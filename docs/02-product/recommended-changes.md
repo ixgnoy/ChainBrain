@@ -5,6 +5,7 @@ Last updated: 2026-10-13
 
 - This is the consolidated, ranked list of changes the overnight research suggests. **Every item is "proposed".** The team decides; the [spec](product-design.md) was not edited.
 - Effort: S under 2 hours, M half a day, L a day or more. Score impact: Task 40, Security 30, Innovation 30, Bonus.
+- **Round 2 added items 28-49** (from Topic F tasks, rivals, model choice, harness, checklist, demo script and licences). Several extend or duplicate earlier items; the Rationale column says which.
 - **Top 5:** (1) organiser email plus a cheap mainnet insurance run, (2) pass the spike and make every claim equal enforced behaviour, (3) evidence pack, (4) fix the false novelty claim, (5) red-team numbers.
 - **Biggest wording fixes:** "nobody verifies buyer agents" is false; "remaining budget" cannot be an on-chain counter; "ERC-4337 account" and "None known" in the risk table overclaim; the compliance paragraph needs correcting.
 - **Biggest design shifts:** budget = pocket balance; stateless exact-digest validator; settle before serve at the gateway; payment-grounded reputation only.
@@ -41,19 +42,43 @@ Last updated: 2026-10-13
 | 25 | Publish reason codes as a small JSON schema | Makes the re-plan loop concrete | [prior art](../03-research/prior-art-hackathons-github.md) | S | Innovation | proposed |
 | 26 | Licence care: do not copy GPL/AGPL code (Safe7579, Smart Sessions, account-abstraction) or Visa TAP sample | Rules require licensed materials | [stack](../04-build/stack-and-repos.md), [identity](../04-build/identity-reputation-fisco.md) | S | compliance | proposed |
 | 27 | Business slide: lead with white-label licence and seller console; per-check fee small and later | Per-check fee near zero at current volume | [market](../03-research/market-regulation-webank.md) | S | Innovation | proposed |
+| 28 | Add an owner-signed one-off payment (R1) and a `get_history` tool so plain "pay X to 0x..." and "show my last payments" work in 1-2 turns | As specified, a plain judge task is refused (address not on allowlist, no plain-transfer tool); a refusal reads as a failed task. Spec author must confirm R1 fits the exact-digest rule | [Topic F tasks](../04-build/topic-f-tasks-and-mainnet-plan.md) | M | Task, Security | proposed |
+| 29 | Unverified seller: step-up with a warning and small cap instead of refuse; add a judge-pocket preset (KYC-anchored owner, seeded reputation, ask-above US$0.50) | Outside x402 sellers and a fresh judge agent would otherwise trigger refusals or a step-up on every task. Extends 11 | [Topic F tasks](../04-build/topic-f-tasks-and-mainnet-plan.md) | S-M | Task, Innovation | proposed |
+| 30 | Put the 28-task judge test set (J-01 to J-28) into `npm run redteam`; report false-refusal count (target 0) beside attack results | Extends 7 (duplicate in part: 7 asks for 10+ ordinary tasks; this fixes the list) | [Topic F tasks](../04-build/topic-f-tasks-and-mainnet-plan.md), [harness](../05-security/evidence-and-redteam-harness.md) | M | Task, Security | proposed |
+| 31 | Rewrite the novelty claim again: do not claim ERC-1271 x402 as new (edxzh/agent-wallet does it); headline the seller-side verdict with a reason-code re-plan loop; add an honest field slide (Leash, sucsage, edxzh, Visa TAP, Skyfire, Kagi) | Extends 5 and 10 (duplicate in part). Rivals ship running code with explorer links | [rivals](../03-research/topic-f-rivals.md) | S | Innovation | proposed |
+| 32 | Replace the spec's same-model semantic check with a rule-based diff as main check plus a checker from a different lab at temperature 0, strict JSON, no tools | Same-model check is a correlated failure; APort Vault: 0 of 69,297 unpermitted transfers behind a deterministic check vs 140 of 76,842 model-alone (per its abstract). Extends 11 | [model choice](../04-build/agent-model-choice.md) | M | Security, Innovation | proposed |
+| 33 | Fix agent models: Sonnet 5.5 for the build week, Qwen3.7-plus (DeepSeek V4 Pro second) for Shenzhen; model as a config string; test China reachability 14-15 Oct | Claude is probably unusable from mainland China; Anthropic's list omits China | [model choice](../04-build/agent-model-choice.md) | S-M | Task | proposed |
+| 34 | Build record-and-replay in the trace panel; pre-record the best scene 6 run and scene 10 with hashes | Offline and network fallback for the live defence | [model choice](../04-build/agent-model-choice.md), [demo script](../06-pitch/demo-script.md) | M | Task, Innovation | proposed |
+| 35 | Build `npm run evidence` and `npm run verify` (re-check every hash from a public RPC, no keys); one `hashes.json`; table has an expected-result column; ship screenshots and receipt JSON | Extends 6 (duplicate in part). Reviewers in mainland China may not reach explorers | [harness](../05-security/evidence-and-redteam-harness.md), [Topic F tasks](../04-build/topic-f-tasks-and-mainnet-plan.md) | M | Task, Security | proposed |
+| 36 | Red-team design: 42 attacks in four classes, 20 runs each, three modes (model only, model plus tool server, full stack), 95% upper bound printed beside every zero, no "unhackable" wording | Extends 7. Zero at n=20 still allows up to 13.9% | [harness](../05-security/evidence-and-redteam-harness.md) | M-L | Security | proposed |
+| 37 | Fix reason-code names as a JSON schema before building; share with agent, harness and docs | Same as 25 (duplicate; 25 stays the main row) | [harness](../05-security/evidence-and-redteam-harness.md) | S | Innovation | proposed |
+| 38 | Send all six deliverables (including optional code, self-assessment, evidence); submit by 12:00 on 20 Oct; v1 on the night of 19 Oct if resubmission is allowed | Topic F is scored on hashes and the first cut uses submitted documents. Extends 16 | [checklist](../06-pitch/submission-checklist.md) | M | All | proposed |
+| 39 | Collect passports and English enrolment proofs now; check at-least-60%-non-Chinese rule (ceil(0.6 x team size)); keep scans out of the repo | Disqualification risk | [checklist](../06-pitch/submission-checklist.md) | S | All | proposed |
+| 40 | Run the 30-minute hosted-facilitator test (x402.org and CDP, 65-byte and longer signatures, wrong-key and tampered-payee controls); self-host unless a hosted one passes all | Extends 8 and 22. A 2026 paper found 9 of 15 facilitators accept adversarial ERC-1271 signatures; keep settle-before-serve | [Topic F tasks](../04-build/topic-f-tasks-and-mainnet-plan.md) | S | Security, Task | proposed |
+| 41 | Mainnet plan: decision rule by Sun 18 12:00; funds by Fri 16; code guard refuses chain 8453 unless `ALLOW_MAINNET=1`, US$1 per-payment cap; fresh keys; run by a teammate outside mainland China; sweep and rotate after | Makes item 1 concrete (extends 1; duplicate in part). Not legal advice | [Topic F tasks](../04-build/topic-f-tasks-and-mainnet-plan.md) | M | Task, Bonus | proposed |
+| 42 | Killer beat: rehearse 20 times, record only after the spike rung is known, narration per rung (rung 3 says "our signing server refused", never "the pocket refuses"); label testnet and simulated issuers in every frame; include a real "what failed" slide | Extends 10 and 11 | [demo script](../06-pitch/demo-script.md) | M | Innovation, Security | proposed |
+| 43 | Live-defence kit: US$2 disposable judge pocket, injection over the untrusted-data channel, team-held kill switch, attack log, L0-L3 network fallback ladder, local copies of everything; test venue network, RPC, explorer and model API from Shenzhen | Judges may inject live; venue network untested [VERIFY] | [demo script](../06-pitch/demo-script.md) | M | Security, Task | proposed |
+| 44 | Judge-facing sandbox (per-visitor pocket or shared one with reset) and a "type your own attack" box with a free dry run (eth_simulateV1); scheduled daily run producing fresh hashes plus a static replay page | Rivals sucsage and edxzh have a sandbox or dashboard | [rivals](../03-research/topic-f-rivals.md) | M | Task, Security | proposed |
+| 45 | Ship THIRD_PARTY_NOTICES.md and a compliance paragraph; never copy from account-abstraction, safe7579, smartsessions, kernel/dependencies, Should-AI-Buy, the Visa TAP repos or any repo without a LICENSE; own contracts on OpenZeppelin, MIT header; licence report on 18 Oct | Extends 26 (duplicate in part) | [licences](../04-build/licences-and-reuse.md) | S | compliance | proposed |
+| 46 | Fund demo wallets from the CDP faucet early across several addresses (USDC capped at 10 claims of 1 USDC per 24 h per address) | Wednesday blocker; faucet cap | [licences](../04-build/licences-and-reuse.md) | S | Task | proposed |
+| 47 | Add payee provenance and look-alike check, exact-amount re-typing on step-up, and "agent may pause but never resume" rule; FISCO dry run only if core is on track | Cross-topic polish bar set by OneGate and Sathi | [rivals](../03-research/topic-f-rivals.md) | S-M | Security, Bonus | proposed |
+| 48 | Re-run the GitHub rival search on 19 Oct and before the 22-23 Oct review; read any new Topic F repo within an hour | Field changes daily | [rivals](../03-research/topic-f-rivals.md) | S | Innovation | proposed |
+| 49 | Correct the line "did not find another project doing exactly that" in prior-art-hackathons-github.md (owner of that doc to edit) | edxzh/agent-wallet already does ERC-1271 x402 plus ERC-8004 | [rivals](../03-research/topic-f-rivals.md) | S | Innovation | proposed |
 
 ## What this means for winning
 
 - **[must]** Items 1-9, 13 and 15. Task 40, Security 30.
 - **[must]** Items 5 and 10. Innovation 30.
+- **[must]** Round 2: items 28, 29, 30, 35, 36, 38, 39, 40, 41, 42 (plain judge tasks, evidence and red-team build, submission, facilitator test, killer beat). Task 40, Security 30.
 - **[should]** Items 11, 12, 14, 16-22. Innovation 30, Security 30.
-- **[could]** Items 24-27 and Nexus/Safe7579 migration. Bonus, Innovation.
+- **[should]** Round 2: items 31-34, 43, 44, 45, 46, 48 and 49. All scores.
+- **[could]** Items 24-27, 47 and Nexus/Safe7579 migration. Bonus, Innovation.
 
 ## Open questions
 
 - Which items does the team accept? Record in [decisions](../07-log/decisions.md).
-- The spec lines to change are owned by the spec author; items 3, 5, 13, 15, 23 need their edit.
+- The spec lines to change are owned by the spec author; items 3, 5, 13, 15, 23 need their edit; so do 28 and 29 (new tool and policy) and item 49 (prior-art doc).
 
 ## Sources
 
-- Local docs listed per row, read 2026-10-13. Spec: [product-design.md](product-design.md).
+- Local docs listed per row, read 2026-10-13 (round 2 rows from docs written the same day). Spec: [product-design.md](product-design.md).

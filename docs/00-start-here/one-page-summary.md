@@ -6,7 +6,7 @@ Last updated: 2026-10-13
 - **ChainBrain (链AI脑)** is a trust layer for AI agents that pay merchants. Before money moves, the seller checks who the agent is, who it works for and what it may buy. The buyer's agent pays from a limited on-chain "pocket", so even a fooled AI cannot overspend.
 - **Entry:** FinTechathon 2026, International AI Track, Topic F (Agent Wallet: an AI wallet that really spends on-chain).
 - **Why it can win:** the 40% task score is judged by on-chain transaction hashes, the 30% security score rewards "refuses even if the AI is fooled", and the seller-side verdict with live re-planning is the part rivals lack.
-- **What it is not:** it is not "the first to verify agents for sellers". Visa, Mastercard, Skyfire, Alipay and others do that already ([competitors](../03-research/competitors-industry.md)). Our narrow claim: seller-side authority enforced by the paying on-chain account, on stablecoin (x402) rails, with a verdict and reason code.
+- **What it is not:** it is not "the first to verify agents for sellers". Visa, Mastercard, Skyfire, Alipay and others do that already ([competitors](../03-research/competitors-industry.md)). Our narrow claim: seller-side authority enforced by the paying on-chain account, on stablecoin (x402) rails, with a verdict and reason code. Same-topic rivals (Leash, sucsage, edxzh/agent-wallet) already ship limit wallets and ERC-1271 x402 payments, so the pocket alone is not our novelty ([rivals](../03-research/topic-f-rivals.md)).
 - **Real vs simulated:** the contracts, payments and checks are real on a test network (Base Sepolia). KYC issuers, merchants, money and licences are stand-ins.
 - **Do first:** ask the organisers if testnet hashes count; pass the 14 Oct spike ([plan](status-and-plan.md)).
 

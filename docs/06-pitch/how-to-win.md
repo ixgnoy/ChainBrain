@@ -8,6 +8,8 @@ Last updated: 2026-10-13
 - **Killer moment:** "fool the agent, not the pocket, then recover" (a judge's attack fails on-chain with a revert hash; seconds later the agent re-plans and pays).
 - **Do not say** "nobody verifies buyer agents for sellers". Say: seller-side authority enforced by the paying on-chain account on x402 rails, with a verdict and reason code ([competitors](../03-research/competitors-industry.md)).
 - **Evidence beats claims:** an evidence pack with expected-vs-actual and red-team numbers is the centre of the submission.
+- **Round 2 links:** the scene-by-scene [demo script](demo-script.md) (5-minute shot list, 10-slide deck, live-defence plan, minimum slice), the [submission checklist](submission-checklist.md), the [rivals](../03-research/topic-f-rivals.md) head-to-head and the [evidence and red-team harness](../05-security/evidence-and-redteam-harness.md). Where this page and the demo script differ on timings, the demo script is newer.
+- **Rivals matter now:** Leash ships a full evidence pack; edxzh already does ERC-1271 x402. Our edge is the seller-side verdict, reason-code re-plan and recovery, but only if we ship it.
 - Simulated panel average about 73/100 ([judge simulation](judge-simulation.md)). These are our simulations, not real judges.
 
 ## Story arc
@@ -38,6 +40,13 @@ Last updated: 2026-10-13
 
 Rehearse 20 times. If the model is not fooled, show the recorded revert hash and say so. See [judge simulation](judge-simulation.md) section 4.
 
+## Round 2 detail
+
+- **Video:** use the 8-beat, 4:50 shot list in the [demo script](demo-script.md). The killer beat (fool the agent, not the pocket, then recover) runs 2:25-3:45: a normal agent ignores an injection, a "fooled agent" toggle sends the attack, the pocket reverts (hash H6), the agent recovers and pays (H7). Leash's script has the revert but no seller side and no recovery; those are our differentiators. Beats 5 and 6 wording depends on the spike rung.
+- **Deck:** 10 slides, 9:45, in the demo script section 3. Add an honest field slide ([rivals](../03-research/topic-f-rivals.md)) and a "what failed" slide.
+- **Package:** all six deliverables by 12:00 on 20 Oct ([checklist](submission-checklist.md)); numbers pasted only from generated evidence and red-team tables.
+- **Defence 22 Nov:** judge injection runs against a US$2 disposable pocket with a kill switch; network fallback ladder L0-L3 ([demo script](demo-script.md) section 4).
+
 ## Judge Q&A cheat sheet (top 15)
 
 | # | Question | Short answer | Source doc |
@@ -57,6 +66,10 @@ Rehearse 20 times. If the model is not fooled, show the recorded revert hash and
 | 13 | Why would a merchant install it; what is the revenue? | Low readiness and no liability shift; white-label licence and seller console; per-check fee small. No customers yet | [market](../03-research/market-regulation-webank.md) |
 | 14 | What data does the seller learn? | Yes/no and reason codes, no raw KYC; quote probing is a named residual | [threat model](../05-security/threat-model-and-red-team.md) |
 | 15 | What failed or is not fixed? | Prepare a real list: spike Q2 result, cuts, in-bounds waste | [judge sim](judge-simulation.md) |
+| 16 | What if the judge's plain task is "pay 1 USDC to 0xABC"? (proposed) | Owner-signed one-off payment in 1-2 turns, or a step-up with a small cap; not a refusal. Only if the spec owner accepts the change | [Topic F tasks](../04-build/topic-f-tasks-and-mainnet-plan.md) |
+| 17 | Leash and edxzh also have limit wallets and on-chain reverts | Agreed. We add the seller-side verdict, reason-code re-plan and recovery; show the field slide | [rivals](../03-research/topic-f-rivals.md) |
+| 18 | The model checking the model is the same model | No: rule-based diff is the main check; the semantic checker comes from a different lab (proposed) | [model choice](../04-build/agent-model-choice.md) |
+| 19 | Does it work offline or without your model in Shenzhen? | Trace replay and recorded clips; a China-reachable model is the plan [VERIFY] | [demo script](demo-script.md) |
 
 ## Emphasise and avoid
 
@@ -74,12 +87,15 @@ Rehearse 20 times. If the model is not fooled, show the recorded revert hash and
 - **[must]** Narrow novelty claim and competitor-accurate slide. Innovation 30.
 - **[must]** Build the killer moment and the evidence pack. Task 40, Security 30.
 - **[should]** Rehearsed Q&A one-pager; "what failed" slide. Innovation 30, Security 30.
+- **[must]** Follow the demo script's gates (Wed 14, Fri 16, Sat 17, Sun 18) and record the killer beat only after the spike rung is known. Task 40, Security 30.
+- **[should]** Burned-in English subtitles, hash tape and evidence table in the video; testnet labelled in every frame. Task 40, Innovation 30.
 - **[could]** Re-run the judge simulation on 19 Oct with real numbers. All.
 
 ## Open questions
 
+- Do Base Sepolia hashes count for Topic F? If not, the hash tape needs mainnet hashes. See [demo script](demo-script.md) open questions.
 - Recorded talk or live slot for the 10-minute deck? Live scripted tasks at the defence? See [open questions](../00-start-here/open-questions.md).
 
 ## Sources
 
-- [Judge simulation](judge-simulation.md), [how judges score](how-judges-score.md), [competitors](../03-research/competitors-industry.md), [prior art](../03-research/prior-art-hackathons-github.md), [market](../03-research/market-regulation-webank.md), [threat model](../05-security/threat-model-and-red-team.md), [feasibility](../04-build/x402-pocket-feasibility.md), [spec](../02-product/product-design.md); read 2026-10-13.
+- [Judge simulation](judge-simulation.md), [how judges score](how-judges-score.md), [competitors](../03-research/competitors-industry.md), [prior art](../03-research/prior-art-hackathons-github.md), [market](../03-research/market-regulation-webank.md), [threat model](../05-security/threat-model-and-red-team.md), [feasibility](../04-build/x402-pocket-feasibility.md), [spec](../02-product/product-design.md); read 2026-10-13. Round 2: [demo script](demo-script.md), [submission checklist](submission-checklist.md), [rivals](../03-research/topic-f-rivals.md), [harness](../05-security/evidence-and-redteam-harness.md), [Topic F tasks](../04-build/topic-f-tasks-and-mainnet-plan.md), [model choice](../04-build/agent-model-choice.md). Read 2026-10-13.

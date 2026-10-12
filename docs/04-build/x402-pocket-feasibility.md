@@ -30,7 +30,7 @@ All three checks used the public Base Sepolia RPC (`https://sepolia.base.org`, c
 | Check | Result |
 | --- | --- |
 | `version()` on the USDC proxy | Returns the string "2" (expected for v2.0, v2.1 and v2.2) |
-| Implementation address (Circle's proxy stores it at slot `0x7050c9e0...f8c3`) | `0xd74cc5d436923b8ba2c179b4bca2841d8a52c5b5`, 23,465 bytes of code |
+| Implementation address (Circle's proxy stores it at slot `0x7050c9e0...f8c3`) | `0xd74cc5d436923b8ba2c179b4bca2841d8a52c5b5`, ~~23,465~~ 23,464 bytes of code (re-measured 2026-10-13 with eth_getCode) |
 | Selectors in that code | Contains `e3ee160e` (v,r,s overload), `cf092995` (bytes overload of `transferWithAuthorization`), `88b7ab63` (bytes overload of `receiveWithAuthorization`). The selector values were computed with a local Keccak-256 implementation that reproduced the known selector `a9059cbb` for `transfer`. |
 | Why no `1626ba7e` in the code | Circle's `SignatureChecker` is an external linked library, so the magic value lives in the library, not in the token. Consistent with Circle's source. |
 | Behavioural test (`eth_call` with a state override that places tiny code at the payer address, value 0, 40-byte signature) | Code returning `0x1626ba7e...` gives success (`0x`). Code returning `0xffffffff...` gives `FiatTokenV2: invalid signature`. No code at the payer gives `ECRecover: invalid signature length`. |
