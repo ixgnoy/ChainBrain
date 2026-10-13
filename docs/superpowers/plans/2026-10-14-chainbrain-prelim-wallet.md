@@ -1656,7 +1656,7 @@ git commit -m "feat(wallet): pocket x402 scheme with intent nonce, owner co-sign
   - `wrapUntrusted`, `scanRequests`, `directory()`
   - Env `APPROVAL_WAIT_MS` (default 600000)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `server/test/intent.test.ts`:
 
@@ -1881,7 +1881,7 @@ describe("tools (fork stack, scripted owner)", () => {
 Run: `pnpm vitest run test/intent.test.ts test/tools.test.ts`
 Expected: FAIL (missing `../src/wallet/scan`, `../src/wallet/tools`, `../src/index`). `tools.test.ts` stays red until Task 5 adds `src/index.ts`, so finish both tasks before expecting green.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `server/src/wallet/scan.ts`:
 
@@ -2150,12 +2150,12 @@ export const tools: ToolMap = Object.fromEntries(
 );
 ```
 
-- [ ] **Step 3: Run the intent tests**
+- [x] **Step 3: Run the intent tests**
 
 Run: `pnpm vitest run test/intent.test.ts`
 Expected: `Tests  5 passed (5)`. Run `tools.test.ts` after Task 5.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add server
