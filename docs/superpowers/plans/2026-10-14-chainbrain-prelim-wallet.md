@@ -2179,7 +2179,7 @@ git commit -m "feat(wallet): six agent tools, fixed-template intent, owner appro
     - `POST /api/approvals/:id {approved, signature?, answer?}`, which checks the owner signature for payments
     - `POST /api/chat {pocket, text, conversationId?}`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `server/test/agent.test.ts`:
 
@@ -2295,7 +2295,7 @@ it("approving an unknown or settled approval is a 404, not a crash", async () =>
 Run: `pnpm vitest run test/agent.test.ts test/api.test.ts`
 Expected: FAIL, cannot find `../src/agent/loop` and `../src/index`.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `server/src/agent/prompt.ts`:
 
@@ -2465,12 +2465,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 }
 ```
 
-- [ ] **Step 3: Run the whole server suite**
+- [x] **Step 3: Run the whole server suite**
 
 Run: `pnpm vitest run && pnpm typecheck`
 Expected: `Test Files  6 passed | 1 skipped (7)`, `Tests  37 passed | 6 skipped (43)`, and no type errors. The skipped file is `scenes.test.ts` (Task 9).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add server
