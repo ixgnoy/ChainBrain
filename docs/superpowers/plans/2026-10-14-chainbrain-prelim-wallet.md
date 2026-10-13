@@ -2482,7 +2482,7 @@ git commit -m "feat(agent): tool-calling agent and wallet API with live trace an
 **Files:**
 - Create: `server/scripts/create-wallets.ts`, `server/scripts/spike.ts`, `server/scripts/new-pocket.ts`, `server/scripts/chat.ts`, `docs/evidence.md`
 
-- [ ] **Step 1: Scripts**
+- [x] **Step 1: Scripts**
 
 `server/scripts/create-wallets.ts`:
 
@@ -2644,7 +2644,9 @@ for (;;) {
 }
 ```
 
-- [ ] **Step 2: Create the wallets now (they age before the demo) and fund them**
+- [x] **Step 2: Create the wallets now (they age before the demo) and fund them**
+
+> Wallets created (`server/.env`, idempotent). **BLOCKED (human):** funding from the faucets.
 
 Run: `cd server && pnpm wallets`
 Expected: eight addresses. A second run prints the same ones (idempotent).
@@ -2657,9 +2659,13 @@ Import `OWNER_PK` into MetaMask as the demo main wallet. The agent key needs no 
 
 - [ ] **Step 3: Email the organisers and register**
 
+> **BLOCKED (human):** email fintechathon@ican-x.com.
+
 Ask whether testnet tx hashes count as "real on-chain". Register the team by email to fintechathon@ican-x.com.
 
 - [ ] **Step 4: Deploy the factory and check it really deployed**
+
+> **BLOCKED (human):** needs funded OWNER. Dry-run on a local fork: `ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.`, 10,687 chars of code.
 
 ```bash
 cd contracts && set -a && source ../server/.env && set +a
@@ -2671,6 +2677,8 @@ Expected: `ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.` and about 10,687 characters
 
 - [ ] **Step 5: Run the live spike (the gate)**
 
+> **BLOCKED (human):** needs funded wallets. Dry-run on a local fork with `FACILITATOR=local`: both payments `ok: true`, `pocket balance 200000n`, exit 0; `new-pocket.ts research|tight` print 5000000 / 200000.
+
 Run: `cd server && pnpm spike`
 Expected (verified on a fork with `FACILITATOR=local`): `0.30 agent-only → { ok: true, tx: … }`, `1.50 owner co-sign → { ok: true, tx: … }`, `pocket balance 200000n`, exit code 0. Paste both tx hashes into `docs/evidence.md` under "Spike". Then decide:
 
@@ -2679,6 +2687,8 @@ Expected (verified on a fork with `FACILITATOR=local`): `0.30 agent-only → { o
 - **The pocket fails on the live chain** (it didn't on the fork): take the spec's hot-wallet fallback, and say so in the security report.
 
 - [ ] **Step 6: Scenes 1–2 from the terminal (Thu)**
+
+> **BLOCKED (human):** needs `ANTHROPIC_API_KEY`. Verified `pnpm chat` stops cleanly when the model is unreachable (also on piped stdin).
 
 You need `ANTHROPIC_API_KEY` in `.env`. Terminal 1: `pnpm sellers`. Terminal 2:
 
