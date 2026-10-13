@@ -2707,6 +2707,8 @@ Save the hash to `docs/evidence.md`.
 
 - [ ] **Step 7: Commit**
 
+> **BLOCKED (human):** commits the live `deployments/84532.json` and tx hashes from Steps 4–6. Scripts and the evidence skeleton are already committed.
+
 ```bash
 git add server/scripts contracts/deployments/84532.json docs/evidence.md
 git commit -m "chore: day-1 wallets, factory on Base Sepolia, live x402 pocket spike"
@@ -4895,6 +4897,8 @@ git commit -m "docs: technical document, security self-assessment, evidence, REA
 ---
 
 ## Open questions (with defaults)
+
+> **BLOCKED (human):** team decisions; the defaults are what is built.
 
 - [ ] **Testnet hashes OK?** Default: Base Sepolia. If not, rerun Task 9, Step 3 on Base mainnet (change the RPC, USDC address and chainId constants; about US$5).
 - [ ] **Team:** overseas university **and** ≥60% non-Chinese nationals.
