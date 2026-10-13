@@ -4,6 +4,7 @@ import { readPocket, revoke, returnFunds, setCap, setAskAbove, setSeller, type P
 import { formatUsd, parseUsd, NEVER, txUrl, shortAddr, REASONS, type Config } from "../shared";
 import type { WalletEvent } from "../useEvents";
 import { status } from "./Home";
+import { HandPalm, ArrowUDownLeft } from "@phosphor-icons/react";
 
 /** Balance, rules, allowed sellers, activity trail; owner-only edits, Revoke, Return funds. */
 export function PocketDetail(props: { cfg: Config; pocket: Address; events: WalletEvent[]; refresh: number; onChanged(): void }) {
@@ -57,8 +58,8 @@ export function PocketDetail(props: { cfg: Config; pocket: Address; events: Wall
         );
       })}
       <div className="row">
-        <button className="danger big-button" disabled={!!busy || v.revoked} onClick={() => void act("Revoked", () => revoke(v.address))}>Revoke</button>
-        <button className="ghost" disabled={!!busy || v.balance === 0n} onClick={() => void act("Returned funds", () => returnFunds(v.address))}>Return funds</button>
+        <button className="danger big-button" disabled={!!busy || v.revoked} onClick={() => void act("Revoked", () => revoke(v.address))}><HandPalm size={16} weight="bold" />Revoke</button>
+        <button className="ghost" disabled={!!busy || v.balance === 0n} onClick={() => void act("Returned funds", () => returnFunds(v.address))}><ArrowUDownLeft size={16} weight="bold" />Return funds</button>
       </div>
       {busy && <p className="muted">{busy} (sign in your wallet)…</p>}
       {msg && <p className="muted">{msg.startsWith("0x") || msg.includes(": 0x") ? <a href={txUrl(msg.split(": ")[1])} target="_blank">{msg}</a> : msg}</p>}

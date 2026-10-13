@@ -8,3 +8,4 @@ contracts/broadcast/
 web/dist/
 mobile/.expo/
 mobile/dist/
+.claude/*.local.*

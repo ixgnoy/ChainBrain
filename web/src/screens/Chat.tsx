@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Address } from "viem";
 import { API, REASONS } from "../shared";
 import { approvalsFrom, type WalletEvent } from "../useEvents";
+import { Warning, PaperPlaneTilt } from "@phosphor-icons/react";
 
 type Line = { who: "you" | "agent"; text: string };
 const reasonOf = (r: any): string | undefined => r?.reason ?? r?.allowedByPocket?.reason ?? r?.intentCheck?.reason ?? (r?.refused ? r.refused.join(", ") : undefined);
@@ -40,11 +41,11 @@ export function Chat(props: { pocket: Address; events: WalletEvent[] }) {
     <section className="card chat">
       <h2>Agent</h2>
       {disclosures.map((d, i) => (
-        <div key={i} className="banner">⚠ {d.sellerId} asked for {d.asked?.join(", ") || "personal data"}{d.signRequest ? " and an approval signature" : ""}. Refused: {d.refused.join(", ")}.</div>
+        <div key={i} className="banner"><Warning size={18} weight="fill" /><span>{d.sellerId} asked for {d.asked?.join(", ") || "personal data"}{d.signRequest ? " and an approval signature" : ""}. Refused: {d.refused.join(", ")}.</span></div>
       ))}
       <div className="lines">
         {lines.map((l, i) => <p key={i} className={l.who}><b>{l.who === "you" ? "You" : "Agent"}:</b> {l.text}</p>)}
-        {questions.map((q) => <p key={q.id} className="agent"><b>Agent asks:</b> {q.text}</p>)}
+        {questions.map((q) => <p key={q.id} className="agent ask"><b>Agent asks:</b> {q.text}</p>)}
         {busy && <p className="muted">Agent is working…</p>}
       </div>
       {intent && (
@@ -59,7 +60,7 @@ export function Chat(props: { pocket: Address; events: WalletEvent[] }) {
       )}
       <form onSubmit={(e) => { e.preventDefault(); void send(); }} className="row">
         <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Tell the agent what to buy…" />
-        <button type="submit" disabled={busy}>Send</button>
+        <button type="submit" disabled={busy} aria-label="Send"><PaperPlaneTilt size={16} weight="fill" />Send</button>
       </form>
       <details open>
         <summary>Trace ({trace.filter((e) => e.phase === "tool_call").length} tool calls)</summary>
@@ -69,7 +70,7 @@ export function Chat(props: { pocket: Address; events: WalletEvent[] }) {
             return (
               <li key={i} className={e.phase}>
                 {e.phase === "tool_call" ? <><code>{e.tool}</code> <span className="muted">{JSON.stringify(e.args)}</span></> :
-                  <>{why ? <><code className="reason">{why}</code> <span className="muted">{REASONS[why.split(",")[0]] ?? ""}</span></> : e.result?.tx ? <>paid · tx {e.result.tx.slice(0, 12)}…</> : <span className="muted">ok</span>}</>}
+                  <>{why ? <><code className="reason">{why}</code> <span className="muted">{REASONS[why.split(",")[0]] ?? ""}</span></> : e.result?.tx ? <>paid, tx {e.result.tx.slice(0, 12)}…</> : <span className="muted">ok</span>}</>}
               </li>
             );
           })}

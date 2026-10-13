@@ -9,6 +9,7 @@ import { PocketDetail } from "./screens/PocketDetail";
 import { Chat } from "./screens/Chat";
 import { ApprovalSheet } from "./screens/ApprovalSheet";
 import { RedTeam } from "./screens/RedTeam";
+import { Wallet, CirclesThreePlus } from "@phosphor-icons/react";
 
 export default function App() {
   const [cfg, setCfg] = useState<Config>();
@@ -46,16 +47,29 @@ export default function App() {
   if (!cfg) return <main className="center">Loading…</main>;
   if (!owner)
     return (
-      <main className="center">
-        <h1>链AI脑 ChainBrain</h1>
-        <p>Give your AI a pocket, not your wallet.</p>
-        <button onClick={() => connect().then(setOwner).catch((e) => setErr(e.message))}>Connect wallet</button>
+      <main className="welcome">
+        <div>
+          <h1>Give your AI a pocket, not your wallet.</h1>
+          <p>Set a budget, pick the sellers, and let the agent buy on its own. The pocket contract enforces every rule on-chain.</p>
+          <button className="big-button" onClick={() => connect().then(setOwner).catch((e) => setErr(e.message))}><Wallet size={18} weight="bold" />Connect wallet</button>
+        </div>
+        <aside className="card preview" aria-label="Example pocket: the Research data preset">
+          <div className="row"><span className="muted">Research data pocket</span><span className="badge active">Active</span></div>
+          <div className="big">US$5.00</div>
+          <dl>
+            <dt>Sellers</dt><dd>DataLite, DataPro</dd>
+            <dt>Per payment</dt><dd>up to US$2.00</dd>
+            <dt>Ask me</dt><dd>above US$1.00</dd>
+            <dt>Ends</dt><dd>23:59 tonight</dd>
+          </dl>
+          <p className="muted">The agent spends only from here. Anything outside these rules is refused by the contract, even if the agent is tricked.</p>
+        </aside>
       </main>
     );
 
   return (
     <main className="layout">
-      <header><h1>链AI脑 ChainBrain</h1><span className="muted">Base Sepolia · test USDC</span></header>
+      <header className="topbar"><h1><CirclesThreePlus size={22} weight="duotone" color="var(--accent)" />链AI脑 ChainBrain</h1><span className="net" title="Base Sepolia testnet, test USDC">Base Sepolia</span></header>
       <div className="left">
         {active ? <Chat pocket={active} events={events} /> : <section className="card muted">Create a pocket to start a task.</section>}
         <RedTeam cfg={cfg} />

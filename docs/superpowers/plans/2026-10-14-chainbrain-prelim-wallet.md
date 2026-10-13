@@ -2723,7 +2723,7 @@ git commit -m "chore: day-1 wallets, factory on Base Sepolia, live x402 pocket s
 - Consumes: Task 5 HTTP API (`VITE_API_URL`, default `http://localhost:8787`), the seller admin route for the red-team box, and `window.ethereum`
 - Produces: the laptop demo layout (chat + trace left, pocket right)
 
-- [ ] **Step 1: Scaffold files**
+- [x] **Step 1: Scaffold files**
 
 `web/package.json`:
 
@@ -2876,7 +2876,7 @@ createRoot(document.getElementById('root')!).render(
 
 Run: `cd .. && pnpm install` (workspace root).
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `web/src/wallet.test.ts`:
 
@@ -2936,7 +2936,7 @@ it("money helpers match the server's", () => {
 Run: `cd web && pnpm test`
 Expected: FAIL, cannot find `./wallet`.
 
-- [ ] **Step 3: Implement the logic**
+- [x] **Step 3: Implement the logic**
 
 `web/src/shared.ts`:
 
@@ -3180,7 +3180,7 @@ export function approvalsFrom(events: WalletEvent[]) {
 Run: `pnpm test`
 Expected: `Tests  9 passed (9)`.
 
-- [ ] **Step 4: Implement the screens**
+- [x] **Step 4: Implement the screens**
 
 `web/src/App.tsx`:
 
@@ -3692,12 +3692,16 @@ a { color: var(--accent); }
 .card p, .card dd, .card a { overflow-wrap: anywhere; }
 ```
 
-- [ ] **Step 5: Build**
+- [x] **Step 5: Build**
 
 Run: `pnpm build`
 Expected: `✓ built`. A chunk-size warning (~527 kB) is fine.
 
 - [ ] **Step 6: Live run in the browser with MetaMask (Base Sepolia)**
+
+> **BLOCKED (human):** needs MetaMask with the funded OWNER key and `ANTHROPIC_API_KEY`. Clicked through on a local fork with an EIP-1193 shim on anvil account 0: connect (US$20.00), create and fund Research (main US$15.00, pocket US$5.00 Active), chat safe-stop reply without a model key, Revoke, Return funds (main back to US$20.00). No horizontal overflow at 371 px.
+>
+> **Design pass (design-taste-frontend):** zinc neutrals + one emerald accent, light and dark tokens, Geist + Geist Mono (self-hosted), Phosphor icons, pill buttons / 16 px cards, reduced-motion-gated entry motion, welcome split with a real preview of the Research preset, wallet above agent on narrow screens, no em-dashes or emoji.
 
 Run `pnpm sellers` and `pnpm dev` in `server/`, and `pnpm dev` in `web/`. Open http://localhost:5173 in a browser with MetaMask on the OWNER account. Expected (the same flow was clicked through against a fork):
 1. Connect wallet: the main wallet USDC balance shows.
@@ -3708,7 +3712,7 @@ Run `pnpm sellers` and `pnpm dev` in `server/`, and `pnpm dev` in `web/`. Open h
 
 Add the tx hashes to `docs/evidence.md`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add web pnpm-lock.yaml docs/evidence.md

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { API } from "../shared";
 import { signTransfer } from "../wallet";
+import { SealCheck } from "@phosphor-icons/react";
 
 /** Payment above the ask-me threshold: the owner signs the exact USDC transfer the wallet built. */
 export function ApprovalSheet(props: { approval: any; onDone(): void }) {
@@ -37,7 +38,7 @@ export function ApprovalSheet(props: { approval: any; onDone(): void }) {
         {err && <p className="error">{err}</p>}
         <div className="row">
           <button className="ghost" disabled={busy} onClick={() => void post({ approved: false }).then(props.onDone)}>Decline</button>
-          <button disabled={busy} onClick={() => void approve()}>{busy ? "Signing…" : "Approve and sign"}</button>
+          <button disabled={busy} onClick={() => void approve()}><SealCheck size={16} weight="bold" />{busy ? "Signing…" : "Approve and sign"}</button>
         </div>
       </div>
     </div>
