@@ -10,12 +10,19 @@ import { Setup } from "./src/screens/Setup";
 import { Home } from "./src/screens/Home";
 import { Pocket } from "./src/screens/Pocket";
 import { Agent } from "./src/screens/Agent";
-import { T, usePalette } from "./src/ui";
+import { F, T, usePalette } from "./src/ui";
+import { useFonts, Geist_400Regular, Geist_600SemiBold } from "@expo-google-fonts/geist";
+import { GeistMono_500Medium, GeistMono_600SemiBold } from "@expo-google-fonts/geist-mono";
+import { Wallet as WalletIcon } from "phosphor-react-native/src/icons/Wallet";
+import { ChatCircleDots } from "phosphor-react-native/src/icons/ChatCircleDots";
+import { Vault } from "phosphor-react-native/src/icons/Vault";
+import { CirclesThreePlus } from "phosphor-react-native/src/icons/CirclesThreePlus";
 
 type Tab = "home" | "agent" | "pocket";
 
 export default function App() {
   const p = usePalette();
+  const [fontsLoaded] = useFonts({ Geist_400Regular, Geist_600SemiBold, GeistMono_500Medium, GeistMono_600SemiBold });
   const [cfg, setCfg] = useState<Config>();
   const [err, setErr] = useState("");
   const [pk, setPk] = useState<Hex | null | undefined>(undefined);
@@ -42,6 +49,7 @@ export default function App() {
     if (wallet) void savePockets(wallet.address, next);
   };
 
+  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: p.bg }} />;
   let body;
   if (err) body = <T color={p.danger}>{err}</T>;
   else if (!cfg || pk === undefined) body = <T muted>Loading…</T>;
@@ -54,12 +62,19 @@ export default function App() {
   return (
     <View style={{ flex: 1, backgroundColor: p.bg }}>
       <StatusBar style="auto" />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 56 }} keyboardShouldPersistTaps="handled">{body}</ScrollView>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 56 }} keyboardShouldPersistTaps="handled">
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <CirclesThreePlus size={22} weight="duotone" color={p.accent} />
+          <Text style={{ fontFamily: F.semi, fontSize: 16, color: p.text }}>链AI脑 ChainBrain</Text>
+        </View>
+        {body}
+      </ScrollView>
       {wallet && cfg && (
         <View style={{ flexDirection: "row", borderTopWidth: 1, borderColor: p.line, backgroundColor: p.card, paddingBottom: 24 }}>
           {(["home", "agent", "pocket"] as Tab[]).map((t) => (
-            <Pressable key={t} accessibilityRole="tab" onPress={() => setTab(t)} style={{ flex: 1, padding: 14, alignItems: "center" }}>
-              <Text style={{ color: tab === t ? p.accent : p.muted, fontWeight: "600" }}>{t === "home" ? "Wallet" : t === "agent" ? "Agent" : "Pocket"}</Text>
+            <Pressable key={t} accessibilityRole="tab" accessibilityState={{ selected: tab === t }} onPress={() => setTab(t)} style={{ flex: 1, paddingTop: 10, paddingBottom: 6, alignItems: "center", gap: 2 }}>
+              {(() => { const I = t === "home" ? WalletIcon : t === "agent" ? ChatCircleDots : Vault; return <I size={24} weight={tab === t ? "fill" : "regular"} color={tab === t ? p.accent : p.muted} />; })()}
+              <Text style={{ color: tab === t ? p.accent : p.muted, fontFamily: F.semi, fontSize: 12 }}>{t === "home" ? "Wallet" : t === "agent" ? "Agent" : "Pocket"}</Text>
             </Pressable>
           ))}
         </View>

@@ -5,6 +5,8 @@ import { readPocket, pocketStatus, type OwnerWallet, type PocketView } from "../
 import { formatUsd, shortAddr, txUrl, REASONS, NEVER, type Config } from "../lib/shared";
 import type { WalletEvent } from "../lib/events";
 import { Btn, Card, T, s, usePalette } from "../ui";
+import { HandPalm } from "phosphor-react-native/src/icons/HandPalm";
+import { ArrowUDownLeft } from "phosphor-react-native/src/icons/ArrowUDownLeft";
 
 /** Balance, rules, allowed sellers (each toggle is an owner tx), activity trail, Revoke and Return funds. */
 export function Pocket(props: { cfg: Config; wallet: OwnerWallet; pocket: Address; events: WalletEvent[]; refresh: number; onChanged(): void }) {
@@ -35,10 +37,12 @@ export function Pocket(props: { cfg: Config; wallet: OwnerWallet; pocket: Addres
       <Card>
         <View style={s.row}>
           <T bold>Pocket {shortAddr(v.address)}</T>
-          <T color={v.revoked ? p.danger : p.ok}>{pocketStatus(v)}</T>
+          <View style={{ paddingHorizontal: 10, paddingVertical: 2, borderRadius: 999, backgroundColor: v.revoked ? p.dangerSoft : p.accentSoft }}><T bold color={v.revoked ? p.danger : p.ok} style={{ fontSize: 12, lineHeight: 18 }}>{pocketStatus(v)}</T></View>
         </View>
         <T big>US${formatUsd(v.balance)}</T>
-        <T muted>Cap US${formatUsd(v.cap)} · ask me above {v.askAbove === NEVER ? "never" : `US$${formatUsd(v.askAbove)}`} · agent {shortAddr(v.agent)}</T>
+        <T muted>Cap US${formatUsd(v.cap)} per payment</T>
+        <T muted>Ask me above {v.askAbove === NEVER ? "never" : `US$${formatUsd(v.askAbove)}`}</T>
+        <T muted>Agent {shortAddr(v.agent)}</T>
         <T muted>Expires {new Date(Number(v.expiresAt) * 1000).toLocaleString()}</T>
       </Card>
       <Card>
@@ -48,17 +52,17 @@ export function Pocket(props: { cfg: Config; wallet: OwnerWallet; pocket: Addres
           return (
             <View key={x.id} style={s.row}>
               <T>{x.name} <T muted>{x.category}</T></T>
-              <Switch value={on} disabled={!!busy} onValueChange={() => void act(on ? `Removed ${x.name}` : `Allowed ${x.name}`, () => props.wallet.setSeller(v.address, x.payTo, !on))} />
+              <Switch value={on} disabled={!!busy} trackColor={{ true: p.accent, false: p.line }} onValueChange={() => void act(on ? `Removed ${x.name}` : `Allowed ${x.name}`, () => props.wallet.setSeller(v.address, x.payTo, !on))} />
             </View>
           );
         })}
       </Card>
       <Card>
-        <Btn kind="danger" label="Revoke" disabled={!!busy || v.revoked} onPress={() => void act("Revoked", () => props.wallet.revoke(v.address))} />
-        <Btn kind="ghost" label="Return funds" disabled={!!busy || v.balance === 0n} onPress={() => void act("Returned funds", () => props.wallet.returnFunds(v.address))} />
+        <Btn kind="danger" icon={(c) => <HandPalm size={18} weight="bold" color={c} />} label="Revoke" disabled={!!busy || v.revoked} onPress={() => void act("Revoked", () => props.wallet.revoke(v.address))} />
+        <Btn kind="ghost" icon={(c) => <ArrowUDownLeft size={18} weight="bold" color={c} />} label="Return funds" disabled={!!busy || v.balance === 0n} onPress={() => void act("Returned funds", () => props.wallet.returnFunds(v.address))} />
         {!!busy && <T muted>{busy}…</T>}
         {!!msg && (msg.includes(": 0x")
-          ? <Pressable onPress={() => void Linking.openURL(txUrl(msg.split(": ")[1]))}><T color={p.accent}>{msg.split(": ")[0]} · view tx</T></Pressable>
+          ? <Pressable onPress={() => void Linking.openURL(txUrl(msg.split(": ")[1]))}><T color={p.accent}>{msg.split(": ")[0]}, view tx</T></Pressable>
           : <T muted>{msg}</T>)}
       </Card>
       <Card>

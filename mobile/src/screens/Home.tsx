@@ -26,7 +26,7 @@ export function Home(props: { cfg: Config; wallet: OwnerWallet; pockets: Address
       const { pocket, tx } = await props.wallet.createPocket(a);
       setBusy("Funding pocket…");
       const f = await props.wallet.fund(pocket, a.budget);
-      setMsg(`Created ${shortAddr(tx)} · funded ${shortAddr(f.hash)}`);
+      setMsg(`Created ${shortAddr(tx)}, funded ${shortAddr(f.hash)}`);
       props.onAdd(pocket);
       props.onChanged();
     } catch (e) {
@@ -40,7 +40,7 @@ export function Home(props: { cfg: Config; wallet: OwnerWallet; pockets: Address
     <View>
       <Card>
         <T muted>Main wallet {shortAddr(props.wallet.address)}</T>
-        <T big>{bal ? `US$${formatUsd(bal.usdc)}` : "—"}</T>
+        <T big>{bal ? `US$${formatUsd(bal.usdc)}` : "…"}</T>
         <T muted>{bal ? `${Number(formatEther(bal.eth)).toFixed(4)} ETH for gas` : ""}</T>
       </Card>
       <Card>
@@ -49,12 +49,12 @@ export function Home(props: { cfg: Config; wallet: OwnerWallet; pockets: Address
         {props.pockets.map((a) => {
           const v = views[a];
           return (
-            <Pressable key={a} onPress={() => props.onOpen(a)} style={[s.input, { borderColor: a === props.active ? p.accent : p.line }]}>
+            <Pressable key={a} onPress={() => props.onOpen(a)} style={[s.input, { borderColor: a === props.active ? p.accent : "transparent", backgroundColor: a === props.active ? p.accentSoft : p.sunken, borderRadius: 12 }]}>
               <View style={s.row}>
-                <T>{shortAddr(a)}</T>
-                <T bold>{v ? `US$${formatUsd(v.balance)}` : "…"}</T>
+                <T>Pocket {shortAddr(a)}</T>
+                <T mono>{v ? `US$${formatUsd(v.balance)}` : "…"}</T>
               </View>
-              <T muted>{v ? `${pocketStatus(v)} · cap US$${formatUsd(v.cap)} · ask above ${formatUsd(v.askAbove)}` : ""}</T>
+              <T muted>{v ? `${pocketStatus(v)}, cap US$${formatUsd(v.cap)}, ask above ${formatUsd(v.askAbove)}` : ""}</T>
             </Pressable>
           );
         })}
@@ -66,8 +66,8 @@ export function Home(props: { cfg: Config; wallet: OwnerWallet; pockets: Address
         ))}
         {!!busy && <T muted>{busy}</T>}
         {!!msg && <T muted>{msg}</T>}
-        <TextInput value={existing} onChangeText={setExisting} placeholder="…or add an existing pocket address" placeholderTextColor={p.muted}
-          autoCapitalize="none" style={[s.input, { color: p.text, borderColor: p.line }]} />
+        <TextInput value={existing} onChangeText={setExisting} placeholder="Or add an existing pocket address" placeholderTextColor={p.muted}
+          autoCapitalize="none" style={[s.input, { color: p.text, borderColor: p.line, backgroundColor: p.sunken }]} />
         <Btn kind="ghost" label="Add pocket" disabled={!isAddress(existing)} onPress={() => { props.onAdd(existing as Address); setExisting(""); }} />
         <Pressable onPress={() => void Linking.openURL(`https://sepolia.basescan.org/address/${props.wallet.address}`)}><T color={p.accent}>View main wallet on Basescan</T></Pressable>
       </Card>
