@@ -3740,7 +3740,7 @@ Can run in parallel with Task 7; it needs only Task 5's API.
 - No router: three tabs held in state (YAGNI).
 - The red-team box stays on the laptop app.
 
-- [ ] **Step 1: Scaffold and install (versions resolved by `expo install` for SDK 57)**
+- [x] **Step 1: Scaffold and install (versions resolved by `expo install` for SDK 57)**
 
 ```bash
 cd /Users/johnnytan5/Documents/Grabber
@@ -3824,7 +3824,7 @@ Then replace the generated package file with this one (same dependencies, plus t
 
 Keep the template's `index.ts`, `tsconfig.json` and `assets/` as generated. Run `npm install` once more after replacing `package.json`.
 
-- [ ] **Step 2: Write the failing logic test**
+- [x] **Step 2: Write the failing logic test**
 
 `mobile/src/lib/logic.test.ts`:
 
@@ -3880,7 +3880,7 @@ test("approvalsFrom keeps the latest status per approval", () => {
 Run: `npm test`
 Expected: FAIL, cannot find `./shared`.
 
-- [ ] **Step 3: Implement the logic**
+- [x] **Step 3: Implement the logic**
 
 `mobile/src/lib/shared.ts`:
 
@@ -4151,7 +4151,7 @@ export function approvalsFrom(events: WalletEvent[]) {
 Run: `npm test`
 Expected: `ℹ pass 4`, `ℹ fail 0`.
 
-- [ ] **Step 4: Implement the screens**
+- [x] **Step 4: Implement the screens**
 
 `mobile/src/ui.tsx`:
 
@@ -4607,7 +4607,7 @@ Expected: no type errors, `ℹ pass 4`, `21/21 checks passed`, and both exports 
 
 The same flow was verified on Expo's web target against a fork. If Expo Go misbehaves on the phone, `npm run web` runs the identical app in a browser as a fallback for the demo.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add mobile
@@ -4620,7 +4620,7 @@ git commit -m "feat(mobile): Expo Go owner app with on-device key, pockets, agen
 - Create: `server/scripts/force-transfer.ts`, `server/test/scenes.test.ts`
 - Modify: `docs/evidence.md`
 
-- [ ] **Step 1: The forced-transfer script and the scene tests**
+- [x] **Step 1: The forced-transfer script and the scene tests**
 
 `server/scripts/force-transfer.ts`:
 
@@ -4831,7 +4831,7 @@ describe.skipIf(!process.env.SCENES)(`scenes (${REAL ? "real model" : "replay mo
 });
 ```
 
-- [ ] **Step 2: Run the scenes**
+- [x] **Step 2: Run the scenes**
 
 Run: `cd server && SCENE_REPLAY=1 pnpm test:scenes`
 Expected: `Tests  6 passed (6)` (verified).
@@ -4839,11 +4839,11 @@ Expected: `Tests  6 passed (6)` (verified).
 Then with the key: `pnpm test:scenes`
 Expected: 6 passed with the real model. If an LLM scene fails, fix `src/agent/prompt.ts` or the tool descriptions in `tools.ts`; **never add a scripted branch**.
 
-- [ ] **Step 3: Live evidence on Base Sepolia**
+- [x] **Step 3: Live evidence on Base Sepolia**
 
 Run scenes 1–8 once through the web app (Task 7) and once through the phone for scenes 1–3 and 7 (Task 8). For scene 8, create its pocket with `pnpm tsx scripts/new-pocket.ts tight`. For scene 5, run `pnpm tsx scripts/force-transfer.ts <researchPocket>`; expected `REVERTED (expected) 0x…`. Fill `docs/evidence.md` with one row per scene (tx link, what it proves). Note that the seller list order was shuffled once to show the path isn't hard-coded.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add server docs/evidence.md
