@@ -1,0 +1,7 @@
+packages:
+  - server
+  - web
+minimumReleaseAgeExclude:
+  - '@hono/node-server@2.1.5'
+allowBuilds:
+  esbuild: true

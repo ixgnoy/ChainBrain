@@ -183,7 +183,7 @@ docs/evidence.md                  tx hash per scene
   - Owner-only: `revoke()`, `returnFunds()`, `setSeller(address,bool)`, `setCap`, `setAskAbove`, `setExpiresAt`
   - "Never ask" = `type(uint256).max`; "ask every time" = 0
 
-- [ ] **Step 1: Scaffold Foundry and the gitignore**
+- [x] **Step 1: Scaffold Foundry and the gitignore**
 
 ```bash
 cd /Users/johnnytan5/Documents/Grabber
@@ -226,7 +226,7 @@ mobile/.expo/
 mobile/dist/
 ```
 
-- [ ] **Step 2: Write the failing fork test**
+- [x] **Step 2: Write the failing fork test**
 
 `contracts/test/Pocket.fork.t.sol`:
 
@@ -467,12 +467,12 @@ contract PocketForkTest is Test {
 }
 ```
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `cd contracts && forge test -vv`
 Expected: compile error, `Source "src/Pocket.sol" not found`.
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `contracts/src/Pocket.sol`:
 
@@ -647,12 +647,12 @@ contract Deploy is Script {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd contracts && forge test`
 Expected: `Suite result: ok. 20 passed; 0 failed`. Forge lint notes about naming style are expected; there are no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .gitignore contracts
@@ -673,7 +673,7 @@ git commit -m "feat(contracts): ERC-1271 pocket with owner co-sign, tested on Ba
   - `sellerPayTo(): Record<sellerId, Address>`
   - `facilitatorClient()`, `localFacilitator()`
 
-- [ ] **Step 1: Package files**
+- [x] **Step 1: Package files**
 
 `pnpm-workspace.yaml`:
 
@@ -775,7 +775,7 @@ SELLER_SHADYFEED_PK=
 
 Run: `cd server && pnpm install`
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `server/test/helpers/env.ts` (anvil's public dev keys, used by every fork test):
 
@@ -852,7 +852,7 @@ it("unknown item is 404", async () => expect((await app.request("/datalite/nope"
 Run: `pnpm vitest run test/sellers.test.ts`
 Expected: FAIL, cannot find `../src/sellers`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `server/src/facilitator.ts`:
 
@@ -1034,12 +1034,12 @@ _Demo data: figures are invented for the ChainBrain demo._
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `pnpm vitest run test/sellers.test.ts`
 Expected: `Tests  6 passed (6)`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add pnpm-workspace.yaml server
