@@ -4591,6 +4591,10 @@ export function Agent(props: { pocket: Address; wallet: OwnerWallet; events: Wal
 
 - [ ] **Step 5: Check, bundle, and run on a phone in Expo Go**
 
+> Done locally: typecheck clean, `ℹ pass 4`, expo-doctor 21/21, Hermes bundles for android and ios (4.4 MB after per-icon Phosphor imports). Clicked through on Expo's web target against a fork: create key, Research pocket (US$5.00 Active), Revoke, Return funds. `npx expo prebuild --platform android` succeeds (Android Studio path). **BLOCKED (human):** Expo Go on a real phone and the approval sheet with a live agent (needs `ANTHROPIC_API_KEY`).
+>
+> **Added: native Android app in Kotlin (`android/`).** Jetpack Compose, web3j `crypto`/`abi` 4.12.3 for signing and ABI, OkHttp JSON-RPC, owner key encrypted with an Android Keystore AES-GCM key. Same tabs, intent card, approval sheet and polling. `./gradlew assembleDebug testDebugUnitTest`: 6/6, including a test that the EIP-712 digest and signature are byte-identical to viem's.
+
 ```bash
 npm run typecheck && npm test && npx expo-doctor
 npx expo export --platform android --output-dir /tmp/cb-android && npx expo export --platform ios --output-dir /tmp/cb-ios
@@ -4839,7 +4843,9 @@ Expected: `Tests  6 passed (6)` (verified).
 Then with the key: `pnpm test:scenes`
 Expected: 6 passed with the real model. If an LLM scene fails, fix `src/agent/prompt.ts` or the tool descriptions in `tools.ts`; **never add a scripted branch**.
 
-- [x] **Step 3: Live evidence on Base Sepolia**
+- [ ] **Step 3: Live evidence on Base Sepolia**
+
+> **BLOCKED (human):** needs funded wallets and the model key. On a fork, `force-transfer.ts` printed `REVERTED (expected) 0x…`.
 
 Run scenes 1–8 once through the web app (Task 7) and once through the phone for scenes 1–3 and 7 (Task 8). For scene 8, create its pocket with `pnpm tsx scripts/new-pocket.ts tight`. For scene 5, run `pnpm tsx scripts/force-transfer.ts <researchPocket>`; expected `REVERTED (expected) 0x…`. Fill `docs/evidence.md` with one row per scene (tx link, what it proves). Note that the seller list order was shuffled once to show the path isn't hard-coded.
 
