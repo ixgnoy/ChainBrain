@@ -4837,6 +4837,8 @@ describe.skipIf(!process.env.SCENES)(`scenes (${REAL ? "real model" : "replay mo
 
 - [x] **Step 2: Run the scenes**
 
+> `SCENE_REPLAY=1 pnpm test:scenes`: `Tests 6 passed (6)`. **BLOCKED (human):** the real-model run needs `ANTHROPIC_API_KEY`.
+
 Run: `cd server && SCENE_REPLAY=1 pnpm test:scenes`
 Expected: `Tests  6 passed (6)` (verified).
 
