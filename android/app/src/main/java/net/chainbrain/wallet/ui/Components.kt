@@ -72,7 +72,7 @@ fun T(text: String, modifier: Modifier = Modifier, muted: Boolean = false, bold:
         fontFamily = if (big || mono) GeistMono else Geist,
         fontWeight = when { big -> FontWeight.SemiBold; mono -> FontWeight.Medium; bold -> FontWeight.SemiBold; else -> FontWeight.Normal },
         fontSize = (size ?: when { big -> 30; muted -> 13; mono -> 13; else -> 15 }).sp,
-        lineHeight = (when { big -> 38; muted -> 18; mono -> 19; else -> 21 }).sp,
+        lineHeight = (size?.let { it * 5 / 4 } ?: when { big -> 38; muted -> 18; mono -> 19; else -> 21 }).sp,
         letterSpacing = if (big) (-0.5).sp else 0.sp,
     )
 }

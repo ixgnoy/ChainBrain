@@ -62,7 +62,7 @@ export function Home(props: { cfg: Config; wallet: OwnerWallet; pockets: Address
       <Card>
         <T bold>New pocket</T>
         {Object.values(PRESETS).map((pr) => (
-          <Btn key={pr.label} kind="ghost" disabled={!!busy} label={`${pr.label}: US$${pr.budget}, cap ${pr.cap}, ask ${pr.askAbove}`} onPress={() => void create(pr)} />
+          <Btn key={pr.label} kind="ghost" disabled={!!busy} label={`${pr.label}, US$${pr.budget}`} onPress={() => void create(pr)} />
         ))}
         {!!busy && <T muted>{busy}</T>}
         {!!msg && <T muted>{msg}</T>}

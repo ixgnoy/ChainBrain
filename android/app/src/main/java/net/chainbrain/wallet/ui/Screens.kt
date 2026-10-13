@@ -128,7 +128,7 @@ fun HomeScreen(cfg: Config, wallet: OwnerWallet, vault: KeyVault, pockets: List<
     CbCard {
         T("New pocket", bold = true)
         Presets.all.forEach { pr ->
-            Btn("${pr.label}: US$${pr.budget}, cap ${pr.cap}, ask ${pr.askAbove}", {
+            Btn("${pr.label}, US$${pr.budget}", {
                 scope.launch {
                     msg = ""
                     runCatching {

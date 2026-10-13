@@ -48,7 +48,7 @@ data class Config(val agent: String, val factory: String, val usdc: String, val 
 
 private fun fn(name: String, vararg args: Type<*>) = FunctionEncoder.encode(Function(name, args.toList(), emptyList()))
 private fun word(hex: String) = Numeric.toBigInt(hex.ifEmpty { "0x0" })
-private fun addr(hex: String) = "0x" + Numeric.cleanHexPrefix(hex).takeLast(40)
+private fun addr(hex: String) = org.web3j.crypto.Keys.toChecksumAddress("0x" + Numeric.cleanHexPrefix(hex).takeLast(40))
 private val POCKET_CREATED = Numeric.toHexString(Hash.sha3("PocketCreated(address,address,address)".toByteArray()))
 
 /** The owner's main wallet on this phone: reads pockets and sends owner-signed transactions (EIP-1559, chain 84532). */
