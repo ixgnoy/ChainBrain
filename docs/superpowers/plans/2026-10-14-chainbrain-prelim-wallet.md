@@ -1065,7 +1065,7 @@ git commit -m "feat(sellers): four stock x402 test sellers from one template, de
   - `state(pocket)`, `newTask(pocket)`; `IntentInput`, `renderIntent`, `checkAgainstIntent` (`intent.ts` lands whole here because `state.ts` imports its type)
   - `startStack()` (fork harness for Tasks 3–5 and 9)
 
-- [ ] **Step 1: Write the failing test and the fork harness**
+- [x] **Step 1: Write the failing test and the fork harness**
 
 The fork harness starts anvil (Base Sepolia fork, chainId 84532), deploys the factory, runs x402's facilitator code in-process and serves the sellers.
 
@@ -1243,7 +1243,7 @@ describe("settle (fork: real USDC v2.2, x402 facilitator code)", () => {
 Run: `cd contracts && forge build && cd ../server && pnpm vitest run test/pay.test.ts`
 Expected: FAIL, cannot find `../src/wallet/pay`.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `server/src/wallet/money.ts`:
 
@@ -1630,12 +1630,12 @@ export async function settle(pocket: Address, rec: QuoteRec, intentHash: Hex): P
 }
 ```
 
-- [ ] **Step 3: Run the tests to verify they pass**
+- [x] **Step 3: Run the tests to verify they pass**
 
 Run: `pnpm vitest run test/pay.test.ts`
 Expected: `Tests  8 passed (8)` in about 10 s. Requires `anvil` on PATH and internet access to `https://sepolia.base.org` (override with `FORK_URL`).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add server
