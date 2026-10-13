@@ -4862,8 +4862,8 @@ git commit -m "test: scenes 1-8 end to end, forced-transfer backstop, on-chain e
 
 **Files:** `docs/technical-document.md`, `docs/security-self-assessment.md`, `README.md` (replace), `docs/evidence.md` (final), the deck, the video (not in git)
 
-- [ ] **Sun 18:** record a full draft video (≤5 min, English) of scenes 1–8. Use the laptop layout, and cut to the phone for the approval in scene 3 and the revoke in scene 7. Fix only what the draft exposes. Freeze features at night.
-- [ ] **Mon 19, technical document:**
+- [ ] **BLOCKED (human):** **Sun 18:** record a full draft video (≤5 min, English) of scenes 1–8. Use the laptop layout, and cut to the phone for the approval in scene 3 and the revoke in scene 7. Fix only what the draft exposes. Freeze features at night.
+- [x] **Mon 19, technical document:** (`docs/technical-document.md`)
   - architecture (the spec's diagram plus the web and mobile owner apps)
   - the pocket check (envelope, digest rebuild, co-sign, budget = balance)
   - the tool layer's signing rule
@@ -4872,20 +4872,20 @@ git commit -m "test: scenes 1-8 end to end, forced-transfer backstop, on-chain e
   - the mobile key model
   - deployment address and evidence table
   - the finals roadmap labelled **"Roadmap, not in prelim demo"**
-- [ ] **Mon 19, security self-assessment:**
+- [x] **Mon 19, security self-assessment:** (`docs/security-self-assessment.md`)
   - permission tiers (add "mobile owner key: device Keychain / Keystore")
   - the spec's two tables (what a pocket stops / doesn't stop)
   - the four named attacks with test references (`Pocket.fork.t.sol`, `pay.test.ts`, `tools.test.ts`, `scenes.test.ts`)
   - residuals as in the spec
   - if the gate fell back, exactly which guarantee moved off-chain
-- [ ] **Mon 19, README:**
+- [x] **Mon 19, README:** (deployed factory address pending the live deploy)
   - setup: `pnpm i`; `server/.env.example`; `pnpm wallets`; faucets; `forge test`; `pnpm test`; `pnpm sellers` / `pnpm dev`; `web: pnpm dev`; `mobile: npx expo start`
   - deployed factory address
   - deployment guide
   - third-party licences: x402 Apache-2.0; OpenZeppelin, viem, Expo and React Native MIT
-- [ ] **Mon 19, deck (≤10 min, English):** problem → "Give your AI a pocket, not your wallet" → pocket rules → how the pocket checks a payment → scenes (web + phone) → scoring map (with the 0–5 bonus row) → what a pocket stops and doesn't → finals roadmap.
-- [ ] **Tue 20:** final video, check every evidence link, **email the submission by noon UTC+8**.
-- [ ] **Commit** (docs only):
+- [ ] **BLOCKED (human):** **Mon 19, deck (≤10 min, English):** problem → "Give your AI a pocket, not your wallet" → pocket rules → how the pocket checks a payment → scenes (web + phone) → scoring map (with the 0–5 bonus row) → what a pocket stops and doesn't → finals roadmap.
+- [ ] **BLOCKED (human):** **Tue 20:** final video, check every evidence link, **email the submission by noon UTC+8**.
+- [x] **Commit** (docs only):
 
 ```bash
 git add README.md docs
