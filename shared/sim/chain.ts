@@ -12,12 +12,16 @@ type PocketRec = {
 
 export class ChainError extends Error {}
 
+/** Block height for a time, about one block per 2 s like Base: every device's built-in chain agrees on heights. */
+const EPOCH = Date.UTC(2026, 9, 1);
+export const blockAt = (ms: number) => 32_000_000n + BigInt(Math.max(0, Math.floor((ms - EPOCH) / 2000)));
+
 export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigint }) {
   const usdc = new Map<string, bigint>();
   const eth = new Map<string, bigint>();
   const pockets = new Map<string, PocketRec>();
   const txs: SimTx[] = [];
-  let block = o.startBlock ?? 32_418_000n;
+  let block = o.startBlock ?? 0n;
   const listeners = new Set<(t: SimTx) => void>();
 
   const bal = (a: string) => usdc.get(lower(a)) ?? 0n;
@@ -30,8 +34,9 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
   const onlyOwner = (p: PocketRec, from: string) => { if (lower(p.owner) !== lower(from)) throw new ChainError("transaction reverted: NOT_OWNER"); };
 
   function record(t: Omit<SimTx, "hash" | "block" | "logIndex" | "at"> & { at?: number }): SimTx {
-    block += BigInt(o.rng.int(1, 3));
-    const tx: SimTx = { ...t, hash: o.rng.hex(32), block, logIndex: 0, at: t.at ?? o.now() };
+    const at = t.at ?? o.now();
+    block = blockAt(at) > block ? blockAt(at) : block + 1n;
+    const tx: SimTx = { ...t, hash: o.rng.hex(32), block, logIndex: 0, at };
     txs.push(tx);
     for (const f of listeners) f(tx);
     return tx;

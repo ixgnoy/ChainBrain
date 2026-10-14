@@ -80,7 +80,7 @@ function Shell() {
     <div className="min-h-dvh">
       {present ? (
         <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3 px-4 pb-1 pt-3 sm:px-8">
-          <div className="flex min-w-0 items-center gap-3 text-[15px] font-semibold"><Mark size={28} />ChainBrain{linked && <span className="text-[13px] font-medium text-muted">Following your phone</span>}</div>
+          <div className="flex min-w-0 items-center gap-3 text-[15px] font-semibold"><Mark size={28} />ChainBrain</div>
           <button type="button" onClick={() => go({ present: false })} className="inline-flex h-11 items-center gap-2 rounded-full px-4 text-[14px] font-semibold text-ink2 hover:bg-card"><X className="size-4" strokeWidth={1.75} />Exit presenter</button>
         </div>
       ) : (
