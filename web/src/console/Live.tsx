@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { ShieldAlert, Bot, Store, Link2 } from "lucide-react";
 import { useNetwork } from "./useNetwork";
 import { Reason, TxHash, Verdict, clock, pocketStatus, pocketTag, usd, NEVER } from "./parts";
-import { TX_LABEL } from "./chain";
+import { txLabel } from "./network";
 import { traceRows, untrustedOf, type TraceRow } from "../lib/trace";
 import { samePocket, type WalletEvent } from "../lib/events";
 
@@ -56,13 +56,13 @@ export function Live({ pocket }: { pocket?: string }) {
   const rows = useMemo(() => traceRows(forPocket(events, pocket)).filter((r) => r.label !== "thinking").reverse(), [events, pocket]);
   const names = new Map(cfg.sellers.map((s) => [s.id, s.name]));
   const history = useMemo(() => {
-    const chain = txs.filter((t) => samePocket(t.pocket, pocket)).map((t) => ({ key: `${t.hash}-${t.kind}-${t.logIndex}`, label: TX_LABEL[t.kind], amount: t.amount, hash: t.hash, bad: false }));
+    const chain = txs.filter((t) => samePocket(t.pocket, pocket)).map((t) => ({ key: `${t.hash}-${t.kind}-${t.logIndex}`, label: txLabel(t), amount: t.amount, hash: t.hash, bad: false }));
     const forced = events.filter((e) => e.type === "forced" && samePocket(e.pocket, pocket)).map((e) => ({ key: `f-${e.tx}`, label: e.reverted ? "Forced transfer · reverted" : "Forced transfer · settled", amount: BigInt(e.amount ?? 0), hash: e.tx as string, bad: !e.reverted }));
     return [...chain, ...forced].reverse();
   }, [txs, events, pocket]);
   const perSeller = useMemo(() => cfg.sellers.map((s) => ({ s, rows: salesFor(forPocket(events, pocket), s.id) })).filter((x) => x.rows.length), [cfg, events, pocket]);
 
-  if (!pocket) return <Card><Empty>No pocket on the network yet. Create one in the phone app (or run <code>pnpm --dir devstack seed</code>).</Empty></Card>;
+  if (!pocket) return <Card><Empty>No pocket on the network yet. Create one in the phone app.</Empty></Card>;
   const st = p ? pocketStatus(p) : undefined;
   const allowed = p ? p.allowed.map((id) => names.get(id) ?? id) : [];
 

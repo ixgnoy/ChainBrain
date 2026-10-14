@@ -21,7 +21,7 @@ export type WorldOptions = {
 };
 
 type Quote = { quoteId: string; sellerId: string; sku: string; description: string; payTo: Hex; amount: bigint; paid: boolean; auth?: Authorization; ownerSig?: string };
-type Task = { intent?: Intent; spent: bigint; items: number; quotes: Map<string, Quote>; nextQuote: number; asked?: boolean; drafted?: boolean };
+type Task = { intent?: Intent; spent: bigint; items: number; quotes: Map<string, Quote>; nextQuote: number; asked?: boolean };
 
 export const SIM_AGENT: Hex = "0xa9e7c41d5b02f3e68c7d91b4e0f2a35c6d7b8e19";
 export const SIM_FACTORY: Hex = "0xfac70e2b9d4c1a3f5e6b7c8d9e0f1a2b3c4d5e6f";
@@ -240,21 +240,22 @@ export function createWorld(opts: WorldOptions = {}) {
   const busy = new Set<string>();
   async function runTurn(pocket: Hex, text: string): Promise<ChatResult> {
     const t = task(pocket);
-    const scene: Scene | undefined = route(text, { asked: !!t.asked && !t.drafted, revokeWindowMs: opts.revokeWindowMs ?? 9000 });
+    // an unanswered clarifying question from the previous turn: this message is the answer
+    const answering = !!t.asked;
+    t.asked = false;
+    const scene: Scene | undefined = route(text, { asked: answering, revokeWindowMs: opts.revokeWindowMs ?? 9000 });
     await jitter(500, 900); // first token
     if (!scene) {
       const reply = FALLBACK;
       trace(pocket, "reply", { text: reply });
       return { reply };
     }
-    if (t.asked) { t.asked = false; t.drafted = true; }
     let step = scene.next(undefined);
     let n = 0;
     while (!step.done) {
       const a: Action = step.value;
       if (a.delayMs) await sleep(a.delayMs);
       if (a.say) { trace(pocket, "thinking", { text: a.say }); await jitter(350, 650); }
-      if (a.tool === "draft_intent") t.drafted = true;
       const result = await runTool(pocket, a.tool, a.input);
       await jitter(250, 500);
       step = scene.next(result);

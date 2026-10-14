@@ -6,7 +6,11 @@ import { sellerName as name } from "./catalog";
 export type Action = { tool: string; input: object; delayMs?: number; say?: string };
 export type Scene = Generator<Action, string, any>;
 
-const tonight = () => new Date(Date.now() + 6 * 3600_000).toISOString();
+/** "By tonight": 23:59 today on this device's clock, or six hours from now when tonight is less than an hour away. */
+const tonight = () => {
+  const d = new Date(); d.setHours(23, 59, 0, 0);
+  return (d.getTime() - Date.now() < 3600_000 ? new Date(Date.now() + 6 * 3600_000) : d).toISOString();
+};
 const intent = (description: string, maxPricePerItem: string, maxTotal: string, maxItems: number, request = description) =>
   ({ request, description, maxPricePerItem, maxTotal, maxItems, deadline: tonight() });
 

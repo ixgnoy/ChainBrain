@@ -14,8 +14,10 @@ const CHECK = "M7.5 12.5 L10.6 15.6 L16.5 9";
 const CROSS = "M8.5 8.5 L15.5 15.5 M15.5 8.5 L8.5 15.5";
 const LEN = 14; // generous path length for the dash trick (both glyphs are shorter)
 
-export function SuccessMark({ kind = "success", size = 64, delay = 0, haptics = true }: { kind?: "success" | "error"; size?: number; delay?: number; haptics?: boolean }) {
-  const reduce = useReduceMotion();
+export function SuccessMark({ kind = "success", size = 64, delay = 0, haptics = true, still = false }: { kind?: "success" | "error"; size?: number; delay?: number; haptics?: boolean; still?: boolean }) {
+  // `still`: already seen (a re-mount): drawn complete, no haptic
+  const reduce = useReduceMotion() || still;
+  if (still) haptics = false;
   const ring = useSharedValue(reduce ? 1 : 0.6);
   const ringO = useSharedValue(reduce ? 1 : 0);
   const draw = useSharedValue(reduce ? 0 : LEN);

@@ -8,6 +8,8 @@ import { detectDev, getApi, getDev, getSource, setApiUrl as setRuntimeApi, setDe
 import { ownerWallet, readPocket, isOwner, type OwnerWallet, type PocketView } from "./lib/wallet";
 import { createKey, loadKey, loadPockets, saveKey, savePockets } from "./lib/keystore";
 import { builtin, seedFor } from "./lib/builtin";
+import { notify } from "./lib/toast";
+import { haptic } from "./haptics";
 import { loadMeta, saveMeta, type PocketMeta } from "./lib/pocketNames";
 import * as api from "./lib/api";
 import {
@@ -273,6 +275,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setOwnerTxs(ownerTxRef.current);
     if (!local) void setItem(`cb.ownerTxs.${wallet.address.toLowerCase()}`, JSON.stringify(ownerTxRef.current));
   }, [wallet, local]);
+  // a forced transfer the pocket refused on-chain (scene 5, set off from the console): tell the owner the moment it happens
+  const forcedSeen = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    const f = myEvents.filter((e) => e.type === "forced");
+    if (!forcedSeen.current) { if (events.length) forcedSeen.current = new Set(f.map((e) => String(e.tx))); return; }
+    for (const e of f) {
+      if (forcedSeen.current.has(String(e.tx))) continue;
+      forcedSeen.current.add(String(e.tx));
+      const name = meta[String(e.pocket).toLowerCase()]?.name ?? "your pocket";
+      if (e.reverted) { notify(`Blocked a transfer out of ${name}. It reverted on-chain.`); haptic.warning(); }
+    }
+  }, [myEvents, events.length, meta]);
   const pending = useMemo(() => livePending(myEvents, { pendingIds }).filter((a) => !answered.has(a.id)), [myEvents, pendingIds, answered]);
   const sellerName = useCallback((sid?: string) => cfg?.sellers.find((s) => s.id === sid)?.name ?? sid ?? "Unknown seller", [cfg]);
 

@@ -6,8 +6,6 @@ export type CatalogItem = { sku: string; description: string; price: string | nu
 export type CatalogSeller = Omit<SimSeller, "items"> & { items: CatalogItem[] };
 
 const DURIAN = `# Durian exports to China, 2025 (DataLite)
-_Demo data: figures are invented for the ChainBrain demo._
-
 - Total volume: 1.42 million tonnes (+9% year on year)
 - Top origins: Thailand 61%, Vietnam 31%, Malaysia 6%, Philippines 2%
 - Average wholesale price: CNY 38 per kg (Q4)
@@ -15,24 +13,18 @@ _Demo data: figures are invented for the ChainBrain demo._
 - Fastest-growing channel: frozen Musang King pulp (+22%)`;
 
 const FRUIT = `# SE Asia fruit trade report 2025 (DataLite)
-_Demo data: figures are invented for the ChainBrain demo._
-
 - Regional fruit exports: US$28.4 billion (+6%)
 - Durian 24%, mangosteen 9%, longan 8%, dragon fruit 7%
 - China takes 58% of regional fruit exports by value
 - Cold-chain capacity up 14% at Laem Chabang and Hai Phong`;
 
 const PREMIUM = `# Durian exports premium report with 2026 forecast (DataPro)
-_Demo data: figures are invented for the ChainBrain demo._
-
 - 2024 baseline: 1.30 million tonnes; 2025: 1.42 million tonnes
 - 2026 forecast: 1.55 to 1.61 million tonnes (base case 1.58)
 - Price outlook: CNY 34 to 40 per kg; downside risk from Vietnamese supply
 - Watch list: phytosanitary rule changes, rail freight via Laos`;
 
 const HARBOUR = `# Fruit and wine trade report (Harbour Wines)
-_Demo data: figures are invented for the ChainBrain demo._
-
 - Hong Kong fruit wine imports: HK$410 million
 - Lychee and plum wines lead growth (+12%)`;
 

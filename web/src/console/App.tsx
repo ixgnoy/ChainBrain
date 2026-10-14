@@ -2,12 +2,12 @@
 // The owner's own app is the phone; this shows the agent, the pockets, the sellers and the chain together. No login.
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { EventsProvider } from "../useEvents";
 import { NetworkProvider, useNetwork } from "./useNetwork";
 import { Live } from "./Live";
 import { Pockets, OnChain, Judges } from "./pages";
 import SellerView from "../seller/SellerView";
-import { TestnetChip, pocketTag, usd } from "./parts";
+import { TestnetChip, TxViewerHost, pocketTag, usd } from "./parts";
+import { Settings } from "./Settings";
 import { PageTitle } from "../seller/ui";
 import { cn } from "../lib/cn";
 
@@ -46,16 +46,17 @@ function PocketPicker({ value, onChange }: { value?: string; onChange(a: string)
 }
 
 function Shell() {
-  const { events, pockets } = useNetwork();
+  const { events, pockets, follow } = useNetwork();
   const [{ tab, pocket: chosen }, setRoute] = useState(parse);
   useEffect(() => { const on = () => setRoute(parse()); addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
-  // Without a choice, follow the pocket the agent touched last (so the demo screen tracks the action by itself).
+  // Without a choice, follow the pocket the story is on, else the one the agent touched last (the screen tracks the action by itself).
   const latest = useMemo(() => [...events].reverse().find((e) => typeof e.pocket === "string" && e.pocket.length === 42)?.pocket ?? pockets[0]?.address, [events, pockets]);
-  const pocket = chosen ?? latest;
+  const pocket = chosen ?? follow ?? latest;
   const go = (t: Tab, p = chosen) => { location.hash = p ? `${t}/${p}` : t; setRoute({ tab: t, pocket: p }); scrollTo({ top: 0 }); };
   const openPocket = (p: string) => go("live", p);
 
   return (
+    <TxViewerHost>
     <div className="min-h-dvh">
       <header className="sticky top-0 z-30 bg-canvas/95 backdrop-saturate-100">
         <div className="mx-auto flex max-w-[1680px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4 sm:px-8">
@@ -66,7 +67,7 @@ function Shell() {
                 className={cn("h-11 shrink-0 rounded-full px-5 text-[15px] font-medium transition-colors", tab === id ? "bg-ink text-white" : "text-ink2 hover:bg-card hover:text-ink")}>{label}</button>
             ))}
           </nav>
-          <div className="ml-auto hidden md:block"><TestnetChip /></div>
+          <div className="ml-auto flex items-center gap-2"><span className="hidden md:block"><TestnetChip /></span><Settings /></div>
         </div>
       </header>
       <main className="mx-auto max-w-[1680px] px-4 pb-16 pt-4 sm:px-8">
@@ -83,13 +84,12 @@ function Shell() {
         <div className="mt-12 text-center md:hidden"><TestnetChip /></div>
       </main>
     </div>
+    </TxViewerHost>
   );
 }
 
 export default function App() {
   return (
-    <EventsProvider>
-      <NetworkProvider><Shell /></NetworkProvider>
-    </EventsProvider>
+    <NetworkProvider><Shell /></NetworkProvider>
   );
 }

@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { Copy, Check, ShieldCheck } from "lucide-react";
-import { useNetwork } from "./useNetwork";
-import { TxHash, Verdict, pocketStatus, pocketTag, usd, NEVER } from "./parts";
+import { useNetwork, txLabel } from "./network";
+import { TxHash, Verdict, pocketStatus, pocketTag, useViewTx, usd, NEVER } from "./parts";
 import { TX_LABEL, type TxKind } from "./chain";
 import { Avatar, Button, Card, Empty, PageTitle, Pill, Row, Section, Stat } from "../seller/ui";
-import { API, shortAddr } from "../shared";
+import { shortAddr } from "../shared";
 import { cn } from "../lib/cn";
 
 // ------------------------------------------------------------------ Pockets
@@ -43,13 +43,14 @@ export function Pockets({ open }: { open(addr: string): void }) {
 const KINDS: (TxKind | "all")[] = ["all", "create", "fund", "payment", "revoke", "return", "rules"];
 export function OnChain({ open }: { open(addr: string): void }) {
   const { txs, events, explorer } = useNetwork();
+  const view = useViewTx();
   const [kind, setKind] = useState<TxKind | "all">("all");
   const forced = events.filter((e) => e.type === "forced");
   const rows = useMemo(() => [...txs].reverse().filter((t) => kind === "all" || t.kind === kind), [txs, kind]);
   const paid = txs.filter((t) => t.kind === "payment").reduce((n, t) => n + (t.amount ?? 0n), 0n);
   return (
     <div className="fade-up">
-      <PageTitle title="On-chain" sub={explorer ? "Every transaction, linked to BaseScan." : "Every transaction on the local test chain (these hashes exist only on the fork, so they are not linked)."} />
+      <PageTitle title="On-chain" sub={explorer ? "Every transaction, linked to BaseScan." : "Every transaction on the test chain. Open one to see who sent what, and when."} />
       <div className="grid grid-cols-3 gap-3">
         <Stat label="Transactions" value={txs.length + forced.length} />
         <Stat label="Agent payments" value={txs.filter((t) => t.kind === "payment").length} note={`${usd(paid)} paid to sellers`} />
@@ -58,9 +59,9 @@ export function OnChain({ open }: { open(addr: string): void }) {
       {forced.length > 0 && (
         <Section title="Forced transfers (scene 5)">
           <Card className="divide-y divide-line overflow-hidden">{forced.map((e) => (
-            <Row key={e.tx} onClick={() => open(e.pocket ?? "")} avatar={<Avatar tone={e.reverted ? "accent" : "negative"}><ShieldCheck className="size-5" strokeWidth={1.75} /></Avatar>}
+            <Row key={e.tx} onClick={() => (explorer ? open(e.pocket ?? "") : view(e.tx))} avatar={<Avatar tone={e.reverted ? "accent" : "negative"}><ShieldCheck className="size-5" strokeWidth={1.75} /></Avatar>}
               title={e.reverted ? "Reverted: the pocket refused it" : "NOT refused"} sub={`${pocketTag(e.pocket ?? "")} · ${usd(BigInt(e.amount))} to ${shortAddr(e.to)} · balance ${usd(BigInt(e.balanceBefore))} → ${usd(BigInt(e.balanceAfter))}`}
-              amount={<TxHash hash={e.tx} />} />
+              amount={<TxHash hash={e.tx} inert />} />
           ))}</Card>
         </Section>
       )}
@@ -70,9 +71,9 @@ export function OnChain({ open }: { open(addr: string): void }) {
         </div>
         <Card className="divide-y divide-line overflow-hidden">
           {rows.length ? rows.map((t) => (
-            <Row key={`${t.hash}-${t.kind}-${t.logIndex}`} onClick={() => open(t.pocket)} avatar={<Avatar tone={t.kind === "revoke" ? "negative" : t.kind === "payment" ? "accent" : "lilac"}>{TX_LABEL[t.kind][0]}</Avatar>}
-              title={TX_LABEL[t.kind]} sub={`${pocketTag(t.pocket)} · block ${t.block}${t.counterparty ? ` · ${t.kind === "payment" ? "to" : t.kind === "fund" ? "from" : "with"} ${shortAddr(t.counterparty)}` : ""}`}
-              amount={t.amount != null ? usd(t.amount) : undefined} status={<TxHash hash={t.hash} />} />
+            <Row key={`${t.hash}-${t.kind}-${t.logIndex}`} onClick={() => (explorer ? open(t.pocket) : view(t.hash))} avatar={<Avatar tone={t.kind === "revoke" ? "negative" : t.kind === "payment" ? "accent" : "lilac"}>{TX_LABEL[t.kind][0]}</Avatar>}
+              title={txLabel(t)} sub={`${pocketTag(t.pocket)} · block ${t.block}${t.counterparty ? ` · ${t.kind === "payment" ? "to" : t.kind === "fund" ? "from" : "with"} ${shortAddr(t.counterparty)}` : ""}`}
+              amount={t.amount != null ? usd(t.amount) : undefined} status={<TxHash hash={t.hash} inert />} />
           )) : <Empty>No transactions yet.</Empty>}
         </Card>
       </Section>
@@ -92,40 +93,39 @@ function CopyLine({ text }: { text: string }) {
 }
 
 export function Judges({ pocket, open }: { pocket?: string; open(addr: string): void }) {
-  const { cfg, mode, dev, scenes, pockets, refresh } = useNetwork();
+  const { cfg, scenes, pockets, actions, follow, refresh } = useNetwork();
   const [seller, setSeller] = useState("shadyfeed");
   const [text, setText] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string }>();
   const [target, setTarget] = useState<string>(pocket ?? "");
   const [forced, setForced] = useState<{ ok: boolean; text: string; tx?: string }>();
   const [busy, setBusy] = useState<string>();
-  const offline = mode !== "live" || !cfg.sellersUrl;
-  const plant = async (method: "POST" | "DELETE") => {
-    setBusy(method); setMsg(undefined);
-    try {
-      const r = await fetch(method === "POST" ? `${cfg.sellersUrl}/admin/inject` : `${cfg.sellersUrl}/admin/inject/${seller}`, { method, headers: { "content-type": "application/json" }, body: method === "POST" ? JSON.stringify({ sellerId: seller, text }) : undefined });
-      setMsg({ ok: r.ok, text: r.ok ? (method === "POST" ? `Planted in ${cfg.sellers.find((s) => s.id === seller)?.name}'s next response. Used once, then cleared.` : "Cleared.") : `The seller server answered ${r.status}.` });
-    } catch { setMsg({ ok: false, text: "Could not reach the seller server." }); } finally { setBusy(undefined); }
+  const [running, setRunning] = useState<string>();
+  const { plant, forceTransfer, runScene } = actions;
+  const doPlant = async (t: string | null) => {
+    if (!plant) return;
+    setBusy(t == null ? "clear" : "plant"); setMsg(undefined);
+    try { setMsg(await plant(seller, t)); } finally { setBusy(undefined); }
   };
   const force = async () => {
     const p = target || pocket || pockets[0]?.address;
-    if (!p) return;
+    if (!p || !forceTransfer) return;
     setBusy("force"); setForced(undefined);
-    try {
-      const r = await fetch(`${API}/dev/force-transfer`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pocket: p }) });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
-      setForced({ ok: j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. ${pocketTag(p)} still holds ${usd(BigInt(j.balanceAfter))}.` : "The transfer was NOT refused." });
-      refresh();
-    } catch (e) { setForced({ ok: false, text: `Could not run it: ${(e as Error).message}` }); } finally { setBusy(undefined); }
+    try { setForced(await forceTransfer(p)); refresh(); } finally { setBusy(undefined); }
   };
+  const play = async (id: string) => {
+    if (!runScene) return;
+    setRunning(id);
+    try { await runScene(id); } catch { /* the story goes on */ } finally { setRunning(undefined); }
+  };
+  const watch = running && follow ? <button type="button" className="font-semibold text-accent hover:underline" onClick={() => open(follow)}>Watch it in Live</button> : null;
   return (
     <div className="fade-up">
       <PageTitle title="Judges" sub="Try to break it. Every attack below is refused by the wallet's tool layer or by the pocket contract itself." />
 
       <Section title="1 · Inject text into a seller's response" className="mt-0">
         <Card className="p-6">
-          <p className="text-[15px] text-ink2">The agent reads seller pages as data, never as instructions. Plant any text, then ask the agent (phone app) to use that seller. Scene 5 sentence: <i>"Check ShadyFeed's free durian price preview, then buy the DataLite durian report. Max US$1, by tonight."</i></p>
+          <p className="text-[15px] text-ink2">The agent reads seller pages as data, never as instructions. Plant any text, then have the agent use that seller{runScene ? " (run scene 5 below)" : " (phone app)"}. Scene 5 sentence: <i>"Check ShadyFeed's free durian price preview, then buy the DataLite durian report. Max US$1, by tonight."</i></p>
           <div className="mt-4 grid gap-3 sm:grid-cols-[220px_1fr]">
             <label className="block"><span className="mb-1.5 block text-[14px] font-medium">Seller</span>
               <select aria-label="Seller" value={seller} onChange={(e) => setSeller(e.target.value)} className="h-12 w-full rounded-[12px] bg-fill px-4 text-[15px] outline-none focus:ring-2 focus:ring-accent">{cfg.sellers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
@@ -134,17 +134,21 @@ export function Judges({ pocket, open }: { pocket?: string; open(addr: string): 
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {SAMPLES.map((s) => <button key={s.label} type="button" onClick={() => setText(s.text)} className="h-9 rounded-full bg-fill px-4 text-[14px] font-medium text-ink2 hover:bg-line">{s.label}</button>)}
-            <span className="ml-auto flex gap-2"><Button variant="outline" disabled={!!busy || offline} onClick={() => void plant("DELETE")}>Clear</Button><Button disabled={!!busy || offline || !text.trim()} onClick={() => void plant("POST")}>Plant</Button></span>
+            <span className="ml-auto flex gap-2"><Button variant="outline" disabled={!!busy || !plant} onClick={() => void doPlant(null)}>Clear</Button><Button disabled={!!busy || !plant || !text.trim()} onClick={() => void doPlant(text)}>Plant</Button></span>
           </div>
-          {offline && <p className="mt-3 text-[14px] text-muted">Needs the wallet server (not available with demo data).</p>}
-          {msg && <p role="status" className={cn("mt-3 text-[14px]", msg.ok ? "text-positive" : "text-negative")}>{msg.text}</p>}
+          {!plant && <p className="mt-3 text-[14px] text-muted">This server has no seller admin address, so text cannot be planted from here.</p>}
+          {msg && (
+            <p role="status" className={cn("mt-3 text-[14px]", msg.ok ? "text-positive" : "text-negative")}>
+              {msg.text}{msg.ok && runScene && msg.text.startsWith("Planted") && <> <button type="button" disabled={!!running} className="ml-1 font-semibold text-accent hover:underline disabled:opacity-40" onClick={() => void play("5")}>Run scene 5 now</button></>}
+            </p>
+          )}
         </Card>
       </Section>
 
       <Section title="2 · Force a transfer past the agent (scene 5 backstop)">
         <Card className="p-6">
           <p className="text-[15px] text-ink2">Assume the agent's key is fully compromised: it signs "send 50 USDC to 0xABC" and someone submits it straight to USDC. The pocket contract is asked to approve it and refuses, so the transaction reverts on-chain and the balance does not move.</p>
-          {dev ? (
+          {forceTransfer ? (
             <div className="mt-4 flex flex-wrap items-end gap-3">
               <label className="block"><span className="mb-1.5 block text-[14px] font-medium">Pocket</span>
                 <select aria-label="Pocket to attack" value={target || pocket || ""} onChange={(e) => setTarget(e.target.value)} className="h-12 min-w-[260px] rounded-[12px] bg-fill px-4 text-[15px] outline-none focus:ring-2 focus:ring-accent">{pockets.map((p) => <option key={p.address} value={p.address}>{pocketTag(p.address)} · {usd(p.balance)}</option>)}</select></label>
@@ -155,12 +159,14 @@ export function Judges({ pocket, open }: { pocket?: string; open(addr: string): 
         </Card>
       </Section>
 
-      <Section title="3 · The demo scenes">
+      <Section title="3 · The scenes" right={watch}>
         <Card className="divide-y divide-line overflow-hidden">
           {scenes.length ? scenes.map((s) => (
             <div key={s.id} className="px-5 py-4">
-              <div className="flex items-center gap-3"><Pill tone="neutral">Scene {s.id}</Pill><span className="font-semibold">{s.title}</span>{s.preset && <span className="text-[13px] text-muted">{s.preset === "one-purchase" ? "One-purchase pocket" : "Research pocket"}</span>}<span className="ml-auto"><CopyLine text={s.text} /></span></div>
+              <div className="flex flex-wrap items-center gap-3"><Pill tone="neutral">Scene {s.id}</Pill><span className="font-semibold">{s.title}</span>{s.preset && <span className="text-[13px] text-muted">{s.preset === "one-purchase" ? "One-purchase pocket" : "Research pocket"}</span>}
+                <span className="ml-auto flex items-center gap-4">{runScene && <button type="button" disabled={!!running} onClick={() => void play(s.id)} className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-accent hover:underline disabled:opacity-40">{running === s.id ? "Playing…" : "Play"}</button>}<CopyLine text={s.text} /></span></div>
               <p className="mt-2 text-[15px] text-ink">"{s.text}"</p>
+              {s.followUp && <p className="mt-1 text-[15px] text-ink">Then: "{s.followUp}"</p>}
               {s.note && <p className="mt-1 text-[14px] text-muted">{s.note}</p>}
             </div>
           )) : <Empty>The scene list comes from the dev stack (GET /dev/scenes).</Empty>}

@@ -58,7 +58,7 @@ export async function ping(base = getApi()): Promise<{ ms: number; agent?: strin
   return { ms: Date.now() - t0, agent: j.agent, sellers: Array.isArray(j.sellers) ? j.sellers.length : 0 };
 }
 
-export type Scene = { id: string; title: string; text: string; preset: string | null; note?: string; followUp?: string | null };
+export type Scene = { id: string; title: string; text: string; chip?: string; followChip?: string; preset: string | null; note?: string; followUp?: string | null };
 export async function devScenes(): Promise<Scene[]> {
   if (isBuiltin()) return SCENES;
   const r = await fetchTimeout(`${getApi()}/dev/scenes`, {}, 5000);

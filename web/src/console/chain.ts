@@ -8,7 +8,11 @@ export type PocketState = {
   balance: bigint; cap: bigint; askAbove: bigint; expiresAt: number; revoked: boolean; allowed: string[];
 };
 export type TxKind = "create" | "fund" | "payment" | "return" | "out" | "revoke" | "rules";
-export type ChainTx = { hash: Hex; block: bigint; logIndex: number; pocket: Address; kind: TxKind; amount?: bigint; counterparty?: Address };
+export type ChainTx = {
+  hash: Hex; block: bigint; logIndex: number; pocket: Address; kind: TxKind; amount?: bigint; counterparty?: Address;
+  /** Known when the source has them (the built-in network); logs alone do not carry them. */
+  at?: number; from?: Address; status?: "success" | "reverted";
+};
 
 const CREATED = parseAbiItem("event PocketCreated(address indexed pocket, address indexed owner, address indexed agent)");
 const TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");

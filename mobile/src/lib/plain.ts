@@ -23,7 +23,20 @@ export const PLAIN_REASONS: Record<string, string> = {
   SIGNATURE_TYPE_NOT_ALLOWED: "the seller asked for a signature that is not a payment",
   SETTLEMENT_FAILED: "the payment did not go through",
   NOT_THIS_AGENT: "this pocket belongs to a different agent",
+  REVERTED: "the pocket refused it on-chain",
 };
+const ASK: Record<string, string> = {
+  owner_full_name: "your full name", owner_email: "your email", owner_phone: "your phone number", wallet_history: "your wallet history",
+  other_pockets: "your other pockets", owner_address: "your address", balance: "your balance", kyc: "your ID documents",
+};
+/** "your full name, your email and an approval signature": what a seller asked for, in words. */
+export function plainAsks(asked: string[], sign: boolean): string {
+  const parts = asked.map((a) => ASK[a] ?? `your ${a.replace(/^owner_/, "").replace(/_/g, " ")}`);
+  if (sign) parts.push("an approval signature");
+  if (!parts.length) return "your data";
+  return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+}
+
 export const plainReason = (code: string) => PLAIN_REASONS[code] ?? "not allowed by your rules";
 const cap1 = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
@@ -58,6 +71,11 @@ function describeBase(row: LedgerRow, seller: string, when: string, where?: stri
   if (row.kind === "intent") {
     const first = (row.text ?? "").split("\n")[0].replace(/^Buy:\s*/i, "");
     return { title: row.outcome === "approved" ? "Task confirmed" : "Task declined", sub: [first, when].filter(Boolean).join(" · "), rightTone: "ink", rightSubTone: bad ? "negative" : "muted", rightSub: bad ? "Declined" : undefined, avatar: { icon: bad ? "ban" : "check", tone: bad ? "negative" : "soft" }, filter: bad ? "refused" : "other" };
+  }
+  if (row.kind === "forced") {
+    return bad
+      ? { title: "Blocked transfer", sub: `${money ?? "Money"} to an address you never allowed · ${when}`, right: money, rightSub: "Reverted", rightTone: "muted", rightSubTone: "negative", avatar: { icon: "shield", tone: "negative" }, filter: "refused" }
+      : { title: "Transfer out", sub: tail, right: money, rightSub: "Sent", rightTone: "ink", rightSubTone: "negative", avatar: { icon: "ban", tone: "negative" }, filter: "other" };
   }
   if (row.kind === "disclosure") {
     return { title: seller, sub: `Refused: ${plainReason("DISCLOSURE_REFUSED")}`, rightSub: "Refused", rightTone: "ink", rightSubTone: "negative", avatar: { icon: "ban", tone: "negative" }, filter: "refused" };

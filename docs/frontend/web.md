@@ -12,8 +12,11 @@ The whole ChainBrain system on one screen, for the laptop demo, the judges and t
 
 - **No login.** Nothing to connect: the console only reads (events stream, `/api/config`, the chain).
 - **Chain reads:** pockets from the factory's `PocketCreated` logs, rules and balances from the pocket contracts, history from USDC `Transfer` and pocket `Revoked` / `RulesChanged` logs (`src/console/chain.ts`). RPC: `<api>/dev/rpc` on the dev stack, `VITE_RPC_URL` (default `https://sepolia.base.org`) otherwise.
-- **Testnet chip** on every page: "Testnet · Base Sepolia · no real money".
-- **Demo data** when the wallet API cannot be reached (sample sellers' sales); live data takes over when it answers.
+- **Testnet chip** on every page: "Testnet · Base Sepolia · no real money" (the dev stack says "local Base Sepolia fork").
+- **Built-in network (default).** The console opens on a network that runs in the tab (`shared/sim`, the same world the phone uses): a presenter owner whose pockets play the story on a loop (scenes 1, 4, 5 with a forced transfer that reverts, 6, 7, 8; about two minutes, 15 s rest, fresh pockets each run) plus earlier history and background traffic from other owners. Live follows the presenter's active pocket unless one is picked. Judges: the red-team box, "Force the transfer", and a Play button per scene all work. The code is `shared/sim/autopilot.ts`, `src/source/localFeed.ts`, `src/console/FeedNetwork.tsx`.
+- **Settings** (gear in the header): "Custom server" switch, off by default. On: a URL field, Test connection (GET /api/config, shows ms or the error) and Use this server; off returns to the built-in network. Stored in localStorage (`cb.source`, `cb.apiUrl`). A hidden `?server=<url>` switches to a real server (used by `devstack/e2e/e2e.cjs`); `?server=builtin` switches back. Screens read one `Network` shape (`src/console/network.ts`) from either `LiveNetwork` (SSE + chain reads, today's behaviour) or `FeedNetwork`, so nothing branches on the source.
+- **Transactions.** On a public chain a hash links to BaseScan. Otherwise (built-in network, local fork) it opens an in-app detail: status (Success / Reverted by the pocket), amount, from, to, block, time, full hash. No explorer links are ever made for hashes that are not on a public chain.
+- **Linking (prepared).** `src/source/feed.ts` is the seam: a `NetworkFeed` (snapshot, subscribe, actions). A remote feed fed by an SSE relay of another device's world would implement it and be returned from `makeFeed` in `localFeed.ts`.
 
 Fill a running dev stack with real purchases: `pnpm --dir devstack seed`.
 

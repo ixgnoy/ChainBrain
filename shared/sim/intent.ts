@@ -9,7 +9,7 @@ export function renderIntent(i: IntentInput): string {
   const d = new Date(Date.parse(i.deadline) + 8 * 3600_000).toISOString().replace("T", " ").slice(0, 16);
   return [
     `Buy: ${i.description}`,
-    `Price: at most US$${formatUsd(parseUsd(i.maxPricePerItem))} each, US$${formatUsd(parseUsd(i.maxTotal))} in total, up to ${i.maxItems} items`,
+    `Price: at most US$${formatUsd(parseUsd(i.maxPricePerItem))} each, US$${formatUsd(parseUsd(i.maxTotal))} in total, up to ${i.maxItems} item${i.maxItems === 1 ? "" : "s"}`,
     `Deadline: ${d} HKT`,
   ].join("\n");
 }

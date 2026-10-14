@@ -109,7 +109,7 @@ async function webFlow(browser, _scenes, issues) {
   let seeded;
 
   await stp("web: console opens on Live with no login", async () => {
-    await page.goto(`${base}/#live`);
+    await page.goto(`${base}/?server=${encodeURIComponent(API)}#live`); // hidden switch: use the dev stack (the default is the built-in network)
     await page.getByRole("heading", { name: "Live" }).waitFor();
     const text = await page.locator("body").innerText();
     check("no connect, login or key screen", !/connect wallet|log ?in|sign ?in|disconnect|private key/i.test(text));
@@ -178,6 +178,7 @@ async function webFlow(browser, _scenes, issues) {
   await stp("web: phone width has no sideways scroll", async () => {
     const m = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const p = await m.newPage(); watch(p, "web-390", issues);
+    await p.goto(`${base}/?server=${encodeURIComponent(API)}#live`);
     for (const h of ["live", "pockets", "sellers", "chain", "judges"]) {
       await p.goto(`${base}/#${h}`); await p.waitForTimeout(500);
       check(`no horizontal scroll on ${h} at 390 px`, (await p.evaluate(() => document.documentElement.scrollWidth)) <= 390);
@@ -185,14 +186,16 @@ async function webFlow(browser, _scenes, issues) {
     await m.close();
   });
 
-  await stp("web: demo data when the wallet server is unreachable", async () => {
+  await stp("web: opens on the built-in network by default, nothing in the UI says so", async () => {
     const d = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const p = await d.newPage();
-    await p.route(`${API}/**`, (r) => r.abort());
-    await p.goto(`${base}/#sellers`);
-    await p.getByText(/Demo data/).first().waitFor();
-    check("demo data label shown", true);
-    check("demo seller earnings shown without a server", /US\$\d+\.\d\d/.test(await p.getByTestId("earned").innerText()));
+    await p.route(`${API}/**`, (r) => r.abort()); // the built-in network needs no server
+    await p.goto(`${base}/#live`);
+    await p.getByRole("list", { name: "Agent trace" }).waitFor();
+    await until("story shows on Live", async () => (await p.getByRole("list", { name: "Agent trace" }).innerText()).length > 100, 15000);
+    check("built-in network plays the story with no server", true);
+    check("no demo/simulated/mock wording", !/demo|simulat|mock/i.test(await p.locator("body").innerText()));
+    check("testnet chip is the same", /Testnet .*no real money/.test(await p.locator("body").innerText()));
     await d.close();
   });
 
@@ -203,6 +206,7 @@ async function webFlow(browser, _scenes, issues) {
 async function phoneFlow(browser, scenes, issues) {
   const S = Object.fromEntries(scenes.map((s) => [s.id, s]));
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: false, isMobile: false });
+  await ctx.addInitScript(() => localStorage.setItem("cb.source", "server")); // the app opens on its built-in network; this run is against the dev stack
   const page = await ctx.newPage();
   watch(page, "phone", issues);
   page.setDefaultTimeout(20000);

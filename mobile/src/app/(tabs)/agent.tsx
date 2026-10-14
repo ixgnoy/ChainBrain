@@ -14,7 +14,11 @@ import { IntentCard } from "../../components/IntentCard";
 import { DeadEndCard } from "../../components/DeadEndCard";
 import { RefusalCard, SellerRefusal, refusalsOf } from "../../components/RefusalCard";
 import { StoppedCard } from "../../components/StoppedCard";
-import { Rise, useStagger } from "../../ui/Rise";
+import { Rise, useStagger, firstTime } from "../../ui/Rise";
+import { StreamText } from "../../ui/StreamText";
+import { Sheet } from "../../ui/Sheet";
+import { PaidCard } from "../../components/PaidCard";
+import { PocketRow } from "../../components/PocketCard";
 import { SendButton } from "../../ui/SendButton";
 import { WorkingLine } from "../../ui/WorkingLine";
 import { cleanText } from "../../lib/sanitize";
@@ -22,10 +26,21 @@ import { devScenes, type Scene } from "../../lib/api";
 import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, type WalletEvent } from "../../lib/events";
 import { deadEndOf } from "../../lib/deadend";
 import { usd } from "../../lib/util";
-import { plainReason } from "../../lib/plain";
+import { plainAsks } from "../../lib/plain";
+import { CodePill } from "../../ui/kit";
 import { haptic } from "../../haptics";
 
-const DEFAULTS = ["Buy the DataLite durian report. Max US$1, by tonight.", "What can you spend right now?"];
+type ChipItem = { label: string; text: string };
+const DEFAULTS: ChipItem[] = [
+  { label: "Buy the DataLite report", text: "Buy the DataLite durian report. Max US$1, by tonight." },
+  { label: "Durian report under US$2", text: "Get me a market report on durian exports, under US$2, by tonight." },
+];
+
+/** The reply of a finished turn: streams in the first time it is seen, then stays still. */
+function Reply({ id, text }: { id: string; text: string }) {
+  const fresh = useRef(firstTime(`reply:${id}`)).current;
+  return <StreamText text={text} play={fresh} />;
+}
 
 /** The owner's message. Optimistic copies rise from the composer (24 pt, snappy); the real turn that replaces it does not re-animate. */
 function UserBubble({ text, fresh }: { text: string; fresh: boolean }) {
@@ -71,7 +86,8 @@ function useRideKeyboard(base: number) {
 export default function AgentChat() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
-  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, setQuestionOpen, sellerName, setAction, ownerTxs, wallet } = useApp();
+  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setActive } = useApp();
+  const [picking, setPicking] = useState(false);
   const [text, setText] = useState("");
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [kb, setKb] = useState(false);
@@ -120,8 +136,12 @@ export default function AgentChat() {
     setSent({ text: v.trim(), n: turns.length });
     void sendChat(v).finally(() => setSent(null));
   };
-  const follow = question ? scenes.map((s) => s.followUp).filter((x): x is string => !!x) : [];
-  const chips = [...follow, ...(scenes.length ? scenes.map((s) => s.text) : DEFAULTS)].slice(0, 12);
+  const follow: ChipItem[] = question ? scenes.filter((s) => s.followUp).map((s) => ({ label: s.followChip ?? s.followUp!, text: s.followUp! })) : [];
+  // a tight pocket (cap US$0.20 or less) leads with the dead-end task; otherwise the scenes in story order
+  const tight = !!active && active.cap <= 200_000n;
+  const ordered = tight ? [...scenes.filter((s) => s.preset === "one-purchase"), ...scenes.filter((s) => s.preset !== "one-purchase")] : scenes;
+  const chipItems = [...follow, ...(scenes.length ? ordered.map((s) => ({ label: s.chip ?? s.text, text: s.text })) : DEFAULTS)].slice(0, 12);
+  const chips = chipItems.map((x) => x.label);
   const chipDelay = useStagger(chips, 40, 8);
   const last = turns.at(-1);
   const canStop = !!active && active.owned && !!wallet && !active.revoked && Number(active.expiresAt) * 1000 > Date.now();
@@ -133,9 +153,12 @@ export default function AgentChat() {
   return (
     <View style={{ flex: 1, backgroundColor: c.card }}>
       <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 12 }}>
-        <View style={{ alignItems: "center", gap: 2, paddingHorizontal: 112 }}>
+        <View style={{ alignItems: "center", gap: 2, paddingHorizontal: 96 }}>
           <T v="row" w="semi" accessibilityRole="header">Ask agent</T>
-          <T v="cap" color="muted" numberOfLines={1}>{active ? `${cleanText(active.name, 14)} · ${active.revoked ? "Stopped" : status}` : "No pocket yet"}</T>
+          <Press haptics="select" scale={0.96} disabled={pockets.length < 2} onPress={() => setPicking(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel={active ? `Pocket ${active.name}. Change pocket` : "No pocket yet"} style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+            <T v="cap" color="muted" numberOfLines={1}>{active ? `${cleanText(active.name, 18)} · ${active.revoked ? "Stopped" : status}` : "No pocket yet"}</T>
+            {pockets.length > 1 ? <Icon name="chevronDown" size={14} color={c.muted} /> : null}
+          </Press>
         </View>
         <View style={{ position: "absolute", right: 20, top: insets.top + 8 }}>
           {canStop ? (
@@ -177,7 +200,9 @@ export default function AgentChat() {
                 <UserBubble text={t.text} fresh={false} />
                 {disclosures.map((d, k) => (
                   <RefusalCard key={k} id={`${t.id}:d${k}`}>
-                    <T v="sub" color="warning">{cleanText(sellerName(d.sellerId), 40)} asked for {(d.asked ?? []).map((x: string) => cleanText(x, 30)).join(", ") || "your data"}{d.signRequest ? " and a signature" : ""}. Refused: {(d.refused ?? []).map((r: string) => plainReason(r)).join(", ") || "not part of a purchase"}.</T>
+                    <T v="sub" w="semi" color="warning">{cleanText(sellerName(d.sellerId), 40)} asked for {plainAsks(d.asked ?? [], !!d.signRequest)}</T>
+                    <T v="sub" color="ink2">Your wallet refused and nothing was shared. Only payments inside your rules get signed.</T>
+                    <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>{(d.refused ?? []).map((r: string) => <CodePill key={r} code={cleanText(r, 40)} tone="warning" />)}</View>
                   </RefusalCard>
                 ))}
                 {refusals.map((r) => <SellerRefusal key={r.sellerId} id={`${t.id}:r${r.sellerId}`} seller={sellerName(r.sellerId)} reasons={r.reasons} />)}
@@ -185,10 +210,12 @@ export default function AgentChat() {
                   <View style={{ gap: 4 }}>
                     {pending.length ? <T v="body" color="muted">Waiting for you…</T> : <WorkingLine on={!running} />}
                     <TraceBlock events={evs} live />
+                    {evs.filter((e) => e.type === "payment").map((e) => <View key={e.tx} style={{ marginTop: 10 }}><PaidCard e={e} /></View>)}
                   </View>
                 ) : (
-                  <Rise dy={8} layout style={{ gap: 4, maxWidth: "94%" }}>
-                    {t.error ? <T v="body" color="negative">{t.error}</T> : <T v="body">{cleanText(reply, 3000) || "Done."}</T>}
+                  <Rise dy={8} layout style={{ gap: 4 }}>
+                    {evs.filter((e) => e.type === "payment").map((e) => <View key={e.tx} style={{ marginBottom: 10 }}><PaidCard e={e} /></View>)}
+                    {t.error ? <T v="body" color="negative">{t.error}</T> : <View style={{ maxWidth: "94%" }}><Reply id={t.id} text={cleanText(reply, 3000) || "Done."} /></View>}
                     {t.stopped && t.stopped !== "refusal" ? <T v="cap" color="muted">Stopped early.</T> : null}
                     <TraceBlock events={evs} />
                   </Rise>
@@ -222,8 +249,7 @@ export default function AgentChat() {
             <Rise dy={16} layout exit>
               <Press kind="row" onPress={() => setQuestionOpen(true)} style={{ padding: 16, borderRadius: 20, backgroundColor: c.canvas, gap: 4 }}>
                 <T v="row" w="semi">Your agent has a question</T>
-                <T v="sub" color="ink2">{cleanText(question.text, 300)}</T>
-                <T v="cap" color="muted">Type your answer below, or tap to answer.</T>
+                <T v="sub" color="ink2">Answer below, pick a suggestion, or tap here.</T>
               </Press>
             </Rise>
           )}
@@ -231,10 +257,10 @@ export default function AgentChat() {
 
         <Animated.View style={[{ gap: 10 }, Platform.OS === "ios" ? ride : { paddingBottom: kb ? 8 : base }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }} style={{ flexGrow: 0 }} keyboardShouldPersistTaps="handled">
-            {chips.map((s) => (
-              <Rise key={s} delay={Math.max(chipDelay[s] ?? 0, 0)} instant={(chipDelay[s] ?? 0) < 0} dy={6}>
-                <Press haptics="select" scale={0.96} onPress={() => send(s)} disabled={chatBusy || !active} accessibilityRole="button" accessibilityLabel={cleanText(s, 120)} style={{ minHeight: 40, maxWidth: 260, paddingHorizontal: 16, borderRadius: 9999, justifyContent: "center", backgroundColor: c.fill, opacity: chatBusy ? 0.5 : 1 }}>
-                  <T v="sub" w="medium" color="ink2" numberOfLines={1}>{cleanText(s, 60)}</T>
+            {chipItems.map(({ label, text: say }) => (
+              <Rise key={label} delay={Math.max(chipDelay[label] ?? 0, 0)} instant={(chipDelay[label] ?? 0) < 0} dy={6}>
+                <Press haptics="select" scale={0.96} onPress={() => send(say)} disabled={chatBusy || !active} accessibilityRole="button" accessibilityLabel={cleanText(say, 160)} style={{ minHeight: 40, maxWidth: 260, paddingHorizontal: 16, borderRadius: 9999, justifyContent: "center", backgroundColor: c.fill, opacity: chatBusy ? 0.5 : 1 }}>
+                  <T v="sub" w="medium" color="ink2" numberOfLines={1}>{cleanText(label, 60)}</T>
                 </Press>
               </Rise>
             ))}
@@ -251,6 +277,18 @@ export default function AgentChat() {
           </View>
         </Animated.View>
       </View>
+
+      <Sheet visible={picking} onClose={() => setPicking(false)}>
+        <View style={{ paddingHorizontal: 20, paddingBottom: 12, gap: 4 }}>
+          <T v="section">Which pocket?</T>
+          <T v="sub" color="ink2">Your agent only spends from the pocket you pick.</T>
+        </View>
+        <View style={{ marginHorizontal: 20, marginBottom: 12, borderRadius: 20, overflow: "hidden", backgroundColor: c.canvas }}>
+          {pockets.map((p, i) => (
+            <PocketRow key={p.address} pocket={p} last={i === pockets.length - 1} onPress={() => { setActive(p.address); setPicking(false); haptic.select(); }} />
+          ))}
+        </View>
+      </Sheet>
     </View>
   );
 }

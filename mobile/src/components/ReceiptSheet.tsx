@@ -9,10 +9,18 @@ import { Money } from "../ui/Money";
 import { Reveal } from "../ui/Reveal";
 import { T } from "../ui/Text";
 import { cleanText } from "../lib/sanitize";
-import { chainFor, type LedgerRow } from "../lib/events";
-import { plainReason } from "../lib/plain";
+import { chainFor, toolResultOf, type LedgerRow, type WalletEvent } from "../lib/events";
+import { plainAsks, plainReason } from "../lib/plain";
 import { usd, stamp, shortHex } from "../lib/util";
 import { TxLink } from "./TxLink";
+
+/** What a payment delivered: the seller's content from the pay tool's result, unwrapped, as short lines. */
+export function deliveredLines(events: WalletEvent[], tx?: string): string[] {
+  if (!tx) return [];
+  const r = events.map((e) => (e.type === "trace" && e.phase === "tool_result" && e.tool === "pay" ? toolResultOf(e) : null)).find((x) => x?.ok && x.tx === tx);
+  const body = typeof r?.content === "string" ? r.content.replace(/<\/?untrusted_content[^>]*>/g, "") : "";
+  return body.split("\n").map((l: string) => l.trim()).filter((l: string) => l && !/^_.*_$/.test(l)).slice(0, 8);
+}
 
 export function ReceiptSheet() {
   const { receipt, setReceipt } = useApp();
@@ -34,11 +42,14 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
   const chain = useMemo(() => (row.kind === "payment" ? chainFor(events, row) : null), [events, row]);
   const noMoney = row.amount == null || row.kind === "disclosure" || row.kind === "intent" || (row.kind === "owner" && row.amount == null);
   const headline = row.kind === "owner" ? row.text : row.kind === "disclosure" ? "Nothing was shared" : row.kind === "intent" ? (row.outcome === "approved" ? "Task confirmed" : "Task declined") : null;
-  const status = row.kind === "owner" ? "Confirmed on chain" : row.kind === "payment" ? (row.cosigned ? "Paid, co-signed by you" : "Paid") : row.outcome === "pending" ? "Waiting for your OK" : bad ? "Refused" : row.outcome === "approved" ? "Approved" : "Done";
-  const sentence = row.kind === "owner" ? `${row.text}${row.detail ? ` (${cleanText(row.detail, 80)})` : ""}. You signed this on your phone.`
+  const got = useMemo(() => (row.kind === "payment" ? deliveredLines(events, row.tx) : []), [events, row]);
+  const status = row.kind === "forced" ? (bad ? "Reverted on chain" : "Sent") : row.kind === "owner" ? "Confirmed on chain" : row.kind === "payment" ? (row.cosigned ? "Paid, co-signed by you" : "Paid") : row.outcome === "pending" ? "Waiting for your OK" : bad ? "Refused" : row.outcome === "approved" ? "Approved" : "Done";
+  const sentence = row.kind === "forced"
+    ? bad ? "Someone submitted a transfer out of this pocket with the agent's signature, straight to the token contract. The pocket checks every transfer on-chain: this address is not allowed, so it reverted and nothing moved." : "Money left the pocket to an address outside your list."
+    : row.kind === "owner" ? `${row.text}${row.detail ? ` (${cleanText(row.detail, 80)})` : ""}. You signed this on your phone.`
     : row.kind === "payment"
     ? row.cosigned ? `Your agent paid ${seller}. You co-signed this payment on your phone.` : `Your agent paid ${seller} on its own, within your limits.`
-    : row.kind === "disclosure" ? `${seller} asked for ${(row.asked ?? []).map((a) => cleanText(a, 40)).join(", ") || "your data"}${row.signRequest ? " and a signature" : ""}. Your wallet refused, so nothing was shared.`
+    : row.kind === "disclosure" ? `${seller} asked for ${plainAsks(row.asked ?? [], !!row.signRequest)}. Your wallet refused, so nothing was shared.`
     : row.kind === "intent" ? cleanText(row.text, 300)
     : bad ? `This payment was not made: ${plainReason(row.reasons[0] ?? "")}.` : row.outcome === "pending" ? "Your agent is waiting for you to approve this payment." : cleanText(row.text, 300);
   // rows enter 40 ms apart (8 pt rise + fade) once the sheet is mostly up; the transaction hash comes last
@@ -51,12 +62,13 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
     </Reveal>
   );
   const facts: [string, string][] = [];
-  if (row.kind !== "intent" && row.kind !== "owner") facts.push(["Seller", seller]);
+  if (row.kind === "forced") facts.push(["To", row.detail ? shortHex(row.detail) : "Unknown address"]);
+  else if (row.kind !== "intent" && row.kind !== "owner") facts.push(["Seller", seller]);
   if (row.description) facts.push(["Item", cleanText(row.description, 80)]);
   facts.push(["Pocket", pocket ? cleanText(pocket.name, 40) : "n/a"], ["When", stamp(row.at)]);
   const tech: [string, string][] = [["Network", dev ? "Local test network" : source === "builtin" ? "Test network" : "Base Sepolia (test network)"]];
   if (row.reasons.length) tech.push(["Reason code", row.reasons.join(", ")]);
-  if (row.detail) tech.push(["Detail", cleanText(row.detail, 200)]);
+  if (row.detail && row.kind !== "forced") tech.push(["Detail", cleanText(row.detail, 200)]);
   if (row.sku) tech.push(["Item code", cleanText(row.sku, 60)]);
   if (row.intentHash) tech.push(["Task id", shortHex(row.intentHash)]);
   if (chain?.task) tech.push(["Task you confirmed", cleanText(chain.task, 300)]);
@@ -76,6 +88,16 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
         <View style={{ backgroundColor: c.canvas, borderRadius: 20, paddingHorizontal: 16 }}>
           {facts.map(([k, v], i) => cell(k, v, 3 + i))}
         </View>
+        {got.length ? (
+          <Reveal {...R(3 + facts.length)}>
+            <View style={{ backgroundColor: c.canvas, borderRadius: 20, padding: 16, gap: 8 }}>
+              <T v="sub" w="semi" color="ink2">What you got</T>
+              {got.map((l, i) => l.startsWith("#")
+                ? <T key={i} v="row" w="semi">{cleanText(l.replace(/^#+\s*/, ""), 120)}</T>
+                : <View key={i} style={{ flexDirection: "row", gap: 8 }}><T v="sub" color="accent">•</T><T v="sub" color="ink2" style={{ flex: 1 }}>{cleanText(l.replace(/^[-*]\s*/, ""), 160)}</T></View>)}
+            </View>
+          </Reveal>
+        ) : null}
         {row.tx ? (
           <Reveal {...R(3 + facts.length)}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 }}>

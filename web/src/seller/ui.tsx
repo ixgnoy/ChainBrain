@@ -109,7 +109,7 @@ export function Empty({ children }: { children: ReactNode }) {
 }
 
 /** Right-hand detail panel (Radix Dialog: focus trap, Esc). */
-export function DetailSheet({ open, onOpenChange, title, children }: { open: boolean; onOpenChange(o: boolean): void; title: string; children: ReactNode }) {
+export function DetailSheet({ open, onOpenChange, title, description = "Details of this sale", children }: { open: boolean; onOpenChange(o: boolean): void; title: string; description?: string; children: ReactNode }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -119,7 +119,7 @@ export function DetailSheet({ open, onOpenChange, title, children }: { open: boo
             <Dialog.Title className="text-[17px] font-semibold">{title}</Dialog.Title>
             <Dialog.Close aria-label="Close" className="grid size-10 place-items-center rounded-full bg-fill text-ink2 hover:bg-line"><X className="size-5" strokeWidth={1.75} /></Dialog.Close>
           </div>
-          <Dialog.Description className="sr-only">Details of this sale</Dialog.Description>
+          <Dialog.Description className="sr-only">{description}</Dialog.Description>
           <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">{children}</div>
         </Dialog.Content>
       </Dialog.Portal>

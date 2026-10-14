@@ -136,7 +136,7 @@ test("seed: lived-in owner with two pockets and real history", async () => {
   const s = await seedOwner(w, OWNER);
   assert.deepEqual(s.pockets.map((p) => p.name), ["Research data", "One purchase"]);
   const [research, tight] = s.pockets.map((p) => w.chain.view(p.address));
-  assert.equal(research.balance, parseUsd("2.85"));
+  assert.equal(research.balance, parseUsd("7.85"));
   assert.equal(tight.balance, parseUsd("0.20"));
   assert.equal(w.chain.balanceOf(OWNER), parseUsd("54.80"));
   const ev = w.events(0);
@@ -146,4 +146,15 @@ test("seed: lived-in owner with two pockets and real history", async () => {
   assert.equal(ev.filter((e) => e.type === "refusal").length, 1);
   assert.equal(w.pending(research.address).length, 0);
   assert.equal(s.ownerTxs.length, 4);
+});
+
+test("scene 1 again on a seeded pocket: the follow-up answers the question (not scene 3)", async () => {
+  const w = createWorld({ speed: 0, seed: 3 });
+  const s = await seedOwner(w, OWNER);
+  const research = s.pockets[0].address;
+  owner(w);
+  assert.equal((await w.chat(research, "Get me a market report on durian exports, under US$2, by tonight.")).reply, "US$2 in total or per report?");
+  await w.chat(research, "Per report. Get the premium one too if it adds a forecast.");
+  const intents = w.events(0, research).filter((e) => e.type === "intent" && e.approval.status === "pending");
+  assert.match(intents.at(-1)!.approval.text, /^Buy: Durian export market report\nPrice: at most US\$2\.00 each, US\$4\.00 in total, up to 4 items/);
 });

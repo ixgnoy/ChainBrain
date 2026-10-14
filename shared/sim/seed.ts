@@ -15,17 +15,17 @@ const tonight = (now: number) => { const d = new Date(now); d.setHours(23, 59, 0
 
 export async function seedOwner(w: World, owner: Hex, o: { startUsdc?: string } = {}): Promise<{ pockets: SeededPocket[]; ownerTxs: OwnerTxSeed[] }> {
   const ownerTxs: OwnerTxSeed[] = [];
-  w.chain.mint(owner, parseUsd(o.startUsdc ?? "60.00"), 2n * 10n ** 17n);
+  w.chain.mint(owner, parseUsd(o.startUsdc ?? "65.00"), 2n * 10n ** 17n);
   w.autoOwner(owner, true);
   const now = w.now();
 
-  // Research data: US$5, cap US$2, ask above US$1, DataLite and DataPro, until 23:59 tonight
+  // Research data: US$10 (room for every scene in one sitting), cap US$2, ask above US$1, DataLite and DataPro, until 23:59 tonight
   const research = await w.past(4 * HOUR + 30 * MIN, async () => {
     const t = w.now();
     const { pocket, tx } = w.chain.createPocket(owner, { agent: SIM_AGENT, cap: parseUsd("2"), askAbove: parseUsd("1"), expiresAt: tonight(now), sellers: payTo("datalite", "datapro") }, t);
     ownerTxs.push({ pocket, kind: "create", hash: tx, at: t });
-    const f = w.chain.transfer(owner, pocket, parseUsd("5"), t + 40_000);
-    ownerTxs.push({ pocket, kind: "fund", hash: f, amount: "5000000", at: t + 40_000 });
+    const f = w.chain.transfer(owner, pocket, parseUsd("10"), t + 40_000);
+    ownerTxs.push({ pocket, kind: "fund", hash: f, amount: "10000000", at: t + 40_000 });
     return pocket;
   });
   await w.past(4 * HOUR + 26 * MIN, () => w.chat(research, "Get me a market report on durian exports, under US$2, by tonight."));

@@ -147,7 +147,7 @@ export const sliceTurn = (events: WalletEvent[], fromAt: number, toAt?: number) 
 
 // ---------------------------------------------------------------- ledger (Activity tab and receipts)
 
-export type LedgerKind = "payment" | "refusal" | "blocked" | "disclosure" | "approval" | "intent" | "owner";
+export type LedgerKind = "payment" | "refusal" | "blocked" | "disclosure" | "approval" | "intent" | "owner" | "forced";
 export type LedgerRow = {
   key: string; at: number; pocket: string; kind: LedgerKind;
   outcome: "paid" | "refused" | "pending" | "approved" | "declined" | "info";
@@ -167,6 +167,9 @@ export function ledgerFrom(events: WalletEvent[], pocket?: string): LedgerRow[] 
       rows.push({ ...base, kind: "payment", outcome: "paid", sellerId: e.sellerId, sku: e.sku, amount: atomic(e.amount), tx: e.tx, cosigned: !!e.cosigned, intentHash: e.intentHash, nonce: e.nonce, reasons: [] });
     } else if (e.type === "refusal") {
       rows.push({ ...base, kind: "refusal", outcome: "refused", sellerId: e.sellerId, sku: e.sku, amount: atomic(e.amount), reasons: e.reason ? [e.reason] : [], detail: typeof e.detail === "string" ? e.detail : undefined });
+    } else if (e.type === "forced") {
+      // someone submitted a transfer straight to USDC with the agent's signature (scene 5's backstop): the pocket decides on-chain
+      rows.push({ ...base, kind: "forced", outcome: e.reverted ? "refused" : "paid", amount: atomic(e.amount), tx: e.tx, reasons: e.reverted ? ["REVERTED"] : [], detail: typeof e.to === "string" ? e.to : undefined });
     } else if (e.type === "disclosure") {
       rows.push({ ...base, kind: "disclosure", outcome: "refused", sellerId: e.sellerId, asked: Array.isArray(e.asked) ? e.asked : [], signRequest: !!e.signRequest, reasons: Array.isArray(e.refused) ? e.refused : [] });
     } else if (e.type === "trace" && e.phase === "tool_result" && e.tool === "get_quote") {
