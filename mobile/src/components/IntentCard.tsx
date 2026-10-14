@@ -16,9 +16,9 @@ export function IntentCard({ text, onConfirm, onDecline, busy, error, compact }:
   const { c } = useTheme();
   const rows = parseIntent(text);
   return (
-    <View style={{ borderRadius: radius.lg, borderWidth: 1, borderColor: c.infoBorder, backgroundColor: c.bgElev1, overflow: "hidden" }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 12, backgroundColor: c.infoBg }}>
-        <Icon name="sparkle" size={16} color={c.agent} />
+    <View style={{ borderRadius: radius.lg, borderWidth: 1, borderColor: c.hairlineStrong, backgroundColor: c.bgElev1, overflow: "hidden" }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 12, backgroundColor: c.accentSoft }}>
+        <Icon name="sparkle" size={16} color={c.accent} />
         <T v="bodySm" weight="semi" style={{ flex: 1 }}>Confirm this task</T>
         <T v="caption" color="text3">fixed template</T>
       </View>

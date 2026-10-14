@@ -3,7 +3,7 @@ import { Switch, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useTheme } from "../../theme";
 import { useApp } from "../../store";
-import { Screen, Ambient } from "../../ui/Screen";
+import { Screen } from "../../ui/Screen";
 import { BackHeader } from "../../ui/BackHeader";
 import { Button, Card, DevBadge, Divider } from "../../ui/primitives";
 import { HoldToRevoke } from "../../ui/HoldToRevoke";
@@ -23,7 +23,7 @@ function SettingRow({ icon, k, v, sub }: { icon: IconName; k: string; v: string;
   const { c } = useTheme();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 }}>
-      <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: c.bgElev3, alignItems: "center", justifyContent: "center" }}><Icon name={icon} size={16} color={c.text2} /></View>
+      <View style={{ width: 34, height: 34, borderRadius: radius.md, backgroundColor: c.bgElev2, alignItems: "center", justifyContent: "center" }}><Icon name={icon} size={16} color={c.text2} /></View>
       <View style={{ flex: 1 }}><T v="bodySm" color="text2">{k}</T>{sub ? <T v="caption" color="text3">{sub}</T> : null}</View>
       <T v="bodySm" weight="semi" style={{ maxWidth: "52%", textAlign: "right" }}>{v}</T>
     </View>
@@ -61,9 +61,8 @@ export default function PocketDetail() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <Ambient />
       <BackHeader title={cleanText(pocket.name, 30)} right={dev ? <DevBadge /> : undefined} />
-      <Screen tabs={false} ambient={false} contentContainerStyle={{ paddingTop: 0 }}>
+      <Screen tabs={false} contentContainerStyle={{ paddingTop: 0 }}>
         <View style={{ paddingHorizontal: 20, gap: 14 }}>
           <PocketCard pocket={cardOf(pocket)} width="100%" hero />
 
@@ -71,7 +70,7 @@ export default function PocketDetail() {
             <View style={{ padding: 14, borderRadius: radius.lg, backgroundColor: c.revokedBg, borderWidth: 1, borderColor: c.revokedBorder, flexDirection: "row", gap: 12, alignItems: "center" }}>
               <Icon name="lock" size={20} color={c.revoked} />
               <View style={{ flex: 1 }}>
-                <T v="bodySm" weight="semi" style={{ color: c.revoked }}>Revoked</T>
+                <T v="bodySm" weight="semi" color="revoked">Revoked</T>
                 <T v="caption" color="text2">The agent can't spend from this pocket. {pocket.balance > 0n ? "The remaining balance stays here until you return it." : ""}</T>
               </View>
             </View>
@@ -118,7 +117,7 @@ export default function PocketDetail() {
                   <View key={s.id}>
                     {i > 0 && <Divider />}
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14 }}>
-                      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.bgElev3, alignItems: "center", justifyContent: "center" }}><T v="bodySm" weight="bold">{cleanText(s.name, 2).slice(0, 1).toUpperCase()}</T></View>
+                      <View style={{ width: 40, height: 40, borderRadius: radius.md, backgroundColor: c.accentSoft, alignItems: "center", justifyContent: "center" }}><T v="bodySm" weight="bold" color="accentInk">{cleanText(s.name, 2).slice(0, 1).toUpperCase()}</T></View>
                       <View style={{ flex: 1, gap: 3 }}>
                         <T v="bodySm" weight="semi" numberOfLines={1}>{cleanText(s.name, 40)}</T>
                         <Mono size={11} color="text3">{cleanText(s.category, 30)} · {shortAddr(s.payTo)}</Mono>

@@ -8,6 +8,7 @@ import { T, Mono } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { useReduceMotion } from "../ui/motion";
 import { cleanText } from "../lib/sanitize";
+import { radius } from "../tokens";
 import { traceLines, type TraceLine, type WalletEvent } from "../lib/events";
 
 function Dot({ state }: { state: TraceLine["state"] }) {
@@ -19,7 +20,7 @@ function Dot({ state }: { state: TraceLine["state"] }) {
     else o.value = 1;
   }, [state, o, reduce]);
   const s = useAnimatedStyle(() => ({ opacity: o.value }));
-  const col = state === "ok" ? c.ok : state === "refused" ? c.refused : state === "ask" ? c.stepup : c.agent;
+  const col = state === "ok" ? c.ok : state === "refused" ? c.refused : state === "ask" ? c.stepup : c.accent;
   return <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: col }, s]} />;
 }
 
@@ -34,8 +35,8 @@ export function TraceBlock({ events, live }: { events: WalletEvent[]; live?: boo
   const tools = lines.filter((l) => l.kind === "tool").length;
   const summary = live ? (last.kind === "tool" ? `Running ${last.tool}…` : "Thinking…") : `Checked the rules · ${tools} step${tools === 1 ? "" : "s"}`;
   return (
-    <View style={{ borderRadius: 14, borderWidth: 1, borderColor: c.hairline, backgroundColor: c.bgElev1, overflow: "hidden", alignSelf: "stretch" }}>
-      <Press haptics="select" scale={0.99} onPress={() => setOpen(!expanded)} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, height: 36 }} accessibilityLabel="Toggle agent trace">
+    <View style={{ borderRadius: radius.lg, borderWidth: 1, borderColor: c.hairline, backgroundColor: c.bgElev1, overflow: "hidden", alignSelf: "stretch" }}>
+      <Press haptics="select" scale={0.99} onPress={() => setOpen(!expanded)} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, height: 44 }} accessibilityLabel="Toggle agent trace">
         <Dot state={live ? "run" : last.state === "run" ? "ok" : last.state} />
         <T v="caption" color="text2" style={{ flex: 1 }} numberOfLines={1}>{summary}</T>
         <View style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}><Icon name="chevronDown" size={14} color={c.text3} /></View>

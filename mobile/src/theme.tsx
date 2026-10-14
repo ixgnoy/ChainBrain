@@ -1,6 +1,8 @@
-// Typed theme context built from shared/tokens.ts. Dark default, light supported, follows the system unless overridden.
+// Typed theme context built from tokens.ts. Light is the default; dark follows the system or the user's choice (Settings).
+// The same mode drives NativeWind's colour scheme, so `dark:` classes and the CSS variables in global.css follow it.
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useColorScheme } from "react-native";
+import { useColorScheme as useNativeWindScheme } from "nativewind";
 import { palette, type Palette } from "./tokens";
 import { getItem, setItem } from "./storage";
 
@@ -11,13 +13,15 @@ const KEY = "cb.theme";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const system = useColorScheme();
+  const { setColorScheme } = useNativeWindScheme();
   const [mode, setModeState] = useState<ThemeMode>("system");
   useEffect(() => {
     getItem(KEY).then((v) => { if (v === "dark" || v === "light" || v === "system") setModeState(v); });
   }, []);
   const setMode = useCallback((m: ThemeMode) => { setModeState(m); setItem(KEY, m); }, []);
-  // "dark first": when the system reports nothing, use dark.
-  const dark = mode === "dark" || (mode === "system" && system !== "light");
+  // Light first: only an explicit dark choice, or a system that reports dark, gives dark.
+  const dark = mode === "dark" || (mode === "system" && system === "dark");
+  useEffect(() => { setColorScheme(dark ? "dark" : "light"); }, [dark, setColorScheme]);
   const value = useMemo<Ctx>(() => ({ c: dark ? palette.dark : palette.light, dark, mode, setMode }), [dark, mode, setMode]);
   return <ThemeCtx.Provider value={value}>{children}</ThemeCtx.Provider>;
 }
@@ -28,13 +32,13 @@ export function useTheme(): Ctx {
   return v;
 }
 
-/** Loaded font family names (see _layout.tsx useFonts). */
+/** Loaded font family names (see _layout.tsx useFonts). IBM Plex Sans for text, IBM Plex Mono for addresses, hashes and codes. */
 export const F = {
-  body: "Inter_400Regular",
-  bodyMed: "Inter_500Medium",
-  bodySemi: "Inter_600SemiBold",
-  bodyBold: "Inter_700Bold",
-  display: "InterTight_600SemiBold",
-  displayBold: "InterTight_700Bold",
-  mono: "GeistMono_500Medium",
+  body: "IBMPlexSans_400Regular",
+  bodyMed: "IBMPlexSans_500Medium",
+  bodySemi: "IBMPlexSans_600SemiBold",
+  bodyBold: "IBMPlexSans_600SemiBold",
+  display: "IBMPlexSans_600SemiBold",
+  displayBold: "IBMPlexSans_600SemiBold",
+  mono: "IBMPlexMono_500Medium",
 } as const;

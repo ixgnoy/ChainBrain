@@ -1,21 +1,22 @@
 import React, { useMemo, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import { isAddress, formatEther, type Address } from "viem";
-import { useTheme, F } from "../../theme";
+import { useTheme } from "../../theme";
 import { useApp } from "../../store";
 import { Screen } from "../../ui/Screen";
-import { Button, Chip, DevBadge, Glass, IconButton, Press, SectionHeader, TestnetPill } from "../../ui/primitives";
+import { Button, Chip, DevBadge, IconButton, Press, SectionHeader, TestnetPill } from "../../ui/primitives";
 import { T } from "../../ui/Text";
 import { Icon, type IconName } from "../../ui/Icon";
 import { Logo } from "../../ui/Logo";
+import { Input } from "../../components/ui/input";
 import { Orb } from "../../ui/Orb";
 import { PocketCard, cardOf, CARD_H, CARD_W } from "../../components/PocketCard";
 import { ActivityRow } from "../../components/ActivityRow";
 import { useCountUp } from "../../lib/useCountUp";
 import { cleanText } from "../../lib/sanitize";
 import { devFund } from "../../lib/api";
-import { usd, num } from "../../lib/util";
+import { usd, usdFrame, num } from "../../lib/util";
 import { haptic } from "../../haptics";
 import { radius } from "../../tokens";
 
@@ -28,13 +29,13 @@ function Header() {
     <View style={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 18, gap: 12 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
         <Logo size={40} />
-        <Glass style={{ flex: 1, height: 48, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View style={{ flex: 1, height: 48, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: radius.md, backgroundColor: c.bgElev1, borderWidth: 1, borderColor: c.hairline }}>
           <Orb size={26} state={agentState} />
           <View style={{ flex: 1 }}>
             <T v="bodySm" weight="semi" numberOfLines={1}>ChainBrain agent</T>
-            <T v="caption" color="text2" numberOfLines={1} style={{ fontSize: 11, lineHeight: 14 }}>{STATE_TEXT[agentState]}</T>
+            <T v="caption" color="text2" numberOfLines={1}>{STATE_TEXT[agentState]}</T>
           </View>
-        </Glass>
+        </View>
         <IconButton icon="sparkle" label="Ask the agent" onPress={() => router.navigate("/agent")} size={44} />
       </View>
       <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
@@ -58,11 +59,10 @@ function Banners() {
   if (!ask && !q) return null;
   const item = (key: string, icon: IconName, title: string, sub: string, onPress: () => void, tone: "stepup" | "info") => (
     <Press key={key} onPress={onPress} haptics="light" accessibilityLabel={title}>
-      <Glass radiusPx={radius.lg} style={{ borderColor: tone === "stepup" ? c.stepupBorder : c.infoBorder }}>
-        <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: tone === "stepup" ? c.stepupBg : c.infoBg, zIndex: -1 }} />
+      <View style={{ borderRadius: radius.lg, borderWidth: 1, backgroundColor: tone === "stepup" ? c.stepupBg : c.bgElev1, borderColor: tone === "stepup" ? c.stepupBorder : c.hairlineStrong }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14 }}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: tone === "stepup" ? c.stepupBg : c.infoBg, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: tone === "stepup" ? c.stepupBorder : c.infoBorder }}>
-            <Icon name={icon} size={20} color={tone === "stepup" ? c.stepup : c.info} />
+          <View style={{ width: 40, height: 40, borderRadius: radius.md, backgroundColor: tone === "stepup" ? c.stepupBg : c.accentSoft, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: tone === "stepup" ? c.stepupBorder : c.hairline }}>
+            <Icon name={icon} size={20} color={tone === "stepup" ? c.stepup : c.accent} />
           </View>
           <View style={{ flex: 1, gap: 3 }}>
             <T v="bodySm" weight="semi" numberOfLines={1}>{title}</T>
@@ -70,7 +70,7 @@ function Banners() {
           </View>
           <Icon name="chevronRight" size={18} color={c.text3} />
         </View>
-      </Glass>
+      </View>
     </Press>
   );
   const payAmt = ask?.kind === "payment" ? `US$${cleanText(ask.data?.amount, 12)} to ${cleanText(sellerName(ask.data?.sellerId), 30)}` : null;
@@ -86,27 +86,25 @@ function ActionButton({ icon, label, onPress, tone }: { icon: IconName; label: s
   const { c } = useTheme();
   return (
     <Press onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={{ alignItems: "center", gap: 8, flex: 1 }}>
-      <View style={{ width: 58, height: 58, borderRadius: 29, backgroundColor: tone === "revoke" ? c.revokedBg : c.bgElev2, borderWidth: tone === "revoke" ? 1.5 : 1, borderColor: tone === "revoke" ? c.revoked : c.hairlineStrong, alignItems: "center", justifyContent: "center" }}>
-        <Icon name={icon} size={24} color={tone === "revoke" ? c.revoked : c.text} />
+      <View style={{ width: 56, height: 56, borderRadius: radius.md, backgroundColor: tone === "revoke" ? c.revokedBg : c.bgElev1, borderWidth: 1, borderColor: tone === "revoke" ? c.revokedBorder : c.hairline, alignItems: "center", justifyContent: "center" }}>
+        <Icon name={icon} size={24} color={tone === "revoke" ? c.revokedText : c.text} />
       </View>
-      <T v="caption" color={tone === "revoke" ? "revoked" : "text2"}>{label}</T>
+      <T v="caption" color={tone === "revoke" ? "revokedText" : "text2"}>{label}</T>
     </Press>
   );
 }
 
 function AddPocket() {
-  const { c } = useTheme();
   const { addPocket } = useApp();
   const [open, setOpen] = useState(false);
   const [v, setV] = useState("");
   return (
     <View style={{ marginHorizontal: 20, marginTop: 14 }}>
       {!open ? (
-        <Press haptics="select" onPress={() => setOpen(true)} style={{ alignSelf: "flex-start" }}><T v="bodySm" weight="semi" color="accentHi">Add an existing pocket by address</T></Press>
+        <Press haptics="select" onPress={() => setOpen(true)} style={{ alignSelf: "flex-start" }}><T v="bodySm" weight="semi" color="accentInk">Add an existing pocket by address</T></Press>
       ) : (
         <View style={{ gap: 10 }}>
-          <TextInput value={v} onChangeText={setV} placeholder="0x pocket address" placeholderTextColor={c.text3} autoCapitalize="none" autoCorrect={false} accessibilityLabel="Pocket address"
-            style={{ height: 52, borderRadius: radius.md, backgroundColor: c.bgElev2, borderWidth: 1, borderColor: c.hairlineStrong, paddingHorizontal: 14, color: c.text, fontFamily: F.mono, fontSize: 13 }} />
+          <Input value={v} onChangeText={setV} placeholder="0x pocket address" autoCapitalize="none" autoCorrect={false} accessibilityLabel="Pocket address" className="font-mono text-sm" />
           <View style={{ flexDirection: "row", gap: 10 }}>
             <Button label="Cancel" kind="secondary" small style={{ flex: 1 }} onPress={() => { setOpen(false); setV(""); }} />
             <Button label="Add pocket" small style={{ flex: 1 }} disabled={!isAddress(v.trim())} onPress={async () => { await addPocket(v.trim() as Address); setV(""); setOpen(false); }} />
@@ -138,7 +136,7 @@ export default function Home() {
   const total = useMemo(() => active.reduce((n, p) => n + num(p.balance), 0), [pockets]); // eslint-disable-line react-hooks/exhaustive-deps
   const shown = useCountUp(total, 700);
   const recent = useMemo(() => [...ledger].reverse().slice(0, 3), [ledger]);
-  const [whole, frac] = usd(BigInt(Math.round(shown))).split(".");
+  const [whole, frac] = usdFrame(shown, total).split(".");
   return (
     <Screen>
       <Header />
@@ -147,8 +145,8 @@ export default function Home() {
       <View style={{ paddingHorizontal: 20, marginBottom: 22 }}>
         <T v="caption" color="text3" style={{ letterSpacing: 0.4 }}>AGENT FUNDS</T>
         <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8, marginTop: 2 }}>
-          <T v="displayXl" num style={{ fontSize: 56, lineHeight: 60, letterSpacing: -2 }}>{whole}<T v="displayXl" num color="text2" style={{ fontSize: 56, lineHeight: 60, letterSpacing: -2 }}>.{frac}</T></T>
-          <T v="body" weight="semi" color="text2" style={{ marginBottom: 8 }}>USDC</T>
+          <T v="displayXl" num>{whole}<T v="displayXl" num color="text3">.{frac}</T></T>
+          <T v="body" weight="semi" color="text2" style={{ marginBottom: 6 }}>USDC</T>
         </View>
         <T v="bodySm" color="text2" style={{ marginTop: 2 }}>
           {pocketsLoaded ? `${pockets.length} pocket${pockets.length === 1 ? "" : "s"}, ${active.length} active. Your agent can only spend what you put here.` : conn === "offline" ? "Not connected yet" : "Loading pockets…"}
@@ -169,23 +167,23 @@ export default function Home() {
       <SectionHeader title="Pockets" />
       {conn === "offline" && pockets.length === 0 ? (
         <View style={{ paddingHorizontal: 20 }}>
-          <View style={{ height: CARD_H, borderRadius: radius.xl, backgroundColor: c.bgElev1, borderWidth: 1, borderColor: c.refusedBorder, padding: 20, justifyContent: "center", gap: 8 }}>
+          <View style={{ height: CARD_H, borderRadius: radius.lg, backgroundColor: c.bgElev1, borderWidth: 1, borderColor: c.refusedBorder, padding: 20, justifyContent: "center", gap: 8 }}>
             <T v="title">Can't reach the server</T>
             <T v="bodySm" color="text2">{connError || "Set the API URL to your laptop's address in Settings, then come back."}</T>
-            <Press onPress={() => router.navigate("/settings")} style={{ alignSelf: "flex-start", marginTop: 6 }}><T v="bodySm" weight="semi" color="accentHi">Open Settings</T></Press>
+            <Press onPress={() => router.navigate("/settings")} style={{ alignSelf: "flex-start", marginTop: 6 }}><T v="bodySm" weight="semi" color="accentInk">Open Settings</T></Press>
           </View>
         </View>
       ) : !pocketsLoaded ? (
         <View style={{ paddingHorizontal: 20 }}>
-          <View style={{ height: CARD_H, borderRadius: radius.xl, backgroundColor: c.bgElev1, borderWidth: 1, borderColor: c.hairline, padding: 20, justifyContent: "center" }}>
+          <View style={{ height: CARD_H, borderRadius: radius.lg, backgroundColor: c.bgElev1, borderWidth: 1, borderColor: c.hairline, padding: 20, justifyContent: "center" }}>
             <T v="title" color="text2">Loading your pockets…</T>
           </View>
         </View>
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={CARD_W + 12} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }} style={{ flexGrow: 0 }}>
           {pockets.map((p) => <PocketCard key={p.address} pocket={cardOf(p)} onPress={() => router.push({ pathname: "/pocket/[id]", params: { id: p.address } })} />)}
-          <Press onPress={() => router.push("/create")} style={{ width: pockets.length ? 150 : CARD_W, height: CARD_H, borderRadius: radius.xl, borderWidth: 1.5, borderStyle: "dashed", borderColor: c.hairlineStrong, alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.bgElev2, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={22} color={c.text} /></View>
+          <Press onPress={() => router.push("/create")} style={{ width: pockets.length ? 150 : CARD_W, height: CARD_H, borderRadius: radius.lg, borderWidth: 1.5, borderStyle: "dashed", borderColor: c.hairlineStrong, alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: c.bgElev2, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={22} color={c.text} /></View>
             <T v="bodySm" weight="semi" color="text2">{pockets.length ? "New pocket" : "Create your first pocket"}</T>
           </Press>
         </ScrollView>

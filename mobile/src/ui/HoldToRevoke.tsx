@@ -1,4 +1,4 @@
-// Hold-to-revoke kill switch (ported idea: react-bits Micro/HoldButton). 600 ms hold fills a magenta bar and ring, then heavy haptic.
+// Hold-to-revoke kill switch (ported idea: react-bits Micro/HoldButton). 600 ms hold fills a slate bar and ring, then heavy haptic.
 import React, { useCallback } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -51,18 +51,18 @@ export function HoldToRevoke({ onComplete, label = "Hold to revoke", disabled, b
         accessibilityState={{ disabled: !!(disabled || busy), busy: !!busy }}
         accessibilityActions={[{ name: "activate" }]}
         onAccessibilityAction={(e) => { if (e.nativeEvent.actionName === "activate" && !disabled && !busy) complete(); }}
-        style={[{ height: 56, borderRadius: radius.pill, borderWidth: 1.5, borderColor: c.revoked, backgroundColor: c.revokedBg, overflow: "hidden", justifyContent: "center", opacity: disabled ? 0.4 : 1 }, press]}
+        style={[{ height: 56, borderRadius: radius.md, borderWidth: 1, borderColor: c.revoked, backgroundColor: c.revokedBg, overflow: "hidden", justifyContent: "center", opacity: disabled ? 0.4 : 1 }, press]}
       >
-        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, backgroundColor: c.revoked }, bar]} />
+        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, backgroundColor: c.revoked, opacity: 0.28 }, bar]} />
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <View style={{ width: 34, height: 34, alignItems: "center", justifyContent: "center" }}>
             <Svg width={34} height={34} style={{ position: "absolute", transform: [{ rotate: "-90deg" }] }}>
               <Circle cx={17} cy={17} r={R} stroke={c.revokedBorder} strokeWidth={2.5} fill="none" />
-              <ACircle cx={17} cy={17} r={R} stroke="#fff" strokeWidth={2.5} fill="none" strokeDasharray={`${CIRC} ${CIRC}`} strokeLinecap="round" animatedProps={ring} />
+              <ACircle cx={17} cy={17} r={R} stroke={c.revoked} strokeWidth={2.5} fill="none" strokeDasharray={`${CIRC} ${CIRC}`} strokeLinecap="round" animatedProps={ring} />
             </Svg>
-            <Icon name="lock" size={15} color={c.text} />
+            <Icon name="lock" size={15} color={c.revokedText} />
           </View>
-          <T v="body" weight="semi" style={{ color: c.text }}>{busy ? "Revoking…" : label}</T>
+          <T v="body" weight="semi" color="revokedText">{busy ? "Revoking…" : label}</T>
         </View>
       </Animated.View>
     </GestureDetector>

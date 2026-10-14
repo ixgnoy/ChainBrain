@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ink & jade (design-system/chainbrain/MASTER.md). Light is the default. */
+@layer base {
+  :root {
+    --bg: #F6F4EF; --e1: #FFFFFF; --e2: #EFECE5; --e3: #E6E2D9;
+    --hair: #E3DFD6; --hair2: #CFCAC0;
+    --fg: #16181A; --t2: #3F4347; --t3: #6B6F73; --tdis: #B9B6AF;
+    --accent: #0F6E56; --accent-hi: #138467; --accent-press: #0B5946; --accent-ink: #0B5946;
+    --accent-soft: rgba(15,110,86,0.10); --on-accent: #FFFFFF;
+
+    --ok: #1F8A4C; --ok-fg: #18703F; --ok-soft: rgba(31,138,76,0.10); --ok-line: rgba(31,138,76,0.28);
+    --refused: #C2410C; --refused-fg: #B23C0B; --refused-soft: rgba(194,65,12,0.08); --refused-line: rgba(194,65,12,0.28);
+    --stepup: #B7791F; --stepup-fg: #8A5A12; --stepup-soft: rgba(183,121,31,0.12); --stepup-line: rgba(183,121,31,0.28);
+    --revoked: #5B6168; --revoked-fg: #4A4F55; --revoked-soft: rgba(22,24,26,0.06); --revoked-line: rgba(91,97,104,0.28);
+    --info: #6B6F73; --info-fg: #3F4347; --info-soft: rgba(22,24,26,0.05); --info-line: rgba(107,111,115,0.28);
+  }
+
+  .dark:root {
+    --bg: #121314; --e1: #1B1C1E; --e2: #232426; --e3: #2C2D30;
+    --hair: rgba(236,234,228,0.08); --hair2: rgba(236,234,228,0.16);
+    --fg: #ECEAE4; --t2: #BDBBB5; --t3: #9A9C9E; --tdis: #55575A;
+    --accent: #3FBF9A; --accent-hi: #5CD1AE; --accent-press: #2FA584; --accent-ink: #3FBF9A;
+    --accent-soft: rgba(63,191,154,0.14); --on-accent: #0D1F19;
+
+    --ok: #4CC27E; --ok-fg: #4CC27E; --ok-soft: rgba(76,194,126,0.14); --ok-line: rgba(76,194,126,0.28);
+    --refused: #F0804A; --refused-fg: #F0804A; --refused-soft: rgba(240,128,74,0.14); --refused-line: rgba(240,128,74,0.28);
+    --stepup: #E0A84A; --stepup-fg: #E0A84A; --stepup-soft: rgba(224,168,74,0.14); --stepup-line: rgba(224,168,74,0.28);
+    --revoked: #A3A7AB; --revoked-fg: #A3A7AB; --revoked-soft: rgba(236,234,228,0.08); --revoked-line: rgba(163,167,171,0.28);
+    --info: #9A9C9E; --info-fg: #BDBBB5; --info-soft: rgba(236,234,228,0.06); --info-line: rgba(154,156,158,0.28);
+  }
+}
+
+@layer base {
+  /* react-native-web gives Text and TextInput `font: 14px System`: inherit the page font instead. */
+  html [class*='css-text-'],
+  html [class*='css-textinput-'] {
+    font-family: inherit;
+  }
+}

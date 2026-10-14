@@ -37,7 +37,7 @@ function Rail({ nodes }: { nodes: { key: string; title: string; state: State; li
         return (
           <View key={node.key} style={{ flexDirection: "row", gap: 12 }}>
             <View style={{ alignItems: "center", width: 22 }}>
-              <View style={{ width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: node.state === "skip" ? c.bgElev3 : col + "26", borderWidth: 1.5, borderColor: col }}>
+              <View style={{ width: 22, height: 22, borderRadius: 6, alignItems: "center", justifyContent: "center", backgroundColor: node.state === "skip" ? c.bgElev3 : col + "26", borderWidth: 1.5, borderColor: col }}>
                 {node.state === "done" ? <Icon name="check" size={12} color={col} stroke={2.8} /> : node.state === "fail" ? <Icon name="x" size={12} color={col} stroke={2.8} /> : node.state === "wait" ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: col }} /> : null}
               </View>
               {!last && <View style={{ flex: 1, width: 2, minHeight: 18, backgroundColor: node.state === "done" ? c.ok + "66" : c.hairlineStrong, marginVertical: 2 }} />}

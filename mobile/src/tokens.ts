@@ -1,69 +1,60 @@
-// ChainBrain design tokens (source: docs/frontend/research/design-brief.md §1).
-// One brand for web and phone: Revolut-like dark premium, glass only on chrome/overlays, hairlines not shadows.
-// Signal violet = actions. Agent cyan = anything the agent is doing (never a button colour).
+// ChainBrain design tokens: Ink & jade.
+
+// Ink & jade (design-system/chainbrain/MASTER.md). Same values live in global.css as CSS variables for NativeWind classes.
+// Light is the default. Hairlines, not shadows. Jade is the only accent; verdicts carry an icon and a word, never colour alone.
 
 export const palette = {
-  dark: {
-    bg: "#050607", bgElev1: "#0E1012", bgElev2: "#16191C", bgElev3: "#1F2328",
-    hairline: "rgba(255,255,255,0.08)", hairlineStrong: "rgba(255,255,255,0.14)",
-    text: "#F5F6F7", text2: "#A7ADB4", text3: "#6F767E", textDisabled: "#3D4349",
-    accent: "#6E56FF", accentHi: "#8C7BFF", accentPress: "#5A43E6", onAccent: "#FFFFFF",
-    agent: "#38E1FF", agentGlow: "rgba(56,225,255,0.35)",
-    ok: "#2ED47A", okBg: "rgba(46,212,122,0.14)", okBorder: "rgba(46,212,122,0.30)",
-    refused: "#FF5A5F", refusedBg: "rgba(255,90,95,0.14)", refusedBorder: "rgba(255,90,95,0.30)",
-    stepup: "#FFB020", stepupBg: "rgba(255,176,32,0.14)", stepupBorder: "rgba(255,176,32,0.30)",
-    revoked: "#C45CFF", revokedBg: "rgba(196,92,255,0.16)", revokedBorder: "rgba(196,92,255,0.34)",
-    info: "#38E1FF", infoBg: "rgba(56,225,255,0.12)", infoBorder: "rgba(56,225,255,0.28)",
-    glass: "rgba(22,25,28,0.55)", glassStrong: "rgba(14,16,18,0.72)", glassBorder: "rgba(255,255,255,0.10)", glassRim: "rgba(255,255,255,0.12)",
-  },
   light: {
-    bg: "#F4F4F6", bgElev1: "#FFFFFF", bgElev2: "#F0F1F3", bgElev3: "#E6E8EB",
-    hairline: "#E2E2E7", hairlineStrong: "#CFD2D8",
-    text: "#191C1F", text2: "#505A63", text3: "#8D969E", textDisabled: "#C9C9CD",
-    accent: "#5B43F0", accentHi: "#7A66FF", accentPress: "#4A33D6", onAccent: "#FFFFFF",
-    agent: "#0A9DBF", agentGlow: "rgba(10,157,191,0.25)",
-    ok: "#14A35A", okBg: "rgba(20,163,90,0.10)", okBorder: "rgba(20,163,90,0.28)",
-    refused: "#E23B4A", refusedBg: "rgba(226,59,74,0.10)", refusedBorder: "rgba(226,59,74,0.28)",
-    stepup: "#C77700", stepupBg: "rgba(199,119,0,0.10)", stepupBorder: "rgba(199,119,0,0.28)",
-    revoked: "#A63FE0", revokedBg: "rgba(166,63,224,0.10)", revokedBorder: "rgba(166,63,224,0.28)",
-    info: "#0A9DBF", infoBg: "rgba(10,157,191,0.10)", infoBorder: "rgba(10,157,191,0.26)",
-    glass: "rgba(255,255,255,0.65)", glassStrong: "rgba(255,255,255,0.82)", glassBorder: "rgba(0,0,0,0.06)", glassRim: "rgba(255,255,255,0.8)",
+    bg: "#F6F4EF", bgElev1: "#FFFFFF", bgElev2: "#EFECE5", bgElev3: "#E6E2D9",
+    hairline: "#E3DFD6", hairlineStrong: "#CFCAC0",
+    text: "#16181A", text2: "#3F4347", text3: "#6B6F73", textDisabled: "#B9B6AF",
+    accent: "#0F6E56", accentHi: "#138467", accentPress: "#0B5946", accentInk: "#0B5946", accentSoft: "rgba(15,110,86,0.10)", onAccent: "#FFFFFF",
+    agent: "#0F6E56",
+    ok: "#1F8A4C", okText: "#18703F", okBg: "rgba(31,138,76,0.10)", okBorder: "rgba(31,138,76,0.28)",
+    refused: "#C2410C", refusedText: "#B23C0B", refusedBg: "rgba(194,65,12,0.08)", refusedBorder: "rgba(194,65,12,0.28)",
+    stepup: "#B7791F", stepupText: "#8A5A12", stepupBg: "rgba(183,121,31,0.12)", stepupBorder: "rgba(183,121,31,0.28)",
+    revoked: "#5B6168", revokedText: "#4A4F55", revokedBg: "rgba(22,24,26,0.06)", revokedBorder: "rgba(91,97,104,0.28)",
+    info: "#6B6F73", infoText: "#3F4347", infoBg: "rgba(22,24,26,0.05)", infoBorder: "rgba(107,111,115,0.28)",
+    scrim: "rgba(22,24,26,0.40)",
+  },
+  dark: {
+    bg: "#121314", bgElev1: "#1B1C1E", bgElev2: "#232426", bgElev3: "#2C2D30",
+    hairline: "rgba(236,234,228,0.08)", hairlineStrong: "rgba(236,234,228,0.16)",
+    text: "#ECEAE4", text2: "#BDBBB5", text3: "#9A9C9E", textDisabled: "#55575A",
+    accent: "#3FBF9A", accentHi: "#5CD1AE", accentPress: "#2FA584", accentInk: "#3FBF9A", accentSoft: "rgba(63,191,154,0.14)", onAccent: "#0D1F19",
+    agent: "#3FBF9A",
+    ok: "#4CC27E", okText: "#4CC27E", okBg: "rgba(76,194,126,0.14)", okBorder: "rgba(76,194,126,0.28)",
+    refused: "#F0804A", refusedText: "#F0804A", refusedBg: "rgba(240,128,74,0.14)", refusedBorder: "rgba(240,128,74,0.28)",
+    stepup: "#E0A84A", stepupText: "#E0A84A", stepupBg: "rgba(224,168,74,0.14)", stepupBorder: "rgba(224,168,74,0.28)",
+    revoked: "#A3A7AB", revokedText: "#A3A7AB", revokedBg: "rgba(236,234,228,0.08)", revokedBorder: "rgba(163,167,171,0.28)",
+    info: "#9A9C9E", infoText: "#BDBBB5", infoBg: "rgba(236,234,228,0.06)", infoBorder: "rgba(154,156,158,0.28)",
+    scrim: "rgba(0,0,0,0.60)",
   },
 } as const;
 
 export type ThemeName = keyof typeof palette;
 export type Palette = { [K in keyof (typeof palette)["dark"]]: string };
 
-/** Pocket card gradients, top-left → bottom-right. */
-export const pocketGradients: Record<string, [string, string]> = {
-  research: ["#2A2F8F", "#6E56FF"],
-  gifts: ["#8F2A6B", "#FF6AA8"],
-  tight: ["#0F5B52", "#2ED4B0"],
-  custom: ["#2B2F36", "#5B6370"],
-};
-
-/** Brand mark gradient (violet → cyan). */
-export const brandGradient: [string, string] = ["#6E56FF", "#38E1FF"];
-
-export const radius = { xs: 8, sm: 12, md: 16, lg: 20, xl: 28, xxl: 36, pill: 9999 } as const;
+/** 6 chips and inputs, 10 buttons and rows, 14 cards, panes and sheets. Pills only for chips and segmented controls. */
+export const radius = { xs: 6, sm: 6, md: 10, lg: 14, xl: 14, xxl: 14, pill: 9999 } as const;
 export const space = [0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64] as const;
 
 export const font = {
-  display: "Inter Tight",
-  body: "Inter",
-  mono: "Geist Mono",
+  display: "IBM Plex Sans",
+  body: "IBM Plex Sans",
+  mono: "IBM Plex Mono",
 } as const;
 
-/** px size / line height / weight / letter-spacing (em). */
+/** px size / line height / weight / letter-spacing (em). Scale: 12 meta, 13-14 small, 16 body, 20 title, 24 h2, 32 h1, 44 balance. */
 export const type = {
-  displayXl: { size: 48, line: 52, weight: 600, tracking: -0.03 },
-  displayLg: { size: 36, line: 40, weight: 600, tracking: -0.025 },
-  headingLg: { size: 28, line: 34, weight: 600, tracking: -0.02 },
-  headingMd: { size: 22, line: 28, weight: 600, tracking: -0.015 },
-  title: { size: 17, line: 22, weight: 600, tracking: -0.01 },
+  displayXl: { size: 44, line: 48, weight: 600, tracking: -0.02 },
+  displayLg: { size: 32, line: 40, weight: 600, tracking: -0.01 },
+  headingLg: { size: 24, line: 32, weight: 600, tracking: -0.01 },
+  headingMd: { size: 20, line: 28, weight: 600, tracking: -0.01 },
+  title: { size: 16, line: 22, weight: 600, tracking: 0 },
   body: { size: 16, line: 24, weight: 400, tracking: 0 },
   bodySm: { size: 14, line: 20, weight: 400, tracking: 0 },
-  caption: { size: 12, line: 16, weight: 500, tracking: 0.01 },
+  caption: { size: 12, line: 16, weight: 500, tracking: 0 },
   mono: { size: 12, line: 16, weight: 500, tracking: 0 },
 } as const;
 

@@ -8,6 +8,7 @@ import { Icon, type IconName } from "../ui/Icon";
 import { cleanText } from "../lib/sanitize";
 import { reasonText } from "../lib/shared";
 import { usd, timeLabel, shortAddr } from "../lib/util";
+import { radius } from "../tokens";
 import type { LedgerRow } from "../lib/events";
 import { RowVerdict } from "./Verdict";
 
@@ -24,7 +25,7 @@ export function ActivityRow({ row, onPress, compact }: { row: LedgerRow; onPress
   const note = row.kind === "intent" ? cleanText(row.text?.split("\n")[0], 80) : bad && row.reasons[0] ? reasonText(row.reasons[0]) : row.kind === "disclosure" ? (row.asked ?? []).join(", ") : row.sku ? cleanText(row.sku, 60) : undefined;
   return (
     <Press onPress={onPress} haptics="select" scale={0.985} style={{ flexDirection: "row", gap: 12, paddingVertical: 12, paddingHorizontal: 20, alignItems: "flex-start" }}>
-      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: bad ? c.refusedBg : row.outcome === "pending" ? c.stepupBg : c.bgElev2, borderWidth: 1, borderColor: bad ? c.refusedBorder : row.outcome === "pending" ? c.stepupBorder : c.hairline, alignItems: "center", justifyContent: "center" }}>
+      <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: bad ? c.refusedBg : row.outcome === "pending" ? c.stepupBg : c.bgElev2, borderWidth: 1, borderColor: bad ? c.refusedBorder : row.outcome === "pending" ? c.stepupBorder : c.hairline, alignItems: "center", justifyContent: "center" }}>
         <Icon name={ICON[row.kind]} size={20} color={bad ? c.refused : row.outcome === "pending" ? c.stepup : row.outcome === "paid" ? c.ok : c.text2} />
       </View>
       <View style={{ flex: 1, gap: 4 }}>

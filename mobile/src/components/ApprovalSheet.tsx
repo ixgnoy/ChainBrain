@@ -87,7 +87,7 @@ function Body({ a, queue }: { a: Approval; queue: number }) {
     <View>
       <ScrollView style={{ maxHeight: Math.max(240, height * 0.92 - 230) }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 16 }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.stepupBg, borderWidth: 1, borderColor: c.stepupBorder, alignItems: "center", justifyContent: "center" }}>
+          <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: c.stepupBg, borderWidth: 1, borderColor: c.stepupBorder, alignItems: "center", justifyContent: "center" }}>
             <Icon name={isPay ? "shieldAlert" : "sparkle"} size={22} color={c.stepup} />
           </View>
           <View style={{ flex: 1 }}>
@@ -127,7 +127,7 @@ function Body({ a, queue }: { a: Approval; queue: number }) {
             <View style={{ gap: 4 }}>
               <T v="caption" color="text3">WHAT YOU SIGN</T>
               <T v="bodySm" color="text2">A USDC transfer authorization from this pocket to {seller}, valid for this one payment for 10 minutes. It moves no money from your main wallet.</T>
-              {auth ? <Mono size={11} color="text3">to {shortAddr(auth.to)} · nonce {auth.nonce.slice(0, 10)}…</Mono> : null}
+              {auth ? <Mono size={12} color="text3">to {shortAddr(auth.to)} · nonce {auth.nonce.slice(0, 10)}…</Mono> : null}
             </View>
           </>
         ) : (

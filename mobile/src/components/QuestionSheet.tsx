@@ -1,8 +1,9 @@
 // The agent asked a question. The owner's next chat message is the answer (the server resolves the pending question on /api/chat).
 import React, { useRef, useState } from "react";
-import { TextInput, View } from "react-native";
+import { View } from "react-native";
+import { Input } from "./ui/input";
 import { router } from "expo-router";
-import { useTheme, F } from "../theme";
+import { useTheme } from "../theme";
 import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
 import { Button } from "../ui/primitives";
@@ -47,10 +48,7 @@ function Body({ q }: { q: Approval }) {
       <View style={{ borderRadius: radius.lg, borderWidth: 1, borderColor: c.hairline, backgroundColor: c.bgElev1, padding: 14 }}>
         <T v="body">{cleanText(q.text, 600)}</T>
       </View>
-      <TextInput
-        value={text} onChangeText={setText} placeholder="Your answer" placeholderTextColor={c.text3} onSubmitEditing={send} returnKeyType="send" accessibilityLabel="Answer"
-        style={{ height: 52, borderRadius: radius.md, backgroundColor: c.bgElev2, borderWidth: 1, borderColor: c.hairlineStrong, paddingHorizontal: 14, color: c.text, fontFamily: F.body, fontSize: 16 }}
-      />
+      <Input value={text} onChangeText={setText} placeholder="Your answer" onSubmitEditing={send} returnKeyType="send" accessibilityLabel="Answer" />
       <Button label="Send answer" onPress={send} disabled={!text.trim()} />
     </View>
   );

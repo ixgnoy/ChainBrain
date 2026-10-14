@@ -66,19 +66,19 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, disabled,
         accessible accessibilityRole="button" accessibilityLabel={label}
         accessibilityActions={[{ name: "activate" }]}
         onAccessibilityAction={() => { if (!disabled && state === "idle") fire(); }}
-        style={{ height: THUMB + PAD * 2, borderRadius: radius.pill, backgroundColor: c.bgElev2, borderWidth: 1, borderColor: c.hairlineStrong, justifyContent: "center", overflow: "hidden", opacity: disabled ? 0.45 : 1 }}
+        style={{ height: THUMB + PAD * 2, borderRadius: radius.md, backgroundColor: c.bgElev2, borderWidth: 1, borderColor: c.hairlineStrong, justifyContent: "center", overflow: "hidden", opacity: disabled ? 0.45 : 1 }}
       >
-        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: radius.pill }, fill]} />
+        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: radius.md }, fill]} />
         <Animated.View style={[{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: c.ok }, doneBg]} />
         <Animated.View style={[{ position: "absolute", left: THUMB + PAD * 2, right: 20, alignItems: "center" }, labelStyle]}>
           <T v="body" weight="semi" color="text2">{state === "busy" ? "Signing…" : label}</T>
         </Animated.View>
         <Animated.View style={[{ position: "absolute", left: 0, right: 0, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8 }, check]}>
-          <Icon name="check" size={22} color="#fff" stroke={2.6} />
-          <T v="body" weight="semi" style={{ color: "#fff" }}>{doneLabel}</T>
+          <Icon name="check" size={22} color={c.onAccent} stroke={2.4} />
+          <T v="body" weight="semi" style={{ color: c.onAccent }}>{doneLabel}</T>
         </Animated.View>
-        <Animated.View style={[{ marginLeft: PAD, width: THUMB, height: THUMB, borderRadius: THUMB / 2, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } }, thumb]}>
-          <Icon name={state === "done" ? "check" : "chevronRight"} size={24} color={state === "done" ? c.ok : "#111"} stroke={2.4} />
+        <Animated.View style={[{ marginLeft: PAD, width: THUMB, height: THUMB, borderRadius: radius.md - 2, backgroundColor: c.bgElev1, borderWidth: 1, borderColor: c.hairlineStrong, alignItems: "center", justifyContent: "center" }, thumb]}>
+          <Icon name={state === "done" ? "check" : "chevronRight"} size={24} color={state === "done" ? c.ok : c.text} stroke={2.4} />
         </Animated.View>
       </View>
     </GestureDetector>

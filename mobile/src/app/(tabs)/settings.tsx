@@ -1,8 +1,11 @@
 import React, { useState } from "react";
-import { TextInput, View } from "react-native";
+import { Platform, View } from "react-native";
+import { TriangleAlert } from "lucide-react-native";
+import { Input } from "../../components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import * as Clipboard from "expo-clipboard";
 import { formatEther } from "viem";
-import { useTheme, F } from "../../theme";
+import { useTheme } from "../../theme";
 import { useApp } from "../../store";
 import * as api from "../../lib/api";
 import { ENV_API, detectDev, normalizeUrl } from "../../lib/runtime";
@@ -24,7 +27,6 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
     </View>
   );
 }
-const input = (c: ReturnType<typeof useTheme>["c"], mono = true) => ({ height: 52, borderRadius: radius.md, backgroundColor: c.bgElev2, borderWidth: 1, borderColor: c.hairlineStrong, paddingHorizontal: 14, color: c.text, fontFamily: mono ? F.mono : F.body, fontSize: 13 });
 
 export default function Settings() {
   const { c, mode, setMode } = useTheme();
@@ -76,7 +78,7 @@ export default function Settings() {
                 <T v="caption" color="text2">{conn === "online" ? "Connected" : conn === "offline" ? "Offline" : "Connecting"}</T>
               </View>
             </View>
-            <TextInput value={draft} onChangeText={setDraft} onSubmitEditing={() => void setApiUrl(draft)} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={ENV_API} placeholderTextColor={c.text3} accessibilityLabel="API URL" style={input(c)} />
+            <Input value={draft} onChangeText={setDraft} onSubmitEditing={() => void setApiUrl(draft)} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={ENV_API} accessibilityLabel="API URL" className="font-mono text-sm" />
             <T v="caption" color="text3">Use your laptop's LAN address, e.g. http://192.168.1.10:8787. Saved on this phone. Empty restores {ENV_API}.</T>
             <Button label="Test connection" kind="secondary" icon="refresh" small loading={test.state === "busy"} onPress={runTest} />
             {test.text && <T v="bodySm" color={test.state === "ok" ? "ok" : "refused"}>{test.text}</T>}
@@ -96,8 +98,8 @@ export default function Settings() {
               <Icon name="key" size={18} color={c.text2} />
               <T v="bodySm" weight="semi">This phone creates pockets and co-signs payments</T>
             </View>
-            <Press haptics="select" onPress={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }} style={{ backgroundColor: c.bgElev2, borderRadius: radius.md, padding: 12, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: c.hairline }} accessibilityLabel="Copy owner address">
-              <Mono size={11} style={{ flex: 1 }}>{wallet?.address ?? "No key"}</Mono>
+            <Press haptics="select" onPress={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }} style={{ backgroundColor: c.bgElev2, borderRadius: radius.md, padding: 12, minHeight: 44, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: c.hairline }} accessibilityLabel="Copy owner address">
+              <Mono size={12} style={[{ flex: 1 }, Platform.OS === "web" ? ({ wordBreak: "break-all" } as object) : null]}>{wallet?.address ?? "No key"}</Mono>
               <Icon name={copied ? "check" : "copy"} size={16} color={copied ? c.ok : c.text3} />
             </Press>
             {balances && <T v="caption" color="text3">{usd(balances.usdc)} USDC · {Number(formatEther(balances.eth)).toFixed(4)} ETH</T>}
@@ -114,18 +116,15 @@ export default function Settings() {
             </View>
           </Card>
         )}
-        <View style={{ backgroundColor: c.stepupBg, borderColor: c.stepupBorder, borderWidth: 1, borderRadius: radius.lg, padding: 14, flexDirection: "row", gap: 12 }}>
-          <Icon name="alert" size={20} color={c.stepup} />
-          <View style={{ flex: 1, gap: 2 }}>
-            <T v="bodySm" weight="semi" color="stepup">Testnet only</T>
-            <T v="bodySm" color="text2">Test funds have no value. Do not put real money on this key.</T>
-          </View>
-        </View>
+        <Alert icon={TriangleAlert} iconClassName="text-stepup" className="bg-stepup-soft border-stepup-line">
+          <AlertTitle className="text-stepup-fg">Testnet only</AlertTitle>
+          <AlertDescription>Test funds have no value. Do not put real money on this key.</AlertDescription>
+        </Alert>
         {replace ? (
           <Card>
             <View style={{ gap: 10 }}>
               <T v="bodySm">Replacing the key means pockets owned by the old key can no longer be revoked or co-signed from this phone. Back up the old key first.</T>
-              <TextInput value={pk} onChangeText={setPk} placeholder="Paste a testnet private key (0x…)" placeholderTextColor={c.text3} autoCapitalize="none" autoCorrect={false} secureTextEntry accessibilityLabel="New private key" style={input(c)} />
+              <Input value={pk} onChangeText={setPk} placeholder="Paste a testnet private key (0x…)" autoCapitalize="none" autoCorrect={false} secureTextEntry accessibilityLabel="New private key" className="font-mono text-sm" />
               {!!keyErr && <T v="bodySm" color="refused">{keyErr}</T>}
               <Button label="Import this key" small disabled={!isPrivateKey(pk)} onPress={async () => { try { await importKey(pk); setReplace(false); setPk(""); haptic.warning(); } catch (e) { setKeyErr((e as Error).message); } }} />
               <Button label="Create a new key instead" kind="danger" small onPress={async () => { await newKey(); setReplace(false); haptic.warning(); }} />

@@ -41,7 +41,7 @@ export function Slider({ min, max, step, value, onChange, accent }: { min: numbe
         onAccessibilityAction={(e) => onChange(Math.min(max, Math.max(min, Math.round((value + (e.nativeEvent.actionName === "increment" ? step : -step)) * 1e6) / 1e6)))}>
         <View style={{ height: 8, borderRadius: 4, backgroundColor: c.bgElev3 }} />
         <Animated.View style={[{ position: "absolute", left: 0, height: 8, borderRadius: 4, backgroundColor: accent ?? c.accent }, fill]} />
-        <Animated.View style={[{ position: "absolute", left: 0, width: THUMB, height: THUMB, borderRadius: THUMB / 2, backgroundColor: "#fff", shadowColor: "#000", shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } }, thumb]} />
+        <Animated.View style={[{ position: "absolute", left: 0, width: THUMB, height: THUMB, borderRadius: THUMB / 2, backgroundColor: c.bgElev1, borderWidth: 2, borderColor: accent ?? c.accent }, thumb]} />
       </View>
     </GestureDetector>
   );

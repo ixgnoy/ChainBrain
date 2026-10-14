@@ -1,13 +1,13 @@
 // Create pocket wizard: preset or custom, one setting per page, live preview card, slide to create. Real chain path:
 // PocketFactory.create then USDC.transfer to fund, with step progress. A failed attempt resumes (never creates or funds twice).
 import React, { useMemo, useRef, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { ScrollView, View } from "react-native";
+import { Input } from "../components/ui/input";
 import { router } from "expo-router";
 import Animated, { FadeInRight, FadeOutLeft } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme, F } from "../theme";
 import { useApp } from "../store";
-import { Ambient } from "../ui/Screen";
 import { BackHeader } from "../ui/BackHeader";
 import { Button, DevBadge, Press, Segmented } from "../ui/primitives";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
@@ -93,15 +93,15 @@ export default function Create() {
 
   const toggle = (id: string) => { haptic.select(); setSellers((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); };
   const Pill = ({ on, label, onPress }: { on: boolean; label: string; onPress: () => void }) => (
-    <Press haptics="none" onPress={onPress} scale={0.96} style={{ height: 40, paddingHorizontal: 16, borderRadius: radius.pill, justifyContent: "center", backgroundColor: on ? c.accent : c.bgElev2, borderWidth: 1, borderColor: on ? c.accent : c.hairlineStrong }}>
+    <Press haptics="none" onPress={onPress} scale={0.96} style={{ height: 44, paddingHorizontal: 16, borderRadius: radius.pill, justifyContent: "center", backgroundColor: on ? c.accent : c.bgElev2, borderWidth: 1, borderColor: on ? c.accent : c.hairlineStrong }}>
       <T v="bodySm" weight="semi" color={on ? "onAccent" : "text"}>{label}</T>
     </Press>
   );
   const BigNumber = ({ value, suffix = "USDC" }: { value: string; suffix?: string }) => (
-    <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}><T v="displayXl" num style={{ fontSize: 52, lineHeight: 56 }}>{value}</T><T v="body" weight="semi" color="text2">{suffix}</T></View>
+    <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}><T v="displayXl" num>{value}</T><T v="body" weight="semi" color="text2">{suffix}</T></View>
   );
   const Title = ({ k, h, sub }: { k: string; h: string; sub: string }) => (
-    <View style={{ gap: 6 }}><T v="caption" color="accentHi" style={{ letterSpacing: 0.5 }}>{k.toUpperCase()}</T><T v="headingLg">{h}</T><T v="bodySm" color="text2">{sub}</T></View>
+    <View style={{ gap: 6 }}><T v="caption" color="accentInk" style={{ letterSpacing: 0.5 }}>{k.toUpperCase()}</T><T v="headingLg">{h}</T><T v="bodySm" color="text2">{sub}</T></View>
   );
   const askLabel = askMode === "always" ? "every payment" : askMode === "never" ? "never" : `above ${money2(askV)}`;
 
@@ -114,20 +114,19 @@ export default function Create() {
             {(Object.keys(PRESETS) as (keyof typeof PRESETS)[]).map((k) => {
               const p = PRESETS[k]; const on = preset === k;
               return (
-                <Press key={k} haptics="none" onPress={() => choose(k)} style={{ padding: 14, borderRadius: radius.lg, borderWidth: 1.5, borderColor: on ? c.accent : c.hairline, backgroundColor: on ? c.bgElev2 : c.bgElev1, gap: 3 }}>
+                <Press key={k} haptics="none" onPress={() => choose(k)} style={{ padding: 14, borderRadius: radius.lg, borderWidth: 1, borderColor: on ? c.accent : c.hairline, backgroundColor: on ? c.accentSoft : c.bgElev1, gap: 3 }}>
                   <T v="title">{p.label}</T>
                   <T v="bodySm" color="text2">US${p.budget} budget · up to US${p.cap} each · {p.askAbove === "never" ? "never asks" : p.askAbove === "0" ? "asks every time" : `asks above US$${p.askAbove}`}</T>
                 </Press>
               );
             })}
-            <Press haptics="none" onPress={() => choose("custom")} style={{ padding: 14, borderRadius: radius.lg, borderWidth: 1.5, borderColor: preset === "custom" ? c.accent : c.hairline, backgroundColor: preset === "custom" ? c.bgElev2 : c.bgElev1, gap: 3 }}>
+            <Press haptics="none" onPress={() => choose("custom")} style={{ padding: 14, borderRadius: radius.lg, borderWidth: 1, borderColor: preset === "custom" ? c.accent : c.hairline, backgroundColor: preset === "custom" ? c.accentSoft : c.bgElev1, gap: 3 }}>
               <T v="title">Custom</T><T v="bodySm" color="text2">Set every limit yourself.</T>
             </Press>
           </View>
           <View style={{ gap: 8 }}>
             <T v="caption" color="text3">NAME (KEPT ON THIS PHONE)</T>
-            <TextInput value={name} onChangeText={(t) => setName(t.slice(0, 24))} placeholder="Pocket name" placeholderTextColor={c.text3} accessibilityLabel="Pocket name"
-              style={{ height: 52, borderRadius: radius.md, backgroundColor: c.bgElev2, borderWidth: 1, borderColor: c.hairlineStrong, paddingHorizontal: 14, color: c.text, fontFamily: F.bodySemi, fontSize: 16 }} />
+            <Input value={name} onChangeText={(t) => setName(t.slice(0, 24))} placeholder="Pocket name" accessibilityLabel="Pocket name" className="font-semibold" />
           </View>
         </View>);
       case 1: return (
@@ -145,12 +144,12 @@ export default function Create() {
           {(cfg?.sellers ?? []).map((s) => {
             const on = sellers.includes(s.id);
             return (
-              <Press key={s.id} haptics="none" onPress={() => toggle(s.id)} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: radius.md, borderWidth: 1.5, borderColor: on ? c.accent : c.hairline, backgroundColor: on ? c.bgElev2 : c.bgElev1 }}>
+              <Press key={s.id} haptics="none" onPress={() => toggle(s.id)} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: radius.md, borderWidth: 1, borderColor: on ? c.accent : c.hairline, backgroundColor: on ? c.accentSoft : c.bgElev1 }}>
                 <View style={{ flex: 1, gap: 3 }}>
                   <T v="bodySm" weight="semi">{cleanText(s.name, 40)}</T>
                   <T v="caption" color="text3">{cleanText(s.category, 30)} · {s.items.map((i) => (i.price ? `US$${cleanText(i.price, 8)}` : "free")).join(", ")}</T>
                 </View>
-                <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: on ? c.accent : c.hairlineStrong, backgroundColor: on ? c.accent : "transparent", alignItems: "center", justifyContent: "center" }}>{on && <Icon name="check" size={14} color="#fff" stroke={3} />}</View>
+                <View style={{ width: 24, height: 24, borderRadius: 6, borderWidth: 1.5, borderColor: on ? c.accent : c.hairlineStrong, backgroundColor: on ? c.accent : "transparent", alignItems: "center", justifyContent: "center" }}>{on && <Icon name="check" size={14} color={c.onAccent} stroke={2.6} />}</View>
               </Press>
             );
           })}
@@ -176,7 +175,7 @@ export default function Create() {
         <View style={{ gap: 14 }}>
           <Title k="How long" h="How long does it last?" sub="After this, the pocket expires and the agent cannot spend." />
           {LIFETIMES.map(([k, h, s]) => (
-            <Press key={k} haptics="select" onPress={() => setLife(k)} style={{ padding: 16, borderRadius: radius.lg, borderWidth: 1.5, borderColor: life === k ? c.accent : c.hairline, backgroundColor: life === k ? c.bgElev2 : c.bgElev1, gap: 4 }}>
+            <Press key={k} haptics="select" onPress={() => setLife(k)} style={{ padding: 16, borderRadius: radius.lg, borderWidth: 1, borderColor: life === k ? c.accent : c.hairline, backgroundColor: life === k ? c.accentSoft : c.bgElev1, gap: 4 }}>
               <T v="title">{h}</T><T v="bodySm" color="text2">{s}</T>
             </Press>
           ))}
@@ -192,7 +191,7 @@ export default function Create() {
             <View style={{ gap: 8, padding: 14, borderRadius: radius.lg, backgroundColor: c.bgElev1, borderWidth: 1, borderColor: c.hairline }}>
               {([["create", "1. Create the pocket", !!progress.current.pocket], ["fund", "2. Fund it", !!progress.current.funded]] as const).map(([k, l, done]) => (
                 <View key={k} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                  <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: done ? c.ok : stage === k ? c.agent : c.hairlineStrong, backgroundColor: done ? c.ok : "transparent", alignItems: "center", justifyContent: "center" }}>{done && <Icon name="check" size={12} color="#fff" stroke={3} />}</View>
+                  <View style={{ width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: done ? c.ok : stage === k ? c.accent : c.hairlineStrong, backgroundColor: done ? c.ok : "transparent", alignItems: "center", justifyContent: "center" }}>{done && <Icon name="check" size={12} color={c.onAccent} stroke={2.6} />}</View>
                   <T v="bodySm" color={done || stage === k ? "text" : "text3"}>{l}{stage === k ? "…" : ""}</T>
                 </View>
               ))}
@@ -205,7 +204,6 @@ export default function Create() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <Ambient />
       <BackHeader title={`New pocket · ${step + 1} of ${STEPS.length}`} close onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))} right={dev ? <DevBadge /> : undefined} />
       <View style={{ flexDirection: "row", gap: 5, paddingHorizontal: 20, marginBottom: 10 }}>
         {STEPS.map((s, i) => <View key={s} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= step ? c.accent : c.bgElev3 }} />)}

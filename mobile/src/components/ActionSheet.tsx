@@ -1,7 +1,6 @@
 // Fund / Return funds / Revoke: pick one of your pockets, then confirm with the matching ceremony. Real owner transactions, signed on this phone.
 import React, { useEffect, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../theme";
 import { useApp, type Pocket } from "../store";
 import { Sheet } from "../ui/Sheet";
@@ -15,7 +14,6 @@ import { cleanText } from "../lib/sanitize";
 import { parseUsd } from "../lib/shared";
 import { usd } from "../lib/util";
 import { radius } from "../tokens";
-import { gradientFor } from "./PocketCard";
 
 type Mode = "fund" | "return" | "revoke";
 const COPY: Record<Mode, { title: string; hint: string }> = {
@@ -80,8 +78,8 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
             const ok = eligible(p);
             const on = sel === p.address;
             return (
-              <Press key={p.address} haptics="select" onPress={ok ? () => { setSel(p.address); setError(null); } : undefined} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: radius.md, borderWidth: 1.5, borderColor: on ? c.accent : c.hairline, backgroundColor: on ? c.bgElev2 : c.bgElev1, opacity: ok ? 1 : 0.45 }}>
-                <View style={{ width: 36, height: 36, borderRadius: 18, overflow: "hidden" }}><LinearGradient colors={gradientFor(p.style)} style={{ flex: 1 }} /></View>
+              <Press key={p.address} haptics="select" onPress={ok ? () => { setSel(p.address); setError(null); } : undefined} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: radius.md, borderWidth: 1, borderColor: on ? c.accent : c.hairline, backgroundColor: on ? c.accentSoft : c.bgElev1, opacity: ok ? 1 : 0.45 }}>
+                <View style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: c.accentSoft, alignItems: "center", justifyContent: "center" }}><Icon name="wallet" size={18} color={c.accentInk} /></View>
                 <View style={{ flex: 1 }}>
                   <T v="body" weight="semi">{cleanText(p.name, 30)}</T>
                   <T v="caption" color="text3">{usd(p.balance)} USDC{p.revoked ? " · revoked" : ""}</T>
@@ -96,7 +94,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
             <T v="caption" color="text3">AMOUNT (USDC)</T>
             <View style={{ flexDirection: "row", gap: 8 }}>
               {AMOUNTS.map((a) => (
-                <Press key={a} haptics="select" onPress={() => setAmount(a)} style={{ flex: 1, height: 44, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", backgroundColor: amount === a ? c.accent : c.bgElev2, borderWidth: 1, borderColor: amount === a ? c.accent : c.hairline }}>
+                <Press key={a} haptics="select" onPress={() => setAmount(a)} style={{ flex: 1, height: 44, borderRadius: radius.md, alignItems: "center", justifyContent: "center", backgroundColor: amount === a ? c.accent : c.bgElev2, borderWidth: 1, borderColor: amount === a ? c.accent : c.hairline }}>
                   <T v="bodySm" weight="semi" color={amount === a ? "onAccent" : "text"} num>{a}</T>
                 </Press>
               ))}

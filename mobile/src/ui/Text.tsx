@@ -5,6 +5,8 @@ import { type } from "../tokens";
 import type { Palette } from "../tokens";
 
 type Variant = keyof typeof type;
+/** Verdict fills are for icons and dots; as text they use the darker text tone (MASTER.md contrast table). */
+const TEXT_TONE: Partial<Record<keyof Palette, keyof Palette>> = { ok: "okText", refused: "refusedText", stepup: "stepupText", revoked: "revokedText", info: "infoText", accent: "accentInk", accentHi: "accentInk" };
 export type TColor = keyof Palette;
 
 const FAMILY: Record<Variant, string> = {
@@ -17,7 +19,7 @@ export function T({ v = "body", color = "text", style, weight, num, ...p }: Text
   const t = type[v];
   const fam = weight === "bold" ? F.bodyBold : weight === "semi" ? F.bodySemi : weight === "med" ? F.bodyMed : FAMILY[v];
   const s: TextStyle = {
-    fontFamily: fam, fontSize: t.size, lineHeight: t.line, letterSpacing: t.tracking * t.size, color: c[color],
+    fontFamily: fam, fontSize: t.size, lineHeight: t.line, letterSpacing: t.tracking * t.size, color: c[TEXT_TONE[color] ?? color],
     ...(num ? { fontVariant: ["tabular-nums"] } : null),
   };
   return <RNText {...p} style={[s, style]} />;

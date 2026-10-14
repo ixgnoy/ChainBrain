@@ -4,6 +4,8 @@ import { formatUsd, NEVER } from "./shared";
 export const usd = (n: bigint | undefined | null) => (n == null ? "0.00" : formatUsd(n));
 /** Micro-USDC as a JS number, for animation and meters only. */
 export const num = (n: bigint) => Number(n > 10n ** 15n ? 0n : n);
+/** A count-up frame as money: whole cents while it moves, the exact amount once it lands on `target`. */
+export const usdFrame = (shown: number, target: number) => usd(BigInt(shown === target ? Math.round(target) : Math.round(shown / 10_000) * 10_000));
 export const isNever = (n: bigint) => n === NEVER;
 export const askText = (askAbove: bigint, cap: bigint) => (askAbove === NEVER || askAbove > cap ? "Never" : askAbove === 0n ? "Every payment" : `Above ${usd(askAbove)}`);
 

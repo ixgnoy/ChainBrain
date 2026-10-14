@@ -1,15 +1,14 @@
 import React, { useMemo, useState } from "react";
 import { View } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, { FadeInDown, LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../theme";
 import { useApp } from "../../store";
-import { Ambient } from "../../ui/Screen";
 import { Chip, DevBadge, Press } from "../../ui/primitives";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
-import { useMinimizeOnScroll } from "../../ui/minimize";
-import { TAB_SPACE } from "../../ui/TabBar";
+import { TAB_H } from "../../ui/TabBar";
+import { useReduceMotion } from "../../ui/motion";
 import { ActivityRow } from "../../components/ActivityRow";
 import { cleanText } from "../../lib/sanitize";
 import { usd, dayLabel } from "../../lib/util";
@@ -23,7 +22,7 @@ type Item = { kind: "head"; key: string; label: string } | { kind: "row"; key: s
 export default function Activity() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
-  const onScroll = useMinimizeOnScroll();
+  const reduce = useReduceMotion();
   const { ledger, pending, dev, setReceipt, setApprovalOpen, setQuestionOpen, sellerName } = useApp();
   const [filter, setFilter] = useState<Filter>("all");
   const needs = pending;
@@ -50,14 +49,12 @@ export default function Activity() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <Ambient />
       <Animated.FlatList
         data={items}
         keyExtractor={(i: Item) => i.key}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
+        itemLayoutAnimation={reduce ? undefined : LinearTransition.duration(200)}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: TAB_SPACE + 24 }}
+        contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: TAB_H + insets.bottom + 24 }}
         ListHeaderComponent={
           <View style={{ paddingBottom: 8 }}>
             <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, gap: 8 }}>
@@ -81,8 +78,8 @@ export default function Activity() {
               {FILTERS.map((f) => {
                 const on = filter === f.key;
                 return (
-                  <Press key={f.key} haptics="select" onPress={() => setFilter(f.key)} scale={0.95} style={{ height: 34, paddingHorizontal: 14, borderRadius: radius.pill, justifyContent: "center", backgroundColor: on ? c.text : c.bgElev2, borderWidth: 1, borderColor: on ? c.text : c.hairline }}>
-                    <T v="bodySm" weight="semi" style={{ color: on ? c.bg : c.text2 }}>{f.label}</T>
+                  <Press key={f.key} haptics="select" onPress={() => setFilter(f.key)} scale={0.95} style={{ height: 44, paddingHorizontal: 14, borderRadius: radius.pill, justifyContent: "center", backgroundColor: on ? c.accentSoft : c.bgElev1, borderWidth: 1, borderColor: on ? c.accent : c.hairline }}>
+                    <T v="bodySm" weight="semi" color={on ? "accentInk" : "text2"}>{f.label}</T>
                   </Press>
                 );
               })}
@@ -96,9 +93,10 @@ export default function Activity() {
             <T v="bodySm" color="text3" style={{ textAlign: "center" }}>Payments, refusals, data requests and approvals from your agent show up here as they happen.</T>
           </View>
         }
-        renderItem={({ item }: { item: Item }) => item.kind === "head"
+        renderItem={({ item, index }: { item: Item; index: number }) => item.kind === "head"
           ? <T v="caption" color="text3" style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, letterSpacing: 0.4 }}>{item.label.toUpperCase()}</T>
-          : <ActivityRow row={item.row} onPress={() => setReceipt(item.row)} />}
+          // AnimatedList idea (React Bits): rows enter one after another, capped so long lists do not wait.
+          : <Animated.View entering={reduce ? undefined : FadeInDown.delay(Math.min(index, 8) * 40).duration(240)}><ActivityRow row={item.row} onPress={() => setReceipt(item.row)} /></Animated.View>}
       />
     </View>
   );

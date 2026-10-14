@@ -4,8 +4,9 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme, F } from "../../theme";
 import { useApp, type Turn } from "../../store";
-import { Ambient } from "../../ui/Screen";
-import { Glass, DevBadge, Press } from "../../ui/primitives";
+import { DevBadge, Press } from "../../ui/primitives";
+import { ShinyText } from "../../ui/ShinyText";
+import { TAB_H } from "../../ui/TabBar";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { Orb } from "../../ui/Orb";
@@ -24,7 +25,7 @@ const DEFAULTS = ["Get me a market report on durian exports, under US$2, by toni
 function UserBubble({ text, reduce }: { text: string; reduce: boolean }) {
   const { c } = useTheme();
   return (
-    <Animated.View entering={reduce ? undefined : FadeInDown.duration(200)} style={{ alignSelf: "flex-end", maxWidth: "82%", backgroundColor: c.accent, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, borderBottomRightRadius: 6 }}>
+    <Animated.View entering={reduce ? undefined : FadeInDown.duration(200)} style={{ alignSelf: "flex-end", maxWidth: "82%", backgroundColor: c.accent, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.lg, borderBottomRightRadius: 4 }}>
       <T v="body" color="onAccent">{cleanText(text, 1000)}</T>
     </Animated.View>
   );
@@ -69,12 +70,11 @@ export default function AgentChat() {
   const send = (v: string) => { if (!v.trim() || chatBusy || !active) return; haptic.light(); setText(""); void sendChat(v); };
   const follow = question ? scenes.map((s) => s.followUp).filter((x): x is string => !!x) : [];
   const chips = [...follow, ...(scenes.length ? scenes.map((s) => s.text) : DEFAULTS)].slice(0, 12);
-  const bottomPad = kb ? 8 : Math.max(insets.bottom - 6, 14) + 60 + 14;
+  const bottomPad = kb ? 8 : TAB_H + insets.bottom + 12;
   const last = turns.at(-1);
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <Ambient />
       <View style={{ paddingTop: insets.top + 6, paddingHorizontal: 20, paddingBottom: 10, flexDirection: "row", alignItems: "center", gap: 12 }}>
         <Orb size={34} state={agentState} />
         <View style={{ flex: 1 }}>
@@ -111,7 +111,7 @@ export default function AgentChat() {
                 ))}
                 {!t.done ? (
                   <AgentRow state={pending.length ? "waiting" : "working"} reduce={reduce}>
-                    <T v="bodySm" color="text2">{pending.length ? "Waiting for you…" : "Working on it…"}</T>
+                    <ShinyText text={pending.length ? "Waiting for you…" : "Working on it…"} />
                     <TraceBlock events={evs} live />
                   </AgentRow>
                 ) : (
@@ -139,12 +139,12 @@ export default function AgentChat() {
                 <T v="bodySm" weight="semi" style={{ flex: 1 }}>Approval needed: US${cleanText(pay.data?.amount, 10)}</T>
               </View>
               <T v="bodySm" color="text2" numberOfLines={2}>{cleanText(sellerName(pay.data?.sellerId), 40)}. {cleanText(pay.text, 110)}</T>
-              <View style={{ height: 40, borderRadius: 20, backgroundColor: c.stepup, alignItems: "center", justifyContent: "center" }}><T v="bodySm" weight="semi" style={{ color: "#1A1000" }}>Review and sign</T></View>
+              <View style={{ height: 44, borderRadius: radius.md, backgroundColor: c.bgElev1, borderWidth: 1, borderColor: c.stepupBorder, alignItems: "center", justifyContent: "center" }}><T v="bodySm" weight="semi" color="stepup">Review and sign</T></View>
             </Press>
           )}
           {question && (
-            <Press onPress={() => setQuestionOpen(true)} style={{ marginLeft: 38, padding: 14, borderRadius: radius.lg, backgroundColor: c.infoBg, borderWidth: 1, borderColor: c.infoBorder, gap: 6 }}>
-              <T v="caption" color="info" weight="semi">AGENT ASKS</T>
+            <Press onPress={() => setQuestionOpen(true)} style={{ marginLeft: 38, padding: 14, borderRadius: radius.lg, backgroundColor: c.accentSoft, borderWidth: 1, borderColor: c.hairlineStrong, gap: 6 }}>
+              <T v="caption" color="accentInk" weight="semi">AGENT ASKS</T>
               <T v="bodySm">{cleanText(question.text, 300)}</T>
               <T v="caption" color="text2">Type your answer below, or tap to answer.</T>
             </Press>
@@ -154,22 +154,22 @@ export default function AgentChat() {
         <View style={{ paddingBottom: bottomPad, gap: 10 }}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }} style={{ flexGrow: 0 }} keyboardShouldPersistTaps="handled">
             {chips.map((s) => (
-              <Press key={s} haptics="select" scale={0.96} onPress={() => send(s)} disabled={chatBusy || !active} style={{ height: 36, maxWidth: 260, paddingHorizontal: 14, borderRadius: radius.pill, justifyContent: "center", backgroundColor: c.bgElev2, borderWidth: 1, borderColor: c.hairlineStrong, opacity: chatBusy ? 0.5 : 1 }}>
+              <Press key={s} haptics="select" scale={0.96} onPress={() => send(s)} disabled={chatBusy || !active} hitSlop={{ top: 4, bottom: 4 }} style={{ height: 36, maxWidth: 260, paddingHorizontal: 14, borderRadius: radius.pill, justifyContent: "center", backgroundColor: c.bgElev1, borderWidth: 1, borderColor: c.hairlineStrong, opacity: chatBusy ? 0.5 : 1 }}>
                 <T v="bodySm" weight="med" color="text" numberOfLines={1}>{cleanText(s, 60)}</T>
               </Press>
             ))}
           </ScrollView>
           <View style={{ paddingHorizontal: 16 }}>
-            <Glass radiusPx={28} strong style={{ flexDirection: "row", alignItems: "center", paddingLeft: 18, paddingRight: 6, paddingVertical: 6 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 16, paddingRight: 6, paddingVertical: 6, borderRadius: radius.lg, backgroundColor: c.bgElev1, borderWidth: 1, borderColor: c.hairlineStrong }}>
               <TextInput
                 value={text} onChangeText={setText} placeholder={question ? "Answer your agent" : "Ask your agent to buy something"} placeholderTextColor={c.text3}
                 onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}
-                style={{ flex: 1, color: c.text, fontFamily: F.body, fontSize: 16, height: 42, paddingVertical: 0, ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null) }}
+                style={{ flex: 1, color: c.text, fontFamily: F.body, fontSize: 16, height: 44, paddingVertical: 0, ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null) }}
               />
-              <Press onPress={() => send(text)} haptics="none" disabled={!text.trim() || chatBusy} accessibilityLabel="Send" style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: text.trim() && !chatBusy ? c.accent : c.bgElev3, alignItems: "center", justifyContent: "center" }}>
-                <Icon name="arrowUp" size={20} color={text.trim() && !chatBusy ? "#fff" : c.text3} stroke={2.4} />
+              <Press onPress={() => send(text)} haptics="none" disabled={!text.trim() || chatBusy} accessibilityLabel="Send" style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: text.trim() && !chatBusy ? c.accent : c.bgElev3, alignItems: "center", justifyContent: "center" }}>
+                <Icon name="arrowUp" size={20} color={text.trim() && !chatBusy ? c.onAccent : c.text3} stroke={2.2} />
               </Press>
-            </Glass>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
