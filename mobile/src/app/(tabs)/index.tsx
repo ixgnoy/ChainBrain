@@ -100,7 +100,7 @@ export default function Home() {
         {demo ? <T v="cap" color="muted" style={{ marginTop: 2 }}>Demo data</T> : null}
         <View style={{ flexDirection: "row", marginTop: 26, alignSelf: "stretch" }}>
           <RoundAction icon="plus" label="Add money" onPress={() => setAction({ mode: "fund" })} />
-          <RoundAction icon="layers" label="New pocket" onPress={() => router.push("/create")} />
+          <RoundAction icon="layers" label="Pocket" a11y="New pocket" onPress={() => router.push("/create")} />
           <RoundAction icon="chat" label="Ask agent" onPress={() => router.navigate("/agent")} />
           <RoundAction icon="more" label="More" a11y="More" onPress={() => router.navigate("/settings")} />
         </View>
