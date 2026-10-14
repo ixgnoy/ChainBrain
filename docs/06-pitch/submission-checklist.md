@@ -1,5 +1,11 @@
 # Submission checklist
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** Built vs pending, as of 14 Oct.
+> - **Done as drafts:** technical document ([docs/technical-document.md](../technical-document.md)), security self-assessment ([docs/security-self-assessment.md](../security-self-assessment.md)), README ([README.md](../../README.md)), source code (built and tested locally), evidence skeleton ([docs/evidence.md](../evidence.md)).
+> - **Pending, needs the live run:** execution evidence (every row in docs/evidence.md is "pending": Base Sepolia tx hashes, funded wallets, live facilitator, MetaMask signing, Expo on a real phone, real-model scene run).
+> - **Human-only, not started:** deck, demo video (5 min or less), team eligibility check (overseas university and at least 60% non-Chinese nationals), team form, and sending the package by email to the address in the rules, by Tue 20 Oct 12:00 UTC+8 (our own deadline).
+> The scene source is now spec v2 scenes 1-8, not 1-9 ([README](../../README.md) "Demo scenes"). Sections below that mention seller guards, `npm run evidence` or `npm run redteam` come from the old design; check names against the README.
 
 ## In one minute
 
@@ -28,7 +34,7 @@ Template files are in `reference/prior-research/official/templates/` (local, rea
 Notes:
 - The folder also holds `ai-technical-document.docx` and `ai-security-self-assessment.docx`. Their text is Chinese ("人工智能赛道｜技术文档模板", "适用于国内人工智能赛道", i.e. for the domestic AI track). Do not use them; use the `-en` International files.
 - Source conflict: the domestic page lists source code and the self-assessment as required and the video as optional; the International page reverses it ([how judges score](how-judges-score.md)). We follow the International page and send everything.
-- Older rule text seen in our saved copy (a different, FISCO-based track page, not the International AI Track) says works go to `fintechathon@g-ican.com` with title "[Name of Team + Name of Works]" and at most 3 submissions, final version counts. The International page names `fintechathon@ican-x.com` for enquiries. Treat the channel, subject format and resubmission count for our track as [VERIFY]; until answered, use email to `fintechathon@ican-x.com` with subject `[ChainBrain] International AI Track, Topic F, <team name>` as the working default.
+- Older rule text seen in our saved copy (a different, FISCO-based track page, not the International AI Track) names a different submission address and says at most 3 submissions, final version counts. For our track, send to the address in the rules; treat the subject format and resubmission count as [VERIFY]. Working subject: `[ChainBrain] International AI Track, Topic F, <team name>`.
 - File names: only the video name is suggested by the organisers. Use one prefix everywhere so a reviewer sees one package.
 
 ## 2. Template sections mapped to our content
@@ -59,17 +65,17 @@ The template is a branded shell with Chinese placeholders: slide 1 "作品名 / 
 
 | Guide section | Requirement | Our plan |
 | --- | --- | --- |
-| 01 Recommended structure | Project and team introduction; end-to-end demo of the core scenario; safety mechanisms, innovation and results | 0:00-0:30 problem and promise; 0:30-3:40 scenes 1, 2, 5a, 6 (with revert hash), 8, 9 from the spec; 3:40-4:40 red-team table, evidence table, residual risks; target 4:40 so we never exceed 5:00 |
+| 01 Recommended structure | Project and team introduction; end-to-end demo of the core scenario; safety mechanisms, innovation and results | 0:00-0:30 problem and promise; 0:30-3:40 v2 scenes 1, 2, 4, 5 (with revert hash), 8 from the spec (old plan listed 1, 2, 5a, 6, 8, 9); 3:40-4:40 red-team table, evidence table, residual risks; target 4:40 so we never exceed 5:00 |
 | 02 Video quality | 16:9 landscape, 1080p preferred; legible interface text, narration, English subtitles | Record at 1920x1080; zoom the trace panel and hash; burn in or attach SRT subtitles; test on a phone screen |
 | 03 Final check | No copyrighted or sensitive material; filename `Track-TeamName-DemoVideo` | Royalty-free or no music; no real keys, no passport, no real personal data; run the secret scan on the video frames (pause on every config screen) |
 
-Scene source: demo script in the [spec](../02-product/product-design.md) (core scenes 1-9). Show the real tx hash landing and the explorer page for at least two scenes. Hosting: also upload as an unlisted link as a backup [VERIFY organisers accept links].
+Scene source: demo script in the [spec](../02-product/product-design.md) (v2 core scenes 1-8; the old text said 1-9). Show the real tx hash landing and the explorer page for at least two scenes. Hosting: also upload as an unlisted link as a backup [VERIFY organisers accept links].
 
 ### 2.4 Source code (`source-code-readme-template-en.md`, copy to repo root)
 
 | README section | Our content |
 | --- | --- |
-| 1 Project Overview (track, team name, project name, one-line summary) | "ChainBrain: seller-side authority checks enforced by the agent's own on-chain pocket" (final wording from [how to win](how-to-win.md)) |
+| 1 Project Overview (track, team name, project name, one-line summary) | v2: "Give your AI a pocket, not your wallet" (old wording, deferred to finals: "ChainBrain: seller-side authority checks enforced by the agent's own on-chain pocket") |
 | 2 System Architecture (include diagram) | Same diagram as the technical document |
 | 3 Environment and Dependencies (OS, runtime, dependencies, env variables, no secrets) | Pinned versions from [stack and repos](../04-build/stack-and-repos.md); `.env.example` only |
 | 4 Installation and Execution (clean environment) | Test in a fresh container or fresh clone before submission; include faucet steps |

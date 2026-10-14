@@ -1,5 +1,7 @@
 # Judge simulation: five panel personas and an adversarial review of ChainBrain
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** Everything here, including the simulated 73/100 average, was computed on the OLD seller-guard design and has NOT been re-scored for v2. The v2 pitch is "Give your AI a pocket, not your wallet" ([spec](../02-product/product-design.md)). Persona questions about the pocket, testnet hashes, injection and regulation still apply. Questions about the seller gateway, ERC-8004, KYC issuers and FISCO describe deferred finals items. The "novelty fix" below is replaced by the v2 claims: limits in a contract the user owns, owner co-sign above ask-me, stock x402 sellers, no scripted re-plan.
 
 > These judges are SIMULATIONS written by us from public information and our own research docs. They are not real people's opinions. We do not know who scores, or the sub-weights ([how judges score](how-judges-score.md)). Scores are our blunt estimates, useful for ranking fixes, not for predicting results. No new web research was done for this doc; every fact is taken from the sibling docs listed in Sources, and their [VERIFY] flags carry over.
 
@@ -9,7 +11,7 @@ Last updated: 2026-10-13
 - **The 40% is the biggest unknown.** Nobody knows if Base Sepolia hashes count for Topic F. If they do not, Task falls to about 10-15 for us and everyone else on testnet. Ask the organisers today.
 - **Our best asset is Security:** "the pocket refuses even if the AI is fooled" is the line every persona respects, provided the day-1 spike (14 Oct) passes and the claim matches what is enforced on-chain.
 - **Our biggest pitch error:** "nobody verifies buyer agents for sellers" is false (Visa TAP, Mastercard via Cloudflare, Skyfire KYAPay, World AgentKit, Alipay APASS). Four of five personas would catch it. Use the narrower claim in [competitors](../03-research/competitors-industry.md): seller-side authority enforced by the paying account on x402/stablecoin rails, with a verdict and reason code.
-- **Second error:** "pocket pays x402 within limits" is no longer novel (sucsage, Leash, MetaMask ERC-7710). The seller gateway plus the live refuse-then-re-plan loop must be the pitch.
+- **Second error:** "pocket pays x402 within limits" is no longer novel (sucsage, Leash, MetaMask ERC-7710). The seller gateway plus the live refuse-then-re-plan loop must be the pitch (old design; for v2 the pitch is the pocket plus the live refuse-then-re-plan loop, seller gateway deferred to finals).
 - **Do first:** (1) organiser email, (2) pass the spike and make every claim match it, (3) evidence pack with expected-result column and one-command reproduction, (4) 10 plain judge-style tasks and 30+ attacks with false-refusal rate, (5) rewrite the novelty and ERC-4337 wording.
 - **Killer demo moment (section 4):** a judge's own injection or "I am the owner" attack is typed live, the agent is fooled on purpose, and the pocket reverts, with the revert hash shown next to a successful re-planned payment seconds later.
 
@@ -127,7 +129,7 @@ Dropped if: market numbers without sources, x402 volume cited as traction, or a 
 
 ## 3. Aggregate
 
-### 3.1 Score table (simulated)
+### 3.1 Score table (simulated, computed on the OLD design, not re-scored for v2)
 
 | Persona | Task /40 | Security /30 | Innovation /30 | Bonus /5 | Total |
 | --- | --- | --- | --- | --- | --- |

@@ -1,5 +1,27 @@
 # Demo script: 5-minute video, 10-minute deck, live defence, minimum slice
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** The authoritative scene list is spec v2 scenes 1-8 ([spec](../02-product/product-design.md) "Demo script") and the [README](../../README.md) "Demo scenes", shown in the table below. The 9+ scene seller-guard script that follows (hash tape, seven guards, fooled-agent toggle, seller gateway) is the old design, deferred to finals and superseded for the prelim. The video (5 min or less), deck (10 min or less) and finals-defence structure still applies; the deck slide list is aligned with Task 10 of the [plan](../superpowers/plans/2026-10-14-chainbrain-prelim-wallet.md).
+
+### v2 scenes (authoritative)
+
+Research pocket: US$5, cap US$2, ask above US$1, DataLite and DataPro, until 23:59 tonight. Scene 8 uses a tight pocket (US$0.20, cap US$0.20, never ask, DataLite only).
+
+| # | Scene | Seller and price | Evidence |
+| --- | --- | --- | --- |
+| 1 | Create and fund the Research pocket; one sentence, one clarifying question, intent card | none | create + fund tx |
+| 2 | Agent buys the durian report | DataLite, US$0.30 | payment tx |
+| 3 | Above ask-me; owner co-signs on web or phone | DataPro premium report, US$1.50 | co-signed payment tx |
+| 4 | Refused with `SELLER_NOT_ALLOWED`; agent re-plans | Harbour Wines US$0.40 (not in pocket), then DataLite fruit-trade-report US$0.35 | payment tx |
+| 5 | Injection ignored; forced transfer reverts on-chain (`scripts/force-transfer.ts`); red-team box for judges | ShadyFeed (free preview) | reverted tx |
+| 6 | Asks for personal data and an approval signature: `DISCLOSURE_REFUSED`, `SIGNATURE_TYPE_NOT_ALLOWED` | ShadyFeed | none |
+| 7 | Revoke mid-task, return funds | n/a | revoke + withdrawal tx |
+| 8 | Dead-end pocket: agent stops safely | DataLite only, over budget | none |
+
+Live Base Sepolia hashes are pending the live run ([evidence](../evidence.md)). Everything below this line is old design unless it says otherwise.
+
+(Superseded, old design, deferred to finals: the scene numbers, seller names (TradeData, translation agent, scam seller), prices, guards and "9 scenes" used in sections 1 to 7 below.)
+
 
 ## In one minute
 
@@ -12,6 +34,8 @@ Last updated: 2026-10-13
 - **Research finding:** the winning pattern in the examples we could open is "show the thing working in the first seconds, one standout moment, say honestly what is simulated". The rival Leash already ships a timed 5-minute script, so our beat must be something it cannot do: the seller side and the recovery (section 7).
 
 ## 1. What every version must prove
+
+(Old design, superseded by the v2 scene table at the top.)
 
 The three scored areas (Task 40, Security 30, Innovation 30, plus Bonus 0-5) and the exact test points are in the [spec](../02-product/product-design.md) table "How this maps to the scoring". The video also has a fixed shape from the organisers' template: project and team intro, end-to-end demo of the core scenario, safety / innovation / results; 16:9, 1080p preferred, legible text, narration and English subtitles, no copyrighted material, file name `Track-TeamName-DemoVideo` (template `demo-video-guide-en.docx`, see [how judges score](how-judges-score.md) section 4).
 
@@ -80,6 +104,8 @@ Rehearsal rules (from the judge simulation): rehearse 20 times; if the model hap
 Cut in this order: (1) beat 3 to 10 s, (2) 6b to a caption, (3) beat 2 translation hire to the caption "agent hires agent, H4", (4) beat 7 to 12 s. Never cut beats 1, 4, 5 or 6.
 
 ## 3. The 10-minute deck, slide by slide
+
+> **v2 deck outline (plan Task 10, 10 min or less, English):** problem, "Give your AI a pocket, not your wallet", pocket rules, how the pocket checks a payment, scenes (web and phone), scoring map (with the 0-5 bonus row), what a pocket stops and does not stop, finals roadmap (label "Roadmap, not in prelim demo"). The 10-slide table below is the old seller-guard design (old design, deferred to finals); reuse only its timing, evidence and honest-limits ideas.
 
 The rules say only "up to 10 minutes" and do not say if the talk is recorded, live or notes ([open questions](../00-start-here/open-questions.md) O4). This plan works for a talk with the video and for a live slot. It is 9:45 with 15 s spare. The earlier outline in [how to win](how-to-win.md) puts the demo at 4-7 min; this one shortens the demo to 2:30 and gives the freed minute to evidence and honest limits, because [how judges score](how-judges-score.md) says the first cut reads documents, not a live demo. Conflict between the two plans is left side by side; the team should pick one.
 
@@ -167,6 +193,8 @@ Prepare before 22 Nov:
 - **Same hashes, same story:** the evidence table in the deck is the one submitted on 20 Oct; do not rerun and swap hashes silently. New hashes are labelled "new run, 22 Nov".
 
 ## 5. Minimum winning slice (if the build is late)
+
+(Old design scene numbers. The v2 spec has no scene-level cut order: it says the core demo ships first and anything else is cut before a core scene slips.)
 
 Aim: a submission that is still honest and still scores on all three areas. The [judge simulation](judge-simulation.md) item 10 and [recommended changes](../02-product/recommended-changes.md) item 16 define the slice as: pocket, x402, guards 1-3, reason codes, console with Revoke, red-team suite and evidence.
 

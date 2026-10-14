@@ -1,16 +1,20 @@
 # How to win: pitch strategy
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** The prelim product is now a consumer wallet: "Give your AI a pocket, not your wallet." Pockets are contracts holding USDC with rules the owner sets, so a hijacked agent can lose at most the pocket's balance, and only to approved sellers ([spec](../02-product/product-design.md)). The seller trust layer, seller guards, bring-your-own-agent and FISCO BCOS (planned only) are deferred to finals. Novelty claims below that rely on the seller side are old design. The 73/100 simulated score was computed on the OLD design and has not been re-scored.
 
 ## In one minute
 
-- **One-line pitch:** "ChainBrain lets a merchant say yes to an AI agent: every payment is checked for who the agent is, who it works for and whether it is allowed, and a spend-limited on-chain pocket refuses what a fooled AI should not do."
-- **Where points come from:** Task 40 (real hashes), Security 30 (refuses even if the AI is fooled), Innovation 30 (seller-side verdict plus visible re-planning).
+- **One-line pitch (v2):** "Give your AI a pocket, not your wallet." Worst case, you lose the pocket's balance, and only to sellers you approved.
+- **One-line pitch (old design, deferred to finals):** "ChainBrain lets a merchant say yes to an AI agent: every payment is checked for who the agent is, who it works for and whether it is allowed, and a spend-limited on-chain pocket refuses what a fooled AI should not do."
+- **v2 novelty claims:** the limits live in a contract the user owns, not on a platform's servers (unlike Alipay AI Pay and UnionPay's protocol, which keep them on the platform side); the budget is the pocket balance; the owner co-signs the exact USDC authorization above an ask-me threshold; sellers are stock x402 and need no ChainBrain code; the agent re-plans from reason codes with no scripted fallback. The pocket alone is not novel (Leash, sucsage, MetaMask ERC-7710), so say so.
+- **Where points come from (old design wording, see the spec scoring map for v2):** Task 40 (real hashes), Security 30 (refuses even if the AI is fooled), Innovation 30 (seller-side verdict plus visible re-planning).
 - **Killer moment:** "fool the agent, not the pocket, then recover" (a judge's attack fails on-chain with a revert hash; seconds later the agent re-plans and pays).
-- **Do not say** "nobody verifies buyer agents for sellers". Say: seller-side authority enforced by the paying on-chain account on x402 rails, with a verdict and reason code ([competitors](../03-research/competitors-industry.md)).
+- **Do not say** (old design wording, seller side deferred to finals) "nobody verifies buyer agents for sellers". Say: seller-side authority enforced by the paying on-chain account on x402 rails, with a verdict and reason code ([competitors](../03-research/competitors-industry.md)).
 - **Evidence beats claims:** an evidence pack with expected-vs-actual and red-team numbers is the centre of the submission.
 - **Round 2 links:** the scene-by-scene [demo script](demo-script.md) (5-minute shot list, 10-slide deck, live-defence plan, minimum slice), the [submission checklist](submission-checklist.md), the [rivals](../03-research/topic-f-rivals.md) head-to-head and the [evidence and red-team harness](../05-security/evidence-and-redteam-harness.md). Where this page and the demo script differ on timings, the demo script is newer.
 - **Rivals matter now:** Leash ships a full evidence pack; edxzh already does ERC-1271 x402. Our edge is the seller-side verdict, reason-code re-plan and recovery, but only if we ship it.
-- Simulated panel average about 73/100 ([judge simulation](judge-simulation.md)). These are our simulations, not real judges.
+- Simulated panel average about 73/100 ([judge simulation](judge-simulation.md)), computed on the OLD design (not re-scored for v2). These are our simulations, not real judges.
 
 ## Story arc
 
