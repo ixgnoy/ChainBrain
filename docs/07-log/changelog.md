@@ -1,5 +1,15 @@
 # Changelog
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+## 2026-10-14 (docs audit against v2)
+
+The team's spec v2 (consumer wallet), plan, technical document, security self-assessment, evidence file and code arrived on main. The master docs were checked against them. The team's files were not edited.
+
+- **Rewritten:** [one-page summary](../00-start-here/one-page-summary.md), [status and plan](../00-start-here/status-and-plan.md), [roles and workplan](../00-start-here/roles-and-workplan.md).
+- **Updated:** [open questions](../00-start-here/open-questions.md) (old-design rows marked, new section E, no email addresses), [recommended changes](../02-product/recommended-changes.md) (disposition table), [docs index](../README.md) (team docs added, paths fixed).
+- **Status banners and fixes (research kept):** every doc in 03-research, 04-build, 05-security and 06-pitch got a v2 banner, a new "Last updated" date and inline marks on old-design claims.
+- **Logs:** decisions got 14 Oct rows; older logs got a "superseded by v2" note.
+- **Links:** every relative markdown link in `docs/` and the top README was checked by script.
 
 ## 2026-10-13 (overnight run)
 

@@ -1,5 +1,7 @@
 # Fact verification, round 2
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Superseded by v2 (14 Oct):** this log was written against the old seller-trust spec and plan. Read its design findings as history. The current spec is [Prelim Product Spec v2](../02-product/product-design.md); see [status and plan](../00-start-here/status-and-plan.md) for what is current.
 
 ## In one minute
 

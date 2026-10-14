@@ -1,6 +1,8 @@
 # Research log
 
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Superseded by v2 (14 Oct):** this log was written against the old seller-trust spec and plan. Read its design findings as history. The current spec is [Prelim Product Spec v2](../02-product/product-design.md); see [status and plan](../00-start-here/status-and-plan.md) for what is current.
 
 | Time | Area | Result | Doc |
 | --- | --- | --- | --- |
@@ -24,3 +26,4 @@ Last updated: 2026-10-13
 | 2026-10-13 02:34 | Topic F rivals | Leash, sucsage confirmed Topic F; edxzh/agent-wallet is an unlabelled lookalike that already does ERC-1271 x402 plus ERC-8004; 6 new C/E/A repos; head-to-head and cheap adds | docs/03-research/topic-f-rivals.md |
 | 2026-10-13 02:38 | master docs round 2 (editor) | roles-and-workplan created; README, status, open questions, recommended changes (items 28-49), how-to-win, changelog, decisions updated; links checked | docs/00-start-here/roles-and-workplan.md |
 | 2026-10-13 02:44 | fact verification | 30 claims re-checked: 22 confirmed, 5 corrected inline (PCAC filing struck, APASS connected agents, code size, Gray Swan, Qwen label), 3 unverified; 574 links ok | docs/07-log/verification-2026-10-13.md |
+| 2026-10-14 19:50 | docs audit vs v2 | Master docs checked against the team's spec v2, technical document, security self-assessment, evidence, plan and code on main; banners, status updates and link fixes applied; findings list kept outside the repo | docs/README.md |
