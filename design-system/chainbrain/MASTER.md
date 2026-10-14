@@ -1,107 +1,103 @@
-# ChainBrain design system: Ink & jade
+# ChainBrain design system v2: clean bank (Ryt / Revolut reference)
 
-Source of truth for `web/` and `mobile/`. Generated with ui-ux-pro-max (`"consumer fintech wallet AI agent trust" --design-system --variance 6 --motion 8 --density 5`), then the colours replaced by the team's chosen "Ink & jade" palette. Page files in `pages/` override this file.
+Source of truth for `web/` (seller dashboard) and `mobile/` (owner app). Replaces v1 "Ink & jade", which still read as AI-made (cream paper, animated canvases, sparkles, mono jargon). Page files in `pages/` override this file.
 
-## Direction
+## References and research
 
-- **Style:** Minimalism & Swiss. Paper, ink, one accent. Grid, hairlines, clear type hierarchy.
-- **Why:** a wallet that holds money for an AI agent must read as calm and trustworthy, not as "AI". The old look (near-black, signal violet `#6E56FF`, cyan glow, glass) is exactly the generic AI aesthetic.
-- **Avoid:** purple/pink/cyan gradients, glow, glassmorphism, neon status colours, emoji as icons, gradient text.
-- **Allowed showcase motion:** React Bits effects, but only in ink and jade, slow, low contrast, off under `prefers-reduced-motion`.
+- Ryt Bank app screenshots in `reference/frontend/ryt-bank/` (13 screens: Home, Do more, Accounts, Main Account, Insights, Cards, Rewards, Ryt AI). These are the primary reference.
+- Revolut public design notes: near-black ink `#191C1F`, `#F4F4F4` soft surface, pill buttons, 20 px cards, **no drop shadows**, one brand colour only.
+- "AI tell" research (2026): purple/blue gradients, glassmorphism, glow, cream backgrounds with serif italic heroes, Inter everywhere, centred hero + three icon cards, coloured left-border cards, "Live" badges as decoration. Avoid all of them.
+- ui-ux-pro-max: used for UX rules (touch targets, lists, keyboards, safe areas, contrast). Its "Fintech" style suggestion (glassmorphism + dark) is rejected for this product.
 
-## Colour tokens
+## What we copy from Ryt (structure, not brand)
 
-Light is the default. Dark follows the system or the user's choice.
+1. **Grey canvas, white cards.** Canvas `#F7F7F8`; cards pure white, radius 20, **no border, no shadow**. Depth comes only from white on grey.
+2. **One action colour.** Every tappable primary thing is the accent; nothing else uses it. No gradients anywhere.
+3. **Round action buttons** under the balance: 64 px solid accent circles with white icons and a label below (Add money, Pockets, Ask agent, More). Secondary round buttons use the soft accent with an accent icon.
+4. **Big balance**, centred, bold sans, with a small grey label above ("Main wallet") and one quiet line below.
+5. **Serif page titles** at the top of each tab ("Pockets", "Activity", "Settings"), left aligned, large. Everything else is sans.
+6. **Section headers** in sans 20/600 ("Accounts", "Recent activity") with a right-aligned grey total or a "View all" link.
+7. **List rows**: 48-56 px round avatar (initial or icon on a soft tint), title 16/500, subtitle 14 grey "DataLite · 14 Oct, 1:32 PM", amount right aligned 16/600; incoming in green with a "+" sign; status ("Pending", "Refused") in grey under the amount.
+8. **Small tinted pills** for rates/facts ("Cap US$2.00", "Ask above US$1.00"): soft accent background, accent text, radius full.
+9. **Outline pill CTA** for secondary actions ("Create now", "View history"): accent text, 1.5 px accent border.
+10. **Floating pill tab bar** on the phone: white, radius full, 16 px from the edges and bottom safe area, active item = grey pill behind accent icon + label.
+11. **Pastel promo cards** only for tips/education (one at a time), with a small caps eyebrow in a darker tone of the pastel.
+12. **Ask agent** entry as a pill in the Home header (like "Ask Ryt AI"), opening the agent chat.
 
-| Token | Light | Dark | Use |
-| --- | --- | --- | --- |
-| `bg` | `#F6F4EF` | `#121314` | canvas (paper / ink) |
-| `e1` | `#FFFFFF` | `#1B1C1E` | cards, panes |
-| `e2` | `#EFECE5` | `#232426` | inputs, raised rows |
-| `e3` | `#E6E2D9` | `#2C2D30` | hover, pressed, selected |
-| `hair` | `#E3DFD6` | `rgba(236,234,228,0.08)` | hairline borders |
-| `hair2` | `#CFCAC0` | `rgba(236,234,228,0.16)` | strong borders, focus outline base |
-| `fg` | `#16181A` | `#ECEAE4` | primary text |
-| `t2` | `#3F4347` | `#BDBBB5` | secondary text |
-| `t3` | `#6B6F73` | `#9A9C9E` | metadata (4.6:1 on paper) |
-| `tdis` | `#B9B6AF` | `#55575A` | disabled |
-| `accent` | `#0F6E56` | `#3FBF9A` | jade: primary buttons, links, focus ring, agent activity |
-| `accent-hi` | `#138467` | `#5CD1AE` | hover |
-| `accent-press` | `#0B5946` | `#2FA584` | pressed |
-| `accent-ink` | `#0B5946` | `#3FBF9A` | jade text on tinted backgrounds |
-| `accent-soft` | `rgba(15,110,86,0.10)` | `rgba(63,191,154,0.14)` | selected / active tint |
-| `on-accent` | `#FFFFFF` | `#0D1F19` | text on accent (6.2:1 / 8.1:1) |
+## Colour (light only, both apps)
 
-### Verdicts (used everywhere: chips, trace, receipts)
+| Token | Hex | Use |
+| --- | --- | --- |
+| `canvas` | `#F7F7F8` | app background |
+| `card` | `#FFFFFF` | cards, sheets, tab bar |
+| `fill` | `#EFEFF1` | pressed rows, inputs, secondary buttons, active tab pill |
+| `line` | `#E6E6EA` | the few dividers we need (inside cards, between rows: inset 72 px) |
+| `ink` | `#111318` | primary text, balances |
+| `ink2` | `#4B5058` | secondary text |
+| `muted` | `#6B7280` | metadata, captions (4.8:1 on white) |
+| `faint` | `#A1A6AE` | disabled, placeholders |
+| `accent` | `#0B7A4B` | forest green: primary buttons, round actions, links, active tab, focus |
+| `accentPress` | `#08613B` | pressed |
+| `accentSoft` | `#E3F3EA` | soft round buttons, fact pills, selected rows |
+| `onAccent` | `#FFFFFF` | text on accent (5.4:1) |
+| `positive` | `#0B7A4B` | incoming money "+US$0.30" (same green, it is money) |
+| `negative` | `#C8372D` | refused, revoked, destructive (4.9:1 on white) |
+| `negativeSoft` | `#FCEBEA` | refusal pill background |
+| `warning` | `#9A6200` | "Needs you" text (4.8:1) |
+| `warningSoft` | `#FFF3DB` | "Needs you" pill background |
+| pastels (promo only) | mint `#DDF5EC` / peach `#FDEBDD` / lilac `#ECE9FB` | tips cards, eyebrows in `#0B7A4B` / `#A4501A` / `#5B4BC4` |
 
-| Verdict | fill (icon, dot) light / dark | text light / dark | tint bg light / dark |
-| --- | --- | --- | --- |
-| `ok` (paid, allowed) | `#1F8A4C` / `#4CC27E` | `#18703F` / `#4CC27E` | `rgba(31,138,76,0.10)` / `rgba(76,194,126,0.14)` |
-| `refused` | `#C2410C` / `#F0804A` | `#B23C0B` / `#F0804A` | `rgba(194,65,12,0.08)` / `rgba(240,128,74,0.14)` |
-| `stepup` (needs you) | `#B7791F` / `#E0A84A` | `#8A5A12` / `#E0A84A` | `rgba(183,121,31,0.12)` / `rgba(224,168,74,0.14)` |
-| `revoked` (stopped) | `#5B6168` / `#A3A7AB` | `#4A4F55` / `#A3A7AB` | `rgba(22,24,26,0.06)` / `rgba(236,234,228,0.08)` |
-| `info` | `#6B6F73` / `#9A9C9E` | `#3F4347` / `#BDBBB5` | `rgba(22,24,26,0.05)` / `rgba(236,234,228,0.06)` |
+No dark mode. No gradients, blur, glow or shadows (the only shadow allowed: the floating tab bar and bottom sheets, `0 8px 24px rgba(17,19,24,0.08)`).
 
-Border of a tinted chip = its fill at 28% alpha. Never rely on colour alone: every verdict has an icon and a word.
+## Type
 
-Contrast (checked): ink on paper 16.2, t3 on paper 4.6, jade on paper 5.6, refused text 4.7, stepup text 5.4, ok text above 4.5; all dark-mode text above 6.
+- **Sans:** Plus Jakarta Sans 400/500/600/700 for all UI, numbers (`tabular-nums`) and buttons.
+- **Serif:** Fraunces 600 (optical size high), **only** for the page title of each tab/page. Never italic. Never in body text.
+- **Scale:** serif title 34/40 (phone) 40/46 (web) · balance 40/44 700 · section 20/28 600 · body 16/24 · row title 16/22 500 · secondary 14/20 · caption 13/18 · tab label 12/16 600.
+- No monospace in the consumer UI. Addresses and hashes only appear in a "Details" sheet, shortened ("0x0D23…0A71"), in the sans with tabular numbers.
 
-## Typography
+## Shape and space
 
-- **Sans:** IBM Plex Sans 400 / 500 / 600 (skill pick for "financial, trustworthy"). Web `@fontsource/ibm-plex-sans`, phone `@expo-google-fonts/ibm-plex-sans`.
-- **Mono:** IBM Plex Mono 400 / 500 for addresses, hashes, reason codes, tool names.
-- **Numbers:** `font-variant-numeric: tabular-nums` for all money.
-- **Scale (px):** 12 meta · 13 small · 14 body-sm · 16 body · 20 title · 24 h2 · 32 h1 · 44 balance display.
-- Headings 600, tracking `-0.01em` (display `-0.02em`). Body line-height 1.5. Never below 12 px.
-- Reason codes stay as mono codes, but always next to a plain-language line.
+- Radii: 20 cards and sheets · full for buttons, pills, avatars, tab bar · 12 inputs.
+- Spacing: 4-pt grid; screen padding 20 (phone) / 32 (web); 12 between cards; 24 above section headers.
+- Touch: 48 px buttons, 64 px round actions, rows ≥ 64 px tall.
 
-## Shape, space, elevation
+## Language
 
-- **Radii:** 6 (chips, inputs), 10 (buttons, rows), 14 (cards, panes, sheets). Pills only for chips and segmented controls.
-- **Spacing:** 4-point grid: 4, 8, 12, 16, 24, 32, 48.
-- **Elevation:** by surface step and 1 px hairline, not by shadow. One soft shadow allowed for dialogs and sheets: `0 12px 32px rgba(22,24,26,0.12)` (dark: `rgba(0,0,0,0.5)`).
-- **Focus:** 2 px `accent` outline, 2 px offset. Never removed.
-- **Touch targets:** 44 x 44 minimum on phone.
+- Plain words for people, not engineers. "Paid DataLite US$0.30", "Refused: seller not on your list", "Waiting for your OK".
+- Reason codes, tool names, nonces, tx hashes: only inside an expandable "Details" area.
+- No status badges as decoration ("LIVE", "LOCAL FORK" chips). One small grey "Demo" or "Test network" line in Settings / footer is enough.
 
-## Motion and components
+## Motion
 
-Durations 150-250 ms for UI, 400-700 ms for showcase. Ease out on enter, faster exits. Everything off or instant under reduced motion.
+Quiet and functional only: 150-200 ms fades and slides, balance count-up, row insert, sheet slide. No canvases, sparks, magnet, shimmer, blur-in text, decrypt effects. Respect reduced motion.
 
-### Web: React Bits (ts-tailwind sources from `reference/frontend/react-bits`, vendored into `web/src/components/bits/`)
+## Phone (owner) screens
 
-| Where | Component |
-| --- | --- |
-| App canvas | `DotGrid` (ink dots on paper, jade near the cursor, low contrast) |
-| Chat empty state | `Threads` in jade at low amplitude |
-| Balances (main wallet, pockets, Bank KPIs) | `CountUp` |
-| Live trace and activity rows | `AnimatedList` |
-| Agent "working" label | `ShinyText` (ink on ink, jade shine) |
-| Empty-state and page headings | `BlurText` / `SplitText` |
-| Pocket cards | `SpotlightCard` (jade spotlight, 8% alpha) |
-| Create-pocket wizard | `Stepper` (Rules, Sellers, Review) |
-| Primary CTA (New pocket) | `Magnet` (small strength) |
-| Whole app | `ClickSpark` (jade, 6 sparks) |
-| Tx hashes revealed in receipts | `DecryptedText` |
-| Revoke | `HoldButton` (Micro, already vendored) |
-| Agent steps | `ThoughtLine` (Micro, already vendored) |
+- **Home:** header row (avatar initials left, "Ask agent" pill centre, bell right) on canvas; white balance card (label "Agent pockets", total, one quiet line "Main wallet US$15.00"); four round actions (Add money, New pocket, Ask agent, More); "Pockets" section (list card of pockets: avatar, name, "2 sellers · until 23:59", balance right); "Recent activity" list card with "View all".
+- **Pocket detail:** back button + title, centred avatar, big balance, fact pills (cap, ask above, expiry), round actions (Add, Return, Revoke), "Allowed sellers" list card with switches, "Activity" list card.
+- **Ask agent:** full screen chat on white; suggestion chips; agent messages as plain text; steps collapsed in a "Details" row; approval as a bottom sheet with the big amount, seller row, one green "Approve" button (slide stays) and a "Decline" text button.
+- **Activity:** serif title, filter pills (All, Paid, Refused, Needs you), date-grouped list card.
+- **Settings:** serif title, grouped list cards (Wallet, Network, About). "Demo data" shown here when in demo mode.
 
-### Phone: React Native Reusables (NativeWind registry) + Reanimated ports
+## Web (seller dashboard) screens
 
-- Reusables `Button`, `Card`, `Badge`, `Text`, `Input`, `Switch`, `Separator`, `Progress`, `Skeleton`, `Alert`, `Dialog` themed with the tokens above (CSS variables in `global.css`).
-- Keep the custom gestures (slide to approve, hold to revoke), restyled.
-- Tab bar: solid `e1` with a hairline top border and jade active pill. No glass, no blur.
-- React Bits ideas ported to Reanimated: `CountUp` (balances), `AnimatedList` (activity, trace via layout animations), `ShinyText` (agent working).
+- Left rail (white, 240 px): logo, seller switcher (avatar + name + chevron), nav: Overview, Payments, Refusals, Catalogue, Response content. Footer: "Test network · Base Sepolia" in muted text.
+- **Overview:** serif title "Overview", three white stat cards (Earned today, Payments, Refused by buyers' wallets), a "Recent payments" list card, a small pastel tip card explaining agent payments.
+- **Payments / Refusals:** list cards with Ryt rows (buyer pocket avatar, "Agent payment · 14 Oct 21:55", amount, status), click → right-side detail sheet with plain-language explanation and a "Technical details" disclosure.
+- **Catalogue:** items and prices as list rows.
+- **Response content:** the red-team box reframed as "What this seller appends to its next response" (one textarea, Plant / Clear).
+- No login: the seller is chosen from the switcher (remembered per browser).
 
-## Brand mark
+## Demo mode
 
-Two linked rings. Ink ring + jade ring on paper; reversed on ink. No gradient.
+If the API is unreachable at start, both apps load built-in sample data (pockets, payments, refusals, an agent conversation) and say "Demo data" once, quietly. When the API becomes reachable they switch to live data.
 
 ## Pre-delivery checklist
 
-- [ ] No violet, cyan, gradient, glow or glass left (`grep -i "6e56ff\|38e1ff\|gradient\|backdrop-blur\|BlurView"`)
-- [ ] Text contrast 4.5:1 in both themes
-- [ ] Visible focus on every control; keyboard reachable
-- [ ] Reduced motion: backgrounds static, counters jump to value
-- [ ] 375 / 768 / 1024 / 1440 px without horizontal scroll (web)
-- [ ] 44 px targets, safe areas, light and dark (phone)
-- [ ] No emoji icons (Lucide on web and phone)
+- [ ] No gradient, blur, glow, canvas effect, sparkle icon, mono font in consumer UI, dark mode
+- [ ] One accent colour; contrast ≥ 4.5:1 for text
+- [ ] Every screen starts without login, connect, key setup or disconnect
+- [ ] Serif only on page titles
+- [ ] 48 px targets, safe areas, keyboard never covers inputs (phone)
+- [ ] 375 / 768 / 1280 px without horizontal scroll (web)

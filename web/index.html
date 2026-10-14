@@ -1,19 +1,11 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="light" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <title>ChainBrain Wallet</title>
-    <script>
-      // Apply the stored or system theme before first paint (no flash).
-      try {
-        var t = localStorage.getItem("cb-theme");
-        if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        document.documentElement.dataset.theme = t;
-      } catch (e) {}
-    </script>
+    <title>ChainBrain for sellers</title>
   </head>
   <body>
     <div id="root"></div>
