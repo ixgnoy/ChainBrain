@@ -31,7 +31,8 @@ async function until(what, fn, ms = 30000, step = 200) {
   page.on("pageerror", (e) => issues.push(`pageerror: ${e.message}`));
   page.on("console", (m) => { if (m.type() === "error" && !/favicon|DevTools|Download the React/.test(m.text())) issues.push(`console: ${m.text().slice(0, 300)}`); });
   page.setDefaultTimeout(20000);
-  const shot = async (name) => { if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, `${name}.png`) }).catch(() => {}); };
+  // screens are captured once their entrance animations have settled (count-ups, sheet reveals, tab highlight)
+  const shot = async (name) => { if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await sleep(1600); await page.screenshot({ path: path.join(SHOTS, `${name}.png`) }).catch(() => {}); };
   const body = () => page.locator("body").innerText();
   const visible = (t) => page.getByText(t).filter({ visible: true }).first();
   const tab = (name) => page.getByRole("tab", { name }).click();
