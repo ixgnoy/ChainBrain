@@ -1,5 +1,7 @@
 # Identity, Credentials, Reputation and the FISCO BCOS Bonus
+Last updated: 2026-10-14
 
+> **Status (14 Oct, v2):** ERC-8004 identity, reputation and FISCO BCOS are not in the prelim demo. They are the finals roadmap ("Roadmap, not in prelim demo"); FISCO BCOS is planned only, and nothing has been deployed there. The prelim is a consumer wallet; the seller trust layer is deferred. Research below is kept for the finals. Spec: [product design](../02-product/product-design.md).
 Last updated: 2026-10-13
 
 ## In one minute
@@ -13,7 +15,7 @@ Last updated: 2026-10-13
 - **Be honest about WeIdentity.** WeBank's identity software (WeIdentity) follows the same W3C model we use, but it is Java-based and its last tagged release is a 2023 release candidate. We do not run it. We say "same data model, deployable on WeBank's stack", never "built on WeIdentity".
 - **What to do this week:** (1) register agents in ERC-8004 on Base Sepolia, (2) issue demo credentials as EAS attestations, (3) write the payment-grounded reputation attester, (4) timebox the FISCO dry run to Saturday morning, (5) send the organiser question today.
 
-## 1. Recommended build for the week: build, fake or cut
+## 1. Recommended build for the week: build, fake or cut (old design, deferred to finals)
 
 | Piece | Decision | What exactly | Time guess | Helps |
 |---|---|---|---|---|
@@ -29,7 +31,7 @@ Last updated: 2026-10-13
 | Visa TAP / Web Bot Auth interoperability | **Could** | A gateway option that also accepts RFC 9421 signed requests in the Web Bot Auth shape, using Cloudflare's Apache-2.0 TypeScript packages (reference only; read before using). | 3-4 h | Innovation 30 |
 | FISCO deployment | **Bonus, timeboxed** | Section 5. | 2-4 h plus 1 h dry run | Bonus 0-5 |
 
-## 2. ERC-8004 (Trustless Agents): what it is and what it gives us
+## 2. ERC-8004 (Trustless Agents): what it is and what it gives us (finals roadmap)
 
 Plain English: ERC-8004 is a proposed Ethereum standard that gives every AI agent an on-chain ID card (an NFT), a place to post feedback about it, and a place for independent checkers to post validation results. There are three registries.
 
@@ -60,7 +62,7 @@ What it means: registration counts do not prove quality, and the on-chain averag
 
 How ChainBrain uses it: ERC-8004 gives us a shared, public place to post identity and feedback records (interoperability and a public explorer); our attester gives the guard something it can rely on. We never read `getSummary` directly for a decision.
 
-## 3. Credentials: DID and verifiable credentials in a week
+## 3. Credentials: DID and verifiable credentials in a week (finals roadmap)
 
 Plain English: a verifiable credential (VC) is a digitally signed statement from an issuer about someone ("this owner is KYC tier 2, region HK"). The holder shows it to a verifier, who checks the issuer's signature without calling the issuer. A DID is a self-owned identifier used as the subject or issuer name.
 
@@ -76,7 +78,7 @@ Recommended split: **EAS for "is this credential on-chain valid right now" (revo
 
 Honesty rules for the demo: the "KYC issuer" and "registrar" are our own keys; the screen and slides say "simulated issuer". Credentials carry no name or ID number, only the claims the guards need.
 
-## 4. Know-Your-Agent (KYA) schemes we can reference
+## 4. Know-Your-Agent (KYA) schemes we can reference (finals roadmap)
 
 | Scheme | What it is (source quality) | Relevance to us |
 |---|---|---|
@@ -91,7 +93,7 @@ Conflict to keep visible: a self-published GitHub comparison (snippet) says no a
 
 Practical line for the pitch: "Visa and Cloudflare prove who the agent is. ERC-8004 gives a public ID card. Nobody checks, at the merchant, whether this agent's owner is KYC-anchored, whether this pocket may buy this item, and whether payment will settle. That is ChainBrain."
 
-## 5. FISCO BCOS bonus: facts, 2-4 hour recipe, risks
+## 5. FISCO BCOS bonus: facts, 2-4 hour recipe, risks (planned only, not built)
 
 ### 5.1 State of FISCO BCOS in Oct 2026 (re-checked)
 
@@ -154,7 +156,7 @@ Hard stop: if step 4 or 6 fails after 90 minutes, drop FISCO to a slide labelled
 
 ### 5.5 Question for the organisers (do not guess the answer)
 
-Draft (contact address on the rules page is fintechathon@g-ican.com, per prior notes):
+Draft (contact address: see the rules page):
 
 > For Topic F, the rules say the task score uses on-chain transaction hashes. (1) Is a public EVM testnet (Base Sepolia) accepted? (2) Is a team-hosted FISCO BCOS 3.x chain accepted, and if yes how should judges verify hashes (public read-only RPC, explorer, snapshot)? (3) Does using FISCO BCOS or other WeBank open source earn extra credit under the +0-5 bonus? (4) Is there an organiser-hosted chain we may use? Please also tell us if international teams may reach a mainland-hosted endpoint from Hong Kong.
 

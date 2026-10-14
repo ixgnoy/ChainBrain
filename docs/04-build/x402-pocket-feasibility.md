@@ -1,5 +1,7 @@
 # x402 + Pocket Feasibility: the Day-1 Spike (Wed 14 Oct)
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** This is the Day-1 spike recipe. The spike passed on a Base Sepolia fork; the live run is still pending (see [evidence](../evidence.md)). What the build actually chose: the signature is an envelope `abi.encode(to, value, validAfter, validBefore, nonce, agentSig, ownerSig)` and the pocket rebuilds the USDC EIP-3009 digest; ERC-1271 only, no ERC-4337 and no bundler (so "Path A" below, minus the 4337 options); the public testnet facilitator at x402.org/facilitator is the default, and `FACILITATOR=local` runs the x402 facilitator code in-process. MetaMask ERC-7710 ("Path B") was not built. See the [technical document](../technical-document.md) section 2 and the [product design](../02-product/product-design.md).
 
 ## In one minute
 
@@ -105,7 +107,7 @@ For Path A: the pocket stores one `agent` address (the session key). The pocket 
 
 **Simplification this allows:** the spec's guard 1 needs "the session key registered to this agent ID". If the pocket stores the agent key (`pocket.agent()`), the gateway can read it from the pocket and the ERC-8004 registry only needs to carry identity, wallet and reputation. Our own contract shrinks to "agentId to owner binding and KYC tier".
 
-## 4. The most likely working recipe (Path A)
+## 4. The most likely working recipe (Path A) (chosen; built without the ERC-4337 options)
 
 **Goal:** a pocket account that USDC accepts as payer, with recipient, cap, expiry and revoke enforced on-chain.
 
@@ -143,7 +145,7 @@ The type hash is `keccak256("TransferWithAuthorization(address from,address to,u
 
 Residual risk to state honestly in the security report: while the pocket is live, the agent could sign several authorizations at once, each under the cap and to allowlisted sellers; the worst case is bounded by the pocket balance. Cap `validBefore` to a short window (for example 10 minutes from now) to limit stockpiled authorizations.
 
-### 4.4 Path B in short (ERC-7710 with MetaMask)
+### 4.4 Path B in short (ERC-7710 with MetaMask) (not built)
 
 1. Owner creates a MetaMask **Hybrid DeleGator** (`toMetaMaskSmartAccount`, `Implementation.Hybrid`, from `@metamask/smart-accounts-kit` 2.0.0) and funds it with test USDC.
 2. Owner signs a root delegation to the agent key with caveats: `AllowedTargets` = USDC, `AllowedMethods` = `transfer`, `ERC20TransferAmount` = total budget, `Timestamp` = expiry, recipient allowlist via `LogicalOrWrapper` over `AllowedCalldata` entries, per-payment cap via one small custom enforcer.

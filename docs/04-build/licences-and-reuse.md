@@ -1,5 +1,7 @@
 # Licences and Reuse Check
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** This is the research-time licence check. The real dependencies (OpenZeppelin 5.4, viem, Hono, x402, Expo, React Native, Vite, Phosphor Icons, Geist fonts, plus web3j and OkHttp on Android) are listed in the [top README licences section](../../README.md). Repos in `reference/` are read-only and git-ignored, so links into it only work in a local clone. Spec: [product design](../02-product/product-design.md).
 
 Competition rule 6 says every piece of data, code, open-source component and API we use must be "legally authorised" and follow its open-source licence and data-use terms; the team carries the liability (see [hackathon rules](../01-competition/hackathon-rules.md), rule 6). This page is the team's answer: what we may copy, what we may only depend on, what we only read, and what to write in the submission.
 

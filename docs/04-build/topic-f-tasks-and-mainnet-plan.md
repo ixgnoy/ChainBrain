@@ -1,5 +1,7 @@
 # Topic F: passing the 40% task score, and the mainnet insurance plan
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** The task-score research and mainnet-insurance ideas still apply as options. The design they critique (seller guards 1 to 7, serve/step-up/refuse) is superseded by the v2 consumer wallet: pockets with an agent key, seller allowlist, cap and an ask-me-above threshold where the owner co-signs. The prelim demo is testnet only, scenes 1 to 8, and evidence hashes are pending ([evidence](../evidence.md)). Spec: [product design](../02-product/product-design.md); plan: [plan](../superpowers/plans/2026-10-14-chainbrain-prelim-wallet.md).
 
 ## In one minute
 
@@ -23,7 +25,7 @@ Last updated: 2026-10-13
 | 6 | A launch article (iFeng, 10 Sep 2026) says review runs **2 to 10 November** with "自动评测与专家盲审双轨机制" (automatic evaluation plus expert blind review) and finals 21-23 Nov as a "48 小时黑客松作品优化+路演答辩" (48-hour hackathon plus pitch). It does not explain either mechanism and describes the competition as a whole. | https://tech.ifeng.com/c/8wJG9eH2KFs, opened 2026-10-13 | Press. **Conflicts** with the official International schedule (online review 22-23 Oct, defence 22 Nov). Keep side by side; the official site wins. See [open questions](../00-start-here/open-questions.md) O5 |
 | 7 | Same article: the **domestic** track lists "智能转账、账单分析、理财操作、卡片管理、订阅/代扣管理、跨场景联动" and "权限分级机制、幻觉防护与注入防御、意图理解与任务规划". This is a domestic scenario list, not Topic F, but it shows the organiser's taste: transfers, permission tiers, injection defence, planning. | same article | Press; indirect |
 | 8 | No Topic F task list, FAQ, Q&A or livestream notes found. Searches (English and Chinese: 微众银行 金融科技大赛 Agent Wallet 赛题 链上交易哈希, FinTechathon 2025 Agent Wallet) returned only the IEEE page, press launch coverage and unrelated hackathons. | WebSearch, 2026-10-13 | Absence of evidence only |
-| 9 | 2025 had an AI track and a data-analysis track only; no agent-wallet topic. 2022-2024 blockchain winners were traceability and supervision platforms on FISCO BCOS. So there is **no past Topic F precedent**. | [past editions](../../reference/prior-research/docs/past-fintechathon.md); [how judges score](../06-pitch/how-judges-score.md) section 3 | Prior research |
+| 9 | 2025 had an AI track and a data-analysis track only; no agent-wallet topic. 2022-2024 blockchain winners were traceability and supervision platforms on FISCO BCOS. So there is **no past Topic F precedent**. | past editions (local-only file `reference/prior-research/docs/past-fintechathon.md`, git-ignored); [how judges score](../06-pitch/how-judges-score.md) section 3 | Prior research |
 | 10 | Rival Topic F entries test on Base Sepolia (sucsage/agentic-wallet) and ship a regenerated evidence file with hashes and reverted bypass transactions (Leash: "30 attacks, 0 auto-executed ... 0 false positives on 6 normal payments", T1/T2/T3 flows, 4 reverted bypass attempts). | [prior art](../03-research/prior-art-hackathons-github.md); local clone `reference/repos/competitors/leash-finbase/README.md` (read) | Rival's own claims |
 
 ### What we infer (labelled as inference)
@@ -38,7 +40,7 @@ Last updated: 2026-10-13
 
 ## 2. Likely judge tasks and whether ChainBrain can do them
 
-Our reading of the spec ([product design](../02-product/product-design.md)): the agent pays **x402 sellers** from a **pocket** whose recipient allowlist, per-payment cap, expiry and revoke are enforced by the contract; sellers run guards 1 to 7 and answer serve, step-up or refuse. That design is built for "agent buys from known sellers". Judges, who do not know our sellers, will probably think in plain wallet terms. The table maps plain-wallet tasks to ChainBrain.
+Our reading of the spec ([product design](../02-product/product-design.md)): the agent pays **x402 sellers** from a **pocket** whose recipient allowlist, per-payment cap, expiry and revoke are enforced by the contract; sellers run guards 1 to 7 and answer serve, step-up or refuse (old design, deferred to finals). That design is built for "agent buys from known sellers". Judges, who do not know our sellers, will probably think in plain wallet terms. The table maps plain-wallet tasks to ChainBrain.
 
 | # | Plain judge task (examples of wording) | What the spec does today | Verdict | Fix |
 | --- | --- | --- | --- | --- |
@@ -300,7 +302,7 @@ contract TestWallet1271 {
 - Official text: `reference/prior-research/official/text/subject-detail-raw.txt`, `.../international-brief-raw.txt`; templates `reference/prior-research/official/templates/international-execution-evidence-en.docx`, `demo-video-guide-en.docx` (all read 2026-10-13).
 - IEEE CIS Shenzhen Chapter, International Track page (17 Jun 2026): https://r10.ieee.org/shenzhen-cis/blog/2026/06/17/2026-shenzhen-international-fintech-competition-international-track/ (search result, 2026-10-13; theme "Agent Wallet - AI Agent Digital Wallet", 21 APEC economies).
 - iFeng launch article (10 Sep 2026): https://tech.ifeng.com/c/8wJG9eH2KFs, opened 2026-10-13.
-- Past editions: [past-fintechathon.md](../../reference/prior-research/docs/past-fintechathon.md); 2025 final coverage search, 2026-10-13 (no Topic F precedent found).
+- Past editions: `reference/prior-research/docs/past-fintechathon.md` (local-only, git-ignored); 2025 final coverage search, 2026-10-13 (no Topic F precedent found).
 - Base gas: JSON-RPC calls to https://mainnet.base.org (`eth_gasPrice`, `eth_feeHistory`, receipts), 2026-10-13; Base fee docs https://docs.base.org/chain/fees (opened 2026-10-13); ETH price https://api.coinbase.com/v2/prices/ETH-USD/spot (2026-10-13).
 - CDP facilitator pricing and networks: https://docs.cdp.coinbase.com/x402/core-concepts/facilitator ; seller quickstart https://docs.cdp.coinbase.com/x402/quickstart-for-sellers ; network support https://docs.cdp.coinbase.com/x402/network-support (all opened 2026-10-13). ctx7 `/websites/cdp_coinbase_x402` snippets for `create_facilitator_config()` and `createX402Server` (2026-10-13).
 - x402 FAQ (testnet-only default facilitator, mainnet checklist): https://docs.x402.org/faq ; wallet compatibility (ERC-1271, ERC-6492, `eip6492AllowedFactories`): https://docs.x402.org/advanced-concepts/wallet-compatibility.md (both opened 2026-10-13); x402.org supported list https://x402.org/facilitator/supported (opened 2026-10-13).

@@ -1,5 +1,7 @@
 # Stack and Reference Repos for ChainBrain
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** The real stack is the table in the "Real stack (v2)" section below, taken from the [technical document](../technical-document.md). The per-component recommendations that follow are the research plan; items not used are marked "(proposed, not used)". The ERC-8004, EAS, reputation and MCP items are finals roadmap. Spec: [product design](../02-product/product-design.md).
 
 ## In one minute
 
@@ -11,29 +13,44 @@ Last updated: 2026-10-13
 - **12 reference repos are cloned in `reference/repos/build/`** (about 120 MB). They are read-only reading material: never build, install or run them. Best three to read first: `stablecoin-evm` (what USDC checks), `from-prior/x402` (SDK, specs, hooks), `erc-8004-contracts` (identity and reputation).
 - **Watch the licences.** Safe7579 and Smart Sessions contain GPL-3.0 and AGPL-3.0 files and the ERC-4337 reference repo is GPL-3.0. We read them; we do not copy code from them into our repo without a licence check.
 
-## 1. Recommended stack per component
+## Real stack (v2, as built)
 
-Components are the rows of the architecture table in the spec (`../02-product/product-design.md`, "System architecture"), plus the parts the spec leaves implicit.
+From the [technical document](../technical-document.md).
+
+| Component | Path | Stack |
+| --- | --- | --- |
+| Pocket + factory | `contracts/` | Solidity 0.8.24, Foundry, OpenZeppelin 5.4 (ECDSA) |
+| Wallet tool layer + agent API | `server/src/wallet`, `server/src/agent`, `server/src/index.ts` | Node 24, TypeScript, Hono, viem, `@x402/*` 2.28.0, Anthropic SDK |
+| Test sellers | `server/src/sellers.ts` | Stock `@x402/hono` middleware, one template, four configurations |
+| Web owner app | `web/` | Vite + React 19, browser wallet (EIP-1193) |
+| Phone owner app (Expo) | `mobile/` | Expo SDK 57, React Native 0.86, viem, `expo-secure-store` |
+| Phone owner app (native) | `android/` | Kotlin, Jetpack Compose, web3j crypto/abi 4.12.3, OkHttp, Android Keystore |
+
+Proposed in the research below but not used in the prelim build: Express 5 and `@x402/express` (build uses Hono and `@x402/hono`), Next.js, wagmi, RainbowKit, Vercel AI SDK, the MCP server and `SKILL.md`, the ERC-8004 and EAS contracts, `AgentBinding`, seven guards, `did-jwt`/`jose`, FISCO BCOS, and the ERC-4337 options. The MCP, ERC-8004, EAS and reputation items are finals roadmap.
+
+## 1. Recommended stack per component (research plan; see the real stack above)
+
+Components are the rows of the architecture table in the spec ([spec](../02-product/product-design.md), "System architecture"), plus the parts the spec leaves implicit.
 
 | Component | Recommended choice | Version checked (2026-10-13) | Why | Alternative if it fails |
 | --- | --- | --- | --- | --- |
 | **Contracts: pocket** | Custom `Pocket.sol` with ERC-1271 `isValidSignature`, owner/agent roles, allowlist, per-payment cap, expiry, revoke; a CREATE2 factory | Solidity 0.8.x, Foundry, OpenZeppelin Contracts 5.6.1 (MIT) | Only route that enforces recipient and amount for a USDC authorization with full control; see feasibility doc sections 3.4 and 4 | MetaMask Hybrid DeleGator with caveat enforcers (Path B); then Nexus or Safe7579 plus our validator module |
-| **Contracts: agent registry** | The deployed ERC-8004 IdentityRegistry `0x8004A818BFB912233c491871b3d84c89A494BD9e` plus a thin `AgentBinding` contract of ours (agentId to owner, pocket, KYC tier) | n/a | Saves writing an ERC-721 registry; `setAgentWallet` already supports smart-contract wallets | Our own minimal registry (about 60 lines) if the deployed one misbehaves |
-| **Contracts: reputation** | Deployed ERC-8004 ReputationRegistry `0x8004B663056A597Dffe9eCcC1965A193B7388713` for feedback, plus our attester that signs summaries as EAS attestations | n/a | Self-feedback is already blocked by the contract; spec's level-1 attestation | Static signed credential (spec cut order step 1) |
-| **Contracts: credentials** | EAS on Base Sepolia (predeploys `0x4200...0021` EAS and `0x4200...0020` schema registry, code confirmed) for KYC-tier and KYB claims | `@ethereum-attestation-service/eas-sdk` 2.10.0 | Issuer-signed, revocable, checked on-chain, no new contract | Plain EIP-712 signed JSON checked by the gateway |
+| **Contracts: agent registry** (proposed, not used; finals roadmap) | The deployed ERC-8004 IdentityRegistry `0x8004A818BFB912233c491871b3d84c89A494BD9e` plus a thin `AgentBinding` contract of ours (agentId to owner, pocket, KYC tier) | n/a | Saves writing an ERC-721 registry; `setAgentWallet` already supports smart-contract wallets | Our own minimal registry (about 60 lines) if the deployed one misbehaves |
+| **Contracts: reputation** (proposed, not used; finals roadmap) | Deployed ERC-8004 ReputationRegistry `0x8004B663056A597Dffe9eCcC1965A193B7388713` for feedback, plus our attester that signs summaries as EAS attestations | n/a | Self-feedback is already blocked by the contract; spec's level-1 attestation | Static signed credential (spec cut order step 1) |
+| **Contracts: credentials** (proposed, not used; finals roadmap) | EAS on Base Sepolia (predeploys `0x4200...0021` EAS and `0x4200...0020` schema registry, code confirmed) for KYC-tier and KYB claims | `@ethereum-attestation-service/eas-sdk` 2.10.0 | Issuer-signed, revocable, checked on-chain, no new contract | Plain EIP-712 signed JSON checked by the gateway |
 | **Chain and token** | Base Sepolia (84532), USDC `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | n/a | Existing x402 facilitators serve it; USDC v2.2 behaviour proven | Base mainnet with a few dollars if organisers need mainnet hashes |
 | **Chain client library** | viem | 2.57.4 (2026-10-08) | Used by the x402 SDK itself; has typed-data hashing, 6492 helpers, `simulateCalls` | none needed |
-| **Facilitator** | Self-hosted from the SDK's `facilitator/basic` example; first smoke test against `https://x402.org/facilitator` | `@x402/core` / `@x402/evm` 2.28.0 | We control hooks and logs; strict ERC-1271 check | MetaMask hosted facilitator (Path B); CDP facilitator (needs API key) |
-| **Seller gateway + x402** | Node/TypeScript with Express 5 and `@x402/express`; seven guards as `onProtectedRequest` / `onBeforeVerify` / `onAfterVerify` hooks; one template instantiated six times | Express 5.3.0, `@x402/express` 2.28.0 | Standard middleware verifies, runs handler, settles, then releases the response (read in source) | Hono adapter `@x402/hono` 2.28.0 |
-| **Standard x402 extensions** | `offer-receipt` for signed quote and receipt; `sign-in-with-x` or `http-message-signatures` for the agent-identity challenge | spec files in local clone | Our "challenge in the 402" and "seller-signed quote and receipt" are already specified upstream; check wire stability first (marked unstable) | Our own header fields, documented |
+| **Facilitator** (build: public testnet facilitator by default, `FACILITATOR=local` in-process) | Self-hosted from the SDK's `facilitator/basic` example; first smoke test against `https://x402.org/facilitator` | `@x402/core` / `@x402/evm` 2.28.0 | We control hooks and logs; strict ERC-1271 check | MetaMask hosted facilitator (Path B); CDP facilitator (needs API key) |
+| **Seller gateway + x402** (proposed with Express and seven guards, not used; build uses Hono) | Node/TypeScript with Express 5 and `@x402/express`; seven guards as `onProtectedRequest` / `onBeforeVerify` / `onAfterVerify` hooks; one template instantiated six times | Express 5.3.0, `@x402/express` 2.28.0 | Standard middleware verifies, runs handler, settles, then releases the response (read in source) | Hono adapter `@x402/hono` 2.28.0 |
+| **Standard x402 extensions** (proposed, not used) | `offer-receipt` for signed quote and receipt; `sign-in-with-x` or `http-message-signatures` for the agent-identity challenge | spec files in local clone | Our "challenge in the 402" and "seller-signed quote and receipt" are already specified upstream; check wire stability first (marked unstable) | Our own header fields, documented |
 | **Buyer client** | `@x402/fetch` `wrapFetchWithPayment` with a custom `ClientEvmSigner` (pocket signature) and a custom scheme that sets the nonce to `hash(intentId, quoteHash)`; hooks `onBeforePaymentCreation` and `spendControls` for guard 4 | 2.28.0 | The `ClientEvmSigner` type is just `{address, signTypedData}`, so a custom signer fits | Raw viem calls to the facilitator |
-| **MCP server for agents** | `@modelcontextprotocol/sdk` (TypeScript) exposing `search_sellers`, `get_quote`, `draft_intent`, `pay_x402`, `ask_owner`, `get_pocket`, plus `SKILL.md`; zod 4.6.7 for tool schemas | SDK 1.32.1 (2026-10-05, MIT) | Official SDK; matches the spec; note the Python SDK is on 2.x while TypeScript is on 1.x | `@x402/mcp` 2.28.0 helpers if sellers also serve MCP tools |
-| **Credentials and attester** | EAS attestations (issuer claims) and `did-jwt` 9.0.2 or `jose` 6.2.12 for presentations; WeIdentity only for the FISCO bonus | as listed | Light, well supported, avoids a full VC framework (`@veramo/core` 7.0.2 exists but is heavy) | Hand-rolled EIP-712 credentials |
-| **Agent runtime (LLM)** | Team's call on model; tool-use reliability first (spec open question). Vercel AI SDK `ai` 7.0.138 or the Anthropic SDK 0.133.0 gives tool loops and streaming for the trace panel | as listed | Needed for the trace panel showing tool calls | OpenAI Agents SDK, LangGraph |
-| **Consoles** | One web app: Next.js 16.4 or Vite 8.3 with React 19.3, wagmi 3.7.7 + viem for the owner's browser wallet, RainbowKit 2.2.11 for the connect button | as listed | One build for chat and trace, owner pockets and seller console; owner signs with a plain browser wallet as in the spec | Plain HTML plus viem if time runs short |
+| **MCP server for agents** (proposed, not used; finals roadmap) | `@modelcontextprotocol/sdk` (TypeScript) exposing `search_sellers`, `get_quote`, `draft_intent`, `pay_x402`, `ask_owner`, `get_pocket`, plus `SKILL.md`; zod 4.6.7 for tool schemas | SDK 1.32.1 (2026-10-05, MIT) | Official SDK; matches the spec; note the Python SDK is on 2.x while TypeScript is on 1.x | `@x402/mcp` 2.28.0 helpers if sellers also serve MCP tools |
+| **Credentials and attester** (proposed, not used; finals roadmap) | EAS attestations (issuer claims) and `did-jwt` 9.0.2 or `jose` 6.2.12 for presentations; WeIdentity only for the FISCO bonus | as listed | Light, well supported, avoids a full VC framework (`@veramo/core` 7.0.2 exists but is heavy) | Hand-rolled EIP-712 credentials |
+| **Agent runtime (LLM)** (build: Anthropic SDK tool loop) | Team's call on model; tool-use reliability first (spec open question). Vercel AI SDK `ai` 7.0.138 or the Anthropic SDK 0.133.0 gives tool loops and streaming for the trace panel | as listed | Needed for the trace panel showing tool calls | OpenAI Agents SDK, LangGraph |
+| **Consoles** (proposed Next.js/wagmi, not used; build is Vite + React 19) | One web app: Next.js 16.4 or Vite 8.3 with React 19.3, wagmi 3.7.7 + viem for the owner's browser wallet, RainbowKit 2.2.11 for the connect button | as listed | One build for chat and trace, owner pockets and seller console; owner signs with a plain browser wallet as in the spec | Plain HTML plus viem if time runs short |
 | **Tests and evidence** | Foundry tests for contracts; Vitest 5.0.4 for gateway and MCP; a scripted test per demo scene 4 to 9 (the spec says those double as test cases) | as listed | Scene tests feed the security self-assessment | Manual runs recorded on video |
 | **Data store for demo** | SQLite or in-memory for nonces, quotes and the seller feed; nothing else | n/a | One-week scope | none needed |
-| **FISCO BCOS (bonus only)** | Minimal Pocket-policy deployment in ECDSA mode with one tx hash | FISCO BCOS v3.17.1 (2026-09-15, from prior research) | Spec: bonus, in order, after core | Skip; mention as production path |
+| **FISCO BCOS (bonus only)** (planned, not built) | Minimal Pocket-policy deployment in ECDSA mode with one tx hash | FISCO BCOS v3.17.1 (2026-09-15, from prior research) | Spec: bonus, in order, after core | Skip; mention as production path |
 
 ## 2. Version pins (so teammates install the same thing)
 

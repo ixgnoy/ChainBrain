@@ -1,5 +1,7 @@
 # Agent model choice: buyer agent, intent checker, demo-day plan
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** The build uses Claude: default `claude-opus-5-5` with effort high, and `AGENT_MODEL=claude-sonnet-5-5` as the cheaper option. There is no temperature parameter (current models reject it) and no scripted fallback. Whether Claude is reachable from China at the Shenzhen defence is an open question; the research below stays as the basis for that decision. The separate intent-checker model and Vercel AI SDK switch were proposals and are not in the build. See the [technical document](../technical-document.md) and the [product design](../02-product/product-design.md).
 
 ## In one minute
 
