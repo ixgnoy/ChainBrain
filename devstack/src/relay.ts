@@ -7,7 +7,8 @@
  *   POST /dev/relay/push     {device, events, snapshot, results?, cmdAfter}  ->  {ok, commands}
  *   GET  /dev/relay/stream   SSE: {kind:"hello"|"events"|"snapshot"|"result"|"reset", ...}
  *   GET  /dev/relay/state    {linked, device, lastSeen, snapshot, events}
- *   POST /dev/relay/command  {type:"plant", sellerId, text} | {type:"force", pocket}  ->  {id}
+ *   POST /dev/relay/command  {type:"plant", sellerId, text} | {type:"force", pocket} | {type:"say", text, preset?}  ->  {id}
+ *                            ("say": the phone types `text` to its agent, on a pocket matching `preset` when given)
  */
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -69,7 +70,7 @@ export function relayApp() {
 
   app.post("/command", async (c) => {
     const b = (await c.req.json().catch(() => ({}))) as { type?: string; [k: string]: unknown };
-    if (b.type !== "plant" && b.type !== "force") return c.json({ error: "BAD_COMMAND" }, 400);
+    if (b.type !== "plant" && b.type !== "force" && b.type !== "say") return c.json({ error: "BAD_COMMAND" }, 400);
     if (!linked()) return c.json({ error: "NO_PHONE" }, 409);
     const cmd: Cmd = { ...b, id: nextCmd++, type: b.type };
     cmds.push(cmd);

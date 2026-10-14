@@ -8,7 +8,8 @@ import { detectDev, getApi, getDev, getSource, setApiUrl as setRuntimeApi, setDe
 import { ownerWallet, readPocket, isOwner, type OwnerWallet, type PocketView } from "./lib/wallet";
 import { createKey, loadKey, loadPockets, saveKey, savePockets } from "./lib/keystore";
 import { builtin, seedFor } from "./lib/builtin";
-import { startRelay } from "./lib/relay";
+import { startRelay, type Say } from "./lib/relay";
+import { router } from "expo-router";
 import { notify } from "./lib/toast";
 import { haptic } from "./haptics";
 import { loadMeta, saveMeta, type PocketMeta } from "./lib/pocketNames";
@@ -277,11 +278,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!local) void setItem(`cb.ownerTxs.${wallet.address.toLowerCase()}`, JSON.stringify(ownerTxRef.current));
   }, [wallet, local]);
   // the built-in network mirrors itself to the console on the laptop when one is reachable (lib/relay.ts)
+  const sayRef = useRef<Say>(async () => ({ ok: false, text: "Not ready" }));
   const metaRef = useRef(meta);
   metaRef.current = meta;
   useEffect(() => {
     if (!local || !wallet || !pocketsLoaded) return;
-    return startRelay(wallet.address, () => Object.fromEntries(Object.entries(metaRef.current).map(([a, m]) => [a, m.name])));
+    return startRelay(wallet.address, () => Object.fromEntries(Object.entries(metaRef.current).map(([a, m]) => [a, m.name])), (text, preset) => sayRef.current(text, preset));
   }, [local, wallet, pocketsLoaded]);
 
   // a forced transfer the pocket refused on-chain (scene 5, set off from the console): tell the owner the moment it happens
@@ -328,6 +330,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     void refreshPockets();
   }, [active, pockets, turnsBy, refreshPockets]);
+
+  // the console's Play button (via the relay): pick the pocket the scene needs, open the chat, type the sentence
+  sayRef.current = async (text, preset) => {
+    const live = pockets.filter((p) => p.owned && !p.revoked && p.balance > 0n);
+    const tight = (p: Pocket) => p.cap <= 200_000n;
+    const target = preset === "one-purchase" ? live.find(tight) : live.find((p) => sameAddr(p.address, activeAddr) && !tight(p)) ?? live.find((p) => !tight(p));
+    if (!target) return { ok: false, text: "No pocket on the phone fits this scene" };
+    if (turnsBy[target.address.toLowerCase()]?.some((t) => !t.done)) return { ok: false, text: "The agent is still busy on the phone" };
+    setActiveAddr(target.address);
+    try { router.navigate("/agent"); } catch { /* not mounted yet */ }
+    void sendChat(text, target.address);
+    return { ok: true, text: `Playing on the phone in ${target.name}`, pocket: target.address };
+  };
 
   const agentState: Ctx["agentState"] = chatBusy ? (pending.length ? "waiting" : "working") : pending.length ? "waiting" : pockets.length > 0 && pockets.every((p) => p.revoked) ? "paused" : "idle";
 

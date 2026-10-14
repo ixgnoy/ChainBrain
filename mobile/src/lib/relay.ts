@@ -6,9 +6,11 @@ import { wire } from "../../../shared/sim";
 import { builtin } from "./builtin";
 import { fetchTimeout, getApi, isBuiltin } from "./runtime";
 
-type Cmd = { id: number; type: "plant" | "force"; sellerId?: string; text?: string | null; pocket?: string };
+type Cmd = { id: number; type: "plant" | "force" | "say"; sellerId?: string; text?: string | null; pocket?: string; preset?: string | null };
+/** The console's Play button: the phone types this to its agent (the owner still confirms and co-signs on the phone). */
+export type Say = (text: string, preset?: string | null) => Promise<{ ok: boolean; text: string; pocket?: string }>;
 
-export function startRelay(owner: string, names: () => Record<string, string>) {
+export function startRelay(owner: string, names: () => Record<string, string>, say?: Say) {
   const w = builtin();
   const device = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
   let sentAt = 0, cmdAfter = 0, lastPush = 0, fails = 0, waitUntil = 0, dirty = true, stopped = false;
@@ -26,6 +28,7 @@ export function startRelay(owner: string, names: () => Record<string, string>) {
         const j = await w.forceTransfer(c.pocket as `0x${string}`);
         return { ok: j.reverted, tx: j.tx, balanceAfter: j.balanceAfter, reverted: j.reverted };
       }
+      if (c.type === "say" && c.text && say) return await say(c.text, c.preset);
       return { ok: false, text: "Unknown command" };
     } catch (e) { return { ok: false, text: (e as Error).message }; }
   }
