@@ -3,6 +3,7 @@ import { RefreshControl, View } from "react-native";
 import Animated, { FadeIn, FadeInDown, FadeOut, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { router } from "expo-router";
 import { isAddress, type Address } from "viem";
+import { StatusDot } from "../../ui/StatusDot";
 import { useApp } from "../../store";
 import { c, F, motion } from "../../tokens";
 import { haptic } from "../../haptics";
@@ -19,7 +20,8 @@ import { PocketRow } from "../../components/PocketCard";
 import { ActivityRow } from "../../components/ActivityRow";
 import { cleanText } from "../../lib/sanitize";
 import { visibleRows } from "../../lib/plain";
-import { usd, money } from "../../lib/util";
+import { usd, money, sameAddr } from "../../lib/util";
+import { Rise as RiseIn } from "../../ui/Rise";
 
 /** Header: owner avatar, "Ask agent" pill, bell. */
 function Header() {
@@ -111,6 +113,31 @@ function EmptyPockets() {
   );
 }
 
+/** While the agent works or waits, a slim strip under the header says so and takes you there (the chat, or the sheet). */
+function LiveStrip() {
+  const { agentState, active, pending, pockets, setApprovalOpen, setQuestionOpen } = useApp();
+  const waiting = pending.length > 0;
+  const on = agentState === "working" || waiting;
+  const where = waiting ? pockets.find((p) => sameAddr(p.address, pending[0].pocket)) : active;
+  const text = waiting ? (pending[0].kind === "question" ? "Your agent has a question" : pending[0].kind === "intent" ? "Confirm your agent's task" : "A payment needs your OK") : "Your agent is working";
+  const open = () => {
+    if (!waiting) return router.navigate("/agent");
+    if (pending[0].kind === "question") { setQuestionOpen(true); return; }
+    setApprovalOpen(true);
+  };
+  if (!on) return null;
+  return (
+    <RiseIn dy={-6} spring="snappy" exit layout style={{ marginHorizontal: 20, marginBottom: 12 }}>
+      <Press kind="row" haptics="select" onPress={open} accessibilityRole="button" accessibilityLabel={`${text}${where ? `, ${where.name}` : ""}`}
+        style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 24, backgroundColor: waiting ? c.warningSoft : c.accentSoft }}>
+        <StatusDot state={waiting ? "waiting" : "working"} />
+        <T v="sub" w="semi" color={waiting ? "warning" : "accent"} style={{ flex: 1 }} numberOfLines={1}>{text}{where ? ` · ${cleanText(where.name, 20)}` : ""}</T>
+        <Icon name="chevronRight" size={16} color={waiting ? c.warning : c.accent} />
+      </Press>
+    </RiseIn>
+  );
+}
+
 export default function Home() {
   const { pockets, pocketsLoaded, conn, balances, ledger, setReceipt, setAction, refreshPockets } = useApp();
   const reduce = useReduceMotion();
@@ -140,6 +167,7 @@ export default function Home() {
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={c.accent} colors={[c.accent]} />}>
       <Header />
+      <LiveStrip />
       <Needs />
       <Rise play={play} index={0}>
         <Animated.View style={pulseStyle}>
