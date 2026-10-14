@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/main.ts",
+    "force-transfer": "tsx src/force-transfer.ts",
     "test": "vitest run"
   },
   "dependencies": {
