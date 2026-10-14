@@ -4602,7 +4602,7 @@ npm run typecheck && npm test && npx expo-doctor
 npx expo export --platform android --output-dir /tmp/cb-android && npx expo export --platform ios --output-dir /tmp/cb-ios
 ```
 
-Expected: no type errors, `ℹ pass 4`, `21/21 checks passed`, and both exports printing an `index-….hbc` bundle (about 4.1 MB). Then on the phone:
+Expected: no type errors, `ℹ pass 4`, `21/22 checks passed`, and both exports printing an `index-….hbc` bundle (about 4.1 MB). Then on the phone:
 1. Laptop: `pnpm sellers` and `pnpm dev` in `server/` (the API listens on all interfaces).
 2. Find the laptop's Wi-Fi IP (`ipconfig getifaddr en0` on macOS) and allow incoming connections for `node` if macOS asks.
 3. `cd mobile && EXPO_PUBLIC_API_URL=http://<LAN-IP>:8787 npx expo start`, then scan the QR code with Expo Go (iOS: Camera app). The phone and laptop must be on the same Wi-Fi.

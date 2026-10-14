@@ -18,6 +18,7 @@ import { Rise, useStagger, firstTime } from "../../ui/Rise";
 import { StreamText } from "../../ui/StreamText";
 import { Sheet } from "../../ui/Sheet";
 import { PaidCard } from "../../components/PaidCard";
+import { BlockedCard } from "../../components/BlockedCard";
 import { PocketRow } from "../../components/PocketCard";
 import { SendButton } from "../../ui/SendButton";
 import { WorkingLine } from "../../ui/WorkingLine";
@@ -206,6 +207,7 @@ export default function AgentChat() {
                   </RefusalCard>
                 ))}
                 {refusals.map((r) => <SellerRefusal key={r.sellerId} id={`${t.id}:r${r.sellerId}`} seller={sellerName(r.sellerId)} reasons={r.reasons} />)}
+                {evs.filter((e) => e.type === "forced").map((e) => <BlockedCard key={String(e.tx)} e={e} />)}
                 {!t.done ? (
                   <View style={{ gap: 4 }}>
                     {pending.length ? <T v="body" color="muted">Waiting for you…</T> : <WorkingLine on={!running} />}

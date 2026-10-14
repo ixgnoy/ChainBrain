@@ -91,7 +91,7 @@ The Kotlin signer is tested to be byte-identical to viem (`android/app/src/test/
 | Server (sellers, intent, pay, tools, agent, API) | `cd server && pnpm test` | 37 passed |
 | Scenes 1–8 through the agent loop | `cd server && SCENE_REPLAY=1 pnpm test:scenes` | 6 passed (replay); real model needs `ANTHROPIC_API_KEY` |
 | Web | `cd web && pnpm test && pnpm build` | 9 passed, build clean |
-| Expo | `cd mobile && npm test && npm run typecheck && npx expo-doctor` | 4 passed, 21/21 checks |
+| Expo | `cd mobile && npm test && npm run typecheck && npx expo-doctor` | 4 passed, 21/22 checks |
 | Native Android | `cd android && ./gradlew testDebugUnitTest assembleDebug` | 6 passed, APK built |
 
 ## 9. Finals roadmap

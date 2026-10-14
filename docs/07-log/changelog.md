@@ -1,5 +1,16 @@
 # Changelog
-Last updated: 2026-10-14
+Last updated: 2026-10-15
+
+## 2026-10-15 (built-in network, phone linked to console)
+
+Docs updated for the last five code commits. Documentation only.
+
+- **Built-in network:** both apps open on it every launch. `shared/sim` runs the wallet API, tool layer, scripted agent and Pocket.sol rules in-app, seeded with a lived-in owner (Research data US$10 pocket with earlier purchases, One purchase US$0.20 pocket, main wallet US$54.80). Scenes 1-8 work offline. It is for demos and offline use; its hashes are not on a public chain, so BaseScan links appear only on a real server.
+- **Real server is opt-in:** phone Settings, Advanced, Custom server (`cb.source` in SecureStore); web gear, Settings, Custom server, or hidden `?server=<url>` / `?server=builtin` (localStorage `cb.source`, `cb.apiUrl`).
+- **Removed:** the read-only offline fallback and its "Demo data" label on the phone.
+- **Link:** `pnpm --dir devstack relay` (or `devstack start`, relay at `/dev/relay`) mirrors the phone's built-in network to the web console; Judges plant and force-transfer run on the phone's pockets.
+- **Tests:** `devstack/e2e/builtin.cjs` (22 checks, no server); `devstack/e2e/e2e.cjs` now 45 checks, switching to the server via `cb.source=server` and `?server=`.
+- **Files:** README.md, docs/frontend/README.md, mobile.md, web.md, devstack/README.md.
 
 ## 2026-10-14 (docs audit against v2)
 

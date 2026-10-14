@@ -2,6 +2,8 @@
 
 A local copy of the whole ChainBrain backend so you can demo and test the web app and the phone app end to end with no Anthropic API key, no faucet and no real money.
 
+Both apps now open on a built-in network (`shared/sim`) and need no server at all. The dev stack is for exercising the real server code and contracts, and for linking the phone to the web console (see [Link the phone to the console](#link-the-phone-to-the-console)). Apps use it only after you choose it: phone Settings, Advanced, **Custom server**; web gear button, Settings, **Custom server** (or `?server=<url>`).
+
 ## What it is
 
 One command starts:
@@ -37,13 +39,35 @@ State lives in memory: restarting the stack gives a fresh chain, so pockets you 
 
 ## Point the apps at it
 
-- **Web (laptop):** `VITE_API_URL=http://localhost:8787 pnpm --dir web dev`. In dev mode the web app should use the "Dev signer" (anvil account 0 through `/dev/rpc`), so no MetaMask is needed.
+The apps open on the built-in network; switch them to the stack first (phone: Settings, Advanced, Custom server, Connect; web: Settings, Custom server, or `?server=http://localhost:8787`).
+
+- **Web (laptop):** `VITE_API_URL=http://localhost:8787 pnpm --dir web dev` (the address the Custom server field offers). In dev mode the web app should use the "Dev signer" (anvil account 0 through `/dev/rpc`), so no MetaMask is needed.
 - **Phone (same Wi-Fi):** use the LAN URL from the banner: `EXPO_PUBLIC_API_URL=http://<LAN IP>:8787 EXPO_PUBLIC_RPC_URL=http://<LAN IP>:8787/dev/rpc npx expo start`. The phone's own key has no money: tap "Get test funds" (calls `POST /dev/fund`: +1 ETH, +20 USDC).
 - Chain access for clients is always `<api>/dev/rpc` (a proxy to anvil). Anvil itself only listens on 127.0.0.1.
 
+## Link the phone to the console
+
+The phone's built-in network can be mirrored to the web console on the same laptop (`src/relay.ts`):
+
+```bash
+pnpm --dir devstack relay      # the relay only, port 8787 (API_PORT to change); no chain, no server
+pnpm --dir devstack start      # or the full stack: the relay is mounted at /dev/relay
+```
+
+Start the phone with `EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787 npx expo start` and keep it on the built-in network. Start the console with `pnpm --dir web dev`: it finds the phone, shows its pockets first by name, follows them, and the Judges tab's plant and force-transfer run on the phone's pockets.
+
+| Route | What it does |
+| --- | --- |
+| `POST /dev/relay/push` | The phone pushes events and a snapshot, and gets back pending commands |
+| `GET /dev/relay/stream` | SSE for the console (hello, events, snapshot, result, reset) |
+| `GET /dev/relay/state` | Linked flag, device, last seen, snapshot, events |
+| `POST /dev/relay/command` `{type:"plant"\|"force", ...}` | Console judge actions, delivered to the phone (409 `NO_PHONE` if none is linked) |
+
+One room: one phone and any number of consoles. A phone counts as linked while it has pushed in the last 15 seconds.
+
 ## Switch back to the real server
 
-Stop the dev stack, run the team's real server (`cd server && cp .env.example .env && pnpm wallets`, fund the wallets, set `ANTHROPIC_API_KEY`, `pnpm sellers`, `pnpm dev`) and start the apps with the same variables pointing at it (for the web app leave `VITE_API_URL` at its default or point it at the real server; for the phone drop `EXPO_PUBLIC_RPC_URL` or set it to the real Base Sepolia RPC). The real server has no `/dev/health` (404), so the apps show real BaseScan links, no "LOCAL FORK" badge, and use MetaMask or the on-device key against the public chain.
+Stop the dev stack, run the team's real server (`cd server && cp .env.example .env && pnpm wallets`, fund the wallets, set `ANTHROPIC_API_KEY`, `pnpm sellers`, `pnpm dev`) and start the apps with the same variables pointing at it (for the web app leave `VITE_API_URL` at its default or point it at the real server; for the phone drop `EXPO_PUBLIC_RPC_URL` or set it to the real Base Sepolia RPC). In the apps, choose Custom server and enter its URL. The real server has no `/dev/health` (404), so the apps show real BaseScan links, no "LOCAL FORK" badge, and use MetaMask or the on-device key against the public chain.
 
 ## `/dev/*` routes
 
@@ -77,9 +101,13 @@ Any other text gets a polite "I only understand the demo tasks" reply. Scenes re
 
 ```bash
 pnpm --dir devstack test
+node devstack/e2e/builtin.cjs --url http://localhost:8091
+node devstack/e2e/e2e.cjs
 ```
 
-Boots its own stack on other ports (18787, 14021, 18546), so it can run beside a live one. Through HTTP only it creates pockets as account 0, runs scenes 1-8, signs payment approvals with `eth_signTypedData_v4`, and checks events and reason codes, plus the `/dev/*` routes.
+Boots its own stack on other ports (18787, 14021, 18546), so it can run beside a live one. Through HTTP only it creates pockets as account 0, runs scenes 1-8, signs payment approvals with `eth_signTypedData_v4`, and checks events and reason codes, plus the `/dev/*` routes and the relay.
+
+`e2e/builtin.cjs` drives the phone (Expo web on :8091 or a static export) on its built-in network, scenes 1-8, 22 checks, no stack needed. `e2e/e2e.cjs` (45 checks) needs a live stack: it switches the phone to the server by setting localStorage `cb.source=server` and the console with `?server=`.
 
 ## Limitations
 

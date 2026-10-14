@@ -18,8 +18,22 @@ FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia 
 | `server/` | Wallet tool layer, Claude agent loop, wallet API (:8787), four x402 test sellers (:4021), scripts |
 | `web/` | Network console for the laptop demo and judges: live agent trace beside the active pocket and the sellers' side, all pockets, every tx hash, red-team box. No login ([docs](docs/frontend/web.md)) |
 | `mobile/` | Owner app for phones in Expo Go (also `npx expo prebuild` for Android Studio / Xcode) ([docs](docs/frontend/mobile.md)) |
+| `shared/sim/` | The built-in network: wallet API, tool layer, scripted agent and the Pocket.sol rules running in-app on a virtual chain, seeded with a lived-in owner. Both apps open on it, so scenes 1-8 work with no server |
 | `devstack/` | Real server and contracts on a local Base Sepolia fork with a scripted agent: demo and test both apps with no API key or funds ([README](devstack/README.md)) |
 | `android/` | Native Android owner app in Kotlin (Jetpack Compose), opens in Android Studio |
+
+## Try it with nothing running
+
+Both apps open on a **built-in network** on every launch: no server, no keys, no funds, no internet. `shared/sim` runs the wallet API, the tool layer, a scripted agent and the Pocket.sol rules inside the app, seeded with a lived-in owner (a Research data pocket with US$10 and earlier purchases, a One purchase pocket with US$0.20, main wallet US$54.80). Scenes 1-8 below play end to end offline.
+
+It is meant for demos and offline use. Its transaction hashes come from a virtual chain, not a public one, so the apps show them in in-app receipts and sheets and never link them to BaseScan. Explorer links appear only when you connect to a real server on the public chain.
+
+```bash
+cd mobile && npm ci && npx expo start     # phone: opens on the built-in network
+pnpm --dir web dev                        # console: http://localhost:5173, also on the built-in network
+```
+
+To use a real server instead: on the phone, Settings, Advanced, **Custom server** (enter the URL, Test, Connect). On the web, gear button, Settings, **Custom server**. The choice is remembered.
 
 ## Prerequisites
 
@@ -47,6 +61,7 @@ cd contracts && forge test                              # 20 tests on a Base Sep
 cd server && pnpm test && pnpm typecheck                # 37 tests (needs anvil on PATH)
 cd server && SCENE_REPLAY=1 pnpm test:scenes            # scenes 1–8 through the agent loop (drop SCENE_REPLAY to use the real model)
 cd web && pnpm test && pnpm build
+node devstack/e2e/builtin.cjs --url http://localhost:8091   # phone on the built-in network, scenes 1-8, 22 checks, no server needed
 cd mobile && npm install && npm test && npm run typecheck && npx expo-doctor
 cd android && ./gradlew testDebugUnitTest assembleDebug
 ```
@@ -62,13 +77,15 @@ cd android && ./gradlew testDebugUnitTest assembleDebug
    Commit `contracts/deployments/84532.json`. The server reads it, or `FACTORY_ADDRESS` if set.
 2. **Live gate:** `cd server && pnpm spike` pays US$0.30 (agent only) and US$1.50 (owner co-signed) from a fresh pocket. If the hosted facilitator refuses, set `FACILITATOR=local`, which runs the same verification code in-process.
 3. **Run the stack:** in `server/`, `pnpm sellers` (port 4021) and `pnpm dev` (port 8787). In `web/`, `pnpm dev`, then open http://localhost:5173.
-4. **Phone, Expo Go:** `cd mobile && EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787 npx expo start`, then scan the QR code. Phone and laptop must share Wi-Fi.
+4. **Phone, Expo Go:** `cd mobile && EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787 npx expo start`, then scan the QR code. Phone and laptop must share Wi-Fi. The app still opens on the built-in network: turn on Settings, Advanced, **Custom server** and connect to the URL above to use the real server. (`EXPO_PUBLIC_API_URL` is the address the app offers there, and the relay address in the linked setup below.)
 5. **Phone, native Android:** open `android/` in Android Studio and run on a device or emulator. The wallet API URL is set on the app's first screen. Use `http://10.0.2.2:8787` from the emulator, or the laptop's LAN IP from a phone. The defaults live in `android/gradle.properties`.
 6. **Terminal only:** `pnpm tsx scripts/new-pocket.ts research`, then `pnpm chat <POCKET>`.
 
 **Deployed factory (Base Sepolia):** see `contracts/deployments/84532.json` once step 1 has run.
 
 ## Demo scenes
+
+All eight play on the built-in network (offline), on the dev stack, and on the real server.
 
 | # | Scene | Evidence |
 | --- | --- | --- |

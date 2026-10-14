@@ -59,6 +59,23 @@ async function until(what, fn, ms = 30000, step = 200) {
     await shot("01-home");
   });
 
+  await run("scene 1: create and fund a Research pocket in the wizard", async () => {
+    await page.getByRole("button", { name: "New pocket" }).first().click();
+    await visible("What is it for?").waitFor();
+    await page.getByText(/US\$5 budget · up to US\$2 each/).first().click();
+    for (let i = 0; i < 6; i++) { await page.getByRole("button", { name: "Continue" }).click(); await sleep(350); }
+    await visible("Looks right?").waitFor();
+    await shot("01b-wizard-review");
+    await slide("Slide to create and fund");
+    await page.waitForURL(/pocket\/0x[0-9a-fA-F]{40}/, { timeout: 30000 });
+    await visible("US$5.00").waitFor({ timeout: 15000 }).catch(() => {});
+    const t = await body();
+    check("new pocket page shows US$5.00", /5\.00/.test(t), t.slice(0, 300));
+    await shot("01c-new-pocket");
+    await page.goBack();
+    await sleep(500);
+  });
+
   await run("scene 1-3: question, intent, DataLite paid, DataPro co-signed", async () => {
     await tab("Agent");
     await visible("Durian report under US$2").waitFor();
