@@ -150,6 +150,13 @@ function Done({ name, budget, createTx, fundTx, first, onOpen }: { name: string;
   );
 }
 
+export function uniqueName(base: string, taken: string[]): string {
+  if (!taken.includes(base)) return base;
+  let n = 2;
+  while (taken.includes(`${base} ${n}`)) n++;
+  return `${base} ${n}`;
+}
+
 export default function Create() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
@@ -182,7 +189,10 @@ export default function Create() {
   const capMax = Math.max(0.05, Math.min(funds, 5));
   const capV = Math.min(cap, capMax);
   const askV = Math.min(ask, capV);
-  const values: PresetValues = { label: cleanText(name.trim() || "Pocket", 24), budget: money2(funds), sellers, cap: money2(capV), askAbove: askMode === "never" ? "never" : askMode === "always" ? "0" : money2(askV), lifetime: life };
+  // never two pockets with the same name in a list: "Research data", then "Research data 2"
+  const frozen = useRef<string | null>(null); // fixed once creation starts: the new pocket itself must not make it "… 3"
+  const label = frozen.current ?? uniqueName(cleanText(name.trim() || "Pocket", 24), pockets.map((p) => p.name));
+  const values: PresetValues = { label, budget: money2(funds), sellers, cap: money2(capV), askAbove: askMode === "never" ? "never" : askMode === "always" ? "0" : money2(askV), lifetime: life };
   const payTo = useMemo(() => Object.fromEntries((cfg?.sellers ?? []).map((s) => [s.id, s.payTo])), [cfg]);
   const style = preset === "custom" ? "custom" : styleForPreset(values.label);
 
@@ -193,6 +203,7 @@ export default function Create() {
 
   const create = async () => {
     setError(null);
+    frozen.current = values.label;
     try {
       if (!wallet || !cfg) throw new Error("not connected");
       const a = toPocketArgs(values, cfg.agent, payTo);

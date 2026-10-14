@@ -208,7 +208,7 @@ export default function AgentChat() {
           </View>
         </Press>
         {canStop && busyHere ? (
-          <Rise dy={4} exit>
+          <Rise dy={4}>
             <Press onPress={() => setAction({ mode: "revoke", pocket: active!.address })} accessibilityRole="button" accessibilityLabel="Stop agent" style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: c.negativeSoft, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Icon name="lock" size={14} color={c.negative} />
               <T v="sub" w="semi" color="negative">Stop</T>
@@ -275,7 +275,8 @@ export default function AgentChat() {
                     <TraceBlock events={evs} />
                   </Rise>
                 )}
-                {t.done && active ? <DeadEndCard id={t.id} evs={evs} pocket={active} sellerName={sellerName} onRetry={isLast && !chatBusy ? send : undefined} /> : null}
+                {t.done && active ? <DeadEndCard id={t.id} evs={evs} pocket={active} sellerName={sellerName} onRetry={isLast && !chatBusy ? send : undefined}
+                  resolved={t.toAt != null && mine.some((e) => e.type === "payment" && e.at > t.toAt!)} /> : null}
                 {isLast && intent ? <TaskWaiting text={intent.text} onOpen={() => setApprovalOpen(true)} id={intent.id} /> : null}
               </View>
             );

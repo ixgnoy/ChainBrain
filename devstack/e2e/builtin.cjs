@@ -156,6 +156,20 @@ async function until(what, fn, ms = 30000, step = 200) {
     const t = await body();
     check("dead end: nothing paid, fix suggested", /No allowed seller fits/.test(t) && /raise the cap and budget to US\$0\.30/.test(t));
     await shot("08-dead-end");
+    await page.getByRole("button", { name: /Raise cap and budget to US\$0\.30/ }).click();
+    await slide("Slide to raise cap and add money");
+    await page.getByRole("button", { name: "Done" }).filter({ visible: true }).last().click();
+    await sleep(800);
+    const ask = page.getByRole("button", { name: /Ask again, max US\$0\.30/ });
+    await ask.waitFor({ timeout: 15000 });
+    check("fix applied: the card offers Ask again, the raise button is gone", (await page.getByRole("button", { name: /Raise cap and budget/ }).count()) === 0);
+    await ask.click();
+    await confirmTask();
+    await visible("Paid DataLite").waitFor({ timeout: 30000 });
+    check("asked again: DataLite paid within the raised cap", true);
+    await idle();
+    check("the old dead end now reads as fixed (no second raise button)", /Fixed: you raised the limit/.test(await body()) && (await page.getByRole("button", { name: /Raise cap and budget/ }).count()) === 0);
+    await shot("08b-fixed");
   });
 
   await run("activity and receipt with what was bought", async () => {

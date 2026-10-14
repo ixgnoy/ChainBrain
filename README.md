@@ -61,7 +61,7 @@ cd contracts && forge test                              # 20 tests on a Base Sep
 cd server && pnpm test && pnpm typecheck                # 37 tests (needs anvil on PATH)
 cd server && SCENE_REPLAY=1 pnpm test:scenes            # scenes 1–8 through the agent loop (drop SCENE_REPLAY to use the real model)
 cd web && pnpm test && pnpm build
-node devstack/e2e/builtin.cjs --url http://localhost:8091   # phone on the built-in network, scenes 1-8, 23 checks, no server needed
+node devstack/e2e/builtin.cjs --url http://localhost:8091   # phone on the built-in network, scenes 1-8, 26 checks, no server needed
 cd mobile && npm install && npm test && npm run typecheck && npx expo-doctor
 cd android && ./gradlew testDebugUnitTest assembleDebug
 ```

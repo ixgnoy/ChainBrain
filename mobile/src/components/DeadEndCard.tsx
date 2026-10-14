@@ -14,7 +14,8 @@ import { deadEndOf, whyText } from "../lib/deadend";
 import { usd } from "../lib/util";
 import type { WalletEvent } from "../lib/events";
 
-export function DeadEndCard({ id, evs, pocket, sellerName, onRetry }: { id: string; evs: WalletEvent[]; pocket: { address: string; cap: bigint; balance: bigint; owned: boolean; revoked: boolean }; sellerName: (id?: string) => string; /** after the fix: ask the agent again with a price limit that now fits */ onRetry?: (text: string) => void }) {
+export function DeadEndCard({ id, evs, pocket, sellerName, onRetry, resolved }: { id: string; evs: WalletEvent[]; pocket: { address: string; cap: bigint; balance: bigint; owned: boolean; revoked: boolean }; sellerName: (id?: string) => string; /** after the fix: ask the agent again with a price limit that now fits */ onRetry?: (text: string) => void;
+  /** a later turn bought it: the card stays as history, without a fix to apply */ resolved?: boolean }) {
   const { setRules } = useApp();
   const d = deadEndOf(evs, pocket);
   if (!d) return null;
@@ -37,7 +38,7 @@ export function DeadEndCard({ id, evs, pocket, sellerName, onRetry }: { id: stri
             </View>
           </View>
         ))}
-        {pocket.owned && !pocket.revoked ? (
+        {resolved ? <T v="sub" color="positive">Fixed: you raised the limit and the next try was bought.</T> : pocket.owned && !pocket.revoked ? (
           fixed ? (
             <View style={{ gap: 10 }}>
               <T v="sub" color="positive">Your rules now allow this.</T>

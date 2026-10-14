@@ -107,7 +107,7 @@ node devstack/e2e/e2e.cjs
 
 Boots its own stack on other ports (18787, 14021, 18546), so it can run beside a live one. Through HTTP only it creates pockets as account 0, runs scenes 1-8, signs payment approvals with `eth_signTypedData_v4`, and checks events and reason codes, plus the `/dev/*` routes and the relay.
 
-`e2e/builtin.cjs` drives the phone (Expo web on :8091 or a static export) on its built-in network, scenes 1-8, 23 checks, no stack needed. `e2e/e2e.cjs` (45 checks) needs a live stack: it switches the phone to the server by setting localStorage `cb.source=server` and the console with `?server=`.
+`e2e/builtin.cjs` drives the phone (Expo web on :8091 or a static export) on its built-in network, scenes 1-8, 26 checks, no stack needed. `e2e/e2e.cjs` (45 checks) needs a live stack: it switches the phone to the server by setting localStorage `cb.source=server` and the console with `?server=`.
 
 ## Limitations
 

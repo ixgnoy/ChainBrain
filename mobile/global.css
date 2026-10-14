@@ -9,3 +9,9 @@
     font-family: inherit;
   }
 }
+
+@layer base {
+  /* web build: the app is a fixed phone-sized screen; only its own scroll views scroll (never the page under the header) */
+  html, body { height: 100%; overflow: hidden; overflow: clip; overscroll-behavior: none; }
+  #root { height: 100dvh; }
+}

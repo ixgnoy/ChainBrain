@@ -9,7 +9,7 @@ Docs updated for the last five code commits. Documentation only.
 - **Real server is opt-in:** phone Settings, Advanced, Custom server (`cb.source` in SecureStore); web gear, Settings, Custom server, or hidden `?server=<url>` / `?server=builtin` (localStorage `cb.source`, `cb.apiUrl`).
 - **Removed:** the read-only offline fallback and its "Demo data" label on the phone.
 - **Link:** `pnpm --dir devstack relay` (or `devstack start`, relay at `/dev/relay`) mirrors the phone's built-in network to the web console; Judges plant and force-transfer run on the phone's pockets.
-- **Tests:** `devstack/e2e/builtin.cjs` (23 checks, no server); `devstack/e2e/e2e.cjs` now 45 checks, switching to the server via `cb.source=server` and `?server=`.
+- **Tests:** `devstack/e2e/builtin.cjs` (26 checks, no server); `devstack/e2e/e2e.cjs` now 45 checks, switching to the server via `cb.source=server` and `?server=`.
 - **Files:** README.md, docs/frontend/README.md, mobile.md, web.md, devstack/README.md.
 
 ## 2026-10-14 (docs audit against v2)
