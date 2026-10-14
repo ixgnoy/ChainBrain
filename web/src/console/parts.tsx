@@ -91,9 +91,9 @@ export function TxViewerHost({ children }: { children: ReactNode }) {
 /** Reason code as judges see it: the code, then the sentence. */
 export function Reason({ code }: { code: string }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-negative-soft py-1 pl-1 pr-3 text-[13px] text-negative">
-      <span className="rounded-full bg-card px-2 py-0.5 text-[12px] font-semibold tracking-[0.01em]">{code}</span>
-      <span className="truncate">{REASONS[code] ?? "Refused"}</span>
+    <span className="inline-flex max-w-full items-start gap-2 rounded-[16px] bg-negative-soft py-1 pl-1 pr-3 text-[13px] leading-5 text-negative">
+      <span className="shrink-0 rounded-full bg-card px-2 py-0.5 text-[12px] font-semibold tracking-[0.01em]">{code}</span>
+      <span className="min-w-0 break-words py-0.5">{REASONS[code] ?? "Refused"}</span>
     </span>
   );
 }
@@ -102,6 +102,11 @@ const VERDICT: Record<ChipKind, string> = { ok: "bg-accent-soft text-accent", re
 export function Verdict({ kind, children }: { kind: ChipKind; children: string }) {
   if (!children) return null;
   return <span className={cn("inline-flex h-6 shrink-0 items-center rounded-full px-2.5 text-[12px] font-semibold", VERDICT[kind])}>{children}</span>;
+}
+
+/** Small pill on a refusal, a revert or an ignored order: the wallet doing its job, not a failure. */
+export function Expected({ className }: { className?: string }) {
+  return <span title="The wallet working as designed" className={cn("inline-flex h-5 shrink-0 items-center rounded-full bg-accent-soft px-2 text-[11px] font-semibold uppercase tracking-[0.04em] text-accent", className)}>Expected</span>;
 }
 
 /** A tiny grey tag for the pockets that live on the linked phone, so they read apart from the network's own. */

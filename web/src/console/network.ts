@@ -4,6 +4,7 @@ import type { Address, Hex } from "viem";
 import type { Config } from "../shared";
 import type { WalletEvent } from "../lib/events";
 import { TX_LABEL, type ChainTx, type PocketState } from "./chain";
+import { listedPockets, pocketNamer } from "./story";
 
 export type Scene = { id: string; title: string; text: string; followUp?: string; note: string; preset: string | null };
 export type ActionResult = { ok: boolean; text: string };
@@ -46,6 +47,8 @@ export type Network = {
   /** One name for a pocket on every screen (the phone's name for it, else "Pocket 2B3C"). */
   nameOf(address: string): string;
   isPhone(address: string): boolean;
+  /** Pockets worth offering in pickers (stale empty stopped ones left out unless in `keep`). */
+  listed(keep?: (string | undefined)[], opts?: { all?: boolean }): PocketState[];
   txDetail(hash: string): TxDetail | undefined;
   actions: Actions;
   refresh(): void;
@@ -73,11 +76,11 @@ export function describeTx(t: ChainTx, owner?: string): TxDetail {
 }
 
 export const pocketTag = (a: string, name?: string) => name || `Pocket ${a.slice(-4).toUpperCase()}`;
-/** Name and phone lookups over a pocket list, the same for every source. */
-export function pocketLookups(pockets: PocketState[], phone: string[] = []): Pick<Network, "nameOf" | "isPhone" | "phonePockets"> {
-  const by = new Map(pockets.map((p) => [p.address.toLowerCase(), p.name]));
+/** Name, phone and listing lookups over a pocket list, the same for every source. */
+export function pocketLookups(pockets: PocketState[], phone: string[] = [], events: WalletEvent[] = []): Pick<Network, "nameOf" | "isPhone" | "phonePockets" | "listed"> {
   const mine = new Set(phone.map((a) => a.toLowerCase()));
-  return { phonePockets: [...mine], nameOf: (a) => pocketTag(a, by.get(a.toLowerCase())), isPhone: (a) => mine.has(a.toLowerCase()) };
+  const nameOf = pocketNamer(listedPockets(pockets, events));
+  return { phonePockets: [...mine], nameOf, isPhone: (a) => mine.has(a.toLowerCase()), listed: (keep, opts) => listedPockets(pockets, events, keep, Date.now(), opts?.all ? undefined : [...mine]) };
 }
 
 /**

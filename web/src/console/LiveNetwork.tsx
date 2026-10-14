@@ -108,7 +108,7 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
     return {
       dev, chainName: dev ? "Local test network" : "Base Sepolia test network", cfg, events: live.events, pockets, txs, chainError,
       explorer: dev ? undefined : (h: string) => `https://sepolia.basescan.org/tx/${h}`,
-      scenes, txDetail, actions, linked: false, ...pocketLookups(pockets), refresh: () => setTick((x) => x + 1),
+      scenes, txDetail, actions, linked: false, ...pocketLookups(pockets, [], live.events), refresh: () => setTick((x) => x + 1),
     };
   }, [cfg, dev, url, live.events, pockets, txs, chainError, scenes]);
 

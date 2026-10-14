@@ -39,19 +39,20 @@ export function Mark({ size = 36 }: { size?: number }) {
 }
 
 function PocketPicker({ value, onChange }: { value?: string; onChange(a: string): void }) {
-  const { pockets, nameOf, isPhone } = useNetwork();
+  const { pockets, listed, nameOf, isPhone } = useNetwork();
   if (!pockets.length) return null;
   const cur = pockets.find((p) => p.address.toLowerCase() === value?.toLowerCase());
+  const shownPockets = listed([value]);
   return (
     <PillSelect label="Pocket" value={cur?.address ?? ""} onChange={onChange}
       shown={cur ? <>{nameOf(cur.address)}{isPhone(cur.address) && <PhoneTag />}<span className="num ml-2 font-medium text-ink2">{usd(cur.balance)}</span></> : "Choose a pocket"}>
-      {pockets.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)}{isPhone(p.address) ? " (phone)" : ""} · {usd(p.balance)}</option>)}
+      {shownPockets.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {usd(p.balance)}</option>)}
     </PillSelect>
   );
 }
 
 function Shell() {
-  const { events, pockets, follow, linked } = useNetwork();
+  const { events, pockets, follow, linked, phonePockets } = useNetwork();
   const [route, setRoute] = useState(parseRoute);
   const { tab, pocket: pinned, present } = route;
   useEffect(() => { const on = () => setRoute(parseRoute()); addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
@@ -64,6 +65,8 @@ function Shell() {
     location.hash = toHash(r); setRoute(r); scrollTo({ top: 0 });
   };
   const openPocket = (p: string) => go({ tab: "live", present: false, pocket: p });
+  // with a phone linked, "watch it in Live" keeps following the phone instead of pinning a pocket
+  const watchLive = (p: string) => (linked && phonePockets.some((a) => a.toLowerCase() === p.toLowerCase()) ? go({ tab: "live", present: false, pocket: null }) : openPocket(p));
   const following = !pinned;
 
   const nav = (
@@ -92,7 +95,7 @@ function Shell() {
           </div>
         </header>
       )}
-      <main className={cn("mx-auto max-w-[1680px] px-4 pt-4 sm:px-8", present ? "pb-40" : "pb-28 md:pb-16")}>
+      <main className={cn("mx-auto max-w-[1680px] px-4 pt-4 sm:px-8", present ? "pb-[calc(var(--stepper-h,10rem)+0.5rem)]" : "pb-28 md:pb-16")}>
         {tab === "live" && (
           <>
             <h1 className="sr-only">Live</h1>
@@ -108,11 +111,11 @@ function Shell() {
         {!present && tab === "pockets" && <div className="mx-auto max-w-[1040px]"><Pockets open={openPocket} /></div>}
         {!present && tab === "sellers" && <div className="mx-auto max-w-[1040px]"><PageTitle title="Sellers" sub="The other side of every payment: what each shop sees when an agent buys or gets refused." /><SellerView /></div>}
         {!present && tab === "chain" && <div className="mx-auto max-w-[1040px]"><OnChain open={openPocket} /></div>}
-        {!present && tab === "judges" && <div className="mx-auto max-w-[1040px]"><Judges pocket={pocket} open={openPocket} /></div>}
+        {!present && tab === "judges" && <div className="mx-auto max-w-[1040px]"><Judges pocket={pocket} open={watchLive} /></div>}
         {!present && <div className="mt-12 text-center lg:hidden"><TestnetChip /></div>}
       </main>
       {!present && <div className="md:hidden">{nav}</div>}
-      {present && <Stepper />}
+      {present && <Stepper pocket={pocket} />}
     </div>
     </TxViewerHost>
   );

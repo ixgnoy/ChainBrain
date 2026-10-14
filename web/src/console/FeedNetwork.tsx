@@ -20,7 +20,7 @@ export function FeedNetwork({ children, make = makeFeed }: { children: ReactNode
   const value = useMemo<Network>(() => ({
     dev: false, chainName: "Base Sepolia test network", cfg: feed.cfg, events: snap.events, pockets: snap.pockets, txs: snap.txs,
     explorer: undefined, scenes: feed.scenes, follow: snap.follow, actions: feed.actions,
-    linked: !!snap.linked, ...pocketLookups(snap.pockets, snap.phonePockets),
+    linked: !!snap.linked, ...pocketLookups(snap.pockets, snap.phonePockets, snap.events),
     txDetail: (hash) => lookupTx(hash, snap.allTxs, snap.events, snap.pockets, (id) => feed.cfg.sellers.find((s) => s.id === id)?.payTo),
     refresh: () => setSnap(feed.snapshot()),
   }), [feed, snap]);

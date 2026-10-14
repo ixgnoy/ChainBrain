@@ -73,5 +73,6 @@ button, a, select, [role="tab"] { cursor: pointer; }
 [data-present="true"] .t-body { font-size: 18px; line-height: 26px; }
 [data-present="true"] .t-name { font-size: 17px; }
 [data-present="true"] [data-testid="pocket-balance"] { font-size: 56px; line-height: 60px; }
+[data-present="true"] [data-testid="pocket-balance"][data-stopped] { font-size: 44px; line-height: 52px; }
 /* A strip of tabs that scrolls sideways hints at what is past the edge. */
 .edge-fade { -webkit-mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 28px), transparent); }

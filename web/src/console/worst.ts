@@ -10,15 +10,18 @@ export type Worst = {
   share: number;
   to: string[];
   stopped: boolean;
+  /** True when `funded` is the sum of the pocket's fund transactions (not a fallback to its balance). */
+  fundedKnown: boolean;
 };
 
 export function worstCase(p: PocketState, txs: ChainTx[], sellerName: (id: string) => string, now = Date.now()): Worst {
   const stopped = p.revoked || p.expiresAt * 1000 < now;
   const put = txs.filter((t) => t.kind === "fund" && t.pocket.toLowerCase() === p.address.toLowerCase() && t.status !== "reverted").reduce((n, t) => n + (t.amount ?? 0n), 0n);
+  // funded comes from the fund transactions; a pocket with none on record is at least what it holds
   const funded = put > p.balance ? put : p.balance;
   const max = stopped ? 0n : p.balance;
   const share = funded > 0n ? Number((max * 10_000n) / funded) / 10_000 : 0;
-  return { max, funded, share, to: p.allowed.map(sellerName), stopped };
+  return { max, funded, share, to: p.allowed.map(sellerName), stopped, fundedKnown: put > 0n };
 }
 
 /** "DataLite", "DataLite or DataPro", "DataLite, DataPro or Harbour Wines". */

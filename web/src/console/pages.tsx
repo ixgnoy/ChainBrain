@@ -11,7 +11,8 @@ import { cn } from "../lib/cn";
 
 // ------------------------------------------------------------------ Pockets
 export function Pockets({ open }: { open(addr: string): void }) {
-  const { pockets, cfg, chainError, nameOf, isPhone } = useNetwork();
+  const { listed, cfg, chainError, nameOf, isPhone } = useNetwork();
+  const pockets = listed([], { all: true });
   const names = new Map(cfg.sellers.map((s) => [s.id, s.name]));
   const total = pockets.reduce((n, p) => n + p.balance, 0n);
   return (
@@ -97,7 +98,7 @@ function CopyLine({ text }: { text: string }) {
 const field = "w-full rounded-[12px] bg-fill px-4 text-[15px] outline-none placeholder:text-faint focus:bg-card focus:ring-2 focus:ring-accent";
 
 export function Judges({ pocket, open }: { pocket?: string; open(addr: string): void }) {
-  const { cfg, scenes, pockets, actions, follow, linked, refresh, nameOf, isPhone } = useNetwork();
+  const { cfg, scenes, pockets, listed, actions, follow, linked, refresh, nameOf, isPhone } = useNetwork();
   const [seller, setSeller] = useState("shadyfeed");
   const [text, setText] = useState(SAMPLES[0].text);
   const [msg, setMsg] = useState<{ ok: boolean; text: string }>();
@@ -111,7 +112,7 @@ export function Judges({ pocket, open }: { pocket?: string; open(addr: string): 
     setBusy(t == null ? "clear" : "plant"); setMsg(undefined);
     try { setMsg(await plant(seller, t)); } finally { setBusy(undefined); }
   };
-  const aim = target || pocket || pockets[0]?.address || "";
+  const aim = target || pocket || listed()[0]?.address || "";
   const force = async () => {
     if (!aim || !forceTransfer) return;
     setBusy("force"); setForced(undefined);
@@ -148,7 +149,7 @@ export function Judges({ pocket, open }: { pocket?: string; open(addr: string): 
           {forceTransfer ? (
             <div className="mt-4 flex flex-wrap items-end gap-3">
               <div><span className="mb-1.5 block text-[14px] font-medium">Pocket</span>
-                <PillSelect tone="fill" className="min-w-[260px]" label="Pocket to attack" value={aim} onChange={setTarget} shown={aim ? <>{nameOf(aim)}{isPhone(aim) && <PhoneTag />}</> : "No pocket"}>{pockets.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)}{isPhone(p.address) ? " (phone)" : ""} · {usd(p.balance)}</option>)}</PillSelect></div>
+                <PillSelect tone="fill" className="min-w-[260px]" label="Pocket to attack" value={aim} onChange={setTarget} shown={aim ? <>{nameOf(aim)}{isPhone(aim) && <PhoneTag />}</> : "No pocket"}>{listed([aim]).map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {usd(p.balance)}</option>)}</PillSelect></div>
               <Button disabled={!!busy || !pockets.length} onClick={() => void force()}>{busy === "force" ? "Submitting…" : "Force the transfer"}</Button>
             </div>
           ) : <p className="mt-3 text-[14px] text-muted">On the real chain this runs from <code>server/scripts/force-transfer.ts</code>; the reverted transaction then appears under On-chain.</p>}
