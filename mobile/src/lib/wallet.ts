@@ -4,18 +4,20 @@
 import { createPublicClient, createWalletClient, http, parseEventLogs, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
-import { RPC, loadConfig, transferTypedData, type Authorization, type Seller } from "./shared";
+import { rpcUrl } from "./runtime";
+import { loadConfig, transferTypedData, type Authorization, type Seller } from "./shared";
 
-export const pub = () => createPublicClient({ chain: baseSepolia, transport: http(RPC) });
+export const pub = () => createPublicClient({ chain: baseSepolia, transport: http(rpcUrl()) });
 
 export type PocketView = { address: Address; owner: Address; agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean; balance: bigint; allowed: string[] };
 
 export function ownerWallet(pk: Hex) {
   const account = privateKeyToAccount(pk);
-  const w = createWalletClient({ account, chain: baseSepolia, transport: http(RPC) });
+  // built per call: the RPC URL changes when the API URL is overridden or dev mode is detected
+  const wallet = () => createWalletClient({ account, chain: baseSepolia, transport: http(rpcUrl()) });
 
   async function write(address: Address, abi: any[], functionName: string, args: unknown[] = []) {
-    const hash = await w.writeContract({ address, abi, functionName, args, account, chain: baseSepolia });
+    const hash = await wallet().writeContract({ address, abi, functionName, args, account, chain: baseSepolia });
     const receipt = await pub().waitForTransactionReceipt({ hash });
     if (receipt.status !== "success") throw new Error(`transaction reverted: ${hash}`);
     return { hash, receipt };
@@ -60,4 +62,5 @@ export async function readPocket(address: Address): Promise<PocketView> {
   return { address, owner, agent, cap, askAbove, expiresAt, revoked, balance, allowed: sellers.filter((_, i) => flags[i]).map((s) => s.id) };
 }
 
+export const isOwner = (p: Pick<PocketView, "owner">, me: string) => p.owner.toLowerCase() === me.toLowerCase();
 export const pocketStatus = (p: PocketView, now = Date.now()) => (p.revoked ? "Revoked" : Number(p.expiresAt) * 1000 < now ? "Expired" : "Active");
