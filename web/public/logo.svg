@@ -1,9 +1,7 @@
 <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6E56FF"/><stop offset="1" stop-color="#38E1FF"/></linearGradient></defs>
-  <rect width="64" height="64" rx="18" fill="#0E1012"/>
-  <g fill="none" stroke="url(#g)" stroke-width="5" stroke-linecap="round">
-    <rect x="11" y="24" width="26" height="16" rx="8" transform="rotate(-35 24 32)"/>
-    <rect x="27" y="24" width="26" height="16" rx="8" transform="rotate(-35 40 32)"/>
+  <rect width="64" height="64" rx="14" fill="#16181A"/>
+  <g fill="none" stroke-width="5" stroke-linecap="round">
+    <rect x="11" y="24" width="26" height="16" rx="8" transform="rotate(-35 24 32)" stroke="#F6F4EF"/>
+    <rect x="27" y="24" width="26" height="16" rx="8" transform="rotate(-35 40 32)" stroke="#3FBF9A"/>
   </g>
-  <circle cx="32" cy="32" r="3.5" fill="#fff"/>
 </svg>

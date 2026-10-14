@@ -63,10 +63,10 @@ export default function ApprovalSheet({ approval, onClose }: { approval?: Approv
           <div>
             <div className="display num text-[44px] leading-[48px]">US${cleanText(d.amount, 12)}</div>
             <p className="mt-1 text-[14px]">to <b>{seller?.name ?? cleanText(d.sellerId, 30)}</b> for “{cleanText(d.description, 160)}”</p>
-            <p className="mono text-[11px] text-t3">{cleanText(d.sellerId, 30)}/{cleanText(d.sku, 40)}</p>
+            <p className="mono text-xs text-t3">{cleanText(d.sellerId, 30)}/{cleanText(d.sku, 40)}</p>
           </div>
-          <section><h3 className="caps mb-1.5">The agent's reason</h3><p className="rounded-2xl bg-e2 px-3.5 py-2.5 text-[14px] leading-6">{cleanText(approval.text, 400)}</p></section>
-          <section><h3 className="caps mb-1.5">Task</h3><pre className="mono whitespace-pre-wrap break-words rounded-2xl bg-e2 p-3 text-[12px] leading-5 text-t2">{cleanText(d.intent, 600)}</pre></section>
+          <section><h3 className="caps mb-1.5">The agent's reason</h3><p className="rounded-[10px] bg-e2 px-3.5 py-2.5 text-[14px] leading-6">{cleanText(approval.text, 400)}</p></section>
+          <section><h3 className="caps mb-1.5">Task</h3><pre className="mono whitespace-pre-wrap break-words rounded-[10px] bg-e2 p-3 text-[12px] leading-5 text-t2">{cleanText(d.intent, 600)}</pre></section>
           <section>
             <h3 className="caps mb-1">What you will sign</h3>
             <p className="text-[13px] text-t2">A USDC “TransferWithAuthorization” message, not a transaction, so no gas. It can be used once, for this payment only.</p>

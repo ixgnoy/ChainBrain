@@ -116,7 +116,7 @@ export default function Bank() {
                     {shown.slice(0, 150).map((r) => (
                       <tr key={r.key} tabIndex={0} onClick={() => setDetail(r)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDetail(r); } }}
                         className="cursor-pointer outline-none hover:bg-e2 focus-visible:bg-e2 [&>td]:h-11 [&>td]:border-b [&>td]:border-hair [&>td]:px-3 [&>td:first-child]:pl-4 [&>td:last-child]:pr-4">
-                        <td className="mono whitespace-nowrap text-[11.5px] text-t3">{clock(r.at)}</td>
+                        <td className="mono whitespace-nowrap text-xs text-t3">{clock(r.at)}</td>
                         <td className="mono whitespace-nowrap text-[12px]">{label(r.pocket)}</td>
                         <td className="max-w-[200px] truncate"><span className="font-medium">{r.sellerId}</span>{r.sku && <span className="text-t3">/{r.sku}</span>}</td>
                         <td className="num whitespace-nowrap">{r.amount != null ? `$${usd(r.amount)}` : "–"}</td>
@@ -138,10 +138,10 @@ export default function Bank() {
             {refusals.length === 0 ? <Empty>No refusals recorded.</Empty> : (
               <ul className="space-y-1 p-3">{refusals.map((r) => (
                 <li key={r.reason}>
-                  <button type="button" onClick={() => drill({ verdict: "refused", reason: r.reason })} aria-label={`${r.reason}: ${r.count}. Filter ledger.`} className={cn("group w-full rounded-xl px-2.5 py-2 text-left hover:bg-e2", filters.reason === r.reason && "bg-e2")}>
-                    <div className="flex items-center gap-2"><span className="mono truncate text-[12px] font-medium">{r.reason}</span><span className="ml-auto text-[11px] text-t3">{reasonLayer(r.reason)}</span><span className="num w-5 text-right text-[13px] font-semibold">{r.count}</span></div>
+                  <button type="button" onClick={() => drill({ verdict: "refused", reason: r.reason })} aria-label={`${r.reason}: ${r.count}. Filter ledger.`} className={cn("group w-full rounded-[8px] px-2.5 py-2 text-left hover:bg-e2", filters.reason === r.reason && "bg-e2")}>
+                    <div className="flex items-center gap-2"><span className="mono truncate text-[12px] font-medium">{r.reason}</span><span className="ml-auto text-xs text-t3">{reasonLayer(r.reason)}</span><span className="num w-5 text-right text-[13px] font-semibold">{r.count}</span></div>
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-e3"><div className="h-full rounded-full bg-refused transition-[width] duration-500" style={{ width: `${(r.count / maxRef) * 100}%` }} /></div>
-                    <div className="mt-1 truncate text-[11px] text-t3">{REASONS[r.reason] ?? ""}</div>
+                    <div className="mt-1 truncate text-xs text-t3">{REASONS[r.reason] ?? ""}</div>
                   </button>
                 </li>))}</ul>
             )}
@@ -156,7 +156,7 @@ export default function Bank() {
                 <thead><tr>{["Pocket", "Balance", "Per-payment cap", "Ask above", "Allowlist", "Expires", "State", "Owner"].map((h) => <th key={h} scope="col" className="caps border-b border-hair px-3 py-2 font-semibold first:pl-4">{h}</th>)}</tr></thead>
                 <tbody>{viewList.map(({ addr, v }) => (
                   <tr key={addr} className="[&>td]:border-b [&>td]:border-hair [&>td]:px-3 [&>td]:py-2.5 [&>td:first-child]:pl-4">
-                    <td className="whitespace-nowrap"><div className="mono text-[12px] font-medium">{label(addr)}</div>{v && <div className="mono text-[11px] text-t3">agent {shortAddr(v.agent)}</div>}</td>
+                    <td className="whitespace-nowrap"><div className="mono text-[12px] font-medium">{label(addr)}</div>{v && <div className="mono text-xs text-t3">agent {shortAddr(v.agent)}</div>}</td>
                     {v ? <>
                       <td className="num whitespace-nowrap">${usd(v.balance)}</td>
                       <td className="num">{money(v.cap)}</td>
@@ -164,7 +164,7 @@ export default function Bank() {
                       <td className="text-[12px] text-t2">{v.allowed.length ? v.allowed.join(", ") : "nobody"}</td>
                       <td className="whitespace-nowrap">{dateOnly(Number(v.expiresAt) * 1000)}</td>
                       <td>{pocketStatus(v) === "Revoked" ? <Chip kind="revoked" /> : pocketStatus(v) === "Expired" ? <Chip kind="neutral">Expired</Chip> : <Chip kind="ok" dot>Active</Chip>}</td>
-                      <td className="mono whitespace-nowrap text-[11.5px] text-t2">{readOnly ? pseudonym(v.owner, "OWNER") : shortAddr(v.owner)}</td>
+                      <td className="mono whitespace-nowrap text-xs text-t2">{readOnly ? pseudonym(v.owner, "OWNER") : shortAddr(v.owner)}</td>
                     </> : <td colSpan={7} className="text-xs text-t3">Reading the contract…</td>}
                   </tr>))}</tbody>
               </table>
@@ -180,8 +180,8 @@ export default function Bank() {
                 <li key={s.key} className="flex gap-3 border-b border-hair px-4 py-2.5 last:border-0">
                   <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", SEV[s.severity])} title={`${s.severity} severity`} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1"><span className="text-[13px] font-semibold">{s.title}</span>{s.reasons.map((c) => <ReasonChip key={c} code={c} />)}<span className="mono ml-auto text-[11px] text-t3">{clock(s.at)}</span></div>
-                    <p className="mt-0.5 break-words text-[12.5px] text-t2">{s.detail}</p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1"><span className="text-[13px] font-semibold">{s.title}</span>{s.reasons.map((c) => <ReasonChip key={c} code={c} />)}<span className="mono ml-auto text-xs text-t3">{clock(s.at)}</span></div>
+                    <p className="mt-0.5 break-words text-[13px] text-t2">{s.detail}</p>
                   </div>
                 </li>))}</ul>
             )}
@@ -195,11 +195,11 @@ export default function Bank() {
               {CONVENTION.map((c) => {
                 const n = c.evidence ? applyFilters(rows, { ...NO_FILTER, ...c.evidence.filter }).length : 0;
                 return (
-                  <li key={c.id} className="flex items-start gap-3 rounded-2xl px-2.5 py-2.5 hover:bg-e2">
+                  <li key={c.id} className="flex items-start gap-3 rounded-[10px] px-2.5 py-2.5 hover:bg-e2">
                     <span className="mt-0.5">{c.status === "aligned" ? <ShieldCheck className="size-4 text-ok" aria-hidden /> : <Fingerprint className="size-4 text-info" aria-hidden />}</span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2"><span className="text-[13px] font-semibold">{c.item}</span>{c.status === "aligned" ? <Chip kind="ok" dot>Aligned with</Chip> : <Chip kind="info" dot>Our addition</Chip>}</div>
-                      <p className="mt-0.5 text-[12.5px] leading-5 text-t2">{c.feature}</p>
+                      <p className="mt-0.5 text-[13px] leading-5 text-t2">{c.feature}</p>
                       {c.evidence && <button type="button" onClick={() => drill(c.evidence!.filter)} className="mt-1 text-xs font-medium text-accent-ink hover:underline">Evidence: {c.evidence.label} · {n} {n === 1 ? "row" : "rows"} →</button>}
                     </div>
                   </li>);
@@ -214,13 +214,13 @@ export default function Bank() {
             <div className="space-y-3 p-4">
               <p className="text-[13px] text-t2">Exports the {filtered ? "filtered " : ""}ledger ({ex.n} rows) as downloaded from this browser. {readOnly && "Pocket ids are pseudonymised and owner text is removed in the regulator view."}</p>
               {([["JSON", "chainbrain-ledger.json", ex.json, hash.json, FileJson, "application/json"], ["CSV", "chainbrain-ledger.csv", ex.csv, hash.csv, FileSpreadsheet, "text/csv"]] as const).map(([lbl, file, text, h, Icon, type]) => (
-                <div key={lbl} className="rounded-2xl border border-hair bg-e2 p-3">
+                <div key={lbl} className="rounded-[10px] border border-hair bg-e2 p-3">
                   <div className="flex items-center gap-2"><Icon className="size-4 text-t2" aria-hidden /><span className="text-[13px] font-semibold">{lbl}</span><Button size="sm" variant="secondary" className="ml-auto" onClick={() => download(file, text, type)}><Download className="size-3.5" />Download</Button></div>
-                  <div className="mt-2 text-[11px] text-t3">SHA-256{dev.state ? " (local fork data: this hash proves nothing about a public chain)" : ""}</div>
-                  <div className="mono mt-0.5 break-all text-[11.5px] leading-4 text-fg" data-testid={`hash-${lbl.toLowerCase()}`}>{h || "computing…"}</div>
+                  <div className="mt-2 text-xs text-t3">SHA-256{dev.state ? " (local fork data: this hash proves nothing about a public chain)" : ""}</div>
+                  <div className="mono mt-0.5 break-all text-xs leading-4 text-fg" data-testid={`hash-${lbl.toLowerCase()}`}>{h || "computing…"}</div>
                 </div>
               ))}
-              <div className="flex items-center gap-2 rounded-2xl border border-dashed border-hair2 px-3 py-2 text-[13px] text-t2"><Lock className="size-4 text-t3" aria-hidden />Anchor the export hash on FISCO BCOS<Chip kind="neutral" className="ml-auto">Planned</Chip></div>
+              <div className="flex items-center gap-2 rounded-[10px] border border-dashed border-hair2 px-3 py-2 text-[13px] text-t2"><Lock className="size-4 text-t3" aria-hidden />Anchor the export hash on FISCO BCOS<Chip kind="neutral" className="ml-auto">Planned</Chip></div>
             </div>
           </Pane>
         </div>
@@ -232,10 +232,10 @@ export default function Bank() {
             <div className="flex flex-wrap items-center gap-2"><Verdict r={detail} />{detail.amount != null && <span className="num text-lg font-semibold">${usd(detail.amount)} <span className="text-xs font-normal text-t3">USDC · {usdNumber(detail.amount).toFixed(2)}</span></span>}</div>
             <p className="text-[13px] text-t2">{detail.outcome === "paid" ? (detail.cosigned ? "Settled with the owner's co-signature (above the ask-me amount)." : "Settled inside the pocket's rules without needing approval.") : detail.source === "quote" ? "Refused when the agent asked for a quote; no payment was attempted." : "Refused when the agent tried to pay; nothing was spent."}</p>
             {detail.reasons.map((c) => <div key={c} className="flex flex-wrap items-center gap-2 text-[13px]"><ReasonChip code={c} /><span className="text-t2">{REASONS[c]}</span><span className="text-t3">· {reasonLayer(c)}</span></div>)}
-            {detail.detail && <p className="mono break-all text-[11.5px] text-t3">{cleanText(detail.detail, 300)}</p>}
+            {detail.detail && <p className="mono break-all text-xs text-t3">{cleanText(detail.detail, 300)}</p>}
             {detail.tx && <div className="flex items-center gap-2 text-sm">tx <TxLink hash={detail.tx} /></div>}
-            {detail.intentHash && <div className="mono break-all text-[11.5px] text-t3">intent {detail.intentHash}</div>}
-            {detail.task && !readOnly && <pre className="mono whitespace-pre-wrap rounded-2xl bg-e2 p-3 text-[12px] leading-5 text-t2">{cleanText(detail.task, 500)}</pre>}
+            {detail.intentHash && <div className="mono break-all text-xs text-t3">intent {detail.intentHash}</div>}
+            {detail.task && !readOnly && <pre className="mono whitespace-pre-wrap rounded-[10px] bg-e2 p-3 text-[12px] leading-5 text-t2">{cleanText(detail.task, 500)}</pre>}
           </div>
         )}
       </Drawer>

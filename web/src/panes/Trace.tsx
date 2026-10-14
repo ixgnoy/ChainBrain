@@ -17,13 +17,13 @@ const ACTOR_ICON: Record<Actor, typeof Bot> = { Agent: Bot, Seller: Landmark, Po
 /** Quarantined, monospace box for seller-supplied text. Plain text only, always through cleanText. */
 export function Untrusted({ source, text, injection }: { source?: string; text: string; injection?: boolean }) {
   return (
-    <div className={cn("mt-2 overflow-hidden rounded-xl border border-dashed", injection ? "border-refused/50 bg-refused-bg" : "border-hair2 bg-e2")}>
-      <div className="flex items-center gap-1.5 border-b border-dashed border-inherit px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-t2">
+    <div className={cn("mt-2 overflow-hidden rounded-[8px] border border-dashed", injection ? "border-refused/50 bg-refused-bg" : "border-hair2 bg-e2")}>
+      <div className="flex items-center gap-1.5 border-b border-dashed border-inherit px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-t2">
         <TriangleAlert className={cn("size-3", injection && "text-refused")} aria-hidden />
         Untrusted seller content{source ? ` · ${cleanText(source, 40)}` : ""}
         {injection && <span className="ml-auto rounded-full bg-refused/20 px-1.5 py-0.5 text-refused-ink">instruction-like text</span>}
       </div>
-      <pre className="mono max-h-28 overflow-auto whitespace-pre-wrap break-words px-2.5 py-2 text-[11.5px] leading-4 text-t2">{text}</pre>
+      <pre className="mono max-h-28 overflow-auto whitespace-pre-wrap break-words px-2.5 py-2 text-xs leading-4 text-t2">{text}</pre>
     </div>
   );
 }
@@ -38,14 +38,14 @@ function Row({ row, onOpen, fresh, showPocket, readOnly }: { row: TraceRow; onOp
   return (
     <li className={cn("group relative border-b border-hair last:border-0", fresh && "row-in")}>
       <button type="button" onClick={onOpen} className="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-e2" aria-label={`Open raw event: ${row.label} ${title}`}>
-        <span className="mono mt-0.5 w-[60px] shrink-0 text-[11px] text-t3">{clock(row.at)}</span>
+        <span className="mono mt-0.5 w-[60px] shrink-0 text-xs text-t3">{clock(row.at)}</span>
         <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-md bg-e3 text-t2"><Icon className="size-3" aria-hidden /></span>
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="mono text-[12px] font-semibold text-fg">{row.label}</span>
             {row.verdict && <Chip kind={row.kind}>{row.verdict}</Chip>}
             {row.reasons.map((c) => <ReasonChip key={c} code={c} />)}
-            {showPocket && e.pocket && <span className="mono text-[11px] text-t3">{readOnly ? pseudonym(e.pocket) : shortAddr(e.pocket)}</span>}
+            {showPocket && e.pocket && <span className="mono text-xs text-t3">{readOnly ? pseudonym(e.pocket) : shortAddr(e.pocket)}</span>}
           </span>
           <span className="mt-0.5 block break-words text-[13px] leading-5 text-t2">{title}</span>
           {first && <span className="mt-0.5 block text-[12px] text-t3">{REASONS[first] ?? ""} · {reasonLayer(first)}</span>}
@@ -55,7 +55,7 @@ function Row({ row, onOpen, fresh, showPocket, readOnly }: { row: TraceRow; onOp
         <div className="px-4 pb-2.5 pl-[111px]">
           {args && !readOnly && (
             <details className="text-xs text-t3"><summary className="cursor-pointer select-none hover:text-t2">args {argSummary(e.args)}</summary>
-              <pre className="mono mt-1 max-h-32 overflow-auto rounded-lg bg-e2 p-2 text-[11px] text-t2">{cleanText(args, 1500)}</pre></details>
+              <pre className="mono mt-1 max-h-32 overflow-auto rounded-[8px] bg-e2 p-2 text-xs text-t2">{cleanText(args, 1500)}</pre></details>
           )}
           {row.tx && <div className="mt-1 flex items-center gap-1.5 text-xs text-t2">tx <TxLink hash={row.tx} /></div>}
           {u && <Untrusted source={u.source} text={u.text} injection={u.injection} />}
@@ -92,7 +92,7 @@ export default function Trace() {
       </Pane>
       <Drawer open={!!open} onOpenChange={(o) => !o && setOpen(null)} title={open ? `${open.type} event` : "Event"} description="Raw JSON, exactly as received from the stream.">
         {open && (<>
-          <pre className="mono overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-hair bg-e2 p-3 text-[12px] leading-5 text-t2">{cleanText(JSON.stringify(redact(open), null, 2), 20000)}</pre>
+          <pre className="mono overflow-auto whitespace-pre-wrap break-words rounded-[10px] border border-hair bg-e2 p-3 text-[12px] leading-5 text-t2">{cleanText(JSON.stringify(redact(open), null, 2), 20000)}</pre>
           <div className="mt-3 flex justify-end"><Button size="sm" variant="secondary" onClick={() => navigator.clipboard?.writeText(JSON.stringify(redact(open), null, 2)).catch(() => {})}>Copy JSON</Button></div>
         </>)}
       </Drawer>

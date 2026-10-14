@@ -15,9 +15,8 @@ import { dateOnly, dateTime, usd, usdNumber } from "../lib/format";
 import { cleanText } from "../lib/sanitize";
 import { NEVER, REASONS, formatUsd, parseUsd, shortAddr } from "../shared";
 import { cn } from "../lib/cn";
+import { Spotlight } from "../components/bits/presets";
 
-const GRADS = [["#2A2F8F", "#6E56FF"], ["#8F2A6B", "#FF6AA8"], ["#0F5B52", "#2ED4B0"]];
-const grad = (addr: string) => { const n = parseInt(addr.slice(2, 6), 16) % GRADS.length; return `linear-gradient(135deg, ${GRADS[n][0]} 0%, ${GRADS[n][1]} 100%)`; };
 const money = (n: bigint) => (n === NEVER ? "never" : `$${formatUsd(n)}`);
 
 function PocketCard({ addr, v, selected, onSelect, maxSeen }: { addr: Address; v?: PocketView; selected: boolean; onSelect(): void; maxSeen: number }) {
@@ -26,18 +25,20 @@ function PocketCard({ addr, v, selected, onSelect, maxSeen }: { addr: Address; v
   const st = v ? pocketStatus(v) : undefined;
   return (
     <button type="button" onClick={onSelect} aria-pressed={selected} aria-label={`Pocket ${shortAddr(addr)}`}
-      className={cn("grain relative isolate flex h-[172px] w-[272px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[24px] p-4 text-left text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] transition-transform duration-150 active:scale-[0.99]",
-        selected ? "ring-2 ring-white/70 ring-offset-2 ring-offset-[var(--e1)]" : "opacity-90 hover:opacity-100", v?.revoked && "saturate-[0.6]")} style={{ background: grad(addr) }}>
-      {v?.revoked && <span className="hatch absolute inset-0 -z-10" aria-hidden />}
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0"><div className="mono truncate text-sm font-semibold">Pocket {shortAddr(addr)}</div><div className="mt-0.5 flex items-center gap-1 text-[11px] text-white/80"><Bot className="size-3" aria-hidden />agent {v ? shortAddr(v.agent) : "…"}</div></div>
-        {st && <span className={cn("inline-flex h-6 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium backdrop-blur-sm", st === "Revoked" ? "border-white/30 bg-[#7a1fa8]/70" : st === "Expired" ? "border-white/25 bg-black/30" : "border-white/25 bg-black/25")}>{st === "Active" && <span className="size-1.5 rounded-full bg-[#7dffb5]" />}{st}</span>}
-      </div>
-      <div>
-        <div className="display flex items-baseline gap-1.5 text-[34px] leading-9"><span className="text-xl text-white/80">$</span>{v ? <Money value={bal} /> : <span>–</span>}<span className="text-xs font-medium text-white/75">USDC</span></div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/25" aria-hidden><div className="h-full rounded-full bg-white/80 transition-[width] duration-500" style={{ width: `${left * 100}%` }} /></div>
-        <div className="num mt-2 text-[11px] text-white/85">{v ? `Cap ${money(v.cap)} · Ask above ${money(v.askAbove)}` : "Reading the contract…"}</div>
-      </div>
+      className={cn("block w-[272px] shrink-0 cursor-pointer snap-start rounded-[14px] text-left transition-[transform,box-shadow] duration-150 active:scale-[0.99]",
+        selected ? "shadow-[0_0_0_2px_var(--accent)]" : "hover:shadow-[0_0_0_1px_var(--hair2)]")}>
+      <Spotlight className={cn("flex h-[172px] flex-col justify-between p-4", v?.revoked && "text-t3")}>
+        {v?.revoked && <span className="hatch absolute inset-0 -z-10" aria-hidden />}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0"><div className="mono truncate text-sm font-medium">Pocket {shortAddr(addr)}</div><div className="mt-0.5 flex items-center gap-1 text-xs text-t3"><Bot className="size-3" aria-hidden />agent {v ? shortAddr(v.agent) : "…"}</div></div>
+          {st && <Chip kind={st === "Active" ? "ok" : st === "Revoked" ? "revoked" : "neutral"} dot={st === "Active"}>{st}</Chip>}
+        </div>
+        <div>
+          <div className="display flex items-baseline gap-1.5 text-[34px] leading-9"><span className="text-xl text-t3">$</span>{v ? <Money value={bal} /> : <span>–</span>}<span className="text-xs font-medium text-t3">USDC</span></div>
+          <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-e3" aria-hidden><div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${left * 100}%` }} /></div>
+          <div className="num mt-2 text-xs text-t3">{v ? `Cap ${money(v.cap)} · Ask above ${money(v.askAbove)}` : "Reading the contract…"}</div>
+        </div>
+      </Spotlight>
     </button>
   );
 }
@@ -57,9 +58,9 @@ function RuleEdit({ label, value, current, allowNever, disabled, onSave }: { lab
     try { await onSave(n); setEditing(false); } catch (e) { setErr(cleanText((e as Error).message.split("\n")[0], 120)); } finally { setBusy(false); }
   };
   return (
-    <div className="rounded-2xl border border-hair bg-e2 px-3 py-2">
+    <div className="rounded-[10px] border border-hair bg-e1 px-3 py-2.5">
       <div className="flex items-center justify-between gap-2"><dt className="caps">{label}</dt>
-        {!editing && !disabled && <button type="button" onClick={open} className="inline-flex items-center gap-1 text-[11px] font-medium text-accent-ink hover:underline" aria-label={`Edit ${label}`}><Pencil className="size-3" aria-hidden />Edit</button>}</div>
+        {!editing && !disabled && <button type="button" onClick={open} className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-accent-ink hover:underline" aria-label={`Edit ${label}`}><Pencil className="size-3" aria-hidden />Edit</button>}</div>
       {!editing ? <dd className="num mt-0.5 text-[15px] font-semibold">{value}</dd> : (
         <form className="mt-1.5 space-y-2" onSubmit={(e) => { e.preventDefault(); void save(); }}>
           <input className={cn(inputCls, "h-9")} aria-label={label} value={text} disabled={never || busy} onChange={(e) => setText(e.target.value)} inputMode="decimal" placeholder="US$" autoFocus />
@@ -80,8 +81,8 @@ function Activity({ rows, readOnly }: { rows: LedgerRow[]; readOnly: boolean }) 
       {rows.map((r) => {
         const isOpen = open === r.key;
         return (
-          <li key={r.key} className="rounded-2xl border border-hair bg-e2">
-            <button type="button" onClick={() => setOpen(isOpen ? null : r.key)} aria-expanded={isOpen} className="flex w-full items-center gap-3 px-3 py-2 text-left">
+          <li key={r.key} className="row-in rounded-[10px] border border-hair bg-e1">
+            <button type="button" onClick={() => setOpen(isOpen ? null : r.key)} aria-expanded={isOpen} className="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left">
               <span className="min-w-0 flex-1 truncate text-[13px]"><span className="font-medium">{r.sellerId}</span>{r.sku && <span className="text-t3">/{r.sku}</span>}</span>
               {r.amount != null && <span className="num text-[13px] font-semibold">${usd(r.amount)}</span>}
               {r.outcome === "paid" ? <Chip kind="ok">Paid</Chip> : <Chip kind="refused">Refused</Chip>}
@@ -92,7 +93,7 @@ function Activity({ rows, readOnly }: { rows: LedgerRow[]; readOnly: boolean }) 
                 <div>{dateTime(r.at)} · {r.outcome === "paid" ? (r.cosigned ? "co-signed by you" : "inside your rules, no approval needed") : r.source === "quote" ? "refused when the agent asked for a quote" : "refused when the agent tried to pay"}</div>
                 {r.reasons.map((c) => <div key={c} className="flex flex-wrap items-center gap-2"><ReasonChip code={c} /><span>{REASONS[c] ?? ""}</span></div>)}
                 {r.tx && <div className="flex items-center gap-2">tx <TxLink hash={r.tx} /></div>}
-                {r.task && !readOnly && <pre className="mono whitespace-pre-wrap rounded-xl bg-e1 p-2 text-[11.5px] leading-5">{cleanText(r.task, 400)}</pre>}
+                {r.task && !readOnly && <pre className="mono whitespace-pre-wrap rounded-[8px] bg-e2 p-2 text-xs leading-5">{cleanText(r.task, 400)}</pre>}
               </div>
             )}
           </li>
@@ -128,9 +129,9 @@ export default function Pocket() {
         actions={owner && !readOnly && <Button size="sm" variant="primary" onClick={() => setCreating(true)}><Plus className="size-3.5" />New pocket</Button>} bodyClassName="overflow-y-auto">
         <div className="space-y-4 p-4">
           {owner && (
-            <div className="flex items-center justify-between rounded-2xl border border-hair bg-e2 px-3.5 py-2.5">
-              <div><div className="caps">Main wallet</div><div className="mono text-[11px] text-t3">{shortAddr(owner)}</div></div>
-              <div className="display num text-xl">{mainBalance === undefined ? "…" : <>US${usd(mainBalance)}</>}</div>
+            <div className="flex items-center justify-between rounded-[10px] border border-hair bg-e2 px-3.5 py-3">
+              <div><div className="caps">Main wallet</div><div className="mono text-xs text-t3">{shortAddr(owner)}</div></div>
+              <div className="display num text-xl">{mainBalance === undefined ? "…" : <>US$<Money value={usdNumber(mainBalance)} /></>}</div>
             </div>
           )}
           {!pockets.length ? (
@@ -138,29 +139,29 @@ export default function Pocket() {
           ) : (
             <div className="-mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 py-1" role="group" aria-label="Pockets">
               {pockets.map((p) => <PocketCard key={p} addr={p} v={views[p.toLowerCase()]} selected={active?.toLowerCase() === p.toLowerCase()} onSelect={() => setActive(p)} maxSeen={maxSeen[p.toLowerCase()] ?? 0} />)}
-              {!readOnly && <button type="button" onClick={() => setCreating(true)} className="grid h-[172px] w-[160px] shrink-0 place-items-center rounded-[24px] border border-dashed border-hair2 text-t3 transition-colors hover:border-accent hover:text-fg"><span className="flex flex-col items-center gap-1 text-sm"><Plus className="size-5" />New pocket</span></button>}
+              {!readOnly && <button type="button" onClick={() => setCreating(true)} className="grid h-[172px] w-[160px] shrink-0 cursor-pointer place-items-center rounded-[14px] border border-dashed border-hair2 text-t3 transition-colors hover:border-accent hover:text-accent-ink"><span className="flex flex-col items-center gap-1 text-sm"><Plus className="size-5" />New pocket</span></button>}
             </div>
           )}
-          {active && failed.has(active.toLowerCase()) && !current && <p role="status" className="rounded-2xl bg-refused-bg px-3 py-2 text-[13px] text-refused-ink">Could not read this pocket from the chain. Check your wallet is on Base Sepolia.</p>}
+          {active && failed.has(active.toLowerCase()) && !current && <p role="status" className="rounded-[10px] border border-refused/30 bg-refused-bg px-3 py-2 text-[13px] text-refused-ink">Could not read this pocket from the chain. Check your wallet is on Base Sepolia.</p>}
 
           {current && active && cfg && (<>
             <dl className="grid grid-cols-2 gap-2">
               <RuleEdit label="Per-payment cap" value={money(current.cap)} current={current.cap} disabled={!busyOk || current.revoked} onSave={(n) => act("Cap updated", () => setCap(active, n))} />
               <RuleEdit label="Ask me above" value={current.askAbove === NEVER ? "never" : current.askAbove === 0n ? "every payment" : money(current.askAbove)} current={current.askAbove} allowNever disabled={!busyOk || current.revoked} onSave={(n) => act("Ask-me amount updated", () => setAskAbove(active, n))} />
               {[["Expires", dateOnly(Number(current.expiresAt) * 1000)], ["Agent key", shortAddr(current.agent)]].map(([k, v]) => (
-                <div key={k} className="rounded-2xl border border-hair bg-e2 px-3 py-2"><dt className="caps">{k}</dt><dd className="num mt-0.5 text-[15px] font-semibold">{v}</dd></div>
+                <div key={k} className="rounded-[10px] border border-hair bg-e1 px-3 py-2.5"><dt className="caps">{k}</dt><dd className="num mt-0.5 text-[15px] font-semibold">{v}</dd></div>
               ))}
             </dl>
 
             <section>
               <h3 className="caps mb-2">Allowed sellers</h3>
-              <ul className="divide-y divide-hair rounded-2xl border border-hair">
+              <ul className="divide-y divide-hair rounded-[10px] border border-hair bg-e1">
                 {cfg.sellers.map((s) => {
                   const on = current.allowed.includes(s.id);
                   return (
                     <li key={s.id} className="flex items-center gap-3 px-3 py-2">
-                      <span className="grid size-7 place-items-center rounded-full bg-e3 text-xs font-semibold uppercase text-t2">{s.name[0]}</span>
-                      <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-medium">{s.name}</div><div className="truncate text-[11px] text-t3">{s.category} · {s.items.map((i) => (i.price ? `US$${i.price}` : "free")).join(", ")}</div></div>
+                      <span className="grid size-7 place-items-center rounded-[6px] bg-e2 text-xs font-semibold uppercase text-t2">{s.name[0]}</span>
+                      <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-medium">{s.name}</div><div className="truncate text-xs text-t3">{s.category} · {s.items.map((i) => (i.price ? `US$${i.price}` : "free")).join(", ")}</div></div>
                       <Switch checked={on} label={`Allow ${s.name}`} disabled={!busyOk || current.revoked} onChange={(next) => quiet(next ? `${s.name} allowed` : `${s.name} removed`, () => setSeller(active, s.payTo, next))} />
                     </li>
                   );
@@ -169,15 +170,15 @@ export default function Pocket() {
             </section>
 
             {busyOk && (
-              <section className="space-y-3 rounded-[24px] border border-revoked/30 bg-revoked-bg/50 p-3">
+              <section className="space-y-3 rounded-[14px] border border-hair2 bg-e2 p-3">
                 <div className="flex items-center gap-2 text-[13px] text-t2"><Clock className="size-4" aria-hidden />{current.revoked ? "Revoked. The agent cannot spend from this pocket." : expired ? "Expired. The agent cannot spend from this pocket." : "Revoke is permanent. Return funds sends the whole balance back to your wallet."}</div>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <HoldButton key={`${active}-${current.revoked}`} size="lg" radius={26} holdTime={700} resetAfter={1500} backgroundColor="color-mix(in srgb, var(--revoked) 18%, var(--e2))" fillColor="#a93de0" textColor="var(--revoked-ink)" fillTextColor="#fff"
+                  <HoldButton key={`${active}-${current.revoked}`} glow={false} size="lg" radius={10} holdTime={700} resetAfter={1500} backgroundColor="var(--e1)" fillColor="var(--fg)" textColor="var(--fg)" fillTextColor="var(--bg)"
                     disabled={current.revoked} className="w-full sm:flex-1" doneLabel="Revoked" onHold={() => quiet("Pocket revoked", () => revoke(active))}>{current.revoked ? "Revoked" : "Hold to revoke"}</HoldButton>
-                  <Button variant="secondary" className="h-[52px] px-5" disabled={current.balance === 0n} onClick={() => quiet("Funds returned", () => returnFunds(active))}><Undo2 className="size-4" />Return funds</Button>
+                  <Button variant="secondary" className="h-[52px] rounded-[10px] px-5" disabled={current.balance === 0n} onClick={() => quiet("Funds returned", () => returnFunds(active))}><Undo2 className="size-4" />Return funds</Button>
                 </div>
                 {!current.revoked && (addFunds === null ? (
-                  <button type="button" onClick={() => setAddFunds("1")} className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-ink hover:underline"><Coins className="size-3.5" aria-hidden />Add funds</button>
+                  <button type="button" onClick={() => setAddFunds("1")} className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-accent-ink hover:underline"><Coins className="size-3.5" aria-hidden />Add funds</button>
                 ) : (
                   <form className="flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); let n: bigint; try { n = parseUsd(addFunds); } catch { toast.error("Enter an amount like 1 or 0.50"); return; } quiet("Funds added", () => fund(active, n)); setAddFunds(null); }}>
                     <div className="flex-1"><Field label="Add (US$)"><input className={cn(inputCls, "h-9")} value={addFunds} onChange={(e) => setAddFunds(e.target.value)} inputMode="decimal" aria-label="Amount to add" autoFocus /></Field></div>

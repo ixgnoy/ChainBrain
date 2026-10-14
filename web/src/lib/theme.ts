@@ -6,7 +6,8 @@ export const resolveTheme = (choice: ThemeChoice, system: "light" | "dark"): "li
 export const nextChoice = (c: ThemeChoice): ThemeChoice => ({ system: "light", light: "dark", dark: "system" } as const)[c];
 export const parseChoice = (v: string | null | undefined): ThemeChoice => (v === "light" || v === "dark" ? v : "system");
 
-const sys = (): "light" | "dark" => (typeof matchMedia !== "undefined" && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+// Light (paper) first: dark only when the system asks for it.
+const sys = (): "light" | "dark" => (typeof matchMedia !== "undefined" && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 const read = (): ThemeChoice => { try { return parseChoice(localStorage.getItem(THEME_KEY)); } catch { return "system"; } };
 
 export function useTheme() {
@@ -15,8 +16,8 @@ export function useTheme() {
   const resolved = resolveTheme(choice, systemTheme);
 
   useEffect(() => {
-    const mq = matchMedia("(prefers-color-scheme: light)");
-    const on = () => setSystemTheme(mq.matches ? "light" : "dark");
+    const mq = matchMedia("(prefers-color-scheme: dark)");
+    const on = () => setSystemTheme(mq.matches ? "dark" : "light");
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
   }, []);

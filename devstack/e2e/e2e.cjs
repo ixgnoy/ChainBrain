@@ -107,6 +107,9 @@ async function webFlow(browser, scenes, issues) {
     const dlg = page.getByRole("dialog");
     await dlg.getByRole("button", { name: preset }).click();
     if (edit) await edit(dlg);
+    // three-step wizard: Rules -> Sellers -> Review
+    await dlg.getByRole("button", { name: "Continue" }).click();
+    await dlg.getByRole("button", { name: "Continue" }).click();
     await dlg.getByRole("button", { name: "Create and fund" }).click();
     await page.getByText("Pocket created and funded").waitFor();
     await dlg.waitFor({ state: "hidden" });
