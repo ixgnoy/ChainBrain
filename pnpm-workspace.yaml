@@ -1,6 +1,7 @@
 packages:
   - server
   - web
+  - devstack
 minimumReleaseAgeExclude:
   - '@hono/node-server@2.1.5'
   - '@oxlint/binding-android-arm-eabi@1.88.0'
