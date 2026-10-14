@@ -7,6 +7,7 @@ FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia 
 - Technical document: [`docs/technical-document.md`](docs/technical-document.md)
 - Security self-assessment: [`docs/security-self-assessment.md`](docs/security-self-assessment.md)
 - On-chain evidence: [`docs/evidence.md`](docs/evidence.md)
+- Frontend and dev stack: [`docs/frontend/README.md`](docs/frontend/README.md)
 - Product spec: [`docs/02-product/product-design.md`](docs/02-product/product-design.md)
 
 ## Repository
@@ -15,8 +16,9 @@ FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia 
 | --- | --- |
 | `contracts/` | Pocket (ERC-1271) and PocketFactory, Foundry, fork tests |
 | `server/` | Wallet tool layer, Claude agent loop, wallet API (:8787), four x402 test sellers (:4021), scripts |
-| `web/` | Owner app for the laptop: browser wallet, chat with trace, approvals, red-team box |
-| `mobile/` | Owner app for phones in Expo Go (also `npx expo prebuild` for Android Studio / Xcode) |
+| `web/` | Owner and ops console for the laptop: browser wallet, chat with trace, approvals, red-team box, Bank / Compliance view ([docs](docs/frontend/web.md)) |
+| `mobile/` | Owner app for phones in Expo Go (also `npx expo prebuild` for Android Studio / Xcode) ([docs](docs/frontend/mobile.md)) |
+| `devstack/` | Real server and contracts on a local Base Sepolia fork with a scripted agent: demo and test both apps with no API key or funds ([README](devstack/README.md)) |
 | `android/` | Native Android owner app in Kotlin (Jetpack Compose), opens in Android Studio |
 
 ## Prerequisites
