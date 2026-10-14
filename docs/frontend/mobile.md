@@ -20,6 +20,10 @@ Home ("Ask agent" pill, Testnet chip, pocket total and main wallet balance, roun
 
 **Demo data:** if the API cannot be reached, built-in sample pockets, activity and chat load (`src/lib/demo.ts`), with a quiet "Demo data" line; live data takes over when the API answers.
 
+## Motion and haptics
+
+Spec: [design-system/chainbrain/pages/motion.md](../../design-system/chainbrain/pages/motion.md). Glass tab bar (iOS 26 Liquid Glass, blur on older iOS, solid on Android/web) with a sliding highlight, finger scrubbing and minimize-on-scroll; tabs slide in from the direction of travel and keep their state; sheets with drag physics, rubber-banding and keyboard lift; slide-to-approve and hold-to-revoke with ticks and a drawn success / error mark; rolling-digit balances; staggered first-load reveals; live agent steps with a status mark that draws its check; a calm three-dot working indicator. Rich haptics through `src/haptics.ts` (semantic, throttled). Everything honours Reduce Motion and Reduce Transparency.
+
 ## Where the logic is
 
 | File | What |

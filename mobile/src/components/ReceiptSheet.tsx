@@ -5,6 +5,8 @@ import { c } from "../tokens";
 import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
 import { Button, CodePill, Details, Pill } from "../ui/kit";
+import { Money } from "../ui/Money";
+import { Reveal } from "../ui/Reveal";
 import { T } from "../ui/Text";
 import { cleanText } from "../lib/sanitize";
 import { chainFor, type LedgerRow } from "../lib/events";
@@ -39,10 +41,14 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
     : row.kind === "disclosure" ? `${seller} asked for ${(row.asked ?? []).map((a) => cleanText(a, 40)).join(", ") || "your data"}${row.signRequest ? " and a signature" : ""}. Your wallet refused, so nothing was shared.`
     : row.kind === "intent" ? cleanText(row.text, 300)
     : bad ? `This payment was not made: ${plainReason(row.reasons[0] ?? "")}.` : row.outcome === "pending" ? "Your agent is waiting for you to approve this payment." : cleanText(row.text, 300);
-  const cell = (k: string, v: string) => (
-    <View key={k} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 12, gap: 16 }}>
-      <T v="sub" color="muted">{k}</T><T v="sub" w="medium" style={{ flexShrink: 1, textAlign: "right" }}>{v}</T>
-    </View>
+  // rows enter 40 ms apart (8 pt rise + fade) once the sheet is mostly up; the transaction hash comes last
+  const R = (i: number) => ({ index: i, step: 40, base: 140, dy: 8 });
+  const cell = (k: string, v: string, i: number) => (
+    <Reveal key={k} {...R(i)}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 12, gap: 16 }}>
+        <T v="sub" color="muted">{k}</T><T v="sub" w="medium" style={{ flexShrink: 1, textAlign: "right" }}>{v}</T>
+      </View>
+    </Reveal>
   );
   const facts: [string, string][] = [];
   if (row.kind !== "intent" && row.kind !== "owner") facts.push(["Seller", seller]);
@@ -59,23 +65,27 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
     <View>
       <ScrollView style={{ maxHeight: 640 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 8, gap: 20 }} showsVerticalScrollIndicator={false}>
         <View style={{ alignItems: "center", gap: 10, paddingTop: 4 }}>
-          {noMoney ? <T v="amount" color={bad ? "negative" : "ink"} style={{ textAlign: "center" }}>{headline ?? "No payment made"}</T> : (
-            <T v="balance" color={bad ? "muted" : "ink"} style={bad ? { textDecorationLine: "line-through" } : undefined}>US${usd(row.amount)}</T>
-          )}
-          <View style={{ alignSelf: "center" }}><Pill label={status} tone={bad ? "negative" : row.outcome === "pending" ? "warning" : "accent"} /></View>
+          <Reveal {...R(0)}>
+            {noMoney ? <T v="amount" color={bad ? "negative" : "ink"} style={{ textAlign: "center" }}>{headline ?? "No payment made"}</T> : (
+              <Money v="balance" value={usd(row.amount)} countIn color={bad ? "muted" : "ink"} strike={bad} />
+            )}
+          </Reveal>
+          <Reveal {...R(1)}><View style={{ alignSelf: "center" }}><Pill label={status} tone={bad ? "negative" : row.outcome === "pending" ? "warning" : "accent"} /></View></Reveal>
         </View>
-        <T v="body" color="ink2" style={{ textAlign: "center" }}>{sentence}</T>
+        <Reveal {...R(2)}><T v="body" color="ink2" style={{ textAlign: "center" }}>{sentence}</T></Reveal>
         <View style={{ backgroundColor: c.canvas, borderRadius: 20, paddingHorizontal: 16 }}>
-          {facts.map(([k, v]) => cell(k, v))}
+          {facts.map(([k, v], i) => cell(k, v, 3 + i))}
         </View>
         {row.tx ? (
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-            <T v="sub" color="muted">Transaction</T>
-            <TxLink tx={row.tx} />
-          </View>
+          <Reveal {...R(3 + facts.length)}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <T v="sub" color="muted">Transaction</T>
+              <TxLink tx={row.tx} />
+            </View>
+          </Reveal>
         ) : null}
-        {row.reasons.length ? <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>{row.reasons.map((k) => <CodePill key={k} code={k} />)}</View> : null}
-        <Details rows={tech} />
+        {row.reasons.length ? <Reveal {...R(4 + facts.length)}><View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>{row.reasons.map((k) => <CodePill key={k} code={k} />)}</View></Reveal> : null}
+        <Reveal {...R(5 + facts.length)}><Details rows={tech} /></Reveal>
       </ScrollView>
       <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
         <Button label="Done" onPress={close} />

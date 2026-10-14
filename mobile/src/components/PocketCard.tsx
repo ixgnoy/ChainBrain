@@ -1,6 +1,9 @@
 // A pocket as a Ryt list row (avatar, name, "2 sellers · until 23:59", balance), plus helpers for the fact pills.
 import React from "react";
+import { View } from "react-native";
 import { ListRow, Avatar } from "../ui/kit";
+import { Money } from "../ui/Money";
+import { T } from "../ui/Text";
 import { cleanText } from "../lib/sanitize";
 import { NEVER } from "../lib/shared";
 import { usd, money, dateLabel, shortAddr } from "../lib/util";
@@ -45,7 +48,12 @@ export function PocketRow({ pocket, onPress, last }: { pocket: Pocket; onPress: 
       a11y={`${cleanText(pocket.name, 30)} pocket, ${usd(pocket.balance)} USDC`}
       avatar={<Avatar label={pocket.name} tone={pocket.revoked || isExpired(pocket) ? "fill" : "soft"} />}
       title={cleanText(pocket.name, 30)} sub={pocketLine(pocket)}
-      right={money(pocket.balance)} rightSub={state} rightSubTone={STATE_TONE[state]}
-    />
+    >
+      {/* the balance rolls when it changes while the row is on screen (no count-in, no colour flash) */}
+      <View style={{ alignItems: "flex-end", gap: 2 }}>
+        <Money value={usd(pocket.balance)} v="row" decorative />
+        <T v="sub" color={STATE_TONE[state]}>{state}</T>
+      </View>
+    </ListRow>
   );
 }

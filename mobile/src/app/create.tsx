@@ -1,17 +1,20 @@
 import React, { useMemo, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
-import { router } from "expo-router";
-import Animated, { FadeInRight, FadeOutLeft } from "react-native-reanimated";
+import { router, Stack } from "expo-router";
+import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming, type EntryExitAnimationFunction } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "../store";
-import { c } from "../tokens";
+import { c, motion } from "../tokens";
 import { BackHeader } from "../ui/BackHeader";
-import { Avatar, Button, Card, Chip, Field, Press } from "../ui/kit";
+import { Avatar, Button, Card, Field, Press } from "../ui/kit";
+import { Money } from "../ui/Money";
+import { Reveal } from "../ui/Reveal";
+import { SuccessMark, landingDip } from "../ui/SuccessMark";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
 import { Slider } from "../ui/Slider";
 import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
-import { useReduceMotion } from "../ui/motion";
+import { EASE_OUT, settle, useReduceMotion } from "../ui/motion";
 import { txError } from "../components/ActionSheet";
 import { TxLink } from "../components/TxLink";
 import { cleanText } from "../lib/sanitize";
@@ -34,10 +37,127 @@ type AskMode = "always" | "above" | "never";
 type Progress = { pocket?: `0x${string}`; funded?: boolean; createTx?: string; fundTx?: string };
 const LIFETIMES: [Lifetime, string, string][] = [["one-task", "One task", "Ends in 24 hours. Made for a single purchase."], ["until-tonight", "Until tonight", "Ends at 23:59 your time."], ["ongoing", "Ongoing", "Runs for a year. You can revoke it any time."]];
 
+// ---- step transition: new page slides in from the direction of travel (48 pt + fade, `smooth`), old one leaves 28 pt the other way (160 ms)
+const slideIn = (dir: number, reduce: boolean): EntryExitAnimationFunction => () => {
+  "worklet";
+  return {
+    initialValues: { opacity: 0, transform: [{ translateX: reduce ? 0 : dir * 48 }] },
+    animations: { opacity: withTiming(1, { duration: motion.base, easing: EASE_OUT }), transform: [{ translateX: withSpring(0, motion.spring.smooth) }] },
+  };
+};
+const slideOut = (dir: number, reduce: boolean): EntryExitAnimationFunction => () => {
+  "worklet";
+  return {
+    initialValues: { opacity: 1, transform: [{ translateX: 0 }] },
+    animations: { opacity: withTiming(0, { duration: motion.exit, easing: EASE_OUT }), transform: [{ translateX: withTiming(reduce ? 0 : -dir * 28, { duration: motion.exit, easing: EASE_OUT }) }] },
+  };
+};
+
+/** 7 segments; each fill scales in from the left on `smooth`, with a small wave so forward steps read as progress. */
+function Segment({ on, delay }: { on: boolean; delay: number }) {
+  const reduce = useReduceMotion();
+  const f = useSharedValue(on ? 1 : 0);
+  React.useEffect(() => { f.value = withDelay(reduce ? 0 : delay, reduce ? withTiming(on ? 1 : 0, { duration: 180 }) : withSpring(on ? 1 : 0, motion.spring.smooth)); }, [on]); // eslint-disable-line react-hooks/exhaustive-deps
+  const a = useAnimatedStyle(() => ({ transform: [{ scaleX: Math.max(0, f.value) }], opacity: Math.min(1, f.value * 4) }));
+  return (
+    <View style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: c.line, overflow: "hidden" }}>
+      <Animated.View style={[{ flex: 1, backgroundColor: c.accent, borderRadius: 2, transformOrigin: "left" } as object, a]} />
+    </View>
+  );
+}
+
+/** Choice card: the fill and a 1.5 pt border fade to the selected state (`snappy`), the check pops in; press is 0.985 from kit. */
+function Option({ on, title, sub, onPress }: { on: boolean; title: string; sub: string; onPress: () => void }) {
+  const reduce = useReduceMotion();
+  const sel = useSharedValue(on ? 1 : 0);
+  React.useEffect(() => { settle(sel, on ? 1 : 0, reduce, motion.spring.snappy); }, [on]); // eslint-disable-line react-hooks/exhaustive-deps
+  const box = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(sel.value, [0, 1], [c.card, c.accentSoft]), borderColor: interpolateColor(sel.value, [0, 1], ["rgba(0,114,127,0)", c.accent]) }));
+  const tick = useAnimatedStyle(() => ({ opacity: Math.min(1, Math.max(0, sel.value)), transform: [{ scale: reduce ? 1 : 0.6 + 0.4 * sel.value }] }));
+  return (
+    <Press kind="row" haptics="select" onPress={onPress} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={title}>
+      <Animated.View style={[{ padding: 16, borderRadius: 20, borderWidth: 1.5, gap: 2, flexDirection: "row", alignItems: "center" }, box]}>
+        <View style={{ flex: 1, gap: 2 }}><T v="row" w="semi">{title}</T><T v="sub" color="ink2">{sub}</T></View>
+        <Animated.View style={tick}><Icon name="check" size={20} color={c.accent} stroke={2.2} /></Animated.View>
+      </Animated.View>
+    </Press>
+  );
+}
+
+/** Filter chip whose fill cross-fades grey/teal when it is picked. */
+function PickChip({ label, on, onPress }: { label: string; on?: boolean; onPress: () => void }) {
+  const reduce = useReduceMotion();
+  const sel = useSharedValue(on ? 1 : 0);
+  React.useEffect(() => { settle(sel, on ? 1 : 0, reduce, motion.spring.snappy); }, [on]); // eslint-disable-line react-hooks/exhaustive-deps
+  const box = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(sel.value, [0, 1], [c.card, c.accent]) }));
+  const txt = useAnimatedStyle(() => ({ color: interpolateColor(sel.value, [0, 1], [c.ink2, c.onAccent]) }));
+  return (
+    <Press haptics="select" onPress={onPress} scale={0.96} accessibilityRole="button" accessibilityState={{ selected: !!on }} style={{ borderRadius: 9999 }}>
+      <Animated.View style={[{ height: 40, paddingHorizontal: 16, borderRadius: 9999, justifyContent: "center" }, box]}>
+        <Animated.Text style={[{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, lineHeight: 20 }, txt]}>{label}</Animated.Text>
+      </Animated.View>
+    </Press>
+  );
+}
+
+const BigNumber = ({ value, suffix }: { value: string; suffix?: string }) => (
+  <View style={{ alignItems: "center", gap: 4, paddingVertical: 8 }}><Money v="balance" value={value} />{suffix ? <T v="sub" color="muted">{suffix}</T> : null}</View>
+);
+const Title = ({ h, sub }: { h: string; sub: string }) => (
+  <View style={{ gap: 6 }}><T v="section" accessibilityRole="header">{h}</T><T v="body" color="ink2">{sub}</T></View>
+);
+
+/** Success: the card rises, the mark draws, the budget rolls in, the two hashes fade up. The first pocket ever gets one soft ring. */
+function Done({ name, budget, createTx, fundTx, first, onOpen }: { name: string; budget: string; createTx?: string; fundTx?: string; first: boolean; onOpen: () => void }) {
+  const reduce = useReduceMotion();
+  const rise = useSharedValue(0);
+  const dip = useSharedValue(1);
+  const ring = useSharedValue(0);
+  React.useEffect(() => {
+    rise.value = reduce ? withTiming(1, { duration: 180 }) : withSpring(1, motion.spring.snappy);
+    const t = setTimeout(() => landingDip(dip, reduce), 380);
+    if (first && !reduce) ring.value = withDelay(300, withTiming(1, { duration: 1000, easing: EASE_OUT }));
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const bg = useAnimatedStyle(() => ({ opacity: Math.min(1, rise.value * 3) }));
+  const card = useAnimatedStyle(() => ({ opacity: Math.min(1, rise.value * 2), transform: [{ translateY: reduce ? 0 : (1 - rise.value) * (first ? 32 : 16) }, { scale: dip.value }] }));
+  const halo = useAnimatedStyle(() => ({ opacity: 0.7 * (1 - ring.value), transform: [{ scale: 1 + ring.value * 1.1 }] }));
+  return (
+    <Animated.View style={[{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, zIndex: 20, backgroundColor: c.canvas, justifyContent: "center", padding: 20 }, bg]}>
+      <Animated.View style={card}>
+        <Card pad={24} style={{ alignItems: "center", gap: 14 }}>
+          <View style={{ width: 72, height: 72, alignItems: "center", justifyContent: "center" }}>
+            {first ? <Animated.View pointerEvents="none" style={[{ position: "absolute", width: 72, height: 72, borderRadius: 36, backgroundColor: c.accentSoft }, halo]} /> : null}
+            <SuccessMark size={72} delay={120} />
+          </View>
+          <T v="section" accessibilityRole="header">Pocket created</T>
+          <View style={{ alignItems: "center", gap: 2 }}>
+            <T v="sub" color="muted">{name} now holds</T>
+            <Money v="balance" value={budget} countIn />
+          </View>
+          <View style={{ alignSelf: "stretch", gap: 6 }}>
+            {([["Create pocket", createTx], ["Add US$" + budget, fundTx]] as const).map(([l, h], i) => h ? (
+              <Reveal key={l} index={i} step={90} base={620} dy={8}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: c.canvas, borderRadius: 14, paddingLeft: 14, paddingRight: 8 }}>
+                  <T v="sub" color="muted">{l}</T><TxLink tx={h} />
+                </View>
+              </Reveal>
+            ) : null)}
+          </View>
+          <Reveal index={2} step={90} base={620} dy={8} style={{ alignSelf: "stretch" }}><Button label="Open pocket" onPress={onOpen} /></Reveal>
+        </Card>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
 export default function Create() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
-  const { cfg, wallet, addPocket, balances, demo, refreshPockets, recordTx, setNotice } = useApp();
+  const { cfg, wallet, addPocket, balances, demo, refreshPockets, recordTx, setNotice, pockets } = useApp();
+  const first = useRef(pockets.length === 0); // the first pocket ever gets the one celebration
+  const dir = useRef(1);
+  const left = useRef(false);
+  const [fin, setFin] = useState<{ createTx?: string; fundTx?: string; id?: string }>({});
   const [step, setStep] = useState(0);
   const [preset, setPreset] = useState<string>("research");
   const [name, setName] = useState<string>(PRESETS.research.label);
@@ -67,7 +187,8 @@ export default function Create() {
   const style = preset === "custom" ? "custom" : styleForPreset(values.label);
 
   const canNext = step === 0 ? name.trim().length > 0 : step === 2 ? sellers.length > 0 : true;
-  const go = (n: number) => { haptic.select(); setStep(Math.max(0, Math.min(STEPS.length - 1, n))); };
+  const go = (n: number) => { const t = Math.max(0, Math.min(STEPS.length - 1, n)); dir.current = t >= step ? 1 : -1; haptic.select(); setStep(t); };
+  const open = (id?: string) => { if (left.current || !id) return; left.current = true; router.replace({ pathname: "/pocket/[id]", params: { id } }); };
   const tonightPassed = life === "until-tonight" && Number(expiryFor(life)) * 1000 < Date.now();
 
   const create = async () => {
@@ -91,12 +212,13 @@ export default function Create() {
         recordTx({ kind: "fund", pocket: prog.pocket, hash: f.hash, amount: a.budget.toString() });
         await refreshPockets();
       }
-      setStage("done");
       const id = prog.pocket;
+      setFin({ createTx: prog.createTx, fundTx: prog.fundTx, id });
+      setStage("done");
       setNotice({ title: `${values.label} created and funded`, pocket: id, txs: [{ label: "Create pocket", hash: prog.createTx! }, { label: `Add US$${values.budget}`, hash: prog.fundTx! }] });
       done.current = { createTx: prog.createTx, fundTx: prog.fundTx };
       progress.current = {};
-      setTimeout(() => router.replace({ pathname: "/pocket/[id]", params: { id } }), 900);
+      setTimeout(() => open(id), first.current ? 2600 : 2200);
     } catch (e) {
       setStage("idle");
       setError(txError(e));
@@ -105,18 +227,6 @@ export default function Create() {
   };
 
   const toggle = (id: string) => { haptic.select(); setSellers((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); };
-  const BigNumber = ({ value, suffix }: { value: string; suffix?: string }) => (
-    <View style={{ alignItems: "center", gap: 4, paddingVertical: 8 }}><T v="balance">US${value}</T>{suffix ? <T v="sub" color="muted">{suffix}</T> : null}</View>
-  );
-  const Title = ({ h, sub }: { h: string; sub: string }) => (
-    <View style={{ gap: 6 }}><T v="section" accessibilityRole="header">{h}</T><T v="body" color="ink2">{sub}</T></View>
-  );
-  const Option = ({ on, title, sub, onPress }: { on: boolean; title: string; sub: string; onPress: () => void }) => (
-    <Press haptics="select" onPress={onPress} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={title} style={{ padding: 16, borderRadius: 20, backgroundColor: on ? c.accentSoft : c.card, gap: 2, flexDirection: "row", alignItems: "center" }}>
-      <View style={{ flex: 1, gap: 2 }}><T v="row" w="semi">{title}</T><T v="sub" color="ink2">{sub}</T></View>
-      {on ? <Icon name="check" size={20} color={c.accent} stroke={2.2} /> : null}
-    </Press>
-  );
   const askLabel = askMode === "always" ? "Every payment" : askMode === "never" ? "Never" : `Above US$${money2(askV)}`;
 
   const page = (() => {
@@ -137,7 +247,7 @@ export default function Create() {
         <View style={{ gap: 20 }}>
           <Title h="How much goes in?" sub="This is the agent's whole budget. When it is gone, the agent stops." />
           <BigNumber value={money2(funds)} />
-          <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>{FUND_PRESETS.map((v) => <Chip key={v} on={funds === v} label={`US$${money2(v)}`} onPress={() => setFunds(v)} />)}</View>
+          <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>{FUND_PRESETS.map((v) => <PickChip key={v} on={funds === v} label={`US$${money2(v)}`} onPress={() => setFunds(v)} />)}</View>
           <Slider min={0.05} max={10} step={0.05} value={funds} onChange={setFunds} />
           {balances && <T v="cap" color="muted" style={{ textAlign: "center" }}>Main wallet: US${usd(balances.usdc)}{balances.usdc < parseUsd(money2(funds)) ? ". Not enough for this budget." : ""}</T>}
         </View>);
@@ -165,7 +275,7 @@ export default function Create() {
         <View style={{ gap: 20 }}>
           <Title h="When should it ask you?" sub="Payments up to this amount go through on their own. Above it, your agent waits for your OK." />
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-            {([["always", "Always"], ["above", "Above an amount"], ["never", "Never"]] as const).map(([k, l]) => <Chip key={k} label={l} on={askMode === k} onPress={() => setAskMode(k)} />)}
+            {([["always", "Always"], ["above", "Above an amount"], ["never", "Never"]] as const).map(([k, l]) => <PickChip key={k} label={l} on={askMode === k} onPress={() => setAskMode(k)} />)}
           </View>
           {askMode === "above" && (<><BigNumber value={money2(askV)} /><Slider min={0.05} max={capV} step={0.05} value={askV} onChange={setAsk} /></>)}
           <T v="sub" color="ink2">{askMode === "always" ? "You approve every payment." : askMode === "never" ? "The agent never asks. It spends freely up to the cap." : `Up to US$${money2(askV)} it pays alone. Above that, up to US$${money2(capV)}, it asks you.`}</T>
@@ -205,11 +315,12 @@ export default function Create() {
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
       <BackHeader title="New pocket" sub={`Step ${step + 1} of ${STEPS.length}`} close onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
-      <View style={{ flexDirection: "row", gap: 4, paddingHorizontal: 20, marginVertical: 12 }}>
-        {STEPS.map((s, i) => <View key={s} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= step ? c.accent : c.line }} />)}
+      <Stack.Screen options={{ gestureEnabled: stage === "idle" }} />
+      <View style={{ flexDirection: "row", gap: 4, paddingHorizontal: 20, marginVertical: 12 }} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: STEPS.length, now: step + 1 }}>
+        {STEPS.map((s, i) => <Segment key={s} on={i <= step} delay={Math.abs(i - step) * 30} />)}
       </View>
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 12, gap: 22 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Animated.View key={step} entering={reduce ? undefined : FadeInRight.duration(200)} exiting={reduce ? undefined : FadeOutLeft.duration(120)}>{page}</Animated.View>
+        <Animated.View key={step} entering={slideIn(dir.current, reduce)} exiting={slideOut(dir.current, reduce)}>{page}</Animated.View>
       </ScrollView>
       <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: insets.bottom + 12, gap: 6, backgroundColor: c.canvas }}>
         {step === STEPS.length - 1 ? (
@@ -219,6 +330,7 @@ export default function Create() {
         )}
         {step > 0 && <Button label="Back" kind="text" onPress={() => go(step - 1)} small />}
       </View>
+      {stage === "done" ? <Done name={values.label} budget={values.budget} createTx={fin.createTx} fundTx={fin.fundTx} first={first.current} onOpen={() => open(fin.id)} /> : null}
     </View>
   );
 }

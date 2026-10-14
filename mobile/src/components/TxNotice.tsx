@@ -2,11 +2,13 @@
 // latest one on the pocket page and in the agent chat until dismissed.
 import React from "react";
 import { View } from "react-native";
+import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
 import { c } from "../tokens";
 import { useApp } from "../store";
 import { Press } from "../ui/kit";
 import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
+import { useReduceMotion } from "../ui/motion";
 import { sameAddr } from "../lib/events";
 import { TxLink } from "./TxLink";
 
@@ -29,13 +31,14 @@ export function TxDone({ title, txs }: { title: string; txs: { label?: string; h
 
 export function TxNotice({ pocket }: { pocket?: string }) {
   const { notice, setNotice } = useApp();
+  const reduce = useReduceMotion();
   if (!notice || (pocket && notice.pocket && !sameAddr(notice.pocket, pocket))) return null;
   return (
-    <View style={{ marginHorizontal: 20, marginTop: 16 }}>
+    <Animated.View key={notice.txs.map((t) => t.hash).join()} entering={reduce ? undefined : FadeInDown.duration(260).delay(60)} exiting={FadeOut.duration(160)} style={{ marginHorizontal: 20, marginTop: 16 }}>
       <TxDone title={notice.title} txs={notice.txs} />
-      <Press haptics="select" onPress={() => setNotice(null)} accessibilityRole="button" accessibilityLabel="Dismiss" hitSlop={8} style={{ position: "absolute", top: 8, right: 8, width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
+      <Press haptics="select" kind="icon" onPress={() => setNotice(null)} accessibilityRole="button" accessibilityLabel="Dismiss" hitSlop={8} style={{ position: "absolute", top: 8, right: 8, width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
         <Icon name="x" size={16} color={c.ink2} />
       </Press>
-    </View>
+    </Animated.View>
   );
 }

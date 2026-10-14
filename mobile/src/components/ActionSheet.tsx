@@ -1,8 +1,10 @@
 // Fund / Return funds / Revoke: pick one of your pockets, then confirm with the matching ceremony. Real owner transactions, signed on this phone.
 import React, { useEffect, useRef, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useApp, type Pocket } from "../store";
 import { Sheet } from "../ui/Sheet";
+import { SheetScroll } from "../ui/SheetScroll";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
 import { HoldToRevoke } from "../ui/HoldToRevoke";
 import { Avatar, Button, Chip, ListRow } from "../ui/kit";
@@ -14,7 +16,8 @@ import { parseUsd } from "../lib/shared";
 import { usd, money } from "../lib/util";
 import { notify, DEMO_MSG } from "../lib/toast";
 import { c } from "../tokens";
-import { TxDone } from "./TxNotice";
+import { SheetSuccess } from "./SheetSuccess";
+import { ErrorNote } from "./ErrorNote";
 
 type Mode = "fund" | "return" | "revoke";
 const COPY: Record<Mode, { title: string; hint: string }> = {
@@ -51,11 +54,19 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
   const [amount, setAmount] = useState("1.00");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const formH = useRef(0);
   useEffect(() => { setDone(null); setSel(initial ?? (pockets.filter((p) => p.owned && !p.revoked).length === 1 ? pockets.find((p) => p.owned && !p.revoked)?.address : undefined)); setError(null); }, [initial, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // revoke: let the success moment play, then close (the pocket page shows the hash notice)
+  useEffect(() => {
+    if (mode !== "revoke" || !done) return;
+    const t = setTimeout(close, 1400);
+    return () => clearTimeout(t);
+  }, [done]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const eligible = (p: Pocket) => p.owned && (mode === "return" ? true : !p.revoked);
   const chosen = pockets.find((p) => p.address === sel);
-  const fail = (e: unknown): never => { haptic.error(); setError(txError(e)); throw e; };
+  const fail = (e: unknown): never => { setError(txError(e)); throw e; };
   const guard = () => { if (demo) { notify(DEMO_MSG); return true; } return false; };
 
   // fund and return stay open on success so the owner reads the transaction hash; revoke closes and the pocket page shows it
@@ -79,17 +90,19 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
     if (guard()) return;
     setBusy(true); setError(null);
     try {
-      const r = await wallet!.revoke(chosen!.address); haptic.heavy();
+      const r = await wallet!.revoke(chosen!.address);
       recordTx({ kind: "revoke", pocket: chosen!.address, hash: r.hash });
-      setNotice({ title: `${cleanText(chosen!.name, 30)} revoked`, pocket: chosen!.address, txs: [{ hash: r.hash }] });
-      await refreshPockets(); close();
+      const name = cleanText(chosen!.name, 30);
+      setNotice({ title: `${name} revoked`, pocket: chosen!.address, txs: [{ hash: r.hash }] });
+      setDone({ title: `${name} revoked`, hash: r.hash });
+      await refreshPockets();
     }
     catch (e) { haptic.error(); setError(txError(e)); } finally { setBusy(false); }
   };
 
-  return (
-    <View>
-      <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 16 }} showsVerticalScrollIndicator={false}>
+  const form = (
+    <Animated.View key="form" onLayout={(e) => { formH.current = Math.max(formH.current, e.nativeEvent.layout.height); }} style={{ flexShrink: 1 }}>
+      <SheetScroll contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 16 }} showsVerticalScrollIndicator={false}>
         <View style={{ gap: 4 }}>
           <T v="section">{COPY[mode].title}</T>
           <T v="body" color="ink2">{COPY[mode].hint}</T>
@@ -117,17 +130,18 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
           </View>
         )}
         {mode === "return" && chosen && <T v="sub" color="ink2">{money(chosen.balance)} comes back to your main wallet.</T>}
-        {done ? <TxDone title={done.title} txs={[{ hash: done.hash }]} /> : null}
-        {error && (
-          <View style={{ backgroundColor: c.negativeSoft, borderRadius: 16, padding: 14 }}>
-            <T v="sub" color="negative">{error}</T>
-          </View>
-        )}
-      </ScrollView>
+        {error ? <ErrorNote text={error} /> : null}
+      </SheetScroll>
+    </Animated.View>
+  );
+
+  return (
+    <View style={{ flexShrink: 1 }}>
+      {done ? <SheetSuccess key="ok" minHeight={formH.current} title={done.title} txs={[{ hash: done.hash }]} /> : form}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}>
         {mode === "fund" && <SlideToConfirm key={`f${sel}${amount}${error}`} label={`Slide to fund ${amount}`} doneLabel="Funded" disabled={!chosen || !wallet} onConfirm={doFund} />}
         {mode === "return" && <SlideToConfirm key={`r${sel}${error}`} label="Slide to return funds" doneLabel="Returned" disabled={!chosen || !wallet || chosen.balance === 0n} onConfirm={doReturn} />}
-        {mode === "revoke" && <HoldToRevoke disabled={!chosen || !wallet} busy={busy} onComplete={doRevoke} />}
+        {mode === "revoke" && (done ? <View style={{ height: 64 }} /> : <HoldToRevoke disabled={!chosen || !wallet} busy={busy} onComplete={doRevoke} />)}
         <Button label={done ? "Done" : "Cancel"} kind={done ? "secondary" : "text"} onPress={close} />
       </View>
     </View>

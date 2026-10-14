@@ -290,7 +290,7 @@ async function phoneFlow(browser, scenes, issues) {
   await stp("phone: scenes 1-3 (question, intent, auto payment, slide to approve co-sign)", async () => {
     await tab("Agent");
     await chatSay(S[1].text);
-    await page.getByText("US$2 in total or per report?").first().waitFor({ timeout: 40000 });
+    await page.getByText("US$2 in total or per report?").filter({ visible: true }).first().waitFor({ timeout: 40000 }); // also rendered in a hidden tab
     check("scene 1: agent asks 'US$2 in total or per report?'", true);
     await chatSay(S[1].followUp);
     await confirmIntent();
@@ -314,12 +314,11 @@ async function phoneFlow(browser, scenes, issues) {
 
   await stp("phone: Activity and a receipt", async () => {
     await tab("Activity");
-    await page.getByText(/DataPro/).first().waitFor();
+    await page.getByText(/DataPro/).filter({ visible: true }).first().waitFor(); // tabs stay mounted: skip hidden copies
     const t0 = await page.locator("body").innerText();
     check("activity lists the DataLite and DataPro payments", /DataLite/.test(t0) && /DataPro/.test(t0));
     await shot(page, "phone-07-activity");
-    // inactive tabs stay mounted (aria-hidden) under the active one: click the row on the Activity screen itself
-    await page.locator('div:not([aria-hidden="true"] *):text-is("DataPro")').first().click();
+    await page.getByText("DataPro", { exact: true }).filter({ visible: true }).first().click(); // tabs stay mounted: only the visible Activity row
     await sleep(700);
     const t = await page.locator("body").innerText();
     check("receipt shows amount and co-signed", /1\.50/.test(t) && /co-?signed/i.test(t), t.slice(0, 300));
@@ -347,7 +346,7 @@ async function phoneFlow(browser, scenes, issues) {
     await sleep(600); // let the sheet finish sliding in before reading the button's position
     const b = await hold.boundingBox();
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
-    await page.mouse.down(); await sleep(1100); await page.mouse.up();
+    await page.mouse.down(); await sleep(1600); await page.mouse.up(); // the hold is 1.2 s
     await until("revoked on chain", () => isRevoked(p7), 15000);
     check("scene 7: hold-to-revoke revoked the pocket on chain", await isRevoked(p7));
     await waitReply(p7);

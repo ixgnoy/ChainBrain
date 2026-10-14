@@ -1,10 +1,12 @@
 // Owner-signed edit of a pocket's rules: per-payment cap and the ask-me threshold (Pocket.setCap / setAskAbove), then the tx hash.
 // Also the one-tap fix of the scene 8 dead end: opened prefilled, optionally adding money so the pocket can pay the quote.
 import React, { useEffect, useRef, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useApp } from "../store";
 import { c } from "../tokens";
 import { Sheet } from "../ui/Sheet";
+import { SheetScroll } from "../ui/SheetScroll";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
 import { Button, Chip, Field } from "../ui/kit";
 import { T } from "../ui/Text";
@@ -14,7 +16,8 @@ import { NEVER, parseUsd } from "../lib/shared";
 import { money, usd } from "../lib/util";
 import { notify, DEMO_MSG } from "../lib/toast";
 import { txError } from "./ActionSheet";
-import { TxDone } from "./TxNotice";
+import { SheetSuccess } from "./SheetSuccess";
+import { ErrorNote } from "./ErrorNote";
 
 export function RulesSheet() {
   const { rules, setRules } = useApp();
@@ -39,6 +42,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
   const [never, setNever] = useState(!isCap && !!pocket && pocket.askAbove === NEVER);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ title: string; txs: { label: string; hash: string }[] } | null>(null);
+  const formH = useRef(0);
   useEffect(() => { setError(null); }, [text, never]);
 
   if (!pocket) return null;
@@ -69,17 +73,16 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
         txs.push({ label: "New ask-me limit", hash: a.hash });
         setDone({ title: never ? "Your agent will never ask you" : v === 0n ? "Your agent will ask you every time" : `Your agent now asks above ${money(v)}`, txs });
       }
-      haptic.success();
       await refreshPockets();
-    } catch (e) { haptic.error(); setError(txError(e)); throw e; }
+    } catch (e) { setError(txError(e)); throw e; }
   };
 
   const hint = isCap
     ? `The most your agent can pay in one go from ${name}. Now ${money(pocket.cap)}.`
     : `Payments up to this amount go through on their own; above it your agent waits for your OK. Now ${pocket.askAbove === NEVER || pocket.askAbove > pocket.cap ? "never" : money(pocket.askAbove)}.`;
-  return (
-    <View>
-      <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 16 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+  const form = (
+    <Animated.View key="form" onLayout={(e) => { formH.current = Math.max(formH.current, e.nativeEvent.layout.height); }} style={{ flexShrink: 1 }}>
+      <SheetScroll contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 16 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={{ gap: 4 }}>
           <T v="section">{isCap ? "Payment cap" : "Ask me above"}</T>
           <T v="body" color="ink2">{hint}</T>
@@ -97,11 +100,15 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
           </View>
         ) : <T v="sub" color="warning">With "Never ask" the agent spends freely up to the cap. The pocket balance is still its whole budget.</T>}
         {topUp > 0n ? <T v="sub" color="ink2">The pocket holds less than this price, so {money(topUp)} from your main wallet is added in a second step.</T> : null}
-        {done ? <TxDone title={done.title} txs={done.txs} /> : null}
-        {error ? <View style={{ backgroundColor: c.negativeSoft, borderRadius: 16, padding: 14 }}><T v="sub" color="negative">{error}</T></View> : null}
-      </ScrollView>
+        {error ? <ErrorNote text={error} /> : null}
+      </SheetScroll>
+    </Animated.View>
+  );
+  return (
+    <View style={{ flexShrink: 1 }}>
+      {done ? <SheetSuccess key="ok" minHeight={formH.current} title={done.title} txs={done.txs} /> : form}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}>
-        <SlideToConfirm key={`${text}${never}${error}`} label={isCap && topUp > 0n ? "Slide to raise cap and add money" : "Slide to confirm"} doneLabel="Saved" disabled={!ok || !wallet || !!done} onConfirm={save} />
+        <SlideToConfirm key={`${text}${never}${error}`} label={isCap && topUp > 0n ? "Slide to raise cap and add money" : "Slide to confirm"} doneLabel="Saved" disabled={!ok || !wallet} onConfirm={save} />
         <Button label={done ? "Done" : "Cancel"} kind={done ? "secondary" : "text"} onPress={close} />
       </View>
     </View>

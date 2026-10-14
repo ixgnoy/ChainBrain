@@ -34,10 +34,12 @@ function Shell() {
         </View>
       ) : (
         <>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.canvas }, animation: "slide_from_right" }}>
+          {/* iOS: native push (UINavigationController slide, parallax, full-width swipe back) and the native card-stack modal for the wizard.
+              Android: slide from right. Web: slide for the pocket page, fade for the wizard. */}
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.canvas }, animation: Platform.OS === "ios" ? "default" : "slide_from_right" }}>
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="pocket/[id]" />
-            <Stack.Screen name="create" options={{ presentation: Platform.OS === "web" ? undefined : "modal", animation: Platform.OS === "web" ? "fade" : undefined }} />
+            <Stack.Screen name="pocket/[id]" options={{ gestureEnabled: true, fullScreenGestureEnabled: Platform.OS === "ios" }} />
+            <Stack.Screen name="create" options={{ presentation: Platform.OS === "web" ? undefined : "modal", animation: Platform.OS === "web" ? "fade" : Platform.OS === "ios" ? "default" : "slide_from_bottom", gestureEnabled: true }} />
           </Stack>
           <ApprovalSheet />
           <QuestionSheet />

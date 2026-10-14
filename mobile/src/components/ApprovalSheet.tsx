@@ -1,9 +1,11 @@
 // Owner approvals. Intent: confirm the fixed-template task card. Payment above the ask-me threshold: slide to co-sign the exact
 // USDC TransferWithAuthorization the wallet built (POST /api/approvals/:id {approved, signature}).
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ScrollView, View, useWindowDimensions } from "react-native";
+import { View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
+import { SheetScroll } from "../ui/SheetScroll";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
 import { Avatar, Button, CodePill, Details } from "../ui/kit";
 import { T } from "../ui/Text";
@@ -16,6 +18,8 @@ import { parseUsd } from "../lib/shared";
 import { usd, shortAddr } from "../lib/util";
 import { c } from "../tokens";
 import { IntentCard } from "./IntentCard";
+import { SheetSuccess } from "./SheetSuccess";
+import { ErrorNote } from "./ErrorNote";
 
 export function describeApprovalError(code: string): string {
   switch (code) {
@@ -37,18 +41,21 @@ export function ApprovalSheet() {
   const last = useRef<Approval | undefined>(current);
   if (current) last.current = current;
   const shown = current ?? last.current;
+  // while the owner's signature is in flight (and the success moment plays) the sheet stays up even though the request is already answered
+  const [hold, setHold] = useState(false);
   return (
-    <Sheet visible={approvalOpen && !!current} onClose={() => setApprovalOpen(false)}>
-      {shown ? <Body key={shown.id} a={shown} queue={pending.filter((x) => x.kind !== "question").length} /> : null}
+    <Sheet visible={(approvalOpen && !!current) || hold} onClose={() => { setHold(false); setApprovalOpen(false); }}>
+      {shown ? <Body key={shown.id} a={shown} queue={pending.filter((x) => x.kind !== "question").length} hold={setHold} /> : null}
     </Sheet>
   );
 }
 
-function Body({ a, queue }: { a: Approval; queue: number }) {
-  const { height } = useWindowDimensions();
+function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolean) => void }) {
   const { findPocket, sellerName, answer, signApprove, wallet, setApprovalOpen, cfg } = useApp();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState<"form" | "success">("form");
+  const formH = useRef(0);
   const pocket = findPocket(a.pocket);
   const isPay = a.kind === "payment";
   const auth = useMemo(() => (isPay ? authOf(a) : null), [a, isPay]);
@@ -67,10 +74,16 @@ function Body({ a, queue }: { a: Approval; queue: number }) {
 
   const approve = async () => {
     setError(null);
+    hold(true);
     const r = await signApprove(a);
-    if (!r.ok) { setError(describeApprovalError(r.error)); throw new Error(r.error); }
-    await new Promise((res) => setTimeout(res, 900));
+    if (!r.ok) { hold(false); setError(describeApprovalError(r.error)); throw new Error(r.error); }
   };
+  // the slide has shown its done state; swap to the success moment, then let the sheet go (about 900 ms of success on screen)
+  useEffect(() => {
+    if (phase !== "success") return;
+    const t = setTimeout(() => { hold(false); setApprovalOpen(false); }, 1000);
+    return () => clearTimeout(t);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   const decline = async () => {
     setBusy(true); setError(null);
     const r = await answer(a, false);
@@ -84,9 +97,12 @@ function Body({ a, queue }: { a: Approval; queue: number }) {
     if (!r.ok && r.error !== "NOT_PENDING") setError(describeApprovalError(r.error)); else haptic.success();
   };
 
+  if (phase === "success") {
+    return <SheetSuccess minHeight={formH.current} title={`Approved · paid US$${amount ?? "?"}`} sub={`To ${seller}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}`} />;
+  }
   return (
-    <View>
-      <ScrollView style={{ maxHeight: Math.max(240, height * 0.92 - 230) }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 20 }} showsVerticalScrollIndicator={false}>
+    <Animated.View style={{ flexShrink: 1 }} onLayout={(e) => { formH.current = e.nativeEvent.layout.height; }}>
+      <SheetScroll contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 20 }} showsVerticalScrollIndicator={false}>
         {isPay ? (
           <>
             <View style={{ alignItems: "center", gap: 6, paddingTop: 4 }}>
@@ -122,19 +138,14 @@ function Body({ a, queue }: { a: Approval; queue: number }) {
           </>
         )}
         {expired && isPay ? <T v="sub" color="warning">The 10-minute window passed. The agent will ask again if it still wants this.</T> : null}
-        {error && (
-          <View style={{ backgroundColor: c.negativeSoft, borderRadius: 16, padding: 14, flexDirection: "row", gap: 10 }}>
-            <Icon name="alert" size={18} color={c.negative} />
-            <T v="sub" color="negative" style={{ flex: 1 }}>{error}</T>
-          </View>
-        )}
-      </ScrollView>
+        {error ? <ErrorNote text={error} /> : null}
+      </SheetScroll>
 
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}>
         {isPay ? (
           owned && wallet ? (
             <>
-              <SlideToConfirm key={a.id + (error ?? "")} label="Slide to approve" doneLabel="Approved" onConfirm={approve} disabled={busy || expired} />
+              <SlideToConfirm key={a.id + (error ?? "")} label="Slide to approve" doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
               <Button label="Decline" kind="text" onPress={decline} loading={busy} />
             </>
           ) : (
@@ -150,6 +161,6 @@ function Body({ a, queue }: { a: Approval; queue: number }) {
           </>
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 }
