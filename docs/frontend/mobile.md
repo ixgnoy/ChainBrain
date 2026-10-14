@@ -49,7 +49,7 @@ With a server chosen, `GET /dev/health` returning 200 switches the RPC to `<api>
 
 ## Checks
 
-`npm test` (22 tests, includes the co-sign payload), `npx tsc --noEmit`, `npx expo-doctor`, `npx expo export --platform web|ios`. Built-in network end to end: `node devstack/e2e/builtin.cjs --url http://localhost:8091` (scenes 1-8, 22 checks, no server needed). Dev stack end to end: `node devstack/e2e/e2e.cjs` (45 checks; switches the phone to the server with localStorage `cb.source=server`). Screenshots from the end-to-end run: `docs/frontend/screenshots/e2e-phone-*.png`.
+`npm test` (22 tests, includes the co-sign payload), `npx tsc --noEmit`, `npx expo-doctor`, `npx expo export --platform web|ios`. Built-in network end to end: `node devstack/e2e/builtin.cjs --url http://localhost:8091` (scenes 1-8, 23 checks, no server needed). Dev stack end to end: `node devstack/e2e/e2e.cjs` (45 checks; switches the phone to the server with localStorage `cb.source=server`). Screenshots from the end-to-end run: `docs/frontend/screenshots/e2e-phone-*.png`.
 
 ## Not verified
 

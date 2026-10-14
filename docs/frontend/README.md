@@ -75,7 +75,7 @@ Once a server is chosen (Custom server), both apps ask `GET /dev/health`. On the
 
 | Suite | Result |
 | --- | --- |
-| Built-in network, `node devstack/e2e/builtin.cjs --url http://localhost:8091` (phone on the built-in network, scenes 1-8, no server needed) | 22 checks |
+| Built-in network, `node devstack/e2e/builtin.cjs --url http://localhost:8091` (phone on the built-in network, scenes 1-8, no server needed) | 23 checks |
 | End-to-end, `pnpm --dir devstack e2e` (phone: scenes 1-3 and 7, approvals, receipt, revoke; web console: trace with reason codes, pocket vs chain, all pockets, on-chain list, seller side, red-team plant, forced transfer reverted, built-in mode, 390 px) | 45/45 on a fresh stack (15 Oct 2026); it switches the phone to the server with localStorage `cb.source=server` and the console with `?server=` |
 | Web, `pnpm --dir web test`, `build`, `lint` | 24/24, clean |
 | Phone, `npm test`, `npx tsc --noEmit`, `npx expo export --platform web` and `ios`, `npx expo-doctor` | 22/22 (incl. the team's co-sign payload test), clean, both exports build, 21/21 |
