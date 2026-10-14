@@ -1,7 +1,7 @@
 // Small UI kit: pressable, white card, round action, list row, pill, buttons, section header, field, expandable details.
 import React, { useState } from "react";
 import { Pressable, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { c, F, motion, radius } from "../tokens";
 import { haptic, type HapticName } from "../haptics";
 import { EASE_OUT, glide, settle, useReduceMotion } from "./motion";
@@ -197,6 +197,23 @@ export function Details({ rows, title = "Details", children }: { rows: [string, 
         </View>
       ) : null}
     </View>
+  );
+}
+
+/** iOS-style switch (51 x 31): the knob springs across, the track tints teal, a selection tick on change. */
+export function Toggle({ on, onChange, a11y, disabled }: { on: boolean; onChange: (v: boolean) => void; a11y: string; disabled?: boolean }) {
+  const reduce = useReduceMotion();
+  const x = useSharedValue(on ? 1 : 0);
+  React.useEffect(() => { x.value = reduce ? (on ? 1 : 0) : withSpring(on ? 1 : 0, motion.spring.snappy); }, [on, reduce, x]);
+  const track = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(x.value, [0, 1], [c.line, c.accent]) }));
+  const knob = useAnimatedStyle(() => ({ transform: [{ translateX: x.value * 20 }] }));
+  return (
+    <Press haptics="select" scale={0.96} disabled={disabled} onPress={() => onChange(!on)} hitSlop={8}
+      accessibilityRole="switch" accessibilityLabel={a11y} accessibilityState={{ checked: on, disabled: !!disabled }} style={{ opacity: disabled ? 0.5 : 1 }}>
+      <Animated.View style={[{ width: 51, height: 31, borderRadius: 16, padding: 2 }, track]}>
+        <Animated.View style={[{ width: 27, height: 27, borderRadius: 14, backgroundColor: "#FFFFFF", shadowColor: "#0F2236", shadowOpacity: 0.18, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 2 }, knob]} />
+      </Animated.View>
+    </Press>
   );
 }
 

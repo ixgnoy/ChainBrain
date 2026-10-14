@@ -27,7 +27,7 @@ export function ReceiptSheet() {
 }
 
 function Body({ row, close }: { row: LedgerRow; close: () => void }) {
-  const { sellerName, findPocket, events, dev } = useApp();
+  const { sellerName, findPocket, events, dev, source } = useApp();
   const pocket = findPocket(row.pocket);
   const bad = row.outcome === "refused" || row.outcome === "declined";
   const seller = cleanText(sellerName(row.sellerId), 60);
@@ -54,7 +54,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
   if (row.kind !== "intent" && row.kind !== "owner") facts.push(["Seller", seller]);
   if (row.description) facts.push(["Item", cleanText(row.description, 80)]);
   facts.push(["Pocket", pocket ? cleanText(pocket.name, 40) : "n/a"], ["When", stamp(row.at)]);
-  const tech: [string, string][] = [["Network", dev ? "Local test network" : "Base Sepolia (test network)"]];
+  const tech: [string, string][] = [["Network", dev ? "Local test network" : source === "builtin" ? "Test network" : "Base Sepolia (test network)"]];
   if (row.reasons.length) tech.push(["Reason code", row.reasons.join(", ")]);
   if (row.detail) tech.push(["Detail", cleanText(row.detail, 200)]);
   if (row.sku) tech.push(["Item code", cleanText(row.sku, 60)]);

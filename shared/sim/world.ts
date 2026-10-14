@@ -44,10 +44,10 @@ export function createWorld(opts: WorldOptions = {}) {
   const recent: SimEvent[] = [];
   const subs = new Set<(e: SimEvent) => void>();
   let lastAt = 0, seq = 0;
-  function publish(e: Omit<SimEvent, "at"> & { at?: number }): SimEvent {
+  function publish(e: { type: string; pocket?: string; at?: number; [k: string]: any }): SimEvent {
     const at = Math.max(e.at ?? now(), lastAt + 1);
     lastAt = at;
-    const ev = wire({ ...e, at, id: `s${++seq}` }) as SimEvent;
+    const ev: SimEvent = wire({ ...e, at, id: `s${++seq}` });
     recent.push(ev);
     if (recent.length > 2000) recent.shift();
     for (const f of subs) f(ev);

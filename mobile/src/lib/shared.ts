@@ -1,6 +1,7 @@
 // Pure helpers shared with web/src/shared.ts (copied on purpose: cheaper than a shared package). No React Native imports here.
 import type { Address, Hex } from "viem";
-import { getApi, fetchTimeout } from "./runtime";
+import { getApi, fetchTimeout, isBuiltin } from "./runtime";
+import { builtin } from "./builtin";
 
 export const USDC: Address = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
 export const NEVER = 2n ** 256n - 1n;
@@ -15,18 +16,7 @@ export function formatUsd(n: bigint): string {
   return `${n / 1_000_000n}.${frac}`;
 }
 
-export type Authorization = { from: Address; to: Address; value: string; validAfter: string; validBefore: string; nonce: Hex };
-export const transferTypedData = (a: Authorization) => ({
-  domain: { name: "USDC", version: "2", chainId: 84532, verifyingContract: USDC },
-  types: {
-    TransferWithAuthorization: [
-      { name: "from", type: "address" }, { name: "to", type: "address" }, { name: "value", type: "uint256" },
-      { name: "validAfter", type: "uint256" }, { name: "validBefore", type: "uint256" }, { name: "nonce", type: "bytes32" },
-    ],
-  },
-  primaryType: "TransferWithAuthorization" as const,
-  message: { from: a.from, to: a.to, value: BigInt(a.value), validAfter: BigInt(a.validAfter), validBefore: BigInt(a.validBefore), nonce: a.nonce },
-});
+export { transferTypedData, type Authorization } from "./typed";
 
 /** The complete reason-code map (20 codes, server/src/wallet/reasons.ts). The mobile app used to miss QUOTE_UNKNOWN and NOT_THIS_AGENT. */
 export const REASONS: Record<string, string> = {
@@ -61,6 +51,7 @@ export type Config = { agent: Address; factory: Address; usdc: Address; sellersU
 const cache = new Map<string, Promise<Config>>();
 export const resetConfig = () => cache.clear();
 export function loadConfig(): Promise<Config> {
+  if (isBuiltin()) return Promise.resolve(builtin().config() as Config);
   const base = getApi();
   let p = cache.get(base);
   if (!p) {

@@ -24,7 +24,6 @@ import { visibleRows, worstCase } from "../../lib/plain";
 import { money, usd, shortAddr } from "../../lib/util";
 import { radius } from "../../tokens";
 import { NEVER } from "../../lib/shared";
-import { notify, DEMO_MSG } from "../../lib/toast";
 import { haptic } from "../../haptics";
 
 /** Editable fact pill: soft accent, pencil, press 0.95 with a selection tick. */
@@ -42,7 +41,7 @@ export default function PocketDetail() {
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { findPocket, pocketsLoaded, cfg, wallet, ledger, setAction, setReceipt, refreshPockets, demo, setRules, recordTx, setNotice } = useApp();
+  const { findPocket, pocketsLoaded, cfg, wallet, ledger, setAction, setReceipt, refreshPockets, setRules, recordTx, setNotice } = useApp();
   const pocket = findPocket(id);
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -59,11 +58,10 @@ export default function PocketDetail() {
   const owned = pocket.owned && !!wallet;
   const expired = isExpired(pocket);
   const off = pocket.revoked || expired;
-  const editable = owned && !off && !demo;
+  const editable = owned && !off;
   const sellerNames = (cfg?.sellers ?? []).filter((s) => pocket.allowed.includes(s.id)).map((s) => cleanText(s.name, 30));
 
   const toggle = async (name: string, on: boolean, payTo: `0x${string}`) => {
-    if (demo) { notify(DEMO_MSG); return; }
     setBusy(`${on ? "Removing" : "Allowing"} ${name}`); setErr(null);
     try {
       const r = await wallet!.setSeller(pocket.address, payTo, !on); haptic.success();

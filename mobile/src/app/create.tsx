@@ -22,7 +22,6 @@ import { PRESETS, toPocketArgs, expiryFor, type Lifetime, type PresetValues } fr
 import { styleForPreset } from "../lib/pocketNames";
 import { parseUsd } from "../lib/shared";
 import { money2, usd } from "../lib/util";
-import { notify, DEMO_MSG } from "../lib/toast";
 import { haptic } from "../haptics";
 
 /** Sellers under their category (Research data, Food and drink), in the order the API lists them. */
@@ -153,7 +152,7 @@ function Done({ name, budget, createTx, fundTx, first, onOpen }: { name: string;
 export default function Create() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
-  const { cfg, wallet, addPocket, balances, demo, refreshPockets, recordTx, setNotice, pockets } = useApp();
+  const { cfg, wallet, addPocket, balances, refreshPockets, recordTx, setNotice, pockets } = useApp();
   const first = useRef(pockets.length === 0); // the first pocket ever gets the one celebration
   const dir = useRef(1);
   const left = useRef(false);
@@ -193,7 +192,6 @@ export default function Create() {
 
   const create = async () => {
     setError(null);
-    if (demo) { notify(DEMO_MSG); throw new Error("demo"); }
     try {
       if (!wallet || !cfg) throw new Error("not connected");
       const a = toPocketArgs(values, cfg.agent, payTo);

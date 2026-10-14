@@ -74,10 +74,9 @@ function Needs() {
 }
 
 function AddPocket() {
-  const { addPocket, demo } = useApp();
+  const { addPocket } = useApp();
   const [open, setOpen] = useState(false);
   const [v, setV] = useState("");
-  if (demo) return null;
   return (
     <View style={{ marginHorizontal: 20, marginTop: 12 }}>
       {!open ? (
@@ -113,7 +112,7 @@ function EmptyPockets() {
 }
 
 export default function Home() {
-  const { pockets, pocketsLoaded, conn, balances, ledger, setReceipt, setAction, demo, refreshPockets } = useApp();
+  const { pockets, pocketsLoaded, conn, balances, ledger, setReceipt, setAction, refreshPockets } = useApp();
   const reduce = useReduceMotion();
   const play = useRef(!introPlayed).current;
   useEffect(() => { introPlayed = true; }, []);
@@ -156,7 +155,6 @@ export default function Home() {
                 </View>
               ) : <T v="section" w="regular" color="ink2">{loading ? "Main wallet, loading…" : "Main wallet"}</T>}
             </View>
-            {demo ? <T v="cap" color="muted" style={{ marginTop: 2 }}>Demo data</T> : null}
             <Rise play={play} index={1} style={{ alignSelf: "stretch" }}>
               <View style={{ flexDirection: "row", marginTop: 26, alignSelf: "stretch" }}>
                 <RoundButton icon="plus" label="Add money" onPress={() => setAction({ mode: "fund" })} />

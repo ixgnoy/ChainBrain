@@ -4,7 +4,8 @@
 import { createPublicClient, createWalletClient, http, parseEventLogs, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
-import { rpcUrl } from "./runtime";
+import { isBuiltin, rpcUrl } from "./runtime";
+import { builtin } from "./builtin";
 import { loadConfig, transferTypedData, type Authorization, type Seller } from "./shared";
 
 export const pub = () => createPublicClient({ chain: baseSepolia, transport: http(rpcUrl()) });
@@ -23,10 +24,15 @@ export function ownerWallet(pk: Hex) {
     return { hash, receipt };
   }
   const pocketWrite = async (p: Address, fn: string, args: unknown[] = []) => write(p, (await loadConfig()).abis.pocket, fn, args);
+  // the built-in network: the same owner calls, confirmed after a block like the real chain
+  const me = account.address;
+  const sim = <T,>(f: (w: ReturnType<typeof builtin>) => T) => { const w = builtin(); return w.ownerTx(() => f(w)); };
+  const simTx = async (f: (w: ReturnType<typeof builtin>) => Hex) => ({ hash: await sim(f), receipt: null });
 
   return {
     address: account.address,
     async balances() {
+      if (isBuiltin()) return builtin().balances(me);
       const c = await loadConfig();
       const [usdc, eth] = await Promise.all([
         pub().readContract({ address: c.usdc, abi: c.abis.erc20, functionName: "balanceOf", args: [account.address] }) as Promise<bigint>,
@@ -35,18 +41,19 @@ export function ownerWallet(pk: Hex) {
       return { usdc, eth };
     },
     async createPocket(a: { agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; sellers: Address[] }) {
+      if (isBuiltin()) return sim((w) => w.chain.createPocket(me, a)) as Promise<{ pocket: Address; tx: Hex }>;
       const c = await loadConfig();
       const { hash, receipt } = await write(c.factory, c.abis.factory, "create", [a.agent, a.cap, a.askAbove, a.expiresAt, a.sellers]);
       const [ev] = parseEventLogs({ abi: c.abis.factory, logs: receipt.logs, eventName: "PocketCreated" }) as any[];
       return { pocket: ev.args.pocket as Address, tx: hash };
     },
-    fund: async (p: Address, amount: bigint) => write((await loadConfig()).usdc, (await loadConfig()).abis.erc20, "transfer", [p, amount]),
-    revoke: (p: Address) => pocketWrite(p, "revoke"),
-    returnFunds: (p: Address) => pocketWrite(p, "returnFunds"),
-    setSeller: (p: Address, s: Address, ok: boolean) => pocketWrite(p, "setSeller", [s, ok]),
+    fund: async (p: Address, amount: bigint) => isBuiltin() ? simTx((w) => w.chain.transfer(me, p, amount)) : write((await loadConfig()).usdc, (await loadConfig()).abis.erc20, "transfer", [p, amount]),
+    revoke: (p: Address) => isBuiltin() ? simTx((w) => w.chain.revoke(me, p)) : pocketWrite(p, "revoke"),
+    returnFunds: (p: Address) => isBuiltin() ? simTx((w) => w.chain.returnFunds(me, p)) : pocketWrite(p, "returnFunds"),
+    setSeller: (p: Address, s: Address, ok: boolean) => isBuiltin() ? simTx((w) => w.chain.setSeller(me, p, s, ok)) : pocketWrite(p, "setSeller", [s, ok]),
     /** Owner-signed rule edits: per-payment cap and ask-me threshold (NEVER = never ask, 0 = ask every time). */
-    setCap: (p: Address, cap: bigint) => pocketWrite(p, "setCap", [cap]),
-    setAskAbove: (p: Address, x: bigint) => pocketWrite(p, "setAskAbove", [x]),
+    setCap: (p: Address, cap: bigint) => isBuiltin() ? simTx((w) => w.chain.setCap(me, p, cap)) : pocketWrite(p, "setCap", [cap]),
+    setAskAbove: (p: Address, x: bigint) => isBuiltin() ? simTx((w) => w.chain.setAskAbove(me, p, x)) : pocketWrite(p, "setAskAbove", [x]),
     /** Co-sign the exact USDC transfer the wallet tool layer built (payments above the ask-me threshold). */
     signTransfer: (auth: Authorization) => account.signTypedData(transferTypedData(auth)),
   };
@@ -54,6 +61,10 @@ export function ownerWallet(pk: Hex) {
 export type OwnerWallet = ReturnType<typeof ownerWallet>;
 
 export async function readPocket(address: Address): Promise<PocketView> {
+  if (isBuiltin()) {
+    const v = builtin().chain.view(address);
+    return { address: v.address, owner: v.owner, agent: v.agent, cap: v.cap, askAbove: v.askAbove, expiresAt: v.expiresAt, revoked: v.revoked, balance: v.balance, allowed: v.allowed };
+  }
   const c = await loadConfig();
   const sellers: Seller[] = c.sellers;
   const r = (functionName: string, args: unknown[] = []) => pub().readContract({ address, abi: c.abis.pocket, functionName, args }) as Promise<any>;

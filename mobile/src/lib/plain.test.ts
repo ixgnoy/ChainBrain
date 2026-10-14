@@ -1,14 +1,16 @@
 /// <reference types="node" />
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeDemo } from "./demo";
+import { createWorld, seedOwner } from "../../../shared/sim";
 import { ledgerFrom } from "./events";
 import { describeRow, visibleRows, plainReason } from "./plain";
 
-test("plain wording: refused rows read as sentences, approved approvals are hidden", () => {
-  const rows = visibleRows(ledgerFrom(makeDemo().events));
+test("plain wording: refused rows read as sentences, approved approvals are hidden", async () => {
+  const w = createWorld({ speed: 0 });
+  await seedOwner(w, "0x00000000000000000000000000000000000d0d0d");
+  const rows = visibleRows(ledgerFrom(w.events(0) as any));
   assert.ok(!rows.some((r) => r.kind === "approval" && r.outcome === "approved"));
-  const refused = rows.find((r) => r.sellerId === "harbour")!;
+  const refused = rows.find((r) => r.sellerId === "harbour-wines")!;
   const v = describeRow(refused, "Harbour Wines", "14 Oct, 1:32 PM");
   assert.equal(v.sub, "Refused: seller not on your list");
   assert.equal(v.rightSub, "Refused");

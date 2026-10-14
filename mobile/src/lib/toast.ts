@@ -3,4 +3,3 @@ type Fn = (msg: string) => void;
 let sink: Fn | null = null;
 export const setToastSink = (f: Fn | null) => { sink = f; };
 export const notify = (msg: string) => { sink?.(msg); };
-export const DEMO_MSG = "Not available in demo data";

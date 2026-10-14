@@ -14,7 +14,6 @@ import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
 import { NEVER, parseUsd } from "../lib/shared";
 import { money, usd } from "../lib/util";
-import { notify, DEMO_MSG } from "../lib/toast";
 import { txError } from "./ActionSheet";
 import { SheetSuccess } from "./SheetSuccess";
 import { ErrorNote } from "./ErrorNote";
@@ -34,7 +33,7 @@ export function RulesSheet() {
 const validAmount = (s: string) => /^\d+(\.\d{1,6})?$/.test(s.trim());
 
 function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>; close: () => void }) {
-  const { findPocket, wallet, refreshPockets, recordTx, demo } = useApp();
+  const { findPocket, wallet, refreshPockets, recordTx } = useApp();
   const pocket = findPocket(r.pocket);
   const isCap = r.field === "cap";
   const initial = r.amount ?? (pocket ? (isCap ? usd(pocket.cap) : pocket.askAbove === NEVER ? "" : usd(pocket.askAbove)) : "");
@@ -51,7 +50,6 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
   const name = cleanText(pocket.name, 30);
 
   const save = async () => {
-    if (demo) { notify(DEMO_MSG); throw new Error("demo"); }
     if (!wallet || !ok) throw new Error("invalid");
     try {
       const txs: { label: string; hash: string }[] = [];

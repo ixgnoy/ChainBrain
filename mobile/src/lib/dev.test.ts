@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { detectDev, setApiUrl, setDev, rpcUrl, explorerEnabled, txUrl, ENV_RPC } from "./runtime";
+import { detectDev, setApiUrl, setDev, setSource, rpcUrl, explorerEnabled, txUrl, ENV_RPC } from "./runtime";
 
 const res = (status: number, body?: unknown) => async () => ({ ok: status >= 200 && status < 300, status, json: async () => { if (body === undefined) throw new Error("not json"); return body; }, text: async () => "" });
 
@@ -19,6 +19,8 @@ test("real server (404), garbage, wrong mode and network errors mean no dev mode
 });
 
 test("RPC and explorer follow dev mode; real path keeps EXPO_PUBLIC_RPC_URL and BaseScan", () => {
+  assert.equal(txUrl("0xab"), undefined, "the built-in network (default) never links to BaseScan");
+  setSource("server");
   setApiUrl("http://192.168.1.5:8787/");
   assert.equal(rpcUrl(), ENV_RPC);
   assert.equal(explorerEnabled(), true);

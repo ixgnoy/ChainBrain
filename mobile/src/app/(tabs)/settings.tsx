@@ -8,14 +8,14 @@ import { ENV_API, detectDev, normalizeUrl } from "../../lib/runtime";
 import { isPrivateKey } from "../../lib/keystore";
 import { c, motion } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
-import { Avatar, Button, Card, Field, ListCard, ListRow, SectionHeader } from "../../ui/kit";
+import { Avatar, Button, Card, Field, ListCard, ListRow, SectionHeader, Toggle } from "../../ui/kit";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { haptic } from "../../haptics";
 import { money, shortAddr } from "../../lib/util";
 
 export default function Settings() {
-  const { apiUrl, setApiUrl, conn, dev, demo, wallet, balances, importKey, refreshPockets, pending } = useApp();
+  const { apiUrl, setApiUrl, conn, connError, dev, source, setSource, wallet, balances, importKey, refreshPockets, pending } = useApp();
   const [draft, setDraft] = useState(apiUrl);
   const [test, setTest] = useState<{ state: "idle" | "busy" | "ok" | "fail"; text?: string }>({ state: "idle" });
   const [copied, setCopied] = useState(false);
@@ -23,12 +23,15 @@ export default function Settings() {
   const [pk, setPk] = useState("");
   const [keyErr, setKeyErr] = useState("");
   const [funds, setFunds] = useState<{ state: "idle" | "busy" | "ok" | "fail"; text?: string }>({ state: "idle" });
+  const custom = source === "server";
+  const [editing, setEditing] = useState(false); // switch turned on, address not confirmed yet
+  const serverOpen = custom || editing;
   React.useEffect(() => setDraft(apiUrl), [apiUrl]);
 
   const runTest = async () => {
     setTest({ state: "busy" });
     const url = normalizeUrl(draft);
-    if (url && url !== apiUrl) await setApiUrl(url);
+    if (custom && url && url !== apiUrl) await setApiUrl(url);
     try {
       const r = await api.ping(url || ENV_API);
       const d = await detectDev(url || ENV_API);
@@ -45,7 +48,17 @@ export default function Settings() {
     try { await api.devFund(wallet.address); await refreshPockets(); setFunds({ state: "ok", text: "Added test money to your wallet." }); haptic.success(); }
     catch { setFunds({ state: "fail", text: "The test network did not accept that. Is it running?" }); haptic.error(); }
   };
-  const network = demo ? "Demo data" : conn === "online" ? (dev ? "Local test network" : "Test network · Base Sepolia") : "Connecting…";
+  const connect = async () => {
+    const url = normalizeUrl(draft);
+    if (url !== apiUrl) await setApiUrl(url);
+    await setSource("server"); setEditing(false); setTest({ state: "idle" }); haptic.success();
+  };
+  const toggleServer = async (v: boolean) => {
+    if (v) { setEditing(true); return; }
+    setEditing(false); setTest({ state: "idle" });
+    if (custom) await setSource("builtin");
+  };
+  const network = conn === "online" ? (dev ? "Connected · local test network" : "Connected · test network (Base Sepolia)") : conn === "offline" ? connError || "Not reachable" : "Connecting…";
 
   return (
     <Screen>
@@ -56,7 +69,7 @@ export default function Settings() {
         <ListRow a11y="Copy wallet address" avatar={<Avatar icon="wallet" />} title="Your wallet" sub={wallet ? shortAddr(wallet.address) : "Not ready"}
           onPress={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }}
           right={copied ? "Copied" : balances ? money(balances.usdc) : undefined} rightTone={copied ? "positive" : "ink"} />
-        {dev ? <ListRow a11y="Get test funds" onPress={getFunds} avatar={<Avatar icon="plus" />} title="Get test funds" sub={funds.text ?? "Adds test money to your wallet"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
+        {dev || !custom ? <ListRow a11y="Get test funds" onPress={getFunds} avatar={<Avatar icon="plus" />} title="Get test funds" sub={funds.text ?? "Adds test money to your wallet"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
         <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} avatar={<Avatar icon="key" />} title="Import a key" sub="Use a test key you already have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
       </ListCard>
       {importing ? (
@@ -71,21 +84,33 @@ export default function Settings() {
         </Animated.View>
       ) : null}
 
-      <SectionHeader title="Network" />
-      <Card style={{ marginHorizontal: 20, gap: 12 }}>
-        <Field label="Server address" value={draft} onChangeText={setDraft} onSubmitEditing={() => void setApiUrl(draft)} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={ENV_API} accessibilityLabel="API URL" />
-        <T v="cap" color="muted">On a phone, use your laptop's address on the same Wi-Fi, for example http://192.168.1.10:8787. Empty uses {ENV_API}.</T>
-        <Button label="Test connection" kind="secondary" small loading={test.state === "busy"} onPress={runTest} />
-        {test.text ? <Animated.View key={test.text} entering={FadeInDown.duration(motion.base).withInitialValues({ opacity: 0, transform: [{ translateY: 6 }] })}><T v="sub" color={test.state === "ok" ? "positive" : "negative"}>{test.text}</T></Animated.View> : null}
-      </Card>
-      <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 10 }}>{network}</T>
-
       <SectionHeader title="About" />
       <ListCard>
         <ListRow avatar={<Avatar icon="shield" />} title="Test money only" sub="Do not put real money on this wallet" />
         <ListRow a11y="Compliance" avatar={<Avatar icon="globe" />} title="Compliance" subLines={6} sub="Testnet assets only. Not offered in mainland China. Target: Hong Kong and APEC, settling in licensed stablecoins or tokenized deposits." />
         <ListRow avatar={<Avatar icon="bolt" />} title="ChainBrain" sub="Your agent spends only from the pockets you fund" />
       </ListCard>
+
+      <SectionHeader title="Advanced" />
+      <ListCard>
+        <ListRow avatar={<Avatar icon="globe" tone="fill" />} title="Custom server" sub={custom ? apiUrl.replace(/^https?:\/\//, "") : editing ? "Enter the address below" : "Off"}>
+          <Toggle on={serverOpen} onChange={(v) => void toggleServer(v)} a11y="Custom server" />
+        </ListRow>
+      </ListCard>
+      {serverOpen ? (
+        <Animated.View entering={FadeInDown.springify(motion.spring.smooth.duration).dampingRatio(1).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })} exiting={FadeOut.duration(motion.exit)}>
+          <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
+            <Field label="Server address" value={draft} onChangeText={setDraft} onSubmitEditing={() => void (custom ? setApiUrl(draft) : connect())} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={ENV_API} accessibilityLabel="API URL" />
+            <T v="cap" color="muted">Your laptop's address on the same Wi-Fi, for example http://192.168.1.10:8787. Empty uses {ENV_API}.</T>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <Button label="Test" kind="secondary" small loading={test.state === "busy"} onPress={runTest} style={{ flex: 1 }} />
+              {custom ? null : <Button label="Connect" small onPress={() => void connect()} style={{ flex: 1 }} />}
+            </View>
+            {test.text ? <Animated.View key={test.text} entering={FadeInDown.duration(motion.base).withInitialValues({ opacity: 0, transform: [{ translateY: 6 }] })}><T v="sub" color={test.state === "ok" ? "positive" : "negative"}>{test.text}</T></Animated.View> : null}
+            {custom ? <T v="cap" color={conn === "offline" ? "negative" : "muted"}>{network}</T> : null}
+          </Card>
+        </Animated.View>
+      ) : null}
     </Screen>
   );
 }

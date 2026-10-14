@@ -14,7 +14,6 @@ import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
 import { parseUsd } from "../lib/shared";
 import { usd, money } from "../lib/util";
-import { notify, DEMO_MSG } from "../lib/toast";
 import { c } from "../tokens";
 import { SheetSuccess } from "./SheetSuccess";
 import { ErrorNote } from "./ErrorNote";
@@ -48,7 +47,7 @@ export function ActionSheet() {
 }
 
 function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: () => void }) {
-  const { pockets, wallet, refreshPockets, balances, demo, recordTx, setNotice } = useApp();
+  const { pockets, wallet, refreshPockets, balances, recordTx, setNotice } = useApp();
   const [done, setDone] = useState<{ title: string; hash: string } | null>(null);
   const [sel, setSel] = useState<string | undefined>(initial);
   const [amount, setAmount] = useState("1.00");
@@ -67,11 +66,9 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
   const eligible = (p: Pocket) => p.owned && (mode === "return" ? true : !p.revoked);
   const chosen = pockets.find((p) => p.address === sel);
   const fail = (e: unknown): never => { setError(txError(e)); throw e; };
-  const guard = () => { if (demo) { notify(DEMO_MSG); return true; } return false; };
 
   // fund and return stay open on success so the owner reads the transaction hash; revoke closes and the pocket page shows it
   const doFund = async () => {
-    if (guard()) throw new Error("demo");
     try {
       const v = parseUsd(amount); const r = await wallet!.fund(chosen!.address, v);
       recordTx({ kind: "fund", pocket: chosen!.address, hash: r.hash, amount: v.toString() });
@@ -79,7 +76,6 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
     } catch (e) { fail(e); }
   };
   const doReturn = async () => {
-    if (guard()) throw new Error("demo");
     try {
       const had = chosen!.balance; const r = await wallet!.returnFunds(chosen!.address);
       recordTx({ kind: "return", pocket: chosen!.address, hash: r.hash, amount: had.toString() });
@@ -87,7 +83,6 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
     } catch (e) { fail(e); }
   };
   const doRevoke = async () => {
-    if (guard()) return;
     setBusy(true); setError(null);
     try {
       const r = await wallet!.revoke(chosen!.address);

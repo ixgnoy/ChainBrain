@@ -6,25 +6,31 @@ export const ENV_API: string = process.env.EXPO_PUBLIC_API_URL || "http://localh
 export const ENV_RPC: string = process.env.EXPO_PUBLIC_RPC_URL || "https://sepolia.base.org";
 
 export type DevInfo = { mode: "local-fork"; chainId: number; rpcPath: string; owner?: Address; startedAt?: number };
+/** Where data comes from: the network built into the app (default on every launch) or a wallet server (Settings). */
+export type Source = "builtin" | "server";
 
 let api = ENV_API;
 let dev: DevInfo | null = null;
+let source: Source = "builtin";
 const subs = new Set<() => void>();
 const emit = () => subs.forEach((f) => f());
 
 export const normalizeUrl = (u: string) => u.trim().replace(/\/+$/, "");
 export const getApi = () => api;
 export const getDev = () => dev;
+export const getSource = () => source;
+export const isBuiltin = () => source === "builtin";
+export function setSource(s: Source) { source = s; dev = null; emit(); }
 export const subscribeRuntime = (f: () => void) => { subs.add(f); return () => { subs.delete(f); }; };
 export function setApiUrl(u: string) { api = normalizeUrl(u) || ENV_API; dev = null; emit(); }
 export function setDev(d: DevInfo | null) { dev = d; emit(); }
 
 /** RPC for chain reads and owner transactions: the dev stack's proxy in dev mode, EXPO_PUBLIC_RPC_URL otherwise. */
 export const rpcUrl = () => (dev ? `${api}${dev.rpcPath}` : ENV_RPC);
-/** Fork transaction hashes do not exist on Base Sepolia, so explorer links are off in dev mode. */
-export const explorerEnabled = () => !dev;
-export const txUrl = (h: string) => (dev ? undefined : `https://sepolia.basescan.org/tx/${h}`);
-export const addressUrl = (a: string) => (dev ? undefined : `https://sepolia.basescan.org/address/${a}`);
+/** Fork and built-in hashes do not exist on Base Sepolia, so explorer links are on only against a real server. */
+export const explorerEnabled = () => !dev && source === "server";
+export const txUrl = (h: string) => (explorerEnabled() ? `https://sepolia.basescan.org/tx/${h}` : undefined);
+export const addressUrl = (a: string) => (explorerEnabled() ? `https://sepolia.basescan.org/address/${a}` : undefined);
 
 type FetchLike = (url: string, init?: any) => Promise<{ ok: boolean; status: number; json(): Promise<any>; text(): Promise<string> }>;
 

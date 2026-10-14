@@ -23,7 +23,6 @@ import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, 
 import { deadEndOf } from "../../lib/deadend";
 import { usd } from "../../lib/util";
 import { plainReason } from "../../lib/plain";
-import { notify, DEMO_MSG } from "../../lib/toast";
 import { haptic } from "../../haptics";
 
 const DEFAULTS = ["Buy the DataLite durian report. Max US$1, by tonight.", "What can you spend right now?"];
@@ -72,7 +71,7 @@ function useRideKeyboard(base: number) {
 export default function AgentChat() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
-  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, demo, setApprovalOpen, setQuestionOpen, sellerName, setAction, ownerTxs, wallet } = useApp();
+  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, setQuestionOpen, sellerName, setAction, ownerTxs, wallet } = useApp();
   const [text, setText] = useState("");
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [kb, setKb] = useState(false);
@@ -83,7 +82,7 @@ export default function AgentChat() {
   const stick = useRef(true);
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => { if (dev) devScenes().then(setScenes).catch(() => {}); else setScenes([]); }, [dev]);
+  useEffect(() => { if (dev || source === "builtin") devScenes().then(setScenes).catch(() => {}); else setScenes([]); }, [dev, source]);
   useEffect(() => {
     const a = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow", () => setKb(true));
     const b = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide", () => setKb(false));
@@ -116,7 +115,6 @@ export default function AgentChat() {
 
   const send = (v: string) => {
     if (!v.trim() || chatBusy || !active) return;
-    if (demo) { notify(DEMO_MSG); return; }
     haptic.light(); setText("");
     stick.current = true;
     setSent({ text: v.trim(), n: turns.length });
@@ -126,7 +124,7 @@ export default function AgentChat() {
   const chips = [...follow, ...(scenes.length ? scenes.map((s) => s.text) : DEFAULTS)].slice(0, 12);
   const chipDelay = useStagger(chips, 40, 8);
   const last = turns.at(-1);
-  const canStop = !!active && active.owned && !!wallet && !active.revoked && Number(active.expiresAt) * 1000 > Date.now() && !demo;
+  const canStop = !!active && active.owned && !!wallet && !active.revoked && Number(active.expiresAt) * 1000 > Date.now();
   const stopped = active?.revoked ? lastStepText(mine, sellerName) : null;
   const stopTx = active ? ownerTxs.filter((t) => t.kind === "revoke" && sameAddr(t.pocket, active.address)).at(-1) : undefined;
   const status = agentState === "working" ? "Working…" : agentState === "waiting" ? "Waiting for you" : agentState === "paused" ? "Paused" : "Ready";

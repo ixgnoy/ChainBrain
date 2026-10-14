@@ -4,11 +4,10 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AppState } from "react-native";
 import type { Address, Hex } from "viem";
 import { loadConfig, resetConfig, type Config } from "./lib/shared";
-import { detectDev, getApi, getDev, setApiUrl as setRuntimeApi, setDev, subscribeRuntime, ENV_API, type DevInfo } from "./lib/runtime";
+import { detectDev, getApi, getDev, getSource, setApiUrl as setRuntimeApi, setDev, setSource as setRuntimeSource, subscribeRuntime, ENV_API, type DevInfo, type Source } from "./lib/runtime";
 import { ownerWallet, readPocket, isOwner, type OwnerWallet, type PocketView } from "./lib/wallet";
 import { createKey, loadKey, loadPockets, saveKey, savePockets } from "./lib/keystore";
-import { makeDemo } from "./lib/demo";
-import { notify, DEMO_MSG } from "./lib/toast";
+import { builtin, seedFor } from "./lib/builtin";
 import { loadMeta, saveMeta, type PocketMeta } from "./lib/pocketNames";
 import * as api from "./lib/api";
 import {
@@ -27,6 +26,7 @@ export type Notice = { title: string; pocket?: string; txs: { label?: string; ha
 export type Conn = "connecting" | "online" | "offline";
 
 const API_KEY = "cb.apiUrl";
+const SOURCE_KEY = "cb.source";
 const POLL_MS = 1500;
 
 type Ctx = {
@@ -35,8 +35,8 @@ type Ctx = {
   cfg: Config | null;
   // owner key
   keyState: "loading" | "none" | "ready"; wallet: OwnerWallet | null; importKey(pk: string): Promise<void>; newKey(): Promise<void>;
-  /** True while the API is unreachable: built-in sample data is shown instead (see lib/demo.ts). */
-  demo: boolean;
+  /** Where data comes from: the network built into the app (default) or the wallet server at `apiUrl`. */
+  source: Source; setSource(s: Source): Promise<void>;
   balances: { usdc: bigint; eth: bigint } | null;
   // pockets
   pockets: Pocket[]; pocketsLoaded: boolean; active?: Pocket; setActive(a: string): void;
@@ -88,6 +88,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const ownerTxRef = useRef<OwnerTx[]>([]);
   const [flash, setFlash] = useState(0);
   const [retry, setRetry] = useState(0);
+  const [source, setSourceState] = useState<Source>(getSource());
+  const [sourceReady, setSourceReady] = useState(false);
+  const local = source === "builtin"; // nothing from the built-in network is written to the device's storage
 
   const eventsRef = useRef<WalletEvent[]>([]);
   const seen = useRef(new Set<string>());
@@ -96,19 +99,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   addrRef.current = addresses;
 
   const wallet = useMemo(() => (pk ? ownerWallet(pk) : null), [pk]);
-  // demo data: API unreachable and never reached. The connect effect keeps retrying; once it works `cfg` is set and live data takes over.
-  const demo = conn === "offline" && !cfg;
-  const demoRef = useRef(demo);
-  demoRef.current = demo;
-  const D = useMemo(() => (demo ? makeDemo() : null), [demo]);
 
   // ---- runtime API URL (persisted override) and key
   useEffect(() => {
-    const off = subscribeRuntime(() => { setApiState(getApi()); setDevState(getDev()); });
+    const off = subscribeRuntime(() => { setApiState(getApi()); setDevState(getDev()); setSourceState(getSource()); });
     (async () => {
       const saved = await getItem(API_KEY);
       if (saved) setRuntimeApi(saved);
       setApiState(getApi());
+      if ((await getItem(SOURCE_KEY)) === "server") setRuntimeSource("server");
+      setSourceReady(true);
       // first launch: create the on-device key silently, no setup screen (an existing key is kept; "Import a key" lives in Settings)
       let k: Hex | null = null;
       try { k = await loadKey(); } catch { k = null; }
@@ -121,10 +121,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { if (keyState === "ready" && !pk) setKeyState("none"); }, [keyState, pk]);
   useEffect(() => { if (pk) setKeyState("ready"); }, [pk]);
 
-  // ---- connect: dev detection, then /api/config. Retries while offline.
+  // ---- connect: dev detection, then /api/config. Retries while offline. The built-in network is always there.
   useEffect(() => {
-    if (keyState === "loading") return;
+    if (keyState === "loading" || !sourceReady) return;
     let alive = true;
+    if (local) {
+      setDev(null);
+      setCfg(builtin().config() as Config); setConn("online"); setConnError("");
+      return () => { alive = false; };
+    }
     setConn((c) => (c === "online" ? c : "connecting"));
     (async () => {
       const d = await detectDev(apiUrl);
@@ -141,7 +146,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     })();
     return () => { alive = false; };
-  }, [apiUrl, keyState, retry]);
+  }, [apiUrl, keyState, retry, local, sourceReady]);
   useEffect(() => {
     if (conn !== "offline") return;
     const t = setTimeout(() => setRetry((n) => n + 1), 5000);
@@ -150,15 +155,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // ---- pockets for this owner
   useEffect(() => {
-    if (!wallet) { setAddresses([]); setMeta({}); setPocketsLoaded(false); return; }
+    if (!wallet || !sourceReady) { setAddresses([]); setMeta({}); setPocketsLoaded(false); return; }
     let alive = true;
+    if (local) {
+      // the built-in network starts lived in: two pockets and earlier activity, made by running the same scenes
+      seedFor(wallet.address).then(({ pockets: seeded, ownerTxs: txs }) => {
+        if (!alive) return;
+        const others = builtin().chain.pocketsOf(wallet.address).filter((p) => !seeded.some((x) => sameAddr(x.address, p.address)));
+        const list = [...others.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)), ...seeded].map((p) => p.address as Address); // Research data first
+        const m: Record<string, PocketMeta> = {};
+        for (const p of seeded) m[p.address.toLowerCase()] = { name: p.name, style: p.style };
+        ownerTxRef.current = txs.map((t) => ({ kind: t.kind, pocket: t.pocket.toLowerCase(), hash: t.hash, at: t.at, amount: t.amount }));
+        setOwnerTxs(ownerTxRef.current);
+        setAddresses(list); setMeta((old) => ({ ...m, ...old })); setActiveAddr((a) => a ?? list[0]); setPocketsLoaded(true);
+      });
+      return () => { alive = false; };
+    }
     Promise.all([loadPockets(wallet.address), loadMeta(wallet.address), getItem(`cb.ownerTxs.${wallet.address.toLowerCase()}`)]).then(([list, m, txs]) => {
       if (!alive) return;
       ownerTxRef.current = parseOwnerTxs(txs); setOwnerTxs(ownerTxRef.current);
       setAddresses(list); setMeta(m); setActiveAddr((a) => a ?? list[0]); setPocketsLoaded(true);
     });
     return () => { alive = false; };
-  }, [wallet]);
+  }, [wallet, local, sourceReady]);
 
   const refreshPockets = useCallback(async () => {
     if (!wallet || !cfg) return;
@@ -200,10 +219,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const next = [a, ...addrRef.current.filter((x) => !sameAddr(x, a))];
     addrRef.current = next;
     setAddresses(next); setActiveAddr(a);
-    await savePockets(wallet.address, next);
-    if (m) { const nm = { ...meta, [a.toLowerCase()]: m }; setMeta(nm); await saveMeta(wallet.address, nm); }
+    if (!local) await savePockets(wallet.address, next);
+    if (m) { const nm = { ...meta, [a.toLowerCase()]: m }; setMeta(nm); if (!local) await saveMeta(wallet.address, nm); }
     await refreshPockets();
-  }, [wallet, meta, refreshPockets]);
+  }, [wallet, meta, refreshPockets, local]);
 
   // ---- event stream: poll /api/events.json (React Native has no EventSource), then reconcile with /api/pending
   const poll = useCallback(async () => {
@@ -227,15 +246,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // new server (API URL changed): forget the old stream
     eventsRef.current = []; seen.current = new Set(); cursor.current = 0; setEvents([]); setPendingIds(null);
-  }, [apiUrl, dev?.startedAt]);
+  }, [apiUrl, dev?.startedAt, source]);
   useEffect(() => {
     if (!cfg) return;
     let on = AppState.currentState !== "background";
     const sub = AppState.addEventListener("change", (s) => { on = s === "active"; if (on) void pollRef.current(); });
     void pollRef.current();
     const t = setInterval(() => { if (on) void pollRef.current(); }, POLL_MS);
-    return () => { clearInterval(t); sub.remove(); };
-  }, [cfg, apiUrl]);
+    // the built-in network pushes: read the moment something happens (coalesced to one read per frame or two)
+    let soon: ReturnType<typeof setTimeout> | null = null;
+    const off = local ? builtin().subscribe(() => { if (!soon) soon = setTimeout(() => { soon = null; void pollRef.current(); }, 32); }) : () => {};
+    return () => { clearInterval(t); sub.remove(); off(); if (soon) clearTimeout(soon); };
+  }, [cfg, apiUrl, local]);
 
   // refresh balances when money moved
   const moneyEvents = useMemo(() => events.filter((e) => e.type === "payment" || e.type === "approval").length, [events]);
@@ -249,8 +271,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!wallet) return;
     ownerTxRef.current = addOwnerTx(ownerTxRef.current, { ...t, pocket: t.pocket.toLowerCase(), at: Date.now() });
     setOwnerTxs(ownerTxRef.current);
-    void setItem(`cb.ownerTxs.${wallet.address.toLowerCase()}`, JSON.stringify(ownerTxRef.current));
-  }, [wallet]);
+    if (!local) void setItem(`cb.ownerTxs.${wallet.address.toLowerCase()}`, JSON.stringify(ownerTxRef.current));
+  }, [wallet, local]);
   const pending = useMemo(() => livePending(myEvents, { pendingIds }).filter((a) => !answered.has(a.id)), [myEvents, pendingIds, answered]);
   const sellerName = useCallback((sid?: string) => cfg?.sellers.find((s) => s.id === sid)?.name ?? sid ?? "Unknown seller", [cfg]);
 
@@ -261,7 +283,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setTurnsBy((m) => ({ ...m, [pocket]: (m[pocket] ?? []).map((t) => (t.id === tid ? { ...t, ...patch } : t)) }));
 
   const sendChat = useCallback(async (text: string, pocket?: string) => {
-    if (demoRef.current) { notify(DEMO_MSG); return; }
     const a = pocket ? pockets.find((p) => sameAddr(p.address, pocket)) : active; const t = text.trim();
     if (!a || !t || turnsBy[a.address.toLowerCase()]?.some((x) => !x.done)) return;
     setActiveAddr(a.address);
@@ -322,6 +343,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ---- key management and API override
   const importKey = useCallback(async (k: string) => { await saveKey(k); setPk(k.trim() as Hex); }, []);
   const newKey = useCallback(async () => { setPk(await createKey()); }, []);
+  const setSource = useCallback(async (s: Source) => {
+    if (s === "server") await setItem(SOURCE_KEY, "server"); else await deleteItem(SOURCE_KEY);
+    resetConfig(); setCfg(null); setConn("connecting"); setPocketsLoaded(false); setBalances(null); setViews({}); setAnswered(new Set()); setTurnsBy({});
+    setRuntimeSource(s);
+    setRetry((n) => n + 1);
+  }, []);
   const setApiUrl = useCallback(async (u: string) => {
     if (u.trim()) await setItem(API_KEY, u.trim().replace(/\/+$/, "")); else await deleteItem(API_KEY);
     resetConfig(); setCfg(null); setConn("connecting");
@@ -329,19 +356,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRetry((n) => n + 1);
   }, []);
 
-  const shownPockets: Pocket[] = D ? D.pockets : pockets;
-  const shownActive = D ? D.pockets.find((p) => sameAddr(p.address, activeAddr)) ?? D.pockets[0] : active;
-  const demoLedger = useMemo(() => (D ? ledgerFrom(D.events) : []), [D]);
-  const shownCfg = D ? D.cfg : cfg;
-  const shownSeller = useCallback((sid?: string) => shownCfg?.sellers.find((s) => s.id === sid)?.name ?? sid ?? "Unknown seller", [shownCfg]);
-
   const value: Ctx = {
-    apiUrl, setApiUrl, conn, connError, dev, retryConnect: () => setRetry((n) => n + 1), cfg: shownCfg,
-    keyState, wallet, importKey, newKey, balances: D ? D.balances : balances, demo,
-    pockets: shownPockets, pocketsLoaded: D ? true : pocketsLoaded, active: shownActive, setActive: setActiveAddr, addPocket, refreshPockets,
-    findPocket: (a) => shownPockets.find((p) => sameAddr(p.address, a)),
-    ownerTxs, recordTx, events: D ? D.events : myEvents, ledger: D ? demoLedger : ledger, pending: D ? [] : pending, sellerName: shownSeller,
-    turns: D ? D.turns.filter((t) => sameAddr(t.pocket, shownActive?.address)) : turns, sendChat, chatBusy: D ? false : chatBusy, agentState: D ? "idle" : agentState,
+    apiUrl, setApiUrl, conn, connError, dev, retryConnect: () => setRetry((n) => n + 1), cfg, source, setSource,
+    keyState, wallet, importKey, newKey, balances,
+    pockets, pocketsLoaded, active, setActive: setActiveAddr, addPocket, refreshPockets,
+    findPocket: (a) => pockets.find((p) => sameAddr(p.address, a)),
+    ownerTxs, recordTx, events: myEvents, ledger, pending, sellerName,
+    turns, sendChat, chatBusy, agentState,
     answer, signApprove, answered,
     approvalOpen, setApprovalOpen, questionOpen, setQuestionOpen, rules, setRules, notice, setNotice, receipt, setReceipt, action, setAction, flash, fireFlash: () => setFlash((n) => n + 1),
   };
