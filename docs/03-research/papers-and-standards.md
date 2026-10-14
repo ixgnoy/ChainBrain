@@ -1,14 +1,16 @@
 # Papers and Standards Behind ChainBrain
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** The papers and standards below still apply. Design links to guards, ERC-8004 reputation, ERC-4337 and the "scene" numbers refer to the earlier design. The v2 [spec](../02-product/product-design.md) uses a minimal ERC-1271 pocket contract (no ERC-4337, no bundler) with a USDC EIP-3009 envelope signature, and a consumer wallet scope. Seller-side and identity items are finals roadmap.
 
 ## In one minute
 
-- **Answer:** ChainBrain's core design (limits enforced by a smart-contract account, not by the AI; seller-side checks; reason codes) is backed by 2025-2026 research. We have 28 new papers and 16 standards texts on disk, plus 14 papers copied from earlier rounds.
+- **Answer:** ChainBrain's core design (limits enforced by a smart-contract account, not by the AI; seller-side checks (old design, deferred to finals); reason codes) is backed by 2025-2026 research. We have 28 new papers and 16 standards texts on disk, plus 14 papers copied from earlier rounds.
 - **Strongest backing:** (1) A deterministic check placed between the model and the money tool stopped unpermitted transfers in a large public attack test (APort Vault: 0 of 69,297 behind the check vs 140 of 76,842 with the model alone, author-reported). (2) Signed payment protocols still fail when the agent's context is poisoned (AP2 studies). This is exactly why our limits live in the pocket contract.
-- **Biggest warning for us:** the first empirical study of ERC-8004 found its reputation registry is not usable as a trust signal today (most reviewers look like coordinated fake accounts; feedback is almost never tied to a real payment). Our spec builds reputation on an "ERC-8004-style" registry, so we must tie feedback to settled x402 payments and filter reviewers. See "Papers that challenge a spec claim".
-- **Second warning:** x402 has real seller-side flaws (replayed payment headers, duplicate settlement, non-final settlement signals). Our seller gateway must handle idempotency and finality itself, not assume x402 does.
-- **Third warning:** adaptive attackers beat most prompt-injection defences that look good on fixed tests. Our scripted injection scene proves little; judges will inject live. The on-chain pocket is our real answer, so lead with it.
-- **Do now:** cite the 12 items in "Cite these in the technical doc"; add a one-paragraph "limits of ERC-8004 reputation" note to the spec; make the gateway idempotent and wait for finality; add a "directory text is untrusted" rule to the agent.
+- **Biggest warning for us:** the first empirical study of ERC-8004 found its reputation registry is not usable as a trust signal today (most reviewers look like coordinated fake accounts; feedback is almost never tied to a real payment). The earlier spec built reputation on an "ERC-8004-style" registry (old design, deferred to finals; v2 prelim has no reputation), so at the finals we must tie feedback to settled x402 payments and filter reviewers. See "Papers that challenge a spec claim".
+- **Second warning:** x402 has real seller-side flaws (replayed payment headers, duplicate settlement, non-final settlement signals). Our seller gateway (old design, deferred to finals; v2 sellers are stock x402 @x402/hono) must handle idempotency and finality itself, not assume x402 does.
+- **Third warning:** adaptive attackers beat most prompt-injection defences that look good on fixed tests. Our scripted injection scene proves little (in v2, scene 5 pairs it with a live red-team box and an on-chain forced-transfer revert); judges will inject live. The on-chain pocket is our real answer, so lead with it.
+- **Do now:** cite the 12 items in "Cite these in the technical doc"; add a one-paragraph "limits of ERC-8004 reputation" note to the spec; make the gateway idempotent and wait for finality (seller gateway: old design, deferred to finals); add a "directory text is untrusted" rule to the agent.
 - **Gaps (honest):** no peer-reviewed paper on "Know Your Agent" exists in our searches (only vendor white papers); no paper on zero-knowledge reputation for agents (AgentValve is the closest and does not use ZK). Do not claim academic backing there.
 
 ## How to read this page
@@ -17,7 +19,7 @@ Plain-English terms used below, defined once:
 
 - **x402:** a way for a web server to answer "402 Payment Required" and for an agent to pay in USDC and retry. A **facilitator** is a service that checks and submits the payment on-chain for the seller.
 - **ERC / EIP:** Ethereum standards documents. **Draft** means not final.
-- **ERC-4337 smart account:** a wallet that is a contract, so it can enforce rules (caps, allowlists) itself.
+- **ERC-4337 smart account:** a wallet that is a contract, so it can enforce rules (caps, allowlists) itself. (v2 pocket is a minimal ERC-1271 contract with no ERC-4337 and no bundler.)
 - **ERC-1271:** how a contract wallet says "this signature is valid". **EIP-3009:** USDC's "transfer with authorization" (a signed permission to move money once, with a one-time nonce).
 - **ERC-7710 / ERC-7715:** standards for granting limited spending permissions ("delegations") from a smart account.
 - **Prompt injection:** text hidden in data the agent reads that tries to give the agent new orders.
@@ -97,15 +99,15 @@ All in `reference/papers/standards/`. Status was read from the file header on 20
 | Document | Status (as read) | File | What we use it for |
 | --- | --- | --- | --- |
 | ERC-8004 Trustless Agents | Draft, created 2025-08-13 | `erc-8004-trustless-agents.md` | Identity registry (ERC-721 token), reputation registry (`giveFeedback`), validation registry. Reserved `agentWallet` key: change needs EIP-712 or ERC-1271 proof. Its own Security Considerations says Sybil attacks are possible and `clientAddresses` filtering is needed |
-| ERC-4337 Account Abstraction | Final | `erc-4337-account-abstraction.md` | Pocket as smart account |
+| ERC-4337 Account Abstraction | Final | `erc-4337-account-abstraction.md` | Pocket as smart account (old design; v2 uses a minimal ERC-1271 contract, no 4337) |
 | ERC-7579 Minimal Modular Smart Accounts | Draft | `erc-7579-minimal-modular-accounts.md` | Module standard (policy validator as a module is one option) |
 | ERC-7710 Smart Contract Delegation | Draft (requires 1271, 7579) | `erc-7710-smart-contract-delegation.md` | Standard way to delegate capabilities; alternative to a fully custom validator |
 | ERC-7715 Request Permissions from Wallets | Draft (requires 4337, 7710) | `erc-7715-request-permissions.md` | Wallet-facing permission request; MetaMask docs say an ERC-7715 request is a signature for an ERC-7710 delegation (snippet) |
 | ERC-1271 Contract signature validation | read as ERC | `eip-1271-contract-signatures.md` | The hash-only check that forces our custom validator |
 | ERC-3009 Transfer With Authorization | read as ERC | `eip-3009-transfer-with-authorization.md` | The signed one-time USDC transfer that x402 uses |
-| EIP-712 Typed data signing | read as EIP | `eip-712-typed-data-signing.md` | Challenge-response signature format (guard 1) |
+| EIP-712 Typed data signing | read as EIP | `eip-712-typed-data-signing.md` | Challenge-response signature format (guard 1; old design, deferred to finals) |
 | ERC-8183 Agentic Commerce | Draft, created 2026-02-25 | `erc-8183-agentic-commerce.md` | Escrowed jobs with an evaluator; a possible dispute/delivery add-on. Forum thread notes provider and evaluator could be the same actor (snippet) |
-| RFC 9421 HTTP Message Signatures | Standards Track RFC | `rfc9421-http-message-signatures.txt` | Production path for guard 1 |
+| RFC 9421 HTTP Message Signatures | Standards Track RFC | `rfc9421-http-message-signatures.txt` | Production path for guard 1 (old design, deferred to finals) |
 | W3C Verifiable Credentials Data Model 2.0 | W3C TR (status not re-read) | `w3c-vc-data-model-2.0.html` | Credential format |
 | W3C DID Core 1.0 | W3C TR (status not re-read) | `w3c-did-core-1.0.html` | Agent and issuer identifiers |
 | IETF draft-ietf-webbotauth-httpsig-protocol-00 | Internet-Draft dated September 2026 (Standards Track per snippet) | `ietf-draft-webbotauth-httpsig-protocol-00.html` | Signature-Agent header and key directory for bots; the real-world version of guard 1 |
@@ -117,14 +119,14 @@ Not saved: x402 and AP2 specifications (already in `reference/repos/from-prior/x
 
 ## Papers that challenge a spec claim
 
-These are the places where research contradicts or pressures the claims in [product-design.md](../02-product/product-design.md). The spec is not edited here; the team decides.
+These are the places where research contradicts or pressures the claims in the earlier spec ([v2 spec](../02-product/product-design.md) is now current). Rows 1 to 3 concern the seller trust layer (old design, deferred to finals). Rows 4 and 5 still matter (v2 scene 5 is the injection scene). The spec is not edited here; the team decides.
 
 | # | Spec claim | Evidence against or pressure | Suggested fix |
 | --- | --- | --- | --- |
 | 1 | Reputation comes from feedback posted to an "ERC-8004-style registry", summarised by our attester | Xiong et al.: feedback is rarely tied to a real interaction (98.7-100% have no proof of payment), a single feedback costs cents to fake, and most reviewers look coordinated. ERC-8004's own text leaves Sybil defence to callers. Tempting-the-Agent adds that cheap identity reset lets agents cash in reputation | Accept feedback only if it references a settled ChainBrain payment hash; weight by payment volume and owner KYC tier; always filter by known reviewers; cap exposure per new counterparty (AgentValve idea). Say "ERC-8004-style, with payment-backed feedback" |
 | 2 | "Replay is impossible by construction" for one-task pockets; settlement "retries once with the same nonce so it can never pay twice" | This holds for the payer's money (the token contract tracks one-time nonces). It does not cover the seller side: Li et al. show one payment header reused to get many grants (248 grants per payment in a live test) and a nonce-preemption variant; Ling et al. show a duplicate-settlement race and a 120-second in-memory dedup cache in one SDK | Gateway keeps a persistent record of paid nonces before granting; wait for a stated confirmation depth; test the preemption case on Base Sepolia [VERIFY with our nonce = hash(intent, quote) scheme] |
-| 3 | Agent picks the seller by comparing price and reputation from the directory (scene 2) | Magentic Marketplace: strong first-proposal bias and manipulability. Louck: marketplace content accepted without integrity checks, and payment destination taken from untrusted text, succeed regardless of model | Directory entries signed by the seller registry; recipient comes only from the seller-signed quote and must match the on-chain allowlist; ranking done by deterministic code, model only breaks ties |
-| 4 | Scene 6: the agent "ignores" an injection; judges can try the red-team box | Nasr et al. and AutoDojo: static tests overstate defences; adaptive attackers break most. FinVault: up to 50% attack success on strong models without extra defences | Do not claim the agent is injection-proof. Claim: "if it is fooled, the pocket still refuses". Rehearse live injection against the pocket directly |
+| 3 | Agent picks the seller by comparing price and reputation from the directory (old scene 2; old design, deferred to finals) | Magentic Marketplace: strong first-proposal bias and manipulability. Louck: marketplace content accepted without integrity checks, and payment destination taken from untrusted text, succeed regardless of model | Directory entries signed by the seller registry; recipient comes only from the seller-signed quote and must match the on-chain allowlist; ranking done by deterministic code, model only breaks ties |
+| 4 | Old scene 6 (v2 scene 5): the agent "ignores" an injection; judges can try the red-team box | Nasr et al. and AutoDojo: static tests overstate defences; adaptive attackers break most. FinVault: up to 50% attack success on strong models without extra defences | Do not claim the agent is injection-proof. Claim: "if it is fooled, the pocket still refuses". Rehearse live injection against the pocket directly |
 | 5 | "Agent never holds raw personal data" | Millstone et al.: aggregates and filtered counts let a model reconstruct a value that never entered its context (four final answers did so) | Only return pass or fail booleans; no counts or ranges beyond the policy threshold |
 | 6 | The semantic intent check uses "the same model, separate prompt" | Not wrong (it can only escalate, never approve), but the Zhu et al. result says precision of the intent certificate is the bottleneck, and LLM judges are attackable (Nasr) | Keep it step-up only; also show a rule-based diff (price, quantity, seller) so the main check is deterministic |
 | 7 | Any "x402 adoption" figure in the pitch | Ling et al.: 21.20% of settlements fictitious and 63.78% internal to a linked cluster over 280 days on Base | If quoting volume, quote with that caveat, or do not quote it |
@@ -134,9 +136,9 @@ Side by side, two figures for x402 scale differ by source and are not directly c
 
 ## Cite these in the technical doc
 
-1. **South et al. 2025** (authenticated delegation): the three questions a seller must answer. Backs guards 1-3.
-2. **ERC-8004 + Xiong et al. 2026**: our identity design and its honest limits. Backs agent registry and reputation caveats.
-3. **ERC-4337, ERC-1271, EIP-3009, EIP-712**: pocket account, signature check, transfer authorization, challenge signature. Backs the pocket enforcement design.
+1. **South et al. 2025** (authenticated delegation): the three questions a seller must answer. Backs guards 1-3 (old design, deferred to finals).
+2. **ERC-8004 + Xiong et al. 2026**: our identity design and its honest limits. Backs agent registry and reputation caveats (old design, deferred to finals).
+3. **ERC-4337, ERC-1271, EIP-3009, EIP-712**: pocket account, signature check, transfer authorization, challenge signature. Backs the pocket enforcement design (v2: ERC-1271 plus EIP-3009 envelope; 4337 not used).
 4. **ERC-7710 / ERC-7715** (and the delegation-framework repo): the standard alternative to a custom validator. Backs "why custom validator" Q&A.
 5. **Li et al. 2026 and Ling et al. 2026 (x402 security)**: why the gateway checks idempotency and finality.
 6. **Louck 2026** (protocol-level attacks): why the recipient comes from a signed quote and on-chain allowlist.
@@ -152,16 +154,16 @@ Side by side, two figures for x402 scale differ by source and are not directly c
 
 | Tag | Recommendation | Helps |
 | --- | --- | --- |
-| [must] | Make the seller gateway idempotent: persistent paid-nonce record, wait N confirmations, bind quote to the exact resource, before releasing goods. Test replay and duplicate calls on Base Sepolia and keep the tx hashes | Task 40 / Security 30 |
+| [must, finals roadmap; not in prelim demo] | Make the seller gateway idempotent: persistent paid-nonce record, wait N confirmations, bind quote to the exact resource, before releasing goods. Test replay and duplicate calls on Base Sepolia and keep the tx hashes | Task 40 / Security 30 |
 | [must] | Lead the security story with "the pocket refuses even if the agent is fooled", citing APort Vault, Nasr et al. and FinVault. Do not claim injection-proof | Security 30 |
-| [must] | In the technical doc and Q&A, state the ERC-8004 limits up front and say reputation feedback is payment-backed and reviewer-filtered | Security 30 / Innovation 30 |
+| [must, finals roadmap; not in prelim demo] | In the technical doc and Q&A, state the ERC-8004 limits up front and say reputation feedback is payment-backed and reviewer-filtered | Security 30 / Innovation 30 |
 | [must] | Take payment recipients only from the seller-signed quote and check against the on-chain allowlist; treat directory text and tool descriptions as untrusted | Security 30 |
 | [should] | Show a rule-based diff (price, quantity, seller) as the main intent check; keep the LLM check step-up only | Security 30 / Innovation 30 |
 | [should] | Return only pass or fail from credential checks; avoid counts or ranges that leak | Security 30 |
-| [should] | Cap exposure for new or unknown buyer agents (small per-order limit, as in AgentValve's finite-capacity idea) instead of relying only on a score | Innovation 30 |
+| [should, finals roadmap] | Cap exposure for new or unknown buyer agents (small per-order limit, as in AgentValve's finite-capacity idea) instead of relying only on a score | Innovation 30 |
 | [should] | Rank sellers with deterministic code (price within allowlist, optionally payment-weighted like TraceRank); log the ranking in the trace panel | Innovation 30 |
 | [could] | Run a small AgentDojo or FinVault subset (or AutoDojo) against our MCP tools and report the number | Innovation 30 / Bonus |
-| [could] | Implement the pocket policy as an ERC-7579 module or ERC-7710 caveat enforcer if the day-1 spike on the custom validator fails | Task 40 |
+| [could] | Implement the pocket policy as an ERC-7579 module or ERC-7710 caveat enforcer if the day-1 spike on the custom validator fails (v2: the spike passed on a fork; the pocket is a minimal ERC-1271 contract) | Task 40 |
 | [could] | Mention WIMSE and Web Bot Auth drafts as the standards path for agent identity headers (production path beyond RFC 9421) | Innovation 30 |
 
 ## Open questions

@@ -1,14 +1,16 @@
 # Topic F rivals: who else is entering, and how ChainBrain beats them
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** The rival findings below still apply. Our own claims are superseded by the [v2 spec](../02-product/product-design.md): ChainBrain is now a consumer wallet. Our novelty is delegated spending with hard limits the user owns in a contract (pockets). The seller trust layer (verdict, seller guards, reputation, ERC-8004) is a finals roadmap item, not in the prelim demo. Lines marked "(old design, deferred to finals)" describe the earlier seller-side plan. Our build is now done locally and tested; live Base Sepolia hashes are still pending ([evidence](../evidence.md)).
 
 ## In one minute
 
 - **Two public repos say they are 2026 Topic F entries:** Leash (`detinatran/finbase`) and `sucsage/agentic-wallet`. Both read as serious. Leash is the stronger package; sucsage has the nicer "try it yourself" sandbox.
 - **New finding, and an important one:** `edxzh/agent-wallet` (a solo developer, "Yunshu AI") is NOT labelled as a FinTechathon entry, but it is the closest technical twin of ChainBrain that we have found. It already does what our earlier doc called a possible "narrow novelty": a contract wallet whose ERC-1271 check approves the standard x402 USDC payment only after the rules pass, plus ERC-8004 reputation checked inside the payment, a live public dashboard, a "try to overspend" page, and an agent-hires-agent escrow. Whether it is a competition entry is [VERIFY]. Judges can find it either way.
 - **The rest of the field is not Topic F.** Fresh repos found today are Topic C (Sathi, TuitionGuard, a tuition-FX assistant), Topic E (OneGate) and A or unstated (Monara). They set the polish bar judges see across topics, not our direct score rival.
-- **What rivals lack (read from their code, not guessed):** no seller-side check on who the buyer is, no real clarification or re-planning dialogue, test-token money (Leash and sucsage deploy their own mock USDC), and in Leash the default "AI" is a script. ChainBrain's seller verdict, reason-code re-plan loop and real Circle test USDC are real gaps to exploit.
+- **What rivals lack (read from their code, not guessed):** no seller-side check on who the buyer is (our seller verdict is old design, deferred to finals), no real clarification or re-planning dialogue, test-token money (Leash and sucsage deploy their own mock USDC), and in Leash the default "AI" is a script. In v2, ChainBrain's real gaps to exploit are a real Claude tool-calling loop (no scripted fallback), reason-code re-planning, real Base Sepolia test USDC and pockets the user owns in a contract.
 - **What rivals have that we do not (yet):** a finished evidence pack with a one-command re-run (Leash), a per-visitor sandbox judges can use (sucsage), an automated "agent run every 6 hours" evidence stream and live dashboard (edxzh), 17 to about 96 contract tests, and a written known-risk list. These are cheap to match; see the table in section 4.
-- **Honest status:** ChainBrain is a design today; the rivals above ship running code with explorer links. We win on idea and demo only if we ship the evidence pack too.
+- **Honest status (updated 14 Oct, v2):** the build is done and tested locally (contracts, server, web, Expo, Android; scenes 1-8 in replay mode). Live Base Sepolia hashes are still pending ([evidence](../evidence.md)). The rivals above ship running code with explorer links. We win on idea and demo only if we ship the evidence pack too.
 - **Most teams do not publish.** This is a floor, not the field (same caveat as [prior art](prior-art-hackathons-github.md)). Search again on 19 Oct.
 
 ## 1. How we searched (GitHub, 12-13 Oct 2026)
@@ -56,12 +58,12 @@ Totals: counting the 14 in the 12 Oct note and the six new repos above (OneGate,
 | Our claim in the docs | What the code shows | Fix |
 | --- | --- | --- |
 | "A pocket that pays x402 within limits" | Done by edxzh with real test USDC, by Leash and sucsage with caps and allowlists (no x402) | Already marked "table stakes" in [judge simulation](../06-pitch/judge-simulation.md). Keep it |
-| "Narrow edge: rules enforced inside an ERC-1271 check on the standard x402 USDC authorization" ([prior art](prior-art-hackathons-github.md), marked [VERIFY] there) | **edxzh/agent-wallet does exactly this**: `isValidSignature` accepts only a reserved digest signed by the agent, after `authorize` ran the rules | Do not claim this as new. Say "we build on the same standard pattern". The prior-art doc should be corrected (not my file to edit) |
-| "ERC-8004 identity and reputation for payees" | edxzh reads both registries inside the payment, with pinned registry addresses and payment-grounded ratings | Our ERC-8004 use must be on the seller-checks-buyer side, which edxzh does not do |
-| "Seller verifies the buyer agent (seven guards, verdict, reason code, live re-plan)" | Not found in any of the three. edxzh has reason codes but for the buyer's own wallet refusals; Leash has typed reverts; none has a seller gateway or a "serve / step up / refuse" verdict | This is the real gap. Lead with it (and still say Visa TAP, Skyfire and others verify agents in the card world) |
-| "Agent hires another agent (translation agent)" | edxzh has a `JobEscrow` for exactly that; sucsage has `MilestoneEscrow` | Our scene is not unique; ours should be a payment-with-check, not an escrow clone |
+| "Narrow edge: rules enforced inside an ERC-1271 check on the standard x402 USDC authorization" ([prior art](prior-art-hackathons-github.md), marked [VERIFY] there) | **edxzh/agent-wallet does exactly this**: `isValidSignature` accepts only a reserved digest signed by the agent, after `authorize` ran the rules | Do not claim this as new. Say "we build on the same standard pattern". (Update 14 Oct: the v2 pocket does use this pattern, an ERC-1271 contract that rebuilds the USDC EIP-3009 digest. Our claim is delegated spending with hard limits the user owns, not the pattern.) |
+| "ERC-8004 identity and reputation for payees" (old design, deferred to finals) | edxzh reads both registries inside the payment, with pinned registry addresses and payment-grounded ratings | Not in the v2 prelim. If used at the finals, it must be on the seller-checks-buyer side, which edxzh does not do |
+| "Seller verifies the buyer agent (seven guards, verdict, reason code, live re-plan)" (old design, deferred to finals; finals roadmap) | Not found in any of the three. edxzh has reason codes but for the buyer's own wallet refusals; Leash has typed reverts; none has a seller gateway or a "serve / step up / refuse" verdict | Still a real gap, but a finals roadmap item. For the prelim, lead with the user-owned pocket and its evidence (and still say Visa TAP, Skyfire and others verify agents in the card world) |
+| "Agent hires another agent (translation agent)" (old design, dropped in v2) | edxzh has a `JobEscrow` for exactly that; sucsage has `MilestoneEscrow` | Not in v2 scenes 1-8 (v2 buys research reports from stock x402 sellers) |
 
-## 4. Head-to-head against ChainBrain (as designed; nothing of ours is built yet)
+## 4. Head-to-head against ChainBrain (written 13 Oct against the old plan; the build now exists locally, live hashes pending; "seller" rows are old design, deferred to finals)
 
 Scale: ahead / even / behind for what a judge could see on 20 Oct. "ChainBrain" means the plan in the [spec](../02-product/product-design.md) and [recommended changes](../02-product/recommended-changes.md), delivered on time.
 
@@ -86,21 +88,21 @@ Scale: ahead / even / behind for what a judge could see on 20 Oct. "ChainBrain" 
 | Data extraction | Not a stated focus | Not stated | Not stated | Selective disclosure idea (SD-JWT) in plan | Possible edge; nobody addresses it |
 | Privilege escalation | Agent cannot unpause or approve itself | Only owner unpauses | Agent key cannot change rules | Per spec | Even |
 | Honest known-risk list | Yes, 11 items, with owner-key-on-server admitted | Draft | "Not audited" note | Spec needs named residuals | Behind Leash until written |
-| Seller-side security (replay, double-grant) | n/a | n/a | n/a | Planned gateway tests | **Ahead** (nobody else has the surface) |
+| Seller-side security (replay, double-grant) | n/a | n/a | n/a | Planned gateway tests (old design, deferred to finals) | **Ahead** (finals; nobody else has the surface) |
 
 ### Innovation and interaction (30%): novelty, real-world value, dialogue efficiency, clarification, correction, fallback
 
 | Item | Leash | sucsage | edxzh | ChainBrain (plan) | Read |
 | --- | --- | --- | --- | --- | --- |
-| Novel idea | Provenance tracking of addresses; student use | Milestone escrow for SME works | ERC-8004 gating; agent hires agent | Seller verdict + reason-code re-plan | **Ahead** on seller side; narrow elsewhere |
+| Novel idea | Provenance tracking of addresses; student use | Milestone escrow for SME works | ERC-8004 gating; agent hires agent | Seller verdict + reason-code re-plan (old design, deferred to finals; v2: user-owned pocket + reason-code re-plan) | **Ahead** on seller side (finals); narrow elsewhere |
 | Real-world value | Students' rent and tuition (clear) | SME contractors (clear) | Developer infrastructure | Merchants' readiness gap (market data in [market doc](market-regulation-webank.md)) | Even; ours is the abstract one, so name one merchant |
-| Clarification | Not found | Chat agent; README says it is tested on refusing an incomplete SAT (no clarification dialogue described) | None | One clarifying question scripted | Even or slightly ahead |
+| Clarification | Not found | Chat agent; README says it is tested on refusing an incomplete SAT (no clarification dialogue described) | None | One clarifying question (v2: asked by the real model, scene 1) | Even or slightly ahead |
 | Correction / re-plan after refusal | Prompt forbids retrying blocked payments (agent stops) | Not stated | Not stated | **Reads a reason code and picks another seller** | **Ahead** |
 | Fallback | Offline scripted mode; LLM refusal fallback | Rule-based UI without LLM | Not applicable | Dead-end stop and explain | Even |
 | Dialogue efficiency measured | No | Latency per run in README (about 35 s) | No | Planned "turns per task" | Ahead if we measure |
 | Visible LLM in the loop | Optional | Yes | No | Yes | Even |
 
-Bonus (0-5): nobody visible uses FISCO BCOS; Leash only says its Solidity "is compatible" with consortium chains. A tested FISCO deployment would be unique but is a bonus, not a core win.
+Bonus (0-5): nobody visible uses FISCO BCOS; Leash only says its Solidity "is compatible" with consortium chains. A tested FISCO deployment would be unique but is a bonus, not a core win. In v2, FISCO BCOS is planned only (finals roadmap), not built.
 
 ## 5. Features rivals have that we lack, and the cheapest way to add them
 
@@ -128,7 +130,9 @@ Do not copy code or text from these repos. They are other students' and develope
 
 Written to be true against what we read. Each needs the matching proof in the demo.
 
-1. **"Every other wallet protects the buyer. ChainBrain also protects the seller."** In the three Topic F rivals, the checks sit on the paying side. None runs a verdict (serve, step up, refuse) before the merchant delivers.
+**v2 positioning (14 Oct):** our novelty is delegated spending with hard limits the user owns in a contract (pockets): "Give your AI a pocket, not your wallet." The owner opens a pocket, funds it, and sets the rules (seller allowlist, per-payment cap, ask-me-above threshold, expiry, revoke, return funds). The agent can be fooled and the pocket still refuses. Lines 2 to 6 below still fit v2 (line 6 with the narrow claim only). The seller trust layer is a finals roadmap item. Rivals are buyer-side too, so do not claim "nobody".
+
+1. **(Old design, deferred to finals; use as finals roadmap line only.) "Every other wallet protects the buyer. ChainBrain also protects the seller."** In the three Topic F rivals, the checks sit on the paying side. None runs a verdict (serve, step up, refuse) before the merchant delivers.
 2. **"A refusal is an instruction, not a dead end."** The agent reads a reason code, explains, and re-plans to a seller that fits the budget; the final payment has a hash. Leash's agent is told to stop after a block; we show the next successful hash seconds after the revert.
 3. **"Real money-shaped test dollars, not play tokens."** We pay with Circle's test USDC through the standard x402 flow, so any explorer or x402 tool recognises it. Leash and sucsage deploy their own mintable mock token.
 4. **"Hit it yourself."** A judge types an attack, the agent can be fooled on purpose, and the contract reverts with a visible hash. (Leash has a "simulate compromised agent" switch, edxzh a dry-run page. Ours adds a seller-side attack and a live re-plan after it.)
@@ -140,15 +144,15 @@ Avoid: "first", "nobody", "novel pocket", "ERC-1271 x402 is new", "only team wit
 ## What this means for winning
 
 - [must] Ship the evidence pack and the template-mirroring documents by Mon 19 Oct. Leash already has them; without them we lose on paper even with the better idea. Task 40 / Security 30
-- [must] Pass the 14 Oct payment spike; edxzh shows the ERC-1271 x402 pattern works with real test USDC and the public x402.org facilitator ([its research notes](../../reference/repos/rivals/edxzh-agent-wallet/specs/001-agent-wallet-demo/research.md) are public). We should read how it dealt with nonce reservation and facilitator signature lag, then write our own. Task 40
-- [must] Rewrite the novelty claim: drop the ERC-1271 x402 "narrow edge" and keep only seller-side verdict plus re-plan. Innovation 30
+- [must] Pass the 14 Oct payment spike (done on a Base Sepolia fork; live run pending); edxzh shows the ERC-1271 x402 pattern works with real test USDC and the public x402.org facilitator ([its research notes](../../reference/repos/rivals/edxzh-agent-wallet/specs/001-agent-wallet-demo/research.md) are public). We should read how it dealt with nonce reservation and facilitator signature lag, then write our own. Task 40
+- [must] Rewrite the novelty claim: drop the ERC-1271 x402 "narrow edge". (13 Oct text said keep only seller-side verdict plus re-plan; v2 says: keep user-owned pockets with hard limits plus the real-model re-plan, and treat the seller verdict as finals roadmap.) Innovation 30
 - [must] Run 30+ attacks and 10 plain tasks with false-refusal rate, and publish a known-risk list. Security 30 / Task 40
 - [should] Provide a judge-facing sandbox (own pocket per visitor, or a shared one with a reset) and a "type your own attack" box with a dry-run. Task 40 / Security 30
 - [should] Add a scheduled daily run that produces fresh hashes and a static dashboard, plus a recorded replay page. Task 40 (protects against a demo failure)
 - [should] Evaluate the agent on two or three models, with run counts, and show turns per task. Innovation 30
 - [should] Test reachability from mainland China (video mirror, gateway, explorer links); no rival states it. Task 40
 - [could] Provenance and look-alike check on payees; exact-amount re-typing on step-up. Security 30
-- [could] FISCO BCOS dry run as the only unique bonus idea in the field. Bonus
+- [could] FISCO BCOS dry run as the only unique bonus idea in the field. Bonus (v2: planned only, not built)
 - [could] Re-run this search on 19 Oct and again before the 22-23 Oct online review; read any new Topic F repo within an hour. All
 
 ## Open questions

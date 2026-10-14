@@ -1,15 +1,17 @@
 # Market, regulation and WeBank fit
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** The market, regulation and WeBank findings still apply. Mentions of seller guards, the seller console, KYB, scene 9, ERC-4337 and a FISCO BCOS deployment describe the earlier design. The prelim product is the consumer wallet in the [v2 spec](../02-product/product-design.md) (no ERC-4337; FISCO BCOS is planned only; seller trust layer and console are finals roadmap). Compliance position is unchanged: mainland China not offered, target HK and APEC, testnet demo only.
 
 ## In one minute
 
 - **The spec's compliance position is mostly right, but needs four fixes.** (1) Describe PBoC Yinfa [2026] No. 42 more precisely (it covers all stablecoins, not only "unapproved RMB" ones, and bars foreign firms from serving mainland users). (2) Say plainly that USDC is a testnet stand-in: in Hong Kong only HKMA-licensed issuers' tokens may be offered to retail users. (3) Add the new mainland and Singapore rules that match our design. (4) Replace "APEC banks" with "Hong Kong and Southeast Asia, via WeBank Technology Services". Details in section 1.
 - **Regulators are now asking for exactly what ChainBrain builds.** On 24 Aug 2026 the China Payment & Clearing Association (a state-backed body, working under PBoC guidance) issued a convention that tells members to build "Know Your Agent" (KYA, see jargon box below) and define each agent's "authorisation boundary". On 3 Jul 2026 Singapore's MAS published a runtime-safeguards white paper with agent identity, a rulebook, a deny/escalate/auto-execute (the paper lists a fourth outcome, "observe") decision step, and a tamper-evident log. On 27 Aug 2026 Hong Kong's regulators admitted 36 agentic-AI pilots, including an "Agentic ID" project using DIDs and verifiable credentials.
-- **That is good news and a warning.** It proves the problem is real. It also means KYA is crowded: Alipay, Skyfire, Visa, Mastercard, Cloudflare and HKT Payment all have something. Our edge must stay specific: the seller-side guards plus an on-chain pocket that holds even if the agent is hijacked.
+- **That is good news and a warning.** It proves the problem is real. It also means KYA is crowded: Alipay, Skyfire, Visa, Mastercard, Cloudflare and HKT Payment all have something. Our edge must stay specific: for the prelim, an on-chain pocket that holds even if the agent is hijacked (the seller-side guards are old design, deferred to finals).
 - **Agent payments are real but still tiny on-chain.** TRM Labs (9 Sep 2026) found that only 0.6% to 7.5% of screened x402 commerce looked like AI agents, and that on-chain records cannot tell an agent from a script. Do not pitch big x402 volume. Pitch the identity gap TRM just described.
 - **Merchants are not ready.** Ravelin's survey of 1,504 fraud and payments staff found only 29% feel "very prepared" for agentic fraud, and nobody agrees who pays for a bad agent purchase (Worldpay: "No liability shift exists yet"). This is our best pitch fact.
 - **WeBank fit is strong if we frame it carefully.** WeBank's own line is "AI executes by default, humans handle exceptions" (Wang Yasheng, Jul 2026). ChainBrain's serve / step-up / refuse is that sentence in payment form. WeBank is a mainland bank, so lead with settlement-agnostic wording and its Hong Kong and Southeast Asia arm, not with USDC.
-- **The business model needs reshaping.** The per-check fee is worth almost nothing at today's volumes (section 6). Lead with a white-label licence to banks and a seller-console subscription.
+- **The business model needs reshaping.** The per-check fee is worth almost nothing at today's volumes (section 6). Lead with a white-label licence to banks and a seller-console subscription (seller console: old design, deferred to finals).
 - **What to do:** apply the spec wording fixes, add one "regulator mapping" slide and table, and open the pitch with the merchant-readiness gap (see "What this means for winning").
 
 **Jargon, defined once.** *KYC* = know your customer (a bank checking who a person is). *KYB* = the same for businesses. *KYA* = know your agent (checking which AI agent is acting and for whom). *Stablecoin* = a crypto token pegged to a currency such as the US dollar. *Tokenised deposit* = an ordinary bank deposit recorded as a token on a ledger; it stays a bank liability. *RWA* = real-world-asset tokenisation (turning ownership of an asset into tokens). *Sandbox* = a regulator-supervised test area. *HKMA* = Hong Kong Monetary Authority (central bank role). *SFC* = Hong Kong Securities and Futures Commission. *MAS* = Monetary Authority of Singapore. *PBoC* = People's Bank of China. *NFRA* = National Financial Regulatory Administration (mainland banks and insurers). *PCAC* = China Payment & Clearing Association. *DID / VC* = decentralised identifier / verifiable credential (W3C standards for portable identity proofs).
@@ -70,9 +72,9 @@ I found no PBoC or NFRA rule specific to AI-agent payments beyond the above. A t
 
 | SAFR part | ChainBrain part |
 | --- | --- |
-| Agent identity | Guard 1 (challenge-response) + agent registry |
-| Controls repository (includes user mandates) | The pocket rules and the seller's published policy |
-| Disposition engine: deny / escalate / auto-execute | Refuse / step-up / serve |
+| Agent identity | Guard 1 (challenge-response) + agent registry (old design, deferred to finals; v2: agent key held by the tool layer, bound to the pocket) |
+| Controls repository (includes user mandates) | The pocket rules (and the seller's published policy, old design, deferred to finals) |
+| Disposition engine: deny / escalate / auto-execute | Refuse / step-up / serve (seller verdict: old design, deferred to finals; v2 prelim equivalent: pocket refuses with a reason code, ask-me-above sends the owner an approval) |
 | Tamper-evident log | Chain of pocket rules, intent hash, payment, receipt |
 
 ### 2.4 APEC 2026
@@ -153,26 +155,26 @@ This is our inference from public statements, not a stated scoring rule.
 
 | WeBank signal | Source | ChainBrain answer | Say it like this |
 | --- | --- | --- | --- |
-| "AI executes by default, humans handle exceptions" | Wang Yasheng, Jul 2026 | Serve is the default; step-up is the exception handed to a human; refuse is a hard stop | "Our three verdicts are your sentence, applied to payments." |
-| Anti-fraud and compressed investigation time (3 days to 5 minutes) | Jiemian | The seller console and evidence chain shorten "who authorised this?" from a dispute to a lookup | "A merchant checks one chain instead of three systems." [illustrate with our own demo time; do not claim WeBank numbers] |
+| "AI executes by default, humans handle exceptions" | Wang Yasheng, Jul 2026 | Serve is the default; step-up is the exception handed to a human; refuse is a hard stop (v2 prelim: pay within the pocket, ask-me-above hands the owner a co-sign, rules refuse; the seller verdict is deferred to finals) | "Our three verdicts are your sentence, applied to payments." |
+| Anti-fraud and compressed investigation time (3 days to 5 minutes) | Jiemian | The seller console (old design, deferred to finals) and evidence chain shorten "who authorised this?" from a dispute to a lookup | "A merchant checks one chain instead of three systems." [illustrate with our own demo time; do not claim WeBank numbers] |
 | Privacy-preserving design (federated learning, "data usable but not visible") | Qiang Yang's research; WeDPR | Agent holds proofs, not raw personal data; sellers get verdicts, not history | "Proofs, not data." |
 | Regulation-ready: human checkpoint, emergency stop, logs, agent security | NFRA 金发〔2026〕8号 items 17, 22, 25 | Step-up, revoke, audit chain, signing allowlist, pocket limits | Use the mapping in 5.4 |
-| Southeast Asia and Hong Kong expansion | WeBank Tech | Rail-agnostic guards sold to HK and SEA banks' merchants | "A trust layer WeBank Tech's bank clients can offer their merchants." |
-| Open-source stack (FISCO BCOS, WeIdentity) | Official competition site lists these platforms | Optional minimal FISCO deployment as a bonus; WeIdentity-style DID and VC model | Only claim it if the deployment exists and a hash can be shown |
+| Southeast Asia and Hong Kong expansion | WeBank Tech | Rail-agnostic guards sold to HK and SEA banks' merchants (old design, deferred to finals; prelim sells the consumer pocket) | "A trust layer WeBank Tech's bank clients can offer their merchants." |
+| Open-source stack (FISCO BCOS, WeIdentity) | Official competition site lists these platforms | FISCO BCOS is planned only, not built; WeIdentity-style DID and VC model | Only claim it if the deployment exists and a hash can be shown |
 
 ### 5.4 Mapping to the mainland bank rulebook (for the security self-assessment)
 
 | NFRA 金发〔2026〕8号 item | Requirement (our paraphrase) | ChainBrain control |
 | --- | --- | --- |
 | 16 | High-risk AI uses need risk-committee approval | Out of scope in a demo; pocket rules are the artefact a committee would approve |
-| 17 | Human supervision and intervention, emergency stop, fallback | Step-up, Revoke button, safe-fallback scene 9 |
+| 17 | Human supervision and intervention, emergency stop, fallback | Step-up, Revoke button, safe-fallback scene 8 (v2: dead-end pocket, agent stops safely) and revoke scene 7 |
 | 22 | Weakly explainable AI may only assist; a person decides; human review points; logs | Template-rendered intent (not an LLM paraphrase), owner signature, audit chain |
 | 25 | Secure agents against data leakage, memory poisoning, identity over-reach, tool misuse, runaway operation; adversarial testing | Disclosure policy, untrusted-content marking, challenge-response, signing allowlist, budget and expiry on-chain, red-team box |
 
 ### 5.5 How to frame ChainBrain as useful to WeBank without overclaiming
 
-- **Safe claims:** "a pattern that fits WeBank Tech's HK and SEA bank clients"; "built to run on any token with signature checks"; "FISCO BCOS deployment is a bonus, shown only if a transaction hash exists".
-- **Unsafe claims:** that WeBank will license it; that WeBank has an agent-payments product (we found none); that FISCO BCOS is production-ready for ERC-4337 (the spec's own risk table says SM2 breaks Ethereum signatures); that WeBank accepts USDC (it cannot in the mainland).
+- **Safe claims:** "a pattern that fits WeBank Tech's HK and SEA bank clients"; "built to run on any token with signature checks"; "FISCO BCOS is planned only" (v2 rule: never claim a FISCO deployment; show a hash only if one exists).
+- **Unsafe claims:** that WeBank will license it; that WeBank has an agent-payments product (we found none); that FISCO BCOS is production-ready for ERC-4337 or for the pocket's signature scheme (the old spec's risk table said SM2 breaks Ethereum signatures; v2 does not use ERC-4337 and FISCO BCOS is planned only); that WeBank accepts USDC (it cannot in the mainland).
 - **Use their words:** "AI default execution, humans handle exceptions"; "inclusive finance". Avoid "AI as a financial participant" as a WeBank quote; earlier research found it only in the competition's own brief.
 - **Hong Kong angle:** WeBank Tech is an HK-incorporated subsidiary with an HK sales centre and, per prior research, ties to Fusion Bank. A merchant-trust layer for HK-licensed tokens is a plausible adjacency. It is an inference, not a WeBank statement.
 - **Inclusive-finance angle (optional):** SME owners are the spec's buyer persona. WeBank says about 50% of its Weiyedai credit clients had no prior enterprise credit record (新京报, 4 Mar 2026, from prior research). A small business without a credit record could still hold a limited pocket. Present this as an idea, not a WeBank commitment.
@@ -181,7 +183,7 @@ This is our inference from public statements, not a stated scoring rule.
 
 ## 6. Business model sanity check
 
-The spec's model: verification fee per request, seller-console subscription, trust tiers for agent operators, white-label licence to banks.
+The old spec's model (business model not in the v2 prelim spec; finals roadmap): verification fee per request, seller-console subscription, trust tiers for agent operators, white-label licence to banks.
 
 | Revenue line | Sanity check | Verdict |
 | --- | --- | --- |
@@ -202,16 +204,16 @@ The spec's model: verification fee per request, seller-console subscription, tru
 | --- | --- | --- | --- |
 | 1 | Fix the spec's compliance paragraph: accurate description of Yinfa No. 42, USDC as demo-only, "Hong Kong and Southeast Asia" instead of "APEC" (section 1 rows 1, 2, 3). | [must] | Security 30 |
 | 2 | Add a one-slide "Regulators are asking for this" table: PCAC KYA convention (24 Aug 2026), MAS SAFR (3 Jul 2026), HK Sandbox++ (27 Aug 2026). Label SAFR as non-binding and PCAC as industry self-regulation. | [must] | Innovation 30, Security 30 |
-| 3 | Put the merchant-readiness gap first in the pitch (Ravelin 29% and Worldpay "no liability shift"), then show seller guards. | [must] | Innovation 30 |
+| 3 | Put the merchant-readiness gap first in the pitch (Ravelin 29% and Worldpay "no liability shift"), then show seller guards (old design; finals roadmap). | [must, finals] | Innovation 30 |
 | 4 | Never cite x402 volume as traction. Cite TRM instead: on-chain cannot tell agent from script, which is why KYA is needed. | [must] | Innovation 30, Security 30 |
 | 5 | Describe settlement as "any token that supports signature checks": USDC on testnet for tx hashes; HKD licensed stablecoin or tokenised deposit for production. | [must] | Task 40, Bonus |
 | 6 | Add the NFRA mapping table (5.4) and a SAFR mapping to the security self-assessment. | [should] | Security 30 |
 | 7 | Use Wang Yasheng's line to explain serve / step-up / refuse, with the date and "WeBank-stated" attribution. | [should] | Innovation 30 |
-| 8 | Lead the business slide with white-label to licensed institutions and a seller-console subscription; show the per-check fee as small and later. | [should] | Innovation 30 |
+| 8 | Lead the business slide with white-label to licensed institutions and a seller-console subscription (finals roadmap); show the per-check fee as small and later. | [should] | Innovation 30 |
 | 9 | Avoid "稳定币" and "RWA" in Chinese product naming; call settlement "on-chain payment on a test network" in Chinese slides. | [should] | Security 30 |
 | 10 | Prepare Q&A answers for the counter-evidence: agent traffic is still small, merchants may trust agents, consumers are uneasy (section 3). Answer: we price the gap before it opens; the pocket limits loss. | [should] | Innovation 30 |
-| 11 | Name HKT Payment + Red Date and Skyfire as peers and say how we differ (seller guards; on-chain pocket enforcement; open MCP + SKILL.md). | [could] | Innovation 30 |
-| 12 | Only mention FISCO BCOS if a tx hash exists; cite WeBank Tech's HK and SEA reach as the route to market. | [could] | Bonus |
+| 11 | Name HKT Payment + Red Date and Skyfire as peers and say how we differ (seller guards and open MCP + SKILL.md are finals roadmap; on-chain pocket enforcement is the prelim difference). | [could] | Innovation 30 |
+| 12 | FISCO BCOS is planned only; do not claim a deployment; cite WeBank Tech's HK and SEA reach as the route to market. | [could] | Bonus |
 
 ## Open questions
 
