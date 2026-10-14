@@ -35,4 +35,4 @@ Home (agent funds, pockets, approvals banner), Agent (chat, per-turn trace, inte
 
 ## Not verified
 
-Not run on a physical phone or in Expo Go itself (web export and iOS Hermes bundle only). iOS 26 Liquid Glass path is untested; the blur fallback is what the screenshots show.
+Not run on a physical phone or in Expo Go itself (web export and iOS Hermes bundle only). The app no longer uses blur or Liquid Glass (Ink & jade design, solid surfaces).

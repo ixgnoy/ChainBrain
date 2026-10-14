@@ -6,11 +6,11 @@ Combined on 14 Oct 2026 on branch `feat/integrate` (local, not pushed). It is th
 
 | Folder | What | Docs |
 | --- | --- | --- |
-| `web/` | Owner and ops console. The team's wallet logic (browser wallet, pocket contract calls, USDC co-sign, intent card, agent question, red-team box) inside the ops-console design: glass top bar, chat with per-turn trace, live trace with filters, pocket pane, approval dialog, Bank / Compliance tab, light and dark | [web.md](web.md) |
-| `mobile/` | Phone app for Expo Go. The team's key, chain and co-sign logic inside the Revolut-style app: glass tab bar, pocket cards, create wizard, slide-to-approve, hold-to-revoke, receipts, Activity, Settings | [mobile.md](mobile.md) |
+| `web/` | Owner and ops console. The team's wallet logic (browser wallet, pocket contract calls, USDC co-sign, intent card, agent question, red-team box) in the Ink & jade design with React Bits components: chat with per-turn trace, live trace with filters, pocket pane, three-step create wizard, approval dialog, Bank / Compliance tab, light and dark | [web.md](web.md) |
+| `mobile/` | Phone app for Expo Go. The team's key, chain and co-sign logic in the Ink & jade design on React Native Reusables + NativeWind: pocket cards, create wizard, slide-to-approve, hold-to-revoke, receipts, Activity, Settings | [mobile.md](mobile.md) |
 | `devstack/` | The team's real server and real contracts on a local fork of Base Sepolia, with a scripted agent instead of Claude. No API key, no faucet, no real money | [devstack/README.md](../../devstack/README.md) |
 
-Design rationale: [research/design-brief.md](research/design-brief.md). Screenshots: [screenshots/](screenshots/).
+Design system: [design-system/chainbrain/MASTER.md](../../design-system/chainbrain/MASTER.md) (Ink & jade, current). Earlier rationale: [research/design-brief.md](research/design-brief.md) (the violet/glass look it describes was replaced on 14 Oct 2026). Screenshots: [screenshots/](screenshots/).
 
 ## How the two builds were combined
 
@@ -57,12 +57,13 @@ Before the end-to-end test: build `web/dist` and the phone web export (`cd mobil
 
 ## Not verified
 
-- **The phone app has not been run on a physical phone or inside Expo Go.** It was tested as a web export and the iOS bundle builds. Haptics, native blur and the iOS 26 Liquid Glass tab bar have not been seen on a device.
+- **The phone app has not been run on a physical phone or inside Expo Go.** It was tested as a web export and the iOS bundle builds. Haptics and native gestures have not been seen on a device.
 - MetaMask on the real Base Sepolia, and the phone's key on the real Base Sepolia, were not run here (no funded wallets, no deployed factory yet). Those paths are the team's code, unchanged in behaviour.
 - The agent in the dev stack is scripted. The real Claude agent needs `ANTHROPIC_API_KEY` and the team's server setup.
 
 ## Known gaps
 
+- The combined e2e run can flake: when the web and phone browsers pay DataLite in the same second, the dev stack's settlement can return HTTP 402 (`SETTLEMENT_FAILED`) for one of them. Seen once in two runs after the Ink & jade redesign; `--phone-only` and a re-run both passed (24/24, 70/70). It is a dev stack timing issue, not UI.
 - Scene 5's forced transfer reverts on-chain, but the server publishes no event for it, so neither app shows it. Show it on BaseScan (real chain) or with `pnpm --dir devstack force-transfer <pocket>` output.
 - The server keeps events in memory only, so the Bank tab and Activity show what happened since the server started.
 - Web: pockets are listed from the browser's own list; there is no discovery from chain logs. The phone has "Add an existing pocket by address"; the web does not yet.
