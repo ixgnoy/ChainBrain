@@ -16,7 +16,7 @@ FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia 
 | --- | --- |
 | `contracts/` | Pocket (ERC-1271) and PocketFactory, Foundry, fork tests |
 | `server/` | Wallet tool layer, Claude agent loop, wallet API (:8787), four x402 test sellers (:4021), scripts |
-| `web/` | Seller dashboard: what a shop selling to AI agents sees (earnings, sales, refused attempts, catalogue, response content / red-team box). No login ([docs](docs/frontend/web.md)) |
+| `web/` | Network console for the laptop demo and judges: live agent trace beside the active pocket and the sellers' side, all pockets, every tx hash, red-team box. No login ([docs](docs/frontend/web.md)) |
 | `mobile/` | Owner app for phones in Expo Go (also `npx expo prebuild` for Android Studio / Xcode) ([docs](docs/frontend/mobile.md)) |
 | `devstack/` | Real server and contracts on a local Base Sepolia fork with a scripted agent: demo and test both apps with no API key or funds ([README](devstack/README.md)) |
 | `android/` | Native Android owner app in Kotlin (Jetpack Compose), opens in Android Studio |

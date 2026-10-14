@@ -54,7 +54,7 @@ export function SellerProvider({ children }: { children: ReactNode }) {
     };
   }, [mode, cfg, sellerId, network, live.events, demo]);
 
-  if (mode === "loading" || !value) return <div className="grid min-h-dvh place-items-center bg-canvas text-sm text-muted">Loading…</div>;
+  if (mode === "loading" || !value) return <div className="py-16 text-center text-sm text-muted">Loading…</div>;
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

@@ -6,11 +6,11 @@ Combined on 14 Oct 2026 on branch `feat/integrate` (local, not pushed). It is th
 
 | Folder | What | Docs |
 | --- | --- | --- |
-| `web/` | Seller dashboard: what a shop selling to AI agents sees (earnings, sales and refused attempts in plain language, catalogue, response content / red-team). No login; demo data when the server is down | [web.md](web.md) |
+| `web/` | Network console: the whole system for the laptop demo and judges (live agent trace beside the active pocket and the sellers' side, all pockets, every tx hash, red-team box, forced-transfer test). No login | [web.md](web.md) |
 | `mobile/` | The owner's app for Expo Go: pockets, ask the agent, approvals, activity, settings. No setup screen; demo data when the server is down | [mobile.md](mobile.md) |
 | `devstack/` | The team's real server and real contracts on a local fork of Base Sepolia, with a scripted agent instead of Claude. No API key, no faucet, no real money | [devstack/README.md](../../devstack/README.md) |
 
-Design system: [design-system/chainbrain/MASTER.md](../../design-system/chainbrain/MASTER.md) (v2, clean bank after Ryt Bank and Revolut, light only). Reference screenshots: `reference/frontend/ryt-bank/` (gitignored).
+Design system: [design-system/chainbrain/MASTER.md](../../design-system/chainbrain/MASTER.md) (v3, clean bank after Ryt Bank and Revolut, deep teal + navy, light only). Reference screenshots: `reference/frontend/ryt-bank/` (gitignored).
 
 ## How the two builds were combined
 
@@ -22,7 +22,7 @@ Once: Node 24, pnpm, Foundry (`curl -L https://foundry.paradigm.xyz | bash`, the
 
 ```bash
 pnpm --dir devstack start        # wallet API :8787, sellers :4021, local chain; prints the LAN URL for the phone
-pnpm --dir web dev               # http://localhost:5173 seller dashboard, no login
+pnpm --dir web dev               # http://localhost:5173 network console, no login
 pnpm --dir devstack seed         # optional: real agent purchases for the dashboard to show
 ```
 
@@ -65,8 +65,8 @@ Before the end-to-end test: build `web/dist` and the phone web export (`cd mobil
 ## Known gaps
 
 - Two payments settling in the same second can make the dev stack refuse one (HTTP 402, `SETTLEMENT_FAILED`). The e2e therefore runs the phone flow and the web flow one after the other.
-- The web no longer has an owner console (chat, approvals, Bank / Compliance view); the owner side is the phone app.
-- Scene 5's forced transfer reverts on-chain, but the server publishes no event for it, so neither app shows it. Show it on BaseScan (real chain) or with `pnpm --dir devstack force-transfer <pocket>` output.
+- The owner signs on the phone; the web console only reads (no co-signing on the web). The Bank / Compliance view of the first console is not in this version.
+- Scene 5's forced transfer: on the dev stack the console's Judges tab runs it (`POST /dev/force-transfer`) and the reverted hash appears in Live and On-chain. On the real chain run `server/scripts/force-transfer.ts`; the console shows the reverted hash only if it comes through the event stream.
 - The server keeps events in memory only, so the Bank tab and Activity show what happened since the server started.
 - Web: pockets are listed from the browser's own list; there is no discovery from chain logs. The phone has "Add an existing pocket by address"; the web does not yet.
 - Phone: there is no "new chat" button, because the server uses the pocket address as the conversation.

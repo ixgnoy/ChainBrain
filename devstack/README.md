@@ -25,6 +25,8 @@ The extra `/dev/*` routes live on the same address and port as the wallet API (8
 
 ## Run it
 
+A second stack can run beside the first: `API_PORT=28787 SELLERS_PORT=24021 ANVIL_PORT=28546 pnpm --dir devstack start`. Fill any running stack with real agent purchases: `pnpm --dir devstack seed` (set `API=` for a non-default port).
+
 ```bash
 pnpm --dir devstack start
 ```
@@ -51,6 +53,7 @@ Stop the dev stack, run the team's real server (`cd server && cp .env.example .e
 | `POST /dev/rpc` | JSON-RPC proxy to anvil (single or batch), CORS `*`. Account 0 is unlocked: `eth_accounts`, `eth_sendTransaction`, `eth_signTypedData_v4` work for it. Typed data for `eth_signTypedData_v4` must include the `EIP712Domain` type in `types` |
 | `POST /dev/fund` `{address}` | Adds 1 ETH and 20 USDC to that address (on top of whatever the fork already has) |
 | `GET /dev/scenes` | The demo sentences the scripted agent understands, with titles, recommended preset and notes |
+| `POST /dev/force-transfer` `{pocket}` | Scene 5 backstop: the agent key signs "send 50 USDC to 0xABC", a third party submits it to USDC, the pocket refuses and the tx reverts on-chain. Returns `{tx, reverted, balanceBefore, balanceAfter}` and publishes a `forced` event (used by the web console's Judges tab) |
 
 ## Demo scenes and exact sentences
 

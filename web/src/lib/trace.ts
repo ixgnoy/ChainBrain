@@ -106,6 +106,9 @@ export function traceRows(events: WalletEvent[]): TraceRow[] {
     } else if (e.type === "disclosure") {
       const asked = [...(Array.isArray(e.asked) ? e.asked : []).map((x: string) => cleanText(x, 30)), e.signRequest ? "a signature" : ""].filter(Boolean).join(", ");
       rows.push({ ...base, kind: "refused", verdict: "Refused", actor: "Policy", label: "disclosure", title: `${cleanText(e.sellerId, 30)} asked for ${asked || "extra data"}`, reasons: reasonsOf(e) });
+    } else if (e.type === "forced") {
+      // dev stack /dev/force-transfer: a third party submits a transfer the (compromised) agent key really signed
+      rows.push({ ...base, kind: e.reverted ? "ok" : "refused", verdict: e.reverted ? "Reverted" : "Settled", actor: "Chain", label: "forced transfer", title: `Forced ${atomicUsd(e.amount)} to ${shortHex(cleanText(e.to, 42), 6, 4)} · ${e.reverted ? "the pocket refused it on-chain, balance unchanged" : "NOT refused"}`, reasons: [], tx: e.tx });
     } else if (e.type === "intent" || e.type === "approval" || e.type === "question") {
       rows.push({ ...base, ...approvalRow(e), actor: "Owner", reasons: [] });
     }

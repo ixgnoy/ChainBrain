@@ -5,30 +5,31 @@
 @import "@fontsource/plus-jakarta-sans/700.css";
 @import "@fontsource/fraunces/600.css";
 
-/* Clean bank, light only (design-system/chainbrain/MASTER.md v2). One accent; depth = white cards on grey, no shadows. */
+/* Clean bank, light only (design-system/chainbrain/MASTER.md v3: deep teal + navy). One accent; depth = white cards on grey, no shadows. */
 @theme {
-  --color-canvas: #f7f7f8;
+  --color-canvas: #f5f7f8;
   --color-card: #ffffff;
-  --color-fill: #efeff1;
-  --color-line: #e6e6ea;
-  --color-ink: #111318;
-  --color-ink2: #4b5058;
-  --color-muted: #6b7280;
-  --color-faint: #a1a6ae;
-  --color-accent: #0b7a4b;
-  --color-accent-press: #08613b;
-  --color-accent-soft: #e3f3ea;
+  --color-fill: #edf0f2;
+  --color-line: #e3e7ea;
+  --color-ink: #0f2236;
+  --color-ink2: #3e4f63;
+  --color-muted: #5d6b7b;
+  --color-faint: #9aa5b1;
+  --color-accent: #00727f;
+  --color-accent-press: #005c66;
+  --color-accent-soft: #ddf0f2;
+  --color-positive: #1a7f4b;
   --color-on-accent: #ffffff;
   --color-negative: #c8372d;
   --color-negative-soft: #fcebea;
   --color-warning: #9a6200;
   --color-warning-soft: #fff3db;
-  --color-mint: #ddf5ec;
-  --color-mint-ink: #0b7a4b;
+  --color-mint: #dff3ec;
+  --color-mint-ink: #1a7f4b;
   --color-peach: #fdebdd;
   --color-peach-ink: #a4501a;
-  --color-lilac: #ece9fb;
-  --color-lilac-ink: #5b4bc4;
+  --color-lilac: #e3eef9;
+  --color-lilac-ink: #28507a;
 
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Fraunces", ui-serif, Georgia, serif;

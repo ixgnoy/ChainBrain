@@ -123,6 +123,31 @@ export async function startDevStack(o: DevStackOptions = {}) {
     return c.json({ address, eth: "1", usdc: "20" });
   });
   root.get("/dev/scenes", (c) => c.json(SCENES));
+  // Scene 5's on-chain backstop, from the browser: the agent key really signs "send 50 USDC to 0xABC" and a third party
+  // submits it straight to USDC; the pocket refuses and the tx reverts on-chain. Published as a `forced` event, so the
+  // apps can show the reverted hash (the real server has no such route).
+  root.post("/dev/force-transfer", async (c) => {
+    const { pocket, attacker = "0x000000000000000000000000000000000000ABC0" } = (await c.req.json().catch(() => ({}))) as { pocket?: string; attacker?: string };
+    if (!pocket || !/^0x[0-9a-fA-F]{40}$/.test(pocket)) return c.json({ error: "BAD_ADDRESS" }, 400);
+    const { buildAuthorization, transferTypedData, envelope } = await import(server("wallet/scheme.ts"));
+    const { bus } = await import(server("wallet/events.ts"));
+    const agent = privateKeyToAccount(DEV_KEYS.AGENT_PK);
+    const sender = createWalletClient({ account: privateKeyToAccount(DEV_KEYS.FORCE_PK), chain: baseSepolia, transport: http(rpc) }).extend(publicActions);
+    const amount = 50_000_000n;
+    const auth = buildAuthorization(pocket as Address, attacker as Address, amount, toHex(crypto.getRandomValues(new Uint8Array(32))), 0n);
+    const sig = envelope(auth, await agent.signTypedData(transferTypedData(auth)), "0x");
+    const before = await usdcOf(pocket as Address);
+    const hash = await sender.writeContract({
+      address: USDC, functionName: "transferWithAuthorization", gas: 200_000n, // explicit gas: the revert lands on-chain as evidence
+      abi: [{ type: "function", name: "transferWithAuthorization", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "address" }, { type: "uint256" }, { type: "uint256" }, { type: "uint256" }, { type: "bytes32" }, { type: "bytes" }], outputs: [] }],
+      args: [auth.from, auth.to, BigInt(auth.value), 0n, BigInt(auth.validBefore), auth.nonce, sig],
+    });
+    const rc = await sender.waitForTransactionReceipt({ hash });
+    const reverted = rc.status === "reverted";
+    const after = await usdcOf(pocket as Address);
+    bus.publish({ type: "forced" as any, pocket, tx: hash, reverted, to: attacker, amount: amount.toString(), balanceBefore: before.toString(), balanceAfter: after.toString() });
+    return c.json({ tx: hash, reverted, balanceBefore: before.toString(), balanceAfter: after.toString() });
+  });
   root.all("*", (c) => api.fetch(c.req.raw));
 
   const apiServer = serve({ fetch: root.fetch, port: apiPort, hostname: "0.0.0.0" });

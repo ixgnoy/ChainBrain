@@ -1,6 +1,6 @@
-# ChainBrain design system v2: clean bank (Ryt / Revolut reference)
+# ChainBrain design system v3: clean bank (Ryt / Revolut structure, deep teal + navy)
 
-Source of truth for `web/` (seller dashboard) and `mobile/` (owner app). Replaces v1 "Ink & jade", which still read as AI-made (cream paper, animated canvases, sparkles, mono jargon). Page files in `pages/` override this file.
+Source of truth for `web/` (ChainBrain ecosystem console) and `mobile/` (owner app). v3 (15 Oct) swaps forest green for deep teal + navy after the team rejected the green. Replaces v1 "Ink & jade", which still read as AI-made (cream paper, animated canvases, sparkles, mono jargon). Page files in `pages/` override this file.
 
 ## References and research
 
@@ -26,26 +26,28 @@ Source of truth for `web/` (seller dashboard) and `mobile/` (owner app). Replace
 
 ## Colour (light only, both apps)
 
+Chosen from four rendered options (Ryt electric blue, Revolut ink + cobalt, deep teal + navy, navy + amber). Research: WGSN forecasts deep teal for 2026-27; Monzo's refresh moved to blue-green #007A8B with dark blue #001E3A; Nubank shows the restraint to copy (brand colour only on CTAs and links, never as a wash).
+
 | Token | Hex | Use |
 | --- | --- | --- |
-| `canvas` | `#F7F7F8` | app background |
+| `canvas` | `#F5F7F8` | app background (cool grey, not cream) |
 | `card` | `#FFFFFF` | cards, sheets, tab bar |
-| `fill` | `#EFEFF1` | pressed rows, inputs, secondary buttons, active tab pill |
-| `line` | `#E6E6EA` | the few dividers we need (inside cards, between rows: inset 72 px) |
-| `ink` | `#111318` | primary text, balances |
-| `ink2` | `#4B5058` | secondary text |
-| `muted` | `#6B7280` | metadata, captions (4.8:1 on white) |
-| `faint` | `#A1A6AE` | disabled, placeholders |
-| `accent` | `#0B7A4B` | forest green: primary buttons, round actions, links, active tab, focus |
-| `accentPress` | `#08613B` | pressed |
-| `accentSoft` | `#E3F3EA` | soft round buttons, fact pills, selected rows |
-| `onAccent` | `#FFFFFF` | text on accent (5.4:1) |
-| `positive` | `#0B7A4B` | incoming money "+US$0.30" (same green, it is money) |
-| `negative` | `#C8372D` | refused, revoked, destructive (4.9:1 on white) |
+| `fill` | `#EDF0F2` | pressed rows, inputs, secondary buttons, active tab pill |
+| `line` | `#E3E7EA` | the few dividers we need |
+| `ink` | `#0F2236` | navy: primary text, balances, dark chips (15.0:1 on canvas) |
+| `ink2` | `#3E4F63` | secondary text (7.8:1) |
+| `muted` | `#5D6B7B` | metadata, captions (5.1:1 on canvas) |
+| `faint` | `#9AA5B1` | disabled, placeholders |
+| `accent` | `#00727F` | deep teal: primary buttons, round actions, links, active tab, focus (5.7:1 on white; white on it 5.7:1) |
+| `accentPress` | `#005C66` | pressed |
+| `accentSoft` | `#DDF0F2` | soft round buttons, fact pills, selected rows (teal text on it 4.8:1) |
+| `onAccent` | `#FFFFFF` | text on accent |
+| `positive` | `#1A7F4B` | incoming money "+US$4.70" (5.0:1) |
+| `negative` | `#C8372D` | refused, revoked, destructive (5.2:1) |
 | `negativeSoft` | `#FCEBEA` | refusal pill background |
-| `warning` | `#9A6200` | "Needs you" text (4.8:1) |
+| `warning` | `#9A6200` | "Needs you" text (5.1:1) |
 | `warningSoft` | `#FFF3DB` | "Needs you" pill background |
-| pastels (promo only) | mint `#DDF5EC` / peach `#FDEBDD` / lilac `#ECE9FB` | tips cards, eyebrows in `#0B7A4B` / `#A4501A` / `#5B4BC4` |
+| pastels (promo/tips only) | mint `#DFF3EC` / peach `#FDEBDD` / sky `#E3EEF9` | eyebrows in `#1A7F4B` / `#A4501A` / `#28507A` |
 
 No dark mode. No gradients, blur, glow or shadows (the only shadow allowed: the floating tab bar and bottom sheets, `0 8px 24px rgba(17,19,24,0.08)`).
 
@@ -77,17 +79,21 @@ Quiet and functional only: 150-200 ms fades and slides, balance count-up, row in
 - **Home:** header row (avatar initials left, "Ask agent" pill centre, bell right) on canvas; white balance card (label "Agent pockets", total, one quiet line "Main wallet US$15.00"); four round actions (Add money, New pocket, Ask agent, More); "Pockets" section (list card of pockets: avatar, name, "2 sellers · until 23:59", balance right); "Recent activity" list card with "View all".
 - **Pocket detail:** back button + title, centred avatar, big balance, fact pills (cap, ask above, expiry), round actions (Add, Return, Revoke), "Allowed sellers" list card with switches, "Activity" list card.
 - **Ask agent:** full screen chat on white; suggestion chips; agent messages as plain text; steps collapsed in a "Details" row; approval as a bottom sheet with the big amount, seller row, one green "Approve" button (slide stays) and a "Decline" text button.
-- **Activity:** serif title, filter pills (All, Paid, Refused, Needs you), date-grouped list card.
-- **Settings:** serif title, grouped list cards (Wallet, Network, About). "Demo data" shown here when in demo mode.
+- **Activity:** serif title, filter pills (All, Paid, Refused, Needs you), date-grouped list card; each row carries its tx hash; owner transactions (create, fund, revoke, return, rule edits) are listed too.
+- **Settings:** serif title, grouped list cards (Wallet, Network, About incl. the compliance position: testnet only, not offered in mainland China, target Hong Kong / APEC). "Demo data" shown here when in demo mode.
+- **Spec musts on the phone:** main wallet balance prominent on Home; pocket rows show balance, agent and status; sellers grouped by category in the wizard; cap and ask-me editable on the pocket page (owner-signed); every owner transaction shows its tx hash with an explorer link on success; revoke reachable from the agent chat; scene 8 dead end shows the sellers tried and a one-tap fix; a small persistent "Testnet" chip.
 
-## Web (seller dashboard) screens
+## Web: ChainBrain ecosystem console (laptop, judges, presenter)
 
-- Left rail (white, 240 px): logo, seller switcher (avatar + name + chevron), nav: Overview, Payments, Refusals, Catalogue, Response content. Footer: "Test network · Base Sepolia" in muted text.
-- **Overview:** serif title "Overview", three white stat cards (Earned today, Payments, Refused by buyers' wallets), a "Recent payments" list card, a small pastel tip card explaining agent payments.
-- **Payments / Refusals:** list cards with Ryt rows (buyer pocket avatar, "Agent payment · 14 Oct 21:55", amount, status), click → right-side detail sheet with plain-language explanation and a "Technical details" disclosure.
-- **Catalogue:** items and prices as list rows.
-- **Response content:** the red-team box reframed as "What this seller appends to its next response" (one textarea, Plant / Clear).
-- No login: the seller is chosen from the switcher (remembered per browser).
+The phone is the owner's app. The web shows the whole system at once, so the audience sees the agent's reasoning, the pocket's balance and the seller's side change together (spec "Demo layout"). No login.
+
+- **Live** (default): three columns. Left: the agent trace, open, every tool call with args, result, the rule it hit and the reason code pill (spec: "judges watch the decision being made"). Middle: the active pocket (balance, rules, allowed sellers, worst case, its on-chain history). Right: what the sellers see (payments in, refused attempts). Pocket switcher at the top.
+- **Pockets:** every pocket on the network with owner, agent, status, balance, rules and "worst case: US$x, only to A and B".
+- **Sellers:** the seller dashboard (Overview, Sales, Catalogue) per shop.
+- **On-chain:** every transaction (create, fund, payment, co-signed payment, revoke, return, reverted forced transfer) with a block-explorer link.
+- **Judges:** the red-team box (plant text in a seller's next response), the demo scenes and their expected outcome, the forced-transfer test for scene 5.
+- Persistent footer chip: "Testnet · Base Sepolia · no real money".
+- Reason codes are shown as pills next to the plain sentence (judges score them); hashes are shown and linked.
 
 ## Demo mode
 
@@ -95,7 +101,8 @@ If the API is unreachable at start, both apps load built-in sample data (pockets
 
 ## Pre-delivery checklist
 
-- [ ] No gradient, blur, glow, canvas effect, sparkle icon, mono font in consumer UI, dark mode
+- [ ] No gradient, blur, glow, canvas effect, sparkle icon, dark mode
+- [ ] Every on-chain action shows its tx hash with an explorer link (spec "App screens")
 - [ ] One accent colour; contrast ≥ 4.5:1 for text
 - [ ] Every screen starts without login, connect, key setup or disconnect
 - [ ] Serif only on page titles

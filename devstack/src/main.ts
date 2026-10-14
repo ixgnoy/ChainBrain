@@ -2,7 +2,9 @@ import { startDevStack } from "./stack";
 
 const forkUrl = process.env.FORK_URL ?? "https://sepolia.base.org";
 console.log(`Starting ChainBrain dev stack (anvil fork of ${forkUrl}) ...`);
-const s = await startDevStack({ log: (m) => console.log(m) });
+// API_PORT / SELLERS_PORT / ANVIL_PORT let a second stack run beside the default one (8787 / 4021 / 8546).
+const port = (k: string) => (process.env[k] ? Number(process.env[k]) : undefined);
+const s = await startDevStack({ log: (m) => console.log(m), apiPort: port("API_PORT"), sellersPort: port("SELLERS_PORT"), anvilPort: port("ANVIL_PORT") });
 
 const line = "=".repeat(68);
 console.log(`
