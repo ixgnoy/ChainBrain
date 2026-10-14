@@ -1,14 +1,23 @@
 // The owner's main wallet (MetaMask or any EIP-1193 browser wallet). Every write and signature checks the chain first.
-import { createPublicClient, createWalletClient, custom, parseEventLogs, type Address, type Hex } from "viem";
+import { createPublicClient, createWalletClient, custom, http, parseEventLogs, type Address, type Hex } from "viem";
 import { baseSepolia } from "viem/chains";
 import { loadConfig, transferTypedData, type Authorization, type Seller } from "./shared";
 
-type Provider = { request(a: { method: string; params?: unknown[] }): Promise<any> };
-const eth = (): Provider => {
+import type { Provider } from "./devSigner";
+
+// The provider the owner connected with: MetaMask (window.ethereum) or the dev signer. Reads before connecting
+// (regulator and bank views) go through plain HTTP: the dev RPC when on the dev stack, the public Base Sepolia RPC otherwise.
+let chosen: Provider | undefined;
+let readRpc: string | undefined;
+export const setProvider = (p?: Provider) => { chosen = p; };
+export const setReadRpc = (url?: string) => { readRpc = url; };
+export const hasInjectedWallet = () => !!(window as any).ethereum;
+export const injected = (): Provider => {
   const p = (window as any).ethereum;
   if (!p) throw new Error("NO_WALLET: install MetaMask (or another browser wallet)");
   return p;
 };
+const eth = (): Provider => chosen ?? injected();
 
 const BASE_SEPOLIA_HEX = "0x14a34";
 
@@ -25,7 +34,7 @@ export async function ensureChain(p: Provider = eth()) {
   }
 }
 
-const pub = () => createPublicClient({ chain: baseSepolia, transport: custom(eth()) });
+const pub = () => createPublicClient({ chain: baseSepolia, transport: chosen ? custom(chosen) : http(readRpc ?? "https://sepolia.base.org") });
 
 async function wallet() {
   await ensureChain();
@@ -33,7 +42,18 @@ async function wallet() {
   return createWalletClient({ account, chain: baseSepolia, transport: custom(eth()) });
 }
 
-export const connect = async () => (await wallet()).account.address;
+/** Connect an EIP-1193 wallet: the browser's own (MetaMask) by default, or the dev signer. */
+export async function connect(p: Provider = injected()): Promise<Address> {
+  const prev = chosen;
+  chosen = p;
+  try {
+    return (await wallet()).account.address;
+  } catch (e) {
+    chosen = prev;
+    throw e;
+  }
+}
+export const disconnect = () => { chosen = undefined; };
 
 async function write(address: Address, abi: any[], functionName: string, args: unknown[] = []) {
   const w = await wallet();
