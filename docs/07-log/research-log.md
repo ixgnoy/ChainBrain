@@ -1,0 +1,26 @@
+# Research log
+
+Last updated: 2026-10-13
+
+| Time | Area | Result | Doc |
+| --- | --- | --- | --- |
+| 2026-10-13 02:01 | setup | Branch docs/master-docs; existing docs moved to 01-competition/ and 02-product/ unchanged; prior research, 14 papers and 14 repos copied into reference/ (gitignored); overnight workflow launched | docs/README.md (pending) |
+| 2026-10-13 02:06 | How judges score | Rubric decoded, judges, scorecard, deliverables checklist, top 10 actions; cloned 3 competitor repos | docs/06-pitch/how-judges-score.md |
+| 2026-10-13 02:08 | Prior art: hackathons + GitHub | Seller-side verification is new among winners but industry has it; pocket, challenge-in-402, BYOA are not new; same-topic rival sucsage/agentic-wallet found; 13 repos, 4 papers | docs/03-research/prior-art-hackathons-github.md |
+| 2026-10-13 02:08 | Papers and standards | 28 new papers + 16 standards texts saved under reference/papers/; 8 spec claims flagged (ERC-8004 reputation, x402 replay, directory injection) | docs/03-research/papers-and-standards.md |
+| 2026-10-13 02:09 | identity-reputation-fisco | ERC-8004 live on Base Sepolia but reputation Sybil-prone (use payment-grounded attester); EAS+SD-JWT credentials; FISCO 3.17.1 bonus recipe unverified, organiser question drafted | docs/04-build/identity-reputation-fisco.md |
+| 2026-10-13 02:12 | industry competitors | Landscape of ~30 players; seller-side KYA already offered by Visa TAP, Skyfire, ACK, KYA-OS, APASS; narrow gap = account-enforced authority on x402 rails | docs/03-research/competitors-industry.md |
+| 2026-10-13 02:12 | security red team | Attack walk of all components and scenes; top 10 attacks, 17 ranked spec gaps (staticcall budget, validator digest scope, MCP auth), test plan, self-assessment outline; 12 papers, 3 repos | docs/05-security/threat-model-and-red-team.md |
+| 2026-10-13 02:15 | Market, regulation, WeBank fit | Verified Yinfa 42 text, PCAC KYA convention (24 Aug 2026), MAS SAFR, HK Sandbox++, TRM x402 reality check; spec compliance fixes and WeBank framing | docs/03-research/market-regulation-webank.md |
+| 2026-10-13 02:17 | judge simulation | 5 simulated personas, aggregate score ~73/100, 10 ranked changes, killer demo, Q&A answers | docs/06-pitch/judge-simulation.md |
+| 2026-10-13 02:14 | Build feasibility: x402 + pocket | Spike Q1 proven live (USDC v2.2 on Base Sepolia accepts contract signatures); Q2 likely, Q3 needs custom 1271 pocket; found x402 ERC-7710 path (MetaMask hosted facilitator) and deployed ERC-8004 registries; 12 repos cloned | docs/04-build/x402-pocket-feasibility.md, docs/04-build/stack-and-repos.md |
+| 2026-10-13 02:20 | master docs (editor) | README index, 3 start-here docs, recommended changes (27 items), how-to-win, decisions, changelog; log header verified, stray row merged | docs/README.md |
+| 2026-10-13 02:22 | docs review (critic) | Links OK, structure checked, 20 claims spot-checked (19 confirmed, 1 VERIFY), gaps listed | docs/07-log/review-2026-10-13.md |
+| 2026-10-13 02:26 | licence and reuse | Licence table for ~50 repos and stack libs; traps: GPL/AGPL (account-abstraction, safe7579, smartsessions, kernel deps), BUSL (Should-AI-Buy), Visa TAP terms; API terms; safe rules; NOTICES outline | docs/04-build/licences-and-reuse.md |
+| 2026-10-13 02:28 | demo + deck storyline | 5-min video shot list (8 beats, 8 hashes), 10-slide deck, live-defence kit, minimum slice, spike-dependency table; 6 demo-video sources | docs/06-pitch/demo-script.md |
+| 2026-10-13 02:28 | submission package + evidence/red-team harness | Submission checklist (6 deliverables, template-to-doc map, T-minus, noon-20-Oct buffer) and evidence/red-team harness design (E01-E16 scenes, 42 attacks x20 runs x3 modes, 13 ordinary tasks, ASR bound + false-refusal, benchmarks AgentDojo/InjecAgent/FinVault/APort Vault) | docs/06-pitch/submission-checklist.md; docs/05-security/evidence-and-redteam-harness.md |
+| 2026-10-13 02:28 | agent model choice | Sonnet 5.5 for build week, Qwen3.7-plus (DeepSeek V4 Pro second) for Shenzhen, different-lab checker plus rule-based diff, Vercel AI SDK MCP client, ~US$200 budget; China reachability of Alibaba intl endpoint [VERIFY] | docs/04-build/agent-model-choice.md |
+| 2026-10-13 02:34 | Topic F tasks + mainnet insurance | No public Topic F task brief exists; plain 'pay 0x' task would be refused by spec (fix: owner-signed one-off payment); 28-task judge test set; Base mainnet gas 0.006 gwei (~US$0.001-0.004/tx), US$10 USDC + US$5 ETH plan; 30-min ERC-1271 facilitator test | docs/04-build/topic-f-tasks-and-mainnet-plan.md |
+| 2026-10-13 02:34 | Topic F rivals | Leash, sucsage confirmed Topic F; edxzh/agent-wallet is an unlabelled lookalike that already does ERC-1271 x402 plus ERC-8004; 6 new C/E/A repos; head-to-head and cheap adds | docs/03-research/topic-f-rivals.md |
+| 2026-10-13 02:38 | master docs round 2 (editor) | roles-and-workplan created; README, status, open questions, recommended changes (items 28-49), how-to-win, changelog, decisions updated; links checked | docs/00-start-here/roles-and-workplan.md |
+| 2026-10-13 02:44 | fact verification | 30 claims re-checked: 22 confirmed, 5 corrected inline (PCAC filing struck, APASS connected agents, code size, Gray Swan, Qwen label), 3 unverified; 574 links ok | docs/07-log/verification-2026-10-13.md |

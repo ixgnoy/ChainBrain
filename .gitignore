@@ -9,3 +9,6 @@ web/dist/
 mobile/.expo/
 mobile/dist/
 .claude/*.local.*
+# Downloaded third-party material (untrusted; never run code from here)
+reference/
+.DS_Store

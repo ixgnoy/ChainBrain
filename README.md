@@ -7,7 +7,7 @@ FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia 
 - Technical document: [`docs/technical-document.md`](docs/technical-document.md)
 - Security self-assessment: [`docs/security-self-assessment.md`](docs/security-self-assessment.md)
 - On-chain evidence: [`docs/evidence.md`](docs/evidence.md)
-- Product spec: [`docs/product-design.md`](docs/product-design.md)
+- Product spec: [`docs/02-product/product-design.md`](docs/02-product/product-design.md)
 
 ## Repository
 
