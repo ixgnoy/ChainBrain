@@ -121,10 +121,10 @@ function TestFunds() {
   const { dev, wallet, balances, refreshPockets } = useApp();
   const { c } = useTheme();
   const [busy, setBusy] = useState(false);
-  if (!dev || !wallet || (balances && balances.usdc > 0n)) return null;
+  if (!dev || !wallet || (balances && balances.usdc > 0n && balances.eth > 0n)) return null;
   return (
     <View style={{ marginHorizontal: 20, marginBottom: 18, padding: 14, borderRadius: radius.lg, backgroundColor: c.stepupBg, borderWidth: 1, borderColor: c.stepupBorder, gap: 10 }}>
-      <T v="bodySm" weight="semi">Your main wallet is empty on the local fork</T>
+      <T v="bodySm" weight="semi">Your main wallet needs fork money</T>
       <T v="caption" color="text2">Get 1 ETH and 20 USDC of fork money to create and fund pockets.</T>
       <Button label="Get test funds" small loading={busy} onPress={async () => { setBusy(true); try { await devFund(wallet.address); haptic.success(); await refreshPockets(); } catch { haptic.error(); } finally { setBusy(false); } }} />
     </View>
@@ -155,7 +155,7 @@ export default function Home() {
         </T>
         {balances && (
           <View style={{ flexDirection: "row", marginTop: 12 }}>
-            <Chip kind="info" dot={false} label={`Main wallet ${usd(balances.usdc)} USDC · ${Number(formatEther(balances.eth)).toFixed(3)} ETH`} />
+            <Chip kind="info" label={`Main wallet ${usd(balances.usdc)} USDC · ${Number(formatEther(balances.eth)).toFixed(3)} ETH`} />
           </View>
         )}
       </View>

@@ -67,7 +67,8 @@ export default function AgentChat() {
   const question = pending.find((a) => a.kind === "question" && here(a));
 
   const send = (v: string) => { if (!v.trim() || chatBusy || !active) return; haptic.light(); setText(""); void sendChat(v); };
-  const chips = (scenes.length ? scenes.map((s) => s.text) : DEFAULTS).slice(0, 12);
+  const follow = question ? scenes.map((s) => s.followUp).filter((x): x is string => !!x) : [];
+  const chips = [...follow, ...(scenes.length ? scenes.map((s) => s.text) : DEFAULTS)].slice(0, 12);
   const bottomPad = kb ? 8 : Math.max(insets.bottom - 6, 14) + 60 + 14;
   const last = turns.at(-1);
 

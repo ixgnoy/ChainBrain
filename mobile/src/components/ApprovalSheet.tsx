@@ -6,7 +6,7 @@ import { useTheme } from "../theme";
 import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
-import { Button, Chip, DevBadge } from "../ui/primitives";
+import { Button, Chip } from "../ui/primitives";
 import { T, Mono } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { Orb } from "../ui/Orb";
@@ -48,7 +48,7 @@ export function ApprovalSheet() {
 function Body({ a, queue }: { a: Approval; queue: number }) {
   const { c } = useTheme();
   const { height } = useWindowDimensions();
-  const { findPocket, sellerName, answer, signApprove, wallet, dev, setApprovalOpen } = useApp();
+  const { findPocket, sellerName, answer, signApprove, wallet, setApprovalOpen } = useApp();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const pocket = findPocket(a.pocket);
@@ -95,7 +95,6 @@ function Body({ a, queue }: { a: Approval; queue: number }) {
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
               <Chip kind="stepup" label="Needs you" /><T v="caption" color="text2">{pocket ? `${cleanText(pocket.name, 30)} pocket` : shortAddr(a.pocket)}</T>
               {queue > 1 && <T v="caption" color="stepup">{queue - 1} more waiting</T>}
-              {dev && <DevBadge />}
             </View>
           </View>
         </View>
