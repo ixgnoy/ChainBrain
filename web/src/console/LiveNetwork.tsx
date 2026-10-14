@@ -1,13 +1,12 @@
 // The network as a real server shows it: config, the event stream (every pocket) and the chain (pockets, rules,
 // on-chain history). Read-only. The dev stack adds /dev routes (local fork, forced transfer, scene list).
-import type { Address } from "viem";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { formatUsd, loadConfig, type Config } from "../shared";
 import { detectDev } from "../dev";
 import { EventsProvider, useEvents } from "../useEvents";
 import { setSource } from "../source/source";
 import { clientFor, loadHistory, loadPockets, scanFrom, type ChainTx, type PocketState } from "./chain";
-import { NetworkCtx, describeTx, type Actions, type Network, type Scene } from "./network";
+import { NetworkCtx, lookupTx, pocketLookups, type Actions, type Network, type Scene } from "./network";
 
 const PUBLIC_RPC = import.meta.env.VITE_RPC_URL ?? "https://sepolia.base.org";
 
@@ -105,16 +104,11 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
         } catch (e) { return { ok: false, text: `Could not run it: ${(e as Error).message}` }; }
       };
     }
-    const txDetail: Network["txDetail"] = (hash) => {
-      const t = txs.find((x) => x.hash.toLowerCase() === hash.toLowerCase());
-      if (t) return { ...describeTx(t, pockets.find((p) => p.address.toLowerCase() === t.pocket.toLowerCase())?.owner), at: t.at ?? live.events.find((e) => e.type === "payment" && e.tx === t.hash)?.at };
-      const f = live.events.find((e) => e.type === "forced" && e.tx?.toLowerCase() === hash.toLowerCase());
-      return f ? { hash: f.tx, label: f.reverted ? "Blocked transfer" : "Forced transfer", status: f.reverted ? "reverted" : "success", amount: BigInt(f.amount ?? 0), pocket: f.pocket as Address, from: f.pocket, to: f.to, at: f.at } : undefined;
-    };
+    const txDetail: Network["txDetail"] = (hash) => lookupTx(hash, txs, live.events, pockets, (id) => cfg.sellers.find((x) => x.id === id)?.payTo);
     return {
       dev, chainName: dev ? "Local test network" : "Base Sepolia test network", cfg, events: live.events, pockets, txs, chainError,
       explorer: dev ? undefined : (h: string) => `https://sepolia.basescan.org/tx/${h}`,
-      scenes, txDetail, actions, refresh: () => setTick((x) => x + 1),
+      scenes, txDetail, actions, linked: false, ...pocketLookups(pockets), refresh: () => setTick((x) => x + 1),
     };
   }, [cfg, dev, url, live.events, pockets, txs, chainError, scenes]);
 

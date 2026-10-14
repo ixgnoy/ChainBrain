@@ -66,3 +66,12 @@ button, a, select, [role="tab"] { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* Live columns scroll inside their card: the last row fades out instead of being cut in half. */
+.live-scroll { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent); }
+/* Presenter mode: bigger type on the Live columns, read from the back of a room. */
+[data-present="true"] .t-body { font-size: 18px; line-height: 26px; }
+[data-present="true"] .t-name { font-size: 17px; }
+[data-present="true"] [data-testid="pocket-balance"] { font-size: 56px; line-height: 60px; }
+/* A strip of tabs that scrolls sideways hints at what is past the edge. */
+.edge-fade { -webkit-mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 28px), transparent); }

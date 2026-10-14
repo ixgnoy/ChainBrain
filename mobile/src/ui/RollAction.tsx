@@ -6,11 +6,13 @@ import { Press } from "./kit";
 import { Icon, type IconName } from "./Icon";
 import { T } from "./Text";
 
-export function RoundButton({ icon, label, onPress, soft, a11y }: { icon: IconName; label: string; onPress: () => void; soft?: boolean; a11y?: string }) {
+export function RoundButton({ icon, label, onPress, soft, danger, a11y }: { icon: IconName; label: string; onPress: () => void; soft?: boolean; /** destructive (Revoke): negative tint */ danger?: boolean; a11y?: string }) {
+  const bg = danger ? c.negativeSoft : soft ? c.accentSoft : c.accent;
+  const fg = danger ? c.negative : soft ? c.accent : c.onAccent;
   return (
     <Press kind="round" haptics="medium" onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label} style={{ alignItems: "center", gap: 8, flex: 1, paddingHorizontal: 2 }}>
-      <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: soft ? c.accentSoft : c.accent, alignItems: "center", justifyContent: "center" }}>
-        <Icon name={icon} size={26} color={soft ? c.accent : c.onAccent} />
+      <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: bg, alignItems: "center", justifyContent: "center" }}>
+        <Icon name={icon} size={26} color={fg} />
       </View>
       <T v="cap" w="medium" color="ink2" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ textAlign: "center", fontSize: 13 }}>{label}</T>
     </Press>

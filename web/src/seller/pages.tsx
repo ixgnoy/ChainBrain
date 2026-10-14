@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { ArrowDownLeft, Ban, Tag, Copy, Check } from "lucide-react";
 import { useSeller } from "./useSeller";
 import { buyerTag, type SaleRow } from "./data";
-import { Avatar, Card, DetailSheet, Empty, PageTitle, Pill, RoundAction, Row, Section, Stat, money, moneyCents, when } from "./ui";
+import { Avatar, Button, Card, DetailSheet, Empty, Pill, Row, Section, Stat, SubTitle, money, moneyCents, tabPill, when } from "./ui";
 import { REASONS, shortAddr } from "../shared";
 import { cleanText } from "../lib/sanitize";
 import { cn } from "../lib/cn";
@@ -80,20 +80,20 @@ export function Overview({ go }: { go(p: Page): void }) {
   const { seller, summary, rows } = useSeller();
   return (
     <div className="fade-up">
-      <PageTitle title="Overview" sub={`${seller.name} · ${seller.category}`} />
+      <SubTitle title="Overview" sub={`${seller.name} · ${seller.category}`} />
       <Card className="px-6 py-8 text-center">
         <div className="text-[15px] text-muted">Earned from AI agents</div>
         <div className="num mt-2 text-[48px] font-bold leading-[52px] tracking-[-0.02em]" data-testid="earned">{money(summary.earned)}</div>
         <div className="mt-2 text-[15px] text-ink2">{summary.paid} {summary.paid === 1 ? "payment" : "payments"} from {summary.buyers} buyer {summary.buyers === 1 ? "agent" : "agents"}</div>
-        <div className="mt-8 flex flex-wrap justify-center gap-3 sm:gap-6">
-          <RoundAction icon={<ArrowDownLeft {...ICON} />} label="Sales" onClick={() => go("sales")} />
-          <RoundAction icon={<Tag {...ICON} />} label="Catalogue" onClick={() => go("catalogue")} />
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Button variant="soft" onClick={() => go("sales")}><ArrowDownLeft className="size-4" {...ICON} />View sales</Button>
+          <Button variant="soft" onClick={() => go("catalogue")}><Tag className="size-4" {...ICON} />Catalogue</Button>
         </div>
       </Card>
-      <div className="mt-3 grid grid-cols-3 gap-3">
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat label="Payments" value={summary.paid} />
         <Stat label="Average sale" value={moneyCents(summary.average)} />
-        <Stat label="Refused by buyers' wallets" value={summary.refused} note={summary.refused ? "Before any money moved" : undefined} />
+        <Stat label="Refused by buyers' wallets" value={summary.refused} note={summary.refused ? "Before any money moved" : undefined} className="col-span-2 sm:col-span-1" />
       </div>
       <Section title="Recent sales" right={rows.length > 5 && <button type="button" onClick={() => go("sales")} className="text-[15px] font-semibold text-accent hover:underline">View all</button>}>
         <SalesList rows={rows.slice(0, 5)} empty="No agent has bought from you yet." />
@@ -118,11 +118,11 @@ export function Sales() {
   }, [shown]);
   return (
     <div className="fade-up">
-      <PageTitle title="Sales" sub="Every agent purchase, and every attempt a buyer's wallet stopped." />
+      <SubTitle title="Sales" sub="Every agent purchase, and every attempt a buyer's wallet stopped." />
       <div role="tablist" aria-label="Filter sales" className="mb-6 flex gap-2">
         {FILTERS.map(([v, l]) => (
           <button key={v} type="button" role="tab" aria-selected={f === v} onClick={() => setF(v)}
-            className={cn("h-10 rounded-full px-5 text-[15px] font-medium transition-colors", f === v ? "bg-ink text-white" : "bg-card text-ink2 hover:bg-fill")}>{l}</button>
+            className={tabPill(f === v)}>{l}</button>
         ))}
       </div>
       {groups.length ? groups.map(([d, rs]) => (
@@ -138,7 +138,7 @@ export function Catalogue() {
   const copy = () => { void navigator.clipboard?.writeText(seller.payTo).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); };
   return (
     <div className="fade-up">
-      <PageTitle title="Catalogue" sub="What buyer agents can buy from you, and the price they see." />
+      <SubTitle title="Catalogue" sub="What buyer agents can buy from you, and the price they see." />
       <Card className="divide-y divide-line">
         {seller.items.map((i) => (
           <Row key={i.sku} avatar={<Avatar tone="lilac"><Tag className="size-5" {...ICON} /></Avatar>} title={cleanText(i.description, 90)} sub={i.sku} amount={i.price ? `US$${i.price}` : "Free"} amountClass={i.price ? undefined : "text-muted"} />

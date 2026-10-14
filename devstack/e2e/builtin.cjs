@@ -83,6 +83,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Durian report under US$2").waitFor();
     await chip("Durian report under US$2");
     await visible("Your agent has a question").waitFor({ timeout: 30000 });
+    await visible("US$2 in total or per report?").waitFor({ timeout: 10000 }).catch(() => {});
     check("one clarifying question", (await body()).includes("US$2 in total or per report?"));
     await shot("02-question");
     await chip("Per report, add the forecast");

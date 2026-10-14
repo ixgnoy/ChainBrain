@@ -14,7 +14,7 @@ function Switch({ checked, onChange, label }: { checked: boolean; onChange(v: bo
   );
 }
 
-export function Settings() {
+export function Settings({ presenter }: { presenter?: () => void }) {
   const src = useSource();
   const [open, setOpen] = useState(false);
   const [on, setOn] = useState(src.kind === "live");
@@ -31,15 +31,24 @@ export function Settings() {
 
   return (
     <Dialog.Root open={open} onOpenChange={reset}>
-      <Dialog.Trigger aria-label="Settings" className="grid size-10 place-items-center rounded-full text-muted transition-colors hover:bg-card hover:text-ink"><Gear className="size-5" strokeWidth={1.75} /></Dialog.Trigger>
+      <Dialog.Trigger aria-label="Settings" className="grid size-11 place-items-center rounded-full text-muted transition-colors hover:bg-card hover:text-ink"><Gear className="size-5" strokeWidth={1.75} /></Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-[rgba(17,19,24,0.24)]" />
         <Dialog.Content className="sheet-in fixed left-1/2 top-[18vh] z-50 w-[min(440px,calc(100vw-24px))] -translate-x-1/2 rounded-[20px] bg-card p-6 outline-none">
           <div className="flex items-center justify-between">
             <Dialog.Title className="text-[17px] font-semibold">Settings</Dialog.Title>
-            <Dialog.Close aria-label="Close" className="grid size-10 place-items-center rounded-full bg-fill text-ink2 hover:bg-line"><X className="size-5" strokeWidth={1.75} /></Dialog.Close>
+            <Dialog.Close aria-label="Close" className="grid size-11 place-items-center rounded-full bg-fill text-ink2 hover:bg-line"><X className="size-5" strokeWidth={1.75} /></Dialog.Close>
           </div>
           <Dialog.Description className="sr-only">Connection settings</Dialog.Description>
+          {presenter && (
+            <>
+              <h3 className="mb-2 mt-4 text-[13px] font-semibold uppercase tracking-[0.06em] text-muted">Presenting</h3>
+              <div className="flex items-center gap-4 rounded-[14px] bg-canvas px-4 py-3.5">
+                <div className="min-w-0 flex-1"><div className="text-[15px] font-medium">Presenter mode</div><div className="text-[13px] leading-5 text-muted">Larger Live view, no menus, and the eight scenes at the bottom.</div></div>
+                <button type="button" onClick={() => { setOpen(false); presenter(); }} className="h-11 rounded-full bg-accent px-5 text-[14px] font-semibold text-on-accent hover:bg-accent-press">Start</button>
+              </div>
+            </>
+          )}
           <h3 className="mb-2 mt-4 text-[13px] font-semibold uppercase tracking-[0.06em] text-muted">Connection</h3>
           <div className="flex items-center gap-4 rounded-[14px] bg-canvas px-4 py-3.5">
             <div className="min-w-0 flex-1"><div className="text-[15px] font-medium">Custom server</div><div className="text-[13px] leading-5 text-muted">Use your own ChainBrain server instead of the built-in network.</div></div>

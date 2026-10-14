@@ -129,7 +129,7 @@ async function webFlow(browser, _scenes, issues) {
     check("trace shows the tool calls and the SELLER_NOT_ALLOWED reason code", /get_quote|pay/.test(await trace.innerText()));
     await until("pocket balance read from chain", async () => (await page.getByTestId("pocket-balance").innerText()) === usdText((await usdcOf(target)) * 1e6), 20000);
     check("pocket balance matches the chain", true);
-    check("worst case line shown", await page.getByText(/Worst case:/).isVisible());
+    check("worst case line shown", await page.getByText(/Worst case/).filter({ visible: true }).first().isVisible());
     await shot(page, "web-01-live");
   });
 
@@ -163,7 +163,7 @@ async function webFlow(browser, _scenes, issues) {
     await page.getByText(/Planted in ShadyFeed/).waitFor();
     check("red-team text reaches the seller server", true);
     await page.getByRole("button", { name: "Clear", exact: true }).click();
-    await page.getByText("Cleared.").waitFor();
+    await page.getByRole("status").filter({ hasText: "Cleared." }).first().waitFor();
     const target = await page.getByLabel("Pocket to attack").inputValue();
     const before = await usdcOf(target);
     await page.getByRole("button", { name: "Force the transfer" }).click();

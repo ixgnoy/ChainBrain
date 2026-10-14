@@ -1,7 +1,7 @@
 // Small console pieces shared by every page.
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Check, Copy, ExternalLink } from "lucide-react";
-import { useNetwork, type TxDetail } from "./network";
+import { useNetwork, pocketTag, type TxDetail } from "./network";
 import { Avatar, Card, DetailSheet, Pill } from "../seller/ui";
 import { REASONS, formatUsd, shortAddr } from "../shared";
 import type { ChipKind } from "../lib/trace";
@@ -10,7 +10,7 @@ import { cn } from "../lib/cn";
 
 export const usd = (n?: bigint) => (n == null ? "–" : `US$${formatUsd(n)}`);
 export const NEVER = 2n ** 256n - 1n;
-export const pocketTag = (a: string, name?: string) => name || `Pocket ${a.slice(-4).toUpperCase()}`;
+export { pocketTag };
 export const clock = (ms: number) => new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
 export const useViewTx = () => useContext(ViewTx);
@@ -23,41 +23,44 @@ export function TxHash({ hash, className, inert }: { hash?: string; className?: 
   if (!hash) return null;
   const short = `${hash.slice(0, 10)}…${hash.slice(-6)}`;
   if (inert && !explorer) return <span className={cn("num text-[13px] text-muted", className)}>{short}</span>; // inside a row that opens the detail itself
-  if (!explorer) return <button type="button" onClick={() => view(hash)} aria-label={`Transaction ${short}`} className={cn("num text-[13px] font-medium text-accent hover:underline", className)}>{short}</button>;
-  return <a href={explorer(hash)} target="_blank" rel="noreferrer noopener" className={cn("num inline-flex items-center gap-1 text-[13px] font-medium text-accent hover:underline", className)}>{short}<ExternalLink className="size-3.5" strokeWidth={1.75} aria-hidden /></a>;
+  if (!explorer) return <button type="button" onClick={() => view(hash)} aria-label={`Transaction ${short}`} className={cn("num relative text-[13px] font-medium text-accent before:absolute before:-inset-x-2 before:-inset-y-3.5 before:content-[''] hover:underline", className)}>{short}</button>;
+  return <a href={explorer(hash)} target="_blank" rel="noreferrer noopener" className={cn("num relative inline-flex items-center gap-1 text-[13px] font-medium text-accent before:absolute before:-inset-x-2 before:-inset-y-3.5 before:content-[''] hover:underline", className)}>{short}<ExternalLink className="size-3.5" strokeWidth={1.75} aria-hidden /></a>;
 }
 
 function CopyHash({ text }: { text: string }) {
   const [ok, setOk] = useState(false);
-  return <button type="button" onClick={() => void navigator.clipboard?.writeText(text).then(() => { setOk(true); setTimeout(() => setOk(false), 1400); })} className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-accent hover:underline">{ok ? <Check className="size-4" /> : <Copy className="size-4" strokeWidth={1.75} />}{ok ? "Copied" : "Copy"}</button>;
+  return <button type="button" onClick={() => void navigator.clipboard?.writeText(text).then(() => { setOk(true); setTimeout(() => setOk(false), 1400); })} className="relative inline-flex items-center gap-1.5 text-[14px] font-semibold text-accent before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] hover:underline">{ok ? <Check className="size-4" /> : <Copy className="size-4" strokeWidth={1.75} />}{ok ? "Copied" : "Copy"}</button>;
 }
 
 function TxBody({ d }: { d: TxDetail }) {
-  const { cfg, pockets } = useNetwork();
+  const { cfg, pockets, nameOf } = useNetwork();
   const who = (a?: string) => {
     if (!a) return "–";
     const l = a.toLowerCase();
     const s = cfg.sellers.find((x) => x.payTo.toLowerCase() === l);
     if (s) return `${s.name} · ${shortAddr(a)}`;
-    if (pockets.some((p) => p.address.toLowerCase() === l)) return `${pocketTag(a)} · ${shortAddr(a)}`;
+    if (pockets.some((p) => p.address.toLowerCase() === l)) return `${nameOf(a)} · ${shortAddr(a)}`;
     if (l === cfg.agent.toLowerCase()) return `Agent key · ${shortAddr(a)}`;
     if (pockets.some((p) => p.owner.toLowerCase() === l)) return `Owner · ${shortAddr(a)}`;
     return shortAddr(a);
   };
-  const ok = d.status === "success";
+  const ok = d.status === "success", pending = d.status === "pending";
+  // a field the source does not know yet is left out, never shown as a dash
   const rows: [string, ReactNode][] = [
-    ["Type", d.label], ["From", who(d.from)], ["To", who(d.to)],
+    ["Type", d.label],
+    ...(d.from ? [["From", who(d.from)] as [string, ReactNode]] : []),
+    ...(d.to ? [["To", who(d.to)] as [string, ReactNode]] : []),
     ...(d.submittedBy ? [["Sent by", who(d.submittedBy)] as [string, ReactNode]] : []),
-    ["Block", d.block != null ? d.block.toString() : "–"],
-    ["Time", d.at ? new Date(d.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "–"],
+    ...(d.block != null ? [["Block", d.block.toString()] as [string, ReactNode]] : []),
+    ...(d.at ? [["Time", new Date(d.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" })] as [string, ReactNode]] : []),
   ];
   return (
     <div>
       <div className="flex flex-col items-center py-6 text-center">
-        <Avatar tone={ok ? "accent" : "negative"} size={64}>{ok ? <Check className="size-7" strokeWidth={1.75} /> : <span className="text-[24px]">×</span>}</Avatar>
+        <Avatar tone={ok || pending ? "accent" : "negative"} size={64}>{ok || pending ? <Check className="size-7" strokeWidth={1.75} /> : <span className="text-[24px]">×</span>}</Avatar>
         <div className="num mt-4 text-[36px] font-bold leading-10">{d.amount != null && d.amount > 0n ? usd(d.amount) : d.label}</div>
-        <div className="mt-3"><Pill tone={ok ? "accent" : "negative"}>{ok ? "Success" : "Reverted by the pocket"}</Pill></div>
-        {!ok && <p className="mx-auto mt-4 max-w-[34ch] text-[15px] text-ink2">The pocket contract refused this transfer, so no money moved.</p>}
+        <div className="mt-3"><Pill tone={ok || pending ? "accent" : "negative"}>{pending ? "Pending" : ok ? "Success" : "Reverted by the pocket"}</Pill></div>
+        {!ok && !pending && <p className="mx-auto mt-4 max-w-[34ch] text-[15px] text-ink2">The pocket contract refused this transfer, so no money moved.</p>}
       </div>
       <Card className="bg-canvas">
         <dl className="divide-y divide-line text-[15px]">
@@ -76,7 +79,7 @@ function TxBody({ d }: { d: TxDetail }) {
 export function TxViewerHost({ children }: { children: ReactNode }) {
   const net = useNetwork();
   const [hash, setHash] = useState<string>();
-  const d = hash ? net.txDetail(hash) ?? ({ hash, label: "Transaction", status: "success" } as TxDetail) : undefined;
+  const d = hash ? net.txDetail(hash) ?? ({ hash, label: "Transaction", status: "pending" } as TxDetail) : undefined;
   return (
     <ViewTx.Provider value={setHash}>
       {children}
@@ -99,6 +102,11 @@ const VERDICT: Record<ChipKind, string> = { ok: "bg-accent-soft text-accent", re
 export function Verdict({ kind, children }: { kind: ChipKind; children: string }) {
   if (!children) return null;
   return <span className={cn("inline-flex h-6 shrink-0 items-center rounded-full px-2.5 text-[12px] font-semibold", VERDICT[kind])}>{children}</span>;
+}
+
+/** A tiny grey tag for the pockets that live on the linked phone, so they read apart from the network's own. */
+export function PhoneTag() {
+  return <span className="ml-2 inline-flex h-5 items-center rounded-full bg-fill px-2 align-middle text-[11px] font-semibold uppercase tracking-[0.04em] text-muted">Phone</span>;
 }
 
 export function TestnetChip() {

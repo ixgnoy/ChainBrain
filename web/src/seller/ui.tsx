@@ -1,7 +1,7 @@
 // Seller dashboard kit: white borderless cards on grey, one accent, round actions, Ryt-style list rows.
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { cn } from "../lib/cn";
 import { formatUsd } from "../shared";
 
@@ -13,6 +13,9 @@ export const when = (ms: number) => {
   const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   return d.toDateString() === today.toDateString() ? time : `${d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}, ${time}`;
 };
+
+/** The one active-tab look on every page (same as the phone): soft teal pill with teal text. */
+export const tabPill = (on: boolean) => cn("inline-flex h-11 shrink-0 items-center rounded-full px-5 text-[15px] font-medium transition-colors", on ? "bg-accent-soft text-accent" : "bg-card text-ink2 hover:bg-fill");
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cn("rounded-[20px] bg-card", className)}>{children}</div>;
@@ -28,6 +31,11 @@ export function PageTitle({ title, sub, action }: { title: string; sub?: ReactNo
       {action}
     </header>
   );
+}
+
+/** Heading of a block inside a page (sans: the serif is kept for the page title). */
+export function SubTitle({ title, sub }: { title: string; sub?: ReactNode }) {
+  return <header className="mb-4"><h2 className="text-[20px] font-semibold leading-7">{title}</h2>{sub && <p className="mt-1 text-[15px] text-muted">{sub}</p>}</header>;
 }
 
 export function Section({ title, right, children, className }: { title: string; right?: ReactNode; children: ReactNode; className?: string }) {
@@ -94,9 +102,9 @@ export function Button({ variant = "primary", className, ...p }: BtnProps) {
   return <button type="button" {...p} className={cn("inline-flex h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-6 text-[15px] font-semibold transition-colors disabled:pointer-events-none disabled:opacity-40", v, className)} />;
 }
 
-export function Stat({ label, value, note }: { label: string; value: ReactNode; note?: ReactNode }) {
+export function Stat({ label, value, note, className }: { label: string; value: ReactNode; note?: ReactNode; className?: string }) {
   return (
-    <Card className="p-4 sm:p-6">
+    <Card className={cn("min-w-0 p-4 sm:p-6", className)}>
       <div className="text-[13px] leading-[18px] text-muted sm:text-[14px]">{label}</div>
       <div className="num mt-2 text-[20px] font-semibold leading-7 sm:text-[28px] sm:leading-9">{value}</div>
       {note && <div className="mt-1 hidden text-[14px] text-muted sm:block">{note}</div>}
@@ -124,5 +132,16 @@ export function DetailSheet({ open, onOpenChange, title, description = "Details 
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+/** A native select wearing the pill look (the OS control stays underneath for keyboards and screen readers). */
+export function PillSelect({ label, value, onChange, children, shown, className, tone = "card" }: { label: string; value: string; onChange(v: string): void; children: ReactNode; shown: ReactNode; className?: string; tone?: "card" | "fill" }) {
+  return (
+    <label className={cn("relative flex h-12 min-w-0 items-center gap-2 rounded-full pl-5 pr-11 text-[15px] font-semibold transition-colors focus-within:outline-2 focus-within:outline-accent", tone === "card" ? "bg-card hover:bg-fill" : "bg-fill hover:bg-line", className)}>
+      <span className="min-w-0 truncate">{shown}</span>
+      <ChevronDown className="pointer-events-none absolute right-4 size-4 text-muted" aria-hidden />
+      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 size-full cursor-pointer appearance-none opacity-0">{children}</select>
+    </label>
   );
 }

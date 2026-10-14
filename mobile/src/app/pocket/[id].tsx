@@ -9,6 +9,7 @@ import { Screen } from "../../ui/Screen";
 import { BackHeader, BACK_HEADER_H } from "../../ui/BackHeader";
 import { Avatar, Card, ListCard, ListRow, Pill, Press, SectionHeader } from "../../ui/kit";
 import { RoundButton } from "../../ui/RollAction";
+import { WorstCase } from "../../components/WorstCase";
 import { Money } from "../../ui/Money";
 import { Reveal as Rise, PopIn } from "../../ui/Reveal";
 import { AnimatedList } from "../../ui/AnimatedList";
@@ -97,7 +98,7 @@ export default function PocketDetail() {
             <View style={{ flexDirection: "row", paddingHorizontal: 20, marginTop: 24 }}>
               <RoundButton soft icon="plus" label="Add" a11y="Add money" onPress={() => setAction({ mode: "fund", pocket: pocket.address })} />
               <RoundButton soft icon="undo" label="Return" a11y="Return funds" onPress={() => setAction({ mode: "return", pocket: pocket.address })} />
-              {!pocket.revoked ? <RoundButton soft icon="lock" label="Revoke" a11y="Revoke" onPress={() => setAction({ mode: "revoke", pocket: pocket.address })} /> : null}
+              {!pocket.revoked ? <RoundButton danger icon="lock" label="Revoke" a11y="Revoke" onPress={() => setAction({ mode: "revoke", pocket: pocket.address })} /> : null}
             </View>
           </Rise>
         ) : (
@@ -108,9 +109,8 @@ export default function PocketDetail() {
         {err ? <T v="sub" color="negative" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 12 }}>{err}</T> : null}
 
         <Rise index={0} base={360} dy={6}>
-          <Card style={{ marginHorizontal: 20, marginTop: 20, gap: 4 }}>
-            <T v="cap" w="semi" color="muted">Worst case</T>
-            <T v="body" accessibilityLabel="Worst case">{worstCase(pocket.balance, sellerNames, off)}</T>
+          <Card style={{ marginHorizontal: 20, marginTop: 20 }}>
+            <WorstCase pocket={pocket} sellers={sellerNames} off={off} />
           </Card>
         </Rise>
         {editable ? <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 10 }}>Tap Cap or Ask above to change a rule. It is signed by your key on this phone.</T> : null}

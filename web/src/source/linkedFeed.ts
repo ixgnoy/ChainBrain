@@ -4,7 +4,7 @@
 // With no phone (or no relay), this is exactly the local feed.
 import type { Address, Hex } from "viem";
 import type { ChainTx, PocketState } from "../console/chain";
-import type { WalletEvent } from "../lib/events";
+import { eventPocket, type WalletEvent } from "../lib/events";
 import type { FeedSnapshot, NetworkFeed } from "./feed";
 import type { LocalFeed } from "./localFeed";
 import { DEFAULT_API } from "./source";
@@ -22,6 +22,14 @@ const toTx = (t: Wire): ChainTx => ({
   hash: t.hash as Hex, block: big(t.block) ?? 0n, logIndex: Number(t.logIndex ?? 0), pocket: t.pocket as Address, kind: t.kind, amount: big(t.amount),
   counterparty: t.counterparty as Address | undefined, at: Number(t.at), from: t.from as Address, status: t.status,
 });
+
+/** The pocket the phone is working on right now: whichever has the newest event or transaction. */
+export function latestPocket(events: WalletEvent[], txs: ChainTx[], pockets: PocketState[]): string | undefined {
+  let best: string | undefined, at = -1;
+  for (const e of events) { const p = eventPocket(e); if (p && e.at >= at) { best = p; at = e.at; } }
+  for (const t of txs) if (t.pocket && (t.at ?? 0) > at && t.status !== "reverted") { best = t.pocket; at = t.at ?? 0; }
+  return best ?? pockets[0]?.address;
+}
 
 export type LinkedFeed = NetworkFeed & { linked(): boolean; phoneNames(): Record<string, string> };
 
@@ -54,7 +62,7 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
     if (m.kind === "hello") {
       phone = null;
       if (m.linked && m.snapshot) { applySnapshot(m.snapshot, m.lastSeen); phone!.events = m.events ?? []; }
-    } else if (m.kind === "reset") phone = null;
+    } else if (m.kind === "reset") phone = { events: [], pockets: [], txs: [], names: {}, lastSeen: Date.now() }; // a new phone session: nothing of the old one stays, and its first events must not be lost
     else if (m.kind === "events" && phone) phone.events = [...phone.events, ...(m.events ?? [])].slice(-3000);
     else if (m.kind === "snapshot") { const ev = phone?.events ?? []; applySnapshot(m.snapshot, m.lastSeen); phone!.events = ev; }
     else if (m.kind === "result") { waiting.get(m.id)?.(m.result); waiting.delete(m.id); return; }
@@ -80,13 +88,13 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
     } catch { /* no relay on this laptop */ }
     if (mine === gen && !stopped) probe = setTimeout(look, 6000);
   };
-  const command = async (body: object): Promise<any> => {
+  const command = async (body: object, ms = 12_000): Promise<any> => {
     const r = await fetch(`${relay}/command`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error(r.status === 409 ? "The phone is not connected" : `Relay answered ${r.status}`);
     const { id } = await r.json();
     return new Promise((res, rej) => {
       waiting.set(id, res);
-      setTimeout(() => { if (waiting.delete(id)) rej(new Error("The phone did not answer")); }, 12_000);
+      setTimeout(() => { if (waiting.delete(id)) rej(new Error("The phone did not answer")); }, ms);
     });
   };
   const isPhonePocket = (p: string) => !!phone?.pockets.some((x) => x.address.toLowerCase() === p.toLowerCase());
@@ -110,18 +118,24 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
         } catch (e) { return { ok: false, text: (e as Error).message }; }
       },
       runScene: local.actions.runScene,
+      async say(text, preset) {
+        if (!phone) throw new Error("The phone is not connected");
+        const r = await command({ type: "say", text, ...(preset ? { preset } : {}) }, 20_000);
+        return { ok: !!r?.ok, text: String(r?.text ?? ""), pocket: r?.pocket };
+      },
     },
     snapshot(): FeedSnapshot {
       const s = local.snapshot();
       if (!phone) return s;
       const byAt = <T extends { at?: number }>(a: T, b: T) => (a.at ?? 0) - (b.at ?? 0);
-      const lastPhone = [...phone.events].reverse().find((e) => typeof e.pocket === "string")?.pocket;
       return {
         events: [...s.events, ...phone.events].sort(byAt),
-        pockets: [...phone.pockets, ...s.pockets],
+        pockets: [...phone.pockets, ...s.pockets.filter((p) => !phone!.pockets.some((x) => x.address.toLowerCase() === p.address.toLowerCase()))],
         txs: [...s.txs, ...phone.txs.filter((t) => t.status !== "reverted")].sort(byAt),
         allTxs: [...s.allTxs, ...phone.txs].sort(byAt),
-        follow: lastPhone ?? phone.pockets[0]?.address ?? s.follow,
+        follow: latestPocket(phone.events, phone.txs, phone.pockets) ?? s.follow,
+        linked: true,
+        phonePockets: phone.pockets.map((p) => p.address),
       };
     },
     subscribe(f) { listeners.add(f); return () => void listeners.delete(f); },

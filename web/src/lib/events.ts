@@ -18,6 +18,12 @@ export const MAX_EVENTS = 3000;
 /** Approvals wait up to 10 minutes on the server and then time out without any event. */
 export const APPROVAL_TTL_MS = 10 * 60_000 + 15_000;
 
+/** The pocket an event belongs to: its own, or the one its approval card names (questions and intents carry only that). */
+export const eventPocket = (e: WalletEvent): string | undefined => {
+  const p = typeof e.pocket === "string" && e.pocket ? e.pocket : e.approval?.pocket;
+  return typeof p === "string" && /^0x[0-9a-fA-F]{40}$/.test(p) ? p : undefined;
+};
+
 export const samePocket = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
 
 export function parseEvent(raw: string, now = Date.now()): StoredEvent | null {

@@ -18,6 +18,10 @@ export type FeedSnapshot = {
   allTxs: ChainTx[];
   /** The pocket the story is on right now. */
   follow?: string;
+  /** A phone is linked (see linkedFeed.ts). */
+  linked?: boolean;
+  /** Addresses of the linked phone's pockets. */
+  phonePockets?: string[];
 };
 
 export interface NetworkFeed {

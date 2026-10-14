@@ -9,7 +9,7 @@ import { T } from "../ui/Text";
 import { Rise, firstTime } from "../ui/Rise";
 import { SuccessMark } from "../ui/SuccessMark";
 import { cleanText } from "../lib/sanitize";
-import { money, shortHex } from "../lib/util";
+import { money } from "../lib/util";
 import type { WalletEvent } from "../lib/events";
 
 export function PaidCard({ e }: { e: WalletEvent }) {
@@ -33,7 +33,7 @@ export function PaidCard({ e }: { e: WalletEvent }) {
         <View style={{ flex: 1, gap: 2 }}>
           <T v="row" w="semi" numberOfLines={1}>Paid {cleanText(seller, 30)}</T>
           <T v="sub" color="muted" numberOfLines={1}>{cleanText(item, 60)}</T>
-          <T v="cap" color="faint" style={{ color: c.muted }} numberOfLines={1}>{e.cosigned ? "Co-signed by you · " : ""}Tx {shortHex(String(e.tx ?? ""), 6, 4)}</T>
+          {e.cosigned ? <T v="cap" w="medium" color="accent" numberOfLines={1}>Co-signed by you</T> : null}
         </View>
         <T v="row" w="semi">{money(amount)}</T>
       </Press>

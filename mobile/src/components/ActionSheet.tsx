@@ -47,14 +47,19 @@ export function ActionSheet() {
 }
 
 function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: () => void }) {
-  const { pockets, wallet, refreshPockets, balances, recordTx, setNotice } = useApp();
+  const { pockets, wallet, refreshPockets, balances, recordTx, setNotice, active } = useApp();
   const [done, setDone] = useState<{ title: string; hash: string } | null>(null);
   const [sel, setSel] = useState<string | undefined>(initial);
   const [amount, setAmount] = useState("1.00");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const formH = useRef(0);
-  useEffect(() => { setDone(null); setSel(initial ?? (pockets.filter((p) => p.owned && !p.revoked).length === 1 ? pockets.find((p) => p.owned && !p.revoked)?.address : undefined)); setError(null); }, [initial, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  // preselect: the pocket asked for, else the one the agent is on, else the first that fits (one tap fewer every time)
+  useEffect(() => {
+    const ok = (p: Pocket) => p.owned && (mode === "return" ? p.balance > 0n : !p.revoked);
+    const pick = initial ?? (active && ok(active) ? active.address : pockets.find(ok)?.address);
+    setDone(null); setSel(pick); setError(null);
+  }, [initial, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // revoke: let the success moment play, then close (the pocket page shows the hash notice)
   useEffect(() => {
@@ -119,7 +124,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
             })}
           </View>
         )}
-        {mode === "fund" && chosen && (
+        {mode === "fund" && (
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
             {AMOUNTS.map((a) => <Chip key={a} label={`US$${a}`} on={amount === a} onPress={() => setAmount(a)} />)}
           </View>
@@ -134,7 +139,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
     <View style={{ flexShrink: 1 }}>
       {done ? <SheetSuccess key="ok" minHeight={formH.current} title={done.title} txs={[{ hash: done.hash }]} /> : form}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}>
-        {mode === "fund" && <SlideToConfirm key={`f${sel}${amount}${error}`} label={`Slide to fund ${amount}`} doneLabel="Funded" disabled={!chosen || !wallet} onConfirm={doFund} />}
+        {mode === "fund" && <SlideToConfirm key={`f${sel}${amount}${error}`} label={`Slide to add US$${amount}`} doneLabel="Funded" disabled={!chosen || !wallet} onConfirm={doFund} />}
         {mode === "return" && <SlideToConfirm key={`r${sel}${error}`} label="Slide to return funds" doneLabel="Returned" disabled={!chosen || !wallet || chosen.balance === 0n} onConfirm={doReturn} />}
         {mode === "revoke" && (done ? <View style={{ height: 64 }} /> : <HoldToRevoke disabled={!chosen || !wallet} busy={busy} onComplete={doRevoke} />)}
         <Button label={done ? "Done" : "Cancel"} kind={done ? "secondary" : "text"} onPress={close} />

@@ -16,9 +16,9 @@ export function StoppedCard({ last, tx, canReturn, onReturn }: { last: string | 
           <StepMark state="refused" size={22} />
           <T v="row" w="semi" color="negative">Agent stopped</T>
         </View>
-        <T v="body" color="ink">Agent stopped. Last completed step: {last ?? "none yet"}.</T>
+        <T v="body" color="ink">You revoked this pocket on-chain, so the agent can't spend from it. Last completed step: {last ?? "none yet"}.</T>
         {tx ? <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}><T v="cap" color="ink2">Revoke transaction</T><TxLink tx={tx} /></View> : null}
-        {canReturn ? <Button label="Return funds" kind="secondary" small onPress={onReturn} /> : null}
+        {canReturn ? <Button label="Return funds to your wallet" small onPress={onReturn} /> : null}
       </View>
     </Rise>
   );

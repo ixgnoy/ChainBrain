@@ -1,22 +1,30 @@
 // ChainBrain network console (web): the whole system at once for the laptop demo, judges and presenter.
 // The owner's own app is the phone; this shows the agent, the pockets, the sellers and the chain together. No login.
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { X } from "lucide-react";
 import { NetworkProvider, useNetwork } from "./useNetwork";
 import { Live } from "./Live";
 import { Pockets, OnChain, Judges } from "./pages";
 import SellerView from "../seller/SellerView";
-import { TestnetChip, TxViewerHost, pocketTag, usd } from "./parts";
+import { PhoneTag, TestnetChip, TxViewerHost, usd } from "./parts";
+import { Stepper } from "./Stepper";
+import { eventPocket } from "../lib/events";
 import { Settings } from "./Settings";
-import { PageTitle } from "../seller/ui";
+import { PageTitle, PillSelect } from "../seller/ui";
 import { cn } from "../lib/cn";
 
 type Tab = "live" | "pockets" | "sellers" | "chain" | "judges";
 const TABS: [Tab, string][] = [["live", "Live"], ["pockets", "Pockets"], ["sellers", "Sellers"], ["chain", "On-chain"], ["judges", "Judges"]];
-const parse = (): { tab: Tab; pocket?: string } => {
-  const [t, p] = location.hash.slice(1).split("/");
-  return { tab: (TABS.some(([id]) => id === t) ? t : "live") as Tab, pocket: p && /^0x[0-9a-fA-F]{40}$/.test(p) ? p : undefined };
+const ADDR = /^0x[0-9a-fA-F]{40}$/;
+type Route = { tab: Tab; pocket?: string; present: boolean };
+/** #live, #judges/0x… (a pinned pocket), #present (presenter mode: Live, no chrome, scene stepper). */
+export const parseRoute = (hash = location.hash): Route => {
+  const [t, p] = hash.slice(1).split("/");
+  const pocket = p && ADDR.test(p) ? p : undefined;
+  if (t === "present") return { tab: "live", pocket, present: true };
+  return { tab: (TABS.some(([id]) => id === t) ? t : "live") as Tab, pocket, present: false };
 };
+const toHash = (r: Route) => (r.present ? "present" : r.tab) + (r.pocket ? `/${r.pocket}` : "");
 
 export function Mark({ size = 36 }: { size?: number }) {
   return (
@@ -31,58 +39,80 @@ export function Mark({ size = 36 }: { size?: number }) {
 }
 
 function PocketPicker({ value, onChange }: { value?: string; onChange(a: string): void }) {
-  const { pockets } = useNetwork();
+  const { pockets, nameOf, isPhone } = useNetwork();
   if (!pockets.length) return null;
   const cur = pockets.find((p) => p.address.toLowerCase() === value?.toLowerCase());
   return (
-    <label className="relative flex h-12 items-center gap-2 rounded-full bg-card pl-5 pr-10 text-[15px] font-semibold hover:bg-fill">
-      {cur ? `${pocketTag(cur.address, cur.name)} · ${usd(cur.balance)}` : "Choose a pocket"}
-      <ChevronDown className="pointer-events-none absolute right-4 size-4 text-muted" />
-      <select aria-label="Pocket" value={cur?.address ?? ""} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0">
-        {pockets.map((p) => <option key={p.address} value={p.address}>{pocketTag(p.address, p.name)} · {usd(p.balance)}</option>)}
-      </select>
-    </label>
+    <PillSelect label="Pocket" value={cur?.address ?? ""} onChange={onChange}
+      shown={cur ? <>{nameOf(cur.address)}{isPhone(cur.address) && <PhoneTag />}<span className="num ml-2 font-medium text-ink2">{usd(cur.balance)}</span></> : "Choose a pocket"}>
+      {pockets.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)}{isPhone(p.address) ? " (phone)" : ""} · {usd(p.balance)}</option>)}
+    </PillSelect>
   );
 }
 
 function Shell() {
-  const { events, pockets, follow } = useNetwork();
-  const [{ tab, pocket: chosen }, setRoute] = useState(parse);
-  useEffect(() => { const on = () => setRoute(parse()); addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
-  // Without a choice, follow the pocket the story is on, else the one the agent touched last (the screen tracks the action by itself).
-  const latest = useMemo(() => [...events].reverse().find((e) => typeof e.pocket === "string" && e.pocket.length === 42)?.pocket ?? pockets[0]?.address, [events, pockets]);
-  const pocket = chosen ?? follow ?? latest;
-  const go = (t: Tab, p = chosen) => { location.hash = p ? `${t}/${p}` : t; setRoute({ tab: t, pocket: p }); scrollTo({ top: 0 }); };
-  const openPocket = (p: string) => go("live", p);
+  const { events, pockets, follow, linked } = useNetwork();
+  const [route, setRoute] = useState(parseRoute);
+  const { tab, pocket: pinned, present } = route;
+  useEffect(() => { const on = () => setRoute(parseRoute()); addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
+  // ONE pocket per render: the one a person picked, else the one the story (or the linked phone) is on, else the last one touched.
+  // Trace, balance, rules and sellers all read this same value.
+  const latest = useMemo(() => [...events].reverse().map(eventPocket).find(Boolean) ?? pockets[0]?.address, [events, pockets]);
+  const pocket = pinned ?? follow ?? latest;
+  const go = (next: Omit<Partial<Route>, "pocket"> & { pocket?: string | null }) => {
+    const r: Route = { tab: next.tab ?? tab, present: next.present ?? present, pocket: next.pocket === null ? undefined : next.pocket ?? pinned };
+    location.hash = toHash(r); setRoute(r); scrollTo({ top: 0 });
+  };
+  const openPocket = (p: string) => go({ tab: "live", present: false, pocket: p });
+  const following = !pinned;
+
+  const nav = (
+    <nav aria-label="Main" className="fixed inset-x-3 bottom-3 z-30 flex gap-1 rounded-full bg-card p-1.5 shadow-[0_8px_24px_rgba(17,19,24,0.08)] md:static md:inset-auto md:bottom-auto md:z-auto md:bg-transparent md:p-0 md:shadow-none">
+      {TABS.map(([id, label]) => (
+        <button key={id} type="button" onClick={() => go({ tab: id })} aria-current={tab === id ? "page" : undefined}
+          className={cn("h-11 min-w-0 flex-1 whitespace-nowrap rounded-full px-1 text-[12.5px] font-semibold transition-colors md:h-11 md:flex-none md:px-5 md:text-[15px] md:font-medium", tab === id ? "bg-accent-soft text-accent" : "text-ink2 hover:bg-fill md:hover:bg-card")}>{label}</button>
+      ))}
+    </nav>
+  );
 
   return (
     <TxViewerHost>
     <div className="min-h-dvh">
-      <header className="sticky top-0 z-30 bg-canvas/95 backdrop-saturate-100">
-        <div className="mx-auto flex max-w-[1680px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4 sm:px-8">
-          <div className="flex items-center gap-3"><Mark /><div className="leading-tight"><div className="text-[17px] font-bold">ChainBrain</div><div className="text-[13px] text-muted">Network console</div></div></div>
-          <nav aria-label="Main" className="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
-            {TABS.map(([id, label]) => (
-              <button key={id} type="button" onClick={() => go(id)} aria-current={tab === id ? "page" : undefined}
-                className={cn("h-11 shrink-0 rounded-full px-5 text-[15px] font-medium transition-colors", tab === id ? "bg-ink text-white" : "text-ink2 hover:bg-card hover:text-ink")}>{label}</button>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-2"><span className="hidden md:block"><TestnetChip /></span><Settings /></div>
+      {present ? (
+        <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3 px-4 pb-1 pt-3 sm:px-8">
+          <div className="flex min-w-0 items-center gap-3 text-[15px] font-semibold"><Mark size={28} />ChainBrain{linked && <span className="text-[13px] font-medium text-muted">Following your phone</span>}</div>
+          <button type="button" onClick={() => go({ present: false })} className="inline-flex h-11 items-center gap-2 rounded-full px-4 text-[14px] font-semibold text-ink2 hover:bg-card"><X className="size-4" strokeWidth={1.75} />Exit presenter</button>
         </div>
-      </header>
-      <main className="mx-auto max-w-[1680px] px-4 pb-16 pt-4 sm:px-8">
+      ) : (
+        <header className="sticky top-0 z-30 bg-canvas">
+          <div className="mx-auto flex max-w-[1680px] items-center gap-x-6 px-4 py-3 sm:px-8 sm:py-4">
+            <div className="flex items-center gap-3"><Mark /><div className="leading-tight"><div className="text-[17px] font-bold">ChainBrain</div><div className="text-[13px] text-muted">Network console</div></div></div>
+            <div className="hidden md:block">{nav}</div>
+            <div className="ml-auto flex items-center gap-2"><span className="hidden lg:block"><TestnetChip /></span><Settings presenter={() => go({ present: true })} /></div>
+          </div>
+        </header>
+      )}
+      <main className={cn("mx-auto max-w-[1680px] px-4 pt-4 sm:px-8", present ? "pb-40" : "pb-28 md:pb-16")}>
         {tab === "live" && (
           <>
-            <PageTitle title="Live" sub="The agent's decisions, the pocket it spends from and what each seller sees, as they happen." action={<PocketPicker value={pocket} onChange={(a) => go("live", a)} />} />
-            <Live pocket={pocket} />
+            <h1 className="sr-only">Live</h1>
+            <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <PocketPicker value={pocket} onChange={(a) => go({ pocket: a })} />
+              {linked && following && <span data-testid="following" className="inline-flex items-center gap-2 text-[14px] font-medium text-ink2"><span className="size-2 rounded-full bg-accent" aria-hidden />Following your phone</span>}
+              {!following && <button type="button" onClick={() => go({ pocket: null })} className="inline-flex h-11 items-center rounded-full px-3 text-[14px] font-semibold text-accent hover:bg-accent-soft">{linked ? "Follow your phone" : "Follow the story"}</button>}
+              <p className="hidden text-[14px] text-muted lg:block">The agent's decisions, the pocket it spends from and what each seller sees, as they happen.</p>
+            </div>
+            <Live pocket={pocket} present={present} />
           </>
         )}
-        {tab === "pockets" && <div className="mx-auto max-w-[960px]"><Pockets open={openPocket} /></div>}
-        {tab === "sellers" && <div className="mx-auto max-w-[960px]"><PageTitle title="Sellers" sub="The other side of every payment: what each shop sees when an agent buys or gets refused." /><SellerView /></div>}
-        {tab === "chain" && <div className="mx-auto max-w-[960px]"><OnChain open={openPocket} /></div>}
-        {tab === "judges" && <div className="mx-auto max-w-[960px]"><Judges pocket={pocket} open={openPocket} /></div>}
-        <div className="mt-12 text-center md:hidden"><TestnetChip /></div>
+        {!present && tab === "pockets" && <div className="mx-auto max-w-[1040px]"><Pockets open={openPocket} /></div>}
+        {!present && tab === "sellers" && <div className="mx-auto max-w-[1040px]"><PageTitle title="Sellers" sub="The other side of every payment: what each shop sees when an agent buys or gets refused." /><SellerView /></div>}
+        {!present && tab === "chain" && <div className="mx-auto max-w-[1040px]"><OnChain open={openPocket} /></div>}
+        {!present && tab === "judges" && <div className="mx-auto max-w-[1040px]"><Judges pocket={pocket} open={openPocket} /></div>}
+        {!present && <div className="mt-12 text-center lg:hidden"><TestnetChip /></div>}
       </main>
+      {!present && <div className="md:hidden">{nav}</div>}
+      {present && <Stepper />}
     </div>
     </TxViewerHost>
   );
