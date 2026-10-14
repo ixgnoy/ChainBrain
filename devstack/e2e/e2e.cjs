@@ -225,25 +225,26 @@ async function phoneFlow(browser, scenes, issues) {
 
   await page.goto(`http://127.0.0.1:${PHONE_PORT}/`);
 
-  await stp("phone: first run creates an on-device key", async () => {
-    await page.getByText("Give your AI a pocket, not your wallet.").waitFor();
-    check("first-run screen offers import or create key", (await page.getByText("Create a new key").count()) > 0);
-    await shot(page, "phone-01-first-run");
-    await page.getByText("Create a new key").click();
-    await page.getByText("LOCAL FORK").first().waitFor();
-    check("LOCAL FORK badge visible on the phone", true);
-    check("no BaseScan links on the phone in dev mode", (await page.locator('a[href*="basescan"]').count()) === 0);
+  await stp("phone: first launch goes straight to Home (key made silently, no login)", async () => {
+    await page.getByText("Agent pockets").first().waitFor({ timeout: 40000 });
+    const text = await page.locator("body").innerText();
+    check("no key setup, login or connect screen", !/create a new key|import key|connect wallet|log ?in|sign ?in|disconnect/i.test(text));
+    check("no LOCAL FORK badge or BaseScan links on Home", !text.includes("LOCAL FORK") && (await page.locator('a[href*="basescan"]').count()) === 0);
+    await shot(page, "phone-01-home");
+    const pk = await until("on-device key stored", () => page.evaluate(() => localStorage.getItem("chainbrain.owner_pk")));
+    const { privateKeyToAccount } = await import(path.join(ROOT, "web/node_modules/viem/_esm/accounts/index.js"));
+    wallet = privateKeyToAccount(pk).address;
+    check("phone key is its own account (not the dev owner)", wallet.toLowerCase() !== OWNER.toLowerCase(), wallet);
     await tab("Settings");
-    wallet = await until("owner key shown", async () => (await page.locator("body").innerText()).match(/0x[0-9a-fA-F]{40}/)?.[0]);
-    check("phone key is its own account (not the web dev signer)", wallet.toLowerCase() !== OWNER.toLowerCase(), wallet);
+    await page.getByText("Local test network").first().waitFor();
+    check("Settings names the local test network quietly", true);
     await tab("Home");
   });
 
-  await stp("phone: Get test funds", async () => {
-    await page.getByRole("button", { name: "Get test funds" }).first().click();
-    await until("phone funded on chain", async () => (await usdcOf(wallet)) >= 20);
-    check("phone funded with 20 USDC on chain", (await usdcOf(wallet)) >= 20, String(await usdcOf(wallet)));
-    await page.getByText(/Main wallet 2\d\.\d\d USDC/).waitFor();
+  await stp("phone: test funds arrive by themselves on the dev stack", async () => {
+    await until("phone funded on chain", async () => (await usdcOf(wallet)) >= 20, 30000);
+    check("phone funded with 20 USDC on chain without a tap", (await usdcOf(wallet)) >= 20, String(await usdcOf(wallet)));
+    await page.getByText(/Main wallet US\$2\d\.\d\d/).first().waitFor();
     check("home shows the main wallet balance", true);
     await shot(page, "phone-02-funded");
   });
@@ -261,9 +262,9 @@ async function phoneFlow(browser, scenes, issues) {
   };
   const openNewestPocket = async (count, balance) => {
     await page.goto(`http://127.0.0.1:${PHONE_PORT}/`);
-    await page.getByText(new RegExp(`${count} pockets?, ${count} active`)).waitFor({ timeout: 40000 });
+    await until(`${count} pocket rows`, async () => (await page.getByLabel(/pocket, [\d.]+ USDC/).count()) >= count, 40000);
     await page.getByLabel(new RegExp(`pocket, ${balance} USDC`)).first().click();
-    await page.getByRole("button", { name: /Hold to revoke/ }).waitFor();
+    await page.getByRole("button", { name: "Revoke", exact: true }).waitFor();
     return (page.url().match(/0x[0-9a-fA-F]{40}/) ?? [])[0];
   };
 
@@ -332,8 +333,10 @@ async function phoneFlow(browser, scenes, issues) {
     await until("first payment", async () => money(await usdcOf(p7)) === 4.7, 40000, 100);
     await tab("Home");
     await page.getByLabel(/pocket, 4\.70 USDC/).first().click();
+    await page.getByRole("button", { name: "Revoke", exact: true }).click(); // opens the revoke sheet
     const hold = page.getByRole("button", { name: /Hold to revoke/ });
     await hold.waitFor();
+    await sleep(600); // let the sheet finish sliding in before reading the button's position
     const b = await hold.boundingBox();
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
     await page.mouse.down(); await sleep(1100); await page.mouse.up();

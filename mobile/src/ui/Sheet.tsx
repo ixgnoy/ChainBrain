@@ -4,15 +4,13 @@ import { Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "../theme";
-import { motion, radius } from "../tokens";
+import { c, lift, motion, radius } from "../tokens";
 import { haptic } from "../haptics";
 import { useReduceMotion, settle, glide } from "./motion";
 
 export function Sheet({ visible, onClose, children, maxHeightPct = 0.92 }: { visible: boolean; onClose: () => void; children: React.ReactNode; maxHeightPct?: number }) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { c, dark } = useTheme();
   const [mounted, setMounted] = useState(visible);
   const y = useSharedValue(height);
   const backdrop = useSharedValue(0);
@@ -50,10 +48,10 @@ export function Sheet({ visible, onClose, children, maxHeightPct = 0.92 }: { vis
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
       </Animated.View>
       <Animated.View style={[{ maxHeight: height * maxHeightPct }, panel]}>
-        <View style={{ backgroundColor: c.bgElev1, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, borderWidth: 1, borderBottomWidth: 0, borderColor: c.hairlineStrong, paddingBottom: insets.bottom + 8, shadowColor: "#16181A", shadowOpacity: dark ? 0.5 : 0.12, shadowRadius: 32, shadowOffset: { width: 0, height: -12 } }}>
+        <View style={{ backgroundColor: c.card, borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card, paddingBottom: insets.bottom + 12, ...lift, shadowOffset: { width: 0, height: -8 } }}>
           <GestureDetector gesture={pan}>
             <View style={{ alignItems: "center", paddingTop: 10, paddingBottom: 6 }}>
-              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: c.hairlineStrong }} />
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: c.line }} />
             </View>
           </GestureDetector>
           {children}

@@ -1,10 +1,6 @@
-const { hairlineWidth, platformSelect } = require("nativewind/theme");
-const plexFontPlugin = require("./plugins/plexFontPlugin.js");
+const { hairlineWidth } = require("nativewind/theme");
 
-// Ink & jade tokens (design-system/chainbrain/MASTER.md). The values live in global.css as CSS variables, light and dark.
-const v = (name) => `var(--${name})`;
-const verdict = (k) => ({ DEFAULT: v(k), fg: v(`${k}-fg`), soft: v(`${k}-soft`), line: v(`${k}-line`) });
-
+// Clean bank v2 tokens (design-system/chainbrain/MASTER.md). Light only: there is no dark variant.
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",
@@ -12,32 +8,17 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
-      fontFamily: { sans: ["IBMPlexSans_400Regular"], mono: ["IBMPlexMono_500Medium"] },
+      fontFamily: { sans: ["PlusJakartaSans_400Regular"], serif: ["Fraunces_600SemiBold"] },
       colors: {
-        // shadcn / Reusables semantic names
-        border: v("hair"),
-        input: v("hair2"),
-        ring: v("accent"),
-        background: v("bg"),
-        foreground: v("fg"),
-        primary: { DEFAULT: v("accent"), foreground: v("on-accent") },
-        secondary: { DEFAULT: v("e2"), foreground: v("fg") },
-        destructive: { DEFAULT: v("refused"), foreground: v("on-accent") },
-        muted: { DEFAULT: v("e2"), foreground: v("t3") },
-        accent: { DEFAULT: v("e3"), foreground: v("fg") },
-        popover: { DEFAULT: v("e1"), foreground: v("fg") },
-        card: { DEFAULT: v("e1"), foreground: v("fg") },
-        // ChainBrain names
-        e1: v("e1"), e2: v("e2"), e3: v("e3"),
-        hair: v("hair"), hair2: v("hair2"),
-        t2: v("t2"), t3: v("t3"), tdis: v("tdis"),
-        jade: { DEFAULT: v("accent"), hi: v("accent-hi"), press: v("accent-press"), ink: v("accent-ink"), soft: v("accent-soft") },
-        ok: verdict("ok"), refused: verdict("refused"), stepup: verdict("stepup"), revoked: verdict("revoked"), info: verdict("info"),
+        canvas: "#F7F7F8", card: "#FFFFFF", fill: "#EFEFF1", line: "#E6E6EA",
+        ink: "#111318", ink2: "#4B5058", muted: "#6B7280", faint: "#A1A6AE",
+        accent: { DEFAULT: "#0B7A4B", press: "#08613B", soft: "#E3F3EA" },
+        negative: { DEFAULT: "#C8372D", soft: "#FCEBEA" },
+        warning: { DEFAULT: "#9A6200", soft: "#FFF3DB" },
       },
-      borderRadius: { chip: "6px", md: "10px", lg: "14px" },
+      borderRadius: { card: "20px", input: "12px" },
       borderWidth: { hairline: hairlineWidth() },
     },
   },
-  future: { hoverOnlyWhenSupported: true },
-  plugins: [platformSelect({ native: plexFontPlugin, default: [] }), require("tailwindcss-animate")],
+  plugins: [],
 };

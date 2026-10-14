@@ -24,3 +24,11 @@ export function dayLabel(at: number, now = Date.now()): string {
 export const timeLabel = (at: number) => new Date(at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 export const dateLabel = (unixSec: number) => new Date(unixSec * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 export const money2 = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
+
+/** "US$3.20" from atomic USDC. */
+export const money = (n: bigint | undefined | null) => `US$${usd(n)}`;
+/** "14 Oct, 1:32 PM". */
+export const stamp = (at: number) => {
+  const d = new Date(at);
+  return `${d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}, ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+};

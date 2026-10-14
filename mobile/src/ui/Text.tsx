@@ -1,32 +1,23 @@
 import React from "react";
 import { Text as RNText, type TextProps, type TextStyle } from "react-native";
-import { F, useTheme } from "../theme";
-import { type } from "../tokens";
-import type { Palette } from "../tokens";
+import { F, c, type Tone } from "../tokens";
 
-type Variant = keyof typeof type;
-/** Verdict fills are for icons and dots; as text they use the darker text tone (MASTER.md contrast table). */
-const TEXT_TONE: Partial<Record<keyof Palette, keyof Palette>> = { ok: "okText", refused: "refusedText", stepup: "stepupText", revoked: "revokedText", info: "infoText", accent: "accentInk", accentHi: "accentInk" };
-export type TColor = keyof Palette;
+// Scale from MASTER.md: serif title 34/40, balance 40/44 700, section 20/28 600, body 16/24, row title 16/22 500, secondary 14/20, caption 13/18, tab 12/16 600.
+const V = {
+  title: { family: F.serif, size: 34, line: 40, ls: -0.3 },
+  balance: { family: F.bold, size: 40, line: 44, ls: -0.8 },
+  amount: { family: F.bold, size: 32, line: 38, ls: -0.5 },
+  section: { family: F.semi, size: 20, line: 28, ls: -0.2 },
+  body: { family: F.regular, size: 16, line: 24, ls: 0 },
+  row: { family: F.medium, size: 16, line: 22, ls: 0 },
+  sub: { family: F.regular, size: 14, line: 20, ls: 0 },
+  cap: { family: F.regular, size: 13, line: 18, ls: 0 },
+  tab: { family: F.semi, size: 12, line: 16, ls: 0 },
+} as const;
+export type Variant = keyof typeof V;
 
-const FAMILY: Record<Variant, string> = {
-  displayXl: F.display, displayLg: F.display, headingLg: F.display, headingMd: F.display,
-  title: F.bodySemi, body: F.body, bodySm: F.body, caption: F.bodyMed, mono: F.mono,
-};
-
-export function T({ v = "body", color = "text", style, weight, num, ...p }: TextProps & { v?: Variant; color?: TColor; weight?: "med" | "semi" | "bold"; num?: boolean }) {
-  const { c } = useTheme();
-  const t = type[v];
-  const fam = weight === "bold" ? F.bodyBold : weight === "semi" ? F.bodySemi : weight === "med" ? F.bodyMed : FAMILY[v];
-  const s: TextStyle = {
-    fontFamily: fam, fontSize: t.size, lineHeight: t.line, letterSpacing: t.tracking * t.size, color: c[TEXT_TONE[color] ?? color],
-    ...(num ? { fontVariant: ["tabular-nums"] } : null),
-  };
+export function T({ v = "body", color = "ink", w, style, ...p }: TextProps & { v?: Variant; color?: Tone; w?: "regular" | "medium" | "semi" | "bold" }) {
+  const t = V[v];
+  const s: TextStyle = { fontFamily: w ? F[w] : t.family, fontSize: t.size, lineHeight: t.line, letterSpacing: t.ls, color: c[color], fontVariant: ["tabular-nums"] };
   return <RNText {...p} style={[s, style]} />;
 }
-
-/** Mono text (ids, hashes, reason codes). */
-export const Mono = (p: TextProps & { color?: TColor; size?: number }) => {
-  const { size = 12, style, ...rest } = p;
-  return <T v="mono" {...rest} style={[{ fontSize: size, lineHeight: size + 4 }, style]} />;
-};

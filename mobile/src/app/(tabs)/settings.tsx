@@ -1,40 +1,24 @@
 import React, { useState } from "react";
-import { Platform, View } from "react-native";
-import { TriangleAlert } from "lucide-react-native";
-import { Input } from "../../components/ui/input";
-import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
+import { View } from "react-native";
 import * as Clipboard from "expo-clipboard";
-import { formatEther } from "viem";
-import { useTheme } from "../../theme";
 import { useApp } from "../../store";
 import * as api from "../../lib/api";
 import { ENV_API, detectDev, normalizeUrl } from "../../lib/runtime";
 import { isPrivateKey } from "../../lib/keystore";
-import { Screen } from "../../ui/Screen";
-import { Button, Card, DevBadge, Divider, Press, Segmented } from "../../ui/primitives";
-import { T, Mono } from "../../ui/Text";
+import { c } from "../../tokens";
+import { Screen, PageTitle } from "../../ui/Screen";
+import { Avatar, Button, Card, Field, ListCard, ListRow, SectionHeader } from "../../ui/kit";
+import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
-import { Logo } from "../../ui/Logo";
 import { haptic } from "../../haptics";
-import { usd } from "../../lib/util";
-import { radius } from "../../tokens";
-
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={{ marginHorizontal: 20, marginBottom: 22, gap: 8 }}>
-      <T v="caption" color="text3" style={{ letterSpacing: 0.4, paddingLeft: 4 }}>{title.toUpperCase()}</T>
-      {children}
-    </View>
-  );
-}
+import { money, shortAddr } from "../../lib/util";
 
 export default function Settings() {
-  const { c, mode, setMode } = useTheme();
-  const { apiUrl, setApiUrl, conn, dev, wallet, balances, importKey, newKey, pending, refreshPockets } = useApp();
+  const { apiUrl, setApiUrl, conn, dev, demo, wallet, balances, importKey, refreshPockets, pending } = useApp();
   const [draft, setDraft] = useState(apiUrl);
   const [test, setTest] = useState<{ state: "idle" | "busy" | "ok" | "fail"; text?: string }>({ state: "idle" });
   const [copied, setCopied] = useState(false);
-  const [replace, setReplace] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [pk, setPk] = useState("");
   const [keyErr, setKeyErr] = useState("");
   const [funds, setFunds] = useState<{ state: "idle" | "busy" | "ok" | "fail"; text?: string }>({ state: "idle" });
@@ -47,104 +31,57 @@ export default function Settings() {
     try {
       const r = await api.ping(url || ENV_API);
       const d = await detectDev(url || ENV_API);
-      setTest({ state: "ok", text: `Reached the server in ${r.ms} ms, ${r.sellers} sellers. ${d ? "This is the LOCAL FORK dev stack: fork money, RPC through the server, no BaseScan." : "This is the real server on Base Sepolia."}` });
+      setTest({ state: "ok", text: `Connected in ${r.ms} ms. ${d ? "This is the local test network." : "This is the test network (Base Sepolia)."}` });
       haptic.success();
     } catch {
-      setTest({ state: "fail", text: "Could not reach it. Phone and laptop need the same Wi-Fi, and the URL must use the laptop's LAN IP, not localhost." });
+      setTest({ state: "fail", text: "Could not reach it. Your phone and laptop need the same Wi-Fi, and the address must be your laptop's, not localhost." });
       haptic.error();
     }
   };
   const getFunds = async () => {
     if (!wallet) return;
     setFunds({ state: "busy" });
-    try { const r = await api.devFund(wallet.address); await refreshPockets(); setFunds({ state: "ok", text: `Added ${r.eth} ETH and ${r.usdc} USDC on the fork.` }); haptic.success(); }
-    catch { setFunds({ state: "fail", text: "The dev stack did not accept that. Is it running?" }); haptic.error(); }
+    try { await api.devFund(wallet.address); await refreshPockets(); setFunds({ state: "ok", text: "Added test money to your wallet." }); haptic.success(); }
+    catch { setFunds({ state: "fail", text: "The test network did not accept that. Is it running?" }); haptic.error(); }
   };
+  const network = demo ? "Demo data" : conn === "online" ? (dev ? "Local test network" : "Test network · Base Sepolia") : "Connecting…";
 
   return (
     <Screen>
-      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 18, gap: 8 }}>
-        <T v="headingLg">Settings</T>
-        <View style={{ flexDirection: "row", gap: 8 }}>{dev && <DevBadge />}</View>
-      </View>
+      <PageTitle title="Settings" sub={pending.length ? `${pending.length} request${pending.length > 1 ? "s" : ""} waiting for you` : undefined} />
 
-      <Group title="Connection">
-        <Card pad={0}>
-          <View style={{ padding: 16, gap: 10 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <T v="bodySm" weight="semi">API URL</T>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: conn === "online" ? c.ok : conn === "offline" ? c.refused : c.stepup }} />
-                <T v="caption" color="text2">{conn === "online" ? "Connected" : conn === "offline" ? "Offline" : "Connecting"}</T>
-              </View>
-            </View>
-            <Input value={draft} onChangeText={setDraft} onSubmitEditing={() => void setApiUrl(draft)} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={ENV_API} accessibilityLabel="API URL" className="font-mono text-sm" />
-            <T v="caption" color="text3">Use your laptop's LAN address, e.g. http://192.168.1.10:8787. Saved on this phone. Empty restores {ENV_API}.</T>
-            <Button label="Test connection" kind="secondary" icon="refresh" small loading={test.state === "busy"} onPress={runTest} />
-            {test.text && <T v="bodySm" color={test.state === "ok" ? "ok" : "refused"}>{test.text}</T>}
-          </View>
-          <Divider />
-          <View style={{ padding: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <T v="bodySm" weight="semi">Chain</T>
-            {dev ? <DevBadge /> : <T v="bodySm" color={conn === "online" ? "ok" : "text3"}>{conn === "online" ? "Base Sepolia" : "Not connected"}</T>}
-          </View>
+      <SectionHeader title="Wallet" />
+      <ListCard>
+        <ListRow a11y="Copy wallet address" avatar={<Avatar icon="wallet" />} title="Your wallet" sub={wallet ? shortAddr(wallet.address) : "Not ready"}
+          onPress={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }}
+          right={copied ? "Copied" : balances ? money(balances.usdc) : undefined} rightTone={copied ? "positive" : "ink"} />
+        {dev ? <ListRow a11y="Get test funds" onPress={getFunds} avatar={<Avatar icon="plus" />} title="Get test funds" sub={funds.text ?? "Adds test money to your wallet"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
+        <ListRow a11y="Import a key" onPress={() => setImporting(!importing)} avatar={<Avatar icon="key" />} title="Import a key" sub="Use a test key you already have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
+      </ListCard>
+      {importing ? (
+        <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
+          <T v="sub" color="ink2">Pockets owned by your current key can no longer be managed from this phone after you switch. Test keys only.</T>
+          <Field value={pk} onChangeText={setPk} placeholder="Private key (0x…)" autoCapitalize="none" autoCorrect={false} secureTextEntry accessibilityLabel="Private key" />
+          {!!keyErr && <T v="sub" color="negative">{keyErr}</T>}
+          <Button label="Import this key" small disabled={!isPrivateKey(pk)} onPress={async () => { try { await importKey(pk); setImporting(false); setPk(""); setKeyErr(""); haptic.warning(); } catch (e) { setKeyErr((e as Error).message); } }} />
+          <Button label="Cancel" kind="text" small onPress={() => { setImporting(false); setPk(""); setKeyErr(""); }} />
         </Card>
-      </Group>
+      ) : null}
 
-      <Group title="Owner key">
-        <Card>
-          <View style={{ gap: 10 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <Icon name="key" size={18} color={c.text2} />
-              <T v="bodySm" weight="semi">This phone creates pockets and co-signs payments</T>
-            </View>
-            <Press haptics="select" onPress={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }} style={{ backgroundColor: c.bgElev2, borderRadius: radius.md, padding: 12, minHeight: 44, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: c.hairline }} accessibilityLabel="Copy owner address">
-              <Mono size={12} style={[{ flex: 1 }, Platform.OS === "web" ? ({ wordBreak: "break-all" } as object) : null]}>{wallet?.address ?? "No key"}</Mono>
-              <Icon name={copied ? "check" : "copy"} size={16} color={copied ? c.ok : c.text3} />
-            </Press>
-            {balances && <T v="caption" color="text3">{usd(balances.usdc)} USDC · {Number(formatEther(balances.eth)).toFixed(4)} ETH</T>}
-            <T v="caption" color="text3">The key is stored in the iOS Keychain or Android Keystore and never leaves this phone.</T>
-          </View>
-        </Card>
-        {dev && (
-          <Card>
-            <View style={{ gap: 10 }}>
-              <T v="bodySm" weight="semi">Test funds (local fork only)</T>
-              <T v="caption" color="text2">Adds 1 ETH and 20 USDC to this address on the fork.</T>
-              <Button label="Get test funds" small loading={funds.state === "busy"} onPress={getFunds} />
-              {funds.text && <T v="bodySm" color={funds.state === "ok" ? "ok" : "refused"}>{funds.text}</T>}
-            </View>
-          </Card>
-        )}
-        <Alert icon={TriangleAlert} iconClassName="text-stepup" className="bg-stepup-soft border-stepup-line">
-          <AlertTitle className="text-stepup-fg">Testnet only</AlertTitle>
-          <AlertDescription>Test funds have no value. Do not put real money on this key.</AlertDescription>
-        </Alert>
-        {replace ? (
-          <Card>
-            <View style={{ gap: 10 }}>
-              <T v="bodySm">Replacing the key means pockets owned by the old key can no longer be revoked or co-signed from this phone. Back up the old key first.</T>
-              <Input value={pk} onChangeText={setPk} placeholder="Paste a testnet private key (0x…)" autoCapitalize="none" autoCorrect={false} secureTextEntry accessibilityLabel="New private key" className="font-mono text-sm" />
-              {!!keyErr && <T v="bodySm" color="refused">{keyErr}</T>}
-              <Button label="Import this key" small disabled={!isPrivateKey(pk)} onPress={async () => { try { await importKey(pk); setReplace(false); setPk(""); haptic.warning(); } catch (e) { setKeyErr((e as Error).message); } }} />
-              <Button label="Create a new key instead" kind="danger" small onPress={async () => { await newKey(); setReplace(false); haptic.warning(); }} />
-              <Button label="Cancel" kind="ghost" small onPress={() => { setReplace(false); setPk(""); setKeyErr(""); }} />
-            </View>
-          </Card>
-        ) : (
-          <Button label="Replace key" kind="secondary" icon="refresh" small onPress={() => setReplace(true)} />
-        )}
-      </Group>
+      <SectionHeader title="Network" />
+      <Card style={{ marginHorizontal: 20, gap: 12 }}>
+        <Field label="Server address" value={draft} onChangeText={setDraft} onSubmitEditing={() => void setApiUrl(draft)} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={ENV_API} accessibilityLabel="API URL" />
+        <T v="cap" color="muted">On a phone, use your laptop's address on the same Wi-Fi, for example http://192.168.1.10:8787. Empty uses {ENV_API}.</T>
+        <Button label="Test connection" kind="secondary" small loading={test.state === "busy"} onPress={runTest} />
+        {test.text ? <T v="sub" color={test.state === "ok" ? "positive" : "negative"}>{test.text}</T> : null}
+      </Card>
+      <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 10 }}>{network}</T>
 
-      <Group title="Appearance">
-        <Segmented options={[{ key: "system", label: "System" }, { key: "dark", label: "Dark" }, { key: "light", label: "Light" }]} value={mode} onChange={setMode} />
-      </Group>
-
-      <View style={{ alignItems: "center", gap: 8, paddingTop: 6 }}>
-        <Logo size={36} />
-        <T v="caption" color="text3">ChainBrain 链AI脑 · owner app · testnet build</T>
-        {pending.length > 0 && <T v="caption" color="stepup">{pending.length} request{pending.length > 1 ? "s" : ""} waiting</T>}
-      </View>
+      <SectionHeader title="About" />
+      <ListCard>
+        <ListRow avatar={<Avatar icon="shield" />} title="Test money only" sub="Do not put real money on this wallet" />
+        <ListRow avatar={<Avatar icon="bolt" />} title="ChainBrain" sub="Your agent spends only from the pockets you fund" />
+      </ListCard>
     </Screen>
   );
 }

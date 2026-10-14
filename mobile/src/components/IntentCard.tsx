@@ -1,43 +1,33 @@
-// The intent confirm card: the server's fixed three-line template (Buy / Price / Deadline), rendered in our style. Never rewritten by the AI.
+// The task confirmation card: the server's fixed three-line template (Buy / Price / Deadline), never rewritten by the AI.
 import React from "react";
 import { View } from "react-native";
-import { useTheme } from "../theme";
-import { Button } from "../ui/primitives";
+import { c } from "../tokens";
+import { Button } from "../ui/kit";
 import { T } from "../ui/Text";
-import { Icon } from "../ui/Icon";
 import { cleanText } from "../lib/sanitize";
-import { radius } from "../tokens";
 
 const LABEL: Record<string, string> = { Buy: "Buy", Price: "Limits", Deadline: "Deadline" };
 export const parseIntent = (text: string) =>
   cleanText(text, 600).split("\n").map((l) => { const i = l.indexOf(":"); return i > 0 && i < 12 ? { k: l.slice(0, i), v: l.slice(i + 1).trim() } : { k: "", v: l.trim() }; }).filter((x) => x.v);
 
-export function IntentCard({ text, onConfirm, onDecline, busy, error, compact }: { text: string; onConfirm?(): void; onDecline?(): void; busy?: boolean; error?: string | null; compact?: boolean }) {
-  const { c } = useTheme();
+export function IntentCard({ text, onConfirm, onDecline, busy, error, flat }: { text: string; onConfirm?(): void; onDecline?(): void; busy?: boolean; error?: string | null; flat?: boolean }) {
   const rows = parseIntent(text);
   return (
-    <View style={{ borderRadius: radius.lg, borderWidth: 1, borderColor: c.hairlineStrong, backgroundColor: c.bgElev1, overflow: "hidden" }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 12, backgroundColor: c.accentSoft }}>
-        <Icon name="sparkle" size={16} color={c.accent} />
-        <T v="bodySm" weight="semi" style={{ flex: 1 }}>Confirm this task</T>
-        <T v="caption" color="text3">fixed template</T>
-      </View>
-      <View style={{ padding: 14, gap: 10 }}>
-        {rows.map((r, i) => (
-          <View key={i} style={{ gap: 2 }}>
-            {r.k ? <T v="caption" color="text3">{(LABEL[r.k] ?? r.k).toUpperCase()}</T> : null}
-            <T v="bodySm" weight={r.k === "Buy" ? "semi" : undefined}>{r.v}</T>
-          </View>
-        ))}
-        {!compact && <T v="caption" color="text3">Your agent can only spend within this task. It is shown from a fixed template, not written by the AI.</T>}
-        {error ? <T v="bodySm" color="refused">{error}</T> : null}
-        {(onConfirm || onDecline) && (
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 2 }}>
-            {onDecline && <Button label="Decline" kind="secondary" small style={{ flex: 1 }} disabled={busy} onPress={onDecline} />}
-            {onConfirm && <Button label="Confirm" small style={{ flex: 1 }} loading={busy} onPress={onConfirm} />}
-          </View>
-        )}
-      </View>
+    <View style={{ borderRadius: 20, backgroundColor: flat ? c.canvas : c.canvas, padding: 16, gap: 12 }}>
+      <T v="row" w="semi">Your agent wants to start this task</T>
+      {rows.map((r, i) => (
+        <View key={i} style={{ gap: 1 }}>
+          {r.k ? <T v="cap" color="muted">{LABEL[r.k] ?? r.k}</T> : null}
+          <T v="body" w={r.k === "Buy" ? "semi" : "regular"}>{r.v}</T>
+        </View>
+      ))}
+      {error ? <T v="sub" color="negative">{error}</T> : null}
+      {(onConfirm || onDecline) && (
+        <View style={{ gap: 8, marginTop: 4 }}>
+          {onConfirm && <Button label="Confirm" loading={busy} onPress={onConfirm} />}
+          {onDecline && <Button label="Decline" kind="text" disabled={busy} onPress={onDecline} />}
+        </View>
+      )}
     </View>
   );
 }

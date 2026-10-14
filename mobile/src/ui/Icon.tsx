@@ -1,22 +1,20 @@
-// Lucide icons (design system: no emoji icons) behind the app's small icon vocabulary.
+// Lucide icons (1.75 stroke) behind the app's small icon vocabulary.
 import React from "react";
 import {
-  Activity, Ban, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Copy, ExternalLink, Globe, House, KeyRound, Layers, Lock, MessageCircle, Moon,
-  Play, Plus, RefreshCw, Send, Shield, ShieldAlert, ShieldCheck, ShieldOff, SlidersHorizontal, Sparkles, Tag, Trash2, TriangleAlert, Undo2, User, Wallet, X, Zap, ArrowDown, ArrowUp,
+  Activity, ArrowDownLeft, ArrowUp, Bell, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Copy, Globe, House, KeyRound, Layers, Lock, MessageCircle,
+  MoreHorizontal, Plus, RefreshCw, Send, ShieldAlert, SlidersHorizontal, Undo2, User, Wallet, X, Zap, TriangleAlert, CircleHelp, Ban,
   type LucideIcon,
 } from "lucide-react-native";
 
 const I = {
-  home: House, chat: MessageCircle, activity: Activity, settings: SlidersHorizontal, plus: Plus, undo: Undo2,
-  shield: Shield, shieldCheck: ShieldCheck, shieldAlert: ShieldAlert, shieldOff: ShieldOff, lock: Lock, ban: Ban,
-  x: X, check: Check, chevronRight: ChevronRight, chevronLeft: ChevronLeft, chevronDown: ChevronDown, copy: Copy, external: ExternalLink,
-  bolt: Zap, clock: Clock, send: Send, arrowUp: ArrowUp, arrowDown: ArrowDown, user: User, sparkle: Sparkles, key: KeyRound, globe: Globe,
-  layers: Layers, play: Play, wallet: Wallet, moon: Moon, alert: TriangleAlert, refresh: RefreshCw, trash: Trash2, tag: Tag,
+  home: House, chat: MessageCircle, activity: Activity, settings: SlidersHorizontal, plus: Plus, undo: Undo2, lock: Lock, x: X, check: Check,
+  chevronRight: ChevronRight, chevronLeft: ChevronLeft, chevronDown: ChevronDown, copy: Copy, clock: Clock, send: Send, arrowUp: ArrowUp, arrowIn: ArrowDownLeft,
+  user: User, key: KeyRound, globe: Globe, layers: Layers, wallet: Wallet, alert: TriangleAlert, refresh: RefreshCw, bell: Bell,
+  more: MoreHorizontal, bolt: Zap, shield: ShieldAlert, help: CircleHelp, ban: Ban,
 } satisfies Record<string, LucideIcon>;
-
 export type IconName = keyof typeof I;
 
-export function Icon({ name, size = 22, color = "#16181A", stroke = 1.75 }: { name: IconName; size?: number; color?: string; stroke?: number }) {
+export function Icon({ name, size = 22, color = "#111318", stroke = 1.75 }: { name: IconName; size?: number; color?: string; stroke?: number }) {
   const L = I[name];
   return <L size={size} color={color} strokeWidth={stroke} />;
 }

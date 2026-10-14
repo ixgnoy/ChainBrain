@@ -1,26 +1,32 @@
 import React from "react";
-import { View, type ScrollViewProps } from "react-native";
-import Animated from "react-native-reanimated";
+import { ScrollView, View, type ScrollViewProps } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "../theme";
+import { c } from "../tokens";
 import { TAB_H } from "./TabBar";
+import { T } from "./Text";
 
-export function Screen({ children, tabs = true, ...p }: ScrollViewProps & { children: React.ReactNode; tabs?: boolean }) {
-  const { c } = useTheme();
+/** Grey canvas with a scrolling column. Leaves room for the floating tab bar unless `tabs` is false. */
+export function Screen({ children, tabs = true, top = true, ...p }: ScrollViewProps & { children: React.ReactNode; tabs?: boolean; top?: boolean }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <Animated.ScrollView
+    <View style={{ flex: 1, backgroundColor: c.canvas }}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
         {...p}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[{ paddingTop: insets.top + 8, paddingBottom: (tabs ? TAB_H + insets.bottom : insets.bottom) + 24 }, p.contentContainerStyle]}
+        contentContainerStyle={[{ paddingTop: top ? insets.top + 12 : 0, paddingBottom: (tabs ? TAB_H : 0) + insets.bottom + 24 }, p.contentContainerStyle]}
       >
         {children}
-      </Animated.ScrollView>
+      </ScrollView>
     </View>
   );
 }
 
-/** Large screen title row. */
-export const Title = ({ children }: { children: React.ReactNode }) => <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 }}>{children}</View>;
+/** Serif page title (the only place the serif is used), left aligned, with an optional grey line below. */
+export function PageTitle({ title, sub }: { title: string; sub?: string }) {
+  return (
+    <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, gap: 4 }}>
+      <T v="title" accessibilityRole="header">{title}</T>
+      {sub ? <T v="body" color="ink2">{sub}</T> : null}
+    </View>
+  );
+}

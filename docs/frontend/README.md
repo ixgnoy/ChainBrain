@@ -6,11 +6,11 @@ Combined on 14 Oct 2026 on branch `feat/integrate` (local, not pushed). It is th
 
 | Folder | What | Docs |
 | --- | --- | --- |
-| `web/` | Owner and ops console. The team's wallet logic (browser wallet, pocket contract calls, USDC co-sign, intent card, agent question, red-team box) in the Ink & jade design with React Bits components: chat with per-turn trace, live trace with filters, pocket pane, three-step create wizard, approval dialog, Bank / Compliance tab, light and dark | [web.md](web.md) |
-| `mobile/` | Phone app for Expo Go. The team's key, chain and co-sign logic in the Ink & jade design on React Native Reusables + NativeWind: pocket cards, create wizard, slide-to-approve, hold-to-revoke, receipts, Activity, Settings | [mobile.md](mobile.md) |
+| `web/` | Seller dashboard: what a shop selling to AI agents sees (earnings, sales and refused attempts in plain language, catalogue, response content / red-team). No login; demo data when the server is down | [web.md](web.md) |
+| `mobile/` | The owner's app for Expo Go: pockets, ask the agent, approvals, activity, settings. No setup screen; demo data when the server is down | [mobile.md](mobile.md) |
 | `devstack/` | The team's real server and real contracts on a local fork of Base Sepolia, with a scripted agent instead of Claude. No API key, no faucet, no real money | [devstack/README.md](../../devstack/README.md) |
 
-Design system: [design-system/chainbrain/MASTER.md](../../design-system/chainbrain/MASTER.md) (Ink & jade, current). Earlier rationale: [research/design-brief.md](research/design-brief.md) (the violet/glass look it describes was replaced on 14 Oct 2026). Screenshots: [screenshots/](screenshots/).
+Design system: [design-system/chainbrain/MASTER.md](../../design-system/chainbrain/MASTER.md) (v2, clean bank after Ryt Bank and Revolut, light only). Reference screenshots: `reference/frontend/ryt-bank/` (gitignored).
 
 ## How the two builds were combined
 
@@ -22,7 +22,8 @@ Once: Node 24, pnpm, Foundry (`curl -L https://foundry.paradigm.xyz | bash`, the
 
 ```bash
 pnpm --dir devstack start        # wallet API :8787, sellers :4021, local chain; prints the LAN URL for the phone
-pnpm --dir web dev               # http://localhost:5173 ; uses the "Dev signer", no MetaMask needed
+pnpm --dir web dev               # http://localhost:5173 seller dashboard, no login
+pnpm --dir devstack seed         # optional: real agent purchases for the dashboard to show
 ```
 
 ## Open it on your phone
@@ -47,9 +48,9 @@ Both apps ask `GET /dev/health` at start. On the dev stack they show a **LOCAL F
 
 | Suite | Result |
 | --- | --- |
-| End-to-end, `pnpm --dir devstack e2e` (web and phone in two browsers, scenes 1-8, Bank tab, regulator view) | 70/70, three runs on fresh stacks |
-| Web, `pnpm --dir web test`, `build`, `lint` | 39/39, clean |
-| Phone, `npm test`, `npx tsc --noEmit`, `npx expo export --platform web` and `ios`, `npx expo-doctor` | 15/15 (incl. the team's co-sign payload test), clean, both exports build, 21/21 |
+| End-to-end, `pnpm --dir devstack e2e` (phone: scenes 1-3 and 7, approvals, receipt, revoke; web: seller dashboard after `seed`, demo mode, 390 px) | 45/45 on a fresh stack (14 Oct 2026) |
+| Web, `pnpm --dir web test`, `build`, `lint` | 24/24, clean |
+| Phone, `npm test`, `npx tsc --noEmit`, `npx expo export --platform web` and `ios`, `npx expo-doctor` | 19/19 (incl. the team's co-sign payload test), clean, both exports build, 21/21 |
 | Dev stack, `pnpm --dir devstack test` | 15/15 |
 | Team server, `cd server && pnpm test`, `SCENE_REPLAY=1 pnpm test:scenes` | 37 passed (6 skipped outside replay), 6/6 |
 
@@ -63,7 +64,8 @@ Before the end-to-end test: build `web/dist` and the phone web export (`cd mobil
 
 ## Known gaps
 
-- The combined e2e run can flake: when the web and phone browsers pay DataLite in the same second, the dev stack's settlement can return HTTP 402 (`SETTLEMENT_FAILED`) for one of them. Seen once in two runs after the Ink & jade redesign; `--phone-only` and a re-run both passed (24/24, 70/70). It is a dev stack timing issue, not UI.
+- Two payments settling in the same second can make the dev stack refuse one (HTTP 402, `SETTLEMENT_FAILED`). The e2e therefore runs the phone flow and the web flow one after the other.
+- The web no longer has an owner console (chat, approvals, Bank / Compliance view); the owner side is the phone app.
 - Scene 5's forced transfer reverts on-chain, but the server publishes no event for it, so neither app shows it. Show it on BaseScan (real chain) or with `pnpm --dir devstack force-transfer <pocket>` output.
 - The server keeps events in memory only, so the Bank tab and Activity show what happened since the server started.
 - Web: pockets are listed from the browser's own list; there is no discovery from chain logs. The phone has "Add an existing pocket by address"; the web does not yet.

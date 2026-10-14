@@ -2,20 +2,18 @@
 import React, { useCallback, useState } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, { Extrapolation, interpolate, interpolateColor, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
-import { useTheme } from "../theme";
+import Animated, { Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { haptic } from "../haptics";
 import { useReduceMotion, settle } from "./motion";
-import { motion, radius } from "../tokens";
+import { c, motion } from "../tokens";
 import { T } from "./Text";
 import { Icon } from "./Icon";
 
-const THUMB = 52, PAD = 4;
+const THUMB = 56, PAD = 4;
 
-export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, disabled, tone = "accent" }: {
-  label: string; doneLabel?: string; onConfirm: () => Promise<void>; disabled?: boolean; tone?: "accent" | "ok";
+export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, disabled }: {
+  label: string; doneLabel?: string; onConfirm: () => Promise<void>; disabled?: boolean;
 }) {
-  const { c } = useTheme();
   const [w, setW] = useState(0);
   const [state, setState] = useState<"idle" | "busy" | "done">("idle");
   const reduce = useReduceMotion();
@@ -48,17 +46,16 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, disabled,
       else settle(x, 0, reduce, motion.spring.ui);
     });
 
-  const to = tone === "ok" ? c.ok : c.accent;
   const fill = useAnimatedStyle(() => ({
     width: x.value + THUMB + PAD * 2,
-    backgroundColor: interpolateColor(x.value / max, [0, 0.7, 1], [to, to, c.ok]),
     opacity: interpolate(x.value, [0, 12], [0.0, 1], Extrapolation.CLAMP),
   }));
-  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }, { scale: 1 - done.value * 0.0 }] }));
+  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
   const labelStyle = useAnimatedStyle(() => ({ opacity: interpolate(x.value, [0, max * 0.5], [1, 0], Extrapolation.CLAMP) * (1 - done.value) }));
   const check = useAnimatedStyle(() => ({ opacity: done.value, transform: [{ scale: 0.4 + done.value * 0.6 }] }));
   const doneBg = useAnimatedStyle(() => ({ opacity: done.value }));
 
+  const R = (THUMB + PAD * 2) / 2;
   return (
     <GestureDetector gesture={pan}>
       <View
@@ -66,19 +63,19 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, disabled,
         accessible accessibilityRole="button" accessibilityLabel={label}
         accessibilityActions={[{ name: "activate" }]}
         onAccessibilityAction={() => { if (!disabled && state === "idle") fire(); }}
-        style={{ height: THUMB + PAD * 2, borderRadius: radius.md, backgroundColor: c.bgElev2, borderWidth: 1, borderColor: c.hairlineStrong, justifyContent: "center", overflow: "hidden", opacity: disabled ? 0.45 : 1 }}
+        style={{ height: THUMB + PAD * 2, borderRadius: R, backgroundColor: c.accentSoft, justifyContent: "center", overflow: "hidden", opacity: disabled ? 0.45 : 1 }}
       >
-        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: radius.md }, fill]} />
-        <Animated.View style={[{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: c.ok }, doneBg]} />
+        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: R, backgroundColor: c.accent }, fill]} />
+        <Animated.View style={[{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: c.accent }, doneBg]} />
         <Animated.View style={[{ position: "absolute", left: THUMB + PAD * 2, right: 20, alignItems: "center" }, labelStyle]}>
-          <T v="body" weight="semi" color="text2">{state === "busy" ? "Signing…" : label}</T>
+          <T v="row" w="semi" color="accent">{state === "busy" ? "Signing…" : label}</T>
         </Animated.View>
         <Animated.View style={[{ position: "absolute", left: 0, right: 0, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8 }, check]}>
-          <Icon name="check" size={22} color={c.onAccent} stroke={2.4} />
-          <T v="body" weight="semi" style={{ color: c.onAccent }}>{doneLabel}</T>
+          <Icon name="check" size={22} color={c.onAccent} stroke={2.2} />
+          <T v="row" w="semi" style={{ color: c.onAccent }}>{doneLabel}</T>
         </Animated.View>
-        <Animated.View style={[{ marginLeft: PAD, width: THUMB, height: THUMB, borderRadius: radius.md - 2, backgroundColor: c.bgElev1, borderWidth: 1, borderColor: c.hairlineStrong, alignItems: "center", justifyContent: "center" }, thumb]}>
-          <Icon name={state === "done" ? "check" : "chevronRight"} size={24} color={state === "done" ? c.ok : c.text} stroke={2.4} />
+        <Animated.View style={[{ marginLeft: PAD, width: THUMB, height: THUMB, borderRadius: THUMB / 2, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }, thumb]}>
+          <Icon name={state === "done" ? "check" : "chevronRight"} size={24} color={c.accent} stroke={2.2} />
         </Animated.View>
       </View>
     </GestureDetector>

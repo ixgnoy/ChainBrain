@@ -1,41 +1,22 @@
 import React from "react";
-import { View } from "react-native";
-import { useTheme } from "../theme";
 import { useApp } from "../store";
-import { Press } from "../ui/primitives";
-import { T } from "../ui/Text";
-import { Icon, type IconName } from "../ui/Icon";
+import { Avatar, ListRow } from "../ui/kit";
 import { cleanText } from "../lib/sanitize";
-import { reasonText } from "../lib/shared";
-import { usd, timeLabel, shortAddr } from "../lib/util";
-import { radius } from "../tokens";
+import { describeRow } from "../lib/plain";
+import { stamp } from "../lib/util";
 import type { LedgerRow } from "../lib/events";
-import { RowVerdict } from "./Verdict";
 
-export const rowTitle = (row: LedgerRow, name: string) =>
-  row.kind === "disclosure" ? `${name} asked for your data` : row.kind === "intent" ? "Task" : row.kind === "approval" ? `Approval for ${name}` : name;
-const ICON: Record<LedgerRow["kind"], IconName> = { payment: "arrowUp", refusal: "ban", blocked: "shield", disclosure: "shieldAlert", approval: "shieldCheck", intent: "check" };
-
-export function ActivityRow({ row, onPress, compact }: { row: LedgerRow; onPress?: () => void; compact?: boolean }) {
-  const { c } = useTheme();
+/** One activity item as a Ryt row: seller, "Research data · 14 Oct, 1:32 PM", amount, status under it. */
+export function ActivityRow({ row, onPress, last, showPocket, timeOnly }: { row: LedgerRow; onPress?: () => void; last?: boolean; showPocket?: boolean; timeOnly?: boolean }) {
   const { sellerName, findPocket } = useApp();
-  const name = cleanText(sellerName(row.sellerId), 50);
-  const pocket = findPocket(row.pocket);
-  const bad = row.outcome === "refused" || row.outcome === "declined";
-  const note = row.kind === "intent" ? cleanText(row.text?.split("\n")[0], 80) : bad && row.reasons[0] ? reasonText(row.reasons[0]) : row.kind === "disclosure" ? (row.asked ?? []).join(", ") : row.sku ? cleanText(row.sku, 60) : undefined;
+  const seller = cleanText(sellerName(row.sellerId), 40);
+  const pocket = showPocket ? findPocket(row.pocket) : undefined;
+  const v = describeRow(row, seller, timeOnly ? new Date(row.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : stamp(row.at), pocket ? cleanText(pocket.name, 24) : undefined);
   return (
-    <Press onPress={onPress} haptics="select" scale={0.985} style={{ flexDirection: "row", gap: 12, paddingVertical: 12, paddingHorizontal: 20, alignItems: "flex-start" }}>
-      <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: bad ? c.refusedBg : row.outcome === "pending" ? c.stepupBg : c.bgElev2, borderWidth: 1, borderColor: bad ? c.refusedBorder : row.outcome === "pending" ? c.stepupBorder : c.hairline, alignItems: "center", justifyContent: "center" }}>
-        <Icon name={ICON[row.kind]} size={20} color={bad ? c.refused : row.outcome === "pending" ? c.stepup : row.outcome === "paid" ? c.ok : c.text2} />
-      </View>
-      <View style={{ flex: 1, gap: 4 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
-          <T v="title" numberOfLines={1} style={{ flex: 1 }}>{rowTitle(row, name)}</T>
-          {row.amount != null && row.kind !== "disclosure" && <T v="title" num color={bad ? "text3" : "text"} style={bad ? { textDecorationLine: "line-through" } : undefined}>{usd(row.amount)}</T>}
-        </View>
-        <T v="bodySm" color="text3" numberOfLines={1}>{[pocket ? cleanText(pocket.name, 24) : shortAddr(row.pocket), timeLabel(row.at)].join(" · ")}{!compact && note ? ` · ${note}` : ""}</T>
-        <RowVerdict row={row} />
-      </View>
-    </Press>
+    <ListRow
+      last={last} onPress={onPress} a11y={`${v.title}, ${v.rightSub ?? ""} ${v.right ?? ""}`}
+      avatar={<Avatar label={v.avatar.label} icon={v.avatar.icon} tone={v.avatar.tone} />}
+      title={v.title} sub={v.sub} right={v.right} rightTone={v.rightTone} rightSub={v.rightSub} rightSubTone={v.rightSubTone}
+    />
   );
 }

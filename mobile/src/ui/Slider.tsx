@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
-import { useTheme } from "../theme";
+import { c } from "../tokens";
 import { haptic } from "../haptics";
 
 const THUMB = 30;
 
 /** Stepped slider with haptic ticks. Values are numbers in `step` increments. */
 export function Slider({ min, max, step, value, onChange, accent }: { min: number; max: number; step: number; value: number; onChange: (v: number) => void; accent?: string }) {
-  const { c } = useTheme();
   const [w, setW] = useState(0);
   const span = Math.max(w - THUMB, 1);
   const frac = max > min ? (value - min) / (max - min) : 0;
@@ -39,9 +38,9 @@ export function Slider({ min, max, step, value, onChange, accent }: { min: numbe
       <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: 44, justifyContent: "center" }} accessible accessibilityRole="adjustable" accessibilityValue={{ min, max, now: value }}
         accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
         onAccessibilityAction={(e) => onChange(Math.min(max, Math.max(min, Math.round((value + (e.nativeEvent.actionName === "increment" ? step : -step)) * 1e6) / 1e6)))}>
-        <View style={{ height: 8, borderRadius: 4, backgroundColor: c.bgElev3 }} />
+        <View style={{ height: 8, borderRadius: 4, backgroundColor: c.fill }} />
         <Animated.View style={[{ position: "absolute", left: 0, height: 8, borderRadius: 4, backgroundColor: accent ?? c.accent }, fill]} />
-        <Animated.View style={[{ position: "absolute", left: 0, width: THUMB, height: THUMB, borderRadius: THUMB / 2, backgroundColor: c.bgElev1, borderWidth: 2, borderColor: accent ?? c.accent }, thumb]} />
+        <Animated.View style={[{ position: "absolute", left: 0, width: THUMB, height: THUMB, borderRadius: THUMB / 2, backgroundColor: c.card, borderWidth: 3, borderColor: accent ?? c.accent }, thumb]} />
       </View>
     </GestureDetector>
   );

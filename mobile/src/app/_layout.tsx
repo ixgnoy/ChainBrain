@@ -4,32 +4,36 @@ import { Platform, View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
+import { colorScheme } from "nativewind";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useFonts, IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold } from "@expo-google-fonts/ibm-plex-sans";
-import { IBMPlexMono_500Medium } from "@expo-google-fonts/ibm-plex-mono";
-import { ThemeProvider, useTheme } from "../theme";
+import { useFonts, PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold } from "@expo-google-fonts/plus-jakarta-sans";
+import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces";
+import { c } from "../tokens";
 import { AppProvider, useApp } from "../store";
-import { Setup } from "../components/Setup";
 import { ApprovalSheet } from "../components/ApprovalSheet";
 import { QuestionSheet } from "../components/QuestionSheet";
 import { ReceiptSheet } from "../components/ReceiptSheet";
 import { ActionSheet } from "../components/ActionSheet";
-import { RevokeFlash } from "../components/RevokeFlash";
+import { ToastHost } from "../ui/Toast";
+import { T } from "../ui/Text";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+// Light only: ignore the system colour scheme.
+colorScheme.set("light");
 
 function Shell() {
-  const { c, dark } = useTheme();
   const { keyState } = useApp();
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <StatusBar style={dark ? "light" : "dark"} />
-      {keyState === "none" ? (
-        <Setup />
-      ) : keyState === "loading" ? null : (
+    <View style={{ flex: 1, backgroundColor: c.canvas }}>
+      <StatusBar style="dark" />
+      {keyState === "loading" ? null : keyState === "none" ? (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
+          <T v="body" color="ink2" style={{ textAlign: "center" }}>This device could not create a secure key. Please restart the app.</T>
+        </View>
+      ) : (
         <>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg }, animation: "slide_from_right" }}>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.canvas }, animation: "slide_from_right" }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="pocket/[id]" />
             <Stack.Screen name="create" options={{ presentation: Platform.OS === "web" ? undefined : "modal", animation: Platform.OS === "web" ? "fade" : undefined }} />
@@ -38,7 +42,7 @@ function Shell() {
           <QuestionSheet />
           <ReceiptSheet />
           <ActionSheet />
-          <RevokeFlash />
+          <ToastHost />
         </>
       )}
     </View>
@@ -46,28 +50,19 @@ function Shell() {
 }
 
 export default function RootLayout() {
-  const [loaded] = useFonts({ IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold, IBMPlexMono_500Medium });
+  const [loaded] = useFonts({ PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, Fraunces_600SemiBold });
   useEffect(() => { if (loaded) SplashScreen.hideAsync().catch(() => {}); }, [loaded]);
   if (!loaded) return null;
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <Frame>
+      {/* on web the app is a 480 px phone column on the same grey canvas */}
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: c.canvas, alignItems: "center" }}>
+        <View style={{ flex: 1, width: "100%", maxWidth: Platform.OS === "web" ? 480 : undefined }}>
           <AppProvider>
             <Shell />
           </AppProvider>
-        </Frame>
-      </ThemeProvider>
+        </View>
+      </GestureHandlerRootView>
     </SafeAreaProvider>
-  );
-}
-
-/** Outer frame: on web the app is a 480 px phone column; the gutter takes the canvas colour of the current theme. */
-function Frame({ children }: { children: React.ReactNode }) {
-  const { c } = useTheme();
-  return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: c.bg, alignItems: "center" }}>
-      <View style={{ flex: 1, width: "100%", maxWidth: Platform.OS === "web" ? 480 : undefined }}>{children}</View>
-    </GestureHandlerRootView>
   );
 }

@@ -2,20 +2,18 @@
 // USDC TransferWithAuthorization the wallet built (POST /api/approvals/:id {approved, signature}).
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, View, useWindowDimensions } from "react-native";
-import { useTheme } from "../theme";
 import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
-import { Button, Chip } from "../ui/primitives";
-import { T, Mono } from "../ui/Text";
+import { Avatar, Button, Details } from "../ui/kit";
+import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
-import { Orb } from "../ui/Orb";
 import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
 import { authOf, authExpired, type Approval } from "../lib/events";
 import { parseUsd } from "../lib/shared";
 import { usd, shortAddr } from "../lib/util";
-import { radius } from "../tokens";
+import { c } from "../tokens";
 import { IntentCard } from "./IntentCard";
 
 export function describeApprovalError(code: string): string {
@@ -46,9 +44,8 @@ export function ApprovalSheet() {
 }
 
 function Body({ a, queue }: { a: Approval; queue: number }) {
-  const { c } = useTheme();
   const { height } = useWindowDimensions();
-  const { findPocket, sellerName, answer, signApprove, wallet, setApprovalOpen } = useApp();
+  const { findPocket, sellerName, answer, signApprove, wallet, setApprovalOpen, cfg } = useApp();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const pocket = findPocket(a.pocket);
@@ -85,84 +82,63 @@ function Body({ a, queue }: { a: Approval; queue: number }) {
 
   return (
     <View>
-      <ScrollView style={{ maxHeight: Math.max(240, height * 0.92 - 230) }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 16 }} showsVerticalScrollIndicator={false}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: c.stepupBg, borderWidth: 1, borderColor: c.stepupBorder, alignItems: "center", justifyContent: "center" }}>
-            <Icon name={isPay ? "shieldAlert" : "sparkle"} size={22} color={c.stepup} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <T v="headingMd" numberOfLines={1}>{isPay ? "Approve payment?" : "Confirm the task?"}</T>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
-              <Chip kind="stepup" label="Needs you" /><T v="caption" color="text2">{pocket ? `${cleanText(pocket.name, 30)} pocket` : shortAddr(a.pocket)}</T>
-              {queue > 1 && <T v="caption" color="stepup">{queue - 1} more waiting</T>}
-            </View>
-          </View>
-        </View>
-
+      <ScrollView style={{ maxHeight: Math.max(240, height * 0.92 - 230) }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 20 }} showsVerticalScrollIndicator={false}>
         {isPay ? (
           <>
-            {a.text ? (
-              <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
-                <Orb size={26} state="waiting" />
-                <T v="bodySm" style={{ flex: 1 }}>{cleanText(a.text, 400)}</T>
-              </View>
-            ) : null}
-            <View style={{ backgroundColor: c.bgElev2, borderRadius: radius.lg, padding: 16, gap: 10, borderWidth: 1, borderColor: c.hairline }}>
-              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-                <T v="displayLg" num>{amount ?? "?"}</T><T v="bodySm" weight="semi" color="text2">USDC</T>
-              </View>
-              <View>
-                <T v="bodySm" weight="semi">{seller}</T>
-                <T v="caption" color="text3" numberOfLines={2}>{cleanText(a.data?.description ?? a.data?.sku, 120)}</T>
+            <View style={{ alignItems: "center", gap: 6, paddingTop: 4 }}>
+              <T v="row" w="semi" color="ink2">Approve payment?</T>
+              <T v="balance" accessibilityLabel={`US$${amount ?? "unknown"}`}>US${amount ?? "?"}</T>
+              <T v="sub" color="muted">{pocket ? `From ${cleanText(pocket.name, 30)}` : `From ${shortAddr(a.pocket)}`}{queue > 1 ? ` · ${queue - 1} more waiting` : ""}</T>
+            </View>
+            <View style={{ backgroundColor: c.canvas, borderRadius: 20, flexDirection: "row", alignItems: "center", gap: 16, padding: 16 }}>
+              <Avatar label={seller} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <T v="row" numberOfLines={1}>{seller}</T>
+                <T v="sub" color="muted" numberOfLines={2}>{cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment"}</T>
               </View>
             </View>
-            {a.data?.intent ? (
-              <View style={{ gap: 8 }}>
-                <T v="caption" color="text3">YOUR CONFIRMED TASK</T>
-                <View style={{ borderRadius: radius.md, borderWidth: 1, borderColor: c.hairline, backgroundColor: c.bgElev1, padding: 12 }}>
-                  <T v="mono" color="text2" style={{ fontSize: 13, lineHeight: 19 }}>{cleanText(a.data.intent, 500)}</T>
-                </View>
-              </View>
-            ) : null}
-            <View style={{ gap: 4 }}>
-              <T v="caption" color="text3">WHAT YOU SIGN</T>
-              <T v="bodySm" color="text2">A USDC transfer authorization from this pocket to {seller}, valid for this one payment for 10 minutes. It moves no money from your main wallet.</T>
-              {auth ? <Mono size={12} color="text3">to {shortAddr(auth.to)} · nonce {auth.nonce.slice(0, 10)}…</Mono> : null}
-            </View>
+            {a.text ? <T v="body" color="ink2">{cleanText(a.text, 400)}</T> : null}
+            <T v="cap" color="muted">Your signature approves this one payment for the next 10 minutes. No money leaves your main wallet.</T>
+            <Details rows={[
+              ...(a.data?.intent ? [["Task you confirmed", cleanText(a.data.intent, 300)] as [string, string]] : []),
+              ["Pays to", auth ? shortAddr(auth.to) : "n/a"], ["Authorization", auth ? `${auth.nonce.slice(0, 10)}…` : "n/a"],
+            ]} />
           </>
         ) : (
-          <IntentCard text={a.text} compact />
+          <>
+            <View style={{ gap: 4 }}>
+              <T v="section">Confirm the task?</T>
+              <T v="sub" color="muted">{pocket ? `${cleanText(pocket.name, 30)} pocket` : shortAddr(a.pocket)}{queue > 1 ? ` · ${queue - 1} more waiting` : ""}</T>
+            </View>
+            <IntentCard text={a.text} />
+          </>
         )}
-
-        {expired && isPay ? <T v="bodySm" color="stepup">The 10-minute window passed. The agent will ask again if it still wants this.</T> : null}
+        {expired && isPay ? <T v="sub" color="warning">The 10-minute window passed. The agent will ask again if it still wants this.</T> : null}
         {error && (
-          <View style={{ backgroundColor: c.refusedBg, borderColor: c.refusedBorder, borderWidth: 1, borderRadius: radius.md, padding: 12, flexDirection: "row", gap: 10 }}>
-            <Icon name="alert" size={18} color={c.refused} />
-            <T v="bodySm" color="refused" style={{ flex: 1 }}>{error}</T>
+          <View style={{ backgroundColor: c.negativeSoft, borderRadius: 16, padding: 14, flexDirection: "row", gap: 10 }}>
+            <Icon name="alert" size={18} color={c.negative} />
+            <T v="sub" color="negative" style={{ flex: 1 }}>{error}</T>
           </View>
         )}
       </ScrollView>
 
-      <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 10 }}>
+      <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}>
         {isPay ? (
           owned && wallet ? (
             <>
               <SlideToConfirm key={a.id + (error ?? "")} label="Slide to approve" doneLabel="Approved" onConfirm={approve} disabled={busy || expired} />
-              <Button label="Decline" kind="secondary" onPress={decline} loading={busy} />
+              <Button label="Decline" kind="text" onPress={decline} loading={busy} />
             </>
           ) : (
-            <View style={{ gap: 10 }}>
-              <View style={{ backgroundColor: c.infoBg, borderColor: c.infoBorder, borderWidth: 1, borderRadius: radius.md, padding: 14, flexDirection: "row", gap: 10, alignItems: "center" }}>
-                <Icon name="globe" size={20} color={c.info} />
-                <View style={{ flex: 1 }}><T v="body" weight="semi">Another key owns this pocket</T><T v="bodySm" color="text2">Approve it on the device that created the pocket.</T></View>
-              </View>
+            <>
+              <T v="sub" color="ink2" style={{ textAlign: "center" }}>Another key owns this pocket. Approve it on the device that created the pocket.</T>
               <Button label="Close" kind="secondary" onPress={() => setApprovalOpen(false)} />
-            </View>
+            </>
           )
         ) : (
           <>
             <Button label="Confirm task" onPress={confirmIntent} loading={busy} />
-            <Button label="Decline" kind="secondary" onPress={decline} disabled={busy} />
+            <Button label="Decline" kind="text" onPress={decline} disabled={busy} />
           </>
         )}
       </View>
