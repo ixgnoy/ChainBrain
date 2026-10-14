@@ -8,22 +8,34 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/geist": "5.3.0",
     "@fontsource-variable/geist-mono": "5.3.0",
-    "@phosphor-icons/react": "2.1.10",
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource-variable/inter-tight": "5.3.0",
+    "@radix-ui/react-dialog": "1.3.0",
+    "@radix-ui/react-tooltip": "1.4.0",
+    "clsx": "2.1.1",
+    "lucide-react": "1.55.0",
+    "motion": "14.1.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "sonner": "2.0.8",
+    "tailwind-merge": "3.7.0",
     "viem": "2.57.4"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@tailwindcss/vite": "4.3.3",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
+    "jsdom": "30.1.2",
     "oxlint": "1.88.0",
+    "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
     "vite": "8.3.4",
     "vitest": "5.0.4"

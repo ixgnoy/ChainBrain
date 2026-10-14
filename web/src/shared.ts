@@ -52,6 +52,15 @@ export const REASONS: Record<string, string> = {
   NOT_THIS_AGENT: "This pocket belongs to a different agent key",
 };
 
+/** Which layer produces a reason code (api spec section 6.1). */
+export const reasonLayer = (code: string): string =>
+  ["SELLER_NOT_ALLOWED", "OVER_CAP", "OVER_BUDGET", "POCKET_REVOKED", "POCKET_EXPIRED"].includes(code) ? "Pocket contract"
+  : ["PRICE_ABOVE_INTENT", "INTENT_TOTAL_REACHED", "INTENT_ITEMS_REACHED", "INTENT_EXPIRED", "INTENT_NOT_CONFIRMED"].includes(code) ? "Intent check"
+  : ["NEEDS_OWNER_APPROVAL", "APPROVAL_EXPIRED", "OWNER_DECLINED"].includes(code) ? "Owner approval"
+  : ["DISCLOSURE_REFUSED", "SIGNATURE_TYPE_NOT_ALLOWED"].includes(code) ? "Content scan"
+  : ["QUOTE_MISMATCH", "QUOTE_ALREADY_PAID", "QUOTE_UNKNOWN"].includes(code) ? "Quote check"
+  : code === "NOT_THIS_AGENT" ? "Agent key" : code === "SETTLEMENT_FAILED" ? "Settlement" : "Wallet";
+
 export const shortAddr = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
 export const txUrl = (h: string) => `https://sepolia.basescan.org/tx/${h}`;
 export const addrUrl = (a: string) => `https://sepolia.basescan.org/address/${a}`;
@@ -60,7 +69,19 @@ export type Seller = { id: string; name: string; category: string; payTo: Addres
 export type Config = { agent: Address; factory: Address; usdc: Address; sellersUrl: string; sellers: Seller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
 
 let cfg: Promise<Config> | undefined;
-export const loadConfig = () => (cfg ??= fetch(`${API}/api/config`).then((r) => r.json()));
+/** Cached after the first success. A failure (server down, 500 plain text) is not cached, so a retry can succeed. */
+export const loadConfig = () => {
+  cfg ??= fetch(`${API}/api/config`)
+    .then((r) => {
+      if (!r.ok) throw new Error(`config HTTP ${r.status}`);
+      return r.json() as Promise<Config>;
+    })
+    .catch((e) => {
+      cfg = undefined;
+      throw e;
+    });
+  return cfg;
+};
 
 export const store = {
   get<T>(k: string, fallback: T): T {
