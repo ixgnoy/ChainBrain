@@ -121,6 +121,9 @@ export default function AgentChat() {
   const [kb, setKb] = useState(false);
   // optimistic bubble: shown the instant the owner sends, until the store has the real turn (it polls once before adding it)
   const [sent, setSent] = useState<{ text: string; n: number } | null>(null);
+  // a long session keeps the latest exchanges in view; older ones fold behind one quiet row
+  const [showAll, setShowAll] = useState(false);
+  useEffect(() => setShowAll(false), [active?.address]);
   const scroll = useRef<ScrollView>(null);
   const stick = useRef(true);
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -174,6 +177,7 @@ export default function AgentChat() {
   const chips = chipItems.map((x) => x.label);
   const chipDelay = useStagger(chips, 40, 8);
   const last = turns.at(-1);
+  const hidden = showAll ? 0 : Math.max(0, turns.length - 3);
   const canStop = !!active && active.owned && !!wallet && !active.revoked && Number(active.expiresAt) * 1000 > Date.now();
   const stopped = active?.revoked ? lastStepText(mine, sellerName) : null;
   const stopTx = active ? ownerTxs.filter((t) => t.kind === "revoke" && sameAddr(t.pocket, active.address)).at(-1) : undefined;
@@ -227,7 +231,15 @@ export default function AgentChat() {
               </View>
             </Rise>
           )}
-          {turns.map((t: Turn, i) => {
+          {hidden > 0 ? (
+            <Press kind="row" haptics="select" onPress={() => setShowAll(true)} accessibilityRole="button" accessibilityLabel={`Show ${hidden} earlier messages`}
+              style={{ alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: c.fill }}>
+              <Icon name="chevronUp" size={14} color={c.ink2} />
+              <T v="cap" w="medium" color="ink2">{hidden} earlier {hidden === 1 ? "message" : "messages"}</T>
+            </Press>
+          ) : null}
+          {turns.slice(hidden).map((t: Turn, k) => {
+            const i = hidden + k;
             const evs = sliceTurn(mine, t.fromAt, t.toAt);
             const disclosures = evs.filter((e) => e.type === "disclosure");
             const reply = t.reply ?? replyOf(evs);

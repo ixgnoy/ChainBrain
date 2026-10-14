@@ -17,7 +17,7 @@ import { NEVER } from "../lib/shared";
 import { parseUsd } from "../lib/shared";
 import { usd, shortAddr } from "../lib/util";
 import { c } from "../tokens";
-import { IntentCard } from "./IntentCard";
+import { IntentCard, parseIntent } from "./IntentCard";
 import { SheetSuccess } from "./SheetSuccess";
 import { ErrorNote } from "./ErrorNote";
 
@@ -110,21 +110,26 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
               <T v="balance" accessibilityLabel={`US$${amount ?? "unknown"}`}>US${amount ?? "?"}</T>
               <T v="sub" color="muted">{pocket ? `From ${cleanText(pocket.name, 30)}` : `From ${shortAddr(a.pocket)}`}{queue > 1 ? ` · ${queue - 1} more waiting` : ""}</T>
             </View>
-            <View style={{ backgroundColor: c.canvas, borderRadius: 20, flexDirection: "row", alignItems: "center", gap: 16, padding: 16 }}>
-              <Avatar label={seller} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <T v="row" numberOfLines={1}>{seller}</T>
-                <T v="sub" color="muted" numberOfLines={2}>{cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment"}</T>
+            <View style={{ backgroundColor: c.canvas, borderRadius: 20, padding: 16, gap: 14 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                <Avatar label={seller} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <T v="row" w="semi" numberOfLines={1}>{seller}</T>
+                  <T v="sub" color="muted" numberOfLines={2}>{cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment"}</T>
+                </View>
+              </View>
+              {a.text ? <View style={{ borderLeftWidth: 2, borderLeftColor: c.line, paddingLeft: 12, gap: 2 }}><T v="cap" color="muted">Your agent says</T><T v="sub" color="ink2">{cleanText(a.text, 400)}</T></View> : null}
+            </View>
+            <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: c.warningSoft, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12 }}>
+              <Icon name="clock" size={18} color={c.warning} />
+              <View style={{ flex: 1, gap: 6 }}>
+                <T v="sub" color="warning">{needsText}</T>
+                <CodePill code="NEEDS_OWNER_APPROVAL" tone="warning" />
               </View>
             </View>
-            {a.data?.intent ? <IntentCard text={a.data.intent} title="Task you confirmed" /> : null}
-            <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: c.warningSoft, borderRadius: 16, padding: 14 }}>
-              <Icon name="clock" size={18} color={c.warning} />
-              <View style={{ flex: 1, gap: 6 }}><T v="sub" color="warning">{needsText}</T><CodePill code="NEEDS_OWNER_APPROVAL" tone="warning" /></View>
-            </View>
-            {a.text ? <View style={{ gap: 2 }}><T v="cap" color="muted">Your agent says</T><T v="body" color="ink2">{cleanText(a.text, 400)}</T></View> : null}
             <T v="cap" color="muted">Your signature approves this one payment for the next 10 minutes. No money leaves your main wallet.</T>
-            <Details rows={[
+            <Details title="Task and signature" rows={[
+              ...(a.data?.intent ? parseIntent(a.data.intent).map((r): [string, string] => [r.k === "Price" ? "Limits" : r.k === "Buy" ? "Task" : r.k || "Task", r.v]) : []),
               ["Pays to", auth ? shortAddr(auth.to) : "n/a"], ["Authorization", auth ? `${auth.nonce.slice(0, 10)}…` : "n/a"],
             ]} />
           </>

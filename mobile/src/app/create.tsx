@@ -17,6 +17,7 @@ import { Icon } from "../ui/Icon";
 import { EASE_OUT, settle, useReduceMotion } from "../ui/motion";
 import { txError } from "../components/ActionSheet";
 import { TxLink } from "../components/TxLink";
+import { worstCase } from "../lib/plain";
 import { cleanText } from "../lib/sanitize";
 import { PRESETS, toPocketArgs, expiryFor, type Lifetime, type PresetValues } from "../lib/presets";
 import { styleForPreset } from "../lib/pocketNames";
@@ -273,7 +274,7 @@ export default function Create() {
         <View style={{ gap: 20 }}>
           <Title h="When should it ask you?" sub="Payments up to this amount go through on their own. Above it, your agent waits for your OK." />
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-            {([["always", "Always"], ["above", "Above an amount"], ["never", "Never"]] as const).map(([k, l]) => <PickChip key={k} label={l} on={askMode === k} onPress={() => setAskMode(k)} />)}
+            {([["always", "Every time"], ["above", "Above an amount"], ["never", "Never"]] as const).map(([k, l]) => <PickChip key={k} label={l} on={askMode === k} onPress={() => setAskMode(k)} />)}
           </View>
           {askMode === "above" && (<><BigNumber value={money2(askV)} /><Slider min={0.05} max={capV} step={0.05} value={askV} onChange={setAsk} /></>)}
           <T v="sub" color="ink2">{askMode === "always" ? "You approve every payment." : askMode === "never" ? "The agent never asks. It spends freely up to the cap." : `Up to US$${money2(askV)} it pays alone. Above that, up to US$${money2(capV)}, it asks you.`}</T>
@@ -321,6 +322,13 @@ export default function Create() {
         <Animated.View key={step} entering={slideIn(dir.current, reduce)} exiting={slideOut(dir.current, reduce)}>{page}</Animated.View>
       </ScrollView>
       <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: insets.bottom + 12, gap: 6, backgroundColor: c.canvas }}>
+        {step > 0 ? (
+          // the product's one sentence, live: every choice above changes what a hijacked agent could lose
+          <View accessibilityLiveRegion="polite" style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", padding: 12, marginBottom: 6, borderRadius: 16, backgroundColor: c.accentSoft }}>
+            <Icon name="shield" size={16} color={c.accent} />
+            <T v="cap" color="ink2" style={{ flex: 1 }}>{worstCase(parseUsd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
+          </View>
+        ) : null}
         {step === STEPS.length - 1 ? (
           <SlideToConfirm key={String(error)} label={progress.current.pocket ? "Slide to retry" : "Slide to create and fund"} doneLabel="Pocket created" onConfirm={create} disabled={!wallet || !cfg || tonightPassed} />
         ) : (
