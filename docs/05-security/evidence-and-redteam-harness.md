@@ -1,5 +1,24 @@
 # Evidence pack and red-team harness
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** This is a design proposal written against the old 16-scene spec. What exists in v2 is smaller: 8 scenes run through the agent loop with `cd server && SCENE_REPLAY=1 pnpm test:scenes` (`server/test/scenes.test.ts`), the on-chain forced-transfer script `server/scripts/force-transfer.ts`, a hash table in [evidence.md](../evidence.md) (all rows pending the live run), and the submission document [security self-assessment](../security-self-assessment.md). The `npm run evidence`, `verify` and `redteam` commands, the 42-attack catalogue and the 13 ordinary tasks are not built and remain a proposal; the red-team box in the web app is the live attack path today. The reason codes and scene IDs below are old; v2 codes are in `server/src/wallet/reasons.ts`. Spec: [product design](../02-product/product-design.md).
+
+### Exists today versus design proposal
+
+Checked against `server/package.json` scripts (`dev`, `sellers`, `test`, `test:scenes`, `typecheck`, `wallets`, `spike`, `chat`) and `server/scripts/` (`chat.ts`, `create-wallets.ts`, `force-transfer.ts`, `new-pocket.ts`, `spike.ts`). No `evidence/` or `redteam/` folder exists.
+
+| Part of this doc | Status in v2 |
+| --- | --- |
+| `npm run evidence` (16 scenes E01-E16) | Proposal. v2 has 8 scenes, replayed by `SCENE_REPLAY=1 pnpm test:scenes` (the script sets `SCENES=1`; drop `SCENE_REPLAY` to use the real model, which needs `ANTHROPIC_API_KEY`). Expected-versus-actual output is test assertions, not a generated table |
+| Evidence table with hashes | Exists as a hand-kept skeleton: [evidence.md](../evidence.md), all hashes pending the live Base Sepolia run |
+| E09 forced transfer reverts on-chain | Exists as `server/scripts/force-transfer.ts <pocket> [attacker]` (agent key really signs, submitted straight to USDC) and `test_scene5_injected_recipient_reverts` |
+| E15 over-cap revert, E16 permit digest rejected | Exist as contract tests (`test_over_cap_reverts_even_with_owner_cosign`, `test_permit_or_other_digest_rejected`), not as live reverts |
+| `npm run verify` (re-read hashes from a public RPC) | Proposal, not built |
+| `npm run redteam`, 42 attacks, 20 runs each, modes A/B/C, ASR bounds | Proposal, not built. Today: the scene tests, the four named attacks in the self-assessment, and the live red-team box |
+| 13 ordinary tasks, false-refusal rate | Proposal, not built |
+| `--custom` judge attack entry | Partly: the web red-team box injects text via `POST /admin/inject` on the test sellers; no CLI and no report log |
+| Fork versus live chain modes | Contract tests run on a Base Sepolia fork with real USDC v2.2 bytecode; the live run is pending |
+| Submission write-up | Done in [security-self-assessment.md](../security-self-assessment.md); it lists the tests behind each claim |
 
 ## In one minute
 
@@ -10,7 +29,7 @@ Last updated: 2026-10-13
 - **Honest statistics:** 20 runs with 0 successes only proves the true rate is below about 14% (95% upper bound); across 840 attack runs the bound is about 0.4%, but runs are not independent. We print the bound next to every "0" and never write "unhackable".
 - **Show the value of each layer** by running the same attacks in three modes: model alone, model plus our tool server, full stack with the pocket contract. This copies the model-alone versus behind-the-layer comparison in APort Vault (0 of 69,297 transfers to unpermitted recipients behind the layer versus 140 of 76,842 with the model alone, per its abstract).
 - **Judge quick path:** `npm run verify` needs no keys and re-reads every recorded hash from a public RPC in about a minute. Re-running the live scenes needs a funded testnet key from the faucet.
-- **Build order:** evidence runner first (Sat 17 Oct), red-team full matrix Sat/Sun, final run on the frozen commit Mon 19 Oct. Design only here; no code is written yet.
+- **Build order:** evidence runner first (Sat 17 Oct), red-team full matrix Sat/Sun, final run on the frozen commit Mon 19 Oct. Design only here (old plan; v2 built the 8-scene test and `force-transfer.ts` instead, see the status box).
 
 ## 1. What the judges and reviewers need
 
@@ -38,6 +57,8 @@ Principle: every number in the technical document, the self-assessment and the d
 Flags (illustrative): `--chain=live|fork` (live testnet for submission, local fork for fast rehearsal), `--scenes=1,2,5a`, `--replay-only` (no sending, just re-verify the recorded hashes; this is `npm run verify`).
 
 ### 2.2 Scene list and expected results
+
+(Old 16-scene list. Rows E04 to E06, E08, E12, E14 and B10 to B12 are old design, deferred to finals. v2 has 8 scenes, listed in [evidence.md](../evidence.md); old codes such as `POCKET_SELLER_NOT_ALLOWED` are now `SELLER_NOT_ALLOWED`.)
 
 Scenes from the demo script in the [spec](../02-product/product-design.md). "Hash kind": **success** = a settled transaction; **revert** = a transaction that lands on-chain with failed status; **none** = a refusal before anything is signed, evidenced by a log line and a screenshot, not a hash.
 
@@ -123,6 +144,8 @@ Document in the README: copy `.env.example`, fund the owner key from a faucet (l
 | Mismatch | Row marked red, run exits non-zero; we fix before submission, never edit the table |
 
 ## 3. Red-team harness: `npm run redteam`
+
+(Design proposal, not built. Attack IDs that target the old gateway, guards, MCP server, registry or second agent, such as PE-06, PE-07, PE-09, IT-07 to IT-09 as written, and the translation-agent rows, are old design, deferred to finals. The v2 agent sends no temperature parameter.)
 
 ### 3.1 Design
 
