@@ -1,63 +1,70 @@
 # ChainBrain in one page
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** rewritten for the team's [Prelim Product Spec v2](../02-product/product-design.md) (consumer wallet). The 13 Oct version described a seller trust layer with seven guards. That design is now a finals roadmap item. The older text is in git history (commit 42a41f2).
 
 ## In one minute
 
-- **ChainBrain (链AI脑)** is a trust layer for AI agents that pay merchants. Before money moves, the seller checks who the agent is, who it works for and what it may buy. The buyer's agent pays from a limited on-chain "pocket", so even a fooled AI cannot overspend.
-- **Entry:** FinTechathon 2026, International AI Track, Topic F (Agent Wallet: an AI wallet that really spends on-chain).
-- **Why it can win:** the 40% task score is judged by on-chain transaction hashes, the 30% security score rewards "refuses even if the AI is fooled", and the seller-side verdict with live re-planning is the part rivals lack.
-- **What it is not:** it is not "the first to verify agents for sellers". Visa, Mastercard, Skyfire, Alipay and others do that already ([competitors](../03-research/competitors-industry.md)). Our narrow claim: seller-side authority enforced by the paying on-chain account, on stablecoin (x402) rails, with a verdict and reason code. Same-topic rivals (Leash, sucsage, edxzh/agent-wallet) already ship limit wallets and ERC-1271 x402 payments, so the pocket alone is not our novelty ([rivals](../03-research/topic-f-rivals.md)).
-- **Real vs simulated:** the contracts, payments and checks are real on a test network (Base Sepolia). KYC issuers, merchants, money and licences are stand-ins.
-- **Do first:** ask the organisers if testnet hashes count; pass the 14 Oct spike ([plan](status-and-plan.md)).
+- **ChainBrain (链AI脑)** is a consumer wallet where you open **pockets** for your AI agent. Pitch line: **Give your AI a pocket, not your wallet.**
+- A pocket is a small smart contract that holds its own USDC and its own rules. The agent spends from it on-chain by itself over x402. The pocket checks every payment, so even a hijacked agent can lose at most the pocket's balance, and only to sellers the owner approved.
+- **Entry:** FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Chain: Base Sepolia testnet, test USDC.
+- **Prelim scope:** main wallet, pockets, an in-house agent that plans and pays, and defences against the four attacks the scoring names. **Finals roadmap (not in the prelim demo):** seller trust layer, attested seller categories, reputation, bring-your-own-agent, the pocket on FISCO BCOS (planned), production money, privacy.
+- **Status:** built and tested locally; live on-chain run, deck, video and submission are still to do. See [status and plan](status-and-plan.md).
+- **Do first:** ask the organisers whether testnet hashes count; run the live gate; fund the demo wallets.
 
 ## Plain-English words (defined once)
 
 | Word | Meaning |
 | --- | --- |
 | Agent | An AI program that acts for a person, such as buying a data report |
-| Pocket | A small smart-contract wallet with its own budget and rules (price cap, allowed sellers, expiry, revoke). Technically an ERC-4337-style "smart account" |
-| x402 | A way for websites to say "pay first" (HTTP 402) and take a stablecoin payment inside the same web request |
-| USDC | A US-dollar stablecoin; on the test network it is free test money |
-| Guard | One of seven checks the seller runs before serving an agent |
-| Reason code | A short machine-readable refusal reason (for example `POCKET_SELLER_NOT_ALLOWED`) the agent reads and re-plans from |
-| MCP / SKILL.md | A standard way for any AI agent to plug in tools, plus an instruction file telling it how to use them safely |
-| Base Sepolia | A public test blockchain where our demo transactions live |
-| FISCO BCOS | WeBank's blockchain; bonus only |
+| Pocket | A small contract wallet (ERC-1271) holding USDC for one agent, with rules: allowed sellers, per-payment cap, ask-me threshold, expiry, revoke |
+| Ask me above | Payments over this amount also need the owner's signature. 0 means ask every time |
+| x402 | A way for websites to say "pay first" (HTTP 402) and take a payment inside the same web request |
+| USDC | A US-dollar token. On the test network it is free test money |
+| Wallet tool layer | The server code that holds the agent key and signs only in-rule payments. The AI model never sees a key |
+| Intent | What the owner confirmed the agent may buy: item, max price, quantity, deadline. Shown from a fixed template, not AI wording |
+| Reason code | A short refusal reason (for example `SELLER_NOT_ALLOWED`) the agent reads and re-plans from |
+| Base Sepolia | A public test blockchain where the demo transactions live |
+| FISCO BCOS | WeBank's blockchain. Planned for finals only |
 
 ## The story
 
-- **Problem.** An agent shows up to pay. The merchant cannot tell who it is, who it acts for, or whether this purchase is authorised. The owner fears overspending and hijacking. Merchants report low readiness (Ravelin: 29% feel very prepared; Worldpay: no liability shift yet) ([market](../03-research/market-regulation-webank.md)).
-- **Users.** The owner (person or small business), the buyer agent (ours or any agent through MCP), the seller, and the auditor or regulator.
-- **What it does.** Owner funds a pocket and sets rules. Agent drafts an intent, picks a seller, gets a quote, pays through x402. Seller gateway runs seven guards: agent identity, owner KYC binding, pocket scope, intent match (buyer side), payment finality, reputation, seller rules. Verdict: serve, step up (ask the owner) or refuse with a reason code.
-- **Why it wins.** Rewards line up with the rubric ([how to win](../06-pitch/how-to-win.md)): real hashes, an attack-resistant pocket, visible AI behaviour (clarify, re-plan, fall back).
+- **Problem.** Giving an agent your wallet is all-or-nothing: it spends everything, or you approve every payment. Alipay's AI Pay and UnionPay's agentic payment protocol keep the limits on the platform's side. Our difference: the limits live in a contract the user owns.
+- **User.** A person or small-business owner who wants an agent to buy small things (data, reports, bookings) without watching every step.
+- **What it does.** The owner funds a pocket and picks its rules. The agent drafts an intent, the owner confirms, the agent picks a seller, gets a quote and pays. Above the ask-me amount the owner co-signs on web or phone.
+- **Why it can win.** The scoring rewards real on-chain hashes (task 40%), refusal even when the AI is fooled (security 30%), and visible AI behaviour: clarify, re-plan, safe stop (interaction 30%). Every test point is answered on the wallet side ([spec scoring map](../02-product/product-design.md)).
+- **What it is not.** Not the first AI wallet with limits. Same-topic rivals ship limit wallets and ERC-1271 x402 payments ([rivals](../03-research/topic-f-rivals.md)). Our claim is narrow: hard limits the user owns, checked by the pocket at settlement, with an agent that adapts to refusals.
 
-## Demo in 6 lines
+## Demo in 8 scenes
 
-1. Owner creates a US$2 Research pocket and says one sentence; the agent asks one clarifying question.
-2. Agent compares three sellers, buys from TradeData (hash), then hires a translation agent (hash).
-3. A bot with no verified owner is refused by guard 2.
-4. Agent tries a seller outside the pocket, reads the reason code, picks another, and pays (hash).
-5. An injected "send everything to 0xABC" is blocked by the pocket on-chain (revert hash); a judge can type their own attack.
-6. Owner taps Revoke; the next payment is refused. A dead-end task stops and explains instead of retrying.
+Four test sellers, all stock x402 endpoints: DataLite (US$0.30 and US$0.35), DataPro (US$1.50), Harbour Wines (US$0.40, not allowed), ShadyFeed (free preview, the attacker).
+
+1. Create and fund the Research pocket (US$5, cap US$2, ask above US$1); one sentence; one clarifying question; intent card.
+2. Agent buys DataLite's report (US$0.30).
+3. DataPro's report (US$1.50) is above ask-me; the owner co-signs on web or phone.
+4. Harbour Wines is refused (`SELLER_NOT_ALLOWED`); the agent re-plans to DataLite.
+5. Injection ignored; a forced transfer reverts on-chain; judges can type their own attack in the red-team box.
+6. ShadyFeed asks for personal data and an "approval" signature; refused.
+7. Revoke mid-task, return funds.
+8. Dead-end pocket: the agent stops safely and suggests a fix.
 
 ## What is real and what is simulated
 
-| Real (on Base Sepolia) | Simulated or not yet proven |
+| Real (on Base Sepolia, locally verified on a fork) | Simulated or not yet proven |
 | --- | --- |
-| Pocket contract rules, payments, revoke, tx hashes | KYC/KYB issuers (labelled "simulated") |
-| x402 payment flow and seller guards | Merchants (six demo sellers from one template) |
-| Agent re-planning from reason codes | Money (test USDC; USDC is not a licensed Hong Kong token) |
-| ERC-8004 agent identity (deployed registry) | Whether the facilitator accepts a pocket signature end to end: spike on 14 Oct |
-| | FISCO BCOS deployment: bonus, untested |
+| Pocket contract rules, x402 payments, revoke, owner co-sign | Sellers (four demo endpoints from one template) |
+| Agent loop re-planning from reason codes | Money (test USDC; not a licensed Hong Kong token) |
+| Web, Expo and native Android owner apps | Live public-facilitator run and live tx hashes (pending, [evidence](../evidence.md)) |
+| | Real-model run of scenes 1-8 (needs an API key; replay mode verified) |
+| | FISCO BCOS: planned, not built |
 
-Budget means the pocket's balance, not a running counter ([feasibility](../04-build/x402-pocket-feasibility.md)).
+Budget means the pocket's balance, not a running counter.
 
 ## What this means for winning
 
-- **[must]** Describe the novelty narrowly and truthfully. Innovation 30.
-- **[must]** Keep every claim equal to what the chain enforces. Security 30.
+- **[must]** Keep every claim equal to what the pocket enforces. Security 30.
 - **[must]** Every core scene ends in a hash or a revert hash. Task 40.
-- **[should]** Label simulated parts on screen. Security 30.
+- **[should]** Label roadmap items "Roadmap, not in prelim demo". Innovation 30.
 
 ## Open questions
 
@@ -65,4 +72,4 @@ See [open questions](open-questions.md). The biggest: do testnet hashes count fo
 
 ## Sources
 
-- [Spec](../02-product/product-design.md), [judge simulation](../06-pitch/judge-simulation.md), [competitors](../03-research/competitors-industry.md), [feasibility](../04-build/x402-pocket-feasibility.md); read 2026-10-13.
+- [Spec v2](../02-product/product-design.md), [technical document](../technical-document.md), [security self-assessment](../security-self-assessment.md), [evidence](../evidence.md), [README](../../README.md). Read 2026-10-14.
