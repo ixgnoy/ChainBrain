@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 
 export type ThemeChoice = "system" | "light" | "dark";
-const KEY = "cb-theme";
-const sys = () => (typeof matchMedia !== "undefined" && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-const read = (): ThemeChoice => { try { const v = localStorage.getItem(KEY); return v === "light" || v === "dark" ? v : "system"; } catch { return "system"; } };
+export const THEME_KEY = "cb-theme";
+export const resolveTheme = (choice: ThemeChoice, system: "light" | "dark"): "light" | "dark" => (choice === "system" ? system : choice);
+export const nextChoice = (c: ThemeChoice): ThemeChoice => ({ system: "light", light: "dark", dark: "system" } as const)[c];
+export const parseChoice = (v: string | null | undefined): ThemeChoice => (v === "light" || v === "dark" ? v : "system");
+
+const sys = (): "light" | "dark" => (typeof matchMedia !== "undefined" && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+const read = (): ThemeChoice => { try { return parseChoice(localStorage.getItem(THEME_KEY)); } catch { return "system"; } };
 
 export function useTheme() {
   const [choice, setChoice] = useState<ThemeChoice>(read);
   const [systemTheme, setSystemTheme] = useState<"light" | "dark">(sys);
-  const resolved = choice === "system" ? systemTheme : choice;
+  const resolved = resolveTheme(choice, systemTheme);
 
   useEffect(() => {
     const mq = matchMedia("(prefers-color-scheme: light)");
@@ -20,7 +24,7 @@ export function useTheme() {
 
   const set = useCallback((c: ThemeChoice) => {
     setChoice(c);
-    try { if (c === "system") localStorage.removeItem(KEY); else localStorage.setItem(KEY, c); } catch { /* storage blocked */ }
+    try { if (c === "system") localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, c); } catch { /* storage blocked: per-viewer convenience only */ }
   }, []);
   return { choice, resolved, set };
 }
