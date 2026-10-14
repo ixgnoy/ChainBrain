@@ -6,6 +6,13 @@ import { wire } from "../../../shared/sim";
 import { builtin } from "./builtin";
 import { fetchTimeout, getApi, isBuiltin } from "./runtime";
 
+// Whether a console on the laptop is receiving this phone (last successful push), for a quiet line in Settings.
+let lastOk = 0;
+const watchers = new Set<() => void>();
+export const relayLinked = () => Date.now() - lastOk < 8000;
+export const onRelay = (f: () => void) => { watchers.add(f); return () => void watchers.delete(f); };
+const ping = (ok: boolean) => { const was = relayLinked(); if (ok) lastOk = Date.now(); else lastOk = 0; if (was !== relayLinked()) watchers.forEach((f) => f()); };
+
 type Cmd = { id: number; type: "plant" | "force" | "say"; sellerId?: string; text?: string | null; pocket?: string; preset?: string | null };
 /** The console's Play button: the phone types this to its agent (the owner still confirms and co-signs on the phone). */
 export type Say = (text: string, preset?: string | null) => Promise<{ ok: boolean; text: string; pocket?: string }>;
@@ -56,14 +63,14 @@ export function startRelay(owner: string, names: () => Record<string, string>, s
         if (j.resync) { sentAt = 0; dirty = true; timer = setTimeout(tick, 50); return; }
         if (events.length) sentAt = events[events.length - 1].at;
         results = results.filter((x) => !done.includes(x));
-        lastPush = now; fails = 0;
+        lastPush = now; fails = 0; ping(true);
         for (const c of (j.commands ?? []) as Cmd[]) {
           if (c.id <= cmdAfter) continue;
           cmdAfter = c.id;
           void run(c).then((result) => { results.push({ id: c.id, result }); dirty = true; });
         }
       } catch {
-        fails += 1; dirty = true;
+        fails += 1; dirty = true; ping(false);
         waitUntil = now + Math.min(30_000, 2000 * 2 ** Math.min(fails - 1, 4)); // 2, 4, 8, 16, 30 s
       }
     }

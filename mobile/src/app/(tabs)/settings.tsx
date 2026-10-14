@@ -4,7 +4,8 @@ import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
 import * as Clipboard from "expo-clipboard";
 import { useApp } from "../../store";
 import * as api from "../../lib/api";
-import { ENV_API, detectDev, isHttpUrl, normalizeUrl } from "../../lib/runtime";
+import { ENV_API, detectDev, getApi, isHttpUrl, normalizeUrl } from "../../lib/runtime";
+import { onRelay, relayLinked } from "../../lib/relay";
 import { isPrivateKey } from "../../lib/keystore";
 import { c, motion } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
@@ -24,6 +25,9 @@ export default function Settings() {
   const [keyErr, setKeyErr] = useState("");
   const [funds, setFunds] = useState<{ state: "idle" | "busy" | "ok" | "fail"; text?: string }>({ state: "idle" });
   const custom = source === "server";
+  // a console on the laptop showing this phone (built-in network mirrored through the dev stack's relay)
+  const [linked, setLinked] = useState(relayLinked());
+  useEffect(() => { const t = setInterval(() => setLinked(relayLinked()), 3000); const off = onRelay(() => setLinked(relayLinked())); return () => { clearInterval(t); off(); }; }, []);
   const [editing, setEditing] = useState(false); // switch turned on, address not confirmed yet
   const serverOpen = custom || editing;
   const scroller = useRef<any>(null);
@@ -101,6 +105,7 @@ export default function Settings() {
         <ListRow avatar={<Avatar icon="globe" tone="fill" />} title="Custom server" sub={custom ? apiUrl.replace(/^https?:\/\//, "") : editing ? "Enter the address below" : "Off"}>
           <Toggle on={serverOpen} onChange={(v) => void toggleServer(v)} a11y="Custom server" />
         </ListRow>
+        {!custom && linked ? <ListRow avatar={<Avatar icon="activity" tone="fill" />} title="Laptop console" sub={`Linked · ${getApi().replace(/^https?:\/\//, "")}`} /> : null}
       </ListCard>
       {serverOpen ? (
         <Animated.View entering={FadeInDown.springify(motion.spring.smooth.duration).dampingRatio(1).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })} exiting={FadeOut.duration(motion.exit)}>
