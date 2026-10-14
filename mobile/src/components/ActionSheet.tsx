@@ -14,6 +14,7 @@ import { parseUsd } from "../lib/shared";
 import { usd, money } from "../lib/util";
 import { notify, DEMO_MSG } from "../lib/toast";
 import { c } from "../tokens";
+import { TxDone } from "./TxNotice";
 
 type Mode = "fund" | "return" | "revoke";
 const COPY: Record<Mode, { title: string; hint: string }> = {
@@ -44,24 +45,45 @@ export function ActionSheet() {
 }
 
 function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: () => void }) {
-  const { pockets, wallet, refreshPockets, balances, demo } = useApp();
+  const { pockets, wallet, refreshPockets, balances, demo, recordTx, setNotice } = useApp();
+  const [done, setDone] = useState<{ title: string; hash: string } | null>(null);
   const [sel, setSel] = useState<string | undefined>(initial);
   const [amount, setAmount] = useState("1.00");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { setSel(initial ?? (pockets.filter((p) => p.owned && !p.revoked).length === 1 ? pockets.find((p) => p.owned && !p.revoked)?.address : undefined)); setError(null); }, [initial, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setDone(null); setSel(initial ?? (pockets.filter((p) => p.owned && !p.revoked).length === 1 ? pockets.find((p) => p.owned && !p.revoked)?.address : undefined)); setError(null); }, [initial, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const eligible = (p: Pocket) => p.owned && (mode === "return" ? true : !p.revoked);
   const chosen = pockets.find((p) => p.address === sel);
   const fail = (e: unknown): never => { haptic.error(); setError(txError(e)); throw e; };
   const guard = () => { if (demo) { notify(DEMO_MSG); return true; } return false; };
 
-  const doFund = async () => { if (guard()) throw new Error("demo"); try { await wallet!.fund(chosen!.address, parseUsd(amount)); await refreshPockets(); setTimeout(close, 900); } catch (e) { fail(e); } };
-  const doReturn = async () => { if (guard()) throw new Error("demo"); try { await wallet!.returnFunds(chosen!.address); await refreshPockets(); setTimeout(close, 900); } catch (e) { fail(e); } };
+  // fund and return stay open on success so the owner reads the transaction hash; revoke closes and the pocket page shows it
+  const doFund = async () => {
+    if (guard()) throw new Error("demo");
+    try {
+      const v = parseUsd(amount); const r = await wallet!.fund(chosen!.address, v);
+      recordTx({ kind: "fund", pocket: chosen!.address, hash: r.hash, amount: v.toString() });
+      setDone({ title: `Added US$${amount} to ${cleanText(chosen!.name, 30)}`, hash: r.hash }); await refreshPockets();
+    } catch (e) { fail(e); }
+  };
+  const doReturn = async () => {
+    if (guard()) throw new Error("demo");
+    try {
+      const had = chosen!.balance; const r = await wallet!.returnFunds(chosen!.address);
+      recordTx({ kind: "return", pocket: chosen!.address, hash: r.hash, amount: had.toString() });
+      setDone({ title: `Returned ${money(had)} to your main wallet`, hash: r.hash }); await refreshPockets();
+    } catch (e) { fail(e); }
+  };
   const doRevoke = async () => {
     if (guard()) return;
     setBusy(true); setError(null);
-    try { await wallet!.revoke(chosen!.address); haptic.heavy(); await refreshPockets(); close(); }
+    try {
+      const r = await wallet!.revoke(chosen!.address); haptic.heavy();
+      recordTx({ kind: "revoke", pocket: chosen!.address, hash: r.hash });
+      setNotice({ title: `${cleanText(chosen!.name, 30)} revoked`, pocket: chosen!.address, txs: [{ hash: r.hash }] });
+      await refreshPockets(); close();
+    }
     catch (e) { haptic.error(); setError(txError(e)); } finally { setBusy(false); }
   };
 
@@ -95,6 +117,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
           </View>
         )}
         {mode === "return" && chosen && <T v="sub" color="ink2">{money(chosen.balance)} comes back to your main wallet.</T>}
+        {done ? <TxDone title={done.title} txs={[{ hash: done.hash }]} /> : null}
         {error && (
           <View style={{ backgroundColor: c.negativeSoft, borderRadius: 16, padding: 14 }}>
             <T v="sub" color="negative">{error}</T>
@@ -105,7 +128,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
         {mode === "fund" && <SlideToConfirm key={`f${sel}${amount}${error}`} label={`Slide to fund ${amount}`} doneLabel="Funded" disabled={!chosen || !wallet} onConfirm={doFund} />}
         {mode === "return" && <SlideToConfirm key={`r${sel}${error}`} label="Slide to return funds" doneLabel="Returned" disabled={!chosen || !wallet || chosen.balance === 0n} onConfirm={doReturn} />}
         {mode === "revoke" && <HoldToRevoke disabled={!chosen || !wallet} busy={busy} onComplete={doRevoke} />}
-        <Button label="Cancel" kind="text" onPress={close} />
+        <Button label={done ? "Done" : "Cancel"} kind={done ? "secondary" : "text"} onPress={close} />
       </View>
     </View>
   );

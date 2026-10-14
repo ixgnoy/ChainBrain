@@ -16,7 +16,7 @@ export function ActivityRow({ row, onPress, last, showPocket, timeOnly }: { row:
     <ListRow
       last={last} onPress={onPress} a11y={`${v.title}, ${v.rightSub ?? ""} ${v.right ?? ""}`}
       avatar={<Avatar label={v.avatar.label} icon={v.avatar.icon} tone={v.avatar.tone} />}
-      title={v.title} sub={v.sub} right={v.right} rightTone={v.rightTone} rightSub={v.rightSub} rightSubTone={v.rightSubTone}
+      title={v.title} sub={v.sub} codes={v.codes} foot={v.foot} right={v.right} rightTone={v.rightTone} rightSub={v.rightSub} rightSubTone={v.rightSubTone}
     />
   );
 }

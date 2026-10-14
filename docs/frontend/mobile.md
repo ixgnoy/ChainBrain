@@ -1,6 +1,6 @@
 # ChainBrain phone app (Expo Go)
 
-The owner's app: the team's verified wallet logic in the clean-bank design (design-system/chainbrain/MASTER.md v2, light only). Code in `mobile/`.
+The owner's app: the team's verified wallet logic in the clean-bank design (design-system/chainbrain/MASTER.md v3, deep teal + navy, light only). Code in `mobile/`.
 
 **No login or setup.** The first launch creates the on-device key silently and opens Home. "Import a key" is in Settings only. On the dev stack the phone key gets test funds by itself.
 
@@ -16,7 +16,7 @@ The API URL can also be changed on the phone: Settings, API URL, Test connection
 
 ## Screens
 
-Home ("Ask agent" pill, pocket total, round actions, pockets, recent activity), Agent (chat; tool steps folded under "Details"), Activity (filters, date groups), Settings (API URL, wallet, import key, network). Stack screens: pocket detail (Add, Return, Revoke round actions, seller switches), create wizard. Sheets: approval (slide to approve), question, receipt, add money / return / revoke (hold to revoke).
+Home ("Ask agent" pill, Testnet chip, pocket total and main wallet balance, round actions, pockets with agent and status, recent activity), Agent (chat; tool steps folded under "Details"), Activity (filters, date groups), Settings (API URL, wallet, import key, network). Stack screens: pocket detail (Add, Return, Revoke round actions, editable cap and ask-me limit, seller switches, worst-case line, history with tx hashes), create wizard (sellers grouped by category). Every owner transaction (create, fund, return, revoke, rule change) shows its tx hash; the agent chat has "Stop agent" and a dead-end card with the sellers tried and a one-tap fix (scene 8). Sheets: approval (slide to approve), question, receipt, add money / return / revoke (hold to revoke).
 
 **Demo data:** if the API cannot be reached, built-in sample pockets, activity and chat load (`src/lib/demo.ts`), with a quiet "Demo data" line; live data takes over when the API answers.
 
@@ -35,7 +35,7 @@ Home ("Ask agent" pill, pocket total, round actions, pockets, recent activity), 
 
 ## Checks
 
-`npm test` (19 tests, includes the co-sign payload), `npx tsc --noEmit`, `npx expo-doctor`, `npx expo export --platform web|ios`. Screenshots from the end-to-end run: `docs/frontend/screenshots/e2e-phone-*.png`.
+`npm test` (22 tests, includes the co-sign payload), `npx tsc --noEmit`, `npx expo-doctor`, `npx expo export --platform web|ios`. Screenshots from the end-to-end run: `docs/frontend/screenshots/e2e-phone-*.png`.
 
 ## Not verified
 

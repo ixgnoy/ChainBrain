@@ -9,17 +9,19 @@ import { Avatar, Card, ListCard, ListRow, Pill, RoundAction, SectionHeader } fro
 import { T } from "../../ui/Text";
 import { ActivityRow } from "../../components/ActivityRow";
 import { factPills, isExpired, untilText } from "../../components/PocketCard";
+import { TxNotice } from "../../components/TxNotice";
 import { txError } from "../../components/ActionSheet";
 import { cleanText } from "../../lib/sanitize";
 import { sameAddr } from "../../lib/events";
-import { visibleRows } from "../../lib/plain";
-import { money, usd } from "../../lib/util";
+import { visibleRows, worstCase } from "../../lib/plain";
+import { money, usd, shortAddr } from "../../lib/util";
+import { NEVER } from "../../lib/shared";
 import { notify, DEMO_MSG } from "../../lib/toast";
 import { haptic } from "../../haptics";
 
 export default function PocketDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { findPocket, pocketsLoaded, cfg, wallet, ledger, setAction, setReceipt, refreshPockets, demo } = useApp();
+  const { findPocket, pocketsLoaded, cfg, wallet, ledger, setAction, setReceipt, refreshPockets, demo, setRules, recordTx, setNotice } = useApp();
   const pocket = findPocket(id);
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -36,11 +38,18 @@ export default function PocketDetail() {
   const owned = pocket.owned && !!wallet;
   const expired = isExpired(pocket);
   const off = pocket.revoked || expired;
+  const editable = owned && !off && !demo;
+  const sellerNames = (cfg?.sellers ?? []).filter((s) => pocket.allowed.includes(s.id)).map((s) => cleanText(s.name, 30));
 
   const toggle = async (name: string, on: boolean, payTo: `0x${string}`) => {
     if (demo) { notify(DEMO_MSG); return; }
     setBusy(`${on ? "Removing" : "Allowing"} ${name}`); setErr(null);
-    try { await wallet!.setSeller(pocket.address, payTo, !on); haptic.success(); await refreshPockets(); }
+    try {
+      const r = await wallet!.setSeller(pocket.address, payTo, !on); haptic.success();
+      recordTx({ kind: "seller", pocket: pocket.address, hash: r.hash, note: `${name} ${on ? "removed" : "allowed"}` });
+      setNotice({ title: `${name} ${on ? "removed from" : "allowed in"} ${cleanText(pocket.name, 30)}`, pocket: pocket.address, txs: [{ hash: r.hash }] });
+      await refreshPockets();
+    }
     catch (e) { haptic.error(); setErr(txError(e)); }
     finally { setBusy(""); }
   };
@@ -54,7 +63,7 @@ export default function PocketDetail() {
           <T v="balance" accessibilityLabel={`pocket, ${usd(pocket.balance)} USDC`}>{money(pocket.balance)}</T>
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center", paddingHorizontal: 20 }}>
             {pocket.revoked ? <Pill label="Revoked" tone="negative" /> : expired ? <Pill label="Expired" tone="fill" /> : null}
-            {factPills(pocket).map((f) => <Pill key={f} label={f} />)}
+            {factPills(pocket).map((f) => <Pill key={f} label={f} onPress={editable ? () => setRules({ pocket: pocket.address, field: f.startsWith("Cap") ? "cap" : "ask" }) : undefined} a11y={editable ? `Edit ${f.startsWith("Cap") ? "cap" : "ask-me limit"}: ${f}` : undefined} />)}
             {!off ? <Pill label={untilText(pocket.expiresAt).replace("until", "Ends")} tone="fill" icon="clock" /> : null}
           </View>
         </View>
@@ -68,8 +77,16 @@ export default function PocketDetail() {
         ) : (
           <Card style={{ marginHorizontal: 20, marginTop: 20 }}><T v="sub" color="ink2">Another key owns this pocket. Add money, return or revoke from the device that created it.</T></Card>
         )}
+        <TxNotice pocket={pocket.address} />
         {pocket.revoked ? <T v="sub" color="muted" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 16 }}>Your agent can't spend from this pocket any more.{pocket.balance > 0n ? " Return the money to your main wallet when you like." : ""}</T> : null}
         {err ? <T v="sub" color="negative" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 12 }}>{err}</T> : null}
+
+        <Card style={{ marginHorizontal: 20, marginTop: 20, gap: 4 }}>
+          <T v="cap" w="semi" color="muted">Worst case</T>
+          <T v="body" accessibilityLabel="Worst case">{worstCase(pocket.balance, sellerNames, off)}</T>
+        </Card>
+        {editable ? <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 10 }}>Tap Cap or Ask above to change a rule. It is signed by your key on this phone.</T> : null}
+        <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 4 }}>Agent {shortAddr(pocket.agent)}</T>
 
         <SectionHeader title="Allowed sellers" />
         <ListCard>
@@ -85,8 +102,8 @@ export default function PocketDetail() {
         </ListCard>
         <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 8 }}>{busy ? `${busy}: waiting for the chain…` : "Changing a seller is signed by your key on this phone."}</T>
 
-        <SectionHeader title="Activity" />
-        {rows.length === 0 ? <Card style={{ marginHorizontal: 20 }}><T v="sub" color="ink2">Nothing from this pocket yet.</T></Card> : <ListCard>{rows.map((r) => <ActivityRow key={r.key} row={r} onPress={() => setReceipt(r)} />)}</ListCard>}
+        <SectionHeader title="History" />
+        {rows.length === 0 ? <Card style={{ marginHorizontal: 20 }}><T v="sub" color="ink2">Nothing from this pocket yet. Creating, adding money, payments and refusals show up here, each with its transaction.</T></Card> : <ListCard>{rows.map((r) => <ActivityRow key={r.key} row={r} onPress={() => setReceipt(r)} />)}</ListCard>}
       </Screen>
     </View>
   );

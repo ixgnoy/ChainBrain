@@ -147,12 +147,12 @@ export const sliceTurn = (events: WalletEvent[], fromAt: number, toAt?: number) 
 
 // ---------------------------------------------------------------- ledger (Activity tab and receipts)
 
-export type LedgerKind = "payment" | "refusal" | "blocked" | "disclosure" | "approval" | "intent";
+export type LedgerKind = "payment" | "refusal" | "blocked" | "disclosure" | "approval" | "intent" | "owner";
 export type LedgerRow = {
   key: string; at: number; pocket: string; kind: LedgerKind;
   outcome: "paid" | "refused" | "pending" | "approved" | "declined" | "info";
   sellerId?: string; sku?: string; description?: string; amount?: bigint; tx?: string; cosigned?: boolean; intentHash?: string; nonce?: string;
-  reasons: string[]; detail?: string; text?: string; asked?: string[]; signRequest?: boolean; approvalId?: string; reasonText?: string;
+  ownerKind?: string; reasons: string[]; detail?: string; text?: string; asked?: string[]; signRequest?: boolean; approvalId?: string; reasonText?: string;
 };
 
 /** Everything the owner should see, newest last: settled payments, refusals (incl. quote-time blocks), disclosures, payment approvals and confirmed tasks. */

@@ -4,7 +4,7 @@ import { ScrollView, View } from "react-native";
 import { c } from "../tokens";
 import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
-import { Button, Details, Pill } from "../ui/kit";
+import { Button, CodePill, Details, Pill } from "../ui/kit";
 import { T } from "../ui/Text";
 import { cleanText } from "../lib/sanitize";
 import { chainFor, type LedgerRow } from "../lib/events";
@@ -30,10 +30,11 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
   const bad = row.outcome === "refused" || row.outcome === "declined";
   const seller = cleanText(sellerName(row.sellerId), 60);
   const chain = useMemo(() => (row.kind === "payment" ? chainFor(events, row) : null), [events, row]);
-  const noMoney = row.amount == null || row.kind === "disclosure" || row.kind === "intent";
-  const headline = row.kind === "disclosure" ? "Nothing was shared" : row.kind === "intent" ? (row.outcome === "approved" ? "Task confirmed" : "Task declined") : null;
-  const status = row.kind === "payment" ? (row.cosigned ? "Paid, co-signed by you" : "Paid") : row.outcome === "pending" ? "Waiting for your OK" : bad ? "Refused" : row.outcome === "approved" ? "Approved" : "Done";
-  const sentence = row.kind === "payment"
+  const noMoney = row.amount == null || row.kind === "disclosure" || row.kind === "intent" || (row.kind === "owner" && row.amount == null);
+  const headline = row.kind === "owner" ? row.text : row.kind === "disclosure" ? "Nothing was shared" : row.kind === "intent" ? (row.outcome === "approved" ? "Task confirmed" : "Task declined") : null;
+  const status = row.kind === "owner" ? "Confirmed on chain" : row.kind === "payment" ? (row.cosigned ? "Paid, co-signed by you" : "Paid") : row.outcome === "pending" ? "Waiting for your OK" : bad ? "Refused" : row.outcome === "approved" ? "Approved" : "Done";
+  const sentence = row.kind === "owner" ? `${row.text}${row.detail ? ` (${cleanText(row.detail, 80)})` : ""}. You signed this on your phone.`
+    : row.kind === "payment"
     ? row.cosigned ? `Your agent paid ${seller}. You co-signed this payment on your phone.` : `Your agent paid ${seller} on its own, within your limits.`
     : row.kind === "disclosure" ? `${seller} asked for ${(row.asked ?? []).map((a) => cleanText(a, 40)).join(", ") || "your data"}${row.signRequest ? " and a signature" : ""}. Your wallet refused, so nothing was shared.`
     : row.kind === "intent" ? cleanText(row.text, 300)
@@ -44,7 +45,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
     </View>
   );
   const facts: [string, string][] = [];
-  if (row.kind !== "intent") facts.push(["Seller", seller]);
+  if (row.kind !== "intent" && row.kind !== "owner") facts.push(["Seller", seller]);
   if (row.description) facts.push(["Item", cleanText(row.description, 80)]);
   facts.push(["Pocket", pocket ? cleanText(pocket.name, 40) : "n/a"], ["When", stamp(row.at)]);
   const tech: [string, string][] = [["Network", dev ? "Local test network" : "Base Sepolia (test network)"]];
@@ -67,7 +68,14 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
         <View style={{ backgroundColor: c.canvas, borderRadius: 20, paddingHorizontal: 16 }}>
           {facts.map(([k, v]) => cell(k, v))}
         </View>
-        <Details rows={tech}>{row.tx ? <View style={{ alignItems: "flex-end" }}><TxLink tx={row.tx} /></View> : null}</Details>
+        {row.tx ? (
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <T v="sub" color="muted">Transaction</T>
+            <TxLink tx={row.tx} />
+          </View>
+        ) : null}
+        {row.reasons.length ? <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>{row.reasons.map((k) => <CodePill key={k} code={k} />)}</View> : null}
+        <Details rows={tech} />
       </ScrollView>
       <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
         <Button label="Done" onPress={close} />

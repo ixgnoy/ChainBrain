@@ -10,11 +10,11 @@ const LABEL: Record<string, string> = { Buy: "Buy", Price: "Limits", Deadline: "
 export const parseIntent = (text: string) =>
   cleanText(text, 600).split("\n").map((l) => { const i = l.indexOf(":"); return i > 0 && i < 12 ? { k: l.slice(0, i), v: l.slice(i + 1).trim() } : { k: "", v: l.trim() }; }).filter((x) => x.v);
 
-export function IntentCard({ text, onConfirm, onDecline, busy, error, flat }: { text: string; onConfirm?(): void; onDecline?(): void; busy?: boolean; error?: string | null; flat?: boolean }) {
+export function IntentCard({ text, onConfirm, onDecline, busy, error, flat, title = "Your agent wants to start this task" }: { title?: string; text: string; onConfirm?(): void; onDecline?(): void; busy?: boolean; error?: string | null; flat?: boolean }) {
   const rows = parseIntent(text);
   return (
     <View style={{ borderRadius: 20, backgroundColor: flat ? c.canvas : c.canvas, padding: 16, gap: 12 }}>
-      <T v="row" w="semi">Your agent wants to start this task</T>
+      <T v="row" w="semi">{title}</T>
       {rows.map((r, i) => (
         <View key={i} style={{ gap: 1 }}>
           {r.k ? <T v="cap" color="muted">{LABEL[r.k] ?? r.k}</T> : null}

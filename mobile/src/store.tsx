@@ -16,10 +16,14 @@ import {
   type Approval, type LedgerRow, type WalletEvent,
 } from "./lib/events";
 import { getItem, setItem, deleteItem } from "./storage";
+import { addOwnerTx, ownerRows, parseOwnerTxs, type OwnerTx } from "./lib/ownerTxs";
 
 export type Turn = { id: string; pocket: string; text: string; fromAt: number; toAt?: number; reply?: string; stopped?: string; error?: string; done: boolean };
 export type Pocket = PocketView & { name: string; style: PocketMeta["style"]; owned: boolean };
 export type Sheet = { mode: "fund" | "return" | "revoke"; pocket?: string } | null;
+export type Rules = { pocket: string; field: "cap" | "ask"; amount?: string; topUp?: bigint } | null;
+/** A just-confirmed owner transaction (or two), shown with its hash on the pocket page and in the agent chat until dismissed. */
+export type Notice = { title: string; pocket?: string; txs: { label?: string; hash: string }[] } | null;
 export type Conn = "connecting" | "online" | "offline";
 
 const API_KEY = "cb.apiUrl";
@@ -38,6 +42,7 @@ type Ctx = {
   pockets: Pocket[]; pocketsLoaded: boolean; active?: Pocket; setActive(a: string): void;
   addPocket(a: Address, meta?: PocketMeta): Promise<void>; refreshPockets(): Promise<void>; findPocket(a?: string): Pocket | undefined;
   // events and derived
+  ownerTxs: OwnerTx[]; recordTx(t: Omit<OwnerTx, "at">): void;
   events: WalletEvent[]; ledger: LedgerRow[]; pending: Approval[]; sellerName(id?: string): string;
   // chat
   turns: Turn[]; sendChat(text: string, pocket?: string): Promise<void>; chatBusy: boolean; agentState: "idle" | "working" | "waiting" | "paused";
@@ -45,6 +50,7 @@ type Ctx = {
   answer(a: Approval, ok: boolean): Promise<api.ApprovalAnswer>; signApprove(a: Approval): Promise<api.ApprovalAnswer>; answered: Set<string>;
   // ui
   approvalOpen: boolean; setApprovalOpen(b: boolean): void; questionOpen: boolean; setQuestionOpen(b: boolean): void;
+  rules: Rules; setRules(r: Rules): void; notice: Notice; setNotice(n: Notice): void;
   receipt: LedgerRow | null; setReceipt(r: LedgerRow | null): void; action: Sheet; setAction(a: Sheet): void; flash: number; fireFlash(): void;
 };
 
@@ -76,6 +82,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [questionOpen, setQuestionOpen] = useState(false);
   const [receipt, setReceipt] = useState<LedgerRow | null>(null);
   const [action, setAction] = useState<Sheet>(null);
+  const [rules, setRules] = useState<Rules>(null);
+  const [notice, setNotice] = useState<Notice>(null);
+  const [ownerTxs, setOwnerTxs] = useState<OwnerTx[]>([]);
+  const ownerTxRef = useRef<OwnerTx[]>([]);
   const [flash, setFlash] = useState(0);
   const [retry, setRetry] = useState(0);
 
@@ -142,8 +152,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!wallet) { setAddresses([]); setMeta({}); setPocketsLoaded(false); return; }
     let alive = true;
-    Promise.all([loadPockets(wallet.address), loadMeta(wallet.address)]).then(([list, m]) => {
+    Promise.all([loadPockets(wallet.address), loadMeta(wallet.address), getItem(`cb.ownerTxs.${wallet.address.toLowerCase()}`)]).then(([list, m, txs]) => {
       if (!alive) return;
+      ownerTxRef.current = parseOwnerTxs(txs); setOwnerTxs(ownerTxRef.current);
       setAddresses(list); setMeta(m); setActiveAddr((a) => a ?? list[0]); setPocketsLoaded(true);
     });
     return () => { alive = false; };
@@ -233,7 +244,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ---- derived views, restricted to this owner's pockets
   const mine = useMemo(() => new Set(addresses.map((a) => a.toLowerCase())), [addresses]);
   const myEvents = useMemo(() => events.filter((e) => e.pocket && mine.has(e.pocket.toLowerCase())), [events, mine]);
-  const ledger = useMemo(() => ledgerFrom(myEvents), [myEvents]);
+  const ledger = useMemo(() => [...ledgerFrom(myEvents), ...ownerRows(ownerTxs.filter((t) => mine.has(t.pocket.toLowerCase())))].sort((x, y) => x.at - y.at), [myEvents, ownerTxs, mine]);
+  const recordTx = useCallback((t: Omit<OwnerTx, "at">) => {
+    if (!wallet) return;
+    ownerTxRef.current = addOwnerTx(ownerTxRef.current, { ...t, pocket: t.pocket.toLowerCase(), at: Date.now() });
+    setOwnerTxs(ownerTxRef.current);
+    void setItem(`cb.ownerTxs.${wallet.address.toLowerCase()}`, JSON.stringify(ownerTxRef.current));
+  }, [wallet]);
   const pending = useMemo(() => livePending(myEvents, { pendingIds }).filter((a) => !answered.has(a.id)), [myEvents, pendingIds, answered]);
   const sellerName = useCallback((sid?: string) => cfg?.sellers.find((s) => s.id === sid)?.name ?? sid ?? "Unknown seller", [cfg]);
 
@@ -323,10 +340,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     keyState, wallet, importKey, newKey, balances: D ? D.balances : balances, demo,
     pockets: shownPockets, pocketsLoaded: D ? true : pocketsLoaded, active: shownActive, setActive: setActiveAddr, addPocket, refreshPockets,
     findPocket: (a) => shownPockets.find((p) => sameAddr(p.address, a)),
-    events: D ? D.events : myEvents, ledger: D ? demoLedger : ledger, pending: D ? [] : pending, sellerName: shownSeller,
+    ownerTxs, recordTx, events: D ? D.events : myEvents, ledger: D ? demoLedger : ledger, pending: D ? [] : pending, sellerName: shownSeller,
     turns: D ? D.turns.filter((t) => sameAddr(t.pocket, shownActive?.address)) : turns, sendChat, chatBusy: D ? false : chatBusy, agentState: D ? "idle" : agentState,
     answer, signApprove, answered,
-    approvalOpen, setApprovalOpen, questionOpen, setQuestionOpen, receipt, setReceipt, action, setAction, flash, fireFlash: () => setFlash((n) => n + 1),
+    approvalOpen, setApprovalOpen, questionOpen, setQuestionOpen, rules, setRules, notice, setNotice, receipt, setReceipt, action, setAction, flash, fireFlash: () => setFlash((n) => n + 1),
   };
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }

@@ -56,15 +56,29 @@ export function RoundAction({ icon, label, onPress, soft, a11y }: { icon: IconNa
 }
 
 export type PillTone = "accent" | "warning" | "negative" | "fill";
-export function Pill({ label, tone = "accent", icon }: { label: string; tone?: PillTone; icon?: IconName }) {
-  const bg = tone === "accent" ? c.accentSoft : tone === "warning" ? c.warningSoft : tone === "negative" ? c.negativeSoft : c.fill;
-  const fg = tone === "accent" ? c.accent : tone === "warning" ? c.warning : tone === "negative" ? c.negative : c.ink2;
+/** A reason code as a small pill next to the plain sentence (judges score the codes): negative or warning tint, 12 px. */
+export function CodePill({ code, tone = "negative" }: { code: string; tone?: "negative" | "warning" | "fill" }) {
+  const bg = tone === "negative" ? c.negativeSoft : tone === "warning" ? c.warningSoft : c.fill;
+  const fg = tone === "negative" ? c.negative : tone === "warning" ? c.warning : c.ink2;
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, height: 28, borderRadius: radius.pill, backgroundColor: bg, alignSelf: "flex-start" }}>
-      {icon ? <Icon name={icon} size={14} color={fg} /> : null}
-      <T v="cap" w="semi" style={{ color: fg }}>{label}</T>
+    <View style={{ paddingHorizontal: 8, height: 22, borderRadius: radius.pill, backgroundColor: bg, alignSelf: "flex-start", justifyContent: "center" }}>
+      <T v="cap" w="semi" style={{ color: fg, fontSize: 11, lineHeight: 14, letterSpacing: 0.3 }}>{code}</T>
     </View>
   );
+}
+
+export function Pill({ label, tone = "accent", icon, onPress, a11y }: { label: string; tone?: PillTone; icon?: IconName; onPress?: () => void; a11y?: string }) {
+  const bg = tone === "accent" ? c.accentSoft : tone === "warning" ? c.warningSoft : tone === "negative" ? c.negativeSoft : c.fill;
+  const fg = tone === "accent" ? c.accent : tone === "warning" ? c.warning : tone === "negative" ? c.negative : c.ink2;
+  const body = (
+    <>
+      {icon ? <Icon name={icon} size={14} color={fg} /> : null}
+      <T v="cap" w="semi" style={{ color: fg }}>{label}</T>
+      {onPress ? <Icon name="edit" size={13} color={fg} /> : null}
+    </>
+  );
+  const box = { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, height: onPress ? 36 : 28, borderRadius: radius.pill, backgroundColor: bg, alignSelf: "flex-start" } as const;
+  return onPress ? <Press haptics="select" onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label} style={box}>{body}</Press> : <View style={box}>{body}</View>;
 }
 
 /** Filter chip: grey pill, accent when selected. */
@@ -101,16 +115,18 @@ export function SectionHeader({ title, right, action, onAction }: { title: strin
 }
 
 /** A Ryt-style list row: 48 px avatar, title 16/500, grey subtitle, amount right with an optional status line beneath. Rows are >= 64 px. */
-export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink", rightSubTone = "muted", onPress, last, a11y, children }: {
+export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink", rightSubTone = "muted", onPress, last, a11y, children, codes, foot, subLines = 2 }: {
   avatar?: React.ReactNode; title: string; sub?: string; right?: string; rightSub?: string; rightTone?: "ink" | "positive" | "muted" | "negative"; rightSubTone?: "muted" | "negative" | "warning" | "positive";
-  onPress?: () => void; last?: boolean; a11y?: string; children?: React.ReactNode;
+  onPress?: () => void; last?: boolean; a11y?: string; children?: React.ReactNode; codes?: string[]; foot?: string; subLines?: number;
 }) {
   const body = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 16, minHeight: 72, paddingHorizontal: 16 }}>
       {avatar}
       <View style={{ flex: 1, gap: 2, paddingVertical: 12 }}>
         <T v="row" numberOfLines={1}>{title}</T>
-        {sub ? <T v="sub" color="muted" numberOfLines={2}>{sub}</T> : null}
+        {sub ? <T v="sub" color="muted" numberOfLines={subLines}>{sub}</T> : null}
+        {codes?.length ? <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 2 }}>{codes.map((k) => <CodePill key={k} code={k} />)}</View> : null}
+        {foot ? <T v="cap" color="faint" numberOfLines={1} style={{ color: c.muted }}>{foot}</T> : null}
       </View>
       {children}
       {right || rightSub ? (

@@ -15,6 +15,7 @@ import { ApprovalSheet } from "../components/ApprovalSheet";
 import { QuestionSheet } from "../components/QuestionSheet";
 import { ReceiptSheet } from "../components/ReceiptSheet";
 import { ActionSheet } from "../components/ActionSheet";
+import { RulesSheet } from "../components/RulesSheet";
 import { ToastHost } from "../ui/Toast";
 import { T } from "../ui/Text";
 
@@ -42,6 +43,7 @@ function Shell() {
           <QuestionSheet />
           <ReceiptSheet />
           <ActionSheet />
+          <RulesSheet />
           <ToastHost />
         </>
       )}

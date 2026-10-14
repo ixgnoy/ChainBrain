@@ -1,6 +1,6 @@
 // Plain-language wording for the owner UI. Reason codes, tool names and hashes stay out of the main screens (they live in "Details").
 import type { LedgerRow } from "./events";
-import { usd } from "./util";
+import { usd, shortHex } from "./util";
 
 export const PLAIN_REASONS: Record<string, string> = {
   SELLER_NOT_ALLOWED: "seller not on your list",
@@ -30,15 +30,31 @@ const cap1 = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 export type RowView = {
   title: string; sub: string; right?: string; rightSub?: string;
   rightTone: "ink" | "positive" | "muted" | "negative"; rightSubTone: "muted" | "negative" | "warning" | "positive";
-  avatar: { label?: string; icon?: "ban" | "clock" | "check"; tone: "soft" | "warning" | "negative" | "fill" };
+  avatar: { label?: string; icon?: "ban" | "clock" | "check" | "layers" | "plus" | "undo" | "lock" | "shield" | "settings"; tone: "soft" | "warning" | "negative" | "fill" };
   filter: "paid" | "refused" | "needs" | "other";
+  /** Reason codes, shown as small pills next to the plain sentence (judges score them). */
+  codes: string[];
+  /** Short transaction hash, muted, under the row. */
+  foot?: string;
 };
 
 /** What the owner sees for one ledger row. `where` is the pocket name and `when` the formatted date. */
 export function describeRow(row: LedgerRow, seller: string, when: string, where?: string): RowView {
+  const v = describeBase(row, seller, when, where);
+  const codes = v.filter === "refused" ? row.reasons : [];
+  return { ...v, codes, foot: row.tx ? `Tx ${shortHex(row.tx, 10, 6)}` : undefined };
+}
+
+const OWNER_ICON = { create: "layers", fund: "plus", return: "undo", revoke: "lock", seller: "shield", cap: "settings", ask: "settings" } as const;
+function describeBase(row: LedgerRow, seller: string, when: string, where?: string): Omit<RowView, "codes" | "foot"> {
   const bad = row.outcome === "refused" || row.outcome === "declined";
   const tail = [where, when].filter(Boolean).join(" · ");
   const money = row.amount != null ? `US$${usd(row.amount)}` : undefined;
+  if (row.kind === "owner") {
+    const k = (row.ownerKind ?? "fund") as keyof typeof OWNER_ICON;
+    const rev = k === "revoke";
+    return { title: row.text ?? "Transaction", sub: [row.detail, where, when].filter(Boolean).join(" · "), right: money, rightSub: "On chain", rightTone: "ink", rightSubTone: "muted", avatar: { icon: OWNER_ICON[k] ?? "check", tone: rev ? "negative" : "soft" }, filter: "other" };
+  }
   if (row.kind === "intent") {
     const first = (row.text ?? "").split("\n")[0].replace(/^Buy:\s*/i, "");
     return { title: row.outcome === "approved" ? "Task confirmed" : "Task declined", sub: [first, when].filter(Boolean).join(" · "), rightTone: "ink", rightSubTone: bad ? "negative" : "muted", rightSub: bad ? "Declined" : undefined, avatar: { icon: bad ? "ban" : "check", tone: bad ? "negative" : "soft" }, filter: bad ? "refused" : "other" };
@@ -58,3 +74,11 @@ export function describeRow(row: LedgerRow, seller: string, when: string, where?
 
 /** Rows worth listing: an approved payment approval is already told by its payment row. */
 export const visibleRows = (rows: LedgerRow[]) => rows.filter((r) => !(r.kind === "approval" && r.outcome === "approved"));
+
+/** The pitch line: if the agent is hijacked, the most it can lose is the pocket balance, and only to the allowed sellers. */
+export function worstCase(balance: bigint, sellers: string[], dead = false): string {
+  if (dead) return "This pocket is switched off. The agent can't spend anything from it.";
+  if (balance === 0n) return "The pocket is empty, so a hijacked agent could not lose anything.";
+  const to = sellers.length === 0 ? "to no one: no seller is allowed" : `only to ${sellers.length === 1 ? sellers[0] : `${sellers.slice(0, -1).join(", ")} and ${sellers.at(-1)}`}`;
+  return `If the agent is hijacked, the most it can lose is US$${usd(balance)}, ${to}.`;
+}

@@ -21,8 +21,14 @@ function Header() {
   const needs = pending.length > 0;
   return (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 16 }}>
-      <Press onPress={() => router.navigate("/settings")} accessibilityRole="button" accessibilityLabel="Settings and wallet" haptics="select"><Avatar icon="user" tone="solid" size={48} /></Press>
-      <Press onPress={() => router.navigate("/agent")} accessibilityRole="button" accessibilityLabel="Ask agent" style={{ height: 48, paddingHorizontal: 22, borderRadius: 24, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Press onPress={() => router.navigate("/settings")} accessibilityRole="button" accessibilityLabel="Settings and wallet" haptics="select"><Avatar icon="user" tone="solid" size={48} /></Press>
+        <View accessibilityLabel="Test network, no real money" style={{ height: 24, paddingHorizontal: 10, borderRadius: 12, backgroundColor: c.fill, flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.muted }} />
+          <T v="cap" w="medium" color="muted" style={{ fontSize: 12, lineHeight: 16 }}>Testnet</T>
+        </View>
+      </View>
+      <Press onPress={() => router.navigate("/agent")} accessibilityRole="button" accessibilityLabel="Ask agent" style={{ height: 48, paddingHorizontal: 18, borderRadius: 24, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Icon name="chat" size={18} color={c.accent} />
         <T v="row" w="semi" color="accent">Ask agent</T>
       </Press>
@@ -96,7 +102,10 @@ export default function Home() {
       <Card pad={20} style={{ marginHorizontal: 20, alignItems: "center" }}>
         <T v="row" w="regular" color="ink2" style={{ marginTop: 4 }}>Agent pockets</T>
         <T v="balance" style={{ marginTop: 10 }} accessibilityLabel={`Agent pockets total ${money(sumAll)}`}>US${usdFrame(shown, total)}</T>
-        <T v="body" color="ink2" style={{ marginTop: 6 }}>{balances ? `Main wallet ${money(balances.usdc)}` : loading ? "Loading…" : "Main wallet"}</T>
+        <View style={{ marginTop: 14, alignSelf: "stretch", backgroundColor: c.canvas, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}>
+          <Icon name="wallet" size={20} color={c.accent} />
+          <T v="section" w="regular" color="ink2" accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"}>{balances ? <>Main wallet <T v="section" w="bold">{money(balances.usdc)}</T></> : loading ? "Main wallet, loading…" : "Main wallet"}</T>
+        </View>
         {demo ? <T v="cap" color="muted" style={{ marginTop: 2 }}>Demo data</T> : null}
         <View style={{ flexDirection: "row", marginTop: 26, alignSelf: "stretch" }}>
           <RoundAction icon="plus" label="Add money" onPress={() => setAction({ mode: "fund" })} />

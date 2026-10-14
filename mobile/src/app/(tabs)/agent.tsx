@@ -4,16 +4,20 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp, type Turn } from "../../store";
 import { c, F } from "../../tokens";
-import { Button, Press } from "../../ui/kit";
+import { Button, CodePill, Press } from "../../ui/kit";
 import { TAB_H } from "../../ui/TabBar";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { useReduceMotion } from "../../ui/motion";
-import { TraceBlock } from "../../components/TraceBlock";
+import { TraceBlock, STEP } from "../../components/TraceBlock";
+import { TxLink } from "../../components/TxLink";
 import { IntentCard } from "../../components/IntentCard";
 import { cleanText } from "../../lib/sanitize";
 import { devScenes, type Scene } from "../../lib/api";
-import { sameAddr, sliceTurn, replyOf } from "../../lib/events";
+import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, type WalletEvent } from "../../lib/events";
+import { deadEndOf, whyText } from "../../lib/deadend";
+import { usd } from "../../lib/util";
+import { router } from "expo-router";
 import { plainReason } from "../../lib/plain";
 import { notify, DEMO_MSG } from "../../lib/toast";
 import { haptic } from "../../haptics";
@@ -28,10 +32,59 @@ function UserBubble({ text, reduce }: { text: string; reduce: boolean }) {
   );
 }
 
+/** "Paid DataLite US$0.30" or "Asked for a price: US$0.30": the latest finished step in the pocket's events. */
+export function lastStepText(events: WalletEvent[], sellerName: (id?: string) => string): string | null {
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i];
+    if (e.type === "payment") return `Paid ${cleanText(sellerName(e.sellerId), 30)} US$${usd(BigInt(e.amount ?? 0))}`;
+    if (e.type === "trace" && e.phase === "tool_result" && e.tool === "pay") {
+      const p = events.slice(0, i + 2).reverse().find((x) => x.type === "payment");
+      if (p) return `Paid ${cleanText(sellerName(p.sellerId), 30)} US$${usd(BigInt(p.amount ?? 0))}`;
+    }
+    if (e.type === "trace" && e.phase === "tool_result" && e.tool) {
+      const sum = summarizeTool(e.tool, toolResultOf(e));
+      return `${STEP[e.tool] ?? "Took a step"}${sum ? `: ${cleanText(sum, 60)}` : ""}`;
+    }
+  }
+  return null;
+}
+
+/** Scene 8: nobody could be paid. Lists each seller tried and why, with a one-tap fix that opens the cap edit prefilled. */
+function DeadEndCard({ evs, pocket, sellerName }: { evs: WalletEvent[]; pocket: { address: string; cap: bigint; balance: bigint; owned: boolean; revoked: boolean }; sellerName: (id?: string) => string }) {
+  const { setRules } = useApp();
+  const d = deadEndOf(evs, pocket);
+  if (!d) return null;
+  const fixed = !!d.fix && d.fix.cap === pocket.cap && d.fix.topUp === 0n;
+  const label = d.fix ? `Raise cap${d.fix.topUp > 0n ? " and budget" : ""} to US$${usd(d.fix.cap)}` : "Open pocket to allow a seller";
+  const again = d.minPrice != null ? `Then ask again with a price limit of at least US$${usd(d.minPrice)}.` : "Then ask your agent again.";
+  return (
+    <View accessibilityLabel="No seller could be paid" style={{ padding: 16, borderRadius: 20, backgroundColor: c.warningSoft, gap: 12 }}>
+      <View style={{ gap: 2 }}>
+        <T v="row" w="semi" color="warning">Nothing was bought</T>
+        <T v="sub" color="ink2">The agent stopped because no seller fit your rules.</T>
+      </View>
+      {d.tried.map((t) => (
+        <View key={`${t.sellerId}${t.sku}`} style={{ gap: 4 }}>
+          <T v="sub" w="semi">{cleanText(sellerName(t.sellerId), 40)}{t.price != null ? ` · US$${usd(t.price)}` : ""}</T>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+            <T v="cap" color="ink2" style={{ flexShrink: 1 }}>{whyText(t).replace(/^./, (x) => x.toUpperCase())}</T>
+            {t.reasons.map((r) => <CodePill key={r} code={r} />)}
+          </View>
+        </View>
+      ))}
+      {pocket.owned && !pocket.revoked ? (
+        fixed ? <T v="sub" color="positive">Your rules now allow this. {again}</T>
+        : !d.fix && !d.needsSeller ? <T v="sub" color="ink2">{again}</T>
+        : <><Button label={label} small onPress={() => (d.fix ? setRules({ pocket: pocket.address, field: "cap", amount: usd(d.fix.cap), topUp: d.fix.topUp }) : router.push({ pathname: "/pocket/[id]", params: { id: pocket.address } }))} /><T v="cap" color="ink2">{again}</T></>
+      ) : null}
+    </View>
+  );
+}
+
 export default function AgentChat() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
-  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, demo, setApprovalOpen, setQuestionOpen, sellerName } = useApp();
+  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, demo, setApprovalOpen, setQuestionOpen, sellerName, setAction, setRules, ownerTxs, wallet } = useApp();
   const [text, setText] = useState("");
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [kb, setKb] = useState(false);
@@ -47,7 +100,7 @@ export default function AgentChat() {
 
   const mine = useMemo(() => (active ? events.filter((e) => sameAddr(e.pocket, active.address)) : []), [events, active]);
   const mineLen = mine.length;
-  useEffect(() => { const t = setTimeout(() => scroll.current?.scrollToEnd({ animated: !reduce }), 60); return () => clearTimeout(t); }, [turns, mineLen, pending.length, reduce]);
+  useEffect(() => { const t = setTimeout(() => scroll.current?.scrollToEnd({ animated: !reduce }), 60); return () => clearTimeout(t); }, [turns, mineLen, pending.length, reduce, active?.revoked]);
 
   const here = (a: { pocket: string }) => !!active && sameAddr(a.pocket, active.address);
   const intent = pending.find((a) => a.kind === "intent" && here(a));
@@ -63,13 +116,26 @@ export default function AgentChat() {
   const chips = [...follow, ...(scenes.length ? scenes.map((s) => s.text) : DEFAULTS)].slice(0, 12);
   const bottomPad = kb ? 8 : TAB_H + insets.bottom + 4;
   const last = turns.at(-1);
+  const canStop = !!active && active.owned && !!wallet && !active.revoked && Number(active.expiresAt) * 1000 > Date.now() && !demo;
+  const stopped = active?.revoked ? lastStepText(mine, sellerName) : null;
+  const stopTx = active ? ownerTxs.filter((t) => t.kind === "revoke" && sameAddr(t.pocket, active.address)).at(-1) : undefined;
   const status = agentState === "working" ? "Working…" : agentState === "waiting" ? "Waiting for you" : agentState === "paused" ? "Paused" : "Ready";
 
   return (
     <View style={{ flex: 1, backgroundColor: c.card }}>
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 12, alignItems: "center", gap: 2 }}>
-        <T v="row" w="semi" accessibilityRole="header">Ask agent</T>
-        <T v="cap" color="muted" numberOfLines={1}>{active ? `${cleanText(active.name, 24)} · ${status}` : "No pocket yet"}</T>
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 12 }}>
+        <View style={{ alignItems: "center", gap: 2, paddingHorizontal: 112 }}>
+          <T v="row" w="semi" accessibilityRole="header">Ask agent</T>
+          <T v="cap" color="muted" numberOfLines={1}>{active ? `${cleanText(active.name, 14)} · ${active.revoked ? "Stopped" : status}` : "No pocket yet"}</T>
+        </View>
+        <View style={{ position: "absolute", right: 20, top: insets.top + 8 }}>
+          {canStop ? (
+            <Press onPress={() => setAction({ mode: "revoke", pocket: active!.address })} accessibilityRole="button" accessibilityLabel="Stop agent" style={{ height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: c.negativeSoft, flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Icon name="lock" size={15} color={c.negative} />
+              <T v="sub" w="semi" color="negative" numberOfLines={1}>Stop agent</T>
+            </Press>
+          ) : null}
+        </View>
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
@@ -96,15 +162,16 @@ export default function AgentChat() {
                 {!t.done ? (
                   <View style={{ gap: 4 }}>
                     <T v="body" color="muted">{pending.length ? "Waiting for you…" : "Working on it…"}</T>
-                    <TraceBlock events={evs} />
+                    <TraceBlock events={evs} defaultOpen />
                   </View>
                 ) : (
                   <Animated.View entering={reduce ? undefined : FadeInDown.duration(200)} style={{ gap: 4, maxWidth: "94%" }}>
                     {t.error ? <T v="body" color="negative">{t.error}</T> : <T v="body">{cleanText(reply, 3000) || "Done."}</T>}
                     {t.stopped && t.stopped !== "refusal" ? <T v="cap" color="muted">Stopped early.</T> : null}
-                    <TraceBlock events={evs} />
+                    <TraceBlock events={evs} defaultOpen={isLast} />
                   </Animated.View>
                 )}
+                {t.done && active ? <DeadEndCard evs={evs} pocket={active} sellerName={sellerName} /> : null}
                 {isLast && intent && (
                   <IntentCard text={intent.text} busy={intentBusy}
                     onConfirm={async () => { setIntentBusy(true); await answer(intent, true); setIntentBusy(false); }}
@@ -114,6 +181,14 @@ export default function AgentChat() {
             );
           })}
           {!last && intent && <IntentCard text={intent.text} onConfirm={() => void answer(intent, true)} onDecline={() => void answer(intent, false)} />}
+          {active?.revoked && turns.length > 0 ? (
+            <View style={{ padding: 16, borderRadius: 20, backgroundColor: c.negativeSoft, gap: 8 }}>
+              <T v="row" w="semi" color="negative">Agent stopped</T>
+              <T v="body" color="ink">Agent stopped. Last completed step: {stopped ?? "none yet"}.</T>
+              {stopTx ? <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}><T v="cap" color="ink2">Revoke transaction</T><TxLink tx={stopTx.hash} /></View> : null}
+              {active.owned && active.balance > 0n ? <Button label="Return funds" kind="secondary" small onPress={() => setAction({ mode: "return", pocket: active.address })} /> : null}
+            </View>
+          ) : null}
           {pay && (
             <View style={{ padding: 16, borderRadius: 20, backgroundColor: c.canvas, gap: 12 }}>
               <View style={{ gap: 2 }}>

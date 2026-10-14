@@ -10,9 +10,9 @@ module.exports = {
     extend: {
       fontFamily: { sans: ["PlusJakartaSans_400Regular"], serif: ["Fraunces_600SemiBold"] },
       colors: {
-        canvas: "#F7F7F8", card: "#FFFFFF", fill: "#EFEFF1", line: "#E6E6EA",
-        ink: "#111318", ink2: "#4B5058", muted: "#6B7280", faint: "#A1A6AE",
-        accent: { DEFAULT: "#0B7A4B", press: "#08613B", soft: "#E3F3EA" },
+        canvas: "#F5F7F8", card: "#FFFFFF", fill: "#EDF0F2", line: "#E3E7EA",
+        ink: "#0F2236", ink2: "#3E4F63", muted: "#5D6B7B", faint: "#9AA5B1",
+        accent: { DEFAULT: "#00727F", press: "#005C66", soft: "#DDF0F2" },
         negative: { DEFAULT: "#C8372D", soft: "#FCEBEA" },
         warning: { DEFAULT: "#9A6200", soft: "#FFF3DB" },
       },

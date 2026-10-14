@@ -48,9 +48,9 @@ Both apps ask `GET /dev/health` at start. On the dev stack they show a **LOCAL F
 
 | Suite | Result |
 | --- | --- |
-| End-to-end, `pnpm --dir devstack e2e` (phone: scenes 1-3 and 7, approvals, receipt, revoke; web: seller dashboard after `seed`, demo mode, 390 px) | 45/45 on a fresh stack (14 Oct 2026) |
+| End-to-end, `pnpm --dir devstack e2e` (phone: scenes 1-3 and 7, approvals, receipt, revoke; web console: trace with reason codes, pocket vs chain, all pockets, on-chain list, seller side, red-team plant, forced transfer reverted, demo mode, 390 px) | 44/44 on a fresh stack (15 Oct 2026) |
 | Web, `pnpm --dir web test`, `build`, `lint` | 24/24, clean |
-| Phone, `npm test`, `npx tsc --noEmit`, `npx expo export --platform web` and `ios`, `npx expo-doctor` | 19/19 (incl. the team's co-sign payload test), clean, both exports build, 21/21 |
+| Phone, `npm test`, `npx tsc --noEmit`, `npx expo export --platform web` and `ios`, `npx expo-doctor` | 22/22 (incl. the team's co-sign payload test), clean, both exports build, 21/21 |
 | Dev stack, `pnpm --dir devstack test` | 15/15 |
 | Team server, `cd server && pnpm test`, `SCENE_REPLAY=1 pnpm test:scenes` | 37 passed (6 skipped outside replay), 6/6 |
 

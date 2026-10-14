@@ -44,6 +44,9 @@ export function ownerWallet(pk: Hex) {
     revoke: (p: Address) => pocketWrite(p, "revoke"),
     returnFunds: (p: Address) => pocketWrite(p, "returnFunds"),
     setSeller: (p: Address, s: Address, ok: boolean) => pocketWrite(p, "setSeller", [s, ok]),
+    /** Owner-signed rule edits: per-payment cap and ask-me threshold (NEVER = never ask, 0 = ask every time). */
+    setCap: (p: Address, cap: bigint) => pocketWrite(p, "setCap", [cap]),
+    setAskAbove: (p: Address, x: bigint) => pocketWrite(p, "setAskAbove", [x]),
     /** Co-sign the exact USDC transfer the wallet tool layer built (payments above the ask-me threshold). */
     signTransfer: (auth: Authorization) => account.signTypedData(transferTypedData(auth)),
   };

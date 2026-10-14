@@ -5,12 +5,13 @@ import { ScrollView, View, useWindowDimensions } from "react-native";
 import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
-import { Avatar, Button, Details } from "../ui/kit";
+import { Avatar, Button, CodePill, Details } from "../ui/kit";
 import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
 import { authOf, authExpired, type Approval } from "../lib/events";
+import { NEVER } from "../lib/shared";
 import { parseUsd } from "../lib/shared";
 import { usd, shortAddr } from "../lib/util";
 import { c } from "../tokens";
@@ -60,6 +61,9 @@ function Body({ a, queue }: { a: Approval; queue: number }) {
   const owned = pocket ? pocket.owned : true;
   const seller = cleanText(sellerName(a.data?.sellerId), 60);
   const amount = safeUsd(a.data?.amount);
+  const needsText = !pocket || pocket.askAbove === NEVER ? "Needs you because it is above your ask-me limit"
+    : pocket.askAbove === 0n ? "Needs you because this pocket asks you about every payment"
+    : `Needs you because it is above your US$${usd(pocket.askAbove)} ask-me limit`;
 
   const approve = async () => {
     setError(null);
@@ -97,10 +101,14 @@ function Body({ a, queue }: { a: Approval; queue: number }) {
                 <T v="sub" color="muted" numberOfLines={2}>{cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment"}</T>
               </View>
             </View>
-            {a.text ? <T v="body" color="ink2">{cleanText(a.text, 400)}</T> : null}
+            {a.data?.intent ? <IntentCard text={a.data.intent} title="Task you confirmed" /> : null}
+            <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: c.warningSoft, borderRadius: 16, padding: 14 }}>
+              <Icon name="clock" size={18} color={c.warning} />
+              <View style={{ flex: 1, gap: 6 }}><T v="sub" color="warning">{needsText}</T><CodePill code="NEEDS_OWNER_APPROVAL" tone="warning" /></View>
+            </View>
+            {a.text ? <View style={{ gap: 2 }}><T v="cap" color="muted">Your agent says</T><T v="body" color="ink2">{cleanText(a.text, 400)}</T></View> : null}
             <T v="cap" color="muted">Your signature approves this one payment for the next 10 minutes. No money leaves your main wallet.</T>
             <Details rows={[
-              ...(a.data?.intent ? [["Task you confirmed", cleanText(a.data.intent, 300)] as [string, string]] : []),
               ["Pays to", auth ? shortAddr(auth.to) : "n/a"], ["Authorization", auth ? `${auth.nonce.slice(0, 10)}…` : "n/a"],
             ]} />
           </>

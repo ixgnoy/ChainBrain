@@ -80,6 +80,7 @@ export default function Settings() {
       <SectionHeader title="About" />
       <ListCard>
         <ListRow avatar={<Avatar icon="shield" />} title="Test money only" sub="Do not put real money on this wallet" />
+        <ListRow a11y="Compliance" avatar={<Avatar icon="globe" />} title="Compliance" subLines={6} sub="Testnet assets only. Not offered in mainland China. Target: Hong Kong and APEC, settling in licensed stablecoins or tokenized deposits." />
         <ListRow avatar={<Avatar icon="bolt" />} title="ChainBrain" sub="Your agent spends only from the pockets you fund" />
       </ListCard>
     </Screen>

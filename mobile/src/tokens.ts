@@ -1,13 +1,13 @@
-// ChainBrain design tokens, clean bank v2 (design-system/chainbrain/MASTER.md). Light only: there is no dark palette.
-// One accent (forest green), white borderless cards on a grey canvas, no gradients, blur, glow or monospace.
+// ChainBrain design tokens, clean bank v3 (design-system/chainbrain/MASTER.md). Light only: there is no dark palette.
+// One accent (deep teal), white borderless cards on a grey canvas, no gradients, blur, glow or monospace.
 
 export const c = {
-  canvas: "#F7F7F8", card: "#FFFFFF", fill: "#EFEFF1", line: "#E6E6EA",
-  ink: "#111318", ink2: "#4B5058", muted: "#6B7280", faint: "#A1A6AE",
-  accent: "#0B7A4B", accentPress: "#08613B", accentSoft: "#E3F3EA", onAccent: "#FFFFFF",
-  positive: "#0B7A4B", negative: "#C8372D", negativeSoft: "#FCEBEA", warning: "#9A6200", warningSoft: "#FFF3DB",
-  mint: "#DDF5EC", peach: "#FDEBDD", lilac: "#ECE9FB",
-  scrim: "rgba(17,19,24,0.40)",
+  canvas: "#F5F7F8", card: "#FFFFFF", fill: "#EDF0F2", line: "#E3E7EA",
+  ink: "#0F2236", ink2: "#3E4F63", muted: "#5D6B7B", faint: "#9AA5B1",
+  accent: "#00727F", accentPress: "#005C66", accentSoft: "#DDF0F2", onAccent: "#FFFFFF",
+  positive: "#1A7F4B", negative: "#C8372D", negativeSoft: "#FCEBEA", warning: "#9A6200", warningSoft: "#FFF3DB",
+  mint: "#DFF3EC", peach: "#FDEBDD", sky: "#E3EEF9",
+  scrim: "rgba(15,34,54,0.40)",
 } as const;
 export type Tone = keyof typeof c;
 
@@ -22,7 +22,7 @@ export const F = {
 
 export const radius = { input: 12, card: 20, pill: 9999 } as const;
 /** The only shadow in the app: floating tab bar and bottom sheets. */
-export const lift = { shadowColor: "#111318", shadowOpacity: 0.08, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 6 } as const;
+export const lift = { shadowColor: "#0F2236", shadowOpacity: 0.08, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 6 } as const;
 
 export const motion = {
   fast: 160, base: 200,

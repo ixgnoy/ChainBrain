@@ -13,6 +13,7 @@ import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { useReduceMotion } from "../ui/motion";
 import { txError } from "../components/ActionSheet";
+import { TxLink } from "../components/TxLink";
 import { cleanText } from "../lib/sanitize";
 import { PRESETS, toPocketArgs, expiryFor, type Lifetime, type PresetValues } from "../lib/presets";
 import { styleForPreset } from "../lib/pocketNames";
@@ -21,16 +22,22 @@ import { money2, usd } from "../lib/util";
 import { notify, DEMO_MSG } from "../lib/toast";
 import { haptic } from "../haptics";
 
+/** Sellers under their category (Research data, Food and drink), in the order the API lists them. */
+export function groupSellers<S extends { category: string }>(list: S[]): [string, S[]][] {
+  const m = new Map<string, S[]>();
+  for (const s of list) m.set(s.category, [...(m.get(s.category) ?? []), s]);
+  return [...m.entries()];
+}
 const STEPS = ["Start", "Funds", "Sellers", "How much", "When to ask me", "How long", "Review"] as const;
 const FUND_PRESETS = [0.3, 1, 2, 5];
 type AskMode = "always" | "above" | "never";
-type Progress = { pocket?: `0x${string}`; funded?: boolean };
+type Progress = { pocket?: `0x${string}`; funded?: boolean; createTx?: string; fundTx?: string };
 const LIFETIMES: [Lifetime, string, string][] = [["one-task", "One task", "Ends in 24 hours. Made for a single purchase."], ["until-tonight", "Until tonight", "Ends at 23:59 your time."], ["ongoing", "Ongoing", "Runs for a year. You can revoke it any time."]];
 
 export default function Create() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
-  const { cfg, wallet, addPocket, balances, demo, refreshPockets } = useApp();
+  const { cfg, wallet, addPocket, balances, demo, refreshPockets, recordTx, setNotice } = useApp();
   const [step, setStep] = useState(0);
   const [preset, setPreset] = useState<string>("research");
   const [name, setName] = useState<string>(PRESETS.research.label);
@@ -43,6 +50,7 @@ export default function Create() {
   const [error, setError] = useState<string | null>(null);
   const [stage, setStage] = useState<"idle" | "create" | "fund" | "done">("idle");
   const progress = useRef<Progress>({});
+  const done = useRef<{ createTx?: string; fundTx?: string }>({});
 
   const choose = (key: keyof typeof PRESETS | "custom") => {
     haptic.select(); setPreset(key);
@@ -71,13 +79,22 @@ export default function Create() {
       const prog = progress.current;
       if (!prog.pocket) {
         setStage("create");
-        prog.pocket = (await wallet.createPocket(a)).pocket;
+        const made = await wallet.createPocket(a);
+        prog.pocket = made.pocket; prog.createTx = made.tx;
+        recordTx({ kind: "create", pocket: made.pocket, hash: made.tx, });
         // saved at once: even if funding fails the pocket is never lost, and Fund on Home resumes it
         await addPocket(prog.pocket, { name: values.label, style: style as any });
       }
-      if (!prog.funded) { setStage("fund"); await wallet.fund(prog.pocket, a.budget); prog.funded = true; await refreshPockets(); }
+      if (!prog.funded) {
+        setStage("fund");
+        const f = await wallet.fund(prog.pocket, a.budget); prog.funded = true; prog.fundTx = f.hash;
+        recordTx({ kind: "fund", pocket: prog.pocket, hash: f.hash, amount: a.budget.toString() });
+        await refreshPockets();
+      }
       setStage("done");
       const id = prog.pocket;
+      setNotice({ title: `${values.label} created and funded`, pocket: id, txs: [{ label: "Create pocket", hash: prog.createTx! }, { label: `Add US$${values.budget}`, hash: prog.fundTx! }] });
+      done.current = { createTx: prog.createTx, fundTx: prog.fundTx };
       progress.current = {};
       setTimeout(() => router.replace({ pathname: "/pocket/[id]", params: { id } }), 900);
     } catch (e) {
@@ -128,8 +145,13 @@ export default function Create() {
         <View style={{ gap: 16 }}>
           <Title h="Who can it pay?" sub="Only these sellers can be paid from the pocket. Anyone else is refused." />
           {(cfg?.sellers ?? []).length === 0 && <T v="sub" color="muted">Sellers did not load. Check the connection.</T>}
-          {(cfg?.sellers ?? []).map((s) => (
-            <Option key={s.id} on={sellers.includes(s.id)} onPress={() => toggle(s.id)} title={cleanText(s.name, 40)} sub={`${cleanText(s.category, 30)} · ${s.items.map((i) => (i.price ? `US$${cleanText(i.price, 8)}` : "free")).join(", ")}`} />
+          {groupSellers(cfg?.sellers ?? []).map(([cat, list]) => (
+            <View key={cat} style={{ gap: 10 }}>
+              <T v="sub" w="semi" color="muted" accessibilityRole="header" style={{ marginTop: 6 }}>{cleanText(cat, 30)}</T>
+              {list.map((s) => (
+                <Option key={s.id} on={sellers.includes(s.id)} onPress={() => toggle(s.id)} title={cleanText(s.name, 40)} sub={s.items.map((i) => (i.price ? `US$${cleanText(i.price, 8)}` : "free")).join(", ")} />
+              ))}
+            </View>
           ))}
         </View>);
       case 3: return (
@@ -162,12 +184,15 @@ export default function Create() {
               <View key={k} style={{ flexDirection: "row", justifyContent: "space-between", gap: 16, paddingVertical: 14, borderBottomWidth: i < all.length - 1 ? 1 : 0, borderBottomColor: c.line }}><T v="sub" color="muted">{k}</T><T v="sub" w="medium" style={{ flexShrink: 1, textAlign: "right" }}>{v}</T></View>
             ))}
           </Card>
-          {stage !== "idle" || progress.current.pocket ? (
+          {stage !== "idle" || progress.current.pocket || done.current.createTx ? (
             <Card style={{ gap: 10 }}>
-              {([["create", "1. Create the pocket", !!progress.current.pocket], ["fund", "2. Add the money", !!progress.current.funded]] as const).map(([k, l, done]) => (
-                <View key={k} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: done ? c.accent : c.fill, alignItems: "center", justifyContent: "center" }}>{done && <Icon name="check" size={13} color={c.onAccent} stroke={2.6} />}</View>
-                  <T v="sub" color={done || stage === k ? "ink" : "muted"}>{l}{stage === k ? "…" : ""}</T>
+              {([["create", "1. Create the pocket", !!progress.current.pocket || !!done.current.createTx, progress.current.createTx ?? done.current.createTx], ["fund", "2. Add the money", !!progress.current.funded || !!done.current.fundTx, progress.current.fundTx ?? done.current.fundTx]] as const).map(([k, l, ok, hash]) => (
+                <View key={k} style={{ gap: 4 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: ok ? c.accent : c.fill, alignItems: "center", justifyContent: "center" }}>{ok && <Icon name="check" size={13} color={c.onAccent} stroke={2.6} />}</View>
+                    <T v="sub" color={ok || stage === k ? "ink" : "muted"}>{l}{stage === k ? "…" : ""}</T>
+                  </View>
+                  {hash ? <View style={{ marginLeft: 32, alignItems: "flex-start" }}><TxLink tx={hash} /></View> : null}
                 </View>
               ))}
             </Card>
