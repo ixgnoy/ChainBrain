@@ -94,7 +94,7 @@ export default function Chat({ onReview }: { onReview(a: Approval): void }) {
       bodyClassName="flex flex-col">
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4" role="log" aria-live="polite" aria-label="Conversation">
         {lastDisclosure && !dismissed.has(disclosureKey) && (
-          <div role="alert" className="row-in flex items-start gap-3 rounded-2xl border border-refused/30 bg-refused-bg p-3">
+          <div className="sticky top-0 z-10 rounded-2xl bg-e1"><div role="alert" className="row-in flex items-start gap-3 rounded-2xl border border-refused/30 bg-refused-bg p-3">
             <TriangleAlert className="mt-0.5 size-5 shrink-0 text-refused" aria-hidden />
             <div className="min-w-0 flex-1">
               <div className="text-sm font-semibold text-refused-ink">A seller asked for more than the purchase</div>
@@ -104,7 +104,7 @@ export default function Chat({ onReview }: { onReview(a: Approval): void }) {
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">{(lastDisclosure.refused ?? []).map((c: string) => <ReasonChip key={c} code={c} />)}{disclosures.length > 1 && <span className="text-[11px] text-t3">{disclosures.length} requests this session</span>}</div>
             </div>
             <button type="button" onClick={() => setDismissed((s) => new Set(s).add(disclosureKey))} className="rounded-full px-2 py-1 text-xs text-t3 hover:bg-e3 hover:text-fg" aria-label="Dismiss this notice">Dismiss</button>
-          </div>
+          </div></div>
         )}
         {!active ? (
           <div className="grid h-full place-items-center text-center"><div className="max-w-xs"><AgentOrb size={44} /><p className="display mt-4 text-base">No pocket yet</p><p className="mt-1 text-[13px] text-t2">{owner ? "Create a pocket to give the agent a budget, then ask it to buy something." : "Connect your wallet, then create a pocket."}</p></div></div>
