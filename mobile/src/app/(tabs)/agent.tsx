@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp, type Turn } from "../../store";
 import { c, F } from "../../tokens";
 import { Button, CodePill, Press } from "../../ui/kit";
-import { TAB_H } from "../../ui/TabBar";
+import { GLASS_TAB_SPACE as TAB_H } from "../../ui/glass/GlassTabBar";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { useReduceMotion } from "../../ui/motion";

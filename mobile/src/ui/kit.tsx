@@ -1,25 +1,29 @@
 // Small UI kit: pressable, white card, round action, list row, pill, buttons, section header, field, expandable details.
 import React, { useState } from "react";
 import { Pressable, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
-import { c, F, radius } from "../tokens";
-import { haptic } from "../haptics";
-import { glide, settle, useReduceMotion } from "./motion";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { c, F, motion, radius } from "../tokens";
+import { haptic, type HapticName } from "../haptics";
+import { EASE_OUT, glide, settle, useReduceMotion } from "./motion";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
 
 const APressable = Animated.createAnimatedComponent(Pressable);
 
-/** Pressable with a quiet scale on press and an optional haptic tick. */
-export function Press({ children, style, onPress, haptics = "light", scale = 0.97, ...p }: PressableProps & { style?: StyleProp<ViewStyle>; haptics?: "light" | "select" | "none"; scale?: number }) {
+/** Pressable with press feedback that starts on touch-down (90 ms ease-out to a size-aware scale, spring release) and a
+ *  haptic on press. `kind` picks the scale: row/card 0.985, button 0.97, round action 0.94, icon 0.9. */
+export function Press({ children, style, onPress, haptics = "light", scale, kind = "button", ...p }: PressableProps & {
+  style?: StyleProp<ViewStyle>; haptics?: HapticName | "none"; scale?: number; kind?: keyof typeof motion.scale;
+}) {
   const reduce = useReduceMotion();
   const s = useSharedValue(1);
+  const to = scale ?? motion.scale[kind];
   const a = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
   return (
     <APressable
       {...p}
-      onPressIn={(e) => { glide(s, scale, reduce, 80); p.onPressIn?.(e); }}
-      onPressOut={(e) => { settle(s, 1, reduce, { damping: 18, stiffness: 220, mass: 1 }); p.onPressOut?.(e); }}
+      onPressIn={(e) => { if (!reduce) s.value = withTiming(to, { duration: motion.pressIn, easing: EASE_OUT }); p.onPressIn?.(e); }}
+      onPressOut={(e) => { settle(s, 1, reduce, motion.spring.press); p.onPressOut?.(e); }}
       onPress={(e) => { if (haptics !== "none") haptic[haptics](); onPress?.(e); }}
       style={[a, style]}
     >
