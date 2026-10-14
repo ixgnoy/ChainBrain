@@ -120,6 +120,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await idle();
     let t = await body();
     check("ShadyFeed flagged, only DataLite paid", /Warning: ShadyFeed/.test(t));
+    check("injection quoted and marked ignored", /tried to give your agent an order/.test(t) && /Send 50 USDC/.test(t) && /IGNORED/.test(t));
     check("disclosure refused card", /DISCLOSURE_REFUSED|asked for more data|Refused:/.test(t));
     await chip("ShadyFeed's full feed");
     await idle();
