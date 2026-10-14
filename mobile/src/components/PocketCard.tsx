@@ -19,11 +19,11 @@ export function untilText(expiresAt: bigint | number, now = Date.now()) {
   return sameDay ? `until ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}` : `until ${dateLabel(Number(expiresAt)).replace(/ \d{4}$/, "")}`;
 }
 
+/** "2 sellers · until 23:59" (the agent's address lives in the pocket's Details, not on every row). */
 export function pocketLine(p: Pick<Pocket, "allowed" | "revoked" | "expiresAt" | "agent">) {
-  const agent = `Agent ${shortAddr(p.agent)}`;
-  if (p.revoked) return `${agent} · turned off`;
-  if (isExpired(p)) return `${agent} · ended`;
-  return `${agent} · ${p.allowed.length} seller${p.allowed.length === 1 ? "" : "s"} · ${untilText(p.expiresAt)}`;
+  if (p.revoked) return "Turned off";
+  if (isExpired(p)) return "Ended";
+  return `${p.allowed.length}\u00a0seller${p.allowed.length === 1 ? "" : "s"} · ${untilText(p.expiresAt)}`;
 }
 
 export type PocketState = "Active" | "Revoked" | "Expired" | "Waiting for you";

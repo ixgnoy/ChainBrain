@@ -45,8 +45,16 @@ function* draft(fields: ReturnType<typeof intent>, say = "Writing the task down 
   return !!r?.ok;
 }
 
+// Reason codes stay out of the agent's sentences: the cards beside the reply carry them as pills.
+const WHY: Record<string, string> = {
+  SELLER_NOT_ALLOWED: "that seller isn't on your list", OVER_CAP: "it's above this pocket's per-payment cap", OVER_BUDGET: "there isn't enough left in the pocket",
+  POCKET_REVOKED: "you stopped the pocket", POCKET_EXPIRED: "the pocket has expired", PRICE_ABOVE_INTENT: "it costs more than the task allows",
+  INTENT_TOTAL_REACHED: "it would go over the task's total", INTENT_ITEMS_REACHED: "the task already has enough items", OWNER_DECLINED: "you declined it",
+  APPROVAL_EXPIRED: "your approval came too late", NEEDS_OWNER_APPROVAL: "it needs your OK", SETTLEMENT_FAILED: "the payment didn't go through",
+};
+const why = (code?: string) => (code && WHY[code]) || "your rules don't allow it";
 const bought = (o: Outcome) => `${name(o.sellerId)}'s ${item(o.sku)} (US$${o.price})`;
-const refused = (o: Outcome) => `${name(o.sellerId)}'s ${item(o.sku)} was refused: ${o.reason}${o.why ? ` (${o.why})` : ""}`;
+const refused = (o: Outcome) => `${name(o.sellerId)}'s ${item(o.sku)} wasn't bought: ${why(o.reason)}`;
 function summary(outs: Outcome[]): string {
   const ok = outs.filter((o) => o.ok), bad = outs.filter((o) => !o.ok);
   const parts: string[] = [];
@@ -93,7 +101,7 @@ function* scene4(): Scene {
   if (first.ok) return summary([first]);
   yield { tool: "search_sellers", input: { category: "Research data" }, say: `${name(first.sellerId)} isn't on this pocket's list. Looking for an allowed seller with a similar report.` };
   const second = yield* purchase("datalite", "fruit-trade-report");
-  const lead = `${name(first.sellerId)} can't be paid from this pocket (${first.reason}), so I re-planned.`;
+  const lead = first.reason === "SELLER_NOT_ALLOWED" ? `${name(first.sellerId)} isn't on this pocket's list, so I re-planned.` : `${name(first.sellerId)} can't be paid from this pocket (${why(first.reason)}), so I re-planned.`;
   return `${lead} ${summary([second])}`;
 }
 
@@ -109,9 +117,8 @@ function* scene5(): Scene {
 
 function* scene6(): Scene {
   const peek = yield { tool: "get_quote", input: { sellerId: "shadyfeed", sku: "preview" }, say: "Opening ShadyFeed's feed. I'll check what it asks for before anything else." };
-  const why = (peek?.refusedWhy ?? []).join("; ");
   return peek?.refused?.length
-    ? `ShadyFeed asked for your name, wallet history and an approval signature. The wallet refused (${peek.refused.join(", ")}); I won't share or sign anything. ${why}`.trim()
+    ? "ShadyFeed asked for your name, email, wallet history and an approval signature. The wallet refused, and I won't share or sign anything. Nothing was paid."
     : "ShadyFeed's preview didn't ask for anything unusual. Nothing was paid.";
 }
 
@@ -125,7 +132,7 @@ function* scene7(windowMs: number): Scene {
     second = p?.ok ? { ...second, ok: true, tx: p.tx } : { ...second, reason: p?.reason, why: p?.why };
   }
   if (!second.ok && second.reason === "POCKET_REVOKED")
-    return `The pocket was revoked (POCKET_REVOKED), so I stopped. ${first.ok ? `Last completed purchase: ${bought(first)}.` : "Nothing was paid."}`;
+    return `You stopped the pocket, so I stopped too. ${first.ok ? `Last completed purchase: ${bought(first)}.` : "Nothing was paid."}`;
   return summary([first, second]);
 }
 
@@ -134,9 +141,15 @@ function* scene8(): Scene {
   yield { tool: "search_sellers", input: {}, say: "Checking every seller against this pocket's limits." };
   const lite = yield { tool: "get_quote", input: { sellerId: "datalite", sku: "durian-report" }, say: "Asking DataLite for the price of its durian export report." };
   const pro = yield { tool: "get_quote", input: { sellerId: "datapro", sku: "premium-report" }, say: "Asking DataPro too, in case it fits." };
-  const line = (id: string, q: any) => (q?.allowedByPocket === "OK" ? `${name(id)} (US$${q.price}) is allowed` : `${name(id)} (US$${q?.price ?? "?"}): ${q?.allowedByPocket?.reason ?? q?.reason ?? "unavailable"}`);
+  const line = (id: string, q: any) => {
+    const r = q?.allowedByPocket === "OK" ? undefined : q?.allowedByPocket?.reason ?? q?.reason;
+    if (!r) return `${name(id)} costs US$${q.price} and is allowed.`;
+    if (r === "OVER_CAP") return `${name(id)} costs US$${q?.price ?? "?"}, above this pocket's cap.`;
+    if (r === "SELLER_NOT_ALLOWED") return `${name(id)} isn't on your list.`;
+    return `${name(id)} can't be paid: ${why(r)}.`;
+  };
   const price = lite?.price ?? "0.30";
-  return `No allowed seller fits. ${line("datalite", lite)}; ${line("datapro", pro)}. Nothing was paid. Fix: raise the cap and budget to US$${price}, then ask me again.`;
+  return `No allowed seller fits. ${line("datalite", lite)} ${line("datapro", pro)} Nothing was paid. Fix: raise the cap and budget to US$${price}, then ask me again.`;
 }
 
 function* hello(): Scene {

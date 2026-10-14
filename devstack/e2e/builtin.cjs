@@ -24,6 +24,8 @@ async function until(what, fn, ms = 30000, step = 200) {
 (async () => {
   const browser = await chromium.launch({ headless: !HEADED });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+  // stay off the laptop relay unless asked (it links one phone at a time): answer its calls here, quietly
+  if (!args.includes("--link")) await ctx.route("**/dev/relay/**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, commands: [] }) }));
   const page = await ctx.newPage();
   const issues = [];
   page.on("pageerror", (e) => issues.push(`pageerror: ${e.message}`));
@@ -43,7 +45,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await page.mouse.up();
   };
   const confirmTask = async () => { const b = page.getByRole("button", { name: "Confirm task" }).last(); await b.waitFor({ timeout: 30000 }); await sleep(450); await b.click(); };
-  const idle = () => until("agent idle", async () => /· Ready|· Stopped|· Paused/.test(await body()), 60000, 300);
+  const idle = () => until("agent idle", async () => /Ready ·|Stopped ·/.test(await body()), 60000, 300);
   const run = async (name, f) => { console.log(`\n# ${name}`); try { await f(); } catch (e) { check(`${name}: no exception`, false, e.message.split("\n")[0]); await shot(`fail-${name.replace(/\W+/g, "_")}`); } };
 
   await page.goto(`${URL0}/`);
@@ -135,7 +137,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await sleep(650); // let the sheet finish sliding in before reading the button's position
     const b = await hold.boundingBox();
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await sleep(1700); await page.mouse.up();
-    await until("revoked reply", async () => /POCKET_REVOKED\), so I stopped/.test(await body()), 30000);
+    await until("revoked reply", async () => /You stopped the pocket, so I stopped too/.test(await body()), 30000);
     check("second payment refused POCKET_REVOKED, agent stopped", true);
     await shot("07-revoked");
   });

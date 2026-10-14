@@ -51,7 +51,7 @@ test("scene 3 declined: OWNER_DECLINED, nothing paid", async () => {
     if (a?.status === "pending") setTimeout(() => void w.answer(a.id, { approved: a.kind === "intent" }), 1);
   });
   const r = await w.chat(pocket, "Get the DataPro premium durian report with the 2026 forecast. Max US$2, by tonight.");
-  assert.match(r.reply, /OWNER_DECLINED/);
+  assert.match(r.reply, /wasn't bought: you declined it/);
   assert.equal(w.chain.view(pocket).balance, parseUsd("5"));
 });
 
@@ -79,7 +79,7 @@ test("scene 4: SELLER_NOT_ALLOWED then re-plan to DataLite US$0.35", async () =>
   const { w, pocket } = await setup();
   owner(w);
   const r = await w.chat(pocket, "Buy Harbour Wines' fruit and wine trade report. Max US$1, by tonight. Confirmed, go ahead.");
-  assert.match(r.reply, /SELLER_NOT_ALLOWED\), so I re-planned\. Bought DataLite's fruit trade report \(US\$0\.35\)/);
+  assert.match(r.reply, /^Harbour Wines isn't on this pocket's list, so I re-planned\. Bought DataLite's fruit trade report \(US\$0\.35\)/);
   const ref = w.events(0, pocket).find((e) => e.type === "refusal");
   assert.equal(ref?.reason, "SELLER_NOT_ALLOWED");
 });
@@ -108,7 +108,7 @@ test("scene 7: revoke mid-task stops the second payment with POCKET_REVOKED", as
   owner(w);
   w.subscribe((e) => { if (e.type === "payment") void w.ownerTx(() => w.chain.revoke(OWNER, pocket)); });
   const r = await w.chat(pocket, "Buy DataLite's durian report and its fruit trade report. Max US$1 each, by tonight.");
-  assert.match(r.reply, /POCKET_REVOKED\), so I stopped\. Last completed purchase: DataLite's durian export report/);
+  assert.match(r.reply, /^You stopped the pocket, so I stopped too\. Last completed purchase: DataLite's durian export report/);
   await w.ownerTx(() => w.chain.returnFunds(OWNER, pocket));
   assert.equal(w.chain.view(pocket).balance, 0n);
   assert.throws(() => w.chain.revoke("0x0000000000000000000000000000000000000001", pocket), /NOT_OWNER/);
@@ -118,7 +118,7 @@ test("scene 8: dead end, nothing paid, suggests the fix", async () => {
   const { w, pocket } = await setup({ cap: "0.20", ask: "never", budget: "0.20", sellers: ["datalite"] });
   owner(w);
   const r = await w.chat(pocket, "Buy a durian export report, max US$0.20, by tonight.");
-  assert.match(r.reply, /^No allowed seller fits\. DataLite \(US\$0\.30\): OVER_CAP; DataPro \(US\$1\.50\): SELLER_NOT_ALLOWED\. Nothing was paid\. Fix: raise the cap and budget to US\$0\.30/);
+  assert.match(r.reply, /^No allowed seller fits\. DataLite costs US\$0\.30, above this pocket's cap\. DataPro isn't on your list\. Nothing was paid\. Fix: raise the cap and budget to US\$0\.30/);
 });
 
 test("events have strictly increasing `at` and bigints arrive as strings", async () => {

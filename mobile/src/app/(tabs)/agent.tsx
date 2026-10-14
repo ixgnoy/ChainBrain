@@ -4,29 +4,28 @@ import Animated, { useAnimatedKeyboard, useAnimatedReaction, useAnimatedStyle, u
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp, type Turn } from "../../store";
 import { c, F } from "../../tokens";
-import { Button, Press } from "../../ui/kit";
+import { Avatar, Button, Press } from "../../ui/kit";
+import { StatusDot, type DotState } from "../../ui/StatusDot";
 import { GLASS_TAB_SPACE as TAB_H } from "../../ui/glass/GlassTabBar";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { useReduceMotion } from "../../ui/motion";
 import { TraceBlock, STEP } from "../../components/TraceBlock";
-import { IntentCard } from "../../components/IntentCard";
+import { parseIntent } from "../../components/IntentCard";
 import { DeadEndCard } from "../../components/DeadEndCard";
 import { RefusalCard, SellerRefusal, refusalsOf } from "../../components/RefusalCard";
 import { StoppedCard } from "../../components/StoppedCard";
 import { Rise, useStagger, firstTime } from "../../ui/Rise";
 import { StreamText } from "../../ui/StreamText";
-import { Sheet } from "../../ui/Sheet";
 import { PaidCard } from "../../components/PaidCard";
 import { BlockedCard } from "../../components/BlockedCard";
-import { PocketRow } from "../../components/PocketCard";
 import { SendButton } from "../../ui/SendButton";
 import { WorkingLine } from "../../ui/WorkingLine";
 import { cleanText } from "../../lib/sanitize";
 import { devScenes, type Scene } from "../../lib/api";
 import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, type WalletEvent } from "../../lib/events";
 import { deadEndOf } from "../../lib/deadend";
-import { usd } from "../../lib/util";
+import { money, usd } from "../../lib/util";
 import { plainAsks } from "../../lib/plain";
 import { CodePill } from "../../ui/kit";
 import { haptic } from "../../haptics";
@@ -36,6 +35,35 @@ const DEFAULTS: ChipItem[] = [
   { label: "Buy the DataLite report", text: "Buy the DataLite durian report. Max US$1, by tonight." },
   { label: "Durian report under US$2", text: "Get me a market report on durian exports, under US$2, by tonight." },
 ];
+
+/** "US$2 in total or per report?" -> ["US$2 in total", "US$2 per report"]: the two answers a one-tap reply needs. */
+export function answerOptions(q: string): string[] {
+  const m = /^(.+?)\s+or\s+(.+?)\?$/i.exec(q.trim());
+  if (!m) return [];
+  let [a, b] = [m[1].trim(), m[2].trim()];
+  const amount = /US\$\d+(?:\.\d+)?/.exec(a)?.[0];
+  if (amount && !/US\$/.test(b)) b = `${amount} ${b}`;
+  const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+  return a.length <= 24 && b.length <= 24 ? [cap(a), cap(b)] : [];
+}
+
+/** The task waits for the owner: one compact row in the chat (the sheet holds the full card). */
+function TaskWaiting({ text, onOpen, id }: { text: string; onOpen(): void; id: string }) {
+  const what = parseIntent(text).find((r) => r.k === "Buy")?.v ?? "A new task";
+  return (
+    <Rise from={0.96} dy={12} spring="snappy" exit layout onEnter={() => { if (firstTime(`intent:${id}`)) haptic.medium(); }}>
+      <Press kind="row" haptics="select" onPress={onOpen} accessibilityRole="button" accessibilityLabel={`Review task: ${what}`}
+        style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 20, backgroundColor: c.warningSoft }}>
+        <Icon name="clock" size={18} color={c.warning} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <T v="row" w="semi" numberOfLines={1}>Confirm the task</T>
+          <T v="sub" color="ink2" numberOfLines={1}>{cleanText(what, 80)}</T>
+        </View>
+        <T v="sub" w="semi" color="accent">Review</T>
+      </Press>
+    </Rise>
+  );
+}
 
 /** The reply of a finished turn: streams in the first time it is seen, then stays still. */
 function Reply({ id, text }: { id: string; text: string }) {
@@ -87,12 +115,10 @@ function useRideKeyboard(base: number) {
 export default function AgentChat() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
-  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setActive } = useApp();
-  const [picking, setPicking] = useState(false);
+  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setPickerOpen } = useApp();
   const [text, setText] = useState("");
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [kb, setKb] = useState(false);
-  const [intentBusy, setIntentBusy] = useState(false);
   // optimistic bubble: shown the instant the owner sends, until the store has the real turn (it polls once before adding it)
   const [sent, setSent] = useState<{ text: string; n: number } | null>(null);
   const scroll = useRef<ScrollView>(null);
@@ -141,36 +167,49 @@ export default function AgentChat() {
   // a tight pocket (cap US$0.20 or less) leads with the dead-end task; otherwise the scenes in story order
   const tight = !!active && active.cap <= 200_000n;
   const ordered = tight ? [...scenes.filter((s) => s.preset === "one-purchase"), ...scenes.filter((s) => s.preset !== "one-purchase")] : scenes;
-  const chipItems = [...follow, ...(scenes.length ? ordered.map((s) => ({ label: s.chip ?? s.text, text: s.text })) : DEFAULTS)].slice(0, 12);
+  // used suggestions go away; while the agent works only the answer to its question is offered
+  const used = new Set(turns.map((t) => t.text.trim()));
+  const offers = (scenes.length ? ordered.map((s) => ({ label: s.chip ?? s.text, text: s.text })) : DEFAULTS).filter((x) => !used.has(x.text));
+  const chipItems = (question ? follow : chatBusy ? [] : offers).slice(0, 12);
   const chips = chipItems.map((x) => x.label);
   const chipDelay = useStagger(chips, 40, 8);
   const last = turns.at(-1);
   const canStop = !!active && active.owned && !!wallet && !active.revoked && Number(active.expiresAt) * 1000 > Date.now();
   const stopped = active?.revoked ? lastStepText(mine, sellerName) : null;
   const stopTx = active ? ownerTxs.filter((t) => t.kind === "revoke" && sameAddr(t.pocket, active.address)).at(-1) : undefined;
-  const status = agentState === "working" ? "Working…" : agentState === "waiting" ? "Waiting for you" : agentState === "paused" ? "Paused" : "Ready";
+  const waitingHere = !!(intent || pay || question);
+  const busyHere = chatBusy || waitingHere;
+  const dot: DotState = active?.revoked ? "stopped" : waitingHere ? "waiting" : chatBusy ? "working" : "ready";
+  const headStatus = !active ? "Create a pocket first" : active.revoked ? "Stopped · this pocket is off"
+    : waitingHere ? "Waiting for you" : chatBusy ? "Working…" : `Ready · ${money(active.balance)} left`;
   const ready = !!text.trim() && !chatBusy;
 
   return (
     <View style={{ flex: 1, backgroundColor: c.card }}>
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 12 }}>
-        <View style={{ alignItems: "center", gap: 2, paddingHorizontal: 96 }}>
-          <T v="row" w="semi" accessibilityRole="header">Ask agent</T>
-          <Press haptics="select" scale={0.96} disabled={pockets.length < 2} onPress={() => setPicking(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel={active ? `Pocket ${active.name}. Change pocket` : "No pocket yet"} style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
-            <T v="cap" color="muted" numberOfLines={1}>{active ? `${cleanText(active.name, 18)} · ${active.revoked ? "Stopped" : status}` : "No pocket yet"}</T>
-            {pockets.length > 1 ? <Icon name="chevronDown" size={14} color={c.muted} /> : null}
-          </Press>
-        </View>
-        <View style={{ position: "absolute", right: 20, top: insets.top + 8 }}>
-          {canStop ? (
-            <Rise dy={4} exit>
-              <Press onPress={() => setAction({ mode: "revoke", pocket: active!.address })} accessibilityRole="button" accessibilityLabel="Stop agent" style={{ height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: c.negativeSoft, flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Icon name="lock" size={15} color={c.negative} />
-                <T v="sub" w="semi" color="negative" numberOfLines={1}>Stop agent</T>
-              </Press>
-            </Rise>
-          ) : null}
-        </View>
+      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 10, flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: 1, borderBottomColor: c.line }}>
+        <Press kind="row" haptics="select" disabled={pockets.length < 2} onPress={() => setPickerOpen(true)} hitSlop={6}
+          accessibilityRole="button" accessibilityLabel={active ? `${active.name}, ${headStatus}. Change pocket` : "No pocket yet"}
+          style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48 }}>
+          <Avatar label={active?.name ?? "?"} size={40} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <T v="row" w="semi" numberOfLines={1} accessibilityRole="header" style={{ flexShrink: 1 }}>{active ? cleanText(active.name, 28) : "Your agent"}</T>
+              {pockets.length > 1 ? <Icon name="chevronDown" size={16} color={c.muted} /> : null}
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              {active ? <StatusDot state={dot} /> : null}
+              <T v="cap" color="muted" numberOfLines={1}>{headStatus}</T>
+            </View>
+          </View>
+        </Press>
+        {canStop && busyHere ? (
+          <Rise dy={4} exit>
+            <Press onPress={() => setAction({ mode: "revoke", pocket: active!.address })} accessibilityRole="button" accessibilityLabel="Stop agent" style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: c.negativeSoft, flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Icon name="lock" size={14} color={c.negative} />
+              <T v="sub" w="semi" color="negative">Stop</T>
+            </Press>
+          </Rise>
+        ) : null}
       </View>
 
       <View style={{ flex: 1 }}>
@@ -222,17 +261,13 @@ export default function AgentChat() {
                     <TraceBlock events={evs} />
                   </Rise>
                 )}
-                {t.done && active ? <DeadEndCard id={t.id} evs={evs} pocket={active} sellerName={sellerName} /> : null}
-                {isLast && intent && (
-                  <IntentCard enter={intent.id} text={intent.text} busy={intentBusy}
-                    onConfirm={async () => { setIntentBusy(true); await answer(intent, true); setIntentBusy(false); }}
-                    onDecline={async () => { setIntentBusy(true); await answer(intent, false); setIntentBusy(false); }} />
-                )}
+                {t.done && active ? <DeadEndCard id={t.id} evs={evs} pocket={active} sellerName={sellerName} onRetry={isLast && !chatBusy ? send : undefined} /> : null}
+                {isLast && intent ? <TaskWaiting text={intent.text} onOpen={() => setApprovalOpen(true)} id={intent.id} /> : null}
               </View>
             );
           })}
           {sent ? <View style={{ gap: 14 }}><UserBubble text={sent.text} fresh /></View> : null}
-          {!last && intent && <IntentCard enter={intent.id} text={intent.text} onConfirm={() => void answer(intent, true)} onDecline={() => void answer(intent, false)} />}
+          {!last && intent ? <TaskWaiting text={intent.text} onOpen={() => setApprovalOpen(true)} id={intent.id} /> : null}
           {active?.revoked && turns.length > 0 ? (
             <StoppedCard last={stopped} tx={stopTx?.hash} canReturn={active.owned && active.balance > 0n} onReturn={() => setAction({ mode: "return", pocket: active.address })} />
           ) : null}
@@ -249,10 +284,17 @@ export default function AgentChat() {
           )}
           {question && (
             <Rise dy={16} layout exit>
-              <Press kind="row" onPress={() => setQuestionOpen(true)} style={{ padding: 16, borderRadius: 20, backgroundColor: c.canvas, gap: 4 }}>
-                <T v="row" w="semi">Your agent has a question</T>
-                <T v="sub" color="ink2">Answer below, pick a suggestion, or tap here.</T>
-              </Press>
+              <View style={{ padding: 16, borderRadius: 20, backgroundColor: c.canvas, gap: 12 }}>
+                <View style={{ gap: 2 }}>
+                  <T v="row" w="semi">Your agent has a question</T>
+                  <T v="sub" color="ink2">One tap to answer, or type your own below.</T>
+                </View>
+                {answerOptions(question.text).length ? (
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {answerOptions(question.text).map((o) => <Button key={o} label={o} kind="secondary" small onPress={() => send(o)} style={{ flex: 1, paddingHorizontal: 12 }} />)}
+                  </View>
+                ) : <Button label="Answer" kind="secondary" small onPress={() => setQuestionOpen(true)} />}
+              </View>
             </Rise>
           )}
         </ScrollView>
@@ -279,18 +321,6 @@ export default function AgentChat() {
           </View>
         </Animated.View>
       </View>
-
-      <Sheet visible={picking} onClose={() => setPicking(false)}>
-        <View style={{ paddingHorizontal: 20, paddingBottom: 12, gap: 4 }}>
-          <T v="section">Which pocket?</T>
-          <T v="sub" color="ink2">Your agent only spends from the pocket you pick.</T>
-        </View>
-        <View style={{ marginHorizontal: 20, marginBottom: 12, borderRadius: 20, overflow: "hidden", backgroundColor: c.canvas }}>
-          {pockets.map((p, i) => (
-            <PocketRow key={p.address} pocket={p} last={i === pockets.length - 1} onPress={() => { setActive(p.address); setPicking(false); haptic.select(); }} />
-          ))}
-        </View>
-      </Sheet>
     </View>
   );
 }

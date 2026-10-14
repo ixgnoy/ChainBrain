@@ -13,6 +13,7 @@ import { c } from "../tokens";
 import { AppProvider, useApp } from "../store";
 import { ApprovalSheet } from "../components/ApprovalSheet";
 import { QuestionSheet } from "../components/QuestionSheet";
+import { PocketPickerSheet } from "../components/PocketPickerSheet";
 import { ReceiptSheet } from "../components/ReceiptSheet";
 import { ActionSheet } from "../components/ActionSheet";
 import { RulesSheet } from "../components/RulesSheet";
@@ -46,6 +47,7 @@ function Shell() {
           <ReceiptSheet />
           <ActionSheet />
           <RulesSheet />
+          <PocketPickerSheet />
           <ToastHost />
         </>
       )}

@@ -53,7 +53,7 @@ type Ctx = {
   // approvals
   answer(a: Approval, ok: boolean): Promise<api.ApprovalAnswer>; signApprove(a: Approval): Promise<api.ApprovalAnswer>; answered: Set<string>;
   // ui
-  approvalOpen: boolean; setApprovalOpen(b: boolean): void; questionOpen: boolean; setQuestionOpen(b: boolean): void;
+  approvalOpen: boolean; setApprovalOpen(b: boolean): void; pickerOpen: boolean; setPickerOpen(b: boolean): void; questionOpen: boolean; setQuestionOpen(b: boolean): void;
   rules: Rules; setRules(r: Rules): void; notice: Notice; setNotice(n: Notice): void;
   receipt: LedgerRow | null; setReceipt(r: LedgerRow | null): void; action: Sheet; setAction(a: Sheet): void; flash: number; fireFlash(): void;
 };
@@ -83,6 +83,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [answered, setAnswered] = useState<Set<string>>(new Set());
   const [turnsBy, setTurnsBy] = useState<Record<string, Turn[]>>({});
   const [approvalOpen, setApprovalOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [questionOpen, setQuestionOpen] = useState(false);
   const [receipt, setReceipt] = useState<LedgerRow | null>(null);
   const [action, setAction] = useState<Sheet>(null);
@@ -402,7 +403,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     ownerTxs, recordTx, events: myEvents, ledger, pending, sellerName,
     turns, sendChat, chatBusy, agentState,
     answer, signApprove, answered,
-    approvalOpen, setApprovalOpen, questionOpen, setQuestionOpen, rules, setRules, notice, setNotice, receipt, setReceipt, action, setAction, flash, fireFlash: () => setFlash((n) => n + 1),
+    approvalOpen, setApprovalOpen, pickerOpen, setPickerOpen, questionOpen, setQuestionOpen, rules, setRules, notice, setNotice, receipt, setReceipt, action, setAction, flash, fireFlash: () => setFlash((n) => n + 1),
   };
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }

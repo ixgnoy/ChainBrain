@@ -8,13 +8,14 @@ import { useMinimizeOnScroll } from "./glass/minimize";
 import { T } from "./Text";
 
 /** Grey canvas with a scrolling column. Leaves room for the floating tab bar unless `tabs` is false. */
-export function Screen({ children, tabs = true, top = true, scrollY, ...p }: ScrollViewProps & { children: React.ReactNode; tabs?: boolean; top?: boolean; scrollY?: SharedValue<number> }) {
+export function Screen({ children, tabs = true, top = true, scrollY, innerRef, ...p }: ScrollViewProps & { children: React.ReactNode; tabs?: boolean; top?: boolean; scrollY?: SharedValue<number>; innerRef?: React.Ref<any> }) {
   const insets = useSafeAreaInsets();
   const onScroll = useMinimizeOnScroll(); // scrolling down folds the glass tab bar's labels away
   const track = useAnimatedScrollHandler({ onScroll: (e) => { if (scrollY) scrollY.value = e.contentOffset.y; } }); // feeds a floating BackHeader
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
       <Animated.ScrollView
+        ref={innerRef}
         keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} scrollEventThrottle={16}
         onScroll={tabs ? onScroll : scrollY ? track : undefined}
         {...(p as any)}

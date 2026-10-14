@@ -159,8 +159,8 @@ export default function Home() {
               <View style={{ flexDirection: "row", marginTop: 26, alignSelf: "stretch" }}>
                 <RoundButton icon="plus" label="Add money" onPress={() => setAction({ mode: "fund" })} />
                 <RoundButton icon="layers" label="Pocket" a11y="New pocket" onPress={() => router.push("/create")} />
-                <RoundButton icon="chat" label="Ask agent" onPress={() => router.navigate("/agent")} />
-                <RoundButton icon="more" label="More" a11y="More" onPress={() => router.navigate("/settings")} />
+                <RoundButton icon="undo" label="Return" a11y="Return funds to your wallet" onPress={() => setAction({ mode: "return" })} />
+                <RoundButton icon="activity" label="Activity" onPress={() => router.navigate("/activity")} />
               </View>
             </Rise>
           </Card>

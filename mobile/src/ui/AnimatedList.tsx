@@ -11,8 +11,11 @@ export function AnimatedList({ children, initial = "none", style }: { children: 
   const reduce = useReduceMotion();
   const kids = React.Children.toArray(children).filter(React.isValidElement) as React.ReactElement<{ last?: boolean }>[];
   const known = useRef<Set<string> | null>(null);
-  const first = known.current === null;
   const seen = known.current ?? new Set<string>();
+  // the first render, or a bulk load (data arriving after mount): the whole list counts as "initial", never as many
+  // simultaneous inserts with layout transitions (rows would overprint each other while they settle)
+  const fresh = kids.filter((k) => !seen.has(String(k.key))).length;
+  const first = known.current === null || fresh > 3;
   useEffect(() => { known.current = new Set(kids.map((k) => String(k.key))); });
   const rise = (delay: number) => (reduce ? FadeIn.duration(180) : FadeInDown.delay(delay).springify(motion.spring.smooth.duration).dampingRatio(motion.spring.smooth.dampingRatio).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] }));
   const layout = reduce ? undefined : LinearTransition.springify(motion.spring.smooth.duration).dampingRatio(1);

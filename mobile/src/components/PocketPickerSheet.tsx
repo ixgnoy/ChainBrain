@@ -1,0 +1,26 @@
+// "Which pocket?": the agent chat's pocket switch. Lives at the root with the other sheets, so it sits above the tab bar.
+import React from "react";
+import { View } from "react-native";
+import { useApp } from "../store";
+import { c } from "../tokens";
+import { Sheet } from "../ui/Sheet";
+import { T } from "../ui/Text";
+import { haptic } from "../haptics";
+import { PocketRow } from "./PocketCard";
+
+export function PocketPickerSheet() {
+  const { pickerOpen, setPickerOpen, pockets, setActive } = useApp();
+  return (
+    <Sheet visible={pickerOpen} onClose={() => setPickerOpen(false)}>
+      <View style={{ paddingHorizontal: 20, paddingBottom: 12, gap: 4 }}>
+        <T v="section">Which pocket?</T>
+        <T v="sub" color="ink2">Your agent only spends from the pocket you pick.</T>
+      </View>
+      <View style={{ marginHorizontal: 20, marginBottom: 12, borderRadius: 20, overflow: "hidden", backgroundColor: c.canvas }}>
+        {pockets.map((p, i) => (
+          <PocketRow key={p.address} pocket={p} last={i === pockets.length - 1} onPress={() => { setActive(p.address); setPickerOpen(false); haptic.select(); }} />
+        ))}
+      </View>
+    </Sheet>
+  );
+}

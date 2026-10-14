@@ -14,7 +14,7 @@ import { deadEndOf, whyText } from "../lib/deadend";
 import { usd } from "../lib/util";
 import type { WalletEvent } from "../lib/events";
 
-export function DeadEndCard({ id, evs, pocket, sellerName }: { id: string; evs: WalletEvent[]; pocket: { address: string; cap: bigint; balance: bigint; owned: boolean; revoked: boolean }; sellerName: (id?: string) => string }) {
+export function DeadEndCard({ id, evs, pocket, sellerName, onRetry }: { id: string; evs: WalletEvent[]; pocket: { address: string; cap: bigint; balance: bigint; owned: boolean; revoked: boolean }; sellerName: (id?: string) => string; /** after the fix: ask the agent again with a price limit that now fits */ onRetry?: (text: string) => void }) {
   const { setRules } = useApp();
   const d = deadEndOf(evs, pocket);
   if (!d) return null;
@@ -38,7 +38,12 @@ export function DeadEndCard({ id, evs, pocket, sellerName }: { id: string; evs: 
           </View>
         ))}
         {pocket.owned && !pocket.revoked ? (
-          fixed ? <T v="sub" color="positive">Your rules now allow this. {again}</T>
+          fixed ? (
+            <View style={{ gap: 10 }}>
+              <T v="sub" color="positive">Your rules now allow this.</T>
+              {onRetry && d.minPrice != null ? <Button label={`Ask again, max US$${usd(d.minPrice)}`} small onPress={() => onRetry(`Buy the DataLite durian report. Max US$${usd(d.minPrice!)}, by tonight.`)} /> : <T v="sub" color="ink2">{again}</T>}
+            </View>
+          )
           : !d.fix && !d.needsSeller ? <T v="sub" color="ink2">{again}</T>
           : <><Button label={label} small onPress={() => (d.fix ? setRules({ pocket: pocket.address, field: "cap", amount: usd(d.fix.cap), topUp: d.fix.topUp }) : router.push({ pathname: "/pocket/[id]", params: { id: pocket.address } }))} /><T v="cap" color="ink2">{again}</T></>
         ) : null}

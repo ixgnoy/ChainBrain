@@ -16,6 +16,7 @@ export function StreamText({ text, play, style, onDone }: { text: string; play: 
   useEffect(() => {
     if (!animate) { setN(text.length); return; }
     let i = 0, t: ReturnType<typeof setTimeout>;
+    const cps = Math.max(CPS, text.length / 1.8); // a long reply still lands within about two seconds
     const step = () => {
       if (i >= text.length) { done.current = true; onDone?.(); return; }
       let j = text.indexOf(" ", i + 1);
@@ -24,7 +25,7 @@ export function StreamText({ text, play, style, onDone }: { text: string; play: 
       i = j;
       setN(i);
       const pause = /[.?!:]\s*$/.test(chunk) ? 170 : /,\s*$/.test(chunk) ? 70 : 0;
-      t = setTimeout(step, (chunk.length / CPS) * 1000 * (0.7 + Math.random() * 0.6) + pause);
+      t = setTimeout(step, (chunk.length / cps) * 1000 * (0.7 + Math.random() * 0.6) + pause);
     };
     t = setTimeout(step, 60);
     return () => clearTimeout(t);

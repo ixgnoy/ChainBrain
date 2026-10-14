@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
 import * as Clipboard from "expo-clipboard";
@@ -26,6 +26,9 @@ export default function Settings() {
   const custom = source === "server";
   const [editing, setEditing] = useState(false); // switch turned on, address not confirmed yet
   const serverOpen = custom || editing;
+  const scroller = useRef<any>(null);
+  // the server card opens below the fold: bring it into view above the tab bar
+  useEffect(() => { if (!editing) return; const t = setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 260); return () => clearTimeout(t); }, [editing]);
   React.useEffect(() => setDraft(apiUrl), [apiUrl]);
 
   const runTest = async () => {
@@ -61,7 +64,7 @@ export default function Settings() {
   const network = conn === "online" ? (dev ? "Connected · local test network" : "Connected · test network (Base Sepolia)") : conn === "offline" ? connError || "Not reachable" : "Connecting…";
 
   return (
-    <Screen>
+    <Screen innerRef={scroller}>
       <PageTitle title="Settings" sub={pending.length ? `${pending.length} request${pending.length > 1 ? "s" : ""} waiting for you` : undefined} />
 
       <SectionHeader title="Wallet" />
