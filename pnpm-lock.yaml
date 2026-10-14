@@ -6,6 +6,28 @@ settings:
 
 importers:
 
+  devstack:
+    dependencies:
+      '@hono/node-server':
+        specifier: 2.1.5
+        version: 2.1.5(hono@4.13.13)
+      hono:
+        specifier: 4.13.13
+        version: 4.13.13
+      viem:
+        specifier: 2.57.4
+        version: 2.57.4(typescript@7.0.2)(zod@4.6.7)
+    devDependencies:
+      '@types/node':
+        specifier: 26.6.5
+        version: 26.6.5
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+      vitest:
+        specifier: 5.0.4
+        version: 5.0.4(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+
   server:
     dependencies:
       '@anthropic-ai/sdk':
@@ -1396,7 +1418,7 @@ snapshots:
 
   '@scure/bip32@1.7.0':
     dependencies:
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
 

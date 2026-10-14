@@ -1,0 +1,19 @@
+{
+  "name": "chainbrain-devstack",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.5",
+    "hono": "4.13.13",
+    "viem": "2.57.4"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "tsx": "4.23.15",
+    "vitest": "5.0.4"
+  }
+}
