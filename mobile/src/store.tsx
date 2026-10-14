@@ -8,6 +8,7 @@ import { detectDev, getApi, getDev, getSource, setApiUrl as setRuntimeApi, setDe
 import { ownerWallet, readPocket, isOwner, type OwnerWallet, type PocketView } from "./lib/wallet";
 import { createKey, loadKey, loadPockets, saveKey, savePockets } from "./lib/keystore";
 import { builtin, seedFor } from "./lib/builtin";
+import { startRelay } from "./lib/relay";
 import { notify } from "./lib/toast";
 import { haptic } from "./haptics";
 import { loadMeta, saveMeta, type PocketMeta } from "./lib/pocketNames";
@@ -275,6 +276,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setOwnerTxs(ownerTxRef.current);
     if (!local) void setItem(`cb.ownerTxs.${wallet.address.toLowerCase()}`, JSON.stringify(ownerTxRef.current));
   }, [wallet, local]);
+  // the built-in network mirrors itself to the console on the laptop when one is reachable (lib/relay.ts)
+  const metaRef = useRef(meta);
+  metaRef.current = meta;
+  useEffect(() => {
+    if (!local || !wallet || !pocketsLoaded) return;
+    return startRelay(wallet.address, () => Object.fromEntries(Object.entries(metaRef.current).map(([a, m]) => [a, m.name])));
+  }, [local, wallet, pocketsLoaded]);
+
   // a forced transfer the pocket refused on-chain (scene 5, set off from the console): tell the owner the moment it happens
   const forcedSeen = useRef<Set<string> | null>(null);
   useEffect(() => {

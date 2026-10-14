@@ -10,7 +10,7 @@ import { cn } from "../lib/cn";
 
 export const usd = (n?: bigint) => (n == null ? "–" : `US$${formatUsd(n)}`);
 export const NEVER = 2n ** 256n - 1n;
-export const pocketTag = (a: string) => `Pocket ${a.slice(-4).toUpperCase()}`;
+export const pocketTag = (a: string, name?: string) => name || `Pocket ${a.slice(-4).toUpperCase()}`;
 export const clock = (ms: number) => new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
 export const useViewTx = () => useContext(ViewTx);

@@ -72,7 +72,7 @@ export function Live({ pocket }: { pocket?: string }) {
         {rows.length ? <ol aria-label="Agent trace">{rows.map((r) => <TraceItem key={r.key} r={r} />)}</ol> : <Empty>No agent activity in this pocket yet. Ask the agent from the phone app.</Empty>}
       </Column>
 
-      <Column title={pocketTag(pocket)} sub={p ? `Owner ${shortAddr(p.owner)} · agent ${shortAddr(p.agent)}` : "Reading the contract…"} icon={<Link2 {...I} />}>
+      <Column title={pocketTag(pocket, p?.name)} sub={p ? `Owner ${shortAddr(p.owner)} · agent ${shortAddr(p.agent)}` : "Reading the contract…"} icon={<Link2 {...I} />}>
         {p && (
           <>
             <div className="py-3 text-center">

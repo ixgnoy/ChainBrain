@@ -26,9 +26,9 @@ export function Pockets({ open }: { open(addr: string): void }) {
           {pockets.length ? pockets.map((p) => {
             const st = pocketStatus(p);
             return (
-              <Row key={p.address} onClick={() => open(p.address)} label={`${pocketTag(p.address)} ${usd(p.balance)}`}
+              <Row key={p.address} onClick={() => open(p.address)} label={`${pocketTag(p.address, p.name)} ${usd(p.balance)}`}
                 avatar={<Avatar tone={st.label === "Active" ? "accent" : "neutral"}>{p.address.slice(-2).toUpperCase()}</Avatar>}
-                title={`${pocketTag(p.address)} · owner ${shortAddr(p.owner)}`}
+                title={`${pocketTag(p.address, p.name)} · owner ${shortAddr(p.owner)}`}
                 sub={`Cap ${usd(p.cap)} · ${p.askAbove === NEVER ? "never asks" : `asks above ${usd(p.askAbove)}`} · ${p.allowed.map((i) => names.get(i) ?? i).join(", ") || "no sellers"}`}
                 amount={usd(p.balance)} status={st.label} />
             );

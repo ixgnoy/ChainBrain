@@ -7,6 +7,7 @@ import type { PocketState, ChainTx } from "../console/chain";
 import { formatUsd, type Config } from "../shared";
 import type { WalletEvent } from "../lib/events";
 import type { NetworkFeed, FeedSnapshot } from "./feed";
+import { createLinkedFeed } from "./linkedFeed";
 
 const toTx = (t: SimTx): ChainTx => ({ hash: t.hash as Hex, block: t.block, logIndex: t.logIndex, pocket: t.pocket as Address, kind: t.kind, amount: t.amount, counterparty: t.counterparty as Address | undefined, at: t.at, from: t.from as Address, status: t.status });
 
@@ -66,5 +67,5 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
   };
 }
 
-/** The feed behind the default (built-in) source. A remote feed (see feed.ts) would be chosen here. */
-export const makeFeed = (): NetworkFeed => createLocalFeed();
+/** The feed behind the default (built-in) source: the local network, linked to a phone on this laptop when there is one. */
+export const makeFeed = (): NetworkFeed => createLinkedFeed(createLocalFeed());

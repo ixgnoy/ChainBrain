@@ -10,6 +10,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 import { scriptedModel } from "./model";
 import { SCENES } from "./scenes";
+import { relayApp } from "./relay";
 
 // Anvil's well-known dev keys (public; never use outside a local fork). Same as server/test/helpers/env.ts.
 export const DEV_KEYS = {
@@ -148,6 +149,8 @@ export async function startDevStack(o: DevStackOptions = {}) {
     bus.publish({ type: "forced" as any, pocket, tx: hash, reverted, to: attacker, amount: amount.toString(), balanceBefore: before.toString(), balanceAfter: after.toString() });
     return c.json({ tx: hash, reverted, balanceBefore: before.toString(), balanceAfter: after.toString() });
   });
+  // the phone's built-in network, mirrored to the console (see relay.ts)
+  root.route("/dev/relay", relayApp());
   root.all("*", (c) => api.fetch(c.req.raw));
 
   const apiServer = serve({ fetch: root.fetch, port: apiPort, hostname: "0.0.0.0" });

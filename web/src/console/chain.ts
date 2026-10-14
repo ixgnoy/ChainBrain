@@ -6,6 +6,8 @@ import type { Config } from "../shared";
 export type PocketState = {
   address: Address; owner: Address; agent: Address; createdTx?: Hex; createdBlock?: bigint;
   balance: bigint; cap: bigint; askAbove: bigint; expiresAt: number; revoked: boolean; allowed: string[];
+  /** The owner's own label for it (only a phone knows it; the chain has none). */
+  name?: string;
 };
 export type TxKind = "create" | "fund" | "payment" | "return" | "out" | "revoke" | "rules";
 export type ChainTx = {

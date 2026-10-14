@@ -36,10 +36,10 @@ function PocketPicker({ value, onChange }: { value?: string; onChange(a: string)
   const cur = pockets.find((p) => p.address.toLowerCase() === value?.toLowerCase());
   return (
     <label className="relative flex h-12 items-center gap-2 rounded-full bg-card pl-5 pr-10 text-[15px] font-semibold hover:bg-fill">
-      {cur ? `${pocketTag(cur.address)} · ${usd(cur.balance)}` : "Choose a pocket"}
+      {cur ? `${pocketTag(cur.address, cur.name)} · ${usd(cur.balance)}` : "Choose a pocket"}
       <ChevronDown className="pointer-events-none absolute right-4 size-4 text-muted" />
       <select aria-label="Pocket" value={cur?.address ?? ""} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0">
-        {pockets.map((p) => <option key={p.address} value={p.address}>{pocketTag(p.address)} · {usd(p.balance)}</option>)}
+        {pockets.map((p) => <option key={p.address} value={p.address}>{pocketTag(p.address, p.name)} · {usd(p.balance)}</option>)}
       </select>
     </label>
   );
