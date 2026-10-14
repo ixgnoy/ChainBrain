@@ -117,7 +117,7 @@ export default function Bank() {
                       <tr key={r.key} tabIndex={0} onClick={() => setDetail(r)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDetail(r); } }}
                         className="cursor-pointer outline-none hover:bg-e2 focus-visible:bg-e2 [&>td]:h-11 [&>td]:border-b [&>td]:border-hair [&>td]:px-3 [&>td:first-child]:pl-4 [&>td:last-child]:pr-4">
                         <td className="mono whitespace-nowrap text-[11.5px] text-t3">{clock(r.at)}</td>
-                        <td className="mono text-[12px]">{label(r.pocket)}</td>
+                        <td className="mono whitespace-nowrap text-[12px]">{label(r.pocket)}</td>
                         <td className="max-w-[200px] truncate"><span className="font-medium">{r.sellerId}</span>{r.sku && <span className="text-t3">/{r.sku}</span>}</td>
                         <td className="num whitespace-nowrap">{r.amount != null ? `$${usd(r.amount)}` : "–"}</td>
                         <td><Verdict r={r} /></td>
@@ -156,9 +156,9 @@ export default function Bank() {
                 <thead><tr>{["Pocket", "Balance", "Per-payment cap", "Ask above", "Allowlist", "Expires", "State", "Owner"].map((h) => <th key={h} scope="col" className="caps border-b border-hair px-3 py-2 font-semibold first:pl-4">{h}</th>)}</tr></thead>
                 <tbody>{viewList.map(({ addr, v }) => (
                   <tr key={addr} className="[&>td]:border-b [&>td]:border-hair [&>td]:px-3 [&>td]:py-2.5 [&>td:first-child]:pl-4">
-                    <td><div className="mono text-[12px] font-medium">{label(addr)}</div>{v && <div className="mono text-[11px] text-t3">agent {shortAddr(v.agent)}</div>}</td>
+                    <td className="whitespace-nowrap"><div className="mono text-[12px] font-medium">{label(addr)}</div>{v && <div className="mono text-[11px] text-t3">agent {shortAddr(v.agent)}</div>}</td>
                     {v ? <>
-                      <td className="num">${usd(v.balance)}</td>
+                      <td className="num whitespace-nowrap">${usd(v.balance)}</td>
                       <td className="num">{money(v.cap)}</td>
                       <td className="num">{v.askAbove === NEVER ? "never" : v.askAbove === 0n ? "every payment" : money(v.askAbove)}</td>
                       <td className="text-[12px] text-t2">{v.allowed.length ? v.allowed.join(", ") : "nobody"}</td>

@@ -80,10 +80,10 @@ export default function Trace() {
   return (
     <>
       <Pane title="Live trace" icon={<Activity className="size-4" />} count={rows.length}
-        actions={<>
-          <Segmented<Scope> label="Trace scope" value={scope} onChange={setScope} className="hidden xl:inline-flex" options={[{ value: "pocket", label: "This pocket" }, { value: "all", label: "All pockets" }]} />
-          <Segmented<Filter> label="Verdict filter" value={filter} onChange={setFilter} options={[{ value: "all", label: "All" }, { value: "ok", label: "Allowed" }, { value: "refused", label: "Refused" }, { value: "stepup", label: "Needs you" }]} />
-          <span className={cn("hidden items-center gap-1.5 text-xs 2xl:flex", connected ? "text-ok-ink" : "text-t3")}><span className={cn("size-1.5 rounded-full", connected ? "bg-ok" : "bg-t3")} />{connected ? "Live" : "Offline"}</span>
+        actions={<span className={cn("flex items-center gap-1.5 text-xs", connected ? "text-ok-ink" : "text-t3")}><span className={cn("size-1.5 rounded-full", connected ? "bg-ok" : "bg-t3")} />{connected ? "Live" : "Offline"}</span>}
+        toolbar={<>
+          <Segmented<Scope> label="Trace scope" value={scope} onChange={setScope} options={[{ value: "pocket", label: "This pocket" }, { value: "all", label: "All pockets" }]} />
+          <Segmented<Filter> label="Verdict filter" className="ml-auto" value={filter} onChange={setFilter} options={[{ value: "all", label: "All" }, { value: "ok", label: "Allowed" }, { value: "refused", label: "Refused" }, { value: "stepup", label: "Needs you" }]} />
         </>}
         bodyClassName="overflow-y-auto">
         {shown.length === 0 ? <Empty icon={<Landmark className="size-6" />}>{connected ? (active || scope === "all" ? "No events yet. Ask the agent to buy something." : "Create a pocket to see the agent at work.") : "Waiting for the event stream…"}</Empty> : (

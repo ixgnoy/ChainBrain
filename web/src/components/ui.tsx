@@ -91,7 +91,7 @@ export function Segmented<T extends string>({ value, onChange, options, label, c
     <div role="radiogroup" aria-label={label} className={cn("inline-flex rounded-full border border-hair bg-e2 p-0.5", className)}>
       {options.map((o) => (
         <button key={o.value} type="button" role="radio" aria-checked={value === o.value} title={o.title} onClick={() => onChange(o.value)}
-          className={cn("h-7 rounded-full px-3 text-xs font-medium transition-colors", value === o.value ? "bg-e1 text-fg shadow-[inset_0_0_0_1px_var(--hair2)]" : "text-t2 hover:text-fg")}>
+          className={cn("h-7 whitespace-nowrap rounded-full px-3 text-xs font-medium transition-colors", value === o.value ? "bg-e1 text-fg shadow-[inset_0_0_0_1px_var(--hair2)]" : "text-t2 hover:text-fg")}>
           {o.label}
         </button>
       ))}
@@ -110,7 +110,7 @@ export function Switch({ checked, onChange, label, disabled }: { checked: boolea
 }
 
 /** Content pane: flat e1 with a hairline, header with title and count badge. No glass. */
-export function Pane({ title, count, icon, actions, children, className, bodyClassName }: { title: string; count?: number | string; icon?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; bodyClassName?: string }) {
+export function Pane({ title, count, icon, actions, toolbar, children, className, bodyClassName }: { toolbar?: ReactNode; title: string; count?: number | string; icon?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; bodyClassName?: string }) {
   return (
     <section aria-label={title} className={cn("card flex min-h-0 min-w-0 flex-col overflow-hidden", className)}>
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hair px-4">
@@ -119,6 +119,7 @@ export function Pane({ title, count, icon, actions, children, className, bodyCla
         {count != null && <span className="num rounded-full bg-e3 px-2 py-0.5 text-[11px] font-semibold text-t2">{count}</span>}
         <div className="ml-auto flex items-center gap-2">{actions}</div>
       </header>
+      {toolbar && <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-hair px-4 py-2">{toolbar}</div>}
       <div className={cn("min-h-0 flex-1", bodyClassName)}>{children}</div>
     </section>
   );
