@@ -32,6 +32,9 @@ const HL_MINIMIZED = ICON + PAD_V * 2;
 export const GLASS_TAB_SPACE = EXPANDED_H + 20;
 
 const SLIDE = motion.spring.pill;
+// The capsule radius animates, so the glass must be an Animated component: handing an animated style to a plain native
+// view makes React Native freeze Reanimated's internal objects in dev ("set the key `current` ... frozen").
+const AnimatedGlassView = Animated.createAnimatedComponent(GlassView);
 const ACTIVE = c.accent;
 const INACTIVE = c.ink2;
 
@@ -130,7 +133,7 @@ export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProp
         <GestureDetector gesture={gesture}>
           <Animated.View style={barStyle}>
             {liquid ? (
-              <GlassView glassEffectStyle="regular" tintColor="rgba(255,255,255,0.35)" style={[StyleSheet.absoluteFill, { borderCurve: "continuous" } as any, shape]} />
+              <AnimatedGlassView glassEffectStyle="regular" tintColor="rgba(255,255,255,0.35)" style={[StyleSheet.absoluteFill, { borderCurve: "continuous" } as any, shape]} />
             ) : !solid ? (
               <Animated.View style={[StyleSheet.absoluteFill, { overflow: "hidden", borderCurve: "continuous" } as any, shape]}>
                 <BlurView tint="systemChromeMaterialLight" intensity={80} style={StyleSheet.absoluteFill} />
