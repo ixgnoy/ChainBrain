@@ -16,6 +16,8 @@ const subs = new Set<() => void>();
 const emit = () => subs.forEach((f) => f());
 
 export const normalizeUrl = (u: string) => u.trim().replace(/\/+$/, "");
+/** Only http(s) servers: anything else ("javascript:", "file:", a typo) is never saved or fetched. */
+export const isHttpUrl = (u: string) => /^https?:\/\/[^\s/$.?#][^\s]*$/i.test(normalizeUrl(u));
 export const getApi = () => api;
 export const getDev = () => dev;
 export const getSource = () => source;

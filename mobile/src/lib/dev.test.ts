@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { detectDev, setApiUrl, setDev, setSource, rpcUrl, explorerEnabled, txUrl, ENV_RPC } from "./runtime";
+import { detectDev, isHttpUrl, setApiUrl, setDev, setSource, rpcUrl, explorerEnabled, txUrl, ENV_RPC } from "./runtime";
 
 const res = (status: number, body?: unknown) => async () => ({ ok: status >= 200 && status < 300, status, json: async () => { if (body === undefined) throw new Error("not json"); return body; }, text: async () => "" });
 
@@ -31,4 +31,9 @@ test("RPC and explorer follow dev mode; real path keeps EXPO_PUBLIC_RPC_URL and 
   assert.equal(txUrl("0xab"), undefined);
   setApiUrl("http://other:8787");
   assert.equal(rpcUrl(), ENV_RPC, "changing the API URL clears dev mode until it is detected again");
+});
+
+test("custom server addresses: http(s) only", () => {
+  for (const ok of ["http://192.168.1.5:8787", "https://api.example.com/", "http://localhost:8787"]) assert.equal(isHttpUrl(ok), true, ok);
+  for (const bad of ["javascript:alert(1)", "file:///etc/passwd", "192.168.1.5:8787", "http://", "ftp://x"]) assert.equal(isHttpUrl(bad), false, bad);
 });

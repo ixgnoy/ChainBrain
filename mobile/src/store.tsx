@@ -4,9 +4,9 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AppState } from "react-native";
 import type { Address, Hex } from "viem";
 import { loadConfig, resetConfig, type Config } from "./lib/shared";
-import { detectDev, getApi, getDev, getSource, setApiUrl as setRuntimeApi, setDev, setSource as setRuntimeSource, subscribeRuntime, ENV_API, type DevInfo, type Source } from "./lib/runtime";
+import { detectDev, isHttpUrl, getApi, getDev, getSource, setApiUrl as setRuntimeApi, setDev, setSource as setRuntimeSource, subscribeRuntime, ENV_API, type DevInfo, type Source } from "./lib/runtime";
 import { ownerWallet, readPocket, isOwner, type OwnerWallet, type PocketView } from "./lib/wallet";
-import { createKey, loadKey, loadPockets, saveKey, savePockets } from "./lib/keystore";
+import { createKey, loadKey, loadPockets, randomKey, saveKey, savePockets } from "./lib/keystore";
 import { builtin, seedFor } from "./lib/builtin";
 import { startRelay, type Say } from "./lib/relay";
 import { router } from "expo-router";
@@ -116,8 +116,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setSourceReady(true);
       // first launch: create the on-device key silently, no setup screen (an existing key is kept; "Import a key" lives in Settings)
       let k: Hex | null = null;
-      try { k = await loadKey(); } catch { k = null; }
-      if (!k) { try { k = await createKey(); } catch { k = null; } }
+      // never overwrite: a key store that cannot be read gets a key for this session only, the stored one stays untouched
+      let unreadable = false;
+      try { k = await loadKey(); } catch { unreadable = true; }
+      if (!k && !unreadable) { try { k = await createKey(); } catch { unreadable = true; } }
+      if (!k && unreadable) { try { k = await randomKey(); } catch { k = null; } }
       setPk(k);
       setKeyState("ready");
     })();
@@ -389,6 +392,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRetry((n) => n + 1);
   }, []);
   const setApiUrl = useCallback(async (u: string) => {
+    if (u.trim() && !isHttpUrl(u)) return; // the Settings form says why
     if (u.trim()) await setItem(API_KEY, u.trim().replace(/\/+$/, "")); else await deleteItem(API_KEY);
     resetConfig(); setCfg(null); setConn("connecting");
     setRuntimeApi(u);

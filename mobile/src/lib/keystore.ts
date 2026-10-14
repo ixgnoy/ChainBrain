@@ -15,9 +15,12 @@ const del = async (k: string) => (web ? globalThis.localStorage?.removeItem(k) :
 
 export const isPrivateKey = (s: string): s is Hex => /^0x[0-9a-fA-F]{64}$/.test(s.trim());
 
+/** The stored key, or null when there is none. Something stored that is not a key throws: it is never overwritten. */
 export async function loadKey(): Promise<Hex | null> {
   const v = await get(KEY);
-  return v && isPrivateKey(v) ? v : null;
+  if (v == null || v === "") return null;
+  if (!isPrivateKey(v)) throw new Error("stored key is unreadable");
+  return v;
 }
 
 export async function saveKey(pk: string) {
@@ -27,10 +30,16 @@ export async function saveKey(pk: string) {
 
 /** New key from the OS CSPRNG (async variant: the sync one may fall back to Math.random in development). */
 export async function createKey(): Promise<Hex> {
-  const bytes = await Crypto.getRandomBytesAsync(32);
-  const pk = `0x${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}` as Hex;
+  const pk = await randomKey();
+  if (await get(KEY)) throw new Error("a key already exists"); // never replace a key (it may own pockets with money in them)
   await set(KEY, pk);
   return pk;
+}
+
+/** A fresh key that is not stored (used only when the device's key store cannot be read). */
+export async function randomKey(): Promise<Hex> {
+  const bytes = await Crypto.getRandomBytesAsync(32);
+  return `0x${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}` as Hex;
 }
 
 export const forgetKey = () => del(KEY);

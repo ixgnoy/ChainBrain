@@ -4,7 +4,7 @@ import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
 import * as Clipboard from "expo-clipboard";
 import { useApp } from "../../store";
 import * as api from "../../lib/api";
-import { ENV_API, detectDev, normalizeUrl } from "../../lib/runtime";
+import { ENV_API, detectDev, isHttpUrl, normalizeUrl } from "../../lib/runtime";
 import { isPrivateKey } from "../../lib/keystore";
 import { c, motion } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
@@ -32,8 +32,9 @@ export default function Settings() {
   React.useEffect(() => setDraft(apiUrl), [apiUrl]);
 
   const runTest = async () => {
-    setTest({ state: "busy" });
     const url = normalizeUrl(draft);
+    if (url && !isHttpUrl(url)) { setTest({ state: "fail", text: "Use a full address, for example http://192.168.1.10:8787." }); haptic.error(); return; }
+    setTest({ state: "busy" });
     if (custom && url && url !== apiUrl) await setApiUrl(url);
     try {
       const r = await api.ping(url || ENV_API);
@@ -53,6 +54,7 @@ export default function Settings() {
   };
   const connect = async () => {
     const url = normalizeUrl(draft);
+    if (url && !isHttpUrl(url)) { setTest({ state: "fail", text: "Use a full address, for example http://192.168.1.10:8787." }); haptic.error(); return; }
     if (url !== apiUrl) await setApiUrl(url);
     await setSource("server"); setEditing(false); setTest({ state: "idle" }); haptic.success();
   };
