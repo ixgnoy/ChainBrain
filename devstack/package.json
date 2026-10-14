@@ -5,7 +5,8 @@
   "scripts": {
     "start": "tsx src/main.ts",
     "force-transfer": "tsx src/force-transfer.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "node e2e/e2e.cjs"
   },
   "dependencies": {
     "@hono/node-server": "2.1.5",
