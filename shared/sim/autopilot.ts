@@ -10,7 +10,7 @@ import { NEVER, lower, parseUsd } from "./util";
 import { SIM_AGENT, type World } from "./world";
 
 export const PRESENTER: Hex = "0x7c5e1a94b3d02f68e1a7c4b9d5f30e2a8b6c1d47";
-const OWNERS = {
+export const OWNERS = {
   research: "0x2b8f6d03a1c94e57f0b3d8a6c2e41f9d7a5b3c68" as Hex,
   trading: "0x91d4a7e2c5b08f36d1a9e7c4b2f63d058a1c9e74" as Hex,
   small: "0x5e03c9b7a2d41f86e0b5c3a97d1f24e8b6a0c5d3" as Hex,

@@ -1,7 +1,7 @@
 // The built-in network: a shared/sim World (virtual chain with the Pocket.sol rules, wallet tools, scripted agent)
 // running in this tab, played by the autopilot's story and background traffic.
 import { createWorld, SCENES, type SimTx, type World, type WorldOptions } from "@sim/index";
-import { createAutopilot, type Autopilot } from "@sim/autopilot";
+import { createAutopilot, OWNERS, type Autopilot } from "@sim/autopilot";
 import type { Address, Hex } from "viem";
 import type { PocketState, ChainTx } from "../console/chain";
 import { formatUsd, type Config } from "../shared";
@@ -22,6 +22,13 @@ const scrub = (e: WalletEvent): WalletEvent => {
   clean.set(e, c);
   return c;
 };
+
+// The network's owners label their pockets like anyone would; the chain itself has no names.
+const OTHER: Record<string, string> = { [OWNERS.research.toLowerCase()]: "Lab research", [OWNERS.trading.toLowerCase()]: "Trading desk", [OWNERS.small.toLowerCase()]: "Side project" };
+function nameOf(owner: string, cap: bigint, presenter: string): string | undefined {
+  if (owner.toLowerCase() === presenter.toLowerCase()) return cap <= 200_000n ? "One purchase" : "Research data";
+  return OTHER[owner.toLowerCase()];
+}
 
 export type LocalFeed = NetworkFeed & { world: World; autopilot: Autopilot };
 
@@ -55,6 +62,7 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
       const pockets: PocketState[] = world.chain.pockets().map((p) => ({
         address: p.address as Address, owner: p.owner as Address, agent: p.agent as Address, createdTx: p.createdTx as Hex | undefined, createdBlock: p.createdBlock,
         balance: p.balance, cap: p.cap, askAbove: p.askAbove, expiresAt: Number(p.expiresAt), revoked: p.revoked, allowed: p.allowed,
+        name: nameOf(p.owner, p.cap, autopilot.presenter),
       })).sort((a, b) => Number((b.createdBlock ?? 0n) - (a.createdBlock ?? 0n)));
       return { events: world.allEvents().map(scrub), pockets, txs: all.filter((t) => t.status !== "reverted"), allTxs: all, follow: autopilot.active };
     },
