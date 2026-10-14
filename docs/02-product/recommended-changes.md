@@ -1,5 +1,7 @@
 # Recommended changes to the ChainBrain spec
-Last updated: 2026-10-13
+Last updated: 2026-10-14
+
+> **Status (14 Oct, v2):** these 49 items were written against the OLD spec (seller trust layer). The team has since published [Prelim Product Spec v2](product-design.md), a consumer wallet. The table "Disposition against v2" below says what v2 adopted, changed or moved to finals. The "Status" column in the ranked list below still says "proposed" and is kept as the 13 Oct record. Dispositions come from the team's docs, not from re-reading code for each item.
 
 ## In one minute
 
@@ -10,6 +12,25 @@ Last updated: 2026-10-13
 - **Biggest wording fixes:** "nobody verifies buyer agents" is false; "remaining budget" cannot be an on-chain counter; "ERC-4337 account" and "None known" in the risk table overclaim; the compliance paragraph needs correcting.
 - **Biggest design shifts:** budget = pocket balance; stateless exact-digest validator; settle before serve at the gateway; payment-grounded reputation only.
 - Several changes are small text edits; the work is in the build and test items.
+
+## Disposition against v2 (14 Oct)
+
+| Items | Disposition | Where in the team's docs |
+| --- | --- | --- |
+| 1, 38, 39, 42, 46, 48, 49 | **Still apply** (organiser email, submission, eligibility, demo rehearsal, wallet funding, rival re-check, prior-art correction) | [plan](../superpowers/plans/2026-10-14-chainbrain-prelim-wallet.md) Task 10 and open questions |
+| 3, 4, 19, 23, 25, 37 | **Adopted in v2.** Budget = pocket balance. Pocket accepts only the rebuilt USDC transfer digest (envelope signature). Nonce = hash(intentHash, seq). The pocket is an ERC-1271 contract, no ERC-4337. Reason codes are in code (20 codes) | [technical document](../technical-document.md) sections 2, 3, 5; `server/src/wallet/reasons.ts` |
+| 2, 15, 16, 22 | **Adopted in part.** Day-1 gate passed on a fork, live run pending. Risk tables name residuals and tests. Docs written. `FACILITATOR=local` is the facilitator fallback | [security self-assessment](../security-self-assessment.md), [evidence](../evidence.md) |
+| 6, 7, 11, 21, 34, 43, 44 | **Adopted in part.** Evidence file exists (pending hashes). Live red-team box. Trace panel. Intent shown from a fixed template, seller text wrapped as untrusted. Scenes replay mode exists for tests. Not built per the team's docs: `npm run evidence`/`verify`/`redteam`, a 42-attack harness, a judge sandbox, a record-and-replay trace panel | [technical document](../technical-document.md) sections 3, 5, 8 |
+| 10, 14, 20, 26, 45 | **Still apply to the pitch and licences.** The README has a third-party licences section | [README](../../README.md) |
+| 13 | **Check.** v2 says "Hong Kong and APEC"; item 13 suggested "Hong Kong and Southeast Asia" | listed in the audit for the team |
+| 5, 31 | **Superseded.** The v2 novelty claim is hard limits the user owns, checked by the pocket; the seller-side verdict is a finals item | [spec v2](product-design.md) |
+| 8, 9, 12, 17, 18, 24, 27 | **Finals roadmap, not in prelim.** Seller gateway, MCP, reputation, ERC-8004, seller guards, selective disclosure, business slide | [spec v2](product-design.md) Finals roadmap |
+| 28, 29 | **Not adopted in v2.** No one-off payment tool and no step-up for unverified sellers; the six tools take no recipient address. Plain judge tasks are a known gap | [technical document](../technical-document.md) section 3 |
+| 30, 35, 36, 47 | **Not built** (design proposals only) | [evidence and red-team harness](../05-security/evidence-and-redteam-harness.md) |
+| 32 | **Changed.** The intent check is a rule check in the tool layer. No second checker from another lab is described | [technical document](../technical-document.md) section 3 |
+| 33 | **Changed.** The build uses Claude (default `claude-opus-5-5`, `AGENT_MODEL=claude-sonnet-5-5` cheaper). Shenzhen model access is still open | [plan](../superpowers/plans/2026-10-14-chainbrain-prelim-wallet.md) Global Constraints |
+| 40 | **Superseded.** The default is the public testnet facilitator; `FACILITATOR=local` runs the same code in-process | plan, spec issue 1 |
+| 41 | **Open.** Plan says rerun on Base mainnet only if testnet hashes are not accepted (about US$5) | plan open questions |
 
 ## Ranked changes
 
