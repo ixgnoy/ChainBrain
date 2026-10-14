@@ -85,6 +85,8 @@ cd android && ./gradlew testDebugUnitTest assembleDebug
 
 ## Demo scenes
 
+Presenter runbook (phone + console, what to press and what judges see): [docs/06-pitch/demo-runbook.md](docs/06-pitch/demo-runbook.md).
+
 All eight play on the built-in network (offline), on the dev stack, and on the real server.
 
 | # | Scene | Evidence |

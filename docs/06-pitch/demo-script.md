@@ -1,6 +1,8 @@
 # Demo script: 5-minute video, 10-minute deck, live defence, minimum slice
 Last updated: 2026-10-14
 
+> **How to run it (15 Oct):** step-by-step presenter runbook for the phone + console, built-in network, scenes 1-8: [demo-runbook.md](demo-runbook.md).
+
 > **Status (14 Oct, v2):** The authoritative scene list is spec v2 scenes 1-8 ([spec](../02-product/product-design.md) "Demo script") and the [README](../../README.md) "Demo scenes", shown in the table below. The 9+ scene seller-guard script that follows (hash tape, seven guards, fooled-agent toggle, seller gateway) is the old design, deferred to finals and superseded for the prelim. The video (5 min or less), deck (10 min or less) and finals-defence structure still applies; the deck slide list is aligned with Task 10 of the [plan](../superpowers/plans/2026-10-14-chainbrain-prelim-wallet.md).
 
 ### v2 scenes (authoritative)
