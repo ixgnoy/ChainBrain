@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createWorld, SIM_AGENT } from "./world";
-import { seedOwner } from "./seed";
+import { seedOwner, claudeAsksForPremium } from "./seed";
+import { buy } from "./agents";
 import { CATALOG } from "./catalog";
-import { NEVER, parseUsd } from "./util";
+import { NEVER, parseUsd, same } from "./util";
 import type { Hex } from "./types";
 
 const OWNER = "0x00000000000000000000000000000000000d0d0d" as Hex;
@@ -131,21 +132,82 @@ test("events have strictly increasing `at` and bigints arrive as strings", async
   assert.equal(w.events(ev[3].at).length, ev.length - 4);
 });
 
-test("seed: lived-in owner with two pockets and real history", async () => {
+test("seed: two weeks of real history across three agents", async () => {
   const w = createWorld({ speed: 0, seed: 1 });
   const s = await seedOwner(w, OWNER);
-  assert.deepEqual(s.pockets.map((p) => p.name), ["Research data", "One purchase"]);
-  const [research, tight] = s.pockets.map((p) => w.chain.view(p.address));
-  assert.equal(research.balance, parseUsd("7.85"));
-  assert.equal(tight.balance, parseUsd("0.20"));
+  assert.deepEqual(s.pockets.map((p) => [p.name, w.agentOf(p.address)]), [["Research data", "chainbrain"], ["One purchase", "chainbrain"], ["Market news", "claude"], ["Trade quotes", "chatgpt"]]);
+  const bal = (name: string) => w.chain.view(s.pockets.find((p) => p.name === name)!.address).balance;
+  assert.equal(bal("Research data"), parseUsd("9.75"));
+  assert.equal(bal("One purchase"), parseUsd("0.20"));
+  assert.equal(bal("Market news"), parseUsd("4.90"));
+  assert.equal(bal("Trade quotes"), parseUsd("1.70"));
   assert.equal(w.chain.balanceOf(OWNER), parseUsd("54.80"));
   const ev = w.events(0);
+  for (let i = 1; i < ev.length; i++) assert.ok(ev[i].at > ev[i - 1].at, "oldest first");
   assert.ok(ev.every((e) => e.at < Date.now()));
-  assert.ok(ev[0].at < Date.now() - 4 * 3600_000);
-  assert.equal(ev.filter((e) => e.type === "payment").length, 3);
-  assert.equal(ev.filter((e) => e.type === "refusal").length, 1);
-  assert.equal(w.pending(research.address).length, 0);
-  assert.equal(s.ownerTxs.length, 4);
+  assert.ok(ev[0].at < Date.now() - 13 * 86_400_000, "two weeks back");
+  const pays = ev.filter((e) => e.type === "payment");
+  assert.equal(pays.length, 19);
+  assert.deepEqual([...new Set(pays.map((e) => e.agent))].sort(), ["chainbrain", "chatgpt", "claude"]);
+  assert.ok(pays.some((e) => e.agent === "claude" && e.cosigned), "Claude's co-signed premium report");
+  assert.ok(ev.filter((e) => e.type === "refusal").every((e) => e.reason === "SELLER_NOT_ALLOWED"));
+  assert.ok(ev.filter((e) => e.pocket).every((e) => e.agent), "every pocket event names its agent");
+  assert.equal(w.approvals().filter((a) => a.status === "pending").length, 0);
+  assert.deepEqual(w.agents().map((a) => [a.id, a.status]), [["chainbrain", "connected"], ["claude", "connected"], ["chatgpt", "connected"]]);
+  assert.equal(s.ownerTxs.length, 9);
+  // payments are signed by the pocket's own agent key
+  const claudePay = w.txs().filter((t) => t.kind === "payment" && t.status === "success" && same(t.pocket, s.pockets[2].address));
+  assert.ok(claudePay.length >= 4);
+});
+
+test("agents: Claude asks for a co-signature in its own pocket; disconnect declines it and keeps the money", async () => {
+  const w = createWorld({ speed: 0, seed: 2, approvalWaitMs: 60_000 });
+  const s = await seedOwner(w, OWNER);
+  const news = s.pockets.find((p) => p.name === "Market news")!.address;
+  const before = w.chain.view(news).balance;
+  const run = claudeAsksForPremium(w, news);
+  await new Promise((r) => setTimeout(r, 5));
+  const ask = w.approvals().find((a) => a.status === "pending")!;
+  assert.equal(ask.kind, "payment");
+  assert.equal(ask.agent, "claude");
+  assert.match(ask.text, /2026 forecast/);
+  assert.ok(ask.expiresAt! - ask.createdAt! === 60_000);
+  w.disconnect("claude");
+  const r = await run;
+  assert.equal(ask.status, "declined");
+  assert.match(r.reply, /declined|Disconnected/);
+  assert.equal(w.chain.view(news).balance, before, "money stays in the pocket");
+  assert.equal((await w.act("claude", news, buy("datalite", "durian-report"))).stopped, "disconnected");
+  assert.ok(w.events(0).some((e) => e.type === "agent" && e.agent === "claude" && e.action === "disconnected"));
+  w.connect("claude");
+  assert.equal(w.agents().find((a) => a.id === "claude")!.status, "connected");
+});
+
+test("agents: one agent per pocket, the agent's key is checked", async () => {
+  const w = createWorld({ speed: 0, seed: 4 });
+  const s = await seedOwner(w, OWNER);
+  const quotes = s.pockets.find((p) => p.name === "Trade quotes")!.address;
+  assert.equal((await w.act("claude", quotes, buy("datalite", "durian-report"))).stopped, "NOT_THIS_AGENT");
+  assert.throws(() => w.disconnect("chainbrain"));
+});
+
+test("revoke and return: both owner txs, pending approvals declined at once", async () => {
+  const w = createWorld({ speed: 0, seed: 5, approvalWaitMs: 60_000 });
+  const s = await seedOwner(w, OWNER);
+  const news = s.pockets.find((p) => p.name === "Market news")!.address;
+  const run = claudeAsksForPremium(w, news);
+  await new Promise((r) => setTimeout(r, 5));
+  const ask = w.approvals().find((a) => a.status === "pending")!;
+  const main = w.chain.balanceOf(OWNER);
+  const r = w.revokeAndReturn(OWNER, news);
+  assert.equal(r.amount, parseUsd("4.90"));
+  assert.equal(w.chain.balanceOf(OWNER), main + parseUsd("4.90"));
+  assert.equal(w.chain.view(news).balance, 0n);
+  assert.ok(w.chain.view(news).revoked);
+  assert.equal(ask.status, "declined");
+  await run;
+  const kinds = w.txs().filter((t) => same(t.pocket, news)).map((t) => t.kind);
+  assert.deepEqual(kinds.slice(-2), ["revoke", "return"]);
 });
 
 test("scene 1 again on a seeded pocket: the follow-up answers the question (not scene 3)", async () => {

@@ -4,7 +4,8 @@ export { CATALOG, SHADY_PREVIEW, ATTACKER, DRAINER, sellerById, sellerByPayTo, s
 export * from "./radar";
 export { createWorld, SIM_AGENT, SIM_FACTORY, SIM_SENTINEL, FORCE_SENDER, type World, type WorldOptions } from "./world";
 export * from "./sentinel";
-export { seedOwner, type SeededPocket, type OwnerTxSeed } from "./seed";
+export { seedOwner, seedOwnerHistory, seedOwnerToday, claudeAsksForPremium, type SeededPocket, type OwnerTxSeed, type Seeded } from "./seed";
+export { AGENTS, CAN, CANNOT, CLAUDE_AGENT, CHATGPT_AGENT, agentInfo, agentByAddress, errand, buy, attempt, firstRun, type AgentId, type AgentInfo, type AgentState, type AgentStatus } from "./agents";
 export { SCENES, type SceneInfo } from "./scenes";
 export { HELLO, FALLBACK, attackOf, type AttackKind } from "./script";
 export { REASONS, renderIntent } from "./intent";

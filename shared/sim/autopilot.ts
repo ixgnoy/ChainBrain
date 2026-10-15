@@ -4,7 +4,7 @@
 // every wait goes through `world.sleep`, so a world at speed 0 runs a whole story instantly (tests).
 import { CATALOG } from "./catalog";
 import { SCENES, type SceneInfo } from "./scenes";
-import { seedOwner } from "./seed";
+import { seedOwnerHistory, seedOwnerToday } from "./seed";
 import type { Hex } from "./types";
 import { NEVER, lower, parseUsd } from "./util";
 import { SIM_AGENT, type World } from "./world";
@@ -129,7 +129,7 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
       chain.transfer(owner, pocket, parseUsd(s.fund), t + 30_000);
       return pocket;
     };
-    // oldest first: event times only move forward, and the presenter's own history starts 4.5 hours ago
+    // oldest first: event times only move forward; the presenter's today starts 4.5 hours ago
     const p1 = await world.past(7 * HOUR, make(research, { cap: "2", ask: "1", sellers: ["datalite", "datapro"], fund: "6" }));
     await world.past(6 * HOUR + 50 * MIN, () => world.chat(p1, "Get the DataPro premium durian report with the 2026 forecast. Max US$2, by tonight."));
     const p2 = await world.past(6 * HOUR + 20 * MIN, make(trading, { cap: "1", ask: "0.5", sellers: ["datalite", "harbour-wines"], fund: "3" }));
@@ -141,8 +141,10 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
   }
 
   async function seed() {
+    // oldest first: the presenter's two weeks, then the other owners' morning, then the presenter's today
+    const prior = await seedOwnerHistory(world, presenter, { startUsdc: "60.00" });
     await seedOthers();
-    await seedOwner(world, presenter, { startUsdc: "60.00" });
+    await seedOwnerToday(world, presenter, prior);
     world.autoOwner(presenter, true);
     // a little recent activity from the rest of the network
     await world.past(13 * MIN, async () => { if (others[1]?.pocket) await world.chat(others[1].pocket, "Buy the DataLite fruit trade report. Max US$1, by tonight."); });

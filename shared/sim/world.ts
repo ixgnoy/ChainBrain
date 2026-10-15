@@ -11,6 +11,7 @@ import { createLabels, exposure, memorySource, narrate, score as radarScore, sho
 import { createChain, ChainError, type Chain } from "./chain";
 import { checkAgainstIntent, renderIntent, REASONS, scanRequests, wrapUntrusted, type Intent, type IntentInput } from "./intent";
 import { attackOf, route, FALLBACK, type Action, type AttackKind, type Scene } from "./script";
+import { AGENTS, agentByAddress, SIM_AGENT, type AgentId, type AgentState } from "./agents";
 import type { AnswerResult, Authorization, ChatResult, Hex, SimApproval, SimConfig, SimEvent, SimTx } from "./types";
 import { formatUsd, lower, NEVER, parseUsd, rng as makeRng, same, usd, USDC, wire, type Rng } from "./util";
 
@@ -28,7 +29,7 @@ export type WorldOptions = {
 type Quote = { quoteId: string; sellerId: string; sku: string; description: string; payTo: Hex; amount: bigint; paid: boolean; auth?: Authorization; ownerSig?: string };
 type Task = { intent?: Intent; spent: bigint; items: number; quotes: Map<string, Quote>; nextQuote: number; asked?: boolean };
 
-export const SIM_AGENT: Hex = "0xa9e7c41d5b02f3e68c7d91b4e0f2a35c6d7b8e19";
+export { SIM_AGENT };
 export const SIM_FACTORY: Hex = "0xfac70e2b9d4c1a3f5e6b7c8d9e0f1a2b3c4d5e6f";
 /** The Sentinel's guardian key: it can only freeze pockets (Pocket.sol guardian). */
 export const SIM_SENTINEL: Hex = "0x5e471e10000000000000000000000000000c0de5";
@@ -53,10 +54,13 @@ export function createWorld(opts: WorldOptions = {}) {
   const recent: SimEvent[] = [];
   const subs = new Set<(e: SimEvent) => void>();
   let lastAt = 0, seq = 0;
+  /** Which agent holds a pocket (from its immutable agent key). */
+  const agentIdOf = (pocket?: string): AgentId | undefined => (pocket && chain.isPocket(pocket) ? agentByAddress(chain.view(pocket as Hex).agent)?.id : undefined);
   function publish(e: { type: string; pocket?: string; at?: number; [k: string]: any }): SimEvent {
     const at = Math.max(e.at ?? now(), lastAt + 1);
     lastAt = at;
-    const ev: SimEvent = wire({ ...e, at, id: `s${++seq}` });
+    const agent = e.agent ?? agentIdOf(e.pocket); // every pocket event names the agent that holds the pocket
+    const ev: SimEvent = wire({ ...e, ...(agent ? { agent } : {}), at, id: `s${++seq}` });
     recent.push(ev);
     if (recent.length > 2000) recent.shift();
     for (const f of subs) f(ev);
@@ -71,7 +75,7 @@ export function createWorld(opts: WorldOptions = {}) {
   const evType = (k: SimApproval["kind"]) => (k === "question" ? "question" : k === "intent" ? "intent" : "approval");
   const autoOwners = new Set<string>();
   function createApproval(a: Omit<SimApproval, "id" | "status">, at?: number): SimApproval {
-    const x: SimApproval = { ...a, id: `ap_${r.hex(8).slice(2)}`, status: "pending" };
+    const x: SimApproval = { ...a, id: `ap_${r.hex(8).slice(2)}`, status: "pending", agent: agentIdOf(a.pocket), createdAt: at ?? now(), expiresAt: (at ?? now()) + (opts.approvalWaitMs ?? 600_000) };
     approvals.set(x.id, x);
     publish({ type: evType(a.kind), pocket: a.pocket, approval: x, at });
     const owner = chain.isPocket(a.pocket) ? chain.view(a.pocket).owner : undefined;
@@ -351,7 +355,7 @@ export function createWorld(opts: WorldOptions = {}) {
     await jitter(900, 1500); // facilitator verifies and settles on Base
     const rule2 = chain.canPay(pocket, q.payTo, q.amount); // the owner may have revoked while it settled: the chain decides
     if (rule2 !== "OK") return fail(rule2, rule2);
-    const s = chain.settle(pocket, q.payTo, q.amount, { submitter: SIM_AGENT, ownerSigned: !!q.ownerSig });
+    const s = chain.settle(pocket, q.payTo, q.amount, { submitter: chain.view(pocket).agent, ownerSigned: !!q.ownerSig }); // the pocket's own agent key
     if (!s.ok) return fail(s.reason ?? "SETTLEMENT_FAILED");
     t.spent += q.amount; t.items += 1;
     if (q.ownerSig && watch(pocket).hold) sentinelClear(pocket, "cosign");
@@ -371,6 +375,23 @@ export function createWorld(opts: WorldOptions = {}) {
 
   // ---- the agent loop (server/src/agent/loop.ts) driving the scripted scenes
   const busy = new Set<string>();
+  /** Runs a plan's tool calls one by one; `go` is checked before each step (an outside agent the owner disconnected stops). */
+  async function drive(pocket: Hex, scene: Scene, go: () => string | undefined = () => undefined): Promise<string> {
+    let step = scene.next(undefined);
+    let n = 0;
+    while (!step.done) {
+      const stop = go();
+      if (stop) return stop;
+      const a: Action = step.value;
+      if (a.delayMs) await sleep(a.delayMs);
+      if (a.say) { trace(pocket, "thinking", { text: a.say }); await jitter(350, 650); }
+      const result = await runTool(pocket, a.tool, a.input);
+      await jitter(250, 500);
+      step = scene.next(result);
+      if (++n > 24) break;
+    }
+    return step.done ? step.value : "I stopped after too many steps. Nothing will be retried.";
+  }
   async function runTurn(pocket: Hex, text: string): Promise<ChatResult> {
     const t = task(pocket);
     // an unanswered clarifying question from the previous turn: this message is the answer
@@ -384,18 +405,7 @@ export function createWorld(opts: WorldOptions = {}) {
       trace(pocket, "reply", { text: reply });
       return { reply };
     }
-    let step = scene.next(undefined);
-    let n = 0;
-    while (!step.done) {
-      const a: Action = step.value;
-      if (a.delayMs) await sleep(a.delayMs);
-      if (a.say) { trace(pocket, "thinking", { text: a.say }); await jitter(350, 650); }
-      const result = await runTool(pocket, a.tool, a.input);
-      await jitter(250, 500);
-      step = scene.next(result);
-      if (++n > 24) break;
-    }
-    const reply = step.done ? step.value : "I stopped after too many steps. Nothing will be retried.";
+    const reply = await drive(pocket, scene);
     trace(pocket, "reply", { text: reply });
     const attack = attackOf(text);
     if (attack) await afterAttack(pocket, attack, text);
@@ -410,6 +420,7 @@ export function createWorld(opts: WorldOptions = {}) {
     [/api key|password/, "passwords and API keys"],
   ];
   async function afterAttack(pocket: Hex, attack: AttackKind, text: string) {
+    const key = chain.view(pocket).agent; // the key the agent holds for this pocket
     const base = { type: "attack", pocket, attack, text: text.slice(0, 280), verdict: "refused", by: "agent" };
     if (attack === "extraction") {
       const t = text.toLowerCase();
@@ -423,8 +434,8 @@ export function createWorld(opts: WorldOptions = {}) {
     const tries: { call: string; f: () => unknown }[] = [];
     const amount = /\bus\$\s?(\d+(?:\.\d{1,2})?)|\$(\d+(?:\.\d{1,2})?)|\b(\d+(?:\.\d{1,2})?)\s?(?:usdc|dollars?)\b/.exec(t);
     const cap = parseUsd(amount?.[1] ?? amount?.[2] ?? amount?.[3] ?? "100");
-    if (!/\bseller\b/.test(t) || /cap|limit/.test(t)) tries.push({ call: `setCap(US$${formatUsd(cap)})`, f: () => chain.setCap(SIM_AGENT, pocket, cap) });
-    if (/\bseller\b|allow ?list|white ?list/.test(t)) tries.push({ call: `setSeller(${ATTACKER.slice(0, 6)}…${ATTACKER.slice(-4)}, true)`, f: () => chain.setSeller(SIM_AGENT, pocket, ATTACKER, true) });
+    if (!/\bseller\b/.test(t) || /cap|limit/.test(t)) tries.push({ call: `setCap(US$${formatUsd(cap)})`, f: () => chain.setCap(key, pocket, cap) });
+    if (/\bseller\b|allow ?list|white ?list/.test(t)) tries.push({ call: `setSeller(${ATTACKER.slice(0, 6)}…${ATTACKER.slice(-4)}, true)`, f: () => chain.setSeller(key, pocket, ATTACKER, true) });
     const txs: { call: string; tx?: string; reverted: boolean }[] = [];
     for (const x of tries) {
       const before = chain.txs().length;
@@ -433,8 +444,16 @@ export function createWorld(opts: WorldOptions = {}) {
       const tx = chain.txs().slice(before).at(-1);
       txs.push({ call: x.call, tx: tx?.hash, reverted });
     }
-    publish({ ...base, reason: "NOT_OWNER", tx: txs[0]?.tx, txs, from: SIM_AGENT });
+    publish({ ...base, reason: "NOT_OWNER", tx: txs[0]?.tx, txs, from: key });
   }
+
+  // ---- agents: ChainBrain's own plus outside agents (Claude, ChatGPT) connected like MCP clients (agents.ts)
+  const agentState = new Map<AgentId, AgentState>(AGENTS.map((a) => [a.id, { ...a, status: a.kind === "builtin" ? "connected" : "available" }]));
+  const declinePending = (pred: (a: SimApproval) => boolean) => {
+    for (const a of [...approvals.values()]) if (a.status === "pending" && pred(a)) resolveApproval(a.id, { approved: false });
+  };
+  // a revoked pocket can't pay, so nothing it asked for can still be approved: decline its open approvals at once
+  chain.onTx((t) => { if (t.kind === "revoke" && t.status === "success") declinePending((a) => same(a.pocket, t.pocket)); });
 
   // ---- public surface: the same calls as the wallet API and the chain
   const config: SimConfig = { agent: SIM_AGENT, factory: SIM_FACTORY, usdc: USDC, sellersUrl: "", sellers: sellers(), abis: { pocket: [], factory: [], erc20: [] } };
@@ -554,6 +573,48 @@ export function createWorld(opts: WorldOptions = {}) {
     autoOwner(owner: string, on = true) { if (on) autoOwners.add(lower(owner)); else autoOwners.delete(lower(owner)); },
     sellerName,
     sellerByPayTo,
+
+    // ---- agents
+    agents: (): AgentState[] => [...agentState.values()].map((a) => ({ ...a })),
+    agentOf: (pocket: string) => agentIdOf(pocket),
+    /** The owner allowed an outside agent (consent sheet). The pocket itself is created by the owner with the agent's key. */
+    connect(id: AgentId, at?: number) {
+      const a = agentState.get(id);
+      if (!a) throw new Error(`unknown agent ${id}`);
+      if (a.status !== "connected") { a.status = "connected"; a.connectedAt = at ?? now(); a.disconnectedAt = undefined; publish({ type: "agent", agent: id, action: "connected", at }); }
+      return { ...a };
+    },
+    /** Stops an agent: its runs end before their next step and its open requests are declined. The money stays in its pockets. */
+    disconnect(id: AgentId, at?: number) {
+      const a = agentState.get(id);
+      if (!a || a.kind === "builtin") throw new Error("the built-in agent can't be disconnected; revoke its pockets instead");
+      if (a.status === "connected") {
+        a.status = "disconnected"; a.disconnectedAt = at ?? now();
+        declinePending((x) => x.agent === id);
+        publish({ type: "agent", agent: id, action: "disconnected", at });
+      }
+      return { ...a };
+    },
+    /** An outside agent works on one of its pockets through the wallet tools (same rules as the in-app agent). */
+    async act(id: AgentId, pocket: Hex, plan: Scene): Promise<ChatResult> {
+      const a = agentState.get(id);
+      if (!a || a.status !== "connected") return { reply: `${a?.name ?? id} isn't connected.`, stopped: "disconnected" };
+      if (agentIdOf(pocket) !== id) return { reply: `${a.name} doesn't hold this pocket.`, stopped: "NOT_THIS_AGENT" };
+      if (busy.has(lower(pocket))) return { reply: "Still working on the last task.", stopped: "busy" };
+      busy.add(lower(pocket));
+      try {
+        const reply = await drive(pocket, plan, () => (a.status === "connected" ? undefined : `Disconnected by the owner. ${a.name} stopped before its next step; the money stays in the pocket.`));
+        trace(pocket, "reply", { text: reply });
+        return { reply };
+      } finally { busy.delete(lower(pocket)); }
+    },
+    /** Revoke: the owner freezes the pocket for good, then sweeps its whole balance back (two owner transactions). */
+    revokeAndReturn(owner: Hex, pocket: Hex) {
+      const amount = chain.balanceOf(pocket);
+      const revokeTx = chain.revoke(owner, pocket);
+      const returnTx = chain.returnFunds(owner, pocket);
+      return { revokeTx, returnTx, amount };
+    },
     txs: (): SimTx[] => chain.txs(),
     rng: r,
     sleep,

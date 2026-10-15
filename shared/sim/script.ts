@@ -8,17 +8,17 @@ export type Action = { tool: string; input: object; delayMs?: number; say?: stri
 export type Scene = Generator<Action, string, any>;
 
 const tonight = () => new Date(tonightMs()).toISOString();
-const intent = (description: string, maxPricePerItem: string, maxTotal: string, maxItems: number, request = description) =>
+export const intent = (description: string, maxPricePerItem: string, maxTotal: string, maxItems: number, request = description) =>
   ({ request, description, maxPricePerItem, maxTotal, maxItems, deadline: tonight() });
 
-type Outcome = { sellerId: string; sku: string; ok: boolean; price?: string; tx?: string; reason?: string; why?: string };
+export type Outcome = { sellerId: string; sku: string; ok: boolean; price?: string; tx?: string; reason?: string; why?: string };
 const ITEM: Record<string, string> = {
   "durian-report": "durian export report", "fruit-trade-report": "fruit trade report", "premium-report": "premium report with the 2026 forecast",
   "fruit-wine-trade-report": "fruit and wine trade report", preview: "free preview",
 };
 const item = (sku: string) => ITEM[sku] ?? sku;
 
-function* purchase(sellerId: string, sku: string, o: { payAnyway?: boolean; reason?: string } = {}): Generator<Action, Outcome, any> {
+export function* purchase(sellerId: string, sku: string, o: { payAnyway?: boolean; reason?: string } = {}): Generator<Action, Outcome, any> {
   const q = yield { tool: "get_quote", input: { sellerId, sku }, say: `Asking ${name(sellerId)} for the price of its ${item(sku)}.` };
   const base = { sellerId, sku, price: q?.price };
   if (!q?.ok) return { ...base, ok: false, reason: q?.reason ?? "QUOTE_UNKNOWN", why: q?.error ?? q?.why };
@@ -39,7 +39,7 @@ function* purchase(sellerId: string, sku: string, o: { payAnyway?: boolean; reas
   return p?.ok ? { ...base, ok: true, tx: p.tx } : { ...base, ok: false, reason: p?.reason, why: p?.why };
 }
 
-function* draft(fields: ReturnType<typeof intent>, say = "Writing the task down from the fixed template so you can confirm it."): Generator<Action, boolean, any> {
+export function* draft(fields: ReturnType<typeof intent>, say = "Writing the task down from the fixed template so you can confirm it."): Generator<Action, boolean, any> {
   const r = yield { tool: "draft_intent", input: fields, say };
   return !!r?.ok;
 }
@@ -55,7 +55,7 @@ const WHY: Record<string, string> = {
 const why = (code?: string) => (code && WHY[code]) || "your rules don't allow it";
 const bought = (o: Outcome) => `${name(o.sellerId)}'s ${item(o.sku)} (US$${o.price})`;
 const refused = (o: Outcome) => `${name(o.sellerId)}'s ${item(o.sku)} wasn't bought: ${why(o.reason)}`;
-function summary(outs: Outcome[]): string {
+export function summary(outs: Outcome[]): string {
   const ok = outs.filter((o) => o.ok), bad = outs.filter((o) => !o.ok);
   const parts: string[] = [];
   if (ok.length) parts.push(`Bought ${ok.map(bought).join(" and ")}.`);

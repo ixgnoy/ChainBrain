@@ -13,6 +13,10 @@ export type SimApproval = {
   status: "pending" | "approved" | "declined" | "timeout";
   signature?: string;
   answer?: string;
+  /** The agent that holds the pocket and asked (chainbrain, claude, chatgpt). */
+  agent?: string;
+  /** When it was asked, and when it times out unanswered (ms). */
+  createdAt?: number; expiresAt?: number;
 };
 
 export type Authorization = { from: Hex; to: Hex; value: string; validAfter: string; validBefore: string; nonce: Hex };
