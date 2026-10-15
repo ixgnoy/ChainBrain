@@ -61,15 +61,46 @@ async function until(what, fn, ms = 30000, step = 200) {
 
   await page.goto(`${URL0}/`);
 
+  await run("intro: three pages on every launch, Skip always there", async () => {
+    const skip = page.getByRole("button", { name: "Skip" });
+    await skip.waitFor({ timeout: 60000 });
+    await visible("Give your AI a pocket, not your wallet").waitFor();
+    check("intro page 1 shows the pitch line with Skip", true);
+    await shot("00-intro");
+    await page.getByRole("button", { name: "Next" }).click();
+    await visible("The limits live in a contract you own").waitFor();
+    await page.getByRole("button", { name: "Next" }).click();
+    await visible("The worst case is the pocket balance").waitFor();
+    check("intro pages 2 and 3 are reachable and Skip stays visible", await skip.isVisible());
+    await skip.click();
+    await skip.waitFor({ state: "detached", timeout: 5000 });
+    check("Skip lands on Home", true);
+  });
+
   await run("launch: straight to a lived-in Home, nothing says demo", async () => {
     await visible("Agent pockets").waitFor({ timeout: 60000 });
     await visible("Research data").waitFor();
     const t = await body();
     check("two seeded pockets", /Research data/.test(t) && /One purchase/.test(t));
+    check("pockets are printed cards (cap, ask-me limit, valid thru)", /CAP/.test(t) && /ASK ME ABOVE/.test(t) && /VALID THRU/.test(t));
+    check("card stack shows both pockets as buttons", (await page.getByRole("button", { name: /Research data pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /One purchase pocket/ }).count()) === 1);
     check("main wallet shows US$54.80", /54\.80/.test(t), t.slice(0, 200));
     check("no demo / sample / mock wording", !/\bdemo\b|sample data|mock|simulat/i.test(t));
     check("no BaseScan links", (await page.locator('a[href*="basescan"]').count()) === 0);
     await shot("01-home");
+  });
+
+  await run("tap a card: it opens the pocket page", async () => {
+    await page.getByRole("button", { name: /Research data pocket/ }).click({ position: { x: 120, y: 24 } }); // the visible header strip
+    await page.waitForURL(/pocket\/0x[0-9a-fA-F]{40}/, { timeout: 15000 });
+    await visible("Allowed sellers").waitFor();
+    await sleep(900);
+    const t = await body();
+    check("pocket page shows the same card (VALID THRU) and its rules", /VALID THRU/.test(t) && /Allowed sellers/.test(t));
+    await shot("01a-pocket-page");
+    await page.goBack();
+    await visible("Agent pockets").waitFor();
+    await sleep(500);
   });
 
   await run("scene 1: create and fund a Research pocket in the wizard", async () => {
@@ -198,7 +229,18 @@ async function until(what, fn, ms = 30000, step = 200) {
     check("receipt shows the delivered report", /2026 forecast/.test(t));
     check("receipt never links to BaseScan", (await page.getByLabel("Open on BaseScan").count()) === 0);
     await shot("10-receipt");
-    await page.getByRole("button", { name: "Done" }).click();
+    // the hash opens the in-app explorer: test network, never BaseScan
+    await page.getByText("Details", { exact: true }).filter({ visible: true }).first().click();
+    await sleep(300);
+    await page.getByRole("button", { name: /Open transaction/ }).filter({ visible: true }).first().click();
+    await visible("How it was checked").waitFor({ timeout: 10000 });
+    const x = await body();
+    check("explorer sheet: Test network, block, method, checks path", /Test network/.test(x) && /Block/.test(x) && /Method/.test(x) && /Signature check/.test(x), x.slice(0, 300));
+    check("explorer never mentions or links BaseScan", !/BaseScan/i.test(x) && (await page.locator('a[href*="basescan"]').count()) === 0);
+    await shot("10b-explorer");
+    await page.getByRole("button", { name: "Done" }).filter({ visible: true }).last().click();
+    await sleep(500);
+    await page.getByRole("button", { name: "Done" }).filter({ visible: true }).last().click();
   });
 
   await run("settings: subtle custom server switch", async () => {

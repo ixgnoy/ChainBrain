@@ -39,11 +39,11 @@ export function DeadEndCard({ id, evs, pocket, sellerName, onRetry, resolved }: 
         fixed ? (
           <View style={{ gap: 10 }}>
             <T v="sub" color="positive">Your rules now allow this.</T>
-            {onRetry && d.minPrice != null ? <Button label={`Ask again, max US$${usd(d.minPrice)}`} small onPress={() => onRetry(`Buy the DataLite durian report. Max US$${usd(d.minPrice!)}, by tonight.`)} /> : <T v="sub" color="ink2">{again}</T>}
+            {onRetry && d.minPrice != null ? <Button label={`Ask again, max US$${usd(d.minPrice)}`} small auto="deadend.askAgain" onPress={() => onRetry(`Buy the DataLite durian report. Max US$${usd(d.minPrice!)}, by tonight.`)} /> : <T v="sub" color="ink2">{again}</T>}
           </View>
         )
         : !d.fix && !d.needsSeller ? <T v="sub" color="ink2">{again}</T>
-        : <><Button label={label} small onPress={() => (d.fix ? setRules({ pocket: pocket.address, field: "cap", amount: usd(d.fix.cap), topUp: d.fix.topUp }) : router.push({ pathname: "/pocket/[id]", params: { id: pocket.address } }))} /><T v="cap" color="ink2">{again}</T></>
+        : <><Button label={label} small auto="deadend.fix" onPress={() => (d.fix ? setRules({ pocket: pocket.address, field: "cap", amount: usd(d.fix.cap), topUp: d.fix.topUp }) : router.push({ pathname: "/pocket/[id]", params: { id: pocket.address } }))} /><T v="cap" color="ink2">{again}</T></>
       ) : null}
     </EventCard>
   );

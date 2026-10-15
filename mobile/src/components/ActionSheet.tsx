@@ -11,6 +11,7 @@ import { Avatar, Button, Chip, ListRow } from "../ui/kit";
 import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { haptic } from "../haptics";
+import { autoplayRunning } from "../lib/autoplayTargets";
 import { cleanText } from "../lib/sanitize";
 import { parseUsd } from "../lib/shared";
 import { usd, money } from "../lib/util";
@@ -65,6 +66,13 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
   useEffect(() => {
     if (mode !== "revoke" || !done) return;
     const t = setTimeout(close, 1400);
+    return () => clearTimeout(t);
+  }, [done]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // the hidden auto-play lets the success moment play, then closes the sheet the way a finger would
+  useEffect(() => {
+    if (mode === "revoke" || !done || !autoplayRunning()) return;
+    const t = setTimeout(close, 2000);
     return () => clearTimeout(t);
   }, [done]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -140,9 +148,9 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
       {done ? <SheetSuccess key="ok" minHeight={formH.current} title={done.title} txs={[{ hash: done.hash }]} /> : form}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}>
         {mode === "fund" && <SlideToConfirm key={`f${sel}${amount}${error}`} label={`Slide to add US$${amount}`} doneLabel="Funded" disabled={!chosen || !wallet} onConfirm={doFund} />}
-        {mode === "return" && <SlideToConfirm key={`r${sel}${error}`} label="Slide to return funds" doneLabel="Returned" disabled={!chosen || !wallet || chosen.balance === 0n} onConfirm={doReturn} />}
-        {mode === "revoke" && (done ? <View style={{ height: 64 }} /> : <HoldToRevoke disabled={!chosen || !wallet} busy={busy} onComplete={doRevoke} />)}
-        <Button label={done ? "Done" : "Cancel"} kind={done ? "secondary" : "text"} onPress={close} />
+        {mode === "return" && <SlideToConfirm key={`r${sel}${error}`} auto="return.slide" label="Slide to return funds" doneLabel="Returned" disabled={!chosen || !wallet || chosen.balance === 0n} onConfirm={doReturn} />}
+        {mode === "revoke" && (done ? <View style={{ height: 64 }} /> : <HoldToRevoke auto="revoke.hold" disabled={!chosen || !wallet} busy={busy} onComplete={doRevoke} />)}
+        <Button label={done ? "Done" : "Cancel"} kind={done ? "secondary" : "text"} auto={done ? "sheet.close" : undefined} onPress={close} />
       </View>
     </View>
   );

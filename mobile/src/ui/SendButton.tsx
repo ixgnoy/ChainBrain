@@ -5,11 +5,16 @@ import React from "react";
 import { View } from "react-native";
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { c, motion } from "../tokens";
-import { Press } from "./kit";
+import { Press, type PressTap } from "./kit";
+import { useAutoplayTarget } from "../lib/autoplayTargets";
 import { Icon } from "./Icon";
 import { settle, useReduceMotion } from "./motion";
 
-export function SendButton({ ready, stop, onPress, onStop }: { ready: boolean; /** the agent works and the owner can stop it */ stop?: boolean; onPress: () => void; onStop?: () => void }) {
+export function SendButton({ ready, stop, onPress, onStop, onAutoStop, tapRef }: { ready: boolean; /** the agent works and the owner can stop it */ stop?: boolean; onPress: () => void; onStop?: () => void;
+  /** what the auto-play's press of Stop does (a finger's tap on Stop ends the auto-play instead) */ onAutoStop?: () => void; /** hands out the send press for the auto-play */ tapRef?: React.MutableRefObject<PressTap | null> }) {
+  const own = React.useRef<PressTap | null>(null);
+  const ref = tapRef ?? own;
+  useAutoplayTarget("revoke.open", () => ref.current?.(onAutoStop ?? onStop), !!stop);
   const reduce = useReduceMotion();
   const show = useSharedValue(ready || stop ? 1 : 0);
   const mode = useSharedValue(stop ? 1 : 0);
@@ -22,7 +27,7 @@ export function SendButton({ ready, stop, onPress, onStop }: { ready: boolean; /
   const square = useAnimatedStyle(() => ({ opacity: mode.value }));
   const active = ready || !!stop;
   return (
-    <Press onPress={stop ? onStop : onPress} haptics={stop ? "medium" : "none"} disabled={!active} accessibilityRole="button" accessibilityLabel={stop ? "Stop agent" : "Send"} accessibilityState={{ disabled: !active }}
+    <Press tapRef={ref} onPress={stop ? onStop : onPress} haptics={stop ? "medium" : "none"} disabled={!active} accessibilityRole="button" accessibilityLabel={stop ? "Stop agent" : "Send"} accessibilityState={{ disabled: !active }}
       style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }} pointerEvents={active ? "auto" : "none"}>
       <Animated.View style={[{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" }, disc]}>
         <Animated.View style={[{ position: "absolute" }, arrow]}><Icon name="arrowUp" size={20} color={c.onAccent} stroke={2.2} /></Animated.View>

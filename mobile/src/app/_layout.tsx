@@ -1,5 +1,5 @@
 import "../../global.css";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -18,6 +18,9 @@ import { ReceiptSheet } from "../components/ReceiptSheet";
 import { ActionSheet } from "../components/ActionSheet";
 import { RulesSheet } from "../components/RulesSheet";
 import { ToastHost } from "../ui/Toast";
+import { Intro } from "../components/Intro";
+import { CardFlightHost } from "../components/CardFlight";
+import { ExplorerSheet } from "../components/ExplorerSheet";
 import { T } from "../ui/Text";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -26,6 +29,7 @@ colorScheme.set("light");
 
 function Shell() {
   const { keyState } = useApp();
+  const [intro, setIntro] = useState(true); // the intro plays on every launch
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
       <StatusBar style="dark" />
@@ -39,16 +43,20 @@ function Shell() {
               Android: slide from right. Web: slide for the pocket page, fade for the wizard. */}
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.canvas }, animation: Platform.OS === "ios" ? "default" : "slide_from_right" }}>
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="pocket/[id]" options={{ gestureEnabled: true, fullScreenGestureEnabled: Platform.OS === "ios" }} />
+            {/* fade: the pocket page's card arrives by the card flight (components/CardFlight.tsx), not by sliding in */}
+            <Stack.Screen name="pocket/[id]" options={{ animation: "fade", gestureEnabled: true, fullScreenGestureEnabled: Platform.OS === "ios" }} />
             <Stack.Screen name="create" options={{ presentation: Platform.OS === "web" ? undefined : "modal", animation: Platform.OS === "web" ? "fade" : Platform.OS === "ios" ? "default" : "slide_from_bottom", gestureEnabled: true }} />
           </Stack>
+          <CardFlightHost />
           <ApprovalSheet />
           <QuestionSheet />
           <ReceiptSheet />
           <ActionSheet />
           <RulesSheet />
           <PocketPickerSheet />
+          <ExplorerSheet />
           <ToastHost />
+          {intro ? <Intro onDone={() => setIntro(false)} /> : null}
         </>
       )}
     </View>

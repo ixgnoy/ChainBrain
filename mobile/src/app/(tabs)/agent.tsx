@@ -3,9 +3,11 @@ import { Keyboard, Platform, ScrollView, TextInput, View } from "react-native";
 import Animated, { FadeIn, FadeOut, useAnimatedKeyboard, useAnimatedReaction, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useApp, type Turn } from "../../store";
 import { c, F, lift } from "../../tokens";
-import { Avatar, Button, Press } from "../../ui/kit";
+import { Avatar, Button, Press, type PressTap } from "../../ui/kit";
+import { autoplayAlive, typeOut, useAutoplayTarget } from "../../lib/autoplayTargets";
 import { StatusDot, type DotState } from "../../ui/StatusDot";
 import { GLASS_TAB_SPACE as TAB_H } from "../../ui/glass/GlassTabBar";
 import { T } from "../../ui/Text";
@@ -20,7 +22,7 @@ import { StoppedCard } from "../../components/StoppedCard";
 import { Rise, useStagger, firstTime } from "../../ui/Rise";
 import { StreamText } from "../../ui/StreamText";
 import { PaidCard } from "../../components/PaidCard";
-import { BlockedCard } from "../../components/BlockedCard";
+import { AttackCard, isAttackEvent } from "../../components/AttackCard";
 import { InjectionCard, injectionsOf } from "../../components/InjectionCard";
 import { SendButton } from "../../ui/SendButton";
 import { WorkingLine } from "../../ui/WorkingLine";
@@ -108,7 +110,7 @@ function useRideKeyboard(base: number) {
 export default function AgentChat() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
-  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setPickerOpen } = useApp();
+  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setPickerOpen, autoplay } = useApp();
   const [text, setText] = useState("");
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [kb, setKb] = useState(false);
@@ -136,6 +138,8 @@ export default function AgentChat() {
 
   const mine = useMemo(() => (active ? events.filter((e) => sameAddr(e.pocket, active.address)) : []), [events, active]);
   const mineLen = mine.length;
+  // attacks that arrived before the first message (the console sets them off through the relay): shown at the top of the chat
+  const loose = useMemo(() => mine.filter((e) => isAttackEvent(e) && (turns.length === 0 || e.at <= turns[0].fromAt)), [mine, turns]);
 
   // follow the conversation: smooth scroll to the end while the owner is at (or near) the bottom; content growing (steps, cards) retriggers it
   const toEnd = () => {
@@ -161,6 +165,29 @@ export default function AgentChat() {
     setSent({ text: v.trim(), n: turns.length });
     void sendChat(v).finally(() => setSent(null));
   };
+  // ---- hidden auto-play (long-press the header ~1.5 s): the composer types the sentence, then presses send like a finger
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  const sendTap = useRef<PressTap | null>(null);
+  useAutoplayTarget("composer", async (arg) => {
+    const v = String(arg?.text ?? "");
+    stick.current = true;
+    setText("");
+    await typeOut(v, setText, { cancelled: () => !autoplayAlive() });
+    if (!autoplayAlive()) return;
+    await new Promise((r) => setTimeout(r, 450));
+    await sendTap.current?.(() => sendRef.current(v));
+  }, !!active);
+  const answerTaps = useRef<Record<string, React.MutableRefObject<PressTap | null>>>({});
+  const answerTap = (o: string) => (answerTaps.current[o] ??= { current: null });
+  useAutoplayTarget("question.answer", async (arg) => {
+    const opts = question ? answerOptions(question.text) : [];
+    const want = String(arg ?? "").toLowerCase();
+    const pick = opts.find((o) => o.toLowerCase().includes(want)) ?? opts[0];
+    if (pick) await answerTap(pick).current?.(); else if (want) sendRef.current(String(arg));
+  }, !!question);
+  const holdHeader = Gesture.LongPress().minDuration(1500).maxDistance(40).runOnJS(true).onStart(() => { autoplay.toggle(); });
+
   const follow: ChipItem[] = question ? scenes.filter((s) => s.followUp).map((s) => ({ label: s.followChip ?? s.followUp!, text: s.followUp! })) : [];
   // a tight pocket (cap US$0.20 or less) leads with the dead-end task; otherwise the scenes in story order
   const tight = !!active && active.cap <= 200_000n;
@@ -190,8 +217,9 @@ export default function AgentChat() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.card }}>
+      <GestureDetector gesture={holdHeader}>
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 10, flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: 1, borderBottomColor: c.line }}>
-        <Press kind="row" haptics="select" disabled={pockets.length < 2} onPress={() => setPickerOpen(true)} hitSlop={6}
+        <Press kind="row" haptics="select" disabled={pockets.length < 2} auto="picker.open" onPress={() => setPickerOpen(true)} onLongPress={() => {}} hitSlop={6}
           accessibilityRole="button" accessibilityLabel={active ? `${active.name}, ${headStatus}. Change pocket` : "No pocket yet"}
           style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48 }}>
           <Avatar label={active?.name ?? "?"} size={32} />
@@ -207,6 +235,7 @@ export default function AgentChat() {
           </View>
         </Press>
       </View>
+      </GestureDetector>
 
       <View style={{ flex: 1 }}>
         <ScrollView
@@ -240,6 +269,7 @@ export default function AgentChat() {
               </View>
             </Rise>
           )}
+          {loose.map((e, k) => <AttackCard key={`loose${e.at}${k}`} e={e} />)}
           {hidden > 0 ? (
             <Press kind="row" haptics="select" onPress={() => setShowAll(true)} accessibilityRole="button" accessibilityLabel={`Show ${hidden} earlier messages`}
               style={{ alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: c.fill }}>
@@ -265,7 +295,7 @@ export default function AgentChat() {
                 ))}
                 {refusals.map((r) => <SellerRefusal key={r.sellerId} id={`${t.id}:r${r.sellerId}`} seller={sellerName(r.sellerId)} reasons={r.reasons} />)}
                 {injectionsOf(evs).map((x, k) => <InjectionCard key={`${t.id}:i${k}`} id={`${t.id}:${k}`} seller={sellerName(x.sellerId)} lines={x.lines} />)}
-                {evs.filter((e) => e.type === "forced").map((e) => <BlockedCard key={String(e.tx)} e={e} />)}
+                {evs.filter(isAttackEvent).map((e, k) => <AttackCard key={`${e.type}${e.at}${k}`} e={e} />)}
                 {!t.done ? (
                   <View style={{ gap: 4 }}>
                     {pending.length ? <T v="body" color="muted">Waiting for you…</T> : !traceLines(evs).length ? <WorkingLine on /> : null}
@@ -300,7 +330,7 @@ export default function AgentChat() {
             <EventCard tone="waiting" title="Your agent has a question" body="One tap to answer, or type your own below.">
               {answerOptions(question.text).length ? (
                 <View style={{ flexDirection: "row", gap: 8 }}>
-                  {answerOptions(question.text).map((o) => <Button key={o} label={o} kind="secondary" small onPress={() => send(o)} style={{ flex: 1, paddingHorizontal: 12 }} />)}
+                  {answerOptions(question.text).map((o) => <Button key={o} label={o} kind="secondary" small tapRef={answerTap(o)} onPress={() => send(o)} style={{ flex: 1, paddingHorizontal: 12 }} />)}
                 </View>
               ) : <Button label="Answer" kind="secondary" small onPress={() => setQuestionOpen(true)} />}
             </EventCard>
@@ -342,7 +372,9 @@ export default function AgentChat() {
               onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}
               style={[{ flex: 1, color: c.ink, fontFamily: F.regular, fontSize: 16, lineHeight: 24, height: 48, paddingVertical: 0 }, Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null]}
             />
-            <SendButton ready={ready} stop={showStop} onPress={() => send(text)} onStop={() => active && setAction({ mode: "revoke", pocket: active.address })} />
+            <SendButton ready={ready} stop={showStop} tapRef={sendTap} onPress={() => send(text)}
+              onStop={() => { if (autoplay.running) autoplay.stop(); else if (active) setAction({ mode: "revoke", pocket: active.address }); }}
+              onAutoStop={() => active && setAction({ mode: "revoke", pocket: active.address })} />
           </View>
         </View>
       </Animated.View>

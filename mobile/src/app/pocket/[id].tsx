@@ -18,6 +18,8 @@ import { T } from "../../ui/Text";
 import { ActivityRow } from "../../components/ActivityRow";
 import { factPills, isExpired, untilText } from "../../components/PocketCard";
 import { TxNotice } from "../../components/TxNotice";
+import { PocketFace, cardHeight, toneFor } from "../../components/PocketFace";
+import { useFlight } from "../../ui/cardFlight";
 import { txError } from "../../components/ActionSheet";
 import { cleanText } from "../../lib/sanitize";
 import { sameAddr } from "../../lib/events";
@@ -41,8 +43,10 @@ export default function PocketDetail() {
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { findPocket, pocketsLoaded, cfg, wallet, ledger, setAction, setReceipt, refreshPockets, setRules, recordTx, setNotice } = useApp();
+  const { pockets, findPocket, pocketsLoaded, cfg, wallet, ledger, setAction, setReceipt, refreshPockets, setRules, recordTx, setNotice } = useApp();
   const pocket = findPocket(id);
+  const flight = useFlight();
+  const [rootW, setRootW] = useState(0);
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const rows = useMemo(() => visibleRows(ledger.filter((r) => sameAddr(r.pocket, id)).reverse()), [ledger, id]);
@@ -74,13 +78,14 @@ export default function PocketDetail() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.canvas }}>
+    <View style={{ flex: 1, backgroundColor: c.canvas }} onLayout={(e) => setRootW(e.nativeEvent.layout.width)}>
       <BackHeader title={cleanText(pocket.name, 30)} sub={pocket.revoked ? "Turned off" : expired ? "Expired" : untilText(pocket.expiresAt)} scrollY={scrollY} revealAt={150} />
       <Screen tabs={false} top={false} scrollY={scrollY} contentContainerStyle={{ paddingTop: insets.top + BACK_HEADER_H }}>
-        <View style={{ alignItems: "center", gap: 10, paddingBottom: 8 }}>
-          <PopIn from={0.92}><Avatar label={pocket.name} size={72} tone={off ? "fill" : "soft"} /></PopIn>
-          <Rise index={0} base={60}><T v="row" w="medium" color="ink2" numberOfLines={1} style={{ textAlign: "center", paddingHorizontal: 24 }}>{cleanText(pocket.name, 30)}</T></Rise>
-          <Money v="balance" value={usd(pocket.balance)} countIn label={`pocket, ${usd(pocket.balance)} USDC`} />
+        <View style={{ alignItems: "center", gap: 14, paddingBottom: 8 }}>
+          {/* the same printed card as Home; it takes over from the flying card the moment that lands */}
+          <View style={{ marginTop: 4, opacity: flight?.pocket === pocket.address.toLowerCase() ? 0 : 1 }} accessibilityLabel={`${cleanText(pocket.name, 30)} card, ${usd(pocket.balance)} USDC`} accessible>
+            {rootW ? <PocketFace pocket={pocket} width={rootW - 40} tone={toneFor(pockets, pocket.address)} buzz /> : <View style={{ height: 200 }} />}
+          </View>
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center", paddingHorizontal: 20 }}>
             {pocket.revoked ? <Rise index={0} step={40} base={140}><Pill label="Revoked" tone="negative" /></Rise> : expired ? <Rise index={0} step={40} base={140}><Pill label="Expired" tone="fill" /></Rise> : null}
             {factPills(pocket).map((f, i) => (

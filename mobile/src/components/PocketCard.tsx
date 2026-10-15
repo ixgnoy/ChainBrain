@@ -40,7 +40,7 @@ export function factPills(p: Pick<Pocket, "cap" | "askAbove">): string[] {
   return out;
 }
 
-export function PocketRow({ pocket, onPress, last }: { pocket: Pocket; onPress: () => void; last?: boolean }) {
+export function PocketRow({ pocket, onPress, last, lit }: { pocket: Pocket; onPress: () => void; last?: boolean; /** pressed by the auto-play */ lit?: boolean }) {
   const { pending, ledger } = useApp();
   const state = pocketState(pocket, pending.some((a) => a.pocket.toLowerCase() === pocket.address.toLowerCase()));
   // a thin bar under the subtitle: how much of this pocket's money the agent has used (only once it has spent something)
@@ -49,7 +49,7 @@ export function PocketRow({ pocket, onPress, last }: { pocket: Pocket; onPress: 
   const share = total > 0n ? Math.min(1, Number((spent * 1000n) / total) / 1000) : 0;
   return (
     <ListRow
-      last={last} onPress={onPress}
+      last={last} onPress={onPress} lit={lit}
       a11y={`${cleanText(pocket.name, 30)} pocket, ${usd(pocket.balance)} USDC`}
       avatar={<Avatar label={pocket.name} tone={pocket.revoked || isExpired(pocket) ? "fill" : "soft"} />}
       title={cleanText(pocket.name, 30)} sub={pocketLine(pocket)}

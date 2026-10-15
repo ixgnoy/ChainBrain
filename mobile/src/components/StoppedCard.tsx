@@ -13,7 +13,7 @@ export function StoppedCard({ last, tx, canReturn, onReturn }: { last: string | 
       body={`You revoked this pocket on-chain, so the agent can't spend from it. Last completed step: ${last ?? "none yet"}.`}
       why={tx ? { title: "Details", children: <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}><T v="cap" color="muted">Revoke transaction</T><TxLink tx={tx} /></View> } : undefined}
     >
-      {canReturn ? <Button label="Return funds to your wallet" small onPress={onReturn} /> : null}
+      {canReturn ? <Button label="Return funds to your wallet" small auto="return.open" onPress={onReturn} /> : null}
     </EventCard>
   );
 }

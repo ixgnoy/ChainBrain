@@ -1,24 +1,47 @@
 // Small UI kit: pressable, white card, round action, list row, pill, buttons, section header, field, expandable details.
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Pressable, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { c, F, motion, radius } from "../tokens";
 import { haptic, type HapticName } from "../haptics";
 import { EASE_OUT, glide, settle, useReduceMotion } from "./motion";
+import { useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
 
 const APressable = Animated.createAnimatedComponent(Pressable);
 
+/** A press the auto-play can make: dip, release, then the same call a finger's tap makes (`action` overrides what it calls). */
+export type PressTap = (action?: () => void) => Promise<void>;
+const nap = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
 /** Pressable with press feedback that starts on touch-down (90 ms ease-out to a size-aware scale, spring release) and a
- *  haptic on press. `kind` picks the scale: row/card 0.985, button 0.97, round action 0.94, icon 0.9. */
-export function Press({ children, style, onPress, haptics = "light", scale, kind = "button", ...p }: PressableProps & {
+ *  haptic on press. `kind` picks the scale: row/card 0.985, button 0.97, round action 0.94, icon 0.9.
+ *  `auto` registers it as a named auto-play target (lib/autoplayTargets.ts); `tapRef` hands out the same press for screens
+ *  that route several buttons through one target (wizard presets, one-tap answers). */
+export function Press({ children, style, onPress, haptics = "light", scale, kind = "button", auto, tapRef, ...p }: PressableProps & {
   style?: StyleProp<ViewStyle>; haptics?: HapticName | "none"; scale?: number; kind?: keyof typeof motion.scale;
+  auto?: TargetName; tapRef?: React.MutableRefObject<PressTap | null>;
 }) {
   const reduce = useReduceMotion();
   const s = useSharedValue(1);
   const to = scale ?? motion.scale[kind];
   const a = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  const press = useRef({ onPress, haptics });
+  press.current = { onPress, haptics };
+  const tap: PressTap = async (action) => {
+    if (!reduce) s.value = withTiming(to, { duration: motion.pressIn, easing: EASE_OUT });
+    await nap(motion.pressIn + 60);
+    settle(s, 1, reduce, motion.spring.press);
+    await nap(70);
+    if (press.current.haptics !== "none") haptic[press.current.haptics]();
+    if (action) action(); else press.current.onPress?.({} as never);
+    await nap(260); // the screen this press leads to has rendered (and registered its own targets) before the driver looks
+  };
+  const tapNow = useRef(tap);
+  tapNow.current = tap;
+  if (tapRef) tapRef.current = (action) => tapNow.current(action);
+  useAutoplayTarget(auto ?? "sheet.close", () => tapNow.current(), !!auto && !p.disabled);
   return (
     <APressable
       {...p}
@@ -92,14 +115,15 @@ export function Chip({ label, on, onPress }: { label: string; on?: boolean; onPr
   );
 }
 
-export function Button({ label, onPress, kind = "primary", icon, disabled, loading, style, small }: {
+export function Button({ label, onPress, kind = "primary", icon, disabled, loading, style, small, auto, tapRef }: {
   label: string; onPress?: () => void; kind?: "primary" | "secondary" | "outline" | "text" | "danger"; icon?: IconName; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>; small?: boolean;
+  auto?: TargetName; tapRef?: React.MutableRefObject<PressTap | null>;
 }) {
   const off = disabled || loading;
   const bg = kind === "primary" ? c.accent : kind === "danger" ? c.negativeSoft : kind === "secondary" ? c.fill : "transparent";
   const fg = kind === "primary" ? c.onAccent : kind === "danger" ? c.negative : kind === "secondary" ? c.ink : kind === "text" ? c.ink2 : c.accent; // teal means go; a text button (Decline, Cancel, Back) is quiet
   return (
-    <Press onPress={off ? undefined : onPress} haptics={kind === "text" ? "select" : "light"} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!off, busy: !!loading }}
+    <Press onPress={off ? undefined : onPress} auto={auto} tapRef={tapRef} disabled={off} haptics={kind === "text" ? "select" : "light"} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!off, busy: !!loading }}
       style={[{ height: small ? 44 : 56, minWidth: 48, paddingHorizontal: 22, borderRadius: radius.pill, backgroundColor: bg, borderWidth: kind === "outline" ? 1.5 : 0, borderColor: c.accent, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, opacity: disabled ? 0.45 : 1 }, style]}>
       {icon ? <Icon name={icon} size={18} color={fg} /> : null}
       <T v="row" w="semi" style={{ color: fg }}>{loading ? "Please wait…" : label}</T>
@@ -117,13 +141,14 @@ export function SectionHeader({ title, right, action, onAction }: { title: strin
 }
 
 /** A Ryt-style list row: 48 px avatar, title 16/500, grey subtitle, amount right with an optional status line beneath. Rows are >= 64 px. */
-export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink", rightSubTone = "muted", onPress, last, a11y, children, codes, foot, subLines = 2, icon, extra }: {
+export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink", rightSubTone = "muted", onPress, last, a11y, children, codes, foot, subLines = 2, icon, extra, lit }: {
   avatar?: React.ReactNode; title: string; sub?: string; right?: string; rightSub?: string; rightTone?: "ink" | "positive" | "muted" | "negative"; rightSubTone?: "muted" | "negative" | "warning" | "positive";
   onPress?: () => void; last?: boolean; a11y?: string; children?: React.ReactNode; codes?: string[]; foot?: string; subLines?: number; /** anything under the subtitle (a thin progress bar) */ extra?: React.ReactNode;
+  /** pressed by the auto-play: the row takes the press tint */ lit?: boolean;
   /** a bare 22 px icon instead of an avatar disc (flat lists such as Settings): rows are 56 px and the divider starts after the icon */ icon?: IconName;
 }) {
   const body = (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: icon ? 14 : 16, minHeight: icon ? 56 : 72, paddingHorizontal: 16 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: icon ? 14 : 16, minHeight: icon ? 56 : 72, paddingHorizontal: 16, backgroundColor: lit ? c.accentSoft : undefined }}>
       {icon ? <View style={{ width: 24, alignItems: "center" }}><Icon name={icon} size={22} color={c.ink2} /></View> : avatar}
       <View style={{ flex: 1, gap: 2, paddingVertical: icon ? 10 : 12 }}>
         <T v="row" numberOfLines={1}>{title}</T>

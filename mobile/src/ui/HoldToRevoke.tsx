@@ -12,13 +12,14 @@ import { EASE_OUT, useReduceMotion } from "./motion";
 import { c, motion } from "../tokens";
 import { T } from "./Text";
 import { Icon } from "./Icon";
+import { autoplayAlive, useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
 
 const ACircle = Animated.createAnimatedComponent(Circle);
 const HOLD_MS = 1200;
 const FILL_EASE = Easing.bezier(0.32, 0.1, 0.72, 0.9); // nearly linear, slight resistance at the start
 const R = 15, CIRC = 2 * Math.PI * R;
 
-export function HoldToRevoke({ onComplete, label = "Hold to revoke", disabled, busy }: { onComplete: () => void; label?: string; disabled?: boolean; busy?: boolean }) {
+export function HoldToRevoke({ onComplete, label = "Hold to revoke", disabled, busy, auto }: { onComplete: () => void | Promise<unknown>; label?: string; disabled?: boolean; busy?: boolean; /** auto-play target: the real 1.2 s hold, then the same completion */ auto?: TargetName }) {
   const reduce = useReduceMotion();
   const p = useSharedValue(0);
   const scale = useSharedValue(1);
@@ -26,7 +27,23 @@ export function HoldToRevoke({ onComplete, label = "Hold to revoke", disabled, b
   const stage = useSharedValue(0);
   const finished = useSharedValue(false);
   const [w, setW] = React.useState(0);
-  const complete = useCallback(() => { haptic.warning(); onComplete(); }, [onComplete]);
+  const complete = useCallback(() => { haptic.warning(); return onComplete(); }, [onComplete]);
+  const completeNow = React.useRef(complete);
+  completeNow.current = complete;
+  useAutoplayTarget(auto ?? "sheet.close", async () => {
+    if (disabled || busy) return;
+    finished.value = false; stage.value = 0; p.value = 0;
+    p.value = withTiming(1, { duration: HOLD_MS, easing: FILL_EASE });
+    if (!reduce) scale.value = withTiming(0.97, { duration: motion.pressIn, easing: EASE_OUT });
+    haptic.light();
+    await new Promise<void>((r) => setTimeout(r, HOLD_MS + 40));
+    if (!autoplayAlive()) { p.value = withTiming(0, { duration: 200 }); scale.value = withSpring(1, motion.spring.press); return; }
+    finished.value = true; p.value = 1;
+    if (!reduce) pulse.value = withSequence(withTiming(1, { duration: 140, easing: EASE_OUT }), withTiming(0, { duration: 360, easing: EASE_OUT }));
+    scale.value = reduce ? 1 : withSpring(1, motion.spring.press);
+    p.value = withTiming(0, { duration: 500, easing: EASE_OUT });
+    await completeNow.current();
+  }, !!auto && !disabled && !busy);
 
   // haptic stages on the UI thread, driven by the fill itself so they stay in sync: 25/50/75 tick, 90 medium
   useAnimatedReaction(

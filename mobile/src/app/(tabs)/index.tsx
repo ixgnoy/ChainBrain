@@ -15,7 +15,8 @@ import { AnimatedList } from "../../ui/AnimatedList";
 import { useReduceMotion } from "../../ui/motion";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
-import { PocketRow } from "../../components/PocketCard";
+import { PocketStack } from "../../components/PocketStack";
+import { useIntroDone } from "../../ui/intro";
 import { ActivityRow } from "../../components/ActivityRow";
 import { cleanText } from "../../lib/sanitize";
 import { visibleRows } from "../../lib/plain";
@@ -46,6 +47,8 @@ function Header() {
 
 /** Played once per app launch: revisiting the tab never re-runs the stagger. */
 let introPlayed = false;
+/** The intro covers Home on every launch: Home mounts again as it lets go, so its entrance is seen. */
+export default function HomeGate() { const done = useIntroDone(); return <Home key={done ? "live" : "wait"} ready={done} />; }
 
 /** No pockets yet: a calm, intentional empty state. */
 function EmptyPockets() {
@@ -90,11 +93,11 @@ function LiveStrip() {
   );
 }
 
-export default function Home() {
+function Home({ ready }: { ready: boolean }) {
   const { pockets, pocketsLoaded, conn, balances, ledger, setReceipt, setAction, refreshPockets } = useApp();
   const reduce = useReduceMotion();
-  const play = useRef(!introPlayed).current;
-  useEffect(() => { introPlayed = true; }, []);
+  const play = useRef(ready && !introPlayed).current;
+  useEffect(() => { if (ready) introPlayed = true; }, [ready]);
   const sumAll = pockets.reduce((n, p) => n + (p.revoked ? 0n : p.balance), 0n);
   const recent = useMemo(() => visibleRows([...ledger].reverse()).slice(0, 3), [ledger]);
   const loading = !pocketsLoaded && conn !== "offline";
@@ -136,7 +139,7 @@ export default function Home() {
             <Rise play={play} index={1} style={{ alignSelf: "stretch" }}>
               <View style={{ flexDirection: "row", marginTop: 24, alignSelf: "stretch" }}>
                 <RoundButton icon="plus" label="Add money" onPress={() => setAction({ mode: "fund" })} />
-                <RoundButton icon="squarePlus" label="New pocket" onPress={() => router.push("/create")} />
+                <RoundButton icon="squarePlus" label="New pocket" auto="home.newPocket" onPress={() => router.push("/create")} />
                 <RoundButton icon="chat" label="Ask agent" onPress={() => router.navigate("/agent")} />
               </View>
             </Rise>
@@ -153,9 +156,7 @@ export default function Home() {
         ) : pockets.length === 0 ? (
           <EmptyPockets />
         ) : (
-          <AnimatedList>
-            {pockets.map((p) => <PocketRow key={p.address} pocket={p} onPress={() => router.push({ pathname: "/pocket/[id]", params: { id: p.address } })} />)}
-          </AnimatedList>
+          <PocketStack pockets={pockets} play={play} />
         )}
       </Rise>
 

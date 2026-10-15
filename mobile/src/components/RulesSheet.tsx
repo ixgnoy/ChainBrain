@@ -111,8 +111,8 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
     <View style={{ flexShrink: 1 }}>
       {done ? <SheetSuccess key="ok" minHeight={formH.current} title={done.title} txs={done.txs} /> : form}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}>
-        <SlideToConfirm key={`${text}${never}${error}`} label={isCap && topUp > 0n ? "Slide to raise cap and add money" : "Slide to confirm"} doneLabel="Saved" disabled={!ok || !wallet} onConfirm={save} />
-        <Button label={done ? "Done" : "Cancel"} kind={done ? "secondary" : "text"} onPress={close} />
+        <SlideToConfirm key={`${text}${never}${error}`} auto="rules.slide" label={isCap && topUp > 0n ? "Slide to raise cap and add money" : "Slide to confirm"} doneLabel="Saved" disabled={!ok || !wallet} onConfirm={save} />
+        <Button label={done ? "Done" : "Cancel"} kind={done ? "secondary" : "text"} auto={done ? "sheet.close" : undefined} onPress={close} />
       </View>
     </View>
   );

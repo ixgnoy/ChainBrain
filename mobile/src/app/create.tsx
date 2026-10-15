@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "../store";
 import { c, motion } from "../tokens";
 import { BackHeader } from "../ui/BackHeader";
-import { Button, Card, Field, Press, SummaryCard } from "../ui/kit";
+import { Button, Card, Field, Press, SummaryCard, type PressTap } from "../ui/kit";
+import { useAutoplayTarget } from "../lib/autoplayTargets";
 import { Money } from "../ui/Money";
 import { Reveal } from "../ui/Reveal";
 import { SuccessMark, landingDip } from "../ui/SuccessMark";
@@ -67,14 +68,14 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
 }
 
 /** Choice card: the fill and a 1.5 pt border fade to the selected state (`snappy`), the check pops in; press is 0.985 from kit. */
-function Option({ on, title, sub, onPress }: { on: boolean; title: string; sub: string; onPress: () => void }) {
+function Option({ on, title, sub, onPress, tapRef }: { on: boolean; title: string; sub: string; onPress: () => void; tapRef?: React.MutableRefObject<PressTap | null> }) {
   const reduce = useReduceMotion();
   const sel = useSharedValue(on ? 1 : 0);
   React.useEffect(() => { settle(sel, on ? 1 : 0, reduce, motion.spring.snappy); }, [on]); // eslint-disable-line react-hooks/exhaustive-deps
   const box = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(sel.value, [0, 1], [c.card, c.accentSoft]), borderColor: interpolateColor(sel.value, [0, 1], ["rgba(0,114,127,0)", c.accent]) }));
   const tick = useAnimatedStyle(() => ({ opacity: Math.min(1, Math.max(0, sel.value)), transform: [{ scale: reduce ? 1 : 0.6 + 0.4 * sel.value }] }));
   return (
-    <Press kind="row" haptics="select" onPress={onPress} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={title}>
+    <Press kind="row" haptics="select" onPress={onPress} tapRef={tapRef} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={title}>
       <Animated.View style={[{ padding: 16, borderRadius: 20, borderWidth: 1.5, gap: 2, flexDirection: "row", alignItems: "center" }, box]}>
         <View style={{ flex: 1, gap: 2 }}><T v="row" w="semi">{title}</T><T v="sub" color="ink2">{sub}</T></View>
         <Animated.View style={tick}><Icon name="check" size={20} color={c.accent} stroke={2.2} /></Animated.View>
@@ -143,7 +144,7 @@ function Done({ name, budget, createTx, fundTx, first, onOpen }: { name: string;
               </Reveal>
             ) : null)}
           </View>
-          <Reveal index={2} step={90} base={620} dy={8} style={{ alignSelf: "stretch" }}><Button label="Open pocket" onPress={onOpen} /></Reveal>
+          <Reveal index={2} step={90} base={620} dy={8} style={{ alignSelf: "stretch" }}><Button label="Open pocket" auto="wizard.open" onPress={onOpen} /></Reveal>
         </Card>
       </Animated.View>
     </Animated.View>
@@ -178,6 +179,11 @@ export default function Create() {
   const [stage, setStage] = useState<"idle" | "create" | "fund" | "done">("idle");
   const progress = useRef<Progress>({});
   const done = useRef<{ createTx?: string; fundTx?: string }>({});
+
+  // the auto-play picks a preset by pressing its card, the way a finger would
+  const presetTaps = useRef<Record<string, React.MutableRefObject<PressTap | null>>>({});
+  const presetTap = (k: string) => (presetTaps.current[k] ??= { current: null });
+  useAutoplayTarget("wizard.preset", async (arg) => { const k = String(arg ?? "research"); await presetTap(k === "one-purchase" ? "onePurchase" : k).current?.(); }, step === 0);
 
   const choose = (key: keyof typeof PRESETS | "custom") => {
     haptic.select(); setPreset(key);
@@ -247,7 +253,7 @@ export default function Create() {
           <View style={{ gap: 10 }}>
             {(Object.keys(PRESETS) as (keyof typeof PRESETS)[]).map((k) => {
               const p = PRESETS[k];
-              return <Option key={k} on={preset === k} onPress={() => choose(k)} title={p.label} sub={`US$${p.budget} budget · up to US$${p.cap} each · ${p.askAbove === "never" ? "never asks" : p.askAbove === "0" ? "asks every time" : `asks above US$${p.askAbove}`}`} />;
+              return <Option key={k} on={preset === k} tapRef={presetTap(k)} onPress={() => choose(k)} title={p.label} sub={`US$${p.budget} budget · up to US$${p.cap} each · ${p.askAbove === "never" ? "never asks" : p.askAbove === "0" ? "asks every time" : `asks above US$${p.askAbove}`}`} />;
             })}
             <Option on={preset === "custom"} onPress={() => choose("custom")} title="Custom" sub="Set every limit yourself." />
           </View>
@@ -340,9 +346,9 @@ export default function Create() {
           </View>
         ) : null}
         {step === STEPS.length - 1 ? (
-          <SlideToConfirm key={String(error)} label={progress.current.pocket ? "Slide to retry" : "Slide to create and fund"} doneLabel="Pocket created" onConfirm={create} disabled={!wallet || !cfg || tonightPassed} />
+          <SlideToConfirm key={String(error)} label={progress.current.pocket ? "Slide to retry" : "Slide to create and fund"} doneLabel="Pocket created" onConfirm={create} auto="wizard.create" disabled={!wallet || !cfg || tonightPassed} />
         ) : (
-          <Button label="Continue" onPress={() => go(step + 1)} disabled={!canNext} />
+          <Button label="Continue" auto="wizard.continue" onPress={() => go(step + 1)} disabled={!canNext} />
         )}
         {step > 0 && <Button label="Back" kind="text" onPress={() => go(step - 1)} small />}
       </View>

@@ -157,7 +157,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
         {isPay ? (
           owned && wallet ? (
             <>
-              <SlideToConfirm key={a.id + (error ?? "")} label="Slide to approve" doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
+              <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label="Slide to approve" doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
               <Button label="Decline" kind="text" onPress={decline} loading={busy} />
             </>
           ) : (
@@ -168,7 +168,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
           )
         ) : (
           <>
-            <Button label="Confirm task" onPress={confirmIntent} loading={busy} />
+            <Button label="Confirm task" auto="intent.confirm" onPress={confirmIntent} loading={busy} />
             <Button label="Decline" kind="text" onPress={decline} disabled={busy} />
           </>
         )}

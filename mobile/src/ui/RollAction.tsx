@@ -3,14 +3,15 @@ import React from "react";
 import { View } from "react-native";
 import { c } from "../tokens";
 import { Press } from "./kit";
+import type { TargetName } from "../lib/autoplayTargets";
 import { Icon, type IconName } from "./Icon";
 import { T } from "./Text";
 
-export function RoundButton({ icon, label, onPress, soft, danger, a11y }: { icon: IconName; label: string; onPress: () => void; soft?: boolean; /** destructive (Revoke): negative tint */ danger?: boolean; a11y?: string }) {
+export function RoundButton({ icon, label, onPress, soft, danger, a11y, auto }: { icon: IconName; label: string; onPress: () => void; soft?: boolean; /** destructive (Revoke): negative tint */ danger?: boolean; a11y?: string; auto?: TargetName }) {
   const bg = danger ? c.fill : soft ? c.accentSoft : c.accent;
   const fg = danger ? c.negative : /* neutral soft disc, red icon only */ soft ? c.accent : c.onAccent;
   return (
-    <Press kind="round" haptics="medium" onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label} style={{ alignItems: "center", gap: 8, flex: 1, paddingHorizontal: 2 }}>
+    <Press kind="round" haptics="medium" auto={auto} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label} style={{ alignItems: "center", gap: 8, flex: 1, paddingHorizontal: 2 }}>
       <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: bg, alignItems: "center", justifyContent: "center" }}>
         <Icon name={icon} size={26} color={fg} />
       </View>

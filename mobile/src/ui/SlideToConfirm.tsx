@@ -12,13 +12,15 @@ import { EASE_OUT, settle, shake, useReduceMotion } from "./motion";
 import { c, motion } from "../tokens";
 import { T } from "./Text";
 import { Icon } from "./Icon";
+import { autoplayAlive, useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
 
 const THUMB = 48, PAD = 4; // track 56 px: solid teal, white grip (a pale track reads as disabled)
 const MIN_PENDING_MS = 300;
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, disabled }: {
+export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, disabled, auto }: {
   label: string; doneLabel?: string; onConfirm: () => Promise<void>; /** called ~260 ms after the done state shows */ onDone?: () => void; disabled?: boolean;
+  /** auto-play target: plays the real slide (ticks and all), then commits through the same path a finger does */ auto?: TargetName;
 }) {
   const [w, setW] = useState(0);
   const [state, setState] = useState<"idle" | "busy" | "done">("idle");
@@ -59,6 +61,21 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, d
       settle(x, 0, reduce, motion.spring.release);
     }
   }, [onConfirm, onDone, x, done, pend, spin, sx, reduce]);
+
+  // the auto-play's finger: the grip travels the whole track on an ease-in-out, then commits exactly like a release past 90 %
+  const stateNow = useRef(state);
+  stateNow.current = state;
+  useAutoplayTarget(auto ?? "sheet.close", async () => {
+    if (disabled || stateNow.current !== "idle" || max <= 1) return;
+    drag.value = true; lastTick.value = 0;
+    haptic.light();
+    x.value = withTiming(max, { duration: reduce ? 160 : 1100, easing: Easing.bezier(0.45, 0, 0.2, 1) });
+    await sleep(reduce ? 180 : 1150);
+    drag.value = false;
+    if (!autoplayAlive()) { settle(x, 0, reduce, motion.spring.release); return; }
+    haptic.rigid();
+    await fire();
+  }, !!auto && !disabled);
 
   // selection tick each time the grip crosses a quarter of the track (both ways), UI thread
   useAnimatedReaction(
