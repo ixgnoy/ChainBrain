@@ -5,6 +5,7 @@
 // built-in network decides every outcome. Started and stopped by a long-press on the Agent header. No React Native
 // imports: Node tests drive it with a fake host.
 import { SCENES } from "../../../shared/sim";
+import { ESCALATION_TEXT } from "../../../shared/sim/autopilot";
 import { hasTarget, pressTarget, setAutoplayRunning, type TargetName } from "./autoplayTargets";
 
 export type HostState = {
@@ -128,6 +129,10 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
 
     // ---- scene 6: data grab refused
     await say(text("6").text);
+    await wait(3000);
+
+    // ---- privilege escalation: the agent refuses, and the agent key's setCap reverts NOT_OWNER on-chain
+    await say(ESCALATION_TEXT);
     await wait(3000);
 
     // ---- scene 7: revoke mid-task, then take the money back

@@ -64,7 +64,7 @@ test("auto-play: wizard, then scenes 1-8 through the screens' targets, on the re
 
   const mine = w.chain.pocketsOf(OWNER).map((p) => p.address);
   const f = factsFrom(w.events(0), w.txs(), { sellerName, pockets: mine, since: Date.now() - 60_000 });
-  for (const id of ["pocketCreated", "onchainPayment", "cosigned", "clarifyingQuestion", "refusedReplanned", "injectionIgnored", "dataRefused", "forcedReverted", "killSwitch", "safeStop", "fixApplied"] as const) assert.ok(f[id], `${id} (pressed: ${pressed.join(", ")})`);
+  for (const id of ["pocketCreated", "onchainPayment", "cosigned", "clarifyingQuestion", "refusedReplanned", "injectionIgnored", "dataRefused", "forcedReverted", "escalationBlocked", "killSwitch", "safeStop", "fixApplied"] as const) assert.ok(f[id], `${id} (pressed: ${pressed.join(", ")})`);
   assert.ok(w.events(0).some((e) => e.type === "refusal" && e.reason === "POCKET_REVOKED"), "scene 7: the second payment was refused after the revoke");
   assert.equal(w.chain.view(seeded[1].address).cap, parseUsd("0.30"));
   assert.equal(pressed.filter((p) => p === "approval.slide").length, 1, "only DataPro needed a co-signature");

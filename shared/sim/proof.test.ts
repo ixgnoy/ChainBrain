@@ -145,10 +145,9 @@ test("the whole story (scenes 1, 4-8 plus the forced transfer) ticks the scoreca
   await ap.runStory();
   const mine = w.chain.pocketsOf(PRESENTER).map((p) => p.address);
   const f = factsFrom(w.events(0), w.txs(), { ...opts, pockets: mine });
-  for (const id of ["pocketCreated", "onchainPayment", "cosigned", "clarifyingQuestion", "refusedReplanned", "injectionIgnored", "dataRefused", "forcedReverted", "killSwitch", "safeStop"] as const) assert.ok(f[id], id);
-  assert.ok(!f.escalationBlocked);
+  for (const id of ["pocketCreated", "onchainPayment", "cosigned", "clarifyingQuestion", "refusedReplanned", "injectionIgnored", "dataRefused", "forcedReverted", "escalationBlocked", "killSwitch", "safeStop"] as const) assert.ok(f[id], id);
   const rows = evidenceRows(f, w.txs());
-  assert.deepEqual(rows.filter((r) => r.status === "pass").map((r) => r.scene), ["1", "2", "3", "4", "5", "6", "7"]);
+  assert.deepEqual(rows.filter((r) => r.status === "pass").map((r) => r.scene), ["1", "2", "3", "4", "5", "6", "7", "A"]);
   assert.ok(rows.find((r) => r.scene === "5")!.txs.some((t) => t.reverted), "the reverted forced transfer is evidence");
   const md = evidenceMarkdown(rows, { network: networkLabel({ builtin: true }), at: new Date(0) });
   assert.match(md, /Network: Test network\./);
