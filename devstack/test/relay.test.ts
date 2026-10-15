@@ -31,3 +31,15 @@ describe("relay", () => {
     expect((await post(app, "/command", { type: "nope" })).status).toBe(400);
   });
 });
+
+describe("relay restart", () => {
+  it("reports a new epoch so a phone resets its command cursor", async () => {
+    const a = relayApp(), b = relayApp();
+    const ea = (await (await post(a, "/push", { device: "x", events: [] })).json()).epoch;
+    const eb = (await (await post(b, "/push", { device: "x", events: [] })).json()).epoch;
+    expect(typeof ea).toBe("string");
+    expect(ea).not.toBe(eb);
+    const { id } = await (await post(b, "/command", { type: "say", text: "hi" })).json();
+    expect(id).toBe(1); // numbering starts over: the phone must not skip it
+  });
+});

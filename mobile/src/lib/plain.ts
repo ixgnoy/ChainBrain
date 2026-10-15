@@ -1,6 +1,7 @@
 // Plain-language wording for the owner UI. Reason codes, tool names and hashes stay out of the main screens (they live in "Details").
 import type { LedgerRow } from "./events";
 import { usd, shortHex } from "./util";
+import { cleanText } from "./sanitize";
 
 export const PLAIN_REASONS: Record<string, string> = {
   SELLER_NOT_ALLOWED: "seller not on your list",
@@ -31,7 +32,8 @@ const ASK: Record<string, string> = {
 };
 /** "your full name, your email and an approval signature": what a seller asked for, in words. */
 export function plainAsks(asked: string[], sign: boolean): string {
-  const parts = asked.map((a) => ASK[a] ?? `your ${a.replace(/^owner_/, "").replace(/_/g, " ")}`);
+  // seller-provided strings: cleaned and bounded before they reach a sentence
+  const parts = asked.slice(0, 6).map((a) => ASK[a] ?? `your ${cleanText(String(a), 40).replace(/^owner_/, "").replace(/_/g, " ")}`);
   if (sign) parts.push("an approval signature");
   if (!parts.length) return "your data";
   return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;

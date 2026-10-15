@@ -22,6 +22,8 @@ const FRESH_MS = 15_000;
 
 export function relayApp() {
   const app = new Hono();
+  // changes every time this relay starts: a phone that sees a new epoch starts its command cursor over
+  const epoch = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   const em = new EventEmitter();
   em.setMaxListeners(100);
   let device = "";
@@ -43,7 +45,7 @@ export function relayApp() {
       device = b.device; events = []; ids.clear(); cmds = [];
       send({ kind: "reset", device });
       // the phone sent only what is new since its last push: ask it for its whole history
-      if (Number(b.from ?? 0) > 0) return c.json({ ok: true, resync: true, commands: [] });
+      if (Number(b.from ?? 0) > 0) return c.json({ ok: true, resync: true, epoch, commands: [] });
     }
     lastSeen = Date.now();
     const fresh = (Array.isArray(b.events) ? b.events : []).filter((e) => e && typeof e === "object" && (!e.id || !ids.has(String(e.id))));
@@ -54,14 +56,14 @@ export function relayApp() {
     for (const r of b.results ?? []) send({ kind: "result", id: r.id, result: r.result });
     const after = Number(b.cmdAfter ?? 0);
     cmds = cmds.filter((x) => x.id > after); // delivered and acknowledged
-    return c.json({ ok: true, commands: cmds });
+    return c.json({ ok: true, epoch, commands: cmds });
   });
 
-  app.get("/state", (c) => c.json({ linked: linked(), device, lastSeen, snapshot, events }));
+  app.get("/state", (c) => c.json({ epoch, linked: linked(), device, lastSeen, snapshot, events }));
 
   app.get("/stream", (c) =>
     streamSSE(c, async (s) => {
-      await s.writeSSE({ data: JSON.stringify({ kind: "hello", linked: linked(), device, lastSeen, snapshot, events }) });
+      await s.writeSSE({ data: JSON.stringify({ kind: "hello", epoch, linked: linked(), device, lastSeen, snapshot, events }) });
       const on = (m: object) => void s.writeSSE({ data: JSON.stringify(m) });
       em.on("m", on);
       s.onAbort(() => void em.off("m", on));

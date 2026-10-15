@@ -2,7 +2,7 @@
 // Event stream quirks (API spec quirk checklist): dedupe, cursor, approvals last-wins, pending reconciliation, trace, ledger.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mergeEvents, nextCursor, approvalsFrom, livePending, traceLines, ledgerFrom, chainFor, reasonsOf, authOf, authExpired, sliceTurn, type WalletEvent } from "./events";
+import { mergeEvents, nextCursor, approvalsFrom, livePending, traceLines, ledgerFrom, chainFor, reasonsOf, authOf, authExpired, sliceTurn, type WalletEvent, authMismatch } from "./events";
 import { REASONS } from "./shared";
 
 const P = "0x00000000000000000000000000000000000000aa";
@@ -92,4 +92,15 @@ test("auth: shape check, expiry (10 s margin), turn slicing", () => {
   assert.equal(authOf({ ...a, data: {} }), null);
   const evs = [{ type: "x", at: 1 }, { type: "x", at: 5 }, { type: "x", at: 9 }];
   assert.deepEqual(sliceTurn(evs, 1, 5).map((e) => e.at), [5]);
+});
+
+test("co-sign: only the transfer the sheet shows (pocket, seller, amount)", () => {
+  const P = "0x00000000000000000000000000000000000000aa", S = "0x00000000000000000000000000000000000000bb";
+  const sellers = [{ id: "datapro", payTo: S }];
+  const a = { id: "x", pocket: P, kind: "payment", text: "", status: "pending", data: { sellerId: "datapro", amount: "1.50" } } as any;
+  const auth = (o: object = {}) => ({ from: P, to: S, value: "1500000", validAfter: "0", validBefore: "9999999999", nonce: "0x01", ...o }) as any;
+  assert.equal(authMismatch(a, auth(), sellers), null);
+  assert.equal(authMismatch(a, auth({ from: S }), sellers), "AUTH_WRONG_POCKET");
+  assert.equal(authMismatch(a, auth({ to: P }), sellers), "AUTH_WRONG_SELLER");
+  assert.equal(authMismatch(a, auth({ value: "50000000" }), sellers), "AUTH_WRONG_AMOUNT");
 });

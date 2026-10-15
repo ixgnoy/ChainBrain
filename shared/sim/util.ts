@@ -42,5 +42,14 @@ export type Rng = ReturnType<typeof rng>;
 /** Plain JSON clone with bigints as decimal strings: what a client receives from the real server. */
 export const wire = <T,>(v: T): T => JSON.parse(JSON.stringify(v, (_, x) => (typeof x === "bigint" ? x.toString() : x)));
 
+/**
+ * "Tonight" as people mean it: 23:59 today on this device's clock, unless that is less than three hours away (late at
+ * night), then twelve hours from now. Seeded pockets and the agent's deadlines use the same rule, so they never disagree.
+ */
+export function tonightMs(now = Date.now()): number {
+  const d = new Date(now); d.setHours(23, 59, 0, 0);
+  return d.getTime() - now < 3 * 3600_000 ? now + 12 * 3600_000 : d.getTime();
+}
+
 export const lower = (a?: string) => (a ?? "").toLowerCase();
 export const same = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();

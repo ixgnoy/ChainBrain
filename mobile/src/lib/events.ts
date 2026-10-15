@@ -79,6 +79,18 @@ export function authOf(a: Approval): Authorization | null {
   if (!x || typeof x.from !== "string" || typeof x.to !== "string" || typeof x.nonce !== "string") return null;
   return { from: x.from, to: x.to, value: String(x.value), validAfter: String(x.validAfter), validBefore: String(x.validBefore), nonce: x.nonce };
 }
+/**
+ * The owner signs only what the sheet shows: this pocket, to the named seller, for the stated amount. A server that
+ * sent a different authorization (another payee or amount) gets no signature.
+ */
+export function authMismatch(a: Approval, auth: Authorization, sellers: { id: string; payTo: string }[]): string | null {
+  if (!sameAddr(auth.from, a.pocket)) return "AUTH_WRONG_POCKET";
+  const payTo = sellers.find((s) => s.id === a.data?.sellerId)?.payTo;
+  if (!payTo || !sameAddr(auth.to, payTo)) return "AUTH_WRONG_SELLER";
+  const shown = decimalToAtomic(a.data?.amount);
+  if (shown == null || BigInt(auth.value) !== shown) return "AUTH_WRONG_AMOUNT";
+  return null;
+}
 export const authExpired = (auth: Authorization, now = Date.now()) => BigInt(auth.validBefore) <= BigInt(Math.floor(now / 1000) + 10);
 
 // ---------------------------------------------------------------- tool results and reasons

@@ -2,15 +2,12 @@
 // tool calls and receives their results, so the pocket's rules (in chain.ts) decide every outcome; the scene only
 // decides what to try next. `say` is the agent's one-line reasoning shown in the trace before the call.
 import { sellerName as name } from "./catalog";
+import { tonightMs } from "./util";
 
 export type Action = { tool: string; input: object; delayMs?: number; say?: string };
 export type Scene = Generator<Action, string, any>;
 
-/** "By tonight": 23:59 today on this device's clock, or six hours from now when tonight is less than an hour away. */
-const tonight = () => {
-  const d = new Date(); d.setHours(23, 59, 0, 0);
-  return (d.getTime() - Date.now() < 3600_000 ? new Date(Date.now() + 6 * 3600_000) : d).toISOString();
-};
+const tonight = () => new Date(tonightMs()).toISOString();
 const intent = (description: string, maxPricePerItem: string, maxTotal: string, maxItems: number, request = description) =>
   ({ request, description, maxPricePerItem, maxTotal, maxItems, deadline: tonight() });
 

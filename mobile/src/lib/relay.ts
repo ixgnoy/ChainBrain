@@ -20,7 +20,7 @@ export type Say = (text: string, preset?: string | null) => Promise<{ ok: boolea
 export function startRelay(owner: string, names: () => Record<string, string>, say?: Say) {
   const w = builtin();
   const device = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-  let sentAt = 0, cmdAfter = 0, lastPush = 0, fails = 0, waitUntil = 0, dirty = true, stopped = false;
+  let sentAt = 0, cmdAfter = 0, lastPush = 0, fails = 0, waitUntil = 0, dirty = true, stopped = false, epoch = "";
   let results: { id: number; result: unknown }[] = [];
   let timer: ReturnType<typeof setTimeout> | null = null;
   const offs = [w.subscribe(() => { dirty = true; }), w.chain.onTx(() => { dirty = true; })];
@@ -60,6 +60,8 @@ export function startRelay(owner: string, names: () => Record<string, string>, s
         }, 3000);
         if (!r.ok) throw new Error(`relay ${r.status}`);
         const j = await r.json();
+        // a restarted relay numbers its commands from 1 again: forget how far we had read
+        if (typeof j.epoch === "string" && j.epoch !== epoch) { if (epoch) cmdAfter = 0; epoch = j.epoch; }
         if (j.resync) { sentAt = 0; dirty = true; timer = setTimeout(tick, 50); return; }
         if (events.length) sentAt = events[events.length - 1].at;
         results = results.filter((x) => !done.includes(x));

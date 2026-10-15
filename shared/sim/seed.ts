@@ -3,7 +3,7 @@
 // same scenes through the world on a clock set back in time, so balances, hashes, events and activity all agree.
 import { CATALOG } from "./catalog";
 import type { Hex } from "./types";
-import { NEVER, parseUsd } from "./util";
+import { NEVER, parseUsd, tonightMs } from "./util";
 import { SIM_AGENT, type World } from "./world";
 
 export type SeededPocket = { address: Hex; name: string; style: "research" | "gifts" | "tight" | "custom" };
@@ -11,12 +11,20 @@ export type OwnerTxSeed = { pocket: Hex; kind: "create" | "fund"; hash: Hex; amo
 
 const MIN = 60_000, HOUR = 60 * MIN;
 const payTo = (...ids: string[]) => CATALOG.filter((s) => ids.includes(s.id)).map((s) => s.payTo);
-const tonight = (now: number) => { const d = new Date(now); d.setHours(23, 59, 0, 0); return BigInt(Math.floor(d.getTime() / 1000)); };
+const tonight = (now: number) => BigInt(Math.floor(tonightMs(now) / 1000));
 
 export async function seedOwner(w: World, owner: Hex, o: { startUsdc?: string } = {}): Promise<{ pockets: SeededPocket[]; ownerTxs: OwnerTxSeed[] }> {
   const ownerTxs: OwnerTxSeed[] = [];
   w.chain.mint(owner, parseUsd(o.startUsdc ?? "65.00"), 2n * 10n ** 17n);
   w.autoOwner(owner, true);
+  try {
+    return await seedHistory(w, owner, ownerTxs);
+  } finally {
+    w.autoOwner(owner, false); // the owner's own approvals are never answered for them after seeding
+  }
+}
+
+async function seedHistory(w: World, owner: Hex, ownerTxs: OwnerTxSeed[]): Promise<{ pockets: SeededPocket[]; ownerTxs: OwnerTxSeed[] }> {
   const now = w.now();
 
   // Research data: US$10 (room for every scene in one sitting), cap US$2, ask above US$1, DataLite and DataPro, until 23:59 tonight
@@ -42,7 +50,6 @@ export async function seedOwner(w: World, owner: Hex, o: { startUsdc?: string } 
     return pocket;
   });
 
-  w.autoOwner(owner, false);
   return {
     pockets: [{ address: research, name: "Research data", style: "research" }, { address: tight, name: "One purchase", style: "tight" }],
     ownerTxs,

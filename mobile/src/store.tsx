@@ -15,7 +15,7 @@ import { haptic } from "./haptics";
 import { loadMeta, saveMeta, type PocketMeta } from "./lib/pocketNames";
 import * as api from "./lib/api";
 import {
-  approvalsFrom, authExpired, authOf, ledgerFrom, livePending, mergeEvents, nextCursor, replyOf, sameAddr, sliceTurn,
+  approvalsFrom, authExpired, authMismatch, authOf, ledgerFrom, livePending, mergeEvents, nextCursor, replyOf, sameAddr, sliceTurn,
   type Approval, type LedgerRow, type WalletEvent,
 } from "./lib/events";
 import { getItem, setItem, deleteItem } from "./storage";
@@ -364,6 +364,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const auth = authOf(a);
     if (!auth) return { ok: false, error: "NO_AUTH" };
     if (authExpired(auth)) return { ok: false, error: "AUTH_EXPIRED" };
+    const wrong = authMismatch(a, auth, cfg?.sellers ?? []);
+    if (wrong) return { ok: false, error: wrong };
     const view = views[a.pocket.toLowerCase()];
     if (view && !isOwner(view, wallet.address)) return { ok: false, error: "NOT_OWNER" };
     let signature: Hex;
@@ -372,7 +374,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (r.ok || r.error === "NOT_PENDING") setAnswered((s) => new Set(s).add(a.id));
     void pollRef.current();
     return r;
-  }, [wallet, views]);
+  }, [wallet, views, cfg]);
 
   // auto-open the approval sheet when something new needs the owner
   const lastOpened = useRef<string>("");
@@ -388,6 +390,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setSource = useCallback(async (s: Source) => {
     if (s === "server") await setItem(SOURCE_KEY, "server"); else await deleteItem(SOURCE_KEY);
     resetConfig(); setCfg(null); setConn("connecting"); setPocketsLoaded(false); setBalances(null); setViews({}); setAnswered(new Set()); setTurnsBy({});
+    // nothing from the other network may linger on screen (a stale notice could link its hash to BaseScan)
+    setNotice(null); setReceipt(null); setAction(null); setRules(null); setApprovalOpen(false); setQuestionOpen(false); setPickerOpen(false); forcedSeen.current = null;
     setRuntimeSource(s);
     setRetry((n) => n + 1);
   }, []);
