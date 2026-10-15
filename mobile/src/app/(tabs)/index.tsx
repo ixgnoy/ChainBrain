@@ -79,15 +79,15 @@ function EmptyPockets() {
   );
 }
 
-/** The needs-you banner above the deck: the built-in agent's question or approval (blue), or "working" (white) while it shops. */
+/** The needs-you banner above the deck: the built-in agent's question or approval (blue), or "working" (white) while it shops.
+ *  Outside agents' asks (Claude, ChatGPT) are in the ask dock above the tab bar instead. */
 function LiveStrip() {
-  const { agentState, pending, setQuestionOpen, sellerName, openApproval, agents } = useApp();
+  const { agentState, pending, setQuestionOpen, sellerName, openApproval } = useApp();
   const mine = pending.filter((a) => (a.agent ?? "chainbrain") === "chainbrain");
-  const outside = pending.filter((a) => (a.agent ?? "chainbrain") !== "chainbrain" && a.kind !== "question");
-  const waiting = mine.length > 0 || outside.length > 0;
-  const on = agentState === "working" || waiting;
-  const first = mine[0] ?? outside[0];
-  const who = first ? agents.find((x) => x.id === (first.agent ?? "chainbrain"))?.name ?? "Your agent" : "Your agent";
+  const waiting = mine.length > 0;
+  const on = waiting || agentState === "working"; // "waiting" alone may be an outside agent's ask (the dock has it)
+  const first = mine[0];
+  const who = "ChainBrain";
   const text = !waiting ? "ChainBrain is working"
     : first.kind === "question" ? `${who} has a question`
     : first.kind === "intent" ? `Confirm ${who}'s task`

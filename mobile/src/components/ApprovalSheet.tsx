@@ -1,6 +1,7 @@
-// Owner approvals (Stitch chainbrain_approve_payment). Payment above the ask-me threshold: who asks (the agent that holds the
-// pocket), the amount and seller, the facts the WALLET checked (item, pocket, the rule that asks you, Radar's seller check, the
-// 10-minute window, counting down), then the agent's own note, set apart as unchecked words; slide to co-sign the exact USDC
+// Owner approvals. A payment above the ask-me threshold is drawn as a cheque (components/Cheque.tsx): who asks and why you
+// are asked (the rule that triggered it) with the countdown, then the pocket's card turning over to the cheque (pay, to, for,
+// what is left after), the wallet's other checks (Radar's seller check, the paying pocket), the agent's own note set apart as
+// unchecked words, and the details. Slide to co-sign, then Face ID: the phone signs the exact USDC
 // TransferWithAuthorization the wallet built (POST /api/approvals/:id {approved, signature}). Intent: confirm the
 // fixed-template task card.
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -11,7 +12,7 @@ import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
 import { SheetScroll } from "../ui/SheetScroll";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
-import { Button, Details, FactRow } from "../ui/kit";
+import { Button, Details } from "../ui/kit";
 import { AgentAvatar } from "../ui/AgentAvatar";
 import { Hatch } from "../ui/Hatch";
 import { agentInfo } from "../../../shared/sim/agents";
@@ -22,6 +23,11 @@ import { authOf, authExpired, sameAddr, radarBody, type Approval } from "../lib/
 import { c } from "../tokens";
 import { Icon } from "../ui/Icon";
 import { ScoreBar } from "./RadarCard";
+import { ChequeCard, CheckLine } from "./Cheque";
+import { Countdown } from "./AskDock";
+import { toneFor } from "./PocketFace";
+import { biometricKind, confirmOwner } from "../lib/biometric";
+import { askNotifyPermission, notifyPermission, type NotifyPermission } from "../lib/notify";
 import { NEVER } from "../lib/shared";
 import { parseUsd } from "../lib/shared";
 import { usd, shortAddr } from "../lib/util";
@@ -65,7 +71,7 @@ export function ApprovalSheet() {
 }
 
 function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolean) => void }) {
-  const { findPocket, sellerName, answer, signApprove, wallet, setApprovalOpen, cfg, ledger, setReceipt } = useApp();
+  const { findPocket, sellerName, answer, signApprove, wallet, setApprovalOpen, cfg, ledger, setReceipt, pockets } = useApp();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<"form" | "success">("form");
@@ -74,15 +80,13 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const isPay = a.kind === "payment";
   const auth = useMemo(() => (isPay ? authOf(a) : null), [a, isPay]);
   const [expired, setExpired] = useState(auth ? authExpired(auth) : false);
-  const [left, setLeft] = useState(auth ? Number(auth.validBefore) - Math.floor(Date.now() / 1000) : 0);
   useEffect(() => {
     if (!auth) return;
-    const t = setInterval(() => { setExpired(authExpired(auth)); setLeft(Number(auth.validBefore) - Math.floor(Date.now() / 1000)); }, 1000);
+    const t = setInterval(() => setExpired(authExpired(auth)), 1000);
     return () => clearInterval(t);
   }, [auth]);
   const agent = agentInfo(a.agent ?? pocket?.agentId ?? "chainbrain");
   const who = agent?.kind === "builtin" ? "ChainBrain" : agent?.name ?? "Your agent";
-  const clock = `${String(Math.max(0, Math.floor(left / 60))).padStart(2, "0")}:${String(Math.max(0, left % 60)).padStart(2, "0")}`;
   const radar = a.data?.radar as { score?: number; verdict?: string; narrative?: string } | undefined;
   const risky = !!radar && radar.verdict !== "ok";
   const owned = pocket ? pocket.owned : true;
@@ -93,8 +97,19 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
     : `Above your US$${usd(pocket.askAbove)} ask-me limit`;
   const item = cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment";
 
+  const [cardW, setCardW] = useState(0);
+  const [bio, setBio] = useState<string | null>(null);
+  useEffect(() => { void biometricKind().then(setBio); }, []);
+  const [notify, setNotify] = useState<NotifyPermission>("unsupported");
+  useEffect(() => { void notifyPermission().then(setNotify); }, []);
+  const outside = (a.agent ?? "chainbrain") !== "chainbrain";
+  const amountUnits = (() => { try { return typeof a.data?.amount === "string" ? parseUsd(a.data.amount) : null; } catch { return null; } })();
+
   const approve = async () => {
     setError(null);
+    // the slide says "I mean it"; Face ID says "it's me"
+    const me = await confirmOwner(`Co-sign US$${amount ?? ""} to ${seller}`);
+    if (me === "cancel") { setError(`Nothing was signed: ${bio ?? "Face ID"} didn't confirm it's you.`); throw new Error("BIOMETRIC"); }
     hold(true);
     const r = await signApprove(a);
     if (!r.ok) { hold(false); setError(describeApprovalError(r.error)); throw new Error(r.error); }
@@ -132,23 +147,25 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
       <SheetScroll contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 20 }} showsVerticalScrollIndicator={false}>
         {isPay ? (
           <>
-            <View style={{ alignItems: "center", gap: 6, paddingTop: 4 }}>
-              <AgentAvatar kind={agent?.id ?? "chainbrain"} size={60} badge={c.vermillion} />
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
-                <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>Approve payment</T>
-                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: c.vermillion }} />
-                <T v="tab" style={{ color: c.vermillionInk, textTransform: "uppercase", letterSpacing: 1 }}>Co-sign needed</T>
+            {/* who asks, and why you are asked: the rule that sent it to you */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingTop: 4 }}>
+              <AgentAvatar kind={agent?.id ?? "chainbrain"} size={44} badge={c.vermillion} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <T v="section" accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{`${who} asks you to co-sign`}</T>
+                <T v="sub" style={{ color: c.vermillionInk }}>{limitText}</T>
               </View>
-              <T v="head" accessibilityRole="header">{`${who} asks to pay`}</T>
-              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-                <T v="balance" accessibilityLabel={`US$${amount ?? "unknown"}`}>US${amount ?? "?"}</T>
-                <T v="section" color="ink2" numberOfLines={1}>to {seller}</T>
-              </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: c.fill }}>
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.vermillion }} />
-                <T v="cap" w="semi" color="ink2">Test network</T>
-              </View>
-              {queue > 1 ? <T v="cap" color="muted">{queue - 1} more waiting</T> : null}
+              {auth && !expired ? <Countdown a={a} size={46} onLight /> : null}
+            </View>
+            {queue > 1 ? <T v="cap" color="muted" style={{ marginTop: -12 }}>{`${queue - 1} more waiting after this one`}</T> : null}
+            <View onLayout={(e) => setCardW(Math.round(e.nativeEvent.layout.width))}>
+              {pocket && cardW ? (
+                <ChequeCard pocket={pocket} tone={toneFor(pockets, pocket.address)} width={cardW} amount={amountUnits} seller={seller} item={item} until={auth ? Number(auth.validBefore) : undefined} />
+              ) : !pocket ? (
+                <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                  <T v="balance" accessibilityLabel={`US$${amount ?? "unknown"}`}>US${amount ?? "?"}</T>
+                  <T v="section" color="ink2" numberOfLines={1}>to {seller}</T>
+                </View>
+              ) : null}
             </View>
             {risky ? (
               <View style={{ gap: 8, padding: 14, borderRadius: 16, backgroundColor: c.vermillionSoft }} accessible accessibilityLabel={`Radar: risk ${radar!.score} out of 10. ${cleanText(radarBody(String(radar!.narrative ?? "")), 300)}`}>
@@ -160,27 +177,10 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
                 <T v="sub" color="ink2">{cleanText(radarBody(String(radar!.narrative ?? "")).split(" Rule:")[0], 300)}</T>
               </View>
             ) : null}
-            {/* what the wallet checked */}
-            <View style={{ borderRadius: 20, backgroundColor: c.card, borderWidth: 1, borderColor: c.tileStroke, paddingHorizontal: 16 }}>
-              <FactRow icon="file" label="Item"><T v="row" w="semi" numberOfLines={2} style={{ textAlign: "right" }}>{item}</T></FactRow>
-              <FactRow icon="wallet" label="Pocket">
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.blue }} />
-                  <T v="row" w="semi" numberOfLines={1}>{pocket ? cleanText(pocket.name, 22) : shortAddr(a.pocket)}</T>
-                  <View style={{ paddingHorizontal: 6, height: 20, borderRadius: 6, backgroundColor: c.fill, justifyContent: "center" }}><T v="mono" style={{ fontSize: 10.5 }}>{`•••• ${a.pocket.slice(-4).toUpperCase()}`}</T></View>
-                </View>
-              </FactRow>
-              <FactRow icon="alert" label="Policy">
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: c.vermillionSoft }}>
-                  <T v="cap" w="bold" style={{ color: c.vermillionInk }}>{limitText}</T>
-                </View>
-              </FactRow>
-              <FactRow icon="shieldCheck" label="Seller check">
-                <T v="row" w="semi" style={{ color: risky ? c.vermillionInk : c.ink }}>{radar?.score != null ? `${radar.verdict === "ok" ? "Low risk" : radar.verdict === "block" ? "Blocked" : "Review"} · ${radar.score}/10` : "Checked"}</T>
-              </FactRow>
-              <FactRow icon="clock" label="Expires" last>
-                <T v="row" w="bold" style={{ color: expired ? c.muted : c.vermillionInk }} accessibilityLabel={expired ? "Expired" : `Approval valid 10 min, ${clock} left`}>{expired ? "Expired" : `Valid 10 min · ${clock} left`}</T>
-              </FactRow>
+            {/* the wallet's other checks */}
+            <View style={{ borderRadius: 18, backgroundColor: c.card, borderWidth: 1, borderColor: c.tileStroke, paddingHorizontal: 16 }}>
+              <CheckLine label="Seller check" tone={risky ? "vermillion" : "green"} value={radar?.score != null ? `${radar.verdict === "ok" ? "Low risk" : radar.verdict === "block" ? "Blocked" : "Review"} · ${radar.score}/10` : "Checked"} />
+              <CheckLine label="Pays from" value={pocket ? `${cleanText(pocket.name, 22)} *${a.pocket.slice(-4).toUpperCase()}` : shortAddr(a.pocket)} last />
             </View>
             {/* the agent's own words: not checked by the wallet, so they look different */}
             {a.text ? (
@@ -200,6 +200,13 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
             ]}>
               <T v="cap" color="muted">Your signature approves this one payment for the next 10 minutes. No money leaves your main wallet.</T>
             </Details>
+            {outside && notify === "undetermined" ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 16, backgroundColor: c.fill }}>
+                <Icon name="bell" size={22} color={c.ink} stroke={1.5} />
+                <T v="sub" color="ink2" style={{ flex: 1 }}>{`Get a notification when ${who} asks, even with ChainBrain closed.`}</T>
+                <Button label="Turn on" small kind="secondary" onPress={() => { void askNotifyPermission().then(setNotify); }} />
+              </View>
+            ) : null}
           </>
         ) : (
           <>
@@ -223,7 +230,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
             <>
               <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label={`Slide to approve US$${amount ?? ""}`} doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
               <Button label="Decline" kind="text" onPress={decline} loading={busy} />
-              <T v="cap" color="muted" style={{ textAlign: "center" }}>{`Paid from the pocket contract ${shortAddr(a.pocket)} with your co-signature.`}</T>
+              {bio ? <T v="cap" color="muted" style={{ textAlign: "center" }}>{`Then ${bio} signs it with your key.`}</T> : null}
             </>
           ) : (
             <>

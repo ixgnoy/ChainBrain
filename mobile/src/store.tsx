@@ -12,6 +12,9 @@ import { agentIdOf, agentViews, type AgentId, type AgentView } from "./lib/agent
 import { startRelay, type Say } from "./lib/relay";
 import { createAutoplay, type AutoplayHost, type HostState } from "./lib/autoplay";
 import { onAutoplay, autoplayRunning } from "./lib/autoplayTargets";
+import { notifyAsk, onAskOpened } from "./lib/notify";
+import { cleanText } from "./lib/sanitize";
+import { agentInfo } from "../../shared/sim/agents";
 import { router } from "expo-router";
 import { notify } from "./lib/toast";
 import { haptic } from "./haptics";
@@ -409,6 +412,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const focused = pending.some((a) => a.id === approvalFocus);
   useEffect(() => { if (approvalOpen && !focused && !ask) setApprovalOpen(false); }, [focused, ask?.id, approvalOpen]);
   const openApproval = useCallback((id: string) => { setApprovalFocus(id); setApprovalOpen(true); }, []);
+  // an outside agent's new ask while ChainBrain is in the background: a local notification (opt-in), which opens the cheque
+  const notified = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    for (const a of pending) {
+      const agent = a.agent ?? "chainbrain";
+      if (agent === "chainbrain" || a.kind === "question" || notified.current.has(a.id)) continue;
+      notified.current.add(a.id);
+      const name = agentInfo(agent)?.name ?? "An agent";
+      const title = a.kind === "payment" ? `${name} asks to pay${a.data?.amount ? ` US$${cleanText(String(a.data.amount), 10)}` : ""}` : `${name} has a task for you`;
+      const body = a.kind === "payment" ? `To ${cleanText(sellerName(a.data?.sellerId), 40)}. It needs your co-signature.` : cleanText(a.text ?? "Confirm it before it starts.", 120);
+      void notifyAsk(a.id, title, body);
+    }
+  }, [pending]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => onAskOpened(openApproval), [openApproval]);
 
   // ---- agents
   const agentTick = useMemo(() => events.filter((e) => e.type === "agent").length, [events]);

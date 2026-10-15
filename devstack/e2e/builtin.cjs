@@ -124,24 +124,30 @@ async function until(what, fn, ms = 30000, step = 200) {
     await page.goBack(); await sleep(600);
   });
 
-  await run("inbox: Claude asks to pay above its limit; the owner co-signs", async () => {
+  await run("ask dock: Claude asks to pay above its limit; the owner co-signs the cheque", async () => {
     await tab("Home");
-    const bell = page.getByRole("button", { name: /Approvals, 1 waiting/ }).first();
-    await bell.waitFor({ timeout: 40000 });
-    await bell.click();
+    const dock = page.getByRole("button", { name: /Claude asks US\$1\.50/ }).first();
+    await dock.waitFor({ timeout: 40000 });
+    check("ask dock: Claude, US$1.50, DataPro", /DataPro/.test((await dock.getAttribute("aria-label")) ?? ""));
+    await shot("01f-dock");
+    // the inbox lists it too
+    await page.getByRole("button", { name: /Approvals, 1 waiting/ }).first().click();
     await visible("Waiting for you (1)").waitFor({ timeout: 15000 });
     const t = await body();
     check("inbox: Claude, DataPro, US$1.50, its countdown", /Claude/.test(t) && /DataPro/.test(t) && /1\.50/.test(t) && /left/.test(t));
     await shot("01f-inbox");
-    await page.getByRole("button", { name: "Co-sign", exact: true }).first().click();
-    await visible("Approve payment").waitFor({ timeout: 15000 });
+    await page.goBack(); await sleep(800);
+    await dock.click();
+    await visible("Claude asks you to co-sign").waitFor({ timeout: 15000 });
+    await sleep(1600); // the card turns over to the cheque
     const a = await body();
-    check("sheet: Claude asks to pay, checked facts, its note marked not checked", /Claude asks to pay/.test(a) && /Seller check/.test(a) && /not checked/i.test(a));
-    await shot("01g-approve-claude");
+    check("cheque: pay, to, for, what is left, the rule that asks, checks, the note marked not checked",
+      /to DataPro/.test(a) && /left after/.test(a) && /ask-me limit/.test(a) && /Seller check/.test(a) && /not checked/i.test(a));
+    await shot("01g-cheque");
     await slide("Slide to approve");
-    await visible("You're all caught up").waitFor({ timeout: 30000 });
-    check("Claude's payment co-signed, nothing waiting", true);
-    await page.goBack(); await sleep(600);
+    await visible("Paid US$1.50").waitFor({ timeout: 30000 });
+    await sleep(2400);
+    check("Claude's payment co-signed, the dock is gone", (await page.getByRole("button", { name: /Claude asks US\$/ }).count()) === 0);
   });
 
   await run("connect: ChatGPT gets its own pocket after consent", async () => {
@@ -193,7 +199,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await confirmTask();
     await visible("Paid DataLite").waitFor({ timeout: 30000 });
     check("DataLite paid on its own", true);
-    await visible("Approve payment").waitFor({ timeout: 30000 });
+    await visible("asks you to co-sign").waitFor({ timeout: 30000 }); await sleep(1600); // the card turns over to the cheque
     const t = await body();
     check("approval sheet: DataPro US$1.50", /DataPro/.test(t) && /1\.50/.test(t));
     await shot("03-approval");

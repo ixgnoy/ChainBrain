@@ -4,12 +4,14 @@ import Animated, { useAnimatedScrollHandler, type SharedValue } from "react-nati
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { c } from "../tokens";
 import { GLASS_TAB_SPACE as TAB_H } from "./glass/GlassTabBar";
+import { DOCK_SPACE, useDockShown } from "../components/AskDock";
 import { useMinimizeOnScroll } from "./glass/minimize";
 import { T } from "./Text";
 
 /** Grey canvas with a scrolling column. Leaves room for the floating tab bar unless `tabs` is false. */
 export function Screen({ children, tabs = true, top = true, scrollY, innerRef, ...p }: ScrollViewProps & { children: React.ReactNode; tabs?: boolean; top?: boolean; scrollY?: SharedValue<number>; innerRef?: React.Ref<any> }) {
   const insets = useSafeAreaInsets();
+  const dock = useDockShown(); // the ask dock above the tab bar takes room too
   const onScroll = useMinimizeOnScroll(); // scrolling down folds the glass tab bar's labels away
   const track = useAnimatedScrollHandler({ onScroll: (e) => { if (scrollY) scrollY.value = e.contentOffset.y; } }); // feeds a floating BackHeader
   return (
@@ -19,7 +21,7 @@ export function Screen({ children, tabs = true, top = true, scrollY, innerRef, .
         keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} scrollEventThrottle={16}
         onScroll={tabs ? onScroll : scrollY ? track : undefined}
         {...(p as any)}
-        contentContainerStyle={[{ paddingTop: top ? insets.top + 12 : 0, paddingBottom: (tabs ? TAB_H : 0) + insets.bottom + 24 }, p.contentContainerStyle]}
+        contentContainerStyle={[{ paddingTop: top ? insets.top + 12 : 0, paddingBottom: (tabs ? TAB_H + (dock ? DOCK_SPACE : 0) : 0) + insets.bottom + 24 }, p.contentContainerStyle]}
       >
         {children}
       </Animated.ScrollView>

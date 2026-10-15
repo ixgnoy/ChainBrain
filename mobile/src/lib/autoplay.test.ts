@@ -7,7 +7,7 @@ import { registerTarget, resetTargets, autoplayRunning, typeOut, type TargetName
 const OWNER = "0x0000000000000000000000000000000000a11ce0" as Hex;
 const payTo = (...ids: string[]) => CATALOG.filter((s) => ids.includes(s.id)).map((s) => s.payTo);
 
-test("auto-play: wizard, scenes 1-8, Claude via Connect and the inbox, then scenes 9 and 10, through the screens' targets", async () => {
+test("auto-play: wizard, scenes 1-8, Claude via Connect and the ask dock, then scenes 9 and 10, through the screens' targets", async () => {
   resetTargets();
   const w = createWorld({ speed: 0.005, seed: 3, revokeWindowMs: 9000 });
   const { pockets: seeded } = await seedOwner(w, OWNER);
@@ -32,7 +32,7 @@ test("auto-play: wizard, scenes 1-8, Claude via Connect and the inbox, then scen
   on("composer", async ({ text }) => { await typeOut(text, (s) => { typed = s; }, { sleep: async () => {} }); void w.chat(active, typed); });
   on("question.answer", (a) => { assert.equal(a, "per report"); void w.chat(active, "US$2 per report."); });
   let claudePocket: Hex | undefined;
-  let focus: string | undefined; // the inbox picked this approval (an outside agent's)
+  let focus: string | undefined; // the ask dock opened this approval (an outside agent's)
   const answerPending = (kind: string) => {
     const p = (focus ? w.approvals().find((x) => x.id === focus && x.status === "pending" && x.kind === kind) : undefined) ?? w.pending(active).find((x) => x.kind === kind);
     focus = undefined;
@@ -57,8 +57,7 @@ test("auto-play: wizard, scenes 1-8, Claude via Connect and the inbox, then scen
     void (async () => { await w.act("claude", pocket, firstRun()); await w.act("claude", pocket, errand({ what: "Durian 2026 forecast", maxPrice: "2.00", maxTotal: "2.00", buys: [["datapro", "premium-report"]] })); })();
   });
   on("consent.done", () => {});
-  on("inbox.open", () => {});
-  on("inbox.review", (agent) => { assert.equal(agent, "claude"); focus = w.approvals().find((a) => a.status === "pending" && a.agent === "claude")?.id; });
+  on("dock.open", () => { focus = w.approvals().filter((a) => a.status === "pending" && a.agent && a.agent !== "chainbrain").sort((x, y) => (x.createdAt ?? 0) - (y.createdAt ?? 0))[0]?.id; });
   on("radar.open", () => {});
   on("deadend.fix", () => {});
   on("rules.slide", () => { w.chain.setCap(OWNER, active, parseUsd("0.30")); w.chain.transfer(OWNER, active, parseUsd("0.10")); });

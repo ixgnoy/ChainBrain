@@ -2,7 +2,7 @@
 // creates the Research pocket in the wizard, types each sentence, answers the one question, confirms tasks, slides to
 // co-sign, holds to revoke (which also returns the money), switches to One purchase, applies the fix and asks again. Then
 // the outside agents: it connects Claude (pairing link, consent, a new pocket), confirms Claude's task and co-signs its
-// payment from the Approvals inbox; then scene 9 (Radar) and scene 10 (Sentinel) on the seeded Research data pocket. Every press goes through a
+// payment from the ask dock (the cheque); then scene 9 (Radar) and scene 10 (Sentinel) on the seeded Research data pocket. Every press goes through a
 // target the screen registered (lib/autoplayTargets.ts), so what the camera sees is the real UI doing real work; the
 // built-in network decides every outcome. Started and stopped by a long-press on the Agent header. No React Native
 // imports: Node tests drive it with a fake host.
@@ -180,7 +180,7 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await drive();
     await wait(3000);
 
-    // ---- outside agents: connect Claude, give it its own pocket, then answer it from the Approvals inbox
+    // ---- outside agents: connect Claude, give it its own pocket, then answer it from the ask dock
     host.navigate("/");
     await wait(2200);
     if (await tap("home.connect", undefined, 5000)) {
@@ -196,17 +196,15 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
       await until("Claude's task", claude("intent"), 40_000).catch(soft);
       if (claude("intent")(host.state())) {
         host.navigate("/");
-        await wait(1500);
-        await must("inbox.open");
-        await wait(1500);
-        await must("inbox.review", "claude");
+        await wait(2200); // the ask dock rises above the tab bar
+        await must("dock.open");
         await wait(1500);
         await must("intent.confirm");
         await until("Claude's payment request", claude("payment"), 40_000).catch(soft);
         if (claude("payment")(host.state())) {
-          await wait(1200);
-          await must("inbox.review", "claude");
-          await wait(1900);
+          await wait(2200);
+          await must("dock.open"); // the card turns over to the cheque
+          await wait(2600);
           await must("approval.slide");
           await wait(3200);
         }
