@@ -69,6 +69,9 @@ const AppCtx = createContext<Ctx | null>(null);
 export const useApp = (): Ctx => { const v = useContext(AppCtx); if (!v) throw new Error("AppProvider missing"); return v; };
 
 const id = () => Math.random().toString(36).slice(2, 10);
+const sameIds = (a: Set<string> | null, b: Set<string> | null) => a === b || (!!a && !!b && a.size === b.size && [...a].every((x) => b.has(x)));
+const sameView = (a: PocketView | undefined, b: PocketView) => !!a && a.balance === b.balance && a.cap === b.cap && a.askAbove === b.askAbove && a.expiresAt === b.expiresAt
+  && a.revoked === b.revoked && a.owner === b.owner && a.agent === b.agent && a.allowed.length === b.allowed.length && a.allowed.every((x, i) => x === b.allowed[i]);
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -201,11 +204,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       wallet.balances().catch(() => null),
       Promise.all(list.map((a) => readPocket(a).catch(() => null))),
     ]);
-    if (bal) setBalances(bal);
+    // keep the same objects when nothing changed: a new object re-renders every screen (and Hermes in dev is slow)
+    if (bal) setBalances((old) => (old && old.usdc === bal.usdc && old.eth === bal.eth ? old : bal));
     setViews((old) => {
+      let changed = false;
       const next = { ...old };
-      list.forEach((a, i) => { const v = reads[i]; if (v) next[a.toLowerCase()] = v; });
-      return next;
+      list.forEach((a, i) => { const v = reads[i]; const k = a.toLowerCase(); if (v && !sameView(old[k], v)) { next[k] = v; changed = true; } });
+      return changed ? next : old;
     });
   }, [wallet, cfg]);
 
@@ -250,8 +255,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const list = addrRef.current;
       if (list.length) {
         const res = await Promise.all(list.map((a) => api.fetchPending(a).catch(() => null)));
-        setPendingIds(res.some((r) => r === null) ? null : new Set(res.flatMap((r) => (r ?? []).map((x) => x.id))));
-      } else setPendingIds(new Set());
+        const ids = res.some((r) => r === null) ? null : new Set(res.flatMap((r) => (r ?? []).map((x) => x.id)));
+        setPendingIds((old) => (sameIds(old, ids) ? old : ids));
+      } else setPendingIds((old) => (old && old.size === 0 ? old : new Set()));
       setConn("online");
     } catch { /* keep polling; connect effect reports offline when config fails */ }
   }, [cfg]);
