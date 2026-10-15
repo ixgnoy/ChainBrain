@@ -6,7 +6,7 @@ import { cleanText } from "../lib/sanitize";
 import { EventCard } from "./EventCard";
 
 // reasons that have their own card or are not a refusal by the pocket's rules
-const SKIP = new Set(["NEEDS_OWNER_APPROVAL", "OWNER_DECLINED", "APPROVAL_EXPIRED", "POCKET_REVOKED", "DISCLOSURE_REFUSED", "SIGNATURE_TYPE_NOT_ALLOWED"]);
+const SKIP = new Set(["NEEDS_OWNER_APPROVAL", "OWNER_DECLINED", "APPROVAL_EXPIRED", "POCKET_REVOKED", "DISCLOSURE_REFUSED", "SIGNATURE_TYPE_NOT_ALLOWED", "COUNTERPARTY_HIGH_RISK", "COUNTERPARTY_REVIEW"]); // Radar's own card tells those
 
 /** Per seller, the rules that said no in this turn (quote-time blocks and pay refusals), e.g. scene 4's SELLER_NOT_ALLOWED. */
 export function refusalsOf(evs: WalletEvent[]) {

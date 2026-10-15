@@ -200,3 +200,13 @@ export function narrate(s: { name: string; score: number; verdict: Verdict; fact
 }
 
 export const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+
+/**
+ * The strongest factor as a money trail for the phone: names from where the money started to the counterparty
+ * ("Demo drainer → DataPro" for source exposure, "DataPro → Mixer" for destination), plus its share.
+ */
+export function trailOf(f: Factor | undefined, nameOf: (a: string) => string): { trail?: string[]; share?: number; direction?: "self" | Direction } {
+  if (!f) return {};
+  const names = f.path.map(nameOf);
+  return { trail: f.on === "source" ? names.reverse() : names, share: Number(f.share.toFixed(4)), direction: f.on };
+}

@@ -12,7 +12,10 @@ import { Avatar, Button, Details, SummaryCard } from "../ui/kit";
 import { T } from "../ui/Text";
 import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
-import { authOf, authExpired, sameAddr, type Approval } from "../lib/events";
+import { authOf, authExpired, sameAddr, radarBody, type Approval } from "../lib/events";
+import { c } from "../tokens";
+import { Icon } from "../ui/Icon";
+import { ScoreBar } from "./RadarCard";
 import { NEVER } from "../lib/shared";
 import { parseUsd } from "../lib/shared";
 import { usd, shortAddr } from "../lib/util";
@@ -126,13 +129,23 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
               </View>
               {queue > 1 ? <T v="cap" color="muted">{queue - 1} more waiting</T> : null}
             </View>
+            {a.data?.radar ? (
+              <View style={{ gap: 8, padding: 14, borderRadius: 16, backgroundColor: c.warningSoft }} accessible accessibilityLabel={`Radar: risk ${a.data.radar.score} out of 10. ${cleanText(radarBody(String(a.data.radar.narrative ?? "")), 300)}`}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Icon name="radar" size={18} color={c.warning} />
+                  <T v="row" w="semi" style={{ flex: 1 }}>Radar found risk in this seller's money</T>
+                </View>
+                <ScoreBar score={Number(a.data.radar.score) || 0} verdict={a.data.radar.verdict === "block" ? "block" : "review"} />
+                <T v="sub" color="ink2">{cleanText(radarBody(String(a.data.radar.narrative ?? "")).split(" Rule:")[0], 300)}</T>
+              </View>
+            ) : null}
             <SummaryCard rows={[
               ["What", item],
               ["From", pocket ? cleanText(pocket.name, 30) : shortAddr(a.pocket)],
               ["Limit", limitText],
               ["Expires", "Approval valid 10 min"],
             ]} />
-            <Details title="Details" codes={["NEEDS_OWNER_APPROVAL"]} rows={[
+            <Details title="Details" codes={a.data?.radar ? ["COUNTERPARTY_REVIEW"] : ["NEEDS_OWNER_APPROVAL"]} rows={[
               ...(a.data?.intent ? parseIntent(a.data.intent).map((r): [string, string] => [r.k === "Price" ? "Limits" : r.k === "Buy" ? "Task" : r.k || "Task", r.v]) : []),
               ["Pays to", auth ? shortAddr(auth.to) : "n/a"], ["Authorization", auth ? `${auth.nonce.slice(0, 10)}…` : "n/a"],
             ]}>

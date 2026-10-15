@@ -21,6 +21,8 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
   const eth = new Map<string, bigint>();
   const pockets = new Map<string, PocketRec>();
   const txs: SimTx[] = [];
+  /** Every USDC movement, as Transfer logs would show it (Radar traces these). */
+  const moves: { from: Hex; to: Hex; value: bigint; tx: Hex; block: bigint }[] = [];
   let block = o.startBlock ?? 0n;
   const listeners = new Set<(t: SimTx) => void>();
 
@@ -80,6 +82,7 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
     needsOwner: (pocket: string, value: bigint) => value > get(pocket).askAbove,
     sellerAllowed: (pocket: string, payTo: string) => get(pocket).allowed.has(lower(payTo)),
     txs: () => txs.slice(),
+    transfers: () => moves.slice(),
     onTx(f: (t: SimTx) => void) { listeners.add(f); return () => void listeners.delete(f); },
 
     /** PocketFactory.create: deploys a pocket and emits PocketCreated. */
@@ -100,7 +103,9 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
       setBal(from, bal(from) - amount);
       setBal(to, bal(to) + amount);
       const kind: SimTxKind = pockets.has(lower(to)) ? "fund" : "out";
-      return record({ pocket: pockets.has(lower(to)) ? to : from, kind, from, counterparty: from, amount, status: "success", at, method: "transfer", args: { to, value: amount.toString() } }).hash;
+      const t = record({ pocket: pockets.has(lower(to)) ? to : from, kind, from, counterparty: from, amount, status: "success", at, method: "transfer", args: { to, value: amount.toString() } });
+      moves.push({ from, to, value: amount, tx: t.hash, block: t.block });
+      return t.hash;
     },
     revoke(from: Hex, pocket: Hex, at?: number) {
       const p = get(pocket); onlyOwner(p, from, "revoke");
@@ -111,7 +116,9 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
       const p = get(pocket); onlyOwner(p, from, "returnFunds");
       const amount = bal(p.address);
       setBal(p.address, 0n); setBal(p.owner, bal(p.owner) + amount);
-      return record({ pocket: p.address, kind: "return", from, counterparty: p.owner, amount, status: "success", at, method: "returnFunds" }).hash;
+      const t = record({ pocket: p.address, kind: "return", from, counterparty: p.owner, amount, status: "success", at, method: "returnFunds" });
+      if (amount > 0n) moves.push({ from: p.address, to: p.owner, value: amount, tx: t.hash, block: t.block });
+      return t.hash;
     },
     setSeller(from: Hex, pocket: Hex, seller: Hex, ok: boolean) {
       const args = { seller, ok: String(ok) };
@@ -154,6 +161,7 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
       setBal(p.address, bal(p.address) - amount);
       setBal(to, bal(to) + amount);
       const tx = record({ pocket: p.address, kind: "payment", from: o2.submitter, counterparty: to, amount, status: "success", at: o2.at, method: "transferWithAuthorization", args: { from: p.address, to, value: amount.toString(), cosigned: String(o2.ownerSigned) } });
+      moves.push({ from: p.address, to, value: amount, tx: tx.hash, block: tx.block });
       return { tx: tx.hash, ok: true };
     },
   };

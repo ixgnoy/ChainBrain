@@ -24,11 +24,12 @@ import { StreamText } from "../../ui/StreamText";
 import { PaidCard } from "../../components/PaidCard";
 import { AttackCard, isAttackEvent } from "../../components/AttackCard";
 import { InjectionCard, injectionsOf } from "../../components/InjectionCard";
+import { RadarAlertCard, RadarBlock } from "../../components/RadarCard";
 import { SendButton } from "../../ui/SendButton";
 import { WorkingLine } from "../../ui/WorkingLine";
 import { cleanText } from "../../lib/sanitize";
 import { devScenes, type Scene } from "../../lib/api";
-import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, type WalletEvent } from "../../lib/events";
+import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, radarScreens, radarAlerts, type WalletEvent } from "../../lib/events";
 import { deadEndOf } from "../../lib/deadend";
 import { money, usd } from "../../lib/util";
 import { plainAsks } from "../../lib/plain";
@@ -141,6 +142,8 @@ export default function AgentChat() {
   const mineLen = mine.length;
   // attacks that arrived before the first message (the console sets them off through the relay): shown at the top of the chat
   const loose = useMemo(() => mine.filter((e) => isAttackEvent(e) && (turns.length === 0 || e.at <= turns[0].fromAt)), [mine, turns]);
+  // Radar alerts that arrived between turns (the monitor re-screened a seller this pocket paid): shown after the conversation
+  const idleAlerts = useMemo(() => (active ? radarAlerts(mine, active.address).filter((a) => !turns.some((t) => a.at > t.fromAt && (t.toAt == null || a.at <= t.toAt))) : []), [mine, turns, active]);
 
   // follow the conversation: smooth scroll to the end while the owner is at (or near) the bottom; content growing (steps, cards) retriggers it
   const toEnd = () => {
@@ -313,6 +316,8 @@ export default function AgentChat() {
                     why={{ codes: (d.refused ?? []).map((r: string) => cleanText(r, 40)) }} />
                 ))}
                 {refusals.map((r) => <SellerRefusal key={r.sellerId} id={`${t.id}:r${r.sellerId}`} seller={sellerName(r.sellerId)} reasons={r.reasons} />)}
+                {active ? radarAlerts(evs, active.address).filter((a) => !radarScreens(evs).some((v) => v.verdict !== "ok" && v.counterparty === a.name)).map((a) => <RadarAlertCard key={a.key} a={a} />) : null}
+                <RadarBlock list={radarScreens(evs)} turnId={t.id} />
                 {injectionsOf(evs).filter((x) => !(seenInj.get(t.id) ?? new Set()).has(JSON.stringify(x))).map((x, k) => <InjectionCard key={`${t.id}:i${k}`} id={`${t.id}:${k}`} seller={sellerName(x.sellerId)} lines={x.lines} />)}
                 {evs.filter(isAttackEvent).map((e, k) => <AttackCard key={`${e.type}${e.at}${k}`} e={e} />)}
                 {!t.done ? (
@@ -335,6 +340,7 @@ export default function AgentChat() {
               </View>
             );
           })}
+          {idleAlerts.map((a) => <RadarAlertCard key={a.key} a={a} />)}
           {sent ? <View style={{ gap: 14 }}><UserBubble text={sent.text} fresh /></View> : null}
           {!last && intent ? <TaskWaiting text={intent.text} onOpen={() => setApprovalOpen(true)} id={intent.id} /> : null}
           {active?.revoked && turns.length > 0 ? (

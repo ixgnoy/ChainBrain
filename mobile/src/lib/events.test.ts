@@ -2,7 +2,7 @@
 // Event stream quirks (API spec quirk checklist): dedupe, cursor, approvals last-wins, pending reconciliation, trace, ledger.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mergeEvents, nextCursor, approvalsFrom, livePending, traceLines, ledgerFrom, chainFor, reasonsOf, authOf, authExpired, sliceTurn, type WalletEvent, authMismatch } from "./events";
+import { mergeEvents, nextCursor, approvalsFrom, livePending, traceLines, ledgerFrom, chainFor, reasonsOf, authOf, authExpired, sliceTurn, type WalletEvent, authMismatch, radarScreens, radarAlerts, radarBody, summarizeTool } from "./events";
 import { REASONS } from "./shared";
 
 const P = "0x00000000000000000000000000000000000000aa";
@@ -103,4 +103,28 @@ test("co-sign: only the transfer the sheet shows (pocket, seller, amount)", () =
   assert.equal(authMismatch(a, auth({ from: S }), sellers), "AUTH_WRONG_POCKET");
   assert.equal(authMismatch(a, auth({ to: P }), sellers), "AUTH_WRONG_SELLER");
   assert.equal(authMismatch(a, auth({ value: "50000000" }), sellers), "AUTH_WRONG_AMOUNT");
+});
+
+test("radar: latest screen per seller, alerts per pocket once, narrative head stripped, quote-time block in the ledger", () => {
+  const P = "0xAAA";
+  const evs = [
+    { type: "radar", kind: "screen", pocket: P, sellerId: "datapro", counterparty: "DataPro", score: 0, verdict: "ok", reasons: [], narrative: "Risk 0/10 for DataPro: no known risk.", at: 1 },
+    { type: "radar", kind: "alert", pocket: P, alert: { id: "a1", name: "DataPro", from: { score: 0, verdict: "ok" }, to: { score: 9, verdict: "block" }, narrative: "n", factors: [{ text: "10% or more of the funds trace to a drainer" }] }, at: 2 },
+    { type: "radar", kind: "alert", alert: { id: "a1", name: "DataPro", to: { score: 9, verdict: "block" } }, at: 2 }, // the global copy
+    { type: "radar", kind: "alert", pocket: "0xBBB", alert: { id: "a1", name: "DataPro", to: { score: 9, verdict: "block" } }, at: 2 },
+    { type: "radar", kind: "screen", pocket: P, sellerId: "datapro", counterparty: "DataPro", score: 9, verdict: "block", reasons: ["10% or more of the funds trace to a drainer"], trail: ["Demo drainer", "DataPro"], share: 0.9,
+      narrative: "Risk 9/10 for DataPro: blocked. 90% of the money DataPro received traces back to Demo drainer (drainer), directly. Rule: x.", at: 3 },
+    { type: "trace", phase: "tool_result", tool: "get_quote", pocket: P, result: { ok: true, sellerId: "datapro", sku: "premium-report", price: "1.50", allowedByPocket: "OK", intentCheck: "OK", counterpartyRisk: { score: 9, verdict: "block", reasons: [] } }, at: 4 },
+  ];
+  const s = radarScreens(evs);
+  assert.equal(s.length, 1);
+  assert.deepEqual([s[0].score, s[0].verdict, s[0].trail], [9, "block", ["Demo drainer", "DataPro"]]);
+  assert.equal(radarBody(s[0].narrative), "90% of the money DataPro received traces back to Demo drainer (drainer), directly. Rule: x.");
+  const a = radarAlerts(evs, "0xaaa");
+  assert.equal(a.length, 1);
+  assert.deepEqual([a[0].name, a[0].from?.score, a[0].to.score, a[0].reasons], ["DataPro", 0, 9, ["10% or more of the funds trace to a drainer"]]);
+  assert.equal(radarAlerts(evs).length, 1); // only the global copy
+  const blocked = ledgerFrom(evs, P).filter((r) => r.kind === "blocked");
+  assert.deepEqual(blocked.map((r) => r.reasons), [["COUNTERPARTY_HIGH_RISK"]]);
+  assert.equal(summarizeTool("get_quote", evs[5].result), "US$1.50, Radar 9/10");
 });

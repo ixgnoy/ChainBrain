@@ -12,6 +12,7 @@ import { approvals } from "./approvals";
 import { state, newTask } from "./state";
 import { bus } from "./events";
 import { radar, screenOrNull, brief } from "../radar/screen";
+import { trailOf } from "../../../shared/sim/radar";
 
 export type ToolCtx = { pocket: Address };
 type Tool = { description: string; schema: z.ZodType; run(ctx: ToolCtx, args: any): Promise<object> };
@@ -27,7 +28,7 @@ async function counterparty(ctx: ToolCtx, rec: { sellerId: string; payTo: Addres
   radar.watch(ctx.pocket, rec.payTo);
   radar.name(rec.payTo, (await directory().catch(() => [])).find((x) => x.id === rec.sellerId)?.name ?? rec.sellerId);
   const s = await screenOrNull(rec.payTo);
-  if (s) bus.publish({ type: "radar", kind: "screen", pocket: ctx.pocket, sellerId: rec.sellerId, ...brief(s), narrative: s.narrative });
+  if (s) bus.publish({ type: "radar", kind: "screen", pocket: ctx.pocket, sellerId: rec.sellerId, ...brief(s), narrative: s.narrative, ...trailOf(s.factors[0], radar.nameOf) });
   return s;
 }
 

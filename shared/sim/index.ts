@@ -1,6 +1,7 @@
 export * from "./types";
 export * from "./util";
-export { CATALOG, SHADY_PREVIEW, ATTACKER, sellerById, sellerByPayTo, sellerName } from "./catalog";
+export { CATALOG, SHADY_PREVIEW, ATTACKER, DRAINER, sellerById, sellerByPayTo, sellerName } from "./catalog";
+export * from "./radar";
 export { createWorld, SIM_AGENT, SIM_FACTORY, FORCE_SENDER, type World, type WorldOptions } from "./world";
 export { seedOwner, type SeededPocket, type OwnerTxSeed } from "./seed";
 export { SCENES, type SceneInfo } from "./scenes";
