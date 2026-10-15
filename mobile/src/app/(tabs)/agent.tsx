@@ -3,7 +3,6 @@ import { Keyboard, Platform, ScrollView, TextInput, View } from "react-native";
 import Animated, { FadeIn, FadeOut, useAnimatedKeyboard, useAnimatedReaction, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useApp, type Turn } from "../../store";
 import { c, F, lift } from "../../tokens";
 import { Avatar, Button, Press, type PressTap } from "../../ui/kit";
@@ -193,7 +192,9 @@ export default function AgentChat() {
     if (want) { sendRef.current(String(arg)); return true; }
     return false;
   }, !!question);
-  const holdHeader = Gesture.LongPress().minDuration(1500).maxDistance(40).runOnJS(true).onStart(() => { autoplay.toggle(); });
+  // hidden auto-play: a 1.5 s hold on the header. It lives on the header button itself: on iOS the Pressable takes the touch,
+  // so a long-press gesture wrapped around it never fires
+  const HOLD_MS = 1500;
 
   const follow: ChipItem[] = question ? scenes.filter((s) => s.followUp).map((s) => ({ label: s.followChip ?? s.followUp!, text: s.followUp! })) : [];
   // a tight pocket (cap US$0.20 or less) leads with the dead-end task; otherwise the scenes in story order
@@ -236,9 +237,8 @@ export default function AgentChat() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.card }}>
-      <GestureDetector gesture={holdHeader}>
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 10, flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: 1, borderBottomColor: c.line }}>
-        <Press kind="row" haptics="select" disabled={pockets.length < 2} auto="picker.open" onPress={() => setPickerOpen(true)} onLongPress={() => {}} hitSlop={6}
+        <Press kind="row" haptics="select" auto="picker.open" onPress={() => { if (pockets.length > 1) setPickerOpen(true); }} onLongPress={() => autoplay.toggle()} delayLongPress={HOLD_MS} hitSlop={6}
           accessibilityRole="button" accessibilityLabel={active ? `${active.name}, ${headStatus}. Change pocket` : "No pocket yet"}
           style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48 }}>
           <Avatar label={active?.name ?? "?"} size={32} />
@@ -254,7 +254,6 @@ export default function AgentChat() {
           </View>
         </Press>
       </View>
-      </GestureDetector>
 
       <View style={{ flex: 1 }}>
         <ScrollView
@@ -385,15 +384,18 @@ export default function AgentChat() {
           </Animated.View>
         ) : null}
         <View style={{ paddingHorizontal: 16 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 20, paddingRight: 8, borderRadius: 26, backgroundColor: c.fill, minHeight: 52 }}>
+          {/* grows with the message (up to ~5 lines, then scrolls inside); the send button stays on the last line */}
+          <View style={{ flexDirection: "row", alignItems: "flex-end", paddingLeft: 20, paddingRight: 8, paddingVertical: 2, borderRadius: 26, backgroundColor: c.fill, minHeight: 52 }}>
             <TextInput
               value={text} onChangeText={setText} placeholder={text ? "" : question ? "Answer your agent" : "Ask your agent to buy something"} placeholderTextColor={c.faint}
-              onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}
-              style={[{ flex: 1, color: c.ink, fontFamily: F.regular, fontSize: 16, lineHeight: 24, height: 48, paddingVertical: 0 }, Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null]}
+              multiline submitBehavior="submit" onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}
+              style={[{ flex: 1, color: c.ink, fontFamily: F.regular, fontSize: 16, lineHeight: 22, minHeight: 48, maxHeight: 124, paddingTop: 13, paddingBottom: 13, textAlignVertical: "center" }, Platform.OS === "web" ? ({ outlineStyle: "none", resize: "none" } as object) : null]}
             />
-            <SendButton ready={ready} stop={showStop} tapRef={sendTap} onPress={() => send(text)}
-              onStop={() => { if (autoplay.running) autoplay.stop(); else if (active) setAction({ mode: "revoke", pocket: active.address }); }}
-              onAutoStop={() => active && setAction({ mode: "revoke", pocket: active.address })} />
+            <View style={{ marginBottom: 2 }}>
+              <SendButton ready={ready} stop={showStop} tapRef={sendTap} onPress={() => send(text)}
+                onStop={() => { if (autoplay.running) autoplay.stop(); else if (active) setAction({ mode: "revoke", pocket: active.address }); }}
+                onAutoStop={() => active && setAction({ mode: "revoke", pocket: active.address })} />
+            </View>
           </View>
         </View>
       </Animated.View>
