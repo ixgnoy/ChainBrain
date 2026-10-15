@@ -9,6 +9,15 @@
         "cd mobile && npx expo start --web --port 8091"
       ],
       "port": 8091
+    },
+    {
+      "name": "web-console",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "pnpm --dir web dev --port 5173 --strictPort"
+      ],
+      "port": 5173
     }
   ]
 }

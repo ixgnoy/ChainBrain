@@ -3,39 +3,59 @@
 @import "@fontsource/plus-jakarta-sans/500.css";
 @import "@fontsource/plus-jakarta-sans/600.css";
 @import "@fontsource/plus-jakarta-sans/700.css";
-@import "@fontsource/fraunces/600.css";
+@import "@fontsource/plus-jakarta-sans/800.css";
 
-/* Clean bank, light only (design-system/chainbrain/MASTER.md v3: deep teal + navy). One accent; depth = white cards on grey, no shadows. */
+/* Neo-Kinetic Fintech, light only (design-system/chainbrain/MASTER.md). Black ink on white cards over a slate canvas,
+   vermillion and powder blue as the only accents, 45° hatch instead of fills. Older role names map onto the new palette. */
 @theme {
-  --color-canvas: #f5f7f8;
+  --color-canvas: #e2e5e8;
   --color-card: #ffffff;
-  --color-fill: #edf0f2;
-  --color-line: #e3e7ea;
-  --color-ink: #0f2236;
-  --color-ink2: #3e4f63;
-  --color-muted: #5d6b7b;
-  --color-faint: #9aa5b1;
-  --color-accent: #00727f;
-  --color-accent-press: #005c66;
-  --color-accent-soft: #ddf0f2;
-  --color-positive: #1a7f4b;
+  --color-fill: #f1f3f5;
+  --color-tile: #f4f5f6;
+  --color-tile-stroke: #ecefef;
+  --color-line: #d3d3d1;
+  --color-ink: #111215;
+  --color-ink2: #3a3b41;
+  --color-muted: #777781;
+  --color-muted-canvas: #5e5f68;
+  --color-faint: #a7a8af;
+  --color-vermillion: #f04e23;
+  --color-vermillion-press: #d8411a;
+  --color-vermillion-ink: #b32a00;
+  --color-vermillion-soft: #ffdbd2;
+  --color-blue: #9dcaff;
+  --color-blue-press: #86bcfa;
+  --color-blue-ink: #124977;
+  --color-blue-soft: #d1e4ff;
+  --color-green: #22c55e;
+  --color-green-ink: #15803d;
+  --color-green-soft: #dcfce7;
+  /* roles (kept names) */
+  --color-accent: #111215;
+  --color-accent-press: #2a2b30;
+  --color-accent-soft: #e9ebed;
+  --color-positive: #15803d;
   --color-on-accent: #ffffff;
-  --color-negative: #c8372d;
-  --color-negative-soft: #fcebea;
-  --color-warning: #9a6200;
-  --color-warning-soft: #fff3db;
-  --color-mint: #dff3ec;
-  --color-mint-ink: #1a7f4b;
-  --color-peach: #fdebdd;
-  --color-peach-ink: #a4501a;
-  --color-lilac: #e3eef9;
-  --color-lilac-ink: #28507a;
+  --color-negative: #b32a00;
+  --color-negative-soft: #ffdbd2;
+  --color-warning: #124977;
+  --color-warning-soft: #d1e4ff;
+  --color-mint: #dcfce7;
+  --color-mint-ink: #15803d;
+  --color-peach: #ffdbd2;
+  --color-peach-ink: #b32a00;
+  --color-lilac: #d1e4ff;
+  --color-lilac-ink: #124977;
 
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+  --font-serif: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
-  --radius-card: 20px;
-  --radius-input: 12px;
+  --radius-card: 24px;
+  --radius-tile: 16px;
+  --radius-input: 16px;
+
+  --shadow-level1: 0 4px 20px -2px rgba(17, 18, 21, 0.04), 0 1px 2px rgba(17, 18, 21, 0.02);
+  --shadow-level3: 0 12px 32px -4px rgba(17, 18, 21, 0.16);
 }
 
 :root { color-scheme: light; }
@@ -50,13 +70,22 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-::selection { background: var(--color-accent-soft); }
+::selection { background: var(--color-blue-soft); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 button, a, select, [role="tab"] { cursor: pointer; }
 
 .num { font-variant-numeric: tabular-nums; }
-/* Serif is for page titles only. */
-.title-serif { font-family: var(--font-serif); font-weight: 600; letter-spacing: -0.01em; font-variation-settings: "opsz" 144; }
+/* Page titles: Jakarta ExtraBold with tight tracking (the old serif class name is kept for callers). */
+.title-serif, .display { font-family: var(--font-sans); font-weight: 800; letter-spacing: -0.03em; }
+/* Balances and financial figures: display-lg tracking (DESIGN.md "Financial Figures"). */
+.figure { font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.figure .cur { font-size: 0.75em; }
+/* 45° hatch: 2 px stroke on a 4 px pitch (DESIGN.md "Hatch Infill"). */
+.hatch { background-image: repeating-linear-gradient(45deg, var(--hatch, var(--color-ink)) 0 2px, transparent 2px 6px); }
+.hatch-soft { --hatch: var(--color-line); }
+.hatch-white { --hatch: rgba(255, 255, 255, 0.45); }
+.card { background: var(--color-card); border-radius: var(--radius-card); box-shadow: var(--shadow-level1); outline: 1px solid rgba(17, 18, 21, 0.04); outline-offset: -1px; }
+.eyebrow { font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
 
 @keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .fade-up { animation: fade-up 180ms ease-out both; }
