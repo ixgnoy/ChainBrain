@@ -25,6 +25,7 @@ export type TargetName =
   | "deadend.askAgain"    // dead-end card after the fix: "Ask again, max …"
   | "sheet.close";        // any open sheet that should be dismissed (success screens)
 
+/** Return false when the control cannot act yet (not laid out, disabled): the press is retried. */
 type Handler = (arg?: any) => unknown | Promise<unknown>;
 const stacks = new Map<TargetName, Handler[]>();
 const watchers = new Set<() => void>();
@@ -51,9 +52,15 @@ export async function pressTarget(name: TargetName, arg?: unknown, ms = 8000, al
     });
     if (!ok || !alive()) return false;
   }
-  const s = stacks.get(name)!;
-  await s[s.length - 1](arg);
-  return true;
+  // a handler that cannot act yet (a slide before layout, a disabled control) returns false: try again until `ms`
+  const until = Date.now() + ms;
+  for (;;) {
+    const s = stacks.get(name);
+    const r = s?.length ? await s[s.length - 1](arg) : false;
+    if (r !== false) return true;
+    if (!alive() || Date.now() > until) return false;
+    await new Promise((res) => setTimeout(res, 250));
+  }
 }
 
 /** Registers `handler` under `name` while the component is mounted (and `enabled`). The latest handler is always used. */
@@ -65,11 +72,14 @@ export function useAutoplayTarget(name: TargetName, handler: Handler, enabled = 
 
 // ---- auto-play running state (screens hide nothing; the Agent header uses it for the long-press toggle)
 let running = false;
+let run = 0; // bumps on every start and stop: a gesture from an earlier run never commits into a later one
 const runWatchers = new Set<() => void>();
 export const autoplayRunning = () => running;
-/** For long gestures (typing, slides): true while the auto-play that started them is still running. */
-export const autoplayAlive = () => running;
-export const setAutoplayRunning = (on: boolean) => { if (running !== on) { running = on; runWatchers.forEach((f) => f()); } };
+/** The current run's id: a long handler takes it when it starts, then checks `autoplayAlive(id)` before committing. */
+export const autoplayRun = () => run;
+/** True while auto-play runs (and, given `id`, while it is still the same run that started the gesture). */
+export const autoplayAlive = (id?: number) => running && (id == null || id === run);
+export const setAutoplayRunning = (on: boolean) => { run++; if (running !== on) { running = on; runWatchers.forEach((f) => f()); } };
 export const onAutoplay = (f: () => void) => { runWatchers.add(f); return () => void runWatchers.delete(f); };
 
 /** Types `text` one character at a time with a human rhythm (faster inside words, a beat after punctuation). */
