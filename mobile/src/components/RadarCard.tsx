@@ -6,7 +6,8 @@ import React from "react";
 import { View } from "react-native";
 import { useApp } from "../store";
 import { c } from "../tokens";
-import { Avatar, Press } from "../ui/kit";
+import { router } from "expo-router";
+import { Avatar, Button, Press } from "../ui/kit";
 import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { Rise } from "../ui/Rise";
@@ -14,16 +15,16 @@ import { cleanText } from "../lib/sanitize";
 import { radarBody, type RadarAlert, type RadarView } from "../lib/events";
 import { EventCard } from "./EventCard";
 
-/** Ten steps, filled up to the score: teal while clean, amber from "needs your OK", ink from "blocked". */
+/** Ten steps, filled up to the score: green while clean, blue from "needs your OK", vermillion from "blocked". */
 export function ScoreBar({ score, verdict }: { score: number; verdict: RadarView["verdict"] }) {
-  const fill = verdict === "block" ? c.ink : verdict === "review" ? c.warning : c.accent;
+  const fill = verdict === "block" ? c.vermillion : verdict === "review" ? c.blueInk : c.green;
   const s = Math.max(0, Math.min(10, Math.round(score)));
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }} accessible accessibilityLabel={`Risk ${s} out of 10`}>
       <View style={{ flex: 1, flexDirection: "row", gap: 3 }}>
         {Array.from({ length: 10 }, (_, i) => <View key={i} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: i < s ? fill : c.line }} />)}
       </View>
-      <T v="cap" w="semi" color={verdict === "ok" ? "accent" : verdict === "review" ? "warning" : "ink"}>{s}/10</T>
+      <T v="cap" w="bold" color={verdict === "ok" ? "greenInk" : verdict === "review" ? "blueInk" : "vermillionInk"}>{s}/10</T>
     </View>
   );
 }
@@ -36,8 +37,8 @@ export function Trail({ names }: { names: string[] }) {
       {names.map((n, i) => (
         <React.Fragment key={`${n}${i}`}>
           {i ? <Icon name="chevronRight" size={14} color={c.faint} /> : null}
-          <View style={{ paddingHorizontal: 8, height: 24, borderRadius: 12, justifyContent: "center", backgroundColor: i === 0 ? c.warningSoft : c.fill }}>
-            <T v="cap" w="medium" color={i === 0 ? "warning" : "ink2"} numberOfLines={1}>{cleanText(n, 28)}</T>
+          <View style={{ paddingHorizontal: 8, height: 24, borderRadius: 12, justifyContent: "center", backgroundColor: i === 0 ? c.vermillionSoft : c.fill }}>
+            <T v="cap" w="semi" color={i === 0 ? "vermillionInk" : "ink2"} numberOfLines={1}>{cleanText(n, 28)}</T>
           </View>
         </React.Fragment>
       ))}
@@ -65,6 +66,7 @@ export function RadarCard({ v, id }: { v: RadarView; id: string }) {
     >
       <ScoreBar score={v.score} verdict={v.verdict} />
       {v.trail.length > 1 ? <View style={{ gap: 6 }}><T v="cap" color="muted">{from}</T><Trail names={v.trail} /></View> : null}
+      <Button label="See the money trail" kind="secondary" small iconRight="arrowUpRight" auto="radar.open" onPress={() => router.push({ pathname: "/radar", params: { name: v.counterparty } })} style={{ alignSelf: "flex-start" }} />
     </EventCard>
   );
 }
@@ -76,7 +78,7 @@ export function RadarClean({ list }: { list: RadarView[] }) {
   const who = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
   return (
     <Rise dy={6} layout style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-      <Icon name="radar" size={16} color={c.accent} />
+      <Icon name="radar" size={16} color={c.greenInk} />
       <T v="cap" color="muted" style={{ flex: 1 }} accessibilityLabel={`Radar checked ${who} on-chain: no known risk`}>Radar checked {who} on-chain: no known risk</T>
     </Rise>
   );
@@ -102,6 +104,7 @@ export function RadarAlertCard({ a }: { a: RadarAlert }) {
     <EventCard tone="blocked" alert={a.key} title={`Radar alert: ${name}`} body={`You paid ${name} before. Its risk rose${was} to ${a.to.score}/10, so your agent won't pay it.`}
       why={{ codes: [a.to.verdict === "block" ? "COUNTERPARTY_HIGH_RISK" : "COUNTERPARTY_REVIEW"], children: <T v="cap" color="muted">{cleanText(a.narrative, 500)}</T> }}>
       <ScoreBar score={a.to.score} verdict={a.to.verdict} />
+      <Button label="See the money trail" kind="secondary" small iconRight="arrowUpRight" auto="radar.open" onPress={() => router.push({ pathname: "/radar", params: { name: a.name } })} style={{ alignSelf: "flex-start" }} />
     </EventCard>
   );
 }
@@ -112,21 +115,21 @@ export function RadarActivityRow({ a, last, delay = 0, onPress }: { a: RadarAler
   const pocket = findPocket(a.pocket);
   const body = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 56, paddingHorizontal: 16 }}>
-      <Avatar icon="radar" tone="warning" size={40} />
+      <Avatar icon="radar" tone="negative" size={40} />
       <View style={{ flex: 1, gap: 1, paddingVertical: 8 }}>
         <T v="row" numberOfLines={1}>Radar alert: {cleanText(a.name, 30)}</T>
         <T v="sub" color="muted" numberOfLines={1}>{[pocket ? cleanText(pocket.name, 24) : undefined, new Date(a.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })].filter(Boolean).join(" · ")}</T>
       </View>
       <View style={{ alignItems: "flex-end", gap: 1 }}>
         <T v="row" w="semi">{a.to.score}/10</T>
-        <T v="cap" w="medium" color={a.to.verdict === "block" ? "ink2" : "warning"}>{a.to.verdict === "block" ? "Blocked" : "Needs you"}</T>
+        <T v="cap" w="bold" color={a.to.verdict === "block" ? "vermillionInk" : "blueInk"}>{a.to.verdict === "block" ? "Blocked" : "Needs you"}</T>
       </View>
     </View>
   );
   return (
     <Rise delay={Math.max(delay, 0)} instant={delay < 0} dy={10} layout>
       {onPress ? <Press kind="row" onPress={onPress} haptics="light" accessibilityRole="button" accessibilityLabel={`Radar alert for ${a.name}, risk ${a.to.score} out of 10`}>{body}</Press> : body}
-      {last ? null : <View style={{ height: 1, backgroundColor: c.line, marginLeft: 70 }} />}
+      {last ? null : <View style={{ height: 1, backgroundColor: c.fill, marginLeft: 70, marginRight: 16 }} />}
     </Rise>
   );
 }
