@@ -79,6 +79,9 @@ Every claim below points to a test that runs today.
 | Phone owner key | Keychain / Keystore; testnet keys only | No hardware-wallet or MetaMask-mobile path in prelims (needs a dev build + WalletConnect) |
 | Demo network config | Phone apps talk to the laptop over plain HTTP on the LAN | Demo only; production uses TLS |
 | Privacy | No personal data on-chain | Pocket addresses link to the owner |
+| Mock e-HKD (FISCO demo) | Labelled a mock in the apps and docs; only on a local chain | Its owner can mint without limit: it demonstrates the flow, not a money supply |
+| FISCO millisecond clock | `Clock.nowSec()` normalises `block.timestamp`; tested on a ms clock | A chain whose seconds clock ever exceeded 1e11 would be misread (year 5138) |
+| FISCO chain governance | Local single node; the console account is the governor and funds senders | A one-node chain has no fault tolerance; a consortium deployment would need several nodes and real governance |
 
 **Day-1 gate.** The pocket path passed on a Base Sepolia fork with real USDC v2.2 and x402's facilitator code. The live public-facilitator run is recorded in `docs/evidence.md`. If the hosted facilitator refuses, `FACILITATOR=local` runs the same verification code, and the on-chain guarantee is unchanged.
 

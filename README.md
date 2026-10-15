@@ -1,15 +1,17 @@
 # 链AI脑 ChainBrain
 
-**Give your AI a pocket, not your wallet.** A consumer wallet where you open *pockets* for your AI agent. Each pocket holds its own USDC and rules. The agent spends from it on-chain by itself over x402, and a pocket smart contract enforces the rules. Even a hijacked agent can lose at most the pocket's balance, and only to sellers you approved.
+**Give your AI a pocket, not your wallet.** A consumer wallet where you open *pockets* for your AI agent. Each pocket holds its own stablecoin balance and rules. The agent spends from it on-chain by itself over x402, and a pocket smart contract enforces the rules. Even a hijacked agent can lose at most the pocket's balance, and only to sellers you approved.
 
 Inside the pocket, an **AI brain** does the work: it understands the task, shops and pays, re-plans after a refusal, resists injection and phishing, screens every seller's money (Radar), watches itself and can freeze the pocket on-chain (Sentinel), remembers, turns spoken rules into pocket rules, predicts every payment before sending it (Pre-flight) and negotiates the price with numbers only (the haggler). AI only tightens: nothing it says can loosen a pocket. See [`docs/ai-brain.md`](docs/ai-brain.md).
 
-FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia testnet.
+FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Runs on a **local FISCO BCOS chain with a mock e-HKD** (default, prices in HK$) or on **Base Sepolia with test USDC** (prices in US$): one switch, `CHAIN=fisco | base-sepolia`, in `server/.env`. The apps read the chain from the wallet API.
+
+> **Mock e-HKD is not the HKMA e-HKD and not money.** `MockEHKD` ("Mock e-HKD", symbol `eHKD`, 6 decimals) is a demo ERC-20 with EIP-3009 that we deploy on a local chain; its owner can mint at will.
 
 - Technical document: [`docs/technical-document.md`](docs/technical-document.md)
 - AI brain (ten features): [`docs/ai-brain.md`](docs/ai-brain.md)
 - Security self-assessment: [`docs/security-self-assessment.md`](docs/security-self-assessment.md)
-- On-chain evidence: [`docs/evidence.md`](docs/evidence.md)
+- On-chain evidence: FISCO [`docs/evidence-fisco.md`](docs/evidence-fisco.md) (every hash re-verified by `server/scripts/verify-evidence.ts`), Base Sepolia [`docs/evidence.md`](docs/evidence.md)
 - Frontend and dev stack: [`docs/08-frontend/README.md`](docs/08-frontend/README.md)
 - Product spec: [`docs/02-product/product-design.md`](docs/02-product/product-design.md)
 
@@ -17,7 +19,8 @@ FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia 
 
 | Path | What |
 | --- | --- |
-| `contracts/` | Pocket (ERC-1271) and PocketFactory, Foundry, fork tests |
+| `contracts/` | Pocket (ERC-1271), PocketFactory, MockEHKD (EIP-3009 + ERC-1271 payers), Foundry tests |
+| `scripts/fisco/` | Local FISCO BCOS 3.16.4 chain: setup, start/stop, fund senders, deploy |
 | `server/` | Wallet tool layer, Claude agent loop, wallet API (:8787), four x402 test sellers (:4021), scripts |
 | `web/` | Network console for the laptop demo and judges: live agent trace beside the active pocket and the sellers' side, all pockets, every tx hash, red-team box. No login ([docs](docs/08-frontend/web.md)) |
 | `mobile/` | Owner app for phones in Expo Go (also `npx expo prebuild` for Android Studio / Xcode) ([docs](docs/08-frontend/mobile.md)) |
@@ -40,7 +43,7 @@ To use a real server instead: on the phone, Settings, Advanced, **Custom server*
 
 ## Prerequisites
 
-Node 24, pnpm (`corepack enable`), [Foundry](https://book.getfoundry.sh/) (`forge`, `anvil`, `cast`). For `android/`: JDK 17 and the Android SDK (Android Studio installs both).
+Node 24, pnpm (`corepack enable`), [Foundry](https://book.getfoundry.sh/) (`forge`, `anvil`, `cast`). For FISCO: macOS arm64 or Linux, JDK 17 (the FISCO console funds senders), `curl`. For `android/`: JDK 17 and the Android SDK (Android Studio installs both).
 
 ## Setup
 
@@ -51,6 +54,18 @@ cp server/.env.example server/.env       # then add ANTHROPIC_API_KEY
 cd server && pnpm wallets                # creates every demo key once, prints addresses to fund
 ```
 
+### Quick start on FISCO BCOS (default)
+
+```bash
+bash scripts/fisco/setup.sh      # downloads FISCO BCOS v3.16.4 + console into .fisco/ (gitignored), builds a 1-node chain, web3 RPC on :8545 (chain id 20200)
+bash scripts/fisco/deploy.sh     # funds OWNER/FACILITATOR/FORCE, deploys MockEHKD + PocketFactory, mints HK$10,000 eHKD to OWNER
+bash scripts/fisco/fund.sh 0xYOUR_APP_KEY   # any other address that will send transactions (MetaMask account, phone key)
+```
+
+Later sessions: `bash scripts/fisco/start.sh` / `stop.sh`. Gas is free on this chain, but its web3 RPC refuses senders whose native balance is 0, hence `fund.sh`. To send eHKD to an app key, transfer from OWNER (for example MetaMask on OWNER, or `cast send` with `--legacy --gas-price 0`). In MetaMask, the web app adds the chain itself (`wallet_addEthereumChain`, RPC `http://127.0.0.1:8545`). The facilitator always runs in-process on FISCO.
+
+### Base Sepolia (`CHAIN=base-sepolia`)
+
 **Fund the wallets** on Base Sepolia:
 - ETH from the Coinbase CDP faucet to **OWNER** and **FORCE**, plus **FACILITATOR** if you use `FACILITATOR=local`.
 - 20 test USDC from https://faucet.circle.com to **OWNER**.
@@ -60,9 +75,11 @@ Then import `OWNER_PK` into MetaMask as the demo main wallet.
 ## Test
 
 ```bash
-cd contracts && forge test                              # 24 tests on a Base Sepolia fork
+cd contracts && forge test                              # 66: MockEHKD 6, pockets on eHKD 20, on a ms clock 20, on a Base Sepolia fork 20
 cd server && pnpm test && pnpm typecheck                # 76 tests + 6 skipped without keys (needs anvil on PATH and forge build)
 cd server && SCENE_REPLAY=1 pnpm test:scenes            # scenes 1–8 through the agent loop (drop SCENE_REPLAY to use the real model)
+cd server && pnpm test:base && SCENE_REPLAY=1 pnpm test:scenes:base   # the same on a Base Sepolia fork (anvil on PATH)
+cd server && CHAIN=fisco pnpm tsx scripts/verify-evidence.ts           # re-fetch every hash in docs/evidence-fisco.json
 cd web && pnpm test && pnpm build                       # 81 tests
 cd mobile && node --import tsx --test ../shared/sim/*.test.ts   # built-in network, scenes 1-11, 40 tests
 node devstack/e2e/builtin.cjs --url http://localhost:8091   # phone on the built-in network, no server needed
@@ -72,20 +89,20 @@ cd android && ./gradlew testDebugUnitTest assembleDebug
 
 ## Deployment guide
 
-1. **Factory** (once):
+1. **Factory** (once). FISCO: `bash scripts/fisco/deploy.sh` (writes `contracts/deployments/20200.json`). Base Sepolia:
    ```bash
    cd contracts && set -a && source ../server/.env && set +a
    forge script script/Deploy.s.sol --rpc-url base_sepolia --broadcast
    cast code $(jq -r .PocketFactory deployments/84532.json) --rpc-url base_sepolia | wc -c   # must be > 1000
    ```
    Commit `contracts/deployments/84532.json`. The server reads it, or `FACTORY_ADDRESS` if set.
-2. **Live gate:** `cd server && pnpm spike` pays US$0.30 (agent only) and US$1.50 (owner co-signed) from a fresh pocket. If the hosted facilitator refuses, set `FACILITATOR=local`, which runs the same verification code in-process.
+2. **Live gate:** `cd server && pnpm spike` pays DataLite (agent only) and DataPro (owner co-signed) from a fresh pocket: HK$2.30 and HK$11.70 on FISCO, US$0.30 and US$1.50 on Base. On Base, if the hosted facilitator refuses, set `FACILITATOR=local`. Set `EVIDENCE_FILE=../docs/evidence-fisco.json` to record the hashes.
 3. **Run the stack:** in `server/`, `pnpm sellers` (port 4021) and `pnpm dev` (port 8787). In `web/`, `pnpm dev`, then open http://localhost:5173.
 4. **Phone, Expo Go:** `cd mobile && EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787 npx expo start`, then scan the QR code. Phone and laptop must share Wi-Fi. The app still opens on the built-in network: turn on Settings, Advanced, **Custom server** and connect to the URL above to use the real server. (`EXPO_PUBLIC_API_URL` is the address the app offers there, and the relay address in the linked setup below.)
-5. **Phone, native Android:** open `android/` in Android Studio and run on a device or emulator. The wallet API URL is set on the app's first screen. Use `http://10.0.2.2:8787` from the emulator, or the laptop's LAN IP from a phone. The defaults live in `android/gradle.properties`.
+5. **Phone, native Android:** open `android/` in Android Studio and run on a device or emulator. The wallet API URL is set on the app's first screen. Use `http://10.0.2.2:8787` from the emulator, or the laptop's LAN IP from a phone. The defaults live in `android/gradle.properties`. On FISCO, the chain RPC is `http://10.0.2.2:8545` from the emulator.
 6. **Terminal only:** `pnpm tsx scripts/new-pocket.ts research`, then `pnpm chat <POCKET>`.
 
-**Deployed factory (Base Sepolia):** see `contracts/deployments/84532.json` once step 1 has run.
+**Deployed contracts:** FISCO `contracts/deployments/20200.json` (MockEHKD `0x0355c0c5Afe2A35369056FBB854903A4aF07781A`, factory `0x03aB4C311eeE7C3295c63F910D79a07Ffa7A097A`, the same on every fresh chain); Base Sepolia `contracts/deployments/84532.json`.
 
 ## Demo scenes
 
@@ -110,7 +127,7 @@ Scenes 1-8 play on the built-in network (offline), on the dev stack, and on the 
 
 ## Third-party licences
 
-- Apache-2.0: x402, web3j, OkHttp, Jetpack Compose and AndroidX
+- Apache-2.0: x402, web3j, OkHttp, Jetpack Compose and AndroidX, FISCO BCOS (downloaded at setup, not vendored)
 - MIT: OpenZeppelin Contracts, viem, Hono, Expo, React Native, React, Vite, Phosphor Icons
 - SIL OFL 1.1: Geist and Geist Mono fonts
 - ITF Free Font License: Clash Display and General Sans (Fontshare), fetched at install, never redistributed

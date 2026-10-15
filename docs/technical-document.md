@@ -80,16 +80,32 @@ The Kotlin signer is tested to be byte-identical to viem (`android/app/src/test/
 
 ## 7. Deployment and evidence
 
-- Factory: `contracts/deployments/84532.json` after `forge script script/Deploy.s.sol --broadcast` (see README).
-- Evidence: `docs/evidence.md`, one Basescan link per scene.
+- FISCO BCOS: `scripts/fisco/deploy.sh` writes `contracts/deployments/20200.json` (MockEHKD + PocketFactory). Evidence: `docs/evidence-fisco.md`; `server/scripts/verify-evidence.ts` re-fetches all 17 hashes and checks status, block and event.
+- Base Sepolia: `contracts/deployments/84532.json` after `forge script script/Deploy.s.sol --broadcast` (see README). Evidence: `docs/evidence.md`, one Basescan link per scene.
+
+## 7a. FISCO BCOS port and the mock e-HKD
+
+One switch, `CHAIN=fisco | base-sepolia` (`server/src/chains.ts`): chain, RPC, token, EIP-712 domain, currency, tx link, x402 network. The web, Expo and Kotlin apps read it from `/api/config`, so they sign the right domain (Mock e-HKD v1 on 20200, USDC v2 on 84532) and label money HK$ or US$. Keys stay ECDSA secp256k1 (not SM2), so viem, web3j, MetaMask and the pocket's ecrecover are unchanged.
+
+`MockEHKD` copies the USDC v2.2 interface the pocket relies on: EIP-3009 `transferWithAuthorization`, including the `bytes signature` overload that asks a contract payer through ERC-1271. The pocket contract is unchanged apart from the clock (below); it reads the domain from the token's `DOMAIN_SEPARATOR()`.
+
+x402 has no default asset for eip155:20200, so sellers price as an explicit asset amount `{amount, asset, extra: {name, version}}`, the client allows the token through `spendControls.allowedAssets` with an atomic cap equal to the pocket's cap, and the facilitator runs in-process (x402's own code). FISCO has no public explorer, so the wallet API serves receipts at `/api/tx/:hash`.
+
+What the local FISCO 3.16.4 chain needed (all recorded in the port plan):
+1. The web3 RPC refuses any sender with zero native balance, even at gas price 0. The chain is built in auth mode with balance features on, and `scripts/fisco/fund.sh` credits senders.
+2. Genesis `alloc` is not parsed, and `executor.version=2` crashes the node, so balances are added after start.
+3. No `eth_feeHistory`: forge uses `--legacy --with-gas-price 0`; the Kotlin app sends legacy zero-price transactions on FISCO.
+4. Contracts see `block.timestamp` in **milliseconds** (the RPC header says seconds). `contracts/src/Clock.sol` normalises it (`nowSec()`), so pocket expiry and EIP-3009 windows stay in seconds; it is a no-op on Ethereum chains, and 20 pocket tests run on a millisecond clock.
+5. A sender's transactions are not ordered by nonce inside a block, so deploys use `forge --slow` and every client waits for each receipt.
 
 ## 8. Test summary
 
 | Suite | Command | Result (local) |
 | --- | --- | --- |
-| Contracts (Base Sepolia fork) | `cd contracts && forge test` | 24 passed (16 Oct) |
-| Server (sellers, intent, pay, tools, agent, API, Radar, Sentinel, memory, rules, Pre-flight, haggler) | `cd server && pnpm test` | 76 passed, 6 skipped (16 Oct; needs `forge build` and anvil) |
+| Contracts | `cd contracts && forge test` | 66 passed: MockEHKD 6, pockets on eHKD 20, on a ms clock 20, Base Sepolia fork 20 |
+| Server (sellers, intent, pay, tools, agent, API, Radar, Sentinel, memory, rules, Pre-flight, haggler) | `cd server && pnpm test` (FISCO) / `pnpm test:base` | 76 passed, 6 skipped (16 Oct; needs `forge build` and anvil) |
 | Scenes 1–8 through the agent loop | `cd server && SCENE_REPLAY=1 pnpm test:scenes` | 6 passed (replay); real model needs `ANTHROPIC_API_KEY` |
+| Evidence | `CHAIN=fisco pnpm tsx scripts/verify-evidence.ts` | 17/17 hashes valid |
 | Web | `cd web && pnpm test && pnpm build` | 81 passed (16 Oct) |
 | Built-in network (`shared/sim`, scenes 1-11) | `cd mobile && node --import tsx --test ../shared/sim/*.test.ts` | 40 passed (16 Oct) |
 | Expo | `cd mobile && npm test && npm run typecheck && npx expo-doctor` | 44 passed (16 Oct), including a full auto-play run of scenes 1-11 |
@@ -112,4 +128,4 @@ Ten features sit on top of the agent loop, all following one rule: **AI only tig
 
 ## 10. Finals roadmap
 
-**Roadmap, not in prelim demo.** Seller trust layer (agent identity, owner backing, serve / ask / refuse verdicts); attested seller categories enforced by pockets; reputation; bring-your-own-agent via a public MCP server; the pocket on FISCO BCOS settling a tokenized deposit; Hong Kong licensed stablecoins or bank deposit tokens; zero-knowledge privacy for pocket checks.
+**Roadmap, not in prelim demo.** Seller trust layer (agent identity, owner backing, serve / ask / refuse verdicts); attested seller categories enforced by pockets; reputation; bring-your-own-agent via a public MCP server; a pocket settling a real tokenized deposit (the FISCO BCOS port here uses a mock e-HKD); Hong Kong licensed stablecoins or bank deposit tokens; zero-knowledge privacy for pocket checks.
