@@ -1,5 +1,8 @@
-// Owner approvals. Intent: confirm the fixed-template task card. Payment above the ask-me threshold: slide to co-sign the exact
-// USDC TransferWithAuthorization the wallet built (POST /api/approvals/:id {approved, signature}).
+// Owner approvals (Stitch chainbrain_approve_payment). Payment above the ask-me threshold: who asks (the agent that holds the
+// pocket), the amount and seller, the facts the WALLET checked (item, pocket, the rule that asks you, Radar's seller check, the
+// 10-minute window, counting down), then the agent's own note, set apart as unchecked words; slide to co-sign the exact USDC
+// TransferWithAuthorization the wallet built (POST /api/approvals/:id {approved, signature}). Intent: confirm the
+// fixed-template task card.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
@@ -8,7 +11,10 @@ import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
 import { SheetScroll } from "../ui/SheetScroll";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
-import { Avatar, Button, Details, SummaryCard } from "../ui/kit";
+import { Button, Details, FactRow } from "../ui/kit";
+import { AgentAvatar } from "../ui/AgentAvatar";
+import { Hatch } from "../ui/Hatch";
+import { agentInfo } from "../../../shared/sim/agents";
 import { T } from "../ui/Text";
 import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
@@ -68,11 +74,17 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const isPay = a.kind === "payment";
   const auth = useMemo(() => (isPay ? authOf(a) : null), [a, isPay]);
   const [expired, setExpired] = useState(auth ? authExpired(auth) : false);
+  const [left, setLeft] = useState(auth ? Number(auth.validBefore) - Math.floor(Date.now() / 1000) : 0);
   useEffect(() => {
     if (!auth) return;
-    const t = setInterval(() => setExpired(authExpired(auth)), 1000);
+    const t = setInterval(() => { setExpired(authExpired(auth)); setLeft(Number(auth.validBefore) - Math.floor(Date.now() / 1000)); }, 1000);
     return () => clearInterval(t);
   }, [auth]);
+  const agent = agentInfo(a.agent ?? pocket?.agentId ?? "chainbrain");
+  const who = agent?.kind === "builtin" ? "ChainBrain" : agent?.name ?? "Your agent";
+  const clock = `${String(Math.max(0, Math.floor(left / 60))).padStart(2, "0")}:${String(Math.max(0, left % 60)).padStart(2, "0")}`;
+  const radar = a.data?.radar as { score?: number; verdict?: string; narrative?: string } | undefined;
+  const risky = !!radar && radar.verdict !== "ok";
   const owned = pocket ? pocket.owned : true;
   const seller = cleanText(sellerName(a.data?.sellerId), 60);
   const amount = safeUsd(a.data?.amount);
@@ -120,44 +132,83 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
       <SheetScroll contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 20 }} showsVerticalScrollIndicator={false}>
         {isPay ? (
           <>
-            <View style={{ alignItems: "center", gap: 6, paddingTop: 2 }}>
-              <T v="row" w="semi" color="muted" style={{ fontSize: 15, lineHeight: 22 }}>Approve payment</T>
-              <T v="balance" accessibilityLabel={`US$${amount ?? "unknown"}`}>US${amount ?? "?"}</T>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Avatar label={seller} size={24} />
-                <T v="row" w="medium" numberOfLines={1}>to {seller}</T>
+            <View style={{ alignItems: "center", gap: 6, paddingTop: 4 }}>
+              <AgentAvatar kind={agent?.id ?? "chainbrain"} size={60} badge={c.vermillion} />
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
+                <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>Approve payment</T>
+                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: c.vermillion }} />
+                <T v="tab" style={{ color: c.vermillionInk, textTransform: "uppercase", letterSpacing: 1 }}>Co-sign needed</T>
+              </View>
+              <T v="head" accessibilityRole="header">{`${who} asks to pay`}</T>
+              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                <T v="balance" accessibilityLabel={`US$${amount ?? "unknown"}`}>US${amount ?? "?"}</T>
+                <T v="section" color="ink2" numberOfLines={1}>to {seller}</T>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: c.fill }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.vermillion }} />
+                <T v="cap" w="semi" color="ink2">Test network</T>
               </View>
               {queue > 1 ? <T v="cap" color="muted">{queue - 1} more waiting</T> : null}
             </View>
-            {a.data?.radar ? (
-              <View style={{ gap: 8, padding: 14, borderRadius: 16, backgroundColor: c.warningSoft }} accessible accessibilityLabel={`Radar: risk ${a.data.radar.score} out of 10. ${cleanText(radarBody(String(a.data.radar.narrative ?? "")), 300)}`}>
+            {risky ? (
+              <View style={{ gap: 8, padding: 14, borderRadius: 16, backgroundColor: c.vermillionSoft }} accessible accessibilityLabel={`Radar: risk ${radar!.score} out of 10. ${cleanText(radarBody(String(radar!.narrative ?? "")), 300)}`}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Icon name="radar" size={18} color={c.warning} />
-                  <T v="row" w="semi" style={{ flex: 1 }}>Radar found risk in this seller's money</T>
+                  <Icon name="radar" size={18} color={c.vermillionInk} />
+                  <T v="row" w="bold" style={{ flex: 1 }}>Radar found risk in this seller's money</T>
                 </View>
-                <ScoreBar score={Number(a.data.radar.score) || 0} verdict={a.data.radar.verdict === "block" ? "block" : "review"} />
-                <T v="sub" color="ink2">{cleanText(radarBody(String(a.data.radar.narrative ?? "")).split(" Rule:")[0], 300)}</T>
+                <ScoreBar score={Number(radar!.score) || 0} verdict={radar!.verdict === "block" ? "block" : "review"} />
+                <T v="sub" color="ink2">{cleanText(radarBody(String(radar!.narrative ?? "")).split(" Rule:")[0], 300)}</T>
               </View>
             ) : null}
-            <SummaryCard rows={[
-              ["What", item],
-              ["From", pocket ? cleanText(pocket.name, 30) : shortAddr(a.pocket)],
-              ["Limit", limitText],
-              ["Expires", "Approval valid 10 min"],
-            ]} />
-            <Details title="Details" codes={a.data?.radar ? ["COUNTERPARTY_REVIEW"] : ["NEEDS_OWNER_APPROVAL"]} rows={[
+            {/* what the wallet checked */}
+            <View style={{ borderRadius: 20, backgroundColor: c.card, borderWidth: 1, borderColor: c.tileStroke, paddingHorizontal: 16 }}>
+              <FactRow icon="file" label="Item"><T v="row" w="semi" numberOfLines={2} style={{ textAlign: "right" }}>{item}</T></FactRow>
+              <FactRow icon="wallet" label="Pocket">
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.blue }} />
+                  <T v="row" w="semi" numberOfLines={1}>{pocket ? cleanText(pocket.name, 22) : shortAddr(a.pocket)}</T>
+                  <View style={{ paddingHorizontal: 6, height: 20, borderRadius: 6, backgroundColor: c.fill, justifyContent: "center" }}><T v="mono" style={{ fontSize: 10.5 }}>{`•••• ${a.pocket.slice(-4).toUpperCase()}`}</T></View>
+                </View>
+              </FactRow>
+              <FactRow icon="alert" label="Policy">
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: c.vermillionSoft }}>
+                  <T v="cap" w="bold" style={{ color: c.vermillionInk }}>{limitText}</T>
+                </View>
+              </FactRow>
+              <FactRow icon="shieldCheck" label="Seller check">
+                <T v="row" w="semi" style={{ color: risky ? c.vermillionInk : c.ink }}>{radar?.score != null ? `${radar.verdict === "ok" ? "Low risk" : radar.verdict === "block" ? "Blocked" : "Review"} · ${radar.score}/10` : "Checked"}</T>
+              </FactRow>
+              <FactRow icon="clock" label="Expires" last>
+                <T v="row" w="bold" style={{ color: expired ? c.muted : c.vermillionInk }} accessibilityLabel={expired ? "Expired" : `Approval valid 10 min, ${clock} left`}>{expired ? "Expired" : `Valid 10 min · ${clock} left`}</T>
+              </FactRow>
+            </View>
+            {/* the agent's own words: not checked by the wallet, so they look different */}
+            {a.text ? (
+              <View style={{ borderRadius: 20, overflow: "hidden", backgroundColor: c.fill, padding: 16, gap: 10 }} accessible accessibilityLabel={`${who}'s note, not checked by your wallet: ${cleanText(a.text, 400)}`}>
+                <Hatch color={c.line} pitch={7} stroke={1.2} style={{ left: undefined, width: 10 }} />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 6 }}>
+                  <View style={{ height: 22, paddingHorizontal: 8, borderRadius: 6, backgroundColor: c.ink, justifyContent: "center" }}>
+                    <T v="tab" w="bold" style={{ color: c.white, letterSpacing: 0.9, textTransform: "uppercase" }}>{`${who}'s note · not checked`}</T>
+                  </View>
+                </View>
+                <T v="body" color="ink2" style={{ fontStyle: "italic", paddingLeft: 6 }}>{`“${cleanText(a.text, 400)}”`}</T>
+              </View>
+            ) : null}
+            <Details title="Details" codes={risky ? ["COUNTERPARTY_REVIEW"] : ["NEEDS_OWNER_APPROVAL"]} rows={[
               ...(a.data?.intent ? parseIntent(a.data.intent).map((r): [string, string] => [r.k === "Price" ? "Limits" : r.k === "Buy" ? "Task" : r.k || "Task", r.v]) : []),
               ["Pays to", auth ? shortAddr(auth.to) : "n/a"], ["Authorization", auth ? `${auth.nonce.slice(0, 10)}…` : "n/a"],
             ]}>
-              {a.text ? <View style={{ gap: 2 }}><T v="cap" color="muted">Your agent says</T><T v="sub" color="ink2">{cleanText(a.text, 400)}</T></View> : null}
               <T v="cap" color="muted">Your signature approves this one payment for the next 10 minutes. No money leaves your main wallet.</T>
             </Details>
           </>
         ) : (
           <>
-            <View style={{ gap: 4 }}>
-              <T v="section">Confirm the task?</T>
-              <T v="sub" color="muted">{pocket ? `${cleanText(pocket.name, 30)} pocket` : shortAddr(a.pocket)}{queue > 1 ? ` · ${queue - 1} more waiting` : ""}</T>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <AgentAvatar kind={agent?.id ?? "chainbrain"} size={48} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <T v="section">{agent?.kind === "outside" ? `${who} wants to start a task` : "Confirm the task?"}</T>
+                <T v="sub" color="muted">{pocket ? `${cleanText(pocket.name, 30)} pocket` : shortAddr(a.pocket)}{queue > 1 ? ` · ${queue - 1} more waiting` : ""}</T>
+              </View>
             </View>
             <IntentCard text={a.text} />
           </>
@@ -170,8 +221,9 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
         {isPay ? (
           owned && wallet ? (
             <>
-              <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label="Slide to approve" doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
+              <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label={`Slide to approve US$${amount ?? ""}`} doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
               <Button label="Decline" kind="text" onPress={decline} loading={busy} />
+              <T v="cap" color="muted" style={{ textAlign: "center" }}>{`Paid from the pocket contract ${shortAddr(a.pocket)} with your co-signature.`}</T>
             </>
           ) : (
             <>

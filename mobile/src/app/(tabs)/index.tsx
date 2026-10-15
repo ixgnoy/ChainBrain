@@ -47,7 +47,7 @@ export function HomeHeader() {
       <NetworkChip />
       <Press
         onPress={() => { if (asks) router.push("/approvals"); else if (question) setQuestionOpen(true); else router.push("/approvals"); }}
-        kind="round" accessibilityRole="button" accessibilityLabel={asks ? `Approvals, ${asks} waiting` : question ? "Notifications, your agent has a question" : "Approvals"}
+        kind="round" auto="inbox.open" accessibilityRole="button" accessibilityLabel={asks ? `Approvals, ${asks} waiting` : question ? "Notifications, your agent has a question" : "Approvals"}
         style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
         <Icon name="bell" size={21} stroke={2} />
         {asks || question ? (

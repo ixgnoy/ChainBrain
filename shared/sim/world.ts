@@ -301,7 +301,8 @@ export function createWorld(opts: WorldOptions = {}) {
         pocket, kind: "payment", text: reason ?? "Approve this payment?",
         data: {
           auth: q.auth, sellerId: q.sellerId, sku: q.sku, description: q.description, amount: formatUsd(q.amount), intent: renderIntent(t.intent!),
-          ...(risk.verdict !== "ok" ? { radar: { score: risk.score, verdict: risk.verdict, narrative: risk.narrative } } : {}),
+          // Radar's score always rides along (the sheet shows "Low risk · 1/10"); the narrative only when there is risk
+          radar: { score: risk.score, verdict: risk.verdict, ...(risk.verdict !== "ok" ? { narrative: risk.narrative } : {}) },
         },
       });
       const res = await waitApproval(a.id);
