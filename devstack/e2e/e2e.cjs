@@ -113,7 +113,7 @@ async function webFlow(browser, _scenes, issues) {
     await page.getByRole("heading", { name: "Live" }).waitFor();
     const text = await page.locator("body").innerText();
     check("no connect, login or key screen", !/connect wallet|log ?in|sign ?in|disconnect|private key/i.test(text));
-    check("testnet chip says no real money", /Testnet .*no real money/.test(text));
+    check("chip says test network, no real money (a local fork is not Base Sepolia)", /Test network .*no real money/.test(text) && !/Base Sepolia/.test(text));
   });
 
   await stp("web: seeded agent activity shows in the trace, pocket and seller columns", async () => {
@@ -133,16 +133,20 @@ async function webFlow(browser, _scenes, issues) {
     await shot(page, "web-01-live");
   });
 
-  await stp("web: pockets and on-chain pages read the chain", async () => {
+  await stp("web: pockets and explorer pages read the chain", async () => {
     await tab("Pockets");
     const pocketsOnChain = [...new Set(seeded.map((e) => e.pocket).filter(Boolean))].length;
     await until("pockets listed", async () => (await page.locator("main").getByRole("button", { name: /^Pocket [0-9A-F]{4}/ }).count()) >= pocketsOnChain, 20000);
     check("every seeded pocket is listed from the chain", true);
-    await tab("On-chain");
+    await tab("Explorer");
     const n = payments(seeded).length;
-    await until("payment rows", async () => (await page.locator("main").getByText("Agent payment", { exact: true }).count()) >= n, 20000);
-    check(`on-chain page lists the ${n} agent payments`, true);
-    await shot(page, "web-02-onchain");
+    await until("payment rows", async () => (await page.getByTestId("explorer-tx-row").filter({ hasText: "Agent payment" }).count()) >= n, 20000);
+    check(`explorer lists the ${n} agent payments`, true);
+    await page.getByTestId("explorer-tx-row").filter({ hasText: "Agent payment" }).first().click();
+    await page.getByTestId("explorer-tx").waitFor();
+    const tx = await page.getByTestId("explorer-tx").innerText();
+    check("explorer tx page: success, USDC Transfer log, no BaseScan on a local fork", /Success/i.test(tx) && /Transfer/.test(tx) && !/basescan/i.test(await page.content()));
+    await shot(page, "web-02-explorer");
   });
 
   await stp("web: sellers see their side", async () => {
@@ -164,7 +168,7 @@ async function webFlow(browser, _scenes, issues) {
     check("red-team text reaches the seller server", true);
     await page.getByRole("button", { name: "Clear", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "Cleared." }).first().waitFor();
-    const target = await page.getByLabel("Pocket to attack").inputValue();
+    const target = await page.getByLabel("Pocket to attack").last().inputValue(); // More tools (the arena has its own picker)
     const before = await usdcOf(target);
     await page.getByRole("button", { name: "Force the transfer" }).click();
     await page.getByText(/Reverted on-chain/).waitFor({ timeout: 30000 });
@@ -179,7 +183,7 @@ async function webFlow(browser, _scenes, issues) {
     const m = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const p = await m.newPage(); watch(p, "web-390", issues);
     await p.goto(`${base}/?server=${encodeURIComponent(API)}#live`);
-    for (const h of ["live", "pockets", "sellers", "chain", "judges"]) {
+    for (const h of ["live", "pockets", "sellers", "explorer", "evidence", "judges"]) {
       await p.goto(`${base}/#${h}`); await p.waitForTimeout(500);
       check(`no horizontal scroll on ${h} at 390 px`, (await p.evaluate(() => document.documentElement.scrollWidth)) <= 390);
     }
@@ -187,7 +191,7 @@ async function webFlow(browser, _scenes, issues) {
   });
 
   await stp("web: opens on the built-in network by default, nothing in the UI says so", async () => {
-    const d = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const d = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
     const p = await d.newPage();
     await p.route(`${API}/**`, (r) => r.abort()); // the built-in network needs no server
     await p.goto(`${base}/#live`);
@@ -195,7 +199,36 @@ async function webFlow(browser, _scenes, issues) {
     await until("story shows on Live", async () => (await p.getByRole("list", { name: "Agent trace" }).innerText()).length > 100, 15000);
     check("built-in network plays the story with no server", true);
     check("no demo/simulated/mock wording", !/demo|simulat|mock/i.test(await p.locator("body").innerText()));
-    check("testnet chip is the same", /Testnet .*no real money/.test(await p.locator("body").innerText()));
+    check("chip says Test network, never Base Sepolia", /Test network .*no real money/.test(await p.locator("body").innerText()) && !/Base Sepolia/.test(await p.locator("body").innerText()));
+    // the checks path lights the gates of the latest attempt
+    await p.getByTestId("checks-path").waitFor();
+    await until("a gate decided", async () => (await p.locator('[data-testid^="gate-"][data-state="pass"], [data-testid^="gate-"][data-state="stop"]').count()) > 0, 30000);
+    check("checks path shows gates passing or stopping", true);
+    // attack arena: privilege escalation in one tap -> refused, and the agent key's setCap reverts NOT_OWNER
+    await p.goto(`${base}/#judges`);
+    await p.getByTestId("arena-fire-escalation").click();
+    await until("escalation verdict", async () => /NOT_OWNER/.test(await p.getByTestId("arena-verdict-escalation").innerText()), 30000);
+    check("arena: escalation blocked with NOT_OWNER", true);
+    await p.getByTestId("arena-fire-induced").click();
+    await until("induced verdict", async () => /SELLER_NOT_ALLOWED/.test(await p.getByTestId("arena-verdict-induced").innerText()), 30000);
+    check("arena: the fooled agent's transfer reverts SELLER_NOT_ALLOWED", true);
+    check("arena scoreboard: nothing lost", (await p.getByTestId("arena-scoreboard").getAttribute("data-lost")) === "US$0.00" && /US\$0\.00 lost/.test(await p.getByTestId("arena-scoreboard").innerText()));
+    await shot(p, "web-04-arena");
+    // the reverted setCap opens in the in-app explorer, labelled Test network, no BaseScan
+    const href = await p.getByTestId("arena-verdict-escalation").locator('a[href*="explorer/tx"]').first().getAttribute("href");
+    await p.goto(`${base}/${href}`);
+    await p.getByTestId("explorer-tx").waitFor();
+    const t = await p.getByTestId("explorer-tx").innerText();
+    check("explorer: the agent key's setCap reverted NOT_OWNER", /NOT_OWNER/.test(t) && /setCap/.test(t));
+    check("explorer: no BaseScan link for built-in hashes", !/basescan/i.test(await p.content()));
+    // evidence: rows built from what ran, export works
+    await p.goto(`${base}/#evidence`);
+    await p.getByTestId("evidence-table").waitFor();
+    await until("escalation row passes", async () => (await p.getByTestId("evidence-row-A").getAttribute("data-status")) === "pass", 15000);
+    check("evidence: privilege escalation row passes with its hash", true);
+    const [dl] = await Promise.all([p.waitForEvent("download"), p.getByTestId("evidence-export-md").click()]);
+    const md = fs.readFileSync(await dl.path(), "utf8");
+    check("evidence Markdown: docs/evidence.md columns, Test network, no BaseScan", /\| Scene \| Expected \| Actual \| Tx \| What it proves \|/.test(md) && /Test network/.test(md) && !/basescan/i.test(md));
     await d.close();
   });
 
