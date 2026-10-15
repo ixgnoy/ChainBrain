@@ -38,10 +38,10 @@ const toHash = (r: Route) => (r.present ? "present" : r.tab) + (r.pocket ? `/${r
 export function Mark({ size = 36 }: { size?: number }) {
   return (
     <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden>
-      <rect width="64" height="64" rx="18" fill="#0F2236" />
-      <g fill="none" strokeWidth="5" strokeLinecap="round">
-        <rect x="11" y="24" width="26" height="16" rx="8" transform="rotate(-35 24 32)" stroke="#FFFFFF" />
-        <rect x="27" y="24" width="26" height="16" rx="8" transform="rotate(-35 40 32)" stroke="#3FB7C4" />
+      <rect width="64" height="64" rx="18" fill="#111215" />
+      <g fill="none" stroke="#FFFFFF" strokeWidth="5" strokeLinecap="round">
+        <rect x="11" y="24" width="26" height="16" rx="8" transform="rotate(-35 24 32)" />
+        <rect x="27" y="24" width="26" height="16" rx="8" transform="rotate(-35 40 32)" />
       </g>
     </svg>
   );
@@ -79,10 +79,10 @@ function Shell() {
   const following = !pinned;
 
   const nav = (
-    <nav aria-label="Main" className="fixed inset-x-3 bottom-3 z-30 flex gap-1 rounded-full bg-card p-1.5 shadow-[0_8px_24px_rgba(17,19,24,0.08)] md:static md:inset-auto md:bottom-auto md:z-auto md:bg-transparent md:p-0 md:shadow-none">
+    <nav aria-label="Main" className="fixed inset-x-3 bottom-3 z-30 flex gap-1 rounded-full bg-card p-1.5 shadow-level3 md:static md:inset-auto md:bottom-auto md:z-auto md:shadow-[var(--shadow-level1)]">
       {TABS.map(([id, label]) => (
         <button key={id} type="button" onClick={() => go({ tab: id })} aria-current={tab === id ? "page" : undefined}
-          className={cn("h-11 min-w-0 flex-1 whitespace-nowrap rounded-full px-1 text-[12.5px] font-semibold transition-colors md:h-11 md:flex-none md:px-5 md:text-[15px] md:font-medium", tab === id ? "bg-accent-soft text-accent" : "text-ink2 hover:bg-fill md:hover:bg-card")}>{label}</button>
+          className={cn("pressable h-11 min-w-0 flex-1 whitespace-nowrap rounded-full px-0.5 text-[12px] font-bold md:h-11 md:flex-none md:px-5 md:text-[15px]", tab === id ? "bg-ink text-on-accent" : "text-ink2 hover:bg-tile")}>{label}</button>
       ))}
     </nav>
   );
@@ -91,15 +91,15 @@ function Shell() {
         <div className="min-h-dvh">
       {present ? (
         <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 pb-1 pt-2 sm:px-8">
-          <div className="flex min-w-0 items-center gap-3 text-[15px] font-semibold"><Mark size={28} />ChainBrain</div>
+          <div className="flex min-w-0 items-center gap-3 text-[17px] font-extrabold tracking-[-0.03em]"><Mark size={30} />ChainBrain</div>
           <div className="min-w-0 max-sm:order-3 max-sm:w-full sm:ml-3 [&_label]:max-w-full"><PocketPicker value={pocket} onChange={(a) => go({ pocket: a })} /></div>
           <span className="ml-auto mr-2 hidden sm:block"><Protected big /></span>
-          <button type="button" onClick={() => go({ present: false })} className="inline-flex h-10 items-center gap-2 rounded-full px-4 text-[14px] font-semibold text-ink2 hover:bg-card"><X className="size-4" strokeWidth={1.75} />Exit presenter<Kbd className="ml-1 hidden sm:inline-flex">Esc</Kbd></button>
+          <button type="button" onClick={() => go({ present: false })} className="pressable inline-flex h-10 items-center gap-2 rounded-full bg-card px-4 text-[14px] font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile"><X className="size-4" strokeWidth={1.75} />Exit presenter<Kbd className="ml-1 hidden sm:inline-flex">Esc</Kbd></button>
         </div>
       ) : (
         <header className="sticky top-0 z-30 bg-canvas">
-          <div className="mx-auto flex max-w-[1680px] items-center gap-x-6 px-4 py-3 sm:px-8 sm:py-4">
-            <div className="flex items-center gap-3"><Mark /><div className="leading-tight"><div className="text-[17px] font-bold">ChainBrain</div><div className="text-[13px] text-muted">Network console</div></div></div>
+          <div className="mx-auto flex max-w-[1680px] items-center gap-x-8 px-4 py-3 sm:px-8 sm:py-4">
+            <div className="flex items-center gap-3"><Mark /><div className="leading-tight"><div className="text-[19px] font-extrabold tracking-[-0.03em]">ChainBrain</div><div className="eyebrow mt-0.5 text-muted-canvas">Network console</div></div></div>
             <div className="hidden md:block">{nav}</div>
             <div className="ml-auto flex items-center gap-2"><span className="hidden lg:block"><TestnetChip /></span><Settings presenter={() => go({ present: true })} /></div>
           </div>
@@ -112,8 +112,8 @@ function Shell() {
             {!present && <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
               <PocketPicker value={pocket} onChange={(a) => go({ pocket: a })} />
               <Protected className="max-sm:order-last" />
-              {linked && following && <span data-testid="following" className="inline-flex items-center gap-2 text-[14px] font-medium text-ink2"><span className="size-2 rounded-full bg-accent" aria-hidden />Following your phone</span>}
-              {!following && <button type="button" onClick={() => go({ pocket: null })} className="inline-flex h-11 items-center rounded-full px-3 text-[14px] font-semibold text-accent hover:bg-accent-soft">{linked ? "Follow your phone" : "Follow the story"}</button>}
+              {linked && following && <span data-testid="following" className="inline-flex items-center gap-2 text-[14px] font-semibold text-ink2"><span className="size-2 rounded-full bg-green" aria-hidden />Following your phone</span>}
+              {!following && <button type="button" onClick={() => go({ pocket: null })} className="pressable inline-flex h-11 items-center rounded-full bg-card px-4 text-[14px] font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile">{linked ? "Follow your phone" : "Follow the story"}</button>}
             </div>}
             <Live pocket={pocket} present={present} goJudges={() => go({ tab: "judges" })} />
           </>

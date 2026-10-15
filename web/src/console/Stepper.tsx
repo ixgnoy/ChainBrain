@@ -94,9 +94,10 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
   const storyLine = storyScene === "A" ? "Playing · privilege escalation" : storyScene ? `Playing · scene ${storyScene}` : "";
   const line = failed ? mine.text : driven ? storyLine : mine?.busy ? (linked ? "Sent to the phone…" : "Playing…") : status.text;
   const kind = failed ? "error" : driven ? "working" : status.kind;
-  const tone = cn("font-medium", failed ? "text-negative" : kind === "done" ? "text-accent" : kind === "working" || kind === "idle" ? "text-ink2" : "text-ink");
+  // the bar is black: statuses read as white, a finished scene in green, a failure in the soft vermillion
+  const tone = cn("font-medium", failed ? "text-vermillion-soft" : kind === "done" ? "text-green" : kind === "working" || kind === "idle" ? "text-white/70" : "text-white");
   return (
-    <section ref={root} aria-label="Scenes" className="fixed inset-x-3 bottom-3 z-30 mx-auto max-w-[1100px] rounded-[20px] bg-card px-3 py-2.5 shadow-[0_8px_24px_rgba(17,19,24,0.08)] sm:px-4">
+    <section ref={root} aria-label="Scenes" className="fixed inset-x-3 bottom-3 z-30 mx-auto max-w-[1100px] rounded-[28px] bg-ink px-3 py-2.5 text-on-accent shadow-level3 sm:px-4">
       <div className="flex items-center gap-3">
         <ol className="chip-row flex min-w-0 shrink-0 gap-1 overflow-x-auto max-md:flex-1">
           {scenes.map((x, n) => {
@@ -104,7 +105,7 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
             return (
               <li key={x.id} className="shrink-0">
                 <button type="button" title={`${x.title}${copyFor(x.id) ? `: ${copyFor(x.id)!.seeing}` : ""}`} onClick={() => setI(n)} aria-label={`Scene ${x.id}: ${x.title}${fin ? " (finished)" : ""}`} aria-current={on ? "step" : undefined}
-                  className={cn("num grid size-11 place-items-center rounded-full text-[14px] font-semibold transition-colors md:size-10", on ? (driven ? "bg-accent text-on-accent ring-2 ring-accent ring-offset-2" : "bg-accent text-on-accent") : fin ? "bg-ink text-on-accent hover:bg-ink2" : "bg-fill text-ink2 hover:bg-line")}>
+                  className={cn("pressable num grid size-11 place-items-center rounded-full text-[14px] font-bold md:size-10", on ? (driven ? "bg-white text-ink ring-2 ring-vermillion ring-offset-2 ring-offset-ink" : "bg-white text-ink") : fin ? "bg-white/20 text-white hover:bg-white/30" : "bg-white/10 text-white/70 hover:bg-white/20")}>
                   {fin && !on ? <Check className="size-4" strokeWidth={2.5} aria-hidden /> : x.id}
                 </button>
               </li>
@@ -112,19 +113,19 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
           })}
         </ol>
         <div className="hidden min-w-0 flex-1 items-center gap-x-3 md:flex">
-          <span className="shrink-0 text-[15px] font-semibold">{s.title}</span>
+          <span className="shrink-0 text-[15px] font-bold tracking-[-0.01em]">{s.title}</span>
           {c && <Pill tone={c.tone} className="shrink-0">{c.outcome}</Pill>}
-          <p role="status" data-testid="stepper-status" data-kind={kind} className={cn("min-w-0 truncate text-[14px] leading-5", tone)}>{line}{!failed && !driven && status.kind === "done" && started && <span className="font-normal text-muted"> · scene {started.id} finished</span>}</p>
+          <p role="status" data-testid="stepper-status" data-kind={kind} className={cn("min-w-0 truncate text-[14px] leading-5", tone)}>{line}{!failed && !driven && status.kind === "done" && started && <span className="font-normal text-white/60"> · scene {started.id} finished</span>}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <button type="button" aria-label="Keyboard shortcuts" aria-expanded={help} onClick={() => setHelp((h) => !h)} className="hidden size-10 place-items-center rounded-full text-muted hover:bg-fill hover:text-ink md:grid"><CircleHelp className="size-5" strokeWidth={1.75} aria-hidden /></button>
-          {mine?.ok && s.followUp && mine.step === "scene" && <Button variant="outline" className="h-10 px-4" disabled={mine.busy} onClick={() => void begin(() => followUp(s))}>Then send</Button>}
-          <Button className="h-11 px-5 max-md:size-11 max-md:px-0 md:h-10" aria-label={`Play scene ${s.id}`} disabled={!canPlay || !!state?.busy || driven} onClick={() => void begin(() => play(s))}><Play className="size-4" strokeWidth={1.75} /><span className="max-md:sr-only">{mine?.busy ? "Playing…" : driven ? "Story playing" : "Play"}</span></Button>
+          <button type="button" aria-label="Keyboard shortcuts" aria-expanded={help} onClick={() => setHelp((h) => !h)} className="pressable hidden size-10 place-items-center rounded-full text-white/70 hover:bg-white/10 hover:text-white md:grid"><CircleHelp className="size-5" strokeWidth={1.75} aria-hidden /></button>
+          {mine?.ok && s.followUp && mine.step === "scene" && <Button variant="outline" className="h-10 bg-white/10 px-4 text-white shadow-none hover:bg-white/20" disabled={mine.busy} onClick={() => void begin(() => followUp(s))}>Then send</Button>}
+          <Button variant="hot" className="h-11 px-5 max-md:size-11 max-md:px-0 md:h-10" aria-label={`Play scene ${s.id}`} disabled={!canPlay || !!state?.busy || driven} onClick={() => void begin(() => play(s))}><Play className="size-4" strokeWidth={1.75} /><span className="max-md:sr-only">{mine?.busy ? "Playing…" : driven ? "Story playing" : "Play"}</span></Button>
         </div>
       </div>
       {help && (
-        <div data-testid="shortcuts" role="dialog" aria-label="Keyboard shortcuts" className="absolute bottom-full right-0 mb-2 w-[min(320px,100%)] rounded-[20px] bg-card p-4 shadow-[0_8px_24px_rgba(17,19,24,0.08)]">
-          <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted">Shortcuts</h3>
+        <div data-testid="shortcuts" role="dialog" aria-label="Keyboard shortcuts" className="absolute bottom-full right-0 mb-3 w-[min(320px,100%)] rounded-[24px] bg-card p-5 text-ink shadow-level3">
+          <h3 className="eyebrow mb-3 text-muted">Shortcuts</h3>
           <dl className="space-y-2 text-[14px]">
             {([["Space / Enter", "Play the selected scene"], ["← →", "Previous / next scene"], ["R", "Reset the scorecard"], ["E", "Open Evidence"], ["?", "This list"], ["Esc", "Exit presenter"]] as const).map(([k, v]) => <div key={k} className="flex items-center justify-between gap-4"><dt><Kbd>{k}</Kbd></dt><dd className="text-ink2">{v}</dd></div>)}
           </dl>

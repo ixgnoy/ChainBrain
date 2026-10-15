@@ -22,20 +22,20 @@ export function useReducedMotion(): boolean {
   return r;
 }
 
-// A gate that stopped an attack is a win, not a failure: navy shield (held here), teal when the agent itself refused. Red is kept for money that moved.
+// A passed gate is ink; the gate that refused is vermillion (a win for the wallet, shown with its reason code); a fooled agent is powder blue.
 const NODE: Record<GateState, string> = {
-  pass: "bg-accent text-on-accent",
-  stop: "bg-ink text-on-accent",
-  skip: "bg-fill text-faint",
-  fooled: "bg-warning-soft text-warning ring-2 ring-warning",
-  idle: "bg-canvas text-faint ring-1 ring-inset ring-line",
+  pass: "bg-ink text-on-accent",
+  stop: "bg-vermillion text-on-accent",
+  skip: "bg-tile text-faint ring-1 ring-inset ring-line",
+  fooled: "bg-blue-soft text-blue-ink ring-2 ring-blue-ink",
+  idle: "bg-card text-faint ring-1 ring-inset ring-line",
 };
 const GroupBg = "gate-group";
 
-export function GateIcon({ state, layer, size = 32, draw }: { state: GateState; layer?: string; size?: number; draw?: boolean }) {
+export function GateIcon({ state, size = 32, draw }: { state: GateState; layer?: string; size?: number; draw?: boolean }) {
   const cls = "size-[55%]";
   return (
-    <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-full transition-colors duration-200", NODE[state], state === "stop" && layer === "agent" && "bg-accent")} style={{ width: size, height: size }}>
+    <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-full transition-colors duration-200", NODE[state])} style={{ width: size, height: size }}>
       {state === "pass" ? <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" className={draw ? "tick-draw" : undefined} /></svg>
         : state === "stop" ? <ShieldCheck className={cls} strokeWidth={2.25} />
         : state === "fooled" ? <TriangleAlert className={cls} strokeWidth={2.25} />
@@ -48,7 +48,7 @@ export function GateIcon({ state, layer, size = 32, draw }: { state: GateState; 
 /** A reason code, always on one line (it may be wider than a narrow gate and then centres on it). */
 export function CodePill({ code, layer, className, testId }: { code: string; layer?: string; className?: string; testId?: string }) {
   return (
-    <span data-testid={testId} className={cn("inline-flex shrink-0 items-center whitespace-nowrap rounded-[10px] px-2 py-1 text-[11px] font-bold leading-[14px] tracking-[0.01em]", layer === "agent" ? "bg-accent-soft text-accent" : "bg-ink text-on-accent", className)}>
+    <span data-testid={testId} className={cn("inline-flex shrink-0 items-center whitespace-nowrap rounded-[10px] px-2 py-1 text-[11px] font-extrabold leading-[14px] tracking-[0.04em]", layer === "agent" ? "bg-vermillion-soft text-vermillion-ink" : "bg-vermillion text-on-accent", className)}>
       <span>{code}</span>
     </span>
   );
@@ -93,7 +93,7 @@ export function ChecksPath({ attempt, run = 0, big, compact }: { attempt?: Attem
   const groups = useMemo(() => groupGates(gates), [gates]);
   const fold = attempt ? collapsiblePrefix(gates) : 0;
   const showRing = !reduced && !!pos && !!attempt;
-  const ringColor = tone === "stop" ? "border-ink" : tone === "fooled" ? "border-warning" : "border-accent";
+  const ringColor = tone === "stop" ? "border-vermillion" : tone === "fooled" ? "border-blue-ink" : "border-ink";
 
   return (
     <div ref={wrap} data-testid="checks-path" data-kind={attempt?.kind ?? "none"} data-verdict={attempt?.verdict ?? "none"} data-attempt={attempt?.id} data-done={finished ? "true" : "false"} className="relative">
@@ -105,8 +105,8 @@ export function ChecksPath({ attempt, run = 0, big, compact }: { attempt?: Attem
           <Fragment key={g.layer}>
             {gi > 0 && <span aria-hidden className={cn("gate-arrow", (hidden(g) || hidden(groups[gi - 1])) && "max-lg:hidden")}><ArrowRight className="size-4" strokeWidth={1.75} /></span>}
             <section aria-label={g.title} className={cn(GroupBg, hidden(g) && "max-lg:hidden")} style={{ flexGrow: g.layer === "contract" ? g.gates.length : 1.4, flexBasis: 0 }}>
-              <h3 className="text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-muted lg:text-center">{g.title}</h3>
-              <p data-testid={`layer-${g.layer}`} className={cn("mb-3 mt-0.5 text-[12px] leading-4 lg:text-center", LAYER_TAG[g.layer].strong ? "font-semibold text-accent" : "text-muted")}>{LAYER_TAG[g.layer].text}</p>
+              <h3 className="eyebrow text-ink lg:text-center">{g.title}</h3>
+              <p data-testid={`layer-${g.layer}`} className={cn("mb-3 mt-0.5 text-[12px] leading-4 lg:text-center", LAYER_TAG[g.layer].strong ? "font-bold text-ink" : "text-muted")}>{LAYER_TAG[g.layer].text}</p>
               <ol className="gate-list">
                 {g.gates.map((gate, k) => {
                   const idx = g.offset + k;
@@ -119,10 +119,10 @@ export function ChecksPath({ attempt, run = 0, big, compact }: { attempt?: Attem
                         <GateIcon state={state} layer={gate.layer} draw={!reduced} />
                       </span>
                       <div className="gate-body">
-                        <div title={gate.title} className={cn("font-semibold leading-[18px]", big ? "text-[15px]" : "text-[13px]", state === "idle" ? "text-faint" : "text-ink")}>{compact ? <><span aria-hidden>{SHORT[gate.id] ?? gate.title}</span><span className="sr-only">{gate.title}</span></> : gate.title}<span className="sr-only"> {SR[state]}</span></div>
+                        <div title={gate.title} className={cn("font-bold leading-[18px] tracking-[-0.01em]", big ? "text-[15px]" : "text-[13px]", state === "idle" ? "text-faint" : "text-ink")}>{compact ? <><span aria-hidden>{SHORT[gate.id] ?? gate.title}</span><span className="sr-only">{gate.title}</span></> : gate.title}<span className="sr-only"> {SR[state]}</span></div>
                         {state === "stop" && shown.code && <div className="mt-1.5 flex max-lg:justify-start lg:justify-center"><CodePill code={shown.code} layer={gate.layer} testId={`gate-${gate.id}-code`} /></div>}
                         {state === "stop" && shown.note && <p className="mt-1 text-[12px] leading-4 text-ink2">{shown.note}</p>}
-                        {state === "fooled" && <><span className="mt-1.5 inline-flex items-center rounded-full bg-warning-soft px-2.5 py-1 text-[12px] font-bold leading-4 text-warning">Fooled</span>{shown.note && <p className="mt-1 text-[12px] leading-4 text-ink2">{shown.note}</p>}</>}
+                        {state === "fooled" && <><span className="mt-1.5 inline-flex items-center rounded-full bg-blue-soft px-2.5 py-1 text-[12px] font-bold leading-4 text-blue-ink">Fooled</span>{shown.note && <p className="mt-1 text-[12px] leading-4 text-ink2">{shown.note}</p>}</>}
                         {state === "skip" && <p className="mt-0.5 text-[12px] leading-4 text-muted"><span className="font-semibold">{w.word}</span>{w.text && !compact ? ` · ${w.text}` : ""}</p>}
                         {state === "pass" && shown.note && <p className="mt-0.5 text-[12px] leading-4 text-muted">{shown.note}</p>}
                       </div>
@@ -144,7 +144,7 @@ export function ChecksPath({ attempt, run = 0, big, compact }: { attempt?: Attem
   );
 }
 
-const VERDICT_TONE: Record<string, string> = { Paid: "bg-accent-soft text-accent", "Not stopped": "bg-negative text-on-accent", Blocked: "bg-ink text-on-accent", Refused: "bg-ink text-on-accent" };
+const VERDICT_TONE: Record<string, string> = { Paid: "bg-green-soft text-green-ink", "Not stopped": "bg-vermillion text-on-accent", Blocked: "bg-vermillion-soft text-vermillion-ink", Refused: "bg-vermillion-soft text-vermillion-ink" };
 
 /** The sentence under the path: what happened, which gate decided, and the code. */
 export function AttemptHeadline({ a, show = true, big }: { a: Attempt; show?: boolean; big?: boolean }) {
@@ -153,24 +153,24 @@ export function AttemptHeadline({ a, show = true, big }: { a: Attempt; show?: bo
   const word = attemptWord(a);
   const kept = (a.kind === "hijack" || a.kind === "forced") && a.verdict === "blocked" && !!a.amount;
   return (
-    <div data-testid="checks-headline" className={cn("flex items-start gap-3 rounded-[14px] bg-canvas px-4 py-3.5 transition-opacity duration-200", show ? "opacity-100" : "opacity-0")}>
-      <span aria-hidden className={cn("mt-0.5 grid size-7 shrink-0 place-items-center rounded-full", a.aiFooled ? "bg-warning-soft text-warning" : a.verdict === "paid" && !a.attack ? "bg-accent-soft text-accent" : "bg-accent-soft text-accent")}>
+    <div data-testid="checks-headline" className={cn("tile flex items-start gap-3 px-4 py-3.5 transition-opacity duration-200", show ? "opacity-100" : "opacity-0")}>
+      <span aria-hidden className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-[10px]", a.aiFooled ? "bg-blue-soft text-blue-ink" : a.verdict === "paid" ? "bg-green-soft text-green-ink" : "bg-vermillion-soft text-vermillion-ink")}>
         {a.aiFooled ? <TriangleAlert className="size-4" strokeWidth={2} /> : a.verdict === "paid" ? <Check className="size-4" strokeWidth={2.5} /> : <ShieldCheck className="size-4" strokeWidth={2} />}
       </span>
       <div className="min-w-0 flex-1">
-        <p className={cn("font-semibold leading-6 [overflow-wrap:anywhere]", big ? "text-[19px] leading-7" : "text-[16px]")}>{main}</p>
+        <p className={cn("font-bold tracking-[-0.01em] leading-6 [overflow-wrap:anywhere]", big ? "text-[20px] leading-7" : "text-[16px]")}>{main}</p>
         {sub && <p className={cn("mt-0.5 text-ink2 [overflow-wrap:anywhere]", big ? "text-[16px] leading-6" : "text-[14px] leading-5")}>{sub}</p>}
-        {kept && <p data-testid="checks-kept" className={cn("mt-1 font-semibold text-accent", big ? "text-[16px] leading-6" : "text-[14px] leading-5")}>US${a.amount} would have left the pocket. US$0.00 did.</p>}
+        {kept && <p data-testid="checks-kept" className={cn("mt-1 font-bold text-green-ink", big ? "text-[16px] leading-6" : "text-[14px] leading-5")}>US${a.amount} would have left the pocket. US$0.00 did.</p>}
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1.5">
-        <span className={cn("inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-semibold", VERDICT_TONE[word])}>{word}</span>
+        <span className={cn("inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-bold", VERDICT_TONE[word])}>{word}</span>
         {stop && a.code && <span className="hidden sm:block"><CodePill code={a.code} layer={stop.layer} /></span>}
       </div>
     </div>
   );
 }
 
-const DOT: Record<string, string> = { paid: "bg-accent", blocked: "bg-ink", refused: "bg-accent" };
+const DOT: Record<string, string> = { paid: "bg-green", blocked: "bg-vermillion", refused: "bg-vermillion" };
 
 export function AttemptStrip({ attempts, selected, onSelect, limit = 14 }: { attempts: Attempt[]; selected?: string; onSelect(id: string): void; limit?: number }) {
   const shown = [...attempts].reverse().slice(0, limit);
@@ -182,9 +182,9 @@ export function AttemptStrip({ attempts, selected, onSelect, limit = 14 }: { att
         return (
           <li key={a.id} className="snap-start">
             <button type="button" data-testid="attempt-chip" data-kind={a.kind} data-verdict={a.verdict} aria-pressed={on} onClick={() => onSelect(a.id)}
-              className={cn("flex min-h-11 w-[200px] items-start gap-2 rounded-[14px] px-3.5 py-2 text-left text-[13px] transition-colors", on ? "bg-ink text-on-accent" : "bg-canvas text-ink2 hover:bg-fill")}>
-              <span aria-hidden className={cn("mt-[5px] size-2 shrink-0 rounded-full", a.aiFooled ? "bg-warning" : on ? "bg-white" : DOT[a.verdict])} />
-              <span className="min-w-0 flex-1"><span className="flex items-baseline justify-between gap-2"><span className="font-semibold">{attemptWord(a)}</span><span className={cn("num text-[12px]", on ? "opacity-70" : "text-muted")}>{clock(a.at)}</span></span><span className={cn("block truncate text-[12px] leading-4", on ? "opacity-80" : "text-muted")}>{a.title}</span></span>
+              className={cn("pressable flex min-h-11 w-[200px] items-start gap-2 rounded-[16px] px-3.5 py-2 text-left text-[13px]", on ? "bg-ink text-on-accent" : "bg-tile text-ink2 shadow-[inset_0_0_0_1px_var(--color-tile-stroke)] hover:bg-line")}>
+              <span aria-hidden className={cn("mt-[5px] size-2 shrink-0 rounded-full", a.aiFooled ? "bg-blue" : DOT[a.verdict])} />
+              <span className="min-w-0 flex-1"><span className="flex items-baseline justify-between gap-2"><span className="font-bold">{attemptWord(a)}</span><span className={cn("num text-[12px]", on ? "opacity-70" : "text-muted")}>{clock(a.at)}</span></span><span className={cn("block truncate text-[12px] leading-4", on ? "opacity-80" : "text-muted")}>{a.title}</span></span>
             </button>
           </li>
         );
@@ -211,15 +211,15 @@ export function ChecksPanel({ attempts, present }: { attempts: Attempt[]; presen
     return () => clearTimeout(t);
   }, [key, reduced]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <section aria-label="Checks path" className={cn("flex flex-col rounded-[20px] bg-card p-4 sm:p-5", present && "xl:p-4")}>
+    <section aria-label="Checks path" className={cn("card flex flex-col p-4 sm:p-5", present && "xl:p-4")}>
       <header className="order-1 mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h2 className="text-[15px] font-semibold leading-5">Checks path</h2>
+        <h2 className="text-[22px] font-bold leading-7 tracking-[-0.02em]">Checks path</h2>
         <span className="order-last w-full min-w-0 text-[13px] leading-5 text-muted sm:order-none sm:w-auto sm:flex-1 sm:truncate">{current ? <>{current.title} · <span className="num">{clock(current.at)}</span>{pinned ? " · earlier attempt" : ""}</> : "Every payment and every attack travels this path"}</span>
-        {current && <button type="button" onClick={() => setRun((x) => x + 1)} className="relative inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold text-accent before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-accent-soft"><RotateCcw className="size-3.5" strokeWidth={2} aria-hidden />Replay</button>}
-        {pinned && <button type="button" onClick={() => { setPicked(undefined); setRun((x) => x + 1); }} className="relative inline-flex h-8 items-center rounded-full px-2.5 text-[13px] font-semibold text-accent before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-accent-soft">Back to latest</button>}
+        {current && <button type="button" onClick={() => setRun((x) => x + 1)} className="pressable relative inline-flex h-9 items-center gap-1.5 rounded-full bg-tile px-3.5 text-[13px] font-bold text-ink shadow-[inset_0_0_0_1px_var(--color-tile-stroke)] before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] hover:bg-line"><RotateCcw className="size-3.5" strokeWidth={2} aria-hidden />Replay</button>}
+        {pinned && <button type="button" onClick={() => { setPicked(undefined); setRun((x) => x + 1); }} className="pressable relative inline-flex h-9 items-center rounded-full bg-blue px-3.5 text-[13px] font-bold text-blue-ink before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] hover:bg-blue-press">Back to latest</button>}
       </header>
       <div className="order-3 sm:order-2"><ChecksPath attempt={current} run={run} big={present} compact={present} /></div>
-      {current ? <div className="order-2 mb-3 sm:order-3 sm:mb-0 sm:mt-4"><AttemptHeadline a={current} show={doneKey === key} big={present} /></div> : <p className="order-3 mt-4 rounded-[14px] bg-canvas px-4 py-3.5 text-[14px] text-ink2">Waiting for the first payment or attack on this pocket.</p>}
+      {current ? <div className="order-2 mb-3 sm:order-3 sm:mb-0 sm:mt-4"><AttemptHeadline a={current} show={doneKey === key} big={present} /></div> : <p className="tile order-3 mt-4 px-4 py-3.5 text-[14px] text-ink2">Waiting for the first payment or attack on this pocket.</p>}
       <div className="order-4">{!present && <AttemptStrip attempts={attempts} selected={current?.id} onSelect={(id) => { setPicked(id === latest?.id ? undefined : id); setRun((x) => x + 1); }} />}</div>
     </section>
   );

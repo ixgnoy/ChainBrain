@@ -42,7 +42,7 @@ export async function seedOwnerHistory(w: World, owner: Hex, o: { startUsdc?: st
   const ownerTxs: OwnerTxSeed[] = [];
   const now = w.now();
   w.chain.mint(owner, parseUsd(o.startUsdc ?? "81.00"), 2n * 10n ** 17n);
-  const create = (name: string, agent: Hex, cap: string, ask: string | null, sellers: string[], expiresAt: bigint, fund: string) => {
+  const create = (_name: string, agent: Hex, cap: string, ask: string | null, sellers: string[], expiresAt: bigint, fund: string) => {
     const t = w.now();
     const { pocket, tx } = w.chain.createPocket(owner, { agent, cap: parseUsd(cap), askAbove: ask === null ? NEVER : parseUsd(ask), expiresAt, sellers: payTo(...sellers) }, t);
     ownerTxs.push({ pocket, kind: "create", hash: tx, at: t });

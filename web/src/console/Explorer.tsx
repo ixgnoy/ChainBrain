@@ -60,15 +60,15 @@ function useChain() {
 function Crumbs({ here }: { here: string }) {
   return (
     <nav aria-label="Explorer" className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px]">
-      <button type="button" onClick={() => history.back()} aria-label="Back" className="mr-1 inline-flex h-11 items-center gap-1.5 rounded-full px-3 font-semibold text-accent hover:bg-accent-soft"><ArrowLeft className="size-4" strokeWidth={2} aria-hidden />Back</button>
-      <a href={explorerHref.home} className="font-semibold text-accent hover:underline">Explorer</a><span className="text-faint" aria-hidden>›</span><span className="text-ink2">{here}</span>
+      <button type="button" onClick={() => history.back()} aria-label="Back" className="pressable mr-1 inline-flex h-11 items-center gap-1.5 rounded-full bg-card px-4 font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile"><ArrowLeft className="size-4" strokeWidth={2} aria-hidden />Back</button>
+      <a href={explorerHref.home} className="font-bold text-ink hover:underline">Explorer</a><span className="text-faint" aria-hidden>›</span><span className="text-ink2">{here}</span>
     </nav>
   );
 }
 
 function CopyButton({ text }: { text: string }) {
   const [ok, setOk] = useState(false);
-  return <button type="button" onClick={() => void navigator.clipboard?.writeText(text).then(() => { setOk(true); setTimeout(() => setOk(false), 1400); })} className="relative inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] hover:underline">{ok ? <Check className="size-4" /> : <Copy className="size-4" strokeWidth={1.75} />}{ok ? "Copied" : "Copy"}</button>;
+  return <button type="button" onClick={() => void navigator.clipboard?.writeText(text).then(() => { setOk(true); setTimeout(() => setOk(false), 1400); })} className="relative inline-flex items-center gap-1.5 text-[13px] font-bold text-ink before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] hover:underline">{ok ? <Check className="size-4" /> : <Copy className="size-4" strokeWidth={1.75} />}{ok ? "Copied" : "Copy"}</button>;
 }
 
 function Addr({ address, full }: { address?: string; full?: boolean }) {
@@ -77,8 +77,8 @@ function Addr({ address, full }: { address?: string; full?: boolean }) {
   const k = who.kindOf(address);
   return (
     <span className="inline-flex min-w-0 flex-wrap items-baseline gap-x-2">
-      {k.name && <span className="font-medium text-ink">{k.name}</span>}
-      <a href={explorerHref.address(address)} className="num break-all text-accent hover:underline">{full ? address : shortAddr(address)}</a>
+      {k.name && <span className="font-bold text-ink">{k.name}</span>}
+      <a href={explorerHref.address(address)} className="num break-all text-ink underline decoration-line decoration-2 underline-offset-4 hover:decoration-vermillion">{full ? address : shortAddr(address)}</a>
     </span>
   );
 }
@@ -87,7 +87,7 @@ function Rows({ rows }: { rows: [string, ReactNode][] }) {
   return (
     <dl className="divide-y divide-line text-[14px]">
       {rows.filter(([, v]) => v != null && v !== "").map(([k, v]) => (
-        <div key={k} className="grid gap-x-6 gap-y-0.5 py-3 sm:grid-cols-[180px_1fr]"><dt className="text-muted">{k}</dt><dd className="min-w-0 break-words font-medium">{v}</dd></div>
+        <div key={k} className="grid gap-x-6 gap-y-0.5 py-3 sm:grid-cols-[180px_1fr]"><dt className="text-muted">{k}</dt><dd className="min-w-0 break-words font-semibold">{v}</dd></div>
       ))}
     </dl>
   );
@@ -100,23 +100,23 @@ function FieldValue({ f }: { f: Field }) {
 }
 
 function StatusPill({ status }: { status: "success" | "reverted" }) {
-  return status === "success" ? <Pill tone="mint"><Check className="mr-1 size-3.5" strokeWidth={2.5} aria-hidden />Success</Pill> : <Pill tone="neutral">Reverted</Pill>;
+  return status === "success" ? <Pill tone="mint"><Check className="mr-1 size-3.5" strokeWidth={2.5} aria-hidden />Success</Pill> : <Pill tone="negative">Reverted</Pill>;
 }
 
 function TxLine({ t }: { t: ChainTx }) {
   const { net, who } = useChain();
   const cp = t.counterparty;
   return (
-    <div data-testid="explorer-tx-row" data-status={t.status ?? "success"} className="txline relative px-4 py-3 transition-colors hover:bg-canvas sm:px-5">
+    <div data-testid="explorer-tx-row" data-status={t.status ?? "success"} className="txline relative px-4 py-3.5 transition-colors hover:bg-tile sm:px-5">
       <a href={explorerHref.tx(t.hash)} aria-label={`${txLabel(t)} ${t.hash}`} className="absolute inset-0 z-0" />
       <span className="tl-pill pointer-events-none relative"><StatusPill status={t.status ?? "success"} /></span>
-      <span className="tl-title pointer-events-none relative min-w-0 break-words text-[14px] font-medium leading-5">{txLabel(t)}{t.method && <span className="num ml-2 text-[12px] font-normal text-muted">{t.method}</span>}</span>
+      <span className="tl-title pointer-events-none relative min-w-0 break-words text-[15px] font-bold leading-5 tracking-[-0.01em]">{txLabel(t)}{t.method && <span className="num ml-2 text-[12px] font-normal text-muted">{t.method}</span>}</span>
       <span className="tl-sub relative min-w-0 break-words text-[12px] leading-4 text-muted">
-        <a href={explorerHref.address(t.pocket)} className="relative z-10 text-accent hover:underline">{net.nameOf(t.pocket)}</a>
-        {cp && <> {t.kind === "payment" ? "to" : t.kind === "fund" ? "from" : "with"} <a href={explorerHref.address(cp)} className="relative z-10 text-accent hover:underline">{who.nameOf(cp) ?? shortAddr(cp)}</a></>}
+        <a href={explorerHref.address(t.pocket)} className="relative z-10 font-semibold text-ink underline decoration-line decoration-2 underline-offset-2 hover:decoration-vermillion">{net.nameOf(t.pocket)}</a>
+        {cp && <> {t.kind === "payment" ? "to" : t.kind === "fund" ? "from" : "with"} <a href={explorerHref.address(cp)} className="relative z-10 font-semibold text-ink underline decoration-line decoration-2 underline-offset-2 hover:decoration-vermillion">{who.nameOf(cp) ?? shortAddr(cp)}</a></>}
         {t.block > 0n && <> · block {String(t.block)}</>}
       </span>
-      <span className="tl-amount pointer-events-none relative num text-[15px] font-semibold leading-5">{t.amount != null && t.amount > 0n ? usd(t.amount) : ""}</span>
+      <span className="tl-amount pointer-events-none relative num text-[16px] font-extrabold leading-5 tracking-[-0.02em]">{t.amount != null && t.amount > 0n ? usd(t.amount) : ""}</span>
       <span className="tl-hash pointer-events-none relative num break-all text-[12px] leading-4 text-muted sm:text-right">{t.hash.slice(0, 10)}…{t.hash.slice(-6)}{t.at ? ` · ${ago(t.at)}` : ""}</span>
     </div>
   );
@@ -128,13 +128,13 @@ function SearchBox() {
   const go = (e: FormEvent) => { e.preventDefault(); const t = searchTarget(q); if (t) { setBad(false); location.hash = t.slice(1); setQ(""); } else setBad(!!q.trim()); };
   return (
     <form onSubmit={go} role="search" className="mb-5">
-      <label className="relative flex h-12 items-center rounded-full bg-card pl-5 pr-2 focus-within:outline-2 focus-within:outline-accent">
+      <label className="card relative flex h-14 items-center rounded-full pl-5 pr-2 focus-within:outline-2 focus-within:outline-ink">
         <Search className="mr-3 size-4 shrink-0 text-muted" strokeWidth={1.75} aria-hidden />
         <input aria-label="Search the explorer" value={q} onChange={(e) => { setQ(e.target.value); setBad(false); }} placeholder="Transaction hash, address or block number" spellCheck={false} autoCapitalize="off"
           className="num min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-faint" />
-        <Button type="submit" className="h-9 px-4 text-[14px]">Search</Button>
+        <Button type="submit" className="h-10 px-5 text-[14px]">Search</Button>
       </label>
-      {bad && <p role="alert" className="mt-2 pl-5 text-[13px] text-negative">That is not a transaction hash, an address or a block number.</p>}
+      {bad && <p role="alert" className="mt-2 pl-5 text-[13px] font-semibold text-vermillion-ink">That is not a transaction hash, an address or a block number.</p>}
     </form>
   );
 }
@@ -162,18 +162,18 @@ function Home() {
       ]} />
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.5fr)]">
         <section>
-          <h2 className="mb-3 text-[15px] font-semibold leading-5">Latest blocks</h2>
+          <h2 className="mb-3 text-[22px] font-bold leading-7 tracking-[-0.02em]">Latest blocks</h2>
           <Card className="divide-y divide-line overflow-hidden">
             {blocks.length ? blocks.map((b) => (
-              <a key={b.number} href={explorerHref.block(b.number)} data-testid="explorer-block-row" className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-canvas sm:px-5">
-                <span><span className="num block text-[15px] font-semibold leading-5">Block {b.number}</span><span className="block text-[12px] leading-4 text-muted">{b.at ? ago(b.at) : ""}</span></span>
+              <a key={b.number} href={explorerHref.block(b.number)} data-testid="explorer-block-row" className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-tile sm:px-5">
+                <span><span className="num block text-[16px] font-extrabold leading-5 tracking-[-0.02em]">Block {b.number}</span><span className="block text-[12px] leading-4 text-muted">{b.at ? ago(b.at) : ""}</span></span>
                 <span className="num text-[13px] text-ink2">{b.txs.length} {b.txs.length === 1 ? "transaction" : "transactions"}</span>
               </a>
             )) : <EmptyState title="No blocks yet">Transactions appear here as they happen.</EmptyState>}
           </Card>
         </section>
         <section>
-          <h2 className="mb-3 text-[15px] font-semibold leading-5">Latest transactions</h2>
+          <h2 className="mb-3 text-[22px] font-bold leading-7 tracking-[-0.02em]">Latest transactions</h2>
           <div role="tablist" aria-label="Filter transactions" className="chip-row -mx-4 mb-3 flex snap-x gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             {FILTERS.map(([k, label]) => <button key={k} type="button" role="tab" aria-selected={f === k} onClick={() => setF(k)} className={chip(f === k)}>{label}<span className="num text-[12px] opacity-70">{all.filter((t) => match(t, k)).length}</span></button>)}
           </div>
@@ -191,7 +191,7 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
   if (!input) {
     return (
       <div data-testid="explorer-tx" data-found="false"><Crumbs here="Transaction" />
-        <Card><EmptyState title="Transaction not found" action={<a href={explorerHref.home} className="font-semibold text-accent hover:underline">Back to the explorer</a>}>This hash is not on {net.chainName} yet. It may still be arriving.<span className="num mt-2 block break-all text-[12px]">{hash}</span></EmptyState></Card>
+        <Card><EmptyState title="Transaction not found" action={<a href={explorerHref.home} className="font-bold text-ink underline hover:decoration-vermillion">Back to the explorer</a>}>This hash is not on {net.chainName} yet. It may still be arriving.<span className="num mt-2 block break-all text-[12px]">{hash}</span></EmptyState></Card>
       </div>
     );
   }
@@ -207,18 +207,19 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
       <Crumbs here="Transaction" />
       <header className="mb-6">
         <div className="flex flex-wrap items-center gap-3"><h1 className="title-serif text-[32px] leading-10 sm:text-[40px] sm:leading-[46px]">Transaction</h1><StatusPill status={x.status} /></div>
-        {x.value && <p data-testid="tx-amount" className="mt-3 flex flex-wrap items-center gap-3"><span className="num text-[28px] font-bold leading-9">US${x.value}</span>{x.status === "reverted" ? <Pill tone="accent">Did not move</Pill> : <Pill tone="neutral">Moved</Pill>}</p>}
+        {x.value && <p data-testid="tx-amount" className="mt-3 flex flex-wrap items-center gap-3"><span className="figure text-[40px] leading-[44px]"><span className="cur">US$</span>{x.value}</span>{x.status === "reverted" ? <Pill tone="warning">Did not move</Pill> : <Pill tone="neutral">Moved</Pill>}</p>}
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1"><span className="num break-all text-[13px] text-ink2" data-testid="tx-hash-full">{hash}</span><CopyButton text={hash} /></div>
       </header>
       <Card className="p-5 sm:p-6">
-        <p className="text-[18px] font-semibold leading-7 [overflow-wrap:anywhere]">{x.summary}</p>
+        <p className="text-[20px] font-bold leading-7 tracking-[-0.02em] [overflow-wrap:anywhere]">{x.summary}</p>
         {x.status === "reverted" && (
-          <div data-testid="explorer-revert" className="mt-4 rounded-[14px] bg-fill px-4 py-3.5">
-            <p className="flex flex-wrap items-center gap-2 text-[14px] font-semibold text-ink"><ShieldCheck className="size-4 shrink-0 text-accent" strokeWidth={2} aria-hidden />{revert ? <>Reverted: <CodePill code={revert} /></> : "Reverted on-chain"}</p>
+          <div data-testid="explorer-revert" className="band-bad hatch relative mt-4 overflow-hidden rounded-[16px] p-1.5">
+          <div className="rounded-[12px] bg-card px-4 py-3.5">
+            <p className="flex flex-wrap items-center gap-2 text-[14px] font-bold text-ink"><ShieldCheck className="size-4 shrink-0 text-vermillion-ink" strokeWidth={2} aria-hidden />{revert ? <>Reverted: <CodePill code={revert} /></> : "Reverted on-chain"}</p>
             {revert && REASONS[revert] && <p className="mt-1 text-[14px] leading-5 text-ink2">{REASONS[revert]}</p>}
             {rule && <p className="mt-2 text-[14px] leading-5 text-ink">Pocket rule that failed (canPay): <CodePill code={rule} /><span className="text-ink2"> {REASONS[rule] ? `· ${REASONS[rule]}` : ""}</span></p>}
             <p className="mt-2 text-[13px] leading-5 text-muted">No money moved.</p>
-          </div>
+          </div></div>
         )}
       </Card>
 
@@ -232,13 +233,13 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
         <Card className="px-5 sm:px-6">
           <Rows rows={[
             ["Status", <StatusPill key="s" status={x.status} />],
-            ["Block", blockN ? <span key="b"><a href={explorerHref.block(blockN)} data-testid="tx-block-link" className="num text-accent hover:underline">{blockN}</a><span className="font-normal text-muted"> · {net.chainName}</span></span> : undefined],
+            ["Block", blockN ? <span key="b"><a href={explorerHref.block(blockN)} data-testid="tx-block-link" className="num font-bold text-ink underline decoration-line decoration-2 underline-offset-4 hover:decoration-vermillion">{blockN}</a><span className="font-normal text-muted"> · {net.chainName}</span></span> : undefined],
             ["Position in block", x.position != null ? <span key="p" className="num">{x.position}</span> : undefined],
             ["Time", x.at ? <span key="t">{when(x.at)} <span className="font-normal text-muted">· {ago(x.at)}</span></span> : undefined],
             ["From", x.from ? <Addr key="f" address={x.from} full /> : undefined],
-            ["To (contract)", x.to ? <span key="to" className="inline-flex min-w-0 flex-wrap items-baseline gap-x-2"><span className="font-medium">{x.toName}</span><a href={explorerHref.address(x.to)} className="num break-all text-accent hover:underline">{x.to}</a>{toKind?.kind === "pocket" && <span className="sr-only">pocket</span>}</span> : undefined],
+            ["To (contract)", x.to ? <span key="to" className="inline-flex min-w-0 flex-wrap items-baseline gap-x-2"><span className="font-medium">{x.toName}</span><a href={explorerHref.address(x.to)} className="num break-all text-ink underline decoration-line decoration-2 underline-offset-4 hover:decoration-vermillion">{x.to}</a>{toKind?.kind === "pocket" && <span className="sr-only">pocket</span>}</span> : undefined],
             ["Value", x.value ? <span key="v" className="num">US${x.value}</span> : undefined],
-            ["Method", <span key="m" className="num rounded-full bg-fill px-2.5 py-1 text-[13px]">{x.method}</span>],
+            ["Method", <span key="m" className="num rounded-full bg-tile px-2.5 py-1 text-[13px] font-bold shadow-[inset_0_0_0_1px_var(--color-tile-stroke)]">{x.method}</span>],
             ["Pocket", x.pocket ? <Addr key="pk" address={x.pocket} /> : undefined],
             ["Network", <span key="n">{net.chainName}{net.builtin || net.dev ? <span className="font-normal text-muted"> · no real money</span> : null}</span>],
           ]} />
@@ -256,7 +257,7 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
           <Card className="divide-y divide-line">
             {x.logs.map((l) => (
               <div key={l.index} data-testid="explorer-log" className="px-5 py-4 sm:px-6">
-                <div className="flex flex-wrap items-baseline gap-x-2"><span className="num text-[12px] text-muted">#{l.index}</span><span className="text-[15px] font-semibold">{l.contractName}.{l.event}</span></div>
+                <div className="flex flex-wrap items-baseline gap-x-2"><span className="num text-[12px] text-muted">#{l.index}</span><span className="text-[16px] font-bold tracking-[-0.01em]">{l.contractName}.{l.event}</span></div>
                 {l.fields.length > 0 && <div className="mt-2"><Rows rows={l.fields.map((f) => [f.name, <FieldValue key={f.name} f={f} />])} /></div>}
               </div>
             ))}
@@ -265,7 +266,7 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
       </Section>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        {net.explorer && <a href={net.explorer(hash)} target="_blank" rel="noreferrer noopener" className="inline-flex h-11 items-center gap-2 rounded-full border-[1.5px] border-accent px-5 text-[14px] font-semibold text-accent hover:bg-accent-soft">View on BaseScan<ExternalLink className="size-4" strokeWidth={1.75} aria-hidden /></a>}
+        {net.explorer && <a href={net.explorer(hash)} target="_blank" rel="noreferrer noopener" className="pressable inline-flex h-11 items-center gap-2 rounded-full bg-card px-5 text-[14px] font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile">View on BaseScan<ExternalLink className="size-4" strokeWidth={1.75} aria-hidden /></a>}
         {watch && t?.pocket && <Button className="h-11 px-5 text-[14px]" onClick={() => watch(t.pocket)}>Watch it in Live</Button>}
       </div>
     </div>
@@ -285,8 +286,8 @@ function BlockPage({ number }: { number: string }) {
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3"><h1 className="title-serif text-[32px] leading-10 sm:text-[40px] sm:leading-[46px]">Block {number}</h1><Pill tone="neutral">{net.chainName}</Pill></div>
         <div className="flex gap-2">
-          <a aria-disabled={!older} href={older ? explorerHref.block(older.number) : undefined} className={cn("inline-flex h-11 items-center gap-1 rounded-full bg-card px-4 text-[14px] font-semibold", older ? "text-accent hover:bg-accent-soft" : "pointer-events-none text-faint")}><ChevronLeft className="size-4" aria-hidden />Older</a>
-          <a aria-disabled={!newer} href={newer ? explorerHref.block(newer.number) : undefined} className={cn("inline-flex h-11 items-center gap-1 rounded-full bg-card px-4 text-[14px] font-semibold", newer ? "text-accent hover:bg-accent-soft" : "pointer-events-none text-faint")}>Newer<ChevronRight className="size-4" aria-hidden /></a>
+          <a aria-disabled={!older} href={older ? explorerHref.block(older.number) : undefined} className={cn("pressable inline-flex h-11 items-center gap-1 rounded-full bg-card px-4 text-[14px] font-bold shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)]", older ? "text-ink hover:bg-tile" : "pointer-events-none text-faint")}><ChevronLeft className="size-4" aria-hidden />Older</a>
+          <a aria-disabled={!newer} href={newer ? explorerHref.block(newer.number) : undefined} className={cn("pressable inline-flex h-11 items-center gap-1 rounded-full bg-card px-4 text-[14px] font-bold shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)]", newer ? "text-ink hover:bg-tile" : "pointer-events-none text-faint")}>Newer<ChevronRight className="size-4" aria-hidden /></a>
         </div>
       </header>
       {b ? (
@@ -318,7 +319,7 @@ function AddressPage({ address, watch }: { address: string; watch?(pocket: strin
       {pocket && (
         <Card className="px-5 sm:px-6">
           <Rows rows={[
-            ["Balance", <span key="b" className="num text-[18px] font-semibold">{usd(pocket.balance)}</span>],
+            ["Balance", <span key="b" className="figure text-[24px]">{usd(pocket.balance)}</span>],
             ["Cap per payment", <span key="c" className="num">{usd(pocket.cap)}</span>],
             ["Asks the owner above", <span key="a" className="num">{pocket.askAbove === NEVER ? "Never asks" : pocket.askAbove === 0n ? "Every time" : usd(pocket.askAbove)}</span>],
             ["Ends", <span key="e" className="num">{new Date(pocket.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>],
@@ -328,7 +329,7 @@ function AddressPage({ address, watch }: { address: string; watch?(pocket: strin
           ]} />
         </Card>
       )}
-      {received != null && <Card className="px-5 sm:px-6"><Rows rows={[["Received from agents", <span key="r" className="num text-[18px] font-semibold">{usd(received)}</span>]]} /></Card>}
+      {received != null && <Card className="px-5 sm:px-6"><Rows rows={[["Received from agents", <span key="r" className="figure text-[24px]">{usd(received)}</span>]]} /></Card>}
       {watch && pocket && <div className="mt-4"><Button className="h-11 px-5 text-[14px]" onClick={() => watch(pocket.address)}>Watch it in Live</Button></div>}
       <Section title={`Transactions (${list.length})`}>
         <Card className="divide-y divide-line overflow-hidden">{list.length ? list.map((t) => { const c = chainTx.get(lc(t.hash)); return c ? <TxLine key={t.hash} t={c} /> : null; }) : <EmptyState title="No transactions">Nothing on this network involves this address yet.</EmptyState>}</Card>

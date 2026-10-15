@@ -34,31 +34,33 @@ export function Pockets({ open }: { open(addr: string): void }) {
         { label: "Held for agents", value: usd(total), note: "Across all pockets" },
         { label: "Most any agent can lose", value: usd(pockets.reduce((n, p) => n + worstCase(p, txs, (id) => names.get(id) ?? id).max, 0n)), note: "Only to each pocket's allowed sellers", accent: true, icon: <ShieldCheck className="size-4" {...I} aria-hidden /> },
       ]} />
-      {chainError && <p role="alert" className="mt-4 text-[14px] text-negative">Could not read the chain: {chainError}</p>}
+      {chainError && <p role="alert" className="mt-4 text-[14px] font-semibold text-vermillion-ink">Could not read the chain: {chainError}</p>}
       <Section title="All pockets">
         <div role="tablist" aria-label="Filter pockets" className="chip-row -mx-4 mb-3 flex snap-x gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           {FILTERS.map(([k, label, n]) => <button key={k} type="button" role="tab" aria-selected={f === k} onClick={() => setF(k)} className={chip(f === k)}>{label}<COUNT n={n} /></button>)}
         </div>
         <Card className="overflow-hidden">
-          <div aria-hidden className="hidden h-10 grid-cols-[minmax(0,1.5fr)_110px_100px_110px_120px_120px] items-center gap-x-4 border-b border-line px-5 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted lg:grid">
+          <div aria-hidden className="eyebrow hidden h-11 grid-cols-[minmax(0,1.5fr)_110px_100px_110px_120px_120px] items-center gap-x-4 border-b border-line px-5 text-muted lg:grid">
             <span>Pocket</span><span>Agent</span><span>Status</span><span className="text-right">Balance</span><span className="text-right">Max loss</span><span className="pl-3">Ends</span>
           </div>
           <div className="divide-y divide-line">
             {shown.length ? shown.map((p) => {
               const st = pocketStatus(p);
               const w = worstCase(p, txs, (id) => names.get(id) ?? id);
+              const off = st.label !== "Active"; // stopped, revoked or expired pockets wear a hatch edge
               return (
-                <div key={p.address} className="relative transition-colors hover:bg-canvas">
+                <div key={p.address} className="relative transition-colors hover:bg-tile">
+                  {off && <span aria-hidden className="hatch absolute inset-y-0 left-0 w-2" />}
                   <button type="button" onClick={() => open(p.address)} aria-label={`${nameOf(p.address)} ${usd(p.balance)}`} className="absolute inset-0 z-0 h-full w-full" />
                   <div className="pointer-events-none relative grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 px-4 py-3.5 lg:min-h-16 lg:grid-cols-[minmax(0,1.5fr)_110px_100px_110px_120px_120px] lg:px-5 lg:py-2">
                   <span className="min-w-0 max-lg:order-1">
-                    <span className="block truncate text-[14px] font-medium leading-5">{nameOf(p.address)}{isPhone(p.address) && <PhoneTag />}</span>
+                    <span className="block truncate text-[15px] font-bold leading-5 tracking-[-0.01em]">{nameOf(p.address)}{isPhone(p.address) && <PhoneTag />}</span>
                     <span className="block truncate text-[12px] leading-4 text-muted">Owner {shortAddr(p.owner)} · cap {usd(p.cap)} · {p.askAbove === NEVER ? "never asks" : `asks above ${usd(p.askAbove)}`} · {p.allowed.map((i) => names.get(i) ?? i).join(", ") || "no sellers"}</span>
-                    <a href={explorerHref.address(p.address)} className="pointer-events-auto relative z-10 text-[12px] font-semibold leading-4 text-accent hover:underline">Open in explorer</a>
+                    <a href={explorerHref.address(p.address)} className="pointer-events-auto relative z-10 text-[12px] font-bold leading-4 text-ink underline decoration-line decoration-2 underline-offset-4 hover:decoration-vermillion">Open in explorer</a>
                   </span>
                   <span className="num hidden text-[13px] text-ink2 lg:block">{shortAddr(p.agent)}</span>
                   <span className="max-lg:order-3"><Verdict kind={st.kind}>{st.label}</Verdict></span>
-                  <span className="num text-right text-[16px] font-semibold leading-5 max-lg:order-2">{usd(p.balance)}</span>
+                  <span className={cn("num text-right text-[17px] font-extrabold leading-5 tracking-[-0.02em] max-lg:order-2", off && "text-muted")}>{usd(p.balance)}</span>
                   <span className="num text-right text-[13px] text-ink2 max-lg:order-4"><span className="text-muted lg:hidden">Max loss </span>{usd(w.max)}</span>
                   <span className="num hidden pl-3 text-[13px] text-ink2 lg:block">{new Date(p.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
                   </div>
@@ -80,10 +82,10 @@ const SAMPLES = [
 
 function CopyLine({ text }: { text: string }) {
   const [ok, setOk] = useState(false);
-  return <button type="button" onClick={() => void navigator.clipboard?.writeText(text).then(() => { setOk(true); setTimeout(() => setOk(false), 1400); })} className="relative inline-flex items-center gap-1.5 text-[14px] font-semibold text-accent before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] hover:underline" aria-label={`Copy: ${text}`}>{ok ? <Check className="size-4" /> : <Copy className="size-4" strokeWidth={1.75} />}{ok ? "Copied" : "Copy"}</button>;
+  return <button type="button" onClick={() => void navigator.clipboard?.writeText(text).then(() => { setOk(true); setTimeout(() => setOk(false), 1400); })} className="relative inline-flex items-center gap-1.5 text-[14px] font-bold text-ink before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] hover:underline" aria-label={`Copy: ${text}`}>{ok ? <Check className="size-4" /> : <Copy className="size-4" strokeWidth={1.75} />}{ok ? "Copied" : "Copy"}</button>;
 }
 
-const field = "w-full resize-none rounded-[12px] border border-line bg-card px-4 text-[14px] leading-5 outline-none placeholder:text-faint focus:border-accent focus:ring-1 focus:ring-accent";
+const field = "w-full resize-none rounded-[16px] bg-tile px-4 text-[14px] leading-5 outline-none shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] placeholder:text-faint focus:bg-card focus:ring-2 focus:ring-ink";
 
 /** One numbered test: what to do, and what a correct wallet does about it, before anything is run. */
 function Test({ n, title, expected, children }: { n: number; title: string; expected: string; children: React.ReactNode }) {
@@ -91,8 +93,8 @@ function Test({ n, title, expected, children }: { n: number; title: string; expe
     <section className="mt-4 first:mt-0">
       <Card className="p-5 sm:p-6">
         <header className="flex items-start gap-3">
-          <span aria-hidden className="num grid size-8 shrink-0 place-items-center rounded-full bg-fill text-[14px] font-semibold text-ink2">{n}</span>
-          <div className="min-w-0"><h2 className="text-[15px] font-semibold leading-5">{title}</h2><p className="mt-0.5 text-[13px] leading-5 text-muted">Expected: {expected}</p></div>
+          <span aria-hidden className="num grid size-10 shrink-0 place-items-center rounded-[14px] bg-ink text-[16px] font-extrabold text-on-accent">{n}</span>
+          <div className="min-w-0"><h2 className="text-[18px] font-bold leading-6 tracking-[-0.02em]">{title}</h2><p className="mt-0.5 text-[13px] leading-5 text-muted">Expected: {expected}</p></div>
         </header>
         <div className="mt-4">{children}</div>
       </Card>
@@ -124,28 +126,28 @@ export function Judges({ pocket, open }: { pocket?: string; open(addr: string): 
   };
   const playing = !!player.state?.busy;
   const sellerName = cfg.sellers.find((s) => s.id === seller)?.name ?? seller;
-  const link = "relative font-semibold text-accent before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:underline";
+  const link = "relative font-bold text-ink underline decoration-line decoration-2 underline-offset-4 before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:decoration-vermillion";
   return (
     <div className="fade-up">
       <PageTitle title="Judges" sub="Try to break it. Every attack below is stopped by the agent, the wallet's tool layer or the pocket contract itself, and you see which." />
 
       <Arena aim={aim} setAim={setTarget} watch={open} />
 
-      <h2 className="mb-3 mt-10 text-[15px] font-semibold leading-5">More tools</h2>
+      <h2 className="mb-3 mt-12 text-[22px] font-bold leading-7 tracking-[-0.02em]">More tools</h2>
       <Test n={1} title="Plant text in a seller's response" expected="the agent reads it as data, never as an instruction, and buys only from allowed sellers.">
         <p className="text-[14px] leading-5 text-ink2">Plant a message, then play scene 5 below to see the agent ignore it.</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-[220px_1fr]">
-          <div><span className="mb-1.5 block text-[13px] font-medium">Seller</span>
+          <div><span className="mb-1.5 block text-[13px] font-bold">Seller</span>
             <PillSelect tone="fill" label="Seller" value={seller} onChange={setSeller} shown={sellerName}>{cfg.sellers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</PillSelect></div>
-          <label className="block"><span className="mb-1.5 block text-[13px] font-medium">Text to plant</span>
+          <label className="block"><span className="mb-1.5 block text-[13px] font-bold">Text to plant</span>
             <textarea aria-label="Text to plant" rows={3} value={text} onChange={(e) => setText(e.target.value)} className={cn(field, "py-3")} /></label>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {SAMPLES.map((x) => <button key={x.label} type="button" aria-pressed={text === x.text} onClick={() => setText(x.text)} className={cn("h-11 rounded-full border-[1.5px] px-4 text-[14px] font-medium transition-colors", text === x.text ? "border-accent bg-accent-soft text-accent" : "border-line text-ink2 hover:bg-fill")}>{x.label}</button>)}
+          {SAMPLES.map((x) => <button key={x.label} type="button" aria-pressed={text === x.text} onClick={() => setText(x.text)} className={chip(text === x.text)}>{x.label}</button>)}
           <span className="ml-auto flex gap-2"><Button variant="outline" disabled={!!busy || !plant} onClick={() => void doPlant(null)}>Clear</Button><Button disabled={!!busy || !plant || !text.trim()} onClick={() => void doPlant(text)}>Plant</Button></span>
         </div>
         {!plant && <p className="mt-3 text-[14px] text-muted">This server has no seller admin address, so text cannot be planted from here.</p>}
-        {msg && <p role="status" className={cn("mt-3 flex items-center gap-2 text-[14px] font-medium", msg.ok ? "text-positive" : "text-negative")}>{msg.ok ? <Check className="size-4 shrink-0" {...I} aria-hidden /> : <ShieldAlert className="size-4 shrink-0" {...I} aria-hidden />}{msg.text}</p>}
+        {msg && <p role="status" className={cn("mt-3 flex items-center gap-2 text-[14px] font-medium", msg.ok ? "text-green-ink" : "text-vermillion-ink")}>{msg.ok ? <Check className="size-4 shrink-0" {...I} aria-hidden /> : <ShieldAlert className="size-4 shrink-0" {...I} aria-hidden />}{msg.text}</p>}
         <Disclosure className="mt-4" summary="Details"><p className="text-[13px] leading-5 text-muted">The text is used once, in that seller's next response, then cleared.{cfg.sellersUrl ? ` Sent to the seller server at ${cfg.sellersUrl}.` : ""}</p></Disclosure>
       </Test>
 
@@ -153,16 +155,16 @@ export function Judges({ pocket, open }: { pocket?: string; open(addr: string): 
         <p className="text-[14px] leading-5 text-ink2">Assume the agent's key is stolen and someone submits "send 50 USDC" straight to the token.</p>
         {forceTransfer ? (
           <div className="mt-4 flex flex-wrap items-end gap-3">
-            <div><span className="mb-1.5 block text-[13px] font-medium">Pocket</span>
+            <div><span className="mb-1.5 block text-[13px] font-bold">Pocket</span>
               <PillSelect tone="fill" className="min-w-[260px]" label="Pocket to attack" value={aim} onChange={setTarget} shown={aim ? <>{nameOf(aim)}{isPhone(aim) && <PhoneTag />}</> : "No pocket"}>{listed([aim]).map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {usd(p.balance)}</option>)}</PillSelect></div>
-            <Button disabled={!!busy || !pockets.length} onClick={() => void force()}>{busy === "force" ? "Submitting…" : "Force the transfer"}</Button>
+            <Button variant="hot" disabled={!!busy || !pockets.length} onClick={() => void force()}>{busy === "force" ? "Submitting…" : "Force the transfer"}</Button>
           </div>
         ) : <p className="mt-3 text-[14px] text-muted">On the real chain this runs from <code>server/scripts/force-transfer.ts</code>; the reverted transaction then appears under On-chain.</p>}
         {forced && (
-          <div role="status" className="fade-up mt-4 flex items-start gap-3 rounded-[14px] bg-canvas p-4">
-            {forced.ok ? <ShieldCheck className="size-6 shrink-0 text-accent" {...I} aria-hidden /> : <ShieldAlert className="size-6 shrink-0 text-negative" {...I} aria-hidden />}
+          <div role="status" className="tile fade-up mt-4 flex items-start gap-3 p-4">
+            {forced.ok ? <ShieldCheck className="size-6 shrink-0 text-green-ink" {...I} aria-hidden /> : <ShieldAlert className="size-6 shrink-0 text-vermillion-ink" {...I} aria-hidden />}
             <div className="min-w-0">
-              <p className={cn("text-[18px] font-semibold leading-6", !forced.ok && "text-negative")}>{forced.text}</p>
+              <p className={cn("text-[18px] font-bold leading-6 tracking-[-0.01em]", !forced.ok && "text-vermillion-ink")}>{forced.text}</p>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px]">
                 {forced.tx && <TxHash hash={forced.tx} />}
                 {forced.tx && <button type="button" className={link} onClick={() => view(forced.tx!)}>Open details</button>}
@@ -182,23 +184,23 @@ export function Judges({ pocket, open }: { pocket?: string; open(addr: string): 
             return (
               <div key={s.id} className="px-4 py-4 sm:px-5" data-testid={`scene-${s.id}`}>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <span className="num grid size-8 shrink-0 place-items-center rounded-full bg-fill text-[14px] font-semibold text-ink2" aria-hidden>{s.id}</span>
-                  <span className="min-w-0 flex-1 text-[15px] font-semibold leading-5"><span className="sr-only">Scene {s.id}: </span>{s.title}</span>
+                  <span className="num grid size-9 shrink-0 place-items-center rounded-[12px] bg-ink text-[15px] font-extrabold text-on-accent" aria-hidden>{s.id}</span>
+                  <span className="min-w-0 flex-1 text-[16px] font-bold leading-5 tracking-[-0.01em]"><span className="sr-only">Scene {s.id}: </span>{s.title}</span>
                   {c && <Pill tone={c.tone}>{c.outcome}</Pill>}
-                  {player.canPlay && <Button variant="outline" className="h-11 px-5" aria-label={`Play scene ${s.id}`} disabled={playing} onClick={() => void player.play(s)}>{mine?.busy && mine.step === "scene" ? "Playing…" : "Play"}</Button>}
+                  {player.canPlay && <Button variant="primary" className="h-11 px-5" aria-label={`Play scene ${s.id}`} disabled={playing} onClick={() => void player.play(s)}>{mine?.busy && mine.step === "scene" ? "Playing…" : "Play"}</Button>}
                 </div>
-                <p className="mt-1.5 pl-11 text-[14px] leading-5 text-ink2">{c ? <>{c.doing} <span className="text-muted">{c.seeing}</span></> : s.note}</p>
+                <p className="mt-1.5 pl-12 text-[14px] leading-5 text-ink2">{c ? <>{c.doing} <span className="text-muted">{c.seeing}</span></> : s.note}</p>
                 {mine && (mine.busy || mine.text) && (
-                  <div className="mt-2 pl-11">
+                  <div className="mt-2 pl-12">
                     {mine.busy ? <p role="status" className="text-[14px] text-muted">{linked ? "Sent to your phone. Waiting for it…" : "Playing…"}</p> : (
-                      <p role="status" className={cn("text-[14px]", mine.ok ? "text-ink2" : "text-negative")}>{mine.text}{mine.ok && watch && <> <button type="button" className={link} onClick={() => open(watch)}>Watch it in Live</button></>}</p>
+                      <p role="status" className={cn("text-[14px]", mine.ok ? "text-ink2" : "text-vermillion-ink")}>{mine.text}{mine.ok && watch && <> <button type="button" className={link} onClick={() => open(watch)}>Watch it in Live</button></>}</p>
                     )}
                   </div>
                 )}
                 {linked && s.followUp && mine?.ok && mine.step === "scene" && !mine.busy && (
-                  <div className="mt-2 pl-11"><Button variant="soft" className="h-11 max-w-full whitespace-normal py-2 text-left" disabled={playing} onClick={() => void player.followUp(s)}>Then send: “{s.followUp}”</Button></div>
+                  <div className="mt-2 pl-12"><Button variant="soft" className="h-11 max-w-full whitespace-normal py-2 text-left" disabled={playing} onClick={() => void player.followUp(s)}>Then send: “{s.followUp}”</Button></div>
                 )}
-                <Disclosure className="mt-2 pl-11" summary="Details">
+                <Disclosure className="mt-2 pl-12" summary="Details">
                   <div className="space-y-1.5 text-[13px] leading-5 text-muted"><p>You say: “{s.text}”</p>{s.followUp && <p>Then: “{s.followUp}”</p>}{s.note && <p>{s.note}</p>}<CopyLine text={s.text} /></div>
                 </Disclosure>
               </div>

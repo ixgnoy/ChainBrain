@@ -84,8 +84,25 @@ button, a, select, [role="tab"] { cursor: pointer; }
 .hatch { background-image: repeating-linear-gradient(45deg, var(--hatch, var(--color-ink)) 0 2px, transparent 2px 6px); }
 .hatch-soft { --hatch: var(--color-line); }
 .hatch-white { --hatch: rgba(255, 255, 255, 0.45); }
-.card { background: var(--color-card); border-radius: var(--radius-card); box-shadow: var(--shadow-level1); outline: 1px solid rgba(17, 18, 21, 0.04); outline-offset: -1px; }
 .eyebrow { font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Components layer: utilities (bg-canvas, rounded-…) still win over these. */
+@layer components {
+  .card { background-color: var(--color-card); border-radius: var(--radius-card); box-shadow: var(--shadow-level1); outline: 1px solid rgba(17, 18, 21, 0.04); outline-offset: -1px; }
+  .tile { background-color: var(--color-tile); border-radius: var(--radius-tile); box-shadow: inset 0 0 0 1px var(--color-tile-stroke); }
+  .pressable { transition: transform 120ms ease-out, background-color 150ms ease-out, color 150ms ease-out; }
+  .pressable:active:not(:disabled) { transform: scale(0.98); }
+  /* Arena verdict band and other hatch fields: a tinted ground with 45° stripes of the same hue. */
+  .band-idle { background-color: var(--color-tile); --hatch: rgba(17, 18, 21, 0.14); }
+  .band-run { background-color: var(--color-blue-soft); --hatch: rgba(18, 73, 119, 0.30); }
+  .band-ok { background-color: var(--color-green-soft); --hatch: rgba(21, 128, 61, 0.38); }
+  .band-bad { background-color: var(--color-vermillion-soft); --hatch: rgba(240, 78, 35, 0.55); }
+  /* Pocket card: powder blue with a fine ink hatch, like the phone. */
+  .pocket-blue { background-color: var(--color-blue); --hatch: rgba(17, 18, 21, 0.07); }
+  .pocket-frozen { background-color: var(--color-card); --hatch: rgba(17, 18, 21, 0.22); }
+}
+@keyframes bar-grow { from { transform: scaleX(0); } to { transform: none; } }
+.bar-grow { transform-origin: left center; animation: bar-grow 500ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 
 @keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .fade-up { animation: fade-up 180ms ease-out both; }
@@ -119,7 +136,7 @@ button, a, select, [role="tab"] { cursor: pointer; }
 .gate[data-state="pass"]::before { background: var(--color-accent); }
 .gate[data-state="fooled"]::before, .gate[data-state="skip"]::before { background: var(--color-faint); }
 .gate-body { min-width: 0; flex: 1; padding-top: 4px; }
-.gate-group { display: flex; flex-direction: column; border-radius: 16px; background: var(--color-canvas); padding: 12px 14px 14px; }
+.gate-group { display: flex; flex-direction: column; border-radius: 16px; background: var(--color-tile); box-shadow: inset 0 0 0 1px var(--color-tile-stroke); padding: 12px 14px 14px; }
 .gate-arrow { display: grid; place-items: center; height: 24px; color: var(--color-faint); transform: rotate(90deg); }
 @media (min-width: 1024px) {
   .gate-row { display: flex; align-items: stretch; }

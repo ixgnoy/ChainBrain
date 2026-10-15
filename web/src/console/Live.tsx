@@ -2,7 +2,7 @@
 // (spec "Demo layout": chat with trace on the left, the active pocket on the right).
 // Every column is keyed on the ONE pocket passed in, so a render never mixes one pocket's trace with another's balance.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ShieldAlert, ShieldCheck, Check, Minus, Wallet, Clock } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Check, Minus, Wallet, Clock, BellRing, Timer, Bot } from "lucide-react";
 import { useNetwork } from "./useNetwork";
 import { Expected, PhoneTag, Reason, TxHash, Verdict, clock, pocketStatus, usd, NEVER } from "./parts";
 import { argsOf, evidenceOf, injectionOf, plainSummary, type Injection } from "./story";
@@ -13,8 +13,8 @@ import { Disclosure, EmptyState, SegmentBar, Tracker } from "./kit";
 import { traceRows, untrustedOf, type TraceRow } from "../lib/trace";
 import { eventPocket, samePocket, type WalletEvent } from "../lib/events";
 import { salesFor } from "../seller/data";
-import { Button, Card } from "../seller/ui";
-import { toBig } from "./chain";
+import { Button, Card, Fig } from "../seller/ui";
+import { toBig, type PocketState } from "./chain";
 import { ChecksPanel } from "./ChecksPath";
 import { Scorecard } from "./Scorecard";
 import { cleanText } from "../lib/sanitize";
@@ -42,8 +42,8 @@ function Column({ title, meta, right, children, className, bodyClass, bodyRef, o
 }) {
   return (
     <Card className={cn("flex min-h-0 flex-col overflow-hidden", className)}>
-      <header className="flex min-h-12 items-center justify-between gap-3 border-b border-line px-4 sm:px-5">
-        <h2 className="flex min-w-0 items-center truncate text-[15px] font-semibold leading-5">{title}</h2>
+      <header className="flex min-h-14 items-center justify-between gap-3 border-b border-line px-4 sm:px-5">
+        <h2 className="flex min-w-0 items-center truncate text-[18px] font-bold leading-6 tracking-[-0.02em]">{title}</h2>
         <div className="flex shrink-0 items-center gap-3 text-[12px] leading-4 text-muted">{meta}{right}</div>
       </header>
       <div ref={bodyRef} onScroll={onBodyScroll} {...bodyEvents} className={cn("min-h-0 flex-1 px-4 sm:px-5", bodyClass)}>{children}</div>
@@ -57,8 +57,8 @@ function InjectionRow({ inj, at, name, turnAt }: { inj: Injection; at: number; n
     <li data-testid="injection-row" className="grid grid-cols-[1fr_auto] gap-x-3 border-b border-line py-3 sm:grid-cols-[56px_1fr_auto]">
       <span className="num hidden pt-0.5 text-[12px] text-muted sm:block">{offsetLabel(at - turnAt)}</span>
       <div className="min-w-0">
-        <div className="flex items-center gap-2"><ShieldAlert className="size-4 shrink-0 text-warning" {...I} /><span className="t-name text-[14px] font-medium leading-5">{name} tried to give the agent an order</span></div>
-        {inj.lines.slice(0, 2).map((l, i) => <p key={i} className="t-body mt-1.5 border-l-2 border-warning pl-3 text-[14px] italic leading-5 text-ink2 [overflow-wrap:anywhere]">“{l}”</p>)}
+        <div className="flex items-center gap-2"><ShieldAlert className="size-4 shrink-0 text-blue-ink" {...I} /><span className="t-name text-[14px] font-bold leading-5">{name} tried to give the agent an order</span></div>
+        {inj.lines.slice(0, 2).map((l, i) => <p key={i} className="t-body mt-1.5 border-l-2 border-blue-ink pl-3 text-[14px] italic leading-5 text-ink2 [overflow-wrap:anywhere]">“{l}”</p>)}
         <p className="mt-1.5 text-[12px] leading-4 text-muted">Seller text is read as data, never as instructions. Nothing was sent.</p>
       </div>
       <div className="pt-0.5"><Verdict kind="stepup">INJECTION IGNORED</Verdict></div>
@@ -72,10 +72,10 @@ function CallDetails({ r }: { r: TraceRow }) {
   const args = r.event.args && typeof r.event.args === "object" ? (r.event.args as Record<string, unknown>) : {};
   const pairs = (o: Record<string, unknown>) => Object.entries(o).filter(([, v]) => typeof v !== "object" || v === null).slice(0, 8).map(([k, v]) => [k, cleanText(v, 120)] as const);
   const json = JSON.stringify({ call: { tool: r.label, args }, result: r.result }, (_k, v) => (typeof v === "string" ? cleanText(v, 400) : v), 2)?.slice(0, 4000) ?? "";
-  const seg = (m: "pretty" | "json", label: string) => <button type="button" aria-pressed={mode === m} onClick={() => setMode(m)} className={cn("h-7 rounded-full px-3 text-[12px] font-semibold", mode === m ? "bg-ink text-on-accent" : "bg-fill text-ink2 hover:bg-line")}>{label}</button>;
+  const seg = (m: "pretty" | "json", label: string) => <button type="button" aria-pressed={mode === m} onClick={() => setMode(m)} className={cn("h-7 rounded-full px-3 text-[12px] font-bold", mode === m ? "bg-ink text-on-accent" : "bg-card text-ink2 hover:bg-line")}>{label}</button>;
   return (
     <Disclosure summary="Call" className="mt-1">
-      <div className="rounded-[12px] bg-canvas p-3">
+      <div className="tile p-3">
         <div className="mb-2 flex gap-1.5">{seg("pretty", "Pretty")}{seg("json", "JSON")}</div>
         {mode === "json" ? <pre className="num max-h-56 overflow-auto whitespace-pre-wrap break-words text-[12px] leading-4 text-ink2">{json}</pre> : (
           <dl className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-1 text-[12px] leading-4">
@@ -106,7 +106,7 @@ function TraceItem({ r, turnAt, present, inj }: { r: TraceRow; turnAt: number; p
       <span className="num hidden pt-0.5 text-[12px] leading-5 text-muted sm:block" title={clock(r.at)}>{offsetLabel(r.at - turnAt)}</span>
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-x-2">
-          <span className={cn("t-name font-medium leading-5", quiet ? "text-[13px] text-ink2" : "text-[14px]", isText ? "text-ink2" : "text-ink")}>{name}</span>
+          <span className={cn("t-name font-bold leading-5", quiet ? "text-[13px] text-ink2" : "text-[14px]", isText ? "text-ink2" : "text-ink")}>{name}</span>
           {r.actor !== name && <span className="text-[12px] text-muted">{r.actor}</span>}
           <span className="num text-[12px] text-muted sm:hidden">{offsetLabel(r.at - turnAt)}</span>
         </div>
@@ -114,8 +114,8 @@ function TraceItem({ r, turnAt, present, inj }: { r: TraceRow; turnAt: number; p
         {r.reasons.length > 0 && <div className="mt-1 space-y-0.5">{r.reasons.map((c) => <Reason key={c} code={c} />)}</div>}
         {hasCall && <CallDetails r={r} />}
         {untrusted && !inj && (
-          <div className={cn("mt-2 rounded-[12px] px-3.5 py-2.5 text-[13px] leading-5", untrusted.injection ? "bg-warning-soft text-ink" : "bg-fill text-ink2")}>
-            <div className={cn("mb-1 flex items-center gap-1.5 text-[12px] font-semibold", untrusted.injection ? "text-warning" : "text-muted")}>{untrusted.injection && <ShieldAlert className="size-3.5" {...I} />}{untrusted.injection ? "Instruction-like text from a seller · treated as data, not obeyed" : `Seller content${untrusted.source ? ` · ${untrusted.source}` : ""} · treated as data`}</div>
+          <div className={cn("mt-2 rounded-[12px] px-3.5 py-2.5 text-[13px] leading-5", untrusted.injection ? "bg-blue-soft text-ink" : "bg-tile text-ink2")}>
+            <div className={cn("mb-1 flex items-center gap-1.5 text-[12px] font-semibold", untrusted.injection ? "text-blue-ink" : "text-muted")}>{untrusted.injection && <ShieldAlert className="size-3.5" {...I} />}{untrusted.injection ? "Instruction-like text from a seller · treated as data, not obeyed" : `Seller content${untrusted.source ? ` · ${untrusted.source}` : ""} · treated as data`}</div>
             <p className="line-clamp-4 whitespace-pre-wrap break-words">{untrusted.text}</p>
           </div>
         )}
@@ -129,8 +129,8 @@ function TraceItem({ r, turnAt, present, inj }: { r: TraceRow; turnAt: number; p
 /** Sticky heading of one turn: what was asked, when, how many calls, how long, and (once) that refusals here are expected. */
 function TurnHeader({ t, expected }: { t: Turn; expected: boolean }) {
   return (
-    <li className="sticky top-0 z-10 -mx-4 flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-line bg-card px-4 py-2 sm:-mx-5 sm:px-5" aria-label={`Turn at ${clock(t.at)}`}>
-      <span className="min-w-0 truncate text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-muted">{t.task ? `Task · ${t.task}` : "Agent turn"}</span>
+    <li className="sticky top-0 z-10 -mx-4 flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-line bg-card px-4 py-2.5 sm:-mx-5 sm:px-5" aria-label={`Turn at ${clock(t.at)}`}>
+      <span className="eyebrow min-w-0 truncate text-ink">{t.task ? `Task · ${t.task}` : "Agent turn"}</span>
       <span className="num text-[12px] leading-4 text-muted">{clock(t.at)} · {t.calls} {t.calls === 1 ? "call" : "calls"}{t.end > t.at ? ` · ${durationLabel(t.end - t.at)}` : ""}</span>
       {expected && <Expected className="ml-auto" />}
     </li>
@@ -144,16 +144,19 @@ function WorstCase({ w, refused, ignored }: { w: ReturnType<typeof worstCase>; r
   const share = (v: bigint) => (total > 0n ? Number((v * 10_000n) / total) / 10_000 : 0);
   const spent = segs.find((s) => s.key === "spent");
   return (
-    <div data-testid="worst-case" className="mt-4 rounded-[14px] bg-canvas p-4">
-      <p className="text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-muted">Worst case</p>
-      <p className="t-body mt-1.5 text-[15px] leading-6 text-ink2">
-        {w.stopped ? <b className="font-semibold text-ink" data-testid="worst-max">Stopped: the agent can't spend.</b> : <>If the agent is hijacked, it can lose at most <b className="num font-semibold text-ink" data-testid="worst-max">{usd(w.max)}</b>, only to {orList(w.to)}.</>}
+    <div data-testid="worst-case" className="card p-4 sm:p-5">
+      <div className="flex items-center gap-3">
+        <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-vermillion-soft text-vermillion-ink"><ShieldCheck className="size-5" {...I} /></span>
+        <div className="min-w-0"><p className="text-[18px] font-bold leading-6 tracking-[-0.02em]">Worst case</p><p className="text-[12px] leading-4 text-muted">The most this pocket can ever lose</p></div>
+      </div>
+      <p className="t-body tile mt-3.5 px-4 py-3.5 text-[15px] leading-6 text-ink2">
+        {w.stopped ? <b className="font-bold text-ink" data-testid="worst-max">Stopped: the agent can't spend.</b> : <>If the agent is hijacked, it can lose at most <b className="num font-extrabold text-ink" data-testid="worst-max">{usd(w.max)}</b>, only to {orList(w.to)}.</>}
       </p>
       <div className="mt-3"><SegmentBar label="Share of the funding still at risk" barTestId="worst-bar" segments={segs.map((s) => ({ key: s.key, share: share(s.value) }))} /></div>
       <div className="num mt-2 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-[12px] leading-4 text-muted">
         <span className="inline-flex flex-wrap items-center gap-x-3">
           {w.stopped ? <span>{w.fundedKnown ? `${usd(w.funded)} was funded in total` : "Stopped"}</span> : <>
-            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-accent" aria-hidden />Can still be lost {usd(w.max)}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-vermillion" aria-hidden />Can still be lost {usd(w.max)}</span>
             {spent ? <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-ink" aria-hidden />Spent so far {usd(spent.value)}</span> : <span>Nothing spent yet</span>}
           </>}
         </span>
@@ -163,7 +166,8 @@ function WorstCase({ w, refused, ignored }: { w: ReturnType<typeof worstCase>; r
   );
 }
 
-const DECISION_TONE: Record<DecisionKind, string> = { paid: "bg-accent", refused: "bg-faint", blocked: "bg-ink", ignored: "bg-warning", settled: "bg-negative" };
+// Hatch blocks: paid = ink hatch, refused = grey hatch, blocked = solid vermillion, ignored = powder blue, settled (money moved) = vermillion ink.
+const DECISION_TONE: Record<DecisionKind, string> = { paid: "hatch [--hatch:var(--color-ink)] bg-card shadow-[inset_0_0_0_1.5px_var(--color-ink)]", refused: "hatch [--hatch:var(--color-faint)] bg-card shadow-[inset_0_0_0_1.5px_var(--color-faint)]", blocked: "bg-vermillion", ignored: "bg-blue", settled: "bg-vermillion-ink" };
 /** Judge evidence at a glance: the last decisions as blocks, the counts in words, the last transactions. */
 function EvidenceStrip({ ev, decisions }: { ev: ReturnType<typeof evidenceOf>; decisions: ReturnType<typeof decisionsOf> }) {
   const items: { k: string; label: string; tx?: string }[] = [
@@ -174,12 +178,46 @@ function EvidenceStrip({ ev, decisions }: { ev: ReturnType<typeof evidenceOf>; d
   ];
   if (!items.length) return null;
   return (
-    <div data-testid="evidence" className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[20px] bg-card px-4 py-3 sm:px-5">
+    <div data-testid="evidence" className="card mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5 sm:px-5">
       <Tracker label="Last decisions" data={decisions.map((d) => ({ key: d.key, className: DECISION_TONE[d.kind], tip: d.tip }))} />
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] leading-5 text-ink2">
-        {items.map((i) => <span key={i.k} className="inline-flex items-center gap-2"><span className="font-medium">{i.label}</span>{i.tx && <TxHash hash={i.tx} />}</span>)}
+        {items.map((i) => <span key={i.k} className="inline-flex items-center gap-2"><span className="font-semibold">{i.label}</span>{i.tx && <TxHash hash={i.tx} />}</span>)}
       </div>
 
+    </div>
+  );
+}
+
+/** The pocket as a card: powder-blue hatch (white hatch with muted text when stopped), name, the balance as a figure, a short pocket number, rules as chips. */
+function PocketCard({ p, name, phone, stopped, status, present }: { p: PocketState; name: string; phone: boolean; stopped: boolean; status?: ReturnType<typeof pocketStatus>; present?: boolean }) {
+  const ask = p.askAbove === NEVER ? "Never asks" : p.askAbove === 0n ? "Asks every time" : `Ask above ${usd(p.askAbove)}`;
+  const ends = new Date(p.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const chip = "inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[12px] font-bold text-ink shadow-[inset_0_0_0_1px_var(--color-tile-stroke)]";
+  return (
+    <div className={cn("card hatch relative overflow-hidden p-5", stopped ? "pocket-frozen" : "pocket-blue")}>
+      <div className="flex items-start justify-between gap-3">
+        <span className="inline-flex min-w-0 items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-ink"><span aria-hidden className={cn("size-2 shrink-0 rounded-full", stopped ? "bg-vermillion" : "bg-green")} /><span className="truncate">{stopped ? "Stopped" : "Agent pocket"}</span></span>
+        {status && <Verdict kind={status.kind}>{status.label}</Verdict>}
+      </div>
+      <h2 className="mt-4 flex min-w-0 flex-wrap items-center text-[22px] font-extrabold leading-7 tracking-[-0.03em]">{name}{phone && <PhoneTag />}</h2>
+      <div className={cn("mt-3 text-[13px] font-semibold leading-5", stopped ? "text-muted" : "text-blue-ink")}>{stopped ? "Held in a stopped pocket" : "Balance, the agent's whole budget"}</div>
+      <div className={cn("figure mt-0.5 text-[48px] leading-[52px]", stopped && "text-ink2")} data-testid="pocket-balance" data-stopped={stopped ? "true" : undefined}><Fig text={usd(p.balance)} />{stopped && p.balance > 0n && <span className="ml-2 text-[16px] font-bold tracking-normal"> to return</span>}</div>
+      {!present && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className={chip}><ShieldCheck className="size-3.5" {...I} aria-hidden />Cap {usd(p.cap)}</span>
+          <span className={chip}><BellRing className="size-3.5" {...I} aria-hidden />{ask}</span>
+        </div>
+      )}
+      <div className="mt-5 flex items-end justify-between gap-3 text-[13px] font-bold">
+        <span className="num tracking-[0.12em]">{"•••• "}{p.address.slice(-4).toUpperCase()}</span>
+        <span className="num inline-flex items-center gap-1.5 font-semibold"><Timer className="size-3.5" {...I} aria-hidden />Valid until {ends}</span>
+      </div>
+      {!present && (
+        <dl className="mt-4 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1.5 border-t border-ink/15 pt-3 text-[12px] leading-4">
+          <dt className="flex items-center gap-1.5 font-semibold"><Bot className="size-3.5" {...I} aria-hidden />Agent</dt><dd className="num text-right font-bold">{shortAddr(p.agent)}</dd>
+          <dt className="font-semibold">Owner</dt><dd className="num text-right font-bold">{shortAddr(p.owner)}</dd>
+        </dl>
+      )}
     </div>
   );
 }
@@ -231,11 +269,11 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
   // ---- columns
   const trace = (
     <Column key="agent" title="Agent" meta={<span className="num">{calls} {calls === 1 ? "call" : "calls"}</span>}
-      right={!present && <button type="button" aria-pressed={paused} onClick={() => { setPaused((x) => !x); setReleased(false); }} className="relative inline-flex h-8 items-center gap-1.5 rounded-full px-2 text-[13px] font-semibold text-accent before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-accent-soft">{!paused && <span className="size-2 rounded-full bg-accent" aria-hidden />}{paused ? "Resume" : "Pause"}</button>}
+      right={!present && <button type="button" aria-pressed={paused} onClick={() => { setPaused((x) => !x); setReleased(false); }} className="pressable relative inline-flex h-9 items-center gap-1.5 rounded-full bg-tile px-3.5 text-[13px] font-bold text-ink shadow-[inset_0_0_0_1px_var(--color-tile-stroke)] before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] hover:bg-line">{!paused && <span className="size-2 rounded-full bg-vermillion" aria-hidden />}{paused ? "Resume" : "Pause"}</button>}
       className={cn(present ? "xl:h-full xl:max-h-full" : "xl:max-h-[calc(100dvh-190px)]", !present && col !== "agent" && "max-xl:hidden", "max-xl:max-h-[calc(100dvh-250px)]")}
       bodyClass="trace-list relative overflow-y-auto pb-2" bodyRef={scroller} onBodyScroll={(e) => setAway(e.currentTarget.scrollTop > 24)}
       bodyEvents={{ onPointerMove: () => { setHover(true); clearTimeout(hoverTimer.current); hoverTimer.current = setTimeout(() => setHover(false), 2500); }, onPointerLeave: () => { clearTimeout(hoverTimer.current); setHover(false); setReleased(false); } }}>
-      {waitingN > 0 && <div className="sticky top-2 z-20 flex justify-center"><button type="button" onClick={apply} className="h-8 rounded-full bg-ink px-3 text-[13px] font-semibold text-on-accent">{waitingN} new</button></div>}
+      {waitingN > 0 && <div className="sticky top-2 z-20 flex justify-center"><button type="button" onClick={apply} className="pressable h-8 rounded-full bg-ink px-3.5 text-[13px] font-bold text-on-accent shadow-level3">{waitingN} new</button></div>}
       {turns.length ? <ol aria-label="Agent trace">{[...turns].reverse().map((t) => {
         const rows = [...t.rows].reverse();
         const expected = t.rows.some((r) => isExpected(r) || !!injOf(r));
@@ -248,52 +286,41 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
         ];
       })}</ol> : present
         ? <EmptyState icon={<Clock {...I} />} title="Ready" className="h-full">Press Play to start scene 1.</EmptyState>
-        : <EmptyState icon={<Clock {...I} />} title="No agent activity yet" action={goJudges && <Button variant="outline" className="h-10 px-5" onClick={goJudges}>Open the Judges tab</Button>}>Ask the agent from the phone app, or play a scene from the Judges tab.</EmptyState>}
+        : <EmptyState icon={<Clock {...I} />} title="No agent activity yet" action={goJudges && <Button variant="soft" className="h-10 px-5" onClick={goJudges}>Open the Judges tab</Button>}>Ask the agent from the phone app, or play a scene from the Judges tab.</EmptyState>}
     </Column>
   );
 
   const pocketCol = (
-    <Column key="pocket" title={<>{nameOf(pocket)}{isPhone(pocket) && <PhoneTag />}</>} meta={p ? <span className="num">Owner {shortAddr(p.owner)}</span> : "Reading the contract…"}
-      className={cn(!present && "xl:sticky xl:top-[88px] xl:max-h-[calc(100dvh-190px)]", !present && col !== "pocket" && "max-xl:hidden", present && "xl:h-full")} bodyClass="overflow-y-auto pb-5">
-      {p && worst && (
+    <div key="pocket" className={cn("flex min-h-0 flex-col gap-3 overflow-y-auto pb-1 [&>*]:shrink-0", !present && "xl:sticky xl:top-[88px] xl:max-h-[calc(100dvh-190px)]", !present && col !== "pocket" && "max-xl:hidden", present && "xl:h-full")}>
+      {p && worst ? (
         <>
-          <div className="py-5 text-center">
-            <div className="text-[13px] leading-5 text-muted">{worst.stopped ? "Held in a stopped pocket" : "Balance, the agent's whole budget"}</div>
-            <div className={cn("num mt-1 font-bold tracking-[-0.02em]", worst.stopped ? "text-[32px] leading-10 text-muted" : "text-[40px] leading-[44px]")} data-testid="pocket-balance" data-stopped={worst.stopped ? "true" : undefined}>{usd(p.balance)}{worst.stopped && p.balance > 0n && <span className="ml-2 text-[16px] font-semibold tracking-normal"> to return</span>}</div>
-          </div>
-          {!present && (
-            <dl className="grid grid-cols-[130px_1fr] items-center gap-y-2.5 border-y border-line py-4 text-[14px] leading-5">
-              <dt className="text-muted">Status</dt><dd>{st && <Verdict kind={st.kind}>{st.label}</Verdict>}</dd>
-              <dt className="text-muted">Cap per payment</dt><dd className="num font-medium">{usd(p.cap)}</dd>
-              <dt className="text-muted">Asks you above</dt><dd className="num font-medium">{p.askAbove === NEVER ? "Never asks" : p.askAbove === 0n ? "Every time" : usd(p.askAbove)}</dd>
-              <dt className="text-muted">Ends</dt><dd className="num font-medium">{new Date(p.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</dd>
-              <dt className="text-muted">Agent</dt><dd className="num font-medium">{shortAddr(p.agent)}</dd>
-            </dl>
-          )}
+          <PocketCard p={p} name={nameOf(pocket)} phone={isPhone(pocket)} stopped={worst.stopped} status={st} present={present} />
           <WorstCase w={worst} refused={refused} ignored={ev.injections} />
           {!present && (
-            <>
-              <h3 className="mb-2 mt-5 text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-muted">Allowed sellers</h3>
+            <Card className="p-4 sm:p-5">
+              <h3 className="mb-3 text-[18px] font-bold leading-6 tracking-[-0.02em]">Allowed sellers</h3>
               <ul className="space-y-1.5">{cfg.sellers.map((s) => {
                 const ok = p.allowed.includes(s.id);
-                return <li key={s.id} className={cn("flex items-center gap-2 text-[14px] leading-5", ok ? "text-ink" : "text-muted")}>{ok ? <Check className="size-4 text-accent" {...I} aria-hidden /> : <Minus className="size-4 text-faint" {...I} aria-hidden />}<span className="font-medium">{s.name}</span><span className="text-[13px] text-muted">{ok ? "allowed" : "not allowed"}</span></li>;
+                return <li key={s.id} className={cn("tile flex items-center gap-3 px-3.5 py-2.5 text-[14px] leading-5", ok ? "text-ink" : "text-muted")}><span aria-hidden className={cn("grid size-6 shrink-0 place-items-center rounded-full", ok ? "bg-ink text-on-accent" : "bg-line text-muted")}>{ok ? <Check className="size-3.5" strokeWidth={3} /> : <Minus className="size-3.5" strokeWidth={3} />}</span><span className="font-bold">{s.name}</span><span className="ml-auto text-[13px] text-muted">{ok ? "allowed" : "not allowed"}</span></li>;
               })}</ul>
-            </>
+            </Card>
           )}
         </>
-      )}
-      <h3 className="mb-1 mt-5 text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-muted">{present ? "Last transaction" : "On-chain"}</h3>
-      {history.length ? (
-        <ul>{(present ? history.slice(0, 1) : history).map((h) => (
-          <li key={h.key} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-b border-line py-2.5 last:border-0">
-            <span className={cn("t-body min-w-0 flex-1 break-words text-[14px] font-medium", h.bad ? "text-negative" : "text-ink")}>{h.label}{h.label === "Blocked transfer" && <> <Expected className="align-middle" /></>}</span>
-            {h.amount != null && h.amount > 0n && <span className="num shrink-0 text-[14px] text-ink2">{usd(h.amount)}</span>}
-            <span className="shrink-0"><TxHash hash={h.hash} /></span>
-          </li>
-        ))}</ul>
-      ) : <p className="py-3 text-[14px] text-muted">Nothing on-chain for this pocket yet.</p>}
-      {present && <SellerStrip perSeller={perSeller} />}
-    </Column>
+      ) : <div className="card hatch hatch-soft grid min-h-40 place-items-center p-6 text-[14px] font-semibold text-muted"><span className="rounded-full bg-card px-4 py-2">Reading the contract…</span></div>}
+      <Card className="p-4 sm:p-5">
+        <h3 className="mb-1 text-[18px] font-bold leading-6 tracking-[-0.02em]">{present ? "Last transaction" : "On-chain"}</h3>
+        {history.length ? (
+          <ul>{(present ? history.slice(0, 1) : history).map((h) => (
+            <li key={h.key} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-b border-line py-2.5 last:border-0">
+              <span className={cn("t-body min-w-0 flex-1 break-words text-[14px] font-semibold", h.bad ? "text-vermillion-ink" : "text-ink")}>{h.label}{h.label === "Blocked transfer" && <> <Expected className="align-middle" /></>}</span>
+              {h.amount != null && h.amount > 0n && <span className="num shrink-0 text-[14px] font-bold text-ink2">{usd(h.amount)}</span>}
+              <span className="shrink-0"><TxHash hash={h.hash} /></span>
+            </li>
+          ))}</ul>
+        ) : <p className="py-3 text-[14px] text-muted">Nothing on-chain for this pocket yet.</p>}
+        {present && <SellerStrip perSeller={perSeller} />}
+      </Card>
+    </div>
   );
 
   const sellers = (
@@ -302,12 +329,12 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
         const got = rs.filter((r) => r.outcome === "paid").reduce((n, r) => n + (r.amount ?? 0n), 0n);
         return (
           <section key={s.id} className="border-b border-line py-3.5 last:border-0">
-            <div className="flex items-center gap-3"><span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-fill text-[13px] font-semibold text-ink">{s.name[0]}</span><div className="min-w-0 flex-1 truncate text-[14px] font-semibold">{s.name}</div>{got > 0n ? <span className="num shrink-0 text-[14px] font-semibold text-positive">+{usd(got)}</span> : <span className="shrink-0 text-[13px] text-muted">Nothing paid</span>}</div>
-            <ul className="mt-2 space-y-1.5 pl-11">{dedupe(rs).map(({ r, n }) => (
+            <div className="flex items-center gap-3"><span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-[12px] bg-blue-soft text-[13px] font-bold text-blue-ink">{s.name[0]}</span><div className="min-w-0 flex-1 truncate text-[15px] font-bold tracking-[-0.01em]">{s.name}</div>{got > 0n ? <span className="num shrink-0 text-[14px] font-bold text-green-ink">+{usd(got)}</span> : <span className="shrink-0 text-[13px] text-muted">Nothing paid</span>}</div>
+            <ul className="mt-2 space-y-1.5 pl-12">{dedupe(rs).map(({ r, n }) => (
               <li key={r.key} className="t-body text-[13px] leading-5">
                 {r.outcome === "paid"
                   ? <span className="text-ink2">Paid {usd(r.amount)}{r.cosigned ? " · owner co-signed" : ""}</span>
-                  : <span><span className="font-semibold text-ink">Refused</span><span className="text-ink2"> · {r.why}</span>{n > 1 && <span className="num ml-1 font-semibold text-ink2">×{n}</span>}</span>}
+                  : <span><span className="font-bold text-vermillion-ink">Refused</span><span className="text-ink2"> · {r.why}</span>{n > 1 && <span className="num ml-1 font-semibold text-ink2">×{n}</span>}</span>}
                 <span className="num ml-2 text-[12px] text-muted">{clock(r.at)}</span>
               </li>
             ))}</ul>
@@ -323,8 +350,8 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
         <div className={cn(!present && "mb-3", present && "shrink-0")}><ChecksPanel attempts={attempts} present={present} /></div>
         {!present && <EvidenceStrip ev={ev} decisions={decisions} />}
         {!present && (
-          <div role="tablist" aria-label="Live view" className="mb-3 flex h-11 gap-1 rounded-full bg-fill p-1 xl:hidden">
-            {COLS.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={col === id} onClick={() => setCol(id)} className={cn("flex-1 rounded-full text-[14px] font-semibold transition-colors", col === id ? "bg-card text-ink" : "text-ink2")}>{label}</button>)}
+          <div role="tablist" aria-label="Live view" className="card mb-3 flex h-12 gap-1 rounded-full p-1 xl:hidden">
+            {COLS.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={col === id} onClick={() => setCol(id)} className={cn("pressable flex-1 rounded-full text-[14px] font-bold", col === id ? "bg-ink text-on-accent" : "text-ink2 hover:bg-tile")}>{label}</button>)}
           </div>
         )}
         <div className={cn("grid gap-3", present ? "min-h-0 flex-1 xl:grid-cols-2" : "items-start xl:grid-cols-[1.35fr_1fr_0.95fr]")}>
@@ -341,11 +368,11 @@ function SellerStrip({ perSeller }: { perSeller: { s: { id: string; name: string
   if (!perSeller.length) return null;
   return (
     <>
-      <h3 className="mb-1 mt-5 text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-muted">Sellers</h3>
+      <h3 className="eyebrow mb-1 mt-5 text-muted">Sellers</h3>
       <ul>{perSeller.map(({ s, rows }) => {
         const got = rows.filter((r) => r.outcome === "paid").reduce((n, r) => n + (r.amount ?? 0n), 0n);
         const no = rows.filter((r) => r.outcome === "refused").length;
-        return <li key={s.id} className="t-body flex items-center justify-between gap-3 border-b border-line py-2 text-[14px] last:border-0"><span className="font-medium">{s.name}</span><span className="num text-ink2">{got > 0n ? <span className="font-semibold text-positive">+{usd(got)}</span> : "Nothing paid"}{no > 0 && <span className="text-muted"> · {no} refused</span>}</span></li>;
+        return <li key={s.id} className="t-body flex items-center justify-between gap-3 border-b border-line py-2 text-[14px] last:border-0"><span className="font-medium">{s.name}</span><span className="num text-ink2">{got > 0n ? <span className="font-bold text-green-ink">+{usd(got)}</span> : "Nothing paid"}{no > 0 && <span className="text-muted"> · {no} refused</span>}</span></li>;
       })}</ul>
     </>
   );

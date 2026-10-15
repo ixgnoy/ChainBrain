@@ -18,7 +18,7 @@ export function useFacts(since?: number) {
 
 function Tick({ done }: { done: boolean }) {
   return (
-    <span aria-hidden className={cn("grid size-6 shrink-0 place-items-center rounded-full transition-colors duration-200", done ? "bg-accent text-on-accent" : "bg-canvas ring-1 ring-inset ring-line")}>
+    <span aria-hidden className={cn("grid size-6 shrink-0 place-items-center rounded-full transition-colors duration-200", done ? "bg-ink text-on-accent" : "bg-card ring-1 ring-inset ring-line")}>
       {done && <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path className="tick-draw" d="M5 12.5l4.5 4.5L19 7.5" /></svg>}
     </span>
   );
@@ -28,14 +28,14 @@ function Item({ it }: { it: ScoreItem }) {
   const [open, setOpen] = useState(false);
   const f = it.fact;
   return (
-    <li data-testid={`score-item-${it.id}`} data-done={it.done ? "true" : "false"} className="border-b border-line last:border-0">
-      <div className="flex items-center gap-3 py-1.5">
+    <li data-testid={`score-item-${it.id}`} data-done={it.done ? "true" : "false"} className="border-t border-line first:border-0">
+      <div className="flex items-center gap-3 py-2">
         <Tick done={it.done} />
-        <span className={cn("min-w-0 flex-1 text-[14px] leading-5 transition-colors", it.done ? "font-medium text-ink" : "text-muted")}>{it.label}</span>
-        {it.done && f && <button type="button" aria-expanded={open} aria-label={`Show proof for ${it.label}`} onClick={() => setOpen((o) => !o)} className="relative inline-flex h-8 items-center gap-1 rounded-full px-2 text-[13px] font-semibold text-accent before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-accent-soft">Proof<ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} aria-hidden /></button>}
+        <span className={cn("min-w-0 flex-1 text-[14px] leading-5 transition-colors", it.done ? "font-semibold text-ink" : "text-muted")}>{it.label}</span>
+        {it.done && f && <button type="button" aria-expanded={open} aria-label={`Show proof for ${it.label}`} onClick={() => setOpen((o) => !o)} className="relative inline-flex h-8 items-center gap-1 rounded-full bg-card px-2.5 text-[13px] font-bold text-ink before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-blue-soft">Proof<ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} aria-hidden /></button>}
       </div>
       {open && f && (
-        <div className="fade-up mb-3 ml-9 rounded-[12px] bg-canvas px-3.5 py-3 text-[13px] leading-5 text-ink2">
+        <div className="fade-up mb-3 ml-9 rounded-[12px] bg-card px-3.5 py-3 text-[13px] leading-5 text-ink2">
           <p>{f.detail}</p>
           {f.txs.length > 0 && <p className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">{f.txs.map((h) => <TxHash key={h} hash={h} />)}</p>}
         </div>
@@ -62,21 +62,25 @@ export function Scorecard({ pocket }: { pocket?: string }) {
   const done = groups.reduce((n, g) => n + g.items.filter((i) => i.done).length, 0);
   const total = groups.reduce((n, g) => n + g.items.length, 0);
   return (
-    <section data-testid="scorecard" data-done={done} aria-label="Scorecard" className="flex min-h-0 flex-col overflow-hidden rounded-[20px] bg-card">
-      <header className="flex min-h-12 items-center justify-between gap-3 border-b border-line px-4 sm:px-5">
-        <h2 className="text-[15px] font-semibold leading-5">Scorecard</h2>
-        <div className="flex items-center gap-2 text-[12px] text-muted">
-          <span className="num font-semibold text-ink" data-testid="score-total">{done} of {total}</span>
-          <button type="button" onClick={reset} className="relative inline-flex h-8 items-center rounded-full px-2 text-[13px] font-semibold text-accent before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-accent-soft">Reset</button>
+    <section data-testid="scorecard" data-done={done} aria-label="Scorecard" className="card flex min-h-0 flex-col overflow-hidden">
+      <header className="px-4 pb-3 pt-4 sm:px-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[22px] font-bold leading-7 tracking-[-0.02em]">Scorecard</h2>
+          <button type="button" onClick={reset} className="pressable relative inline-flex h-9 items-center rounded-full bg-tile px-3.5 text-[13px] font-bold text-ink shadow-[inset_0_0_0_1px_var(--color-tile-stroke)] before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] hover:bg-line">Reset</button>
         </div>
+        <div className="mt-2 flex items-end justify-between gap-3">
+          <span className="figure text-[40px] leading-[44px]" data-testid="score-total">{done} of {total}</span>
+          <span className="eyebrow pb-1.5 text-muted">proven</span>
+        </div>
+        <div role="presentation" className="hatch hatch-soft mt-2.5 h-2.5 overflow-hidden rounded-full bg-tile shadow-[inset_0_0_0_1px_var(--color-line)]"><div className="bar-grow h-full rounded-full bg-ink transition-[width] duration-500 ease-out" style={{ width: `${total ? Math.round((done / total) * 100) : 0}%` }} /></div>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3 sm:px-5">
-        <p className="pt-3 text-[12px] leading-4 text-muted">{all ? "Everything on the pockets being presented." : "Since you opened presenter mode."} <button type="button" onClick={() => setAll((a) => !a)} className="font-semibold text-accent hover:underline">{all ? "Only since opening" : "Show all history"}</button></p>
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 sm:px-4">
+        <p className="px-1 pb-1 text-[12px] leading-4 text-muted">{all ? "Everything on the pockets being presented." : "Since you opened presenter mode."} <button type="button" onClick={() => setAll((a) => !a)} className="font-bold text-ink underline decoration-line decoration-2 underline-offset-4 hover:decoration-vermillion">{all ? "Only since opening" : "Show all history"}</button></p>
         {groups.map((g) => {
           const n = g.items.filter((i) => i.done).length;
           return (
-            <div key={g.id} className="pt-2.5" data-testid={`score-group-${g.id}`}>
-              <div className="flex items-baseline justify-between"><h3 className="text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-muted">{g.title} · {g.weight}</h3><span className="num text-[12px] text-muted">{n}/{g.items.length}</span></div>
+            <div key={g.id} className="tile mt-2 px-3.5 py-3" data-testid={`score-group-${g.id}`}>
+              <div className="flex items-baseline justify-between"><h3 className="eyebrow text-muted">{g.title} · {g.weight}</h3><span className="num text-[13px] font-bold text-ink">{n}/{g.items.length}</span></div>
               <ul>{g.items.map((it) => <Item key={it.id} it={it} />)}</ul>
             </div>
           );

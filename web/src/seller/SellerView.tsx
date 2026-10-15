@@ -7,7 +7,7 @@ import { PillSelect, Pill, tabPill } from "./ui";
 function ShopSwitch() {
   const { cfg, seller, setSellerId } = useSeller();
   return (
-    <PillSelect label="Shop" value={seller.id} onChange={setSellerId} shown={<span className="flex items-center gap-2.5"><span aria-hidden className="grid size-8 place-items-center rounded-full bg-accent text-[13px] font-semibold text-on-accent">{seller.name[0]}</span>{seller.name}</span>}>
+    <PillSelect label="Shop" value={seller.id} onChange={setSellerId} shown={<span className="flex items-center gap-2.5"><span aria-hidden className="grid size-8 place-items-center rounded-[10px] bg-ink text-[13px] font-bold text-on-accent">{seller.name[0]}</span>{seller.name}</span>}>
       {cfg.sellers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
     </PillSelect>
   );

@@ -20,12 +20,12 @@ function Connecting({ url, failed, retry }: { url: string; failed: boolean; retr
   return (
     <div className="grid min-h-dvh place-items-center bg-canvas px-6 text-center">
       <div>
-        <p className="text-[15px] text-ink2">{failed ? "Can't reach the server" : "Connecting…"}</p>
+        <p className="text-[22px] font-bold tracking-[-0.02em]">{failed ? "Can't reach the server" : "Connecting…"}</p>
         <p className="num mt-1 break-all text-[13px] text-muted">{url}</p>
         {failed && (
           <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <button type="button" onClick={retry} className="h-10 rounded-full bg-fill px-5 text-[14px] font-semibold text-ink hover:bg-line">Try again</button>
-            <button type="button" onClick={() => setSource({ kind: "demo" })} className="h-10 rounded-full px-5 text-[14px] font-semibold text-accent hover:bg-accent-soft">Use the built-in network</button>
+            <button type="button" onClick={retry} className="pressable h-11 rounded-full bg-ink px-5 text-[14px] font-bold text-on-accent hover:bg-accent-press">Try again</button>
+            <button type="button" onClick={() => setSource({ kind: "demo" })} className="pressable h-11 rounded-full bg-card px-5 text-[14px] font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile">Use the built-in network</button>
           </div>
         )}
       </div>
