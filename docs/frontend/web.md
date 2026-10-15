@@ -1,6 +1,6 @@
 # Network console (web/)
 
-The whole ChainBrain system on one screen, for the laptop demo, the judges and the presenter. The owner's own app is the phone (`mobile/`); the console shows what the phone, the agent, the pockets, the sellers and the chain are doing, together. React 19, Tailwind v4, viem (read-only), Radix dialog, lucide icons. Design: [design-system/chainbrain/MASTER.md](../../design-system/chainbrain/MASTER.md) (v3: deep teal + navy, light only).
+The whole ChainBrain system on one screen, for the laptop demo, the judges and the presenter. The owner's own app is the phone (`mobile/`); the console shows what the phone, the agent, the pockets, the sellers and the chain are doing, together. React 19, Tailwind v4, viem (read-only), Radix dialog, lucide icons. Design: [design-system/chainbrain/MASTER.md](../../design-system/chainbrain/MASTER.md) (v4 Neo-Kinetic Fintech: slate canvas, white 24-radius cards, black pill nav, ExtraBold figures with the currency at 75 %, hatch bars and verdict bands, a powder-blue pocket card, vermillion for the refusing gate; light only). Pockets name the agent that holds them (ChainBrain, Claude or ChatGPT, read from the pocket's immutable agent key, with the official marks in `shared/brand/`). Screenshots: `docs/frontend/screenshots/neo/web-*.png`.
 
 | Tab | Shows | Spec link |
 | --- | --- | --- |

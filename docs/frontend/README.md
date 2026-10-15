@@ -12,7 +12,7 @@ Combined on 14 Oct 2026 on branch `feat/integrate` (local, not pushed). It is th
 
 | `shared/sim/` | The built-in network both apps open on: wallet API, tool layer, scripted agent and Pocket.sol rules in-app, seeded owner, scenes 1-8 offline | (code, `shared/sim/world.test.ts`) |
 
-Design system: [design-system/chainbrain/MASTER.md](../../design-system/chainbrain/MASTER.md) (v3, clean bank after Ryt Bank and Revolut, deep teal + navy, light only). Reference screenshots: `reference/frontend/ryt-bank/` (gitignored).
+Design system: [design-system/chainbrain/MASTER.md](../../design-system/chainbrain/MASTER.md) (v4 Neo-Kinetic Fintech, after the Stitch export in `reference/frontend/stitch_chainbrain_ai_pocket_banking/`, gitignored; light only). Plan, screen map and decisions: [neo-kinetic-plan.md](neo-kinetic-plan.md).
 
 ## How the two builds were combined
 
@@ -20,7 +20,7 @@ The team's `web/` and `mobile/` were built against the v2 spec and the real serv
 
 ## Built-in network (default)
 
-Both apps open on a built-in network on every launch. `shared/sim` runs the wallet API, the tool layer, the scripted agent and the Pocket.sol rules in the app, on a virtual chain, seeded with a lived-in owner: a Research data pocket (US$10, earlier purchases), a One purchase pocket (US$0.20) and a main wallet of US$54.80. Scenes 1-8 work with no server and no internet. It is meant for demos and offline use; its hashes are not on a public chain, so the apps show in-app receipts and sheets for them and never link BaseScan.
+Both apps open on a built-in network on every launch. `shared/sim` runs the wallet API, the tool layer, the scripted agent and the Pocket.sol rules in the app, on a virtual chain, seeded with two weeks of real activity by three agents: Research data and One purchase (ChainBrain's agent), Market news (Claude) and Trade quotes (ChatGPT), main wallet US$54.80. Claude and ChatGPT are connected agents in the simulator (`shared/sim/agents.ts`) that use the same wallet tools and rules; on a real server only the built-in agent exists until an MCP server ships. Scenes 1-10 work with no server and no internet. It is meant for demos and offline use; its hashes are not on a public chain, so the apps show in-app receipts and sheets for them and never link BaseScan.
 
 **Use a real server instead:**
 
@@ -43,7 +43,7 @@ cd mobile && EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787 npx expo start   # 
 pnpm --dir web dev               # the console finds the phone by itself
 ```
 
-The console then shows the phone's pockets first, by name, follows them, and holds its own story while the phone is linked. The Judges tab's attack arena, red-team plant and forced transfer run on the phone's pockets, and the phone's hidden auto-play (long-press the Agent header) drives the console exactly like a person would. With no phone (or no relay) the console is just the built-in network.
+The console then shows the phone's pockets first, by name, follows them, and holds its own story while the phone is linked. The Judges tab's attack arena, red-team plant and forced transfer run on the phone's pockets, and the phone's hidden auto-play (long-press the chat's header) drives the console exactly like a person would. With no phone (or no relay) the console is just the built-in network.
 
 ## Run it on a laptop with the dev stack (no keys needed)
 
@@ -71,7 +71,7 @@ Type the sentences from the [devstack scene table](../../devstack/README.md#demo
 
 Once a server is chosen (Custom server), both apps ask `GET /dev/health`. On the dev stack they show a **LOCAL FORK** badge, turn BaseScan links into plain hashes (fork hashes don't exist on Base Sepolia), and use `/dev/rpc` for the chain. On the team's real server that route is missing, so the badge disappears, BaseScan links work, the web uses MetaMask and the phone uses its own key on Base Sepolia. Nothing else changes.
 
-## Checks (all run on 15 Oct 2026)
+## Checks (Neo-Kinetic round, 16 Oct 2026: phone `npm test` 34/34, typecheck clean, iOS export builds; built-in e2e 45/45; sim 32/32; web 76/76, build and lint clean; dev-stack e2e not re-run. The table below is the 15 Oct run.)
 
 | Suite | Result |
 | --- | --- |

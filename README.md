@@ -24,7 +24,7 @@ FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia 
 
 ## Try it with nothing running
 
-Both apps open on a **built-in network** on every launch: no server, no keys, no funds, no internet. `shared/sim` runs the wallet API, the tool layer, a scripted agent and the Pocket.sol rules inside the app, seeded with a lived-in owner (a Research data pocket with US$10 and earlier purchases, a One purchase pocket with US$0.20, main wallet US$54.80). Scenes 1-8 below play end to end offline.
+Both apps open on a **built-in network** on every launch: no server, no keys, no funds, no internet. `shared/sim` runs the wallet API, the tool layer, a scripted agent and the Pocket.sol rules inside the app, seeded with two weeks of activity by three agents (Research data and One purchase held by ChainBrain's agent, Market news by Claude, Trade quotes by ChatGPT; main wallet US$54.80). Claude and ChatGPT are connected agents in the built-in network, using the same wallet tools and pocket rules. Scenes 1-8 below play end to end offline.
 
 It is meant for demos and offline use. Its transaction hashes come from a virtual chain, not a public one, so the apps show them in in-app receipts and sheets and never link them to BaseScan. Explorer links appear only when you connect to a real server on the public chain.
 

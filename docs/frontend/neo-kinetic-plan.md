@@ -1,6 +1,6 @@
 # Neo-Kinetic redesign: plan for mobile/ and web/
 
-15 Oct 2026. Status: **draft for review, no UI code written yet.** The open questions are at the end. Sources: the Stitch export in `reference/frontend/stitch_chainbrain_ai_pocket_banking/` (gitignored): `neo_kinetic_fintech/DESIGN.md`, 11 `chainbrain_*` screens, 4 `*_vaultbank_style` screens and 5 VaultBank shots. Read alongside `docs/frontend/mobile.md`, `docs/frontend/web.md` and `docs/02-product/product-design.md`.
+15 Oct 2026, built 15-16 Oct. Status: **built on local `main` (not pushed)**; decisions in sections 6 and 7, what shipped in section 8. Sources: the Stitch export in `reference/frontend/stitch_chainbrain_ai_pocket_banking/` (gitignored): `neo_kinetic_fintech/DESIGN.md`, 11 `chainbrain_*` screens, 4 `*_vaultbank_style` screens and 5 VaultBank shots. Read alongside `docs/frontend/mobile.md`, `docs/frontend/web.md` and `docs/02-product/product-design.md`.
 
 ## 0. Where the repo stands
 
@@ -237,3 +237,30 @@ Docs (`mobile.md`, `web.md`, screenshots) are updated at the end.
 - **No extra marking:** Claude and ChatGPT are treated like the rest of the built-in network, with no "preview" chip.
 - **Auto-play:** scenes 1–8 play as now, then: Agents → connect Claude (consent, create a pocket, Allow) → co-sign Claude's request from the inbox → scene 9 (Radar) → scene 10 (Sentinel). It ends on the fanned deck.
 - **Git:** one commit per slice on local `main`, not pushed.
+
+## 8. What shipped (16 Oct, overnight run)
+
+One commit per slice on local `main`:
+
+| Commit | Slice |
+| --- | --- |
+| `9277bf0` | Tokens and fonts, both apps (Plus Jakarta 400-800, Fraunces removed); palette parity test; official marks in `shared/brand/` |
+| `4771fb9` | Phone kit: pill tab bar, tiles, cards, hatch, agent marks, pill buttons, slide track, underline tabs, sheets |
+| `698816b` | Built-in network: Claude and ChatGPT as connected agents, events and approvals name their agent, revoke-and-return, two weeks of seeded history |
+| `0fc6d9e` | Web console restyle, every view and the kit (routes, shortcuts, test ids unchanged) |
+| `663dc29` | Home and the fanned pocket deck, spend chart, store agents and approval focus |
+| `b62c69f` | Agents tab, Agent detail, Connect + consent; chat moved to a pushed `/agent` |
+| `3d52f25` | Approval sheet and Approvals inbox |
+| `755a8b1` | Pocket page and Revoked; auto-play and e2e for the multi-agent flow; MASTER.md and motion.md rewritten; console names each pocket's agent |
+| `b415180` | Chat |
+| `df017e8` | Radar alert page |
+| `bd77407` | Intro |
+| `58eb9cd` | Polish: the exact approval opens everywhere |
+
+Changes from the plan, and why:
+
+- The multi-agent simulator came before Home (Home's agent chips and deck need it).
+- Revoke now always returns the money in the same hold (two owner transactions), so scene 7's separate "return funds" step is gone; auto-play skips it safely.
+- The chat's pocket picker lists only ChainBrain's pockets: a pocket keeps the agent it was made for.
+- The approval sheet opens by itself only for the built-in agent; outside agents' requests wait in the inbox (bell count, blue strip on Home).
+- "Stop everything" on the Agents tab was not built (Disconnect per agent and Revoke per pocket cover it without a one-tap kill of every pocket).

@@ -50,7 +50,7 @@ With a phone linked, every attack runs on the phone's pocket and appears in its 
 
 1. Laptop: relay and console as above, console on `#present` (it follows the phone; the scorecard ticks as scenes land).
 2. Phone: reload the app (shake, Reload), Skip the intro, open the **Agent** tab.
-3. **Long-press the Agent header for about 1.5 s.** The phone plays the whole story by itself, typing each sentence and pressing every control the way a person would: New pocket through the wizard (create and fund hashes), scenes 1, 4, 5 (and the forced transfer), 6, the escalation attempt, 7 (hold to revoke, return funds), 8 (One purchase, dead end, one-tap fix, ask again), then back to Home with the frozen card. About 4 minutes. Nothing on screen says it is automatic.
+3. **Open the chat (Agents tab, ChainBrain's card, Chat) and long-press its header for about 1.5 s.** The phone plays the whole story by itself, typing each sentence and pressing every control the way a person would: New pocket through the wizard (create and fund hashes), scenes 1, 4, 5 (and the forced transfer), 6, the escalation attempt, 7 (hold to revoke: the pocket is frozen and its money returned in one hold), 8 (One purchase, dead end, one-tap fix, ask again); then it connects Claude (pairing link, consent, Claude's own pocket), confirms Claude's task and co-signs its payment from the Approvals inbox, plays scene 9 (Radar blocks DataPro and opens the money trail) and scene 10 (the Sentinel freezes a probing agent), and ends on Home with the revoked card in the deck. About 6 minutes. Nothing on screen says it is automatic.
 4. To stop early: long-press the header again, or tap Stop.
 
 ## If something goes wrong

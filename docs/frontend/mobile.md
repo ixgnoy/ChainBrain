@@ -1,6 +1,6 @@
 # ChainBrain phone app (Expo Go)
 
-The owner's app: the team's verified wallet logic in the clean-bank design (design-system/chainbrain/MASTER.md v3, deep teal + navy, light only). Code in `mobile/`.
+The owner's app: the team's verified wallet logic in the Neo-Kinetic Fintech design (design-system/chainbrain/MASTER.md v4: slate canvas, white cards, black ink, vermillion and powder-blue accents, 45° hatch, Plus Jakarta Sans; light only). Code in `mobile/`. Screen-by-screen plan and decisions: [neo-kinetic-plan.md](neo-kinetic-plan.md).
 
 **No login or setup.** The first launch creates the on-device key silently and opens Home. "Import a key" is in Settings only. The app opens on the **built-in network** on every launch (see below); a real server is opt-in in Settings.
 
@@ -15,7 +15,9 @@ EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787 npx expo start       # address o
 
 ## Built-in network (default)
 
-`shared/sim` runs the wallet API, tool layer, scripted agent and the Pocket.sol rules in the app on a virtual chain (`src/lib/builtin.ts`). It is seeded with a lived-in owner: Research data (US$10 pocket, earlier purchases), One purchase (US$0.20 pocket), main wallet US$54.80. Every owner action, agent turn, co-sign and refusal works offline; scenes 1-8 play end to end. Paid cards show in chat, replies stream, and receipts say what was bought.
+`shared/sim` runs the wallet API, tool layer, scripted agent and the Pocket.sol rules in the app on a virtual chain (`src/lib/builtin.ts`). It is seeded with two weeks of real activity, produced by running the same plans through the world on a clock set back in time (`shared/sim/seed.ts`): Research data (held by ChainBrain's agent), Market news (held by **Claude**, connected 12 days ago), Trade quotes (held by **ChatGPT**, connected 9 days ago) and One purchase (ChainBrain, for scene 8); main wallet US$54.80. A little after launch Claude asks, in the Approvals inbox, to co-sign a premium report above its pocket's limit. Every owner action, agent turn, co-sign and refusal works offline; scenes 1-10 play end to end. Paid cards show in chat, replies stream, and receipts say what was bought.
+
+**Agents.** Each pocket names exactly one agent key (Pocket.sol `agent` is immutable); one agent can hold several pockets, each granted separately. Claude and ChatGPT are connected agents on the built-in network (`shared/sim/agents.ts`): they act through the same wallet tools as the in-app agent, so the pocket rules, Radar and the Sentinel decide for them too. **Disconnect** stops an agent and declines its open requests; the money stays in its pockets. **Revoke** (one hold) freezes a pocket for good and returns everything left to the main wallet: two owner transactions. On a real server only the built-in agent exists until ChainBrain's MCP server ships, so Connect is not offered there.
 
 It is meant for demos and offline use. Its hashes are not on a public chain, so they open in-app receipts and sheets, and BaseScan links appear only when connected to a real server on the public chain.
 
@@ -23,22 +25,24 @@ It is meant for demos and offline use. Its hashes are not on a public chain, so 
 
 **Link to the web console:** on the built-in network the phone quietly pushes its pockets and events to a relay (`src/lib/relay.ts`, backs off when none answers). On the laptop run `pnpm --dir devstack relay` (or the full `pnpm --dir devstack start`), start the phone with `EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787`, and keep it on the built-in network. The console then mirrors the phone, and the Judges tab's plant and forced transfer run on the phone's pockets.
 
-## What a judge sees first (15 Oct round)
+## What a judge sees (Neo-Kinetic round, 16 Oct)
 
-- **Intro on every launch:** three pages ("Give your AI a pocket, not your wallet"; the limits live in a contract you own; the worst case is the pocket balance, only to sellers you allowed). Skip is always there, pages follow the finger, and it finishes into Home by itself in about 7 s (`src/components/Intro.tsx`).
-- **Pocket cards (Apple Wallet stack):** each pocket is a printed card with a solid navy or teal face: name, balance, cap, ask-me limit, valid-thru and a short pocket number. Tapping a card flies it into the pocket page (a measured overlay, since Expo Go has no shared-element transitions: `src/components/PocketStack.tsx`, `CardFlight.tsx`, `src/ui/cardFlight.ts`). Revoking freezes the card: a cool grey face, frost lines and a Warning haptic.
-- **ChainBrain explorer sheet:** every hash on the phone opens it: status, block, time, from, to, method and arguments, event logs, a plain summary, and "How it was checked" (the gates the payment or attack passed and the one that stopped it, codes under "Why"). A reverted transfer shows the on-chain error and the pocket rule that failed as separate rows. It says "Test network" on the built-in network and the local fork; "View on BaseScan" appears only against a real public-chain server (`src/components/ExplorerSheet.tsx`, `shared/sim/explorer.ts`).
-- **Attack cards:** when the laptop console attacks the phone's pocket, chat and Activity say so calmly: a fooled agent's transfer (reverted on-chain), the agent key's attempt to change the rules (NOT_OWNER), a request for private data (nothing shared) (`src/components/AttackCard.tsx`).
-- **Hidden auto-play (for the video):** long-press the Agent screen header for about 1.5 s. The phone then plays the whole story by itself at a natural pace: Home, New pocket, the Research preset through the wizard, slide to create and fund, then scenes 1, 4, 5 (plus the forced transfer), 6, the privilege-escalation attempt, 7 (hold to revoke, return funds), 8 (switch to One purchase, the dead end, the one-tap fix, ask again), and it ends on Home with the frozen card. Long-press again, or tap Stop, to end it. Every step presses the real control through a named target (`src/lib/autoplay.ts`, `src/lib/autoplayTargets.ts`), so a linked console follows it exactly as it follows a person. Nothing on screen shows it is running.
+- **Intro on every launch:** three pages, Skip always there, the finger drives the pager, about 7 s auto-advance. Page 1 fans out the owner's own pockets (names, short numbers, holding agents) over a hatch panel (`src/components/Intro.tsx`).
+- **Home:** the agent-pockets pool and the main wallet with Fund; Add money, New pocket and a powder-blue Connect tile; a **fanned pocket deck** (`PocketStack.tsx`, `PocketFace.tsx`): tap a card behind to deal it to the front, swipe to cycle, tap the front card to fly it into its page (a measured overlay that carries the card's rotation and width, `CardFlight.tsx`); agent spending as a hatch curve that draws in, with "vs last week" only when the history covers last week (`SpendChart.tsx`, `lib/agents.ts`); recent activity with the agent that acted.
+- **Agents tab:** ChainBrain's agent, Claude and ChatGPT with the pockets they hold, spent share, what they are doing; Agent detail with its own ledger, Give another pocket and hold-to-disconnect; **Connect** (pairing link and QR, then the consent sheet: a new pocket for the agent, can / can't, slide to allow).
+- **Approvals inbox** (the bell): every agent's waiting requests with their 10-minute countdown; the **approval sheet** separates what the wallet checked (item, pocket, rule, Radar's score, expiry) from the agent's own note, marked "not checked"; black slide track with a vermillion grip.
+- **Pocket page:** rule chips, Add / Return / Revoke tiles, worst case with main-wallet exposure US$0.00, spending by day as hatch bars split by seller, the holding agent, black seller toggles, history. Revoked: banner, white-hatch card, what came back, audit trail with a JSON export.
+- **Chat** (pushed from Agents or Home): black owner bubbles, the agent's words in white cards, green / vermillion / blue event cards, Radar cards that open the **Radar alert** page (diagnosis, money trail, affected pockets, Keep blocked or remove the seller).
+- **ChainBrain explorer sheet:** every hash opens it ("Test network"; "View on BaseScan" only against a real public-chain server).
+- **Hidden auto-play (for the video):** long-press the chat header for about 1.5 s. Scenes 1-8 as before (wizard, question, co-sign, refusal, injection plus the forced transfer, data grab, escalation, revoke, dead end and fix), then: Connect Claude (pairing, consent, its own pocket), confirm Claude's task and co-sign its payment from the inbox, scene 9 (Radar, opening the money trail) and scene 10 (Sentinel). Every step presses the real control through a named target (`src/lib/autoplay.ts`, `src/lib/autoplayTargets.ts`).
 
 ## Screens
 
-Home ("Ask agent" pill, Test network chip, pocket total and main wallet balance, round actions, the pocket card stack, recent activity), Agent (chat; tool steps folded under "Details"), Activity (filters, date groups), Settings (wallet, import key, network, Advanced: Custom server). Stack screens: pocket detail (Add, Return, Revoke round actions, editable cap and ask-me limit, seller switches, worst-case line, history with tx hashes), create wizard (sellers grouped by category). Every owner transaction (create, fund, return, revoke, rule change) shows its tx hash; the agent chat has "Stop agent" and a dead-end card with the sellers tried and a one-tap fix (scene 8). Sheets: approval (slide to approve), question, receipt, add money / return / revoke (hold to revoke).
-
+Tabs: Home, Agents, Brain, Activity, Settings (a floating white pill bar; the active tab is a black pill that slides). Stack screens: chat (`/agent`), Agent detail (`/agents/[id]`), Connect (`/connect`), Approvals (`/approvals`), Radar alert (`/radar`), pocket page (`/pocket/[id]`), create wizard (`/create`). Sheets: approval, consent, question, receipt, explorer, add money / return / revoke (hold), rules, pocket picker (ChainBrain's pockets only).
 
 ## Motion and haptics
 
-Spec: [design-system/chainbrain/pages/motion.md](../../design-system/chainbrain/pages/motion.md). Glass tab bar (iOS 26 Liquid Glass, blur on older iOS, solid on Android/web) with a sliding highlight, finger scrubbing and minimize-on-scroll; tabs slide in from the direction of travel and keep their state; sheets with drag physics, rubber-banding and keyboard lift; slide-to-approve and hold-to-revoke with ticks and a drawn success / error mark; rolling-digit balances; staggered first-load reveals; live agent steps with a status mark that draws its check; a calm three-dot working indicator. Rich haptics through `src/haptics.ts` (semantic, throttled). Everything honours Reduce Motion and Reduce Transparency.
+Spec: [design-system/chainbrain/pages/motion.md](../../design-system/chainbrain/pages/motion.md). Floating pill tab bar (solid white, no glass or blur) with a sliding black pill, finger scrubbing and minimize-on-scroll; the deck deals, swipes and flies; tabs slide in from the direction of travel and keep their state; sheets with drag physics, rubber-banding and keyboard lift; slide-to-approve and hold-to-revoke with ticks and a drawn success / error mark; rolling-digit balances; staggered first-load reveals; live agent steps with a status mark that draws its check; a calm three-dot working indicator. Rich haptics through `src/haptics.ts` (semantic, throttled). Charts draw in, hatch bars grow. Everything honours Reduce Motion.
 
 ## Where the logic is
 
@@ -49,7 +53,9 @@ Spec: [design-system/chainbrain/pages/motion.md](../../design-system/chainbrain/
 | `src/lib/runtime.ts` | data source (built-in or server), API URL, dev detection (`/dev/health`), RPC and explorer switching |
 | `src/lib/builtin.ts` | the in-app world from `shared/sim` |
 | `src/lib/relay.ts` | pushes the built-in network to the devstack relay for the web console |
-| `src/store.tsx` | polling, pending reconciliation, chat turns |
+| `src/lib/agents.ts` | agents and their numbers (pockets, spent, last active, requests today), daily spend, week over week, an agent's own ledger |
+| `src/store.tsx` | polling, pending reconciliation, chat turns, agents, approval focus (only the in-app agent's asks open the sheet by themselves) |
+| `src/tokens.ts`, `src/ui/*` | Neo-Kinetic tokens and kit (pill tab bar, tiles, hatch, agent marks, slide track); `src/lib/tokens.test.ts` keeps the palette identical to the console's |
 
 ## Dev mode
 
@@ -57,8 +63,8 @@ With a server chosen, `GET /dev/health` returning 200 switches the RPC to `<api>
 
 ## Checks
 
-`npm test` (25 tests, includes the co-sign payload and a full auto-play run against the built-in network), `npx tsc --noEmit`, `npx expo-doctor`, `npx expo export --platform web|ios`. Built-in network end to end: `node devstack/e2e/builtin.cjs --url http://localhost:8091` (scenes 1-8 plus intro, card stack and explorer sheet, 34 checks, no server needed). Dev stack end to end: `node devstack/e2e/e2e.cjs` (56 checks; switches the phone to the server with localStorage `cb.source=server`). Screenshots from the end-to-end run: `docs/frontend/screenshots/e2e-phone-*.png`.
+`npm test` (34 tests: the co-sign payload, agents and spending maths, the palette parity with the console, and a full auto-play run on the built-in network that includes Claude via Connect and the inbox and scenes 9-10), `npx tsc --noEmit`, `npx expo-doctor` (16 Oct: only `expo` / `expo-router` one patch behind the newest release), `npx expo export --platform web|ios` (the iOS Hermes bundle builds). Built-in network end to end: `node devstack/e2e/builtin.cjs --url http://localhost:8091` (45 checks on 16 Oct: intro, Home deck and spending, Agents and Claude's page, Claude's co-sign from the inbox, Connect + consent for ChatGPT, scenes 1-8, receipt and explorer, settings; no server needed). Dev stack end to end: `node devstack/e2e/e2e.cjs` (not re-run in the Neo-Kinetic round). Screenshots: `docs/frontend/screenshots/builtin/*.png` (refreshed 16 Oct), `docs/frontend/screenshots/neo/web-*.png`.
 
 ## Not verified
 
-Not run on a physical phone or in Expo Go itself (web export and iOS Hermes bundle only): haptics, Liquid Glass, 120 Hz motion, whether the card flight stays in step with the native fade, and iOS edge swipe-back on the pocket page are unverified. No dark mode.
+Not run on a physical phone or in Expo Go itself (web export and iOS Hermes bundle only): haptics, 120 Hz motion, the deck's deal and swipe under a real finger, whether the card flight (now rotating and scaling) stays in step with the native fade, the SVG hatch patterns on iOS, and iOS edge swipe-back on the pocket page are unverified. Slide and hold gestures were driven in Playwright with a real mouse. No dark mode.
