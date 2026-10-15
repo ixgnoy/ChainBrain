@@ -12,7 +12,7 @@ import { EASE_OUT, useReduceMotion } from "./motion";
 import { c, motion } from "../tokens";
 import { T } from "./Text";
 import { Icon } from "./Icon";
-import { autoplayAlive, useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
+import { autoplayAlive, autoplayRun, useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
 
 const ACircle = Animated.createAnimatedComponent(Circle);
 const HOLD_MS = 1200;
@@ -31,13 +31,14 @@ export function HoldToRevoke({ onComplete, label = "Hold to revoke", disabled, b
   const completeNow = React.useRef(complete);
   completeNow.current = complete;
   useAutoplayTarget(auto ?? "sheet.close", async () => {
-    if (disabled || busy) return;
+    if (disabled || busy) return false;
+    const run = autoplayRun();
     finished.value = false; stage.value = 0; p.value = 0;
     p.value = withTiming(1, { duration: HOLD_MS, easing: FILL_EASE });
     if (!reduce) scale.value = withTiming(0.97, { duration: motion.pressIn, easing: EASE_OUT });
     haptic.light();
     await new Promise<void>((r) => setTimeout(r, HOLD_MS + 40));
-    if (!autoplayAlive()) { p.value = withTiming(0, { duration: 200 }); scale.value = withSpring(1, motion.spring.press); return; }
+    if (!autoplayAlive(run)) { p.value = withTiming(0, { duration: 200 }); scale.value = withSpring(1, motion.spring.press); return false; }
     finished.value = true; p.value = 1;
     if (!reduce) pulse.value = withSequence(withTiming(1, { duration: 140, easing: EASE_OUT }), withTiming(0, { duration: 360, easing: EASE_OUT }));
     scale.value = reduce ? 1 : withSpring(1, motion.spring.press);

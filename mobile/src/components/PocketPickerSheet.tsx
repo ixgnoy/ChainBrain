@@ -7,7 +7,7 @@ import { Sheet } from "../ui/Sheet";
 import { T } from "../ui/Text";
 import { haptic } from "../haptics";
 import { PocketRow } from "./PocketCard";
-import { useAutoplayTarget } from "../lib/autoplayTargets";
+import { autoplayAlive, autoplayRun, useAutoplayTarget } from "../lib/autoplayTargets";
 
 export function PocketPickerSheet() {
   const { pickerOpen, setPickerOpen, pockets, setActive } = useApp();
@@ -16,9 +16,11 @@ export function PocketPickerSheet() {
   useAutoplayTarget("picker.pocket", async (arg) => {
     const want = String(arg ?? "").toLowerCase();
     const p = pockets.find((x) => x.name.toLowerCase().includes(want)) ?? pockets[0];
-    if (!p) return;
+    if (!p) return false;
+    const run = autoplayRun();
     setLit(p.address);
     await new Promise((r) => setTimeout(r, 650));
+    if (!autoplayAlive(run)) { setLit(null); return false; }
     setActive(p.address); setPickerOpen(false); haptic.select(); setLit(null);
   }, pickerOpen);
   return (

@@ -7,8 +7,8 @@ import { motion } from "../tokens";
 import { useReduceMotion } from "./motion";
 
 /** Fade + `dy` pt rise. `base + index * step` ms of delay (index capped at 8). */
-export function Reveal({ children, index = 0, step = 50, base = 0, dy = 10, play = true, style }: {
-  children: React.ReactNode; index?: number; step?: number; base?: number; dy?: number; play?: boolean; style?: StyleProp<ViewStyle>;
+export function Reveal({ children, index = 0, step = 50, base = 0, dy = 10, play = true, style, hidden }: {
+  children: React.ReactNode; index?: number; step?: number; base?: number; dy?: number; play?: boolean; style?: StyleProp<ViewStyle>; /** invisible (still laid out), e.g. while its card is flying */ hidden?: boolean;
 }) {
   const reduce = useReduceMotion();
   const p = useSharedValue(play ? 0 : 1);
@@ -17,7 +17,7 @@ export function Reveal({ children, index = 0, step = 50, base = 0, dy = 10, play
     const d = base + Math.min(index, 8) * step;
     p.value = withDelay(d, reduce ? withTiming(1, { duration: 180 }) : withSpring(1, motion.spring.smooth));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const a = useAnimatedStyle(() => ({ opacity: Math.min(1, p.value * 1.6), transform: [{ translateY: reduce ? 0 : (1 - p.value) * dy }] }));
+  const a = useAnimatedStyle(() => ({ opacity: hidden ? 0 : Math.min(1, p.value * 1.6), transform: [{ translateY: reduce ? 0 : (1 - p.value) * dy }] }));
   return <Animated.View style={[a, style]}>{children}</Animated.View>;
 }
 

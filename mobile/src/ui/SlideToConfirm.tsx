@@ -12,7 +12,7 @@ import { EASE_OUT, settle, shake, useReduceMotion } from "./motion";
 import { c, motion } from "../tokens";
 import { T } from "./Text";
 import { Icon } from "./Icon";
-import { autoplayAlive, useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
+import { autoplayAlive, autoplayRun, useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
 
 const THUMB = 48, PAD = 4; // track 56 px: solid teal, white grip (a pale track reads as disabled)
 const MIN_PENDING_MS = 300;
@@ -66,13 +66,14 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, d
   const stateNow = useRef(state);
   stateNow.current = state;
   useAutoplayTarget(auto ?? "sheet.close", async () => {
-    if (disabled || stateNow.current !== "idle" || max <= 1) return;
+    if (disabled || stateNow.current !== "idle" || max <= 1) return false; // not ready: the driver retries
+    const run = autoplayRun();
     drag.value = true; lastTick.value = 0;
     haptic.light();
     x.value = withTiming(max, { duration: reduce ? 160 : 1100, easing: Easing.bezier(0.45, 0, 0.2, 1) });
     await sleep(reduce ? 180 : 1150);
     drag.value = false;
-    if (!autoplayAlive()) { settle(x, 0, reduce, motion.spring.release); return; }
+    if (!autoplayAlive(run)) { settle(x, 0, reduce, motion.spring.release); return false; }
     haptic.rigid();
     await fire();
   }, !!auto && !disabled);

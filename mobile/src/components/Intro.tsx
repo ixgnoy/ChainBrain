@@ -186,6 +186,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
   const finish = useCallback(() => {
     if (leaving.current) return;
     leaving.current = true;
+    setAuto(false); // the auto-advance stops with the fade
     finishIntro(); // Home plays its entrance while the intro lets go
     fade.value = withTiming(0, { duration: reduce ? 160 : 260, easing: EASE_OUT }, (ok) => { if (ok) scheduleOnRN(onDone); });
   }, [onDone, reduce, fade]);
@@ -200,10 +201,10 @@ export function Intro({ onDone }: { onDone: () => void }) {
 
   // auto-advance: the active dot fills over PAGE_MS, then the next page; the first touch hands control to the owner
   useEffect(() => {
-    if (!auto || w === 0) return;
+    if (!auto || w === 0 || leaving.current) return;
     fill.value = 0;
     fill.value = withTiming(1, { duration: PAGE_MS, easing: Easing.linear });
-    const t = setTimeout(() => { if (page >= PAGES.length - 1) finish(); else go(page + 1); }, PAGE_MS);
+    const t = setTimeout(() => { if (leaving.current) return; if (page >= PAGES.length - 1) finish(); else go(page + 1); }, PAGE_MS);
     return () => { clearTimeout(t); cancelAnimation(fill); };
   }, [auto, page, w]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -245,7 +246,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
         </View>
       </GestureDetector>
       <View style={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 16, gap: 18 }}>
-        <View accessibilityLabel={`Page ${page + 1} of ${PAGES.length}`} style={{ flexDirection: "row", gap: 6, justifyContent: "center", alignItems: "center", height: 12 }}>
+        <View accessible accessibilityLabel={`Page ${page + 1} of ${PAGES.length}`} style={{ flexDirection: "row", gap: 6, justifyContent: "center", alignItems: "center", height: 12 }}>
           {PAGES.map((_, i) => <Dot key={i} i={i} w={w} pos={pos} fill={fill} auto={auto && page === i} />)}
         </View>
         <Button label={last ? "Get started" : "Next"} onPress={() => (last ? finish() : go(page + 1))} />

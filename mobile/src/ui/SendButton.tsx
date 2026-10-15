@@ -14,7 +14,7 @@ export function SendButton({ ready, stop, onPress, onStop, onAutoStop, tapRef }:
   /** what the auto-play's press of Stop does (a finger's tap on Stop ends the auto-play instead) */ onAutoStop?: () => void; /** hands out the send press for the auto-play */ tapRef?: React.MutableRefObject<PressTap | null> }) {
   const own = React.useRef<PressTap | null>(null);
   const ref = tapRef ?? own;
-  useAutoplayTarget("revoke.open", () => ref.current?.(onAutoStop ?? onStop), !!stop);
+  useAutoplayTarget("revoke.open", async () => (ref.current ? ref.current(onAutoStop ?? onStop) : false), !!stop);
   const reduce = useReduceMotion();
   const show = useSharedValue(ready || stop ? 1 : 0);
   const mode = useSharedValue(stop ? 1 : 0);

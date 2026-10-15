@@ -78,7 +78,7 @@ Once a server is chosen (Custom server), both apps ask `GET /dev/health`. On the
 | Built-in network, `node devstack/e2e/builtin.cjs --url http://localhost:8091` (phone on the built-in network: intro, card stack, explorer sheet, scenes 1-8, no server needed) | 34/34 |
 | End-to-end, `node devstack/e2e/e2e.cjs` (phone: intro, wizard, scenes 1-3 and 7, approvals, receipt, revoke; console: trace with reason codes, pockets, Explorer tx page, sellers, plant + forced transfer, built-in mode with checks path, attack arena (escalation `NOT_OWNER`, fooled transfer `SELLER_NOT_ALLOWED`, US$0.00 lost), explorer revert page, Evidence export, 390 px on every tab) | 55/55 on a fresh stack |
 | Built-in network logic, `cd mobile && node --import tsx --test ../shared/sim/*.test.ts` (world, scenes, attacks, checks path, proof facts, evidence export, explorer) | 18/18 |
-| Web, `pnpm --dir web test`, `build`, `lint` | 71/71, clean |
+| Web, `pnpm --dir web test`, `build`, `lint` | 76/76, clean |
 | Phone, `npm test`, `npx tsc --noEmit`, `npx expo export --platform web` and `ios` | 25/25 (incl. the co-sign payload and a full auto-play run), clean, both exports build |
 | Dev stack, `pnpm --dir devstack test` | 18/18 |
 

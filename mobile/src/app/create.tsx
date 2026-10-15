@@ -187,7 +187,7 @@ export default function Create() {
   // the auto-play picks a preset by pressing its card, the way a finger would
   const presetTaps = useRef<Record<string, React.MutableRefObject<PressTap | null>>>({});
   const presetTap = (k: string) => (presetTaps.current[k] ??= { current: null });
-  useAutoplayTarget("wizard.preset", async (arg) => { const k = String(arg ?? "research"); await presetTap(k === "one-purchase" ? "onePurchase" : k).current?.(); }, step === 0);
+  useAutoplayTarget("wizard.preset", async (arg) => { const k = String(arg ?? "research"); const t = presetTap(k === "one-purchase" ? "onePurchase" : k).current; return t ? await t() : false; }, step === 0);
 
   const choose = (key: keyof typeof PRESETS | "custom") => {
     haptic.select(); setPreset(key);

@@ -79,7 +79,12 @@ export function PocketFace({ pocket, width, tone, buzz, shadow, focused = true }
     else if (!pocket.revoked) { fr.value = 0; grey.value = reduce ? (off ? 1 : 0) : withTiming(off ? 1 : 0, { duration: 700, easing: EASE_OUT }); owed.current = false; }
     was.current = pocket.revoked;
   }, [pocket.revoked, off]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (focused && owed.current) { owed.current = false; fr.value = 0; grey.value = 0; setTimeout(play, 250); } }, [focused]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!focused || !owed.current) return;
+    owed.current = false; fr.value = 0; grey.value = 0;
+    const t = setTimeout(play, 250);
+    return () => clearTimeout(t);
+  }, [focused]); // eslint-disable-line react-hooks/exhaustive-deps
   const face = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(grey.value, [0, 1], [FACE[tone], FROZEN]), transform: [{ scale: dip.value }] }));
   const ask = pocket.askAbove === NEVER || pocket.askAbove > pocket.cap ? "Never" : pocket.askAbove === 0n ? "Every payment" : money(pocket.askAbove);
   const tail = pocket.address.slice(-4).toUpperCase();

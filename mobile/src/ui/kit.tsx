@@ -5,14 +5,15 @@ import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withSprin
 import { c, F, motion, radius } from "../tokens";
 import { haptic, type HapticName } from "../haptics";
 import { EASE_OUT, glide, settle, useReduceMotion } from "./motion";
-import { useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
+import { autoplayAlive, autoplayRun, useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
 
 const APressable = Animated.createAnimatedComponent(Pressable);
 
 /** A press the auto-play can make: dip, release, then the same call a finger's tap makes (`action` overrides what it calls). */
-export type PressTap = (action?: () => void) => Promise<void>;
+/** Resolves true once the press happened, false when it could not (disabled, nothing to call) or the auto-play was stopped meanwhile. */
+export type PressTap = (action?: () => void) => Promise<boolean>;
 const nap = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** Pressable with press feedback that starts on touch-down (90 ms ease-out to a size-aware scale, spring release) and a
@@ -30,13 +31,17 @@ export function Press({ children, style, onPress, haptics = "light", scale, kind
   const press = useRef({ onPress, haptics });
   press.current = { onPress, haptics };
   const tap: PressTap = async (action) => {
+    if (p.disabled || (!action && !press.current.onPress)) return false;
+    const run = autoplayRun();
     if (!reduce) s.value = withTiming(to, { duration: motion.pressIn, easing: EASE_OUT });
     await nap(motion.pressIn + 60);
     settle(s, 1, reduce, motion.spring.press);
     await nap(70);
+    if (!autoplayAlive(run)) return false; // stopped meanwhile: do not press
     if (press.current.haptics !== "none") haptic[press.current.haptics]();
     if (action) action(); else press.current.onPress?.({} as never);
     await nap(260); // the screen this press leads to has rendered (and registered its own targets) before the driver looks
+    return true;
   };
   const tapNow = useRef(tap);
   tapNow.current = tap;

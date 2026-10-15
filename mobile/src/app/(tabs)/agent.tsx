@@ -7,7 +7,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useApp, type Turn } from "../../store";
 import { c, F, lift } from "../../tokens";
 import { Avatar, Button, Press, type PressTap } from "../../ui/kit";
-import { autoplayAlive, typeOut, useAutoplayTarget } from "../../lib/autoplayTargets";
+import { autoplayAlive, autoplayRun, typeOut, useAutoplayTarget } from "../../lib/autoplayTargets";
 import { StatusDot, type DotState } from "../../ui/StatusDot";
 import { GLASS_TAB_SPACE as TAB_H } from "../../ui/glass/GlassTabBar";
 import { T } from "../../ui/Text";
@@ -171,13 +171,17 @@ export default function AgentChat() {
   sendRef.current = send;
   const sendTap = useRef<PressTap | null>(null);
   useAutoplayTarget("composer", async (arg) => {
+    const run = autoplayRun();
     const v = String(arg?.text ?? "");
+    if (!sendTap.current) return false; // not laid out yet: the driver retries
     stick.current = true;
     setText("");
-    await typeOut(v, setText, { cancelled: () => !autoplayAlive() });
-    if (!autoplayAlive()) return;
+    await typeOut(v, setText, { cancelled: () => !autoplayAlive(run) });
+    if (!autoplayAlive(run)) return false;
     await new Promise((r) => setTimeout(r, 450));
-    await sendTap.current?.(() => sendRef.current(v));
+    if (!autoplayAlive(run)) { setText(""); return false; }
+    // the send press starts only once the text is in: the disc dips, the message leaves, then the input clears
+    return await sendTap.current(() => sendRef.current(v));
   }, !!active);
   const answerTaps = useRef<Record<string, React.MutableRefObject<PressTap | null>>>({});
   const answerTap = (o: string) => (answerTaps.current[o] ??= { current: null });
@@ -185,7 +189,9 @@ export default function AgentChat() {
     const opts = question ? answerOptions(question.text) : [];
     const want = String(arg ?? "").toLowerCase();
     const pick = opts.find((o) => o.toLowerCase().includes(want)) ?? opts[0];
-    if (pick) await answerTap(pick).current?.(); else if (want) sendRef.current(String(arg));
+    if (pick) { const t = answerTap(pick).current; return t ? await t() : false; }
+    if (want) { sendRef.current(String(arg)); return true; }
+    return false;
   }, !!question);
   const holdHeader = Gesture.LongPress().minDuration(1500).maxDistance(40).runOnJS(true).onStart(() => { autoplay.toggle(); });
 
