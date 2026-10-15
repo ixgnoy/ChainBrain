@@ -79,3 +79,28 @@ button, a, select, [role="tab"] { cursor: pointer; }
 /* Horizontal chip rows hide their scrollbar but still scroll. */
 .chip-row { scrollbar-width: none; }
 .chip-row::-webkit-scrollbar { display: none; }
+
+/* Checks path: the gates of one attempt, stacked on a phone, in one row from lg. */
+.gate-list { display: flex; flex-direction: column; }
+.gate { position: relative; display: flex; gap: 12px; padding-bottom: 16px; }
+.gate:last-child { padding-bottom: 0; }
+.gate::before { content: ""; position: absolute; left: 15px; top: 34px; bottom: 2px; width: 2px; border-radius: 1px; background: var(--color-line); transition: background-color 200ms ease-out; }
+.gate:last-child::before { display: none; }
+.gate[data-state="pass"]::before { background: var(--color-accent); }
+.gate[data-state="fooled"]::before, .gate[data-state="skip"]::before { background: var(--color-faint); }
+.gate-body { min-width: 0; flex: 1; padding-top: 4px; }
+.gate-group { display: flex; flex-direction: column; border-radius: 16px; background: var(--color-canvas); padding: 12px 14px 14px; }
+.gate-arrow { display: grid; place-items: center; height: 24px; color: var(--color-faint); transform: rotate(90deg); }
+@media (min-width: 1024px) {
+  .gate-row { display: flex; align-items: stretch; }
+  .gate-group { padding: 12px 8px 14px; min-width: 0; }
+  .gate-arrow { height: auto; width: 28px; flex: none; transform: none; }
+  .gate-list { flex-direction: row; }
+  .gate { flex: 1 1 0; min-width: 0; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 0 4px; }
+  .gate::before { left: calc(50% + 20px); right: calc(-50% + 20px); top: 15px; bottom: auto; width: auto; height: 2px; }
+  .gate-body { padding-top: 0; flex: none; width: 100%; }
+}
+@keyframes ring-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+.ring-shake { animation: ring-shake 360ms ease-out both; }
+@keyframes draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+.tick-draw { stroke-dasharray: 24; animation: draw 320ms ease-out both; }

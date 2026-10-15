@@ -44,3 +44,13 @@ export function usePlay(actions: Actions, linked: boolean, refresh?: () => void)
     clear: () => { live.current++; setState(undefined); },
   };
 }
+
+/** Plays one scene once and says how it went: typed to the linked phone, or run by the built-in network. */
+export async function playScene(actions: Actions, linked: boolean, scene: Scene): Promise<SayResult> {
+  if (linked && actions.say) return sayOnPhone(actions.say, scene.text, scene.preset);
+  if (actions.runScene) {
+    try { const r = await actions.runScene(scene.id); return { ok: true, text: "Played.", pocket: r?.pocket }; }
+    catch (e) { return { ok: false, text: (e as Error).message || "That scene could not run." }; }
+  }
+  return { ok: false, text: "Scenes can be played when the built-in network or a linked phone is on." };
+}

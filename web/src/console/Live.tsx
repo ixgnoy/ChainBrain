@@ -5,15 +5,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ShieldAlert, ShieldCheck, Check, Minus, Wallet, Clock } from "lucide-react";
 import { useNetwork } from "./useNetwork";
 import { Expected, PhoneTag, Reason, TxHash, Verdict, clock, pocketStatus, usd, NEVER } from "./parts";
-import { argsOf, evidenceOf, injectionOf, injectionsIn, plainSummary, type Injection } from "./story";
+import { argsOf, evidenceOf, injectionOf, plainSummary, type Injection } from "./story";
 import { txLabel } from "./network";
 import { orList, worstCase, worstSegments } from "./worst";
-import { decisionsOf, durationLabel, groupTurns, headlineOf, holdKeys, offsetLabel, waiting, type DecisionKind, type Turn } from "./liveRules";
+import { decisionsOf, durationLabel, groupTurns, holdKeys, offsetLabel, waiting, type DecisionKind, type Turn } from "./liveRules";
 import { Disclosure, EmptyState, SegmentBar, Tracker } from "./kit";
 import { traceRows, untrustedOf, type TraceRow } from "../lib/trace";
 import { eventPocket, samePocket, type WalletEvent } from "../lib/events";
 import { salesFor } from "../seller/data";
 import { Button, Card } from "../seller/ui";
+import { attemptsFrom } from "@sim/checks";
+import { ChecksPanel } from "./ChecksPath";
+import { Scorecard } from "./Scorecard";
 import { cleanText } from "../lib/sanitize";
 import { shortAddr } from "../shared";
 import { cn } from "../lib/cn";
@@ -217,9 +220,9 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
   const perSeller = useMemo(() => cfg.sellers.map((s) => ({ s, rows: salesFor(mine, s.id) })).filter((x) => x.rows.length), [cfg, mine]);
   const worst = useMemo(() => (p ? worstCase(p, txs, (id) => names.get(id) ?? id) : undefined), [p, txs, cfg]); // eslint-disable-line react-hooks/exhaustive-deps
   const ev = useMemo(() => evidenceOf(mine), [mine]);
+  const attempts = useMemo(() => attemptsFrom(mine, { sellerName: (id) => names.get(id) ?? id }), [mine, cfg]); // eslint-disable-line react-hooks/exhaustive-deps
   const decisions = useMemo(() => decisionsOf(mine), [mine]);
   const refused = mine.filter((e) => e.type === "refusal" || e.type === "disclosure" || (e.type === "forced" && e.reverted)).length;
-  const headline = useMemo(() => headlineOf(allRows, injectionsIn(mine).map((i) => ({ at: i.at, seller: names.get(i.sellerId) ?? i.sellerId })), (id) => names.get(id) ?? id), [allRows, mine, cfg]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!pocket) return <Card><EmptyState icon={<Wallet {...I} />} title="No pocket on the network yet">Create one in the phone app and it shows up here.</EmptyState></Card>;
   const st = p ? pocketStatus(p) : undefined;
@@ -317,24 +320,14 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
   return (
     <div data-present={present ? "true" : undefined}>
       {!present && <EvidenceStrip ev={ev} decisions={decisions} />}
-      {present && (
-        <div className="mb-3 min-h-14" aria-live="polite" data-testid="headline">
-          {headline && (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              {headline.kind === "refused" ? <ShieldAlert className="size-7 shrink-0 text-negative" {...I} /> : headline.kind === "stepup" ? <Clock className="size-7 shrink-0 text-warning" {...I} /> : <ShieldCheck className="size-7 shrink-0 text-accent" {...I} />}
-              <span className="text-[28px] font-semibold leading-9">{headline.text}</span>
-              {headline.code && <span className="num text-[14px] text-muted">{headline.code}</span>}
-            </div>
-          )}
-        </div>
-      )}
+      <div className="mb-3"><ChecksPanel attempts={attempts} present={present} /></div>
       {!present && (
         <div role="tablist" aria-label="Live view" className="mb-3 flex h-11 gap-1 rounded-full bg-fill p-1 xl:hidden">
           {COLS.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={col === id} onClick={() => setCol(id)} className={cn("flex-1 rounded-full text-[14px] font-semibold transition-colors", col === id ? "bg-card text-ink" : "text-ink2")}>{label}</button>)}
         </div>
       )}
-      <div className={cn("grid gap-3", present ? "xl:h-[calc(100dvh-var(--stepper-h,150px)-225px)] xl:grid-cols-[1.2fr_1fr]" : "items-start xl:grid-cols-[1.35fr_1fr_0.95fr]")}>
-        {trace}{pocketCol}{!present && sellers}
+      <div className={cn("grid gap-3", present ? "xl:h-[max(340px,calc(100dvh-var(--stepper-h,150px)-420px))] xl:grid-cols-[1.25fr_1fr_0.9fr]" : "items-start xl:grid-cols-[1.35fr_1fr_0.95fr]")}>
+        {trace}{pocketCol}{!present && sellers}{present && <Scorecard pocket={pocket} />}
       </div>
     </div>
   );

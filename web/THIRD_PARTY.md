@@ -32,3 +32,7 @@ Small components in `src/console/kit.tsx` and the restyled sheet in `src/seller/
 | Trace `Call` disclosure (Pretty / JSON), turn grouping | layout idea from `web/src/features/traces/components/TraceLogView` | https://github.com/langfuse/langfuse | MIT (non-`ee/` paths) | Markup idea only; no code copied. |
 
 Not used: anything from blockscout/frontend (restrictive licence) or originui outside `apps/origin` and `apps/ui`.
+
+## Frontend wow round (checks path, arena, scorecard, evidence, explorer)
+
+Written fresh for ChainBrain; no code copied. Patterns only, from public product UIs: the checks path follows the rule-evaluation lists of Stripe Radar and the step-by-step trace views of Datadog / Honeycomb (ordered stages, the deciding stage called out); the explorer's transaction page follows the general Etherscan layout (status, block, from/to, method, input, logs). No Blockscout code was read or used. The checklist tick and the gate list reuse the `Tracker` / `Kbd` conventions already credited above.

@@ -21,6 +21,7 @@ const toPocket = (p: Wire): PocketState => ({
 const toTx = (t: Wire): ChainTx => ({
   hash: t.hash as Hex, block: big(t.block) ?? 0n, logIndex: Number(t.logIndex ?? 0), pocket: t.pocket as Address, kind: t.kind, amount: big(t.amount),
   counterparty: t.counterparty as Address | undefined, at: Number(t.at), from: t.from as Address, status: t.status,
+  method: t.method, reason: t.reason, args: t.args, label: t.label,
 });
 
 /** The pocket the phone is working on right now: whichever has the newest event or transaction. */
@@ -121,6 +122,21 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
         } catch (e) { return { ok: false, text: (e as Error).message }; }
       },
       runScene: local.actions.runScene,
+      async chat(pocket, text) {
+        if (!isPhonePocket(pocket)) return local.actions.chat!(pocket, text);
+        // the phone types it to its agent (a pocket that fits the research preset), like Play does
+        try { const r = await command({ type: "say", text, preset: "research" }, 25_000); return { ok: !!r?.ok, text: String(r?.text ?? ""), pocket: r?.pocket ?? pocket }; }
+        catch (e) { return { ok: false, text: (e as Error).message, pocket }; }
+      },
+      async hijack(pocket, text) {
+        if (!isPhonePocket(pocket)) return local.actions.hijack!(pocket, text);
+        try {
+          const r = await command({ type: "hijack", pocket, ...(text ? { text } : {}) });
+          if (typeof r?.reverted !== "boolean") return { ok: false, text: r?.text ?? "The phone could not run it" };
+          const left = r?.balanceAfter ? (Number(BigInt(r.balanceAfter)) / 1e6).toFixed(2) : undefined;
+          return { ok: !!r?.reverted, tx: r?.tx, text: r?.reverted ? `Reverted on-chain. The pocket still holds US$${left}.` : "The transfer was NOT refused." };
+        } catch (e) { return { ok: false, text: (e as Error).message }; }
+      },
       async say(text, preset) {
         if (!live()) throw new Error("The phone is not connected");
         const r = await command({ type: "say", text, ...(preset ? { preset } : {}) }, 20_000);

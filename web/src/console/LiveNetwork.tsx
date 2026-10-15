@@ -5,6 +5,7 @@ import { formatUsd, loadConfig, type Config } from "../shared";
 import { detectDev } from "../dev";
 import { EventsProvider, useEvents } from "../useEvents";
 import { setSource } from "../source/source";
+import { networkLabel } from "@sim/explorer";
 import { clientFor, loadHistory, loadPockets, scanFrom, type ChainTx, type PocketState } from "./chain";
 import { NetworkCtx, lookupTx, pocketLookups, type Actions, type Network, type Scene } from "./network";
 
@@ -81,6 +82,8 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
     return () => { alive = false; };
   }, [cfg, dev, url, tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // the chain read lists transactions that left logs; a reverted one (forced transfer, escalation) is known from its event
+  const allTxs = useMemo(() => withReverted(txs, live.events), [txs, live.events]);
   const value = useMemo<Network | null>(() => {
     if (!cfg) return null;
     const actions: Actions = {};
@@ -104,14 +107,42 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
         } catch (e) { return { ok: false, text: `Could not run it: ${(e as Error).message}` }; }
       };
     }
+    // the chat route exists on every ChainBrain server: an attack sentence goes to the agent like the owner's own message
+    actions.chat = async (pocket, text) => {
+      try {
+        const r = await fetch(`${url}/api/chat`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pocket, text }) });
+        if (!r.ok) return { ok: false, text: `The server answered ${r.status}.`, pocket };
+        const j = await r.json();
+        setTick((x) => x + 1);
+        return { ok: true, text: String(j.reply ?? ""), pocket };
+      } catch { return { ok: false, text: "Could not reach the server.", pocket }; }
+    };
+    // "assume the AI is fooled" is what /dev/force-transfer does on the real chain: the agent's own key signs, the pocket reverts
+    if (actions.forceTransfer) actions.hijack = (pocket) => actions.forceTransfer!(pocket);
     const txDetail: Network["txDetail"] = (hash) => lookupTx(hash, txs, live.events, pockets, (id) => cfg.sellers.find((x) => x.id === id)?.payTo);
     return {
-      dev, chainName: dev ? "Local test network" : "Base Sepolia test network", cfg, events: live.events, pockets, txs, chainError,
+      dev, builtin: false, chainName: networkLabel({ builtin: false, dev }), cfg, events: live.events, pockets, txs, allTxs, chainError,
       explorer: dev ? undefined : (h: string) => `https://sepolia.basescan.org/tx/${h}`,
       scenes, txDetail, actions, linked: false, ...pocketLookups(pockets, [], live.events), refresh: () => setTick((x) => x + 1),
     };
-  }, [cfg, dev, url, live.events, pockets, txs, chainError, scenes]);
+  }, [cfg, dev, url, live.events, pockets, txs, allTxs, chainError, scenes]);
 
   if (!value) return <Connecting url={url} failed={failed} retry={() => setTries((x) => x + 1)} />;
   return <NetworkCtx.Provider value={value}>{children}</NetworkCtx.Provider>;
+}
+
+/** Reverted transactions are not in the chain's logs; the wallet's own events carry their hashes. */
+export function withReverted(txs: ChainTx[], events: { type: string; pocket?: string; at: number; [k: string]: any }[]): ChainTx[] {
+  const have = new Set(txs.map((t) => t.hash.toLowerCase()));
+  const extra: ChainTx[] = [];
+  const add = (t: Partial<ChainTx> & { hash?: string }) => {
+    if (!t.hash || have.has(t.hash.toLowerCase())) return;
+    have.add(t.hash.toLowerCase());
+    extra.push({ block: 0n, logIndex: 0, kind: "out", status: "reverted", ...t } as ChainTx);
+  };
+  for (const e of events) {
+    if (e.type === "forced" && e.reverted) add({ hash: e.tx, pocket: e.pocket as any, at: e.at, amount: BigInt(e.amount ?? 0), counterparty: e.to, reason: e.reason ?? "SELLER_NOT_ALLOWED", method: "transfer" });
+    if (e.type === "attack" && e.attack === "escalation") for (const t of e.txs ?? []) if (t.reverted) add({ hash: t.tx, pocket: e.pocket as any, kind: "rules", at: e.at, reason: e.reason ?? "NOT_OWNER", label: t.call });
+  }
+  return extra.length ? [...txs, ...extra] : txs;
 }

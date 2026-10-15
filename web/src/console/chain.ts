@@ -14,6 +14,8 @@ export type ChainTx = {
   hash: Hex; block: bigint; logIndex: number; pocket: Address; kind: TxKind; amount?: bigint; counterparty?: Address;
   /** Known when the source has them (the built-in network); logs alone do not carry them. */
   at?: number; from?: Address; status?: "success" | "reverted";
+  /** The contract function called, why a reverted transaction reverted, the call's arguments and a short label (built-in network and linked phone). */
+  method?: string; reason?: string; args?: Record<string, string>; label?: string;
 };
 
 const CREATED = parseAbiItem("event PocketCreated(address indexed pocket, address indexed owner, address indexed agent)");

@@ -20,7 +20,8 @@ it("plays the whole story instantly at speed 0: scenes 1, 4, 5, 6, 7 on one pock
   const forced = ev.filter((e) => e.type === "forced");
   expect(forced).toHaveLength(1);
   expect(forced[0].reverted).toBe(true);
-  expect(w.txs().filter((t) => t.status === "reverted")).toHaveLength(1);
+  // the forced transfer, plus the agent key's refused setCap / setSeller of the escalation scene
+  expect(w.txs().filter((t) => t.status === "reverted").map((t) => t.reason)).toEqual(["SELLER_NOT_ALLOWED", "NOT_OWNER", "NOT_OWNER"]);
   const tight = pockets.filter((p) => p.cap === 200_000n && p.askAbove > 10n ** 30n && !p.revoked && p.balance === 200_000n && p.address !== research.address).at(-1)!;
   expect(tight).toBeTruthy();
   expect(ap.active?.toLowerCase()).toBe(tight.address.toLowerCase());

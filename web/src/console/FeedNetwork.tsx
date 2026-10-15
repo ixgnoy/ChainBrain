@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { makeFeed } from "../source/localFeed";
 import type { NetworkFeed } from "../source/feed";
+import { networkLabel } from "@sim/explorer";
 import { Skeleton } from "./kit";
 import { NetworkCtx, lookupTx, pocketLookups, type Network } from "./network";
 
@@ -19,7 +20,7 @@ export function FeedNetwork({ children, make = makeFeed }: { children: ReactNode
   }, [feed]);
 
   const value = useMemo<Network>(() => ({
-    dev: false, chainName: "Base Sepolia test network", cfg: feed.cfg, events: snap.events, pockets: snap.pockets, txs: snap.txs,
+    dev: false, builtin: true, chainName: networkLabel({ builtin: true }), cfg: feed.cfg, events: snap.events, pockets: snap.pockets, txs: snap.txs, allTxs: snap.allTxs,
     explorer: undefined, scenes: feed.scenes, follow: snap.follow, actions: feed.actions,
     linked: !!snap.linked, ...pocketLookups(snap.pockets, snap.phonePockets, snap.events),
     txDetail: (hash) => lookupTx(hash, snap.allTxs, snap.events, snap.pockets, (id) => feed.cfg.sellers.find((s) => s.id === id)?.payTo),

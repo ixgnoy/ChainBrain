@@ -4,27 +4,33 @@ import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { NetworkProvider, useNetwork } from "./useNetwork";
 import { Live } from "./Live";
-import { Pockets, OnChain, Judges } from "./pages";
+import { Pockets, Judges } from "./pages";
+import { Explorer } from "./Explorer";
+import { Evidence } from "./Evidence";
 import SellerView from "../seller/SellerView";
-import { PhoneTag, TestnetChip, TxViewerHost, usd } from "./parts";
+import { PhoneTag, TestnetChip, usd } from "./parts";
 import { Stepper } from "./Stepper";
 import { Kbd } from "./kit";
 import { eventPocket } from "../lib/events";
 import { Settings } from "./Settings";
 import { PageTitle, PillSelect } from "../seller/ui";
 import { cn } from "../lib/cn";
-import { splitHash } from "./route";
+import { parseExplorer, splitHash, type ExplorerRoute } from "./route";
 
-type Tab = "live" | "pockets" | "sellers" | "chain" | "judges";
-const TABS: [Tab, string][] = [["live", "Live"], ["pockets", "Pockets"], ["sellers", "Sellers"], ["chain", "On-chain"], ["judges", "Judges"]];
+type Tab = "live" | "pockets" | "sellers" | "explorer" | "evidence" | "judges";
+const TABS: [Tab, string][] = [["live", "Live"], ["pockets", "Pockets"], ["sellers", "Sellers"], ["explorer", "Explorer"], ["evidence", "Evidence"], ["judges", "Judges"]];
 const ADDR = /^0x[0-9a-fA-F]{40}$/;
-type Route = { tab: Tab; pocket?: string; present: boolean };
-/** #live, #judges/0x… (a pinned pocket), #present (presenter mode: Live, no chrome, scene stepper). */
+type Route = { tab: Tab; pocket?: string; present: boolean; explorer: ExplorerRoute };
+const HOME: ExplorerRoute = { kind: "home" };
+/** #live, #judges/0x… (a pinned pocket), #present (presenter mode), #explorer, #explorer/tx/0x…, #explorer/block/n, #explorer/address/0x…. */
 export const parseRoute = (hash = location.hash): Route => {
-  const [t, p] = splitHash(hash).path.split("/");
+  const { path, tx } = splitHash(hash);
+  const [t, p] = path.split("/");
+  if (tx) return { tab: "explorer", present: false, explorer: { kind: "tx", hash: tx } }; // an older shared `?tx=` link
+  if (t === "explorer" || t === "chain") return { tab: "explorer", present: false, explorer: parseExplorer(path) };
   const pocket = p && ADDR.test(p) ? p : undefined;
-  if (t === "present") return { tab: "live", pocket, present: true };
-  return { tab: (TABS.some(([id]) => id === t) ? t : "live") as Tab, pocket, present: false };
+  if (t === "present") return { tab: "live", pocket, present: true, explorer: HOME };
+  return { tab: (TABS.some(([id]) => id === t) ? t : "live") as Tab, pocket, present: false, explorer: HOME };
 };
 const toHash = (r: Route) => (r.present ? "present" : r.tab) + (r.pocket ? `/${r.pocket}` : "");
 
@@ -57,13 +63,13 @@ function Shell() {
   const { events, pockets, follow, linked, phonePockets } = useNetwork();
   const [route, setRoute] = useState(parseRoute);
   const { tab, pocket: pinned, present } = route;
-  useEffect(() => { const on = () => setRoute(parseRoute()); addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
+  useEffect(() => { const on = () => { setRoute(parseRoute()); scrollTo({ top: 0 }); }; addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
   // ONE pocket per render: the one a person picked, else the one the story (or the linked phone) is on, else the last one touched.
   // Trace, balance, rules and sellers all read this same value.
   const latest = useMemo(() => [...events].reverse().map(eventPocket).find(Boolean) ?? pockets[0]?.address, [events, pockets]);
   const pocket = pinned ?? follow ?? latest;
   const go = (next: Omit<Partial<Route>, "pocket"> & { pocket?: string | null }) => {
-    const r: Route = { tab: next.tab ?? tab, present: next.present ?? present, pocket: next.pocket === null ? undefined : next.pocket ?? pinned };
+    const r: Route = { tab: next.tab ?? tab, present: next.present ?? present, pocket: next.pocket === null ? undefined : next.pocket ?? pinned, explorer: HOME };
     location.hash = toHash(r); setRoute(r); scrollTo({ top: 0 });
   };
   const openPocket = (p: string) => go({ tab: "live", present: false, pocket: p });
@@ -81,8 +87,7 @@ function Shell() {
   );
 
   return (
-    <TxViewerHost watch={watchLive}>
-    <div className="min-h-dvh">
+        <div className="min-h-dvh">
       {present ? (
         <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3 px-4 pb-1 pt-3 sm:px-8">
           <div className="flex min-w-0 items-center gap-3 text-[15px] font-semibold"><Mark size={28} />ChainBrain</div>
@@ -111,14 +116,14 @@ function Shell() {
         )}
         {!present && tab === "pockets" && <div className="mx-auto max-w-[1040px]"><Pockets open={openPocket} /></div>}
         {!present && tab === "sellers" && <div className="mx-auto max-w-[1040px]"><PageTitle title="Sellers" sub="The other side of every payment: what each shop sees when an agent buys or gets refused." /><SellerView /></div>}
-        {!present && tab === "chain" && <div className="mx-auto max-w-[1040px]"><OnChain open={openPocket} /></div>}
+        {!present && tab === "explorer" && <Explorer route={route.explorer} watch={watchLive} />}
+        {!present && tab === "evidence" && <div className="mx-auto max-w-[1180px]"><Evidence /></div>}
         {!present && tab === "judges" && <div className="mx-auto max-w-[1040px]"><Judges pocket={pocket} open={watchLive} /></div>}
         {!present && <div className="mt-12 text-center lg:hidden"><TestnetChip /></div>}
       </main>
       {!present && <div className="md:hidden">{nav}</div>}
       {present && <Stepper pocket={pocket} onExit={() => go({ present: false })} />}
     </div>
-    </TxViewerHost>
   );
 }
 

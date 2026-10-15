@@ -20,6 +20,10 @@ export type Actions = {
   runScene?(id: string): Promise<{ pocket: string } | void>;
   /** Linked phone only: the phone types this to its agent on a pocket that fits `preset`; the owner confirms on the phone. */
   say?(text: string, preset?: string | null): Promise<SayResult>;
+  /** Types an attack sentence to the agent of this pocket; `text` of the result is what the agent answered. */
+  chat?(pocket: string, text: string): Promise<SayResult>;
+  /** Induced transfer, "assume the AI is fooled": the agent's own key signs the attacker's transfer and the pocket contract refuses it. */
+  hijack?(pocket: string, text?: string): Promise<ForceResult>;
 };
 export type SayResult = { ok: boolean; text: string; pocket?: string };
 
@@ -31,11 +35,15 @@ export type TxDetail = {
 export type Network = {
   /** A local fork of the test chain (dev stack): hashes there are not on a public explorer. */
   dev: boolean;
-  /** Plain name of the chain for headers and chips. */
+  /** The network is the built-in one (runs in this tab, or on the linked phone). Its hashes are not on any public chain. */
+  builtin: boolean;
+  /** Plain name of the chain for headers and chips: "Test network" for the built-in one and the local fork, else the public chain's own name. */
   chainName: string;
   cfg: Config; events: WalletEvent[];
   pockets: PocketState[]; txs: ChainTx[]; chainError?: string;
-  /** Block-explorer link for a transaction; absent when there is none to link to (the app shows its own detail). */
+  /** Every transaction including reverted ones (the in-app explorer's data). */
+  allTxs: ChainTx[];
+  /** BaseScan link for a transaction; only on a public chain (the in-app explorer is always there for every hash). */
   explorer?: (hash: string) => string;
   scenes: Scene[];
   /** The pocket the story is on, when the source knows (Live follows it unless one is picked). */
@@ -61,7 +69,8 @@ export function useNetwork(): Network {
   return v;
 }
 
-export const txLabel = (t: Pick<ChainTx, "kind"> & { status?: string }) => (t.status === "reverted" ? "Blocked transfer" : TX_LABEL[t.kind]);
+export const txLabel = (t: Pick<ChainTx, "kind"> & { status?: string; reason?: string }) =>
+  t.status === "reverted" ? (t.kind === "rules" ? `Rule change refused${t.reason ? ` (${t.reason})` : ""}` : "Blocked transfer") : TX_LABEL[t.kind];
 
 /** Who sent and who received, by money flow (a payment leaves the pocket; funding arrives from the owner). */
 export function describeTx(t: ChainTx, owner?: string): TxDetail {
@@ -70,6 +79,7 @@ export function describeTx(t: ChainTx, owner?: string): TxDetail {
   const [from, to]: (string | undefined)[] =
     t.kind === "payment" || t.kind === "out" ? [pocket, t.counterparty]
     : t.kind === "fund" ? [t.counterparty, pocket]
+    : t.kind === "rules" && status === "reverted" ? [t.from, pocket]
     : t.kind === "return" ? [pocket, t.counterparty ?? owner]
     : [t.counterparty ?? owner, pocket];
   return { hash: t.hash, label: txLabel(t), status, amount: t.amount, pocket, from, to, block: t.block, at: t.at, submittedBy: t.from && t.from.toLowerCase() !== from?.toLowerCase() && t.kind === "payment" ? t.from : undefined };

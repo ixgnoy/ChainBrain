@@ -9,7 +9,7 @@ import type { WalletEvent } from "../lib/events";
 import type { NetworkFeed, FeedSnapshot } from "./feed";
 import { createLinkedFeed } from "./linkedFeed";
 
-const toTx = (t: SimTx): ChainTx => ({ hash: t.hash as Hex, block: t.block, logIndex: t.logIndex, pocket: t.pocket as Address, kind: t.kind, amount: t.amount, counterparty: t.counterparty as Address | undefined, at: t.at, from: t.from as Address, status: t.status });
+const toTx = (t: SimTx): ChainTx => ({ hash: t.hash as Hex, block: t.block, logIndex: t.logIndex, pocket: t.pocket as Address, kind: t.kind, amount: t.amount, counterparty: t.counterparty as Address | undefined, at: t.at, from: t.from as Address, status: t.status, method: t.method, reason: t.reason, args: t.args, label: t.label });
 
 // The sample reports carry a "figures are invented" footnote; the console shows seller content as it arrives, without it.
 const NOTE = /\\n_Demo data:[^\n]*?_(?=\\n|")/g;
@@ -56,6 +56,23 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
         return { ok: j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds US$${left}.` : "The transfer was NOT refused." };
       },
       async runScene(id) { return autopilot.runScene(id); },
+      // a judge's own attack: the story waits while it runs (like runScene), and a turn already in flight on that pocket finishes first
+      async chat(pocket, text) {
+        autopilot.hold();
+        try {
+          for (let i = 0; i < 100 && world.isBusy(pocket); i++) await new Promise((r) => setTimeout(r, 200));
+          const r = await world.chat(pocket as Hex, text);
+          return { ok: !r.stopped || r.stopped !== "llm_error", text: r.reply, pocket };
+        } catch (e) { return { ok: false, text: (e as Error).message, pocket }; } finally { autopilot.release(); }
+      },
+      async hijack(pocket, text) {
+        autopilot.hold();
+        try {
+          const j = await world.hijack(pocket as Hex, text);
+          const left = formatUsd(BigInt(j.balanceAfter));
+          return { ok: j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds US$${left}.` : "The transfer was NOT refused." };
+        } catch (e) { return { ok: false, text: (e as Error).message }; } finally { autopilot.release(); }
+      },
     },
     snapshot(): FeedSnapshot {
       const all = world.txs().map(toTx);
