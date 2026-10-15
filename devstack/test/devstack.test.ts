@@ -1,8 +1,17 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { encodeFunctionData, parseEventLogs, type Address, type Hex } from "viem";
 import { randomBytes } from "node:crypto";
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { startDevStack } from "../src/stack";
+
+// async on purpose: spawnSync would freeze this process and stale its keep-alive connections to anvil (ECONNRESET)
+const run = (cmd: string, args: string[], env: NodeJS.ProcessEnv) =>
+  new Promise<{ stdout: string }>((ok) => {
+    let stdout = "";
+    const c = spawn(cmd, args, { env, shell: process.platform === "win32" }); // npx is npx.cmd on Windows
+    c.stdout.on("data", (d) => (stdout += d));
+    c.on("close", () => ok({ stdout }));
+  });
 
 /**
  * Everything below goes over HTTP only, the way the web and phone clients do: chain access through /dev/rpc,
@@ -229,7 +238,7 @@ describe("scenes through POST /api/chat", () => {
     expect(peek.content).toContain("untrusted_content");
     expect(peek.content).toContain("50 USDC");
     // On-chain backstop: the forced transfer script (compromised agent key) reverts against the pocket.
-    const f = spawnSync("npx", ["tsx", "src/force-transfer.ts", pocket], { env: { ...process.env, BASE_SEPOLIA_RPC: `http://127.0.0.1:${ANVIL_PORT}` }, encoding: "utf8" });
+    const f = await run("npx", ["tsx", "src/force-transfer.ts", pocket], { ...process.env, BASE_SEPOLIA_RPC: `http://127.0.0.1:${ANVIL_PORT}` });
     expect(f.stdout).toContain("REVERTED (expected)");
     expect(await balanceOf(pocket)).toBe(usd("4.7"));
   });

@@ -60,6 +60,7 @@ Last updated: 2026-10-14
 | [topic-f-rivals.md](03-research/topic-f-rivals.md) | Public Topic F rivals (Leash, sucsage, edxzh), head-to-head, cheap adds, positioning lines |
 | **04-build/** | How to build it |
 | [x402-pocket-feasibility.md](04-build/x402-pocket-feasibility.md) | The spike: recipe, fallback ladder, checklist (passed on a fork; live run pending) |
+| [metamask-expo-go.md](04-build/metamask-expo-go.md) | MetaMask on the phone via Reown AppKit in Expo Go: findings, gotchas, verified integration code (live phone run pending) |
 | [stack-and-repos.md](04-build/stack-and-repos.md) | Tools, pinned versions, cloned repos |
 | [identity-reputation-fisco.md](04-build/identity-reputation-fisco.md) | ERC-8004, credentials, KYA, FISCO BCOS (planned): finals roadmap |
 | [topic-f-tasks-and-mainnet-plan.md](04-build/topic-f-tasks-and-mainnet-plan.md) | Likely judge tasks, 28-task test set, Base mainnet insurance plan, 30-minute facilitator test |
