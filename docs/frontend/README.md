@@ -43,7 +43,7 @@ cd mobile && EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787 npx expo start   # 
 pnpm --dir web dev               # the console finds the phone by itself
 ```
 
-The console then shows the phone's pockets first, by name, follows them, and holds its own story while the phone is linked. The Judges tab's red-team plant and forced transfer run on the phone's pockets. With no phone (or no relay) the console is just the built-in network.
+The console then shows the phone's pockets first, by name, follows them, and holds its own story while the phone is linked. The Judges tab's attack arena, red-team plant and forced transfer run on the phone's pockets, and the phone's hidden auto-play (long-press the Agent header) drives the console exactly like a person would. With no phone (or no relay) the console is just the built-in network.
 
 ## Run it on a laptop with the dev stack (no keys needed)
 
@@ -71,16 +71,16 @@ Type the sentences from the [devstack scene table](../../devstack/README.md#demo
 
 Once a server is chosen (Custom server), both apps ask `GET /dev/health`. On the dev stack they show a **LOCAL FORK** badge, turn BaseScan links into plain hashes (fork hashes don't exist on Base Sepolia), and use `/dev/rpc` for the chain. On the team's real server that route is missing, so the badge disappears, BaseScan links work, the web uses MetaMask and the phone uses its own key on Base Sepolia. Nothing else changes.
 
-## Checks (all run on 14 Oct 2026)
+## Checks (all run on 15 Oct 2026)
 
 | Suite | Result |
 | --- | --- |
-| Built-in network, `node devstack/e2e/builtin.cjs --url http://localhost:8091` (phone on the built-in network, scenes 1-8, no server needed) | 26 checks |
-| End-to-end, `pnpm --dir devstack e2e` (phone: scenes 1-3 and 7, approvals, receipt, revoke; web console: trace with reason codes, pocket vs chain, all pockets, on-chain list, seller side, red-team plant, forced transfer reverted, built-in mode, 390 px) | 45/45 on a fresh stack (15 Oct 2026); it switches the phone to the server with localStorage `cb.source=server` and the console with `?server=` |
-| Web, `pnpm --dir web test`, `build`, `lint` | 24/24, clean |
-| Phone, `npm test`, `npx tsc --noEmit`, `npx expo export --platform web` and `ios`, `npx expo-doctor` | 22/22 (incl. the team's co-sign payload test), clean, both exports build, 21/21 |
-| Dev stack, `pnpm --dir devstack test` | 15/15 |
-| Team server, `cd server && pnpm test`, `SCENE_REPLAY=1 pnpm test:scenes` | 37 passed (6 skipped outside replay), 6/6 |
+| Built-in network, `node devstack/e2e/builtin.cjs --url http://localhost:8091` (phone on the built-in network: intro, card stack, explorer sheet, scenes 1-8, no server needed) | 34/34 |
+| End-to-end, `node devstack/e2e/e2e.cjs` (phone: intro, wizard, scenes 1-3 and 7, approvals, receipt, revoke; console: trace with reason codes, pockets, Explorer tx page, sellers, plant + forced transfer, built-in mode with checks path, attack arena (escalation `NOT_OWNER`, fooled transfer `SELLER_NOT_ALLOWED`, US$0.00 lost), explorer revert page, Evidence export, 390 px on every tab) | 55/55 on a fresh stack |
+| Built-in network logic, `cd mobile && node --import tsx --test ../shared/sim/*.test.ts` (world, scenes, attacks, checks path, proof facts, evidence export, explorer) | 18/18 |
+| Web, `pnpm --dir web test`, `build`, `lint` | 71/71, clean |
+| Phone, `npm test`, `npx tsc --noEmit`, `npx expo export --platform web` and `ios` | 25/25 (incl. the co-sign payload and a full auto-play run), clean, both exports build |
+| Dev stack, `pnpm --dir devstack test` | 18/18 |
 
 Before the end-to-end test: build `web/dist` and the phone web export (`cd mobile && EXPO_PUBLIC_API_URL=http://localhost:8787 npx expo export --platform web --output-dir dist`), and restart the dev stack.
 
