@@ -18,6 +18,8 @@ export type FeedSnapshot = {
   allTxs: ChainTx[];
   /** The pocket the story is on right now. */
   follow?: string;
+  /** The scene the built-in story is playing now ("1"…"8", "A" = escalation); absent between scenes and while a phone is linked. */
+  scene?: string;
   /** A phone is linked (see linkedFeed.ts). */
   linked?: boolean;
   /** Addresses of the linked phone's pockets. */

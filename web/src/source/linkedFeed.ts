@@ -155,6 +155,7 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
         allTxs: [...s.allTxs, ...phone.txs].sort(byAt),
         follow: latestPocket(phone.events, phone.txs, phone.pockets) ?? s.follow,
         linked: true,
+        scene: undefined,
         phonePockets: phone.pockets.map((p) => p.address),
       };
     },

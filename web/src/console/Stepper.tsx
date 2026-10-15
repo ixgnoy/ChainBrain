@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Check, Play } from "lucide-react";
 import { useNetwork } from "./useNetwork";
 import { usePlay } from "./play";
-import { copyFor, shortFor } from "./sceneCopy";
+import { copyFor } from "./sceneCopy";
 import { Kbd } from "./kit";
 import { phoneStatus } from "./story";
 import { eventPocket, samePocket } from "../lib/events";
@@ -13,7 +13,7 @@ import { Button, Pill } from "../seller/ui";
 import { cn } from "../lib/cn";
 
 export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => void }) {
-  const { scenes, actions, linked, refresh, events } = useNetwork();
+  const { scenes, actions, linked, refresh, events, storyScene } = useNetwork();
   const { state, play, followUp, canPlay } = usePlay(actions, linked, refresh);
   const [i, setI] = useState(0);
   const [done, setDone] = useState<Set<string>>(() => new Set());
@@ -45,6 +45,17 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
   }, [events, target, started, linked, tick]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(() => setTick((x) => x + 1), 5000); return () => clearInterval(t); }, []); // a quiet phone ages out of "Working…"
 
+  // the built-in story plays by itself: the highlight follows it, and a scene it leaves is marked finished
+  const driven = !linked && !!storyScene;
+  const lastStory = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const prev = lastStory.current;
+    lastStory.current = storyScene;
+    if (linked) return;
+    if (storyScene) { const n = scenes.findIndex((x) => x.id === storyScene); if (n >= 0) setI(n); }
+    if (prev && prev !== storyScene && scenes.some((x) => x.id === prev)) setDone((d) => new Set(d).add(prev));
+  }, [storyScene, linked, scenes]);
+
   // keyboard: left and right step through the scenes, Space plays, Escape leaves (typing in a field is left alone)
   const keys = useRef({ n: 0, go: () => {}, exit: () => {} });
   useEffect(() => {
@@ -72,36 +83,39 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
   const c = copyFor(s.id);
   const begin = (fn: () => Promise<void>) => { setStarted({ id: s.id, at: Date.now() }); return fn(); };
   const failed = mine && !mine.busy && !mine.ok;
-  keys.current = { n: scenes.length, go: () => { if (canPlay && !state?.busy) void begin(() => play(s)); }, exit: () => onExit?.() };
-  const line = failed ? mine.text : mine?.busy ? (linked ? "Sent to the phone…" : "Playing…") : status.text;
+  keys.current = { n: scenes.length, go: () => { if (canPlay && !state?.busy && !driven) void begin(() => play(s)); }, exit: () => onExit?.() };
+  const storyLine = storyScene === "A" ? "Playing · privilege escalation" : storyScene ? `Playing · scene ${storyScene}` : "";
+  const line = failed ? mine.text : driven ? storyLine : mine?.busy ? (linked ? "Sent to the phone…" : "Playing…") : status.text;
+  const kind = failed ? "error" : driven ? "working" : status.kind;
+  const tone = cn("font-medium", failed ? "text-negative" : kind === "done" ? "text-accent" : kind === "working" || kind === "idle" ? "text-ink2" : "text-ink");
   return (
-    <section ref={root} aria-label="Scenes" className="fixed inset-x-3 bottom-3 z-30 mx-auto max-w-[1100px] rounded-[20px] bg-card p-3 shadow-[0_8px_24px_rgba(17,19,24,0.08)] sm:p-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 sm:flex-nowrap">
-        <ol className="flex shrink-0 gap-1">
+    <section ref={root} aria-label="Scenes" className="fixed inset-x-3 bottom-3 z-30 mx-auto max-w-[1100px] rounded-[20px] bg-card px-3 py-2.5 shadow-[0_8px_24px_rgba(17,19,24,0.08)] sm:px-4">
+      <div className="flex items-center gap-3">
+        <ol className="chip-row flex min-w-0 shrink-0 gap-1 overflow-x-auto max-md:flex-1">
           {scenes.map((x, n) => {
             const fin = done.has(x.id), on = n === i;
             return (
-              <li key={x.id} className="flex w-11 flex-col items-center gap-1 xl:w-[60px]">
-                <button type="button" title={x.title} onClick={() => setI(n)} aria-label={`Scene ${x.id}: ${x.title}${fin ? " (finished)" : ""}`} aria-current={on ? "step" : undefined}
-                  className={cn("num grid size-11 place-items-center rounded-full text-[15px] font-semibold transition-colors", on ? "bg-accent text-on-accent" : fin ? "bg-ink text-on-accent hover:bg-ink2" : "bg-fill text-ink2 hover:bg-line")}>
-                  {fin && !on ? <Check className="size-5" strokeWidth={2.25} aria-hidden /> : x.id}
+              <li key={x.id} className="shrink-0">
+                <button type="button" title={`${x.title}${copyFor(x.id) ? `: ${copyFor(x.id)!.seeing}` : ""}`} onClick={() => setI(n)} aria-label={`Scene ${x.id}: ${x.title}${fin ? " (finished)" : ""}`} aria-current={on ? "step" : undefined}
+                  className={cn("num grid size-11 place-items-center rounded-full text-[14px] font-semibold transition-colors md:size-10", on ? (driven ? "bg-accent text-on-accent ring-2 ring-accent ring-offset-2" : "bg-accent text-on-accent") : fin ? "bg-ink text-on-accent hover:bg-ink2" : "bg-fill text-ink2 hover:bg-line")}>
+                  {fin && !on ? <Check className="size-4" strokeWidth={2.5} aria-hidden /> : x.id}
                 </button>
-                <span aria-hidden className={cn("hidden w-full truncate text-center text-[12px] leading-4 xl:block", on ? "font-semibold text-ink" : "text-muted")}>{shortFor(x.id)}</span>
               </li>
             );
           })}
         </ol>
-        <div className="min-w-0 flex-1 basis-60">
-          <div className="flex flex-wrap items-center gap-2"><span className="text-[16px] font-semibold">{s.title}</span>{c && <Pill tone={c.tone}>{c.outcome}</Pill>}</div>
-          <p className="mt-0.5 text-[14px] leading-5 text-ink2">{c?.seeing ?? s.note}</p>
+        <div className="hidden min-w-0 flex-1 items-center gap-x-3 md:flex">
+          <span className="shrink-0 text-[15px] font-semibold">{s.title}</span>
+          {c && <Pill tone={c.tone} className="shrink-0">{c.outcome}</Pill>}
+          <p role="status" data-testid="stepper-status" data-kind={kind} className={cn("min-w-0 truncate text-[14px] leading-5", tone)}>{line}{!failed && !driven && status.kind === "done" && started && <span className="font-normal text-muted"> · scene {started.id} finished</span>}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="mr-2 hidden items-center gap-1.5 text-[12px] text-muted 2xl:inline-flex" aria-hidden><Kbd>←</Kbd><Kbd>→</Kbd>step<Kbd>Space</Kbd>play</span>
-          {mine?.ok && s.followUp && mine.step === "scene" && <Button variant="outline" disabled={mine.busy} onClick={() => void begin(() => followUp(s))}>Then send</Button>}
-          <Button disabled={!canPlay || !!state?.busy} onClick={() => void begin(() => play(s))}><Play className="size-4" strokeWidth={1.75} />{mine?.busy ? "Playing…" : "Play"}</Button>
+          <span className="mr-1 hidden items-center gap-1.5 text-[12px] text-muted 2xl:inline-flex" aria-hidden><Kbd>←</Kbd><Kbd>→</Kbd>step<Kbd>Space</Kbd>play</span>
+          {mine?.ok && s.followUp && mine.step === "scene" && <Button variant="outline" className="h-10 px-4" disabled={mine.busy} onClick={() => void begin(() => followUp(s))}>Then send</Button>}
+          <Button className="h-11 px-5 max-md:size-11 max-md:px-0 md:h-10" aria-label={`Play scene ${s.id}`} disabled={!canPlay || !!state?.busy || driven} onClick={() => void begin(() => play(s))}><Play className="size-4" strokeWidth={1.75} /><span className="max-md:sr-only">{mine?.busy ? "Playing…" : driven ? "Story playing" : "Play"}</span></Button>
         </div>
       </div>
-      <p role="status" data-testid="stepper-status" data-kind={failed ? "error" : status.kind} className={cn("mt-2 min-h-10 pl-1 text-[14px] leading-5 font-medium", failed ? "text-negative" : status.kind === "done" ? "text-accent" : status.kind === "working" || status.kind === "idle" ? "text-ink2" : "text-ink")}>{line}{!failed && status.kind === "done" && started && <span className="font-normal text-muted"> · scene {started.id} finished</span>}</p>
+      <p role="status" aria-hidden className={cn("mt-1.5 truncate text-[13px] leading-5 md:hidden", tone)}>{s.title}{line ? ` · ${line}` : ""}</p>
     </section>
   );
 }

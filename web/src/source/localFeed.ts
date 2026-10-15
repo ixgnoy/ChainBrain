@@ -81,7 +81,7 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
         balance: p.balance, cap: p.cap, askAbove: p.askAbove, expiresAt: Number(p.expiresAt), revoked: p.revoked, allowed: p.allowed,
         name: nameOf(p.owner, p.cap, autopilot.presenter),
       })).sort((a, b) => Number((b.createdBlock ?? 0n) - (a.createdBlock ?? 0n)));
-      return { events: world.allEvents().map(scrub), pockets, txs: all.filter((t) => t.status !== "reverted"), allTxs: all, follow: autopilot.active };
+      return { events: world.allEvents().map(scrub), pockets, txs: all.filter((t) => t.status !== "reverted"), allTxs: all, follow: autopilot.active, scene: autopilot.state.scene };
     },
     subscribe(f) { listeners.add(f); return () => void listeners.delete(f); },
     start() {

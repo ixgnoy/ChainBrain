@@ -29,9 +29,9 @@ function Item({ it }: { it: ScoreItem }) {
   const f = it.fact;
   return (
     <li data-testid={`score-item-${it.id}`} data-done={it.done ? "true" : "false"} className="border-b border-line last:border-0">
-      <div className="flex items-center gap-3 py-2.5">
+      <div className="flex items-center gap-3 py-1.5">
         <Tick done={it.done} />
-        <span className={cn("min-w-0 flex-1 text-[15px] leading-5 transition-colors", it.done ? "font-medium text-ink" : "text-muted")}>{it.label}</span>
+        <span className={cn("min-w-0 flex-1 text-[14px] leading-5 transition-colors", it.done ? "font-medium text-ink" : "text-muted")}>{it.label}</span>
         {it.done && f && <button type="button" aria-expanded={open} aria-label={`Show proof for ${it.label}`} onClick={() => setOpen((o) => !o)} className="relative inline-flex h-8 items-center gap-1 rounded-full px-2 text-[13px] font-semibold text-accent before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-accent-soft">Proof<ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} aria-hidden /></button>}
       </div>
       {open && f && (
@@ -68,7 +68,7 @@ export function Scorecard({ pocket }: { pocket?: string }) {
         {groups.map((g) => {
           const n = g.items.filter((i) => i.done).length;
           return (
-            <div key={g.id} className="pt-3" data-testid={`score-group-${g.id}`}>
+            <div key={g.id} className="pt-2.5" data-testid={`score-group-${g.id}`}>
               <div className="flex items-baseline justify-between"><h3 className="text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-muted">{g.title} · {g.weight}</h3><span className="num text-[12px] text-muted">{n}/{g.items.length}</span></div>
               <ul>{g.items.map((it) => <Item key={it.id} it={it} />)}</ul>
             </div>

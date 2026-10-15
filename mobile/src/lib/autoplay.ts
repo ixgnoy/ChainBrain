@@ -174,7 +174,11 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await wait(900);
     await must("deadend.askAgain");
     await drive();
-    await wait(2500);
+    await wait(3000);
+
+    // ---- close on Home: the stack, the frozen Research card and the fixed One purchase card
+    host.navigate("/");
+    await wait(4000);
   }
 
   return self;

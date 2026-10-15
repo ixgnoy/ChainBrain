@@ -48,6 +48,8 @@ export type Network = {
   scenes: Scene[];
   /** The pocket the story is on, when the source knows (Live follows it unless one is picked). */
   follow?: string;
+  /** The scene the built-in story is playing right now (not set while a phone is linked or on a server). */
+  storyScene?: string;
   /** A phone is linked: its pockets lead, Live follows them and Play is typed on the phone. */
   linked: boolean;
   /** Lower-case addresses of the linked phone's pockets. */

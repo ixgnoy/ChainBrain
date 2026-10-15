@@ -2,12 +2,12 @@
 // public chain, so they are never linked to BaseScan or dressed up as it; a public-chain server gets an extra BaseScan link.
 // Pages: #explorer (blocks and latest transactions), #explorer/tx/0x…, #explorer/block/n, #explorer/address/0x….
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Search, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Search, ShieldCheck } from "lucide-react";
 import { attemptsFrom } from "@sim/checks";
 import { blocksFrom, explainTx, txsOfAddress, usdText, type ExplorerInput, type Field } from "@sim/explorer";
 import { useNetwork } from "./useNetwork";
 import { txLabel } from "./network";
-import { AttemptHeadline, ChecksPath } from "./ChecksPath";
+import { AttemptHeadline, ChecksPath, CodePill } from "./ChecksPath";
 import { Verdict, pocketStatus, usd, NEVER } from "./parts";
 import { explorerHref, searchTarget, type ExplorerRoute } from "./route";
 import { ago } from "./liveRules";
@@ -101,25 +101,25 @@ function FieldValue({ f }: { f: Field }) {
 }
 
 function StatusPill({ status }: { status: "success" | "reverted" }) {
-  return status === "success" ? <Pill tone="mint"><Check className="mr-1 size-3.5" strokeWidth={2.5} aria-hidden />Success</Pill> : <Pill tone="negative">Reverted</Pill>;
+  return status === "success" ? <Pill tone="mint"><Check className="mr-1 size-3.5" strokeWidth={2.5} aria-hidden />Success</Pill> : <Pill tone="neutral">Reverted</Pill>;
 }
 
 function TxLine({ t }: { t: ChainTx }) {
   const { net, who } = useChain();
-  const bad = t.status === "reverted";
-  const sub = [net.nameOf(t.pocket), t.counterparty ? `${t.kind === "payment" ? "to" : t.kind === "fund" ? "from" : "with"} ${who.nameOf(t.counterparty) ?? shortAddr(t.counterparty)}` : "", t.block > 0n ? `block ${t.block}` : ""].filter(Boolean).join(" · ");
+  const cp = t.counterparty;
   return (
-    <a href={explorerHref.tx(t.hash)} data-testid="explorer-tx-row" data-status={t.status ?? "success"} className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 px-4 py-3 transition-colors hover:bg-canvas sm:px-5">
-      <span className="w-[76px]"><StatusPill status={t.status ?? "success"} /></span>
-      <span className="min-w-0">
-        <span className={cn("block truncate text-[14px] font-medium leading-5", bad && "text-negative")}>{txLabel(t)}{t.method && <span className="num ml-2 hidden text-[12px] font-normal text-muted sm:inline">{t.method}</span>}</span>
-        <span className="block truncate text-[12px] leading-4 text-muted">{sub}</span>
+    <div data-testid="explorer-tx-row" data-status={t.status ?? "success"} className="txline relative px-4 py-3 transition-colors hover:bg-canvas sm:px-5">
+      <a href={explorerHref.tx(t.hash)} aria-label={`${txLabel(t)} ${t.hash}`} className="absolute inset-0 z-0" />
+      <span className="tl-pill pointer-events-none relative"><StatusPill status={t.status ?? "success"} /></span>
+      <span className="tl-title pointer-events-none relative min-w-0 break-words text-[14px] font-medium leading-5">{txLabel(t)}{t.method && <span className="num ml-2 text-[12px] font-normal text-muted">{t.method}</span>}</span>
+      <span className="tl-sub relative min-w-0 break-words text-[12px] leading-4 text-muted">
+        <a href={explorerHref.address(t.pocket)} className="relative z-10 text-accent hover:underline">{net.nameOf(t.pocket)}</a>
+        {cp && <> {t.kind === "payment" ? "to" : t.kind === "fund" ? "from" : "with"} <a href={explorerHref.address(cp)} className="relative z-10 text-accent hover:underline">{who.nameOf(cp) ?? shortAddr(cp)}</a></>}
+        {t.block > 0n && <> · block {String(t.block)}</>}
       </span>
-      <span className="text-right">
-        {t.amount != null && t.amount > 0n ? <span className="num block text-[15px] font-semibold leading-5">{usd(t.amount)}</span> : <span className="block h-5" />}
-        <span className="num block text-[12px] leading-4 text-muted">{t.hash.slice(0, 8)}…{t.hash.slice(-4)}{t.at ? ` · ${ago(t.at)}` : ""}</span>
-      </span>
-    </a>
+      <span className="tl-amount pointer-events-none relative num text-[15px] font-semibold leading-5">{t.amount != null && t.amount > 0n ? usd(t.amount) : ""}</span>
+      <span className="tl-hash pointer-events-none relative num break-all text-[12px] leading-4 text-muted sm:text-right">{t.hash.slice(0, 10)}…{t.hash.slice(-6)}{t.at ? ` · ${ago(t.at)}` : ""}</span>
+    </div>
   );
 }
 
@@ -157,7 +157,7 @@ function Home() {
       <PageTitle title="Explorer" sub={<>Every block and transaction on this network ({net.chainName.toLowerCase() === "test network" ? "a test network, no real money" : net.chainName}). Open a hash or an address to see what happened and which checks decided it.</>} />
       <SearchBox />
       <KpiStrip items={[
-        { label: "Latest block", value: blocks[0]?.number ?? "–", note: "Blocks that carry transactions" },
+        { label: "Latest block", value: blocks[0]?.number ?? "–", note: `${net.chainName} · blocks with transactions` },
         { label: "Transactions", value: all.length, note: `${all.filter((t) => t.kind === "payment").length} agent payments` },
         { label: "Reverted by the pocket", value: blocked, note: blocked ? "Attacks the contract refused" : "None yet", accent: true, icon: <ShieldCheck className="size-4" strokeWidth={1.75} aria-hidden /> },
       ]} />
@@ -213,10 +213,10 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
       <Card className="p-5 sm:p-6">
         <p className="text-[18px] font-semibold leading-7 [overflow-wrap:anywhere]">{x.summary}</p>
         {x.status === "reverted" && (
-          <div data-testid="explorer-revert" className="mt-4 rounded-[14px] bg-negative-soft px-4 py-3.5">
-            <p className="flex flex-wrap items-center gap-2 text-[14px] font-semibold text-negative"><ShieldAlert className="size-4 shrink-0" strokeWidth={2} aria-hidden />{revert ? <>Reverted: <span className="num rounded-full bg-card px-2.5 py-0.5 text-[13px]">{revert}</span></> : "Reverted on-chain"}</p>
+          <div data-testid="explorer-revert" className="mt-4 rounded-[14px] bg-fill px-4 py-3.5">
+            <p className="flex flex-wrap items-center gap-2 text-[14px] font-semibold text-ink"><ShieldCheck className="size-4 shrink-0 text-accent" strokeWidth={2} aria-hidden />{revert ? <>Reverted: <CodePill code={revert} /></> : "Reverted on-chain"}</p>
             {revert && REASONS[revert] && <p className="mt-1 text-[14px] leading-5 text-ink2">{REASONS[revert]}</p>}
-            {rule && <p className="mt-2 text-[14px] leading-5 text-ink">Pocket rule that failed (canPay): <span className="num rounded-full bg-card px-2.5 py-0.5 text-[13px] font-bold text-negative">{rule}</span><span className="text-ink2"> {REASONS[rule] ? `· ${REASONS[rule]}` : ""}</span></p>}
+            {rule && <p className="mt-2 text-[14px] leading-5 text-ink">Pocket rule that failed (canPay): <CodePill code={rule} /><span className="text-ink2"> {REASONS[rule] ? `· ${REASONS[rule]}` : ""}</span></p>}
             <p className="mt-2 text-[13px] leading-5 text-muted">No money moved.</p>
           </div>
         )}
@@ -224,7 +224,7 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
 
       {attempt && (
         <Section title="Which checks decided it">
-          <Card className="p-4 sm:p-5"><ChecksPath attempt={attempt} /><AttemptHeadline a={attempt} /></Card>
+          <Card className="p-4 sm:p-5"><ChecksPath attempt={attempt} /><div className="mt-4"><AttemptHeadline a={attempt} /></div></Card>
         </Section>
       )}
 
@@ -232,7 +232,7 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
         <Card className="px-5 sm:px-6">
           <Rows rows={[
             ["Status", <StatusPill key="s" status={x.status} />],
-            ["Block", blockN ? <a key="b" href={explorerHref.block(blockN)} data-testid="tx-block-link" className="num text-accent hover:underline">{blockN}</a> : undefined],
+            ["Block", blockN ? <span key="b"><a href={explorerHref.block(blockN)} data-testid="tx-block-link" className="num text-accent hover:underline">{blockN}</a><span className="font-normal text-muted"> · {net.chainName}</span></span> : undefined],
             ["Position in block", x.position != null ? <span key="p" className="num">{x.position}</span> : undefined],
             ["Time", x.at ? <span key="t">{when(x.at)} <span className="font-normal text-muted">· {ago(x.at)}</span></span> : undefined],
             ["From", x.from ? <Addr key="f" address={x.from} full /> : undefined],
@@ -283,7 +283,7 @@ function BlockPage({ number }: { number: string }) {
     <div data-testid="explorer-block" data-found={b ? "true" : "false"} className="fade-up">
       <Crumbs here={`Block ${number}`} />
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <h1 className="title-serif text-[32px] leading-10 sm:text-[40px] sm:leading-[46px]">Block {number}</h1>
+        <div className="flex flex-wrap items-center gap-3"><h1 className="title-serif text-[32px] leading-10 sm:text-[40px] sm:leading-[46px]">Block {number}</h1><Pill tone="neutral">{net.chainName}</Pill></div>
         <div className="flex gap-2">
           <a aria-disabled={!older} href={older ? explorerHref.block(older.number) : undefined} className={cn("inline-flex h-11 items-center gap-1 rounded-full bg-card px-4 text-[14px] font-semibold", older ? "text-accent hover:bg-accent-soft" : "pointer-events-none text-faint")}><ChevronLeft className="size-4" aria-hidden />Older</a>
           <a aria-disabled={!newer} href={newer ? explorerHref.block(newer.number) : undefined} className={cn("inline-flex h-11 items-center gap-1 rounded-full bg-card px-4 text-[14px] font-semibold", newer ? "text-accent hover:bg-accent-soft" : "pointer-events-none text-faint")}>Newer<ChevronRight className="size-4" aria-hidden /></a>
@@ -339,7 +339,7 @@ function AddressPage({ address, watch }: { address: string; watch?(pocket: strin
 
 export function Explorer({ route, watch }: { route: ExplorerRoute; watch?(pocket: string): void }) {
   return (
-    <div className="mx-auto max-w-[1040px]">
+    <div className="mx-auto max-w-[1040px] pb-10">
       {route.kind === "home" && <Home />}
       {route.kind === "tx" && <TxPage hash={route.hash} watch={watch} />}
       {route.kind === "block" && <BlockPage number={route.number} />}

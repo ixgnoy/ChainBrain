@@ -3,6 +3,7 @@ import { usePlay } from "./play";
 import { copyFor } from "./sceneCopy";
 import { Copy, Check, ShieldCheck, ShieldAlert, Wallet } from "lucide-react";
 import { Arena } from "./Arena";
+import { explorerHref } from "./route";
 import { useNetwork } from "./network";
 import { PhoneTag, TxHash, Verdict, pocketStatus, useViewTx, usd, NEVER } from "./parts";
 import { Disclosure, KpiStrip, chip } from "./kit";
@@ -47,18 +48,21 @@ export function Pockets({ open }: { open(addr: string): void }) {
               const st = pocketStatus(p);
               const w = worstCase(p, txs, (id) => names.get(id) ?? id);
               return (
-                <button key={p.address} type="button" onClick={() => open(p.address)} aria-label={`${nameOf(p.address)} ${usd(p.balance)}`}
-                  className="grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 px-4 py-3.5 text-left transition-colors hover:bg-canvas lg:min-h-16 lg:grid-cols-[minmax(0,1.5fr)_110px_100px_110px_120px_120px] lg:px-5 lg:py-2">
+                <div key={p.address} className="relative transition-colors hover:bg-canvas">
+                  <button type="button" onClick={() => open(p.address)} aria-label={`${nameOf(p.address)} ${usd(p.balance)}`} className="absolute inset-0 z-0 h-full w-full" />
+                  <div className="pointer-events-none relative grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 px-4 py-3.5 lg:min-h-16 lg:grid-cols-[minmax(0,1.5fr)_110px_100px_110px_120px_120px] lg:px-5 lg:py-2">
                   <span className="min-w-0 max-lg:order-1">
                     <span className="block truncate text-[14px] font-medium leading-5">{nameOf(p.address)}{isPhone(p.address) && <PhoneTag />}</span>
                     <span className="block truncate text-[12px] leading-4 text-muted">Owner {shortAddr(p.owner)} · cap {usd(p.cap)} · {p.askAbove === NEVER ? "never asks" : `asks above ${usd(p.askAbove)}`} · {p.allowed.map((i) => names.get(i) ?? i).join(", ") || "no sellers"}</span>
+                    <a href={explorerHref.address(p.address)} className="pointer-events-auto relative z-10 text-[12px] font-semibold leading-4 text-accent hover:underline">Open in explorer</a>
                   </span>
                   <span className="num hidden text-[13px] text-ink2 lg:block">{shortAddr(p.agent)}</span>
                   <span className="max-lg:order-3"><Verdict kind={st.kind}>{st.label}</Verdict></span>
                   <span className="num text-right text-[16px] font-semibold leading-5 max-lg:order-2">{usd(p.balance)}</span>
                   <span className="num text-right text-[13px] text-ink2 max-lg:order-4"><span className="text-muted lg:hidden">Max loss </span>{usd(w.max)}</span>
                   <span className="num hidden pl-3 text-[13px] text-ink2 lg:block">{new Date(p.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
-                </button>
+                  </div>
+                </div>
               );
             }) : <Empty icon={<Wallet {...I} />} title="No pockets here">{f === "all" ? "Pockets appear once an owner creates one in the phone app." : "Nothing matches this filter."}</Empty>}
           </div>

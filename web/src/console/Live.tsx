@@ -179,7 +179,7 @@ function EvidenceStrip({ ev, decisions }: { ev: ReturnType<typeof evidenceOf>; d
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] leading-5 text-ink2">
         {items.map((i) => <span key={i.k} className="inline-flex items-center gap-2"><span className="font-medium">{i.label}</span>{i.tx && <TxHash hash={i.tx} />}</span>)}
       </div>
-      <span className="ml-auto hidden items-center gap-2 text-[12px] text-muted sm:inline-flex"><Expected />Refusals are the wallet doing its job</span>
+
     </div>
   );
 }
@@ -232,7 +232,7 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
   const trace = (
     <Column key="agent" title="Agent" meta={<span className="num">{calls} {calls === 1 ? "call" : "calls"}</span>}
       right={!present && <button type="button" aria-pressed={paused} onClick={() => { setPaused((x) => !x); setReleased(false); }} className="relative inline-flex h-8 items-center gap-1.5 rounded-full px-2 text-[13px] font-semibold text-accent before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-accent-soft">{!paused && <span className="size-2 rounded-full bg-accent" aria-hidden />}{paused ? "Resume" : "Pause"}</button>}
-      className={cn(present ? "xl:h-full" : "xl:max-h-[calc(100dvh-190px)]", !present && col !== "agent" && "max-xl:hidden", "max-xl:max-h-[calc(100dvh-250px)]")}
+      className={cn(present ? "xl:h-full xl:max-h-full" : "xl:max-h-[calc(100dvh-190px)]", !present && col !== "agent" && "max-xl:hidden", "max-xl:max-h-[calc(100dvh-250px)]")}
       bodyClass="trace-list relative overflow-y-auto pb-2" bodyRef={scroller} onBodyScroll={(e) => setAway(e.currentTarget.scrollTop > 24)}
       bodyEvents={{ onPointerMove: () => { setHover(true); clearTimeout(hoverTimer.current); hoverTimer.current = setTimeout(() => setHover(false), 2500); }, onPointerLeave: () => { clearTimeout(hoverTimer.current); setHover(false); setReleased(false); } }}>
       {waitingN > 0 && <div className="sticky top-2 z-20 flex justify-center"><button type="button" onClick={apply} className="h-8 rounded-full bg-ink px-3 text-[13px] font-semibold text-on-accent">{waitingN} new</button></div>}
@@ -318,17 +318,20 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
   );
 
   return (
-    <div data-present={present ? "true" : undefined}>
-      {!present && <EvidenceStrip ev={ev} decisions={decisions} />}
-      <div className="mb-3"><ChecksPanel attempts={attempts} present={present} /></div>
-      {!present && (
-        <div role="tablist" aria-label="Live view" className="mb-3 flex h-11 gap-1 rounded-full bg-fill p-1 xl:hidden">
-          {COLS.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={col === id} onClick={() => setCol(id)} className={cn("flex-1 rounded-full text-[14px] font-semibold transition-colors", col === id ? "bg-card text-ink" : "text-ink2")}>{label}</button>)}
+    <div data-present={present ? "true" : undefined} className={cn(present && "xl:grid xl:h-[calc(100dvh-var(--stepper-h,90px)-88px)] xl:grid-cols-[minmax(0,1fr)_370px] xl:gap-3")}>
+      <div className={cn(present && "flex min-h-0 min-w-0 flex-col gap-3 max-xl:mb-3")}>
+        <div className={cn(!present && "mb-3", present && "shrink-0")}><ChecksPanel attempts={attempts} present={present} /></div>
+        {!present && <EvidenceStrip ev={ev} decisions={decisions} />}
+        {!present && (
+          <div role="tablist" aria-label="Live view" className="mb-3 flex h-11 gap-1 rounded-full bg-fill p-1 xl:hidden">
+            {COLS.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={col === id} onClick={() => setCol(id)} className={cn("flex-1 rounded-full text-[14px] font-semibold transition-colors", col === id ? "bg-card text-ink" : "text-ink2")}>{label}</button>)}
+          </div>
+        )}
+        <div className={cn("grid gap-3", present ? "min-h-0 flex-1 xl:grid-cols-2" : "items-start xl:grid-cols-[1.35fr_1fr_0.95fr]")}>
+          {trace}{pocketCol}{!present && sellers}
         </div>
-      )}
-      <div className={cn("grid gap-3", present ? "xl:h-[max(340px,calc(100dvh-var(--stepper-h,150px)-420px))] xl:grid-cols-[1.25fr_1fr_0.9fr]" : "items-start xl:grid-cols-[1.35fr_1fr_0.95fr]")}>
-        {trace}{pocketCol}{!present && sellers}{present && <Scorecard pocket={pocket} />}
       </div>
+      {present && <Scorecard pocket={pocket} />}
     </div>
   );
 }

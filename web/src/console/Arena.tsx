@@ -2,8 +2,8 @@
 // expected result and the actual verdict, read back from the events the attack produced (arena.ts). The scoreboard sums
 // what the network has stopped. Nothing here decides anything: the wallet and the pocket contract do, this only asks.
 import { useMemo, useRef, useState } from "react";
-import { Check, Loader, ShieldAlert, ShieldCheck, TriangleAlert } from "lucide-react";
-import { attackBoard, attemptsFrom, type Attempt } from "@sim/checks";
+import { Check, ChevronRight, Loader, ShieldAlert, ShieldCheck, TriangleAlert } from "lucide-react";
+import { GATES, attackBoard, attemptsFrom, type Attempt } from "@sim/checks";
 import { useNetwork } from "./useNetwork";
 import { playScene } from "./play";
 import { GateStrip } from "./ChecksPath";
@@ -45,6 +45,7 @@ export function Arena({ aim, setAim, watch }: { aim: string; setAim(a: string): 
   const latest = useRef(attempts);
   latest.current = attempts;
   const [fired, setFired] = useState<Partial<Record<ArenaKey, Fired>>>({});
+  const [openOwn, setOpenOwn] = useState<Partial<Record<ArenaKey, boolean>>>({});
   const [texts, setTexts] = useState<Record<ArenaKey, string>>({ induced: "", extraction: "", escalation: "", injection: "" });
   const scene = (id: string) => scenes.find((s) => s.id === id);
 
@@ -129,15 +130,15 @@ export function Arena({ aim, setAim, watch }: { aim: string; setAim(a: string): 
                 </div>
                 {!can[c.key] && <p className="mt-2 text-[13px] leading-5 text-muted">{why[c.key]}</p>}
 
-                <label className="mt-4 block">
-                  <span className="mb-1.5 block text-[13px] font-medium">Or write your own</span>
+                <button type="button" aria-expanded={!!openOwn[c.key]} data-testid={`arena-own-${c.key}`} onClick={() => setOpenOwn((o) => ({ ...o, [c.key]: !o[c.key] }))} className="relative mt-3 inline-flex h-9 items-center gap-1 self-start text-[13px] font-semibold text-accent before:absolute before:-inset-y-1 before:-inset-x-2 before:content-[''] hover:underline"><ChevronRight className={cn("size-4 transition-transform", openOwn[c.key] && "rotate-90")} aria-hidden />Write your own attack</button>
+                {openOwn[c.key] && <label className="fade-up mt-1 block">
                   <textarea aria-label={`Your own attack: ${c.title}`} rows={2} value={texts[c.key]} placeholder={c.placeholder} onChange={(e) => setTexts((t) => ({ ...t, [c.key]: e.target.value }))} className={field} />
-                </label>
-                <div className="mt-2"><Button variant="outline" data-testid={`arena-send-${c.key}`} className="h-11 px-5 text-[14px]" disabled={!texts[c.key].trim() || !can[c.key] || !!f?.busy || (c.key === "induced" && !canChat)} onClick={() => own(c)}>{c.key === "injection" ? "Plant it and play scene 5" : "Send my attack"}</Button></div>
+                </label>}
+                {openOwn[c.key] && <div className="mt-2"><Button variant="outline" data-testid={`arena-send-${c.key}`} className="h-11 px-5 text-[14px]" disabled={!texts[c.key].trim() || !can[c.key] || !!f?.busy || (c.key === "induced" && !canChat)} onClick={() => own(c)}>{c.key === "injection" ? "Plant it and play scene 5" : "Send my attack"}</Button></div>}
 
                 {f && (
                   <div data-testid={`arena-verdict-${c.key}`} data-state={state} role="status" className="fade-up mt-4 rounded-[14px] bg-canvas p-4">
-                    {f.reply && <p className="mb-3 border-l-2 border-line pl-3 text-[14px] italic leading-5 text-ink2 [overflow-wrap:anywhere]">The agent: “{f.reply.slice(0, 320)}”</p>}
+                    {f.reply && <p className="mb-3 border-l-2 border-accent pl-3 text-[14px] leading-5 text-ink2 [overflow-wrap:anywhere]">The agent: “{f.reply.slice(0, 320)}”</p>}
                     {v?.state === "waiting" && (f.busy ? <p className="flex items-center gap-2 text-[14px] text-ink2"><Loader className="size-4 animate-spin" aria-hidden />Running the attack…</p> : f.ok === false ? <p className="flex items-start gap-2 text-[14px] text-negative"><ShieldAlert className="mt-0.5 size-4 shrink-0" {...I} aria-hidden />{f.text || "It could not run."}</p> : <p className="text-[14px] text-ink2">{f.text || "Waiting for the agent's answer."}</p>)}
                     {v && v.state !== "waiting" && <Result card={c} v={v} />}
                     {v?.state === "blocked" && v.inWords && actions.hijack && (
@@ -169,11 +170,11 @@ function Result({ card, v }: { card: ArenaCard; v: Exclude<ReturnType<typeof are
         <p className={cn("text-[15px] font-semibold leading-6 [overflow-wrap:anywhere]", lost && "text-negative")}>{lost ? "The transfer was NOT refused." : a.headline}</p>
       </div>
       <div className="mt-3"><GateStrip attempt={a} /></div>
-      {a.code && <p className="mt-3 text-[13px] leading-5 text-ink2">Stopped by <span className="font-semibold text-ink">{a.gates.find((g) => g.state === "stop")?.title ?? "the wallet"}</span> <span className="num ml-1 rounded-full bg-negative-soft px-2 py-0.5 text-[12px] font-bold text-negative">{a.code}</span></p>}
+      {a.stoppedAt && <p className="mt-3 text-[13px] leading-5 text-ink2">Stopped by <span className="font-semibold text-ink">{GATES[a.stoppedAt].title}</span> <span className="text-muted">({GATES[a.stoppedAt].layer === "agent" ? "the agent" : GATES[a.stoppedAt].layer === "tools" ? "wallet tools" : "pocket contract"})</span></p>}
       {card.key === "escalation" && (a.txs?.length ?? 0) > 0 && (
-        <ul className="mt-3 space-y-1.5">{a.txs!.map((h, i) => <li key={h} className="flex flex-wrap items-baseline gap-x-2 text-[13px]"><span className="num font-semibold text-negative">{calls[i] ?? "call"} reverted</span><TxHash hash={h} /></li>)}</ul>
+        <ul className="mt-3 space-y-1.5">{a.txs!.map((h, i) => <li key={h} className="flex flex-wrap items-baseline gap-x-2 text-[13px]"><span className="num font-semibold text-ink">{calls[i] ?? "call"} reverted</span><TxHash hash={h} /></li>)}</ul>
       )}
-      {card.key === "induced" && a.tx && <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-[13px]"><span className="font-semibold text-negative">Transfer reverted</span><TxHash hash={a.tx} /></p>}
+      {card.key === "induced" && a.tx && <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-[13px]"><span className="font-semibold text-ink">Transfer reverted</span><TxHash hash={a.tx} /></p>}
     </div>
   );
 }

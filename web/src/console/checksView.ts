@@ -56,3 +56,10 @@ export function tokenTone(gates: Gate[], revealed: number): "go" | "stop" | "foo
   if (seen.some((g) => g.state === "fooled")) return "fooled";
   return "go";
 }
+
+/** On a narrow screen the first passed gates fold into one line ("7 checks passed"): the count of leading passes, when there are at least two and something else follows. */
+export function collapsiblePrefix(gates: Gate[]): number {
+  let n = 0;
+  while (n < gates.length - 1 && gates[n].state === "pass") n++;
+  return n >= 2 ? n : 0;
+}

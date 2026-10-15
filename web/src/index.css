@@ -72,8 +72,8 @@ button, a, select, [role="tab"] { cursor: pointer; }
 /* Presenter mode: bigger type on the Live columns, read from the back of a room. */
 [data-present="true"] .t-body { font-size: 18px; line-height: 26px; }
 [data-present="true"] .t-name { font-size: 17px; }
-[data-present="true"] [data-testid="pocket-balance"] { font-size: 72px; line-height: 76px; }
-[data-present="true"] [data-testid="pocket-balance"][data-stopped] { font-size: 52px; line-height: 60px; }
+[data-present="true"] [data-testid="pocket-balance"] { font-size: 56px; line-height: 60px; }
+[data-present="true"] [data-testid="pocket-balance"][data-stopped] { font-size: 44px; line-height: 52px; }
 /* The live trace keeps its place when rows arrive above it. */
 .trace-list { overflow-anchor: auto; overscroll-behavior: contain; }
 /* Horizontal chip rows hide their scrollbar but still scroll. */
@@ -104,3 +104,15 @@ button, a, select, [role="tab"] { cursor: pointer; }
 .ring-shake { animation: ring-shake 360ms ease-out both; }
 @keyframes draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
 .tick-draw { stroke-dasharray: 24; animation: draw 320ms ease-out both; }
+
+/* Explorer transaction row: pill, title, subtitle, amount and hash stack on a phone and sit in three columns from sm. */
+.txline { display: grid; align-items: center; gap: 2px 12px; grid-template-columns: auto 1fr; grid-template-areas: "pill amount" "title title" "sub sub" "hash hash"; }
+.txline > .tl-pill { grid-area: pill; margin-bottom: 4px; }
+.txline > .tl-amount { grid-area: amount; text-align: right; }
+.txline > .tl-title { grid-area: title; }
+.txline > .tl-sub { grid-area: sub; }
+.txline > .tl-hash { grid-area: hash; }
+@media (min-width: 640px) {
+  .txline { grid-template-columns: 76px minmax(0, 1fr) auto; grid-template-areas: "pill title amount" "pill sub hash"; column-gap: 16px; }
+  .txline > .tl-pill { margin-bottom: 0; }
+}
