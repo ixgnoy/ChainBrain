@@ -248,3 +248,16 @@ test("Sentinel never freezes on normal shopping", async () => {
   assert.equal(w.events(0, pocket).filter((e) => e.type === "sentinel" && (e.kind === "freeze" || e.kind === "hold")).length, 0);
   assert.equal(w.chain.view(pocket).frozen, false);
 });
+
+test("pre-flight: every payment is predicted, then checked; predictions match outcomes", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  await w.chat(pocket, "Get me a market report on durian exports, under US$2, by tonight.");
+  await w.chat(pocket, "Per report. Get the premium one too if it adds a forecast.");
+  await w.chat(pocket, "Buy Harbour Wines' fruit and wine trade report. Max US$1, by tonight. Confirmed, go ahead.");
+  const results = w.events(0, pocket).filter((e) => e.type === "preflight" && e.kind === "result");
+  assert.deepEqual(results.map((e) => [e.sellerId, e.predicted.outcome, e.predicted.reason ?? "", e.matched]), [
+    ["datalite", "pays", "", true], ["datapro", "pays", "", true], ["harbour-wines", "refused", "SELLER_NOT_ALLOWED", true], ["datalite", "pays", "", true],
+  ]);
+  assert.equal(w.events(0, pocket).filter((e) => e.type === "preflight" && e.kind === "predict").length, 4);
+});

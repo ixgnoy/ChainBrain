@@ -17,6 +17,8 @@ import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { EASE_OUT, settle, useReduceMotion } from "../ui/motion";
 import { txError } from "../components/ActionSheet";
+import { SpeakRules } from "../components/SpeakRules";
+import type { Draft } from "../../../shared/sim/speak";
 import { TxLink } from "../components/TxLink";
 import { worstCase } from "../lib/plain";
 import { cleanText } from "../lib/sanitize";
@@ -246,6 +248,14 @@ export default function Create() {
     }
   };
 
+  /** "Speak your rules": the sentence's rules fill every page; the owner lands on Review and still signs. */
+  const applyDraft = (d: Draft) => {
+    setPreset("custom");
+    if (d.name) setName(d.name.slice(0, 24));
+    setFunds(Number(d.budget)); setCap(Number(d.cap)); setSellers(d.sellers); setLife(d.lifetime);
+    if (d.askAbove === "never") setAskMode("never"); else if (d.askAbove === "0") setAskMode("always"); else { setAskMode("above"); setAsk(Number(d.askAbove)); }
+    go(STEPS.length - 1);
+  };
   const toggle = (id: string) => { haptic.select(); setSellers((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); };
   const askLabel = askMode === "always" ? "Every payment" : askMode === "never" ? "Never" : `Above US$${money2(askV)}`;
 
@@ -253,7 +263,8 @@ export default function Create() {
     switch (step) {
       case 0: return (
         <View style={{ gap: 20 }}>
-          <Title h="What is it for?" sub="Pick a starting point. You can change every setting on the next pages." />
+          <Title h="What is it for?" sub="Say it in one sentence, or pick a starting point. You can change every setting on the next pages." />
+          <SpeakRules onUse={applyDraft} />
           <View style={{ gap: 10 }}>
             {(Object.keys(PRESETS) as (keyof typeof PRESETS)[]).map((k) => {
               const p = PRESETS[k];

@@ -89,3 +89,11 @@ export async function forgetMemory(pocket: string, id: string): Promise<boolean>
   const r = await fetchTimeout(`${getApi()}/api/memory/forget`, { method: "POST", headers: json, body: JSON.stringify({ pocket, id }) }, 8000).catch(() => null);
   return !!r?.ok;
 }
+
+/** POST /api/rules/compile: one sentence -> proposed rules, open questions and a computed proof card. Never creates a pocket. */
+export async function compileRules(sentence: string): Promise<import("../../../shared/sim/speak").Compiled & { proof: import("../../../shared/sim/speak").Proof }> {
+  if (isBuiltin()) return builtin().compileRules(sentence) as any;
+  const r = await fetchTimeout(`${getApi()}/api/rules/compile`, { method: "POST", headers: json, body: JSON.stringify({ sentence }) }, 30000);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}

@@ -14,6 +14,7 @@ import { bus } from "./events";
 import { radar, screenOrNull, brief } from "../radar/screen";
 import { trailOf } from "../../../shared/sim/radar";
 import { sentinel } from "../sentinel";
+import { preflight, sameOutcome } from "./preflight";
 
 export type ToolCtx = { pocket: Address };
 type Tool = { description: string; schema: z.ZodType; run(ctx: ToolCtx, args: any): Promise<object> };
@@ -164,10 +165,16 @@ const defs: Record<string, Tool> = {
         bus.publish({ type: "refusal", pocket: ctx.pocket, sellerId: rec.sellerId, sku: rec.sku, amount: rec.amount, reason: "SENTINEL_HOLD" });
         return refuse("SENTINEL_HOLD");
       }
+      // pre-flight: predict this exact transfer on the current chain, then check the prediction against what happens
+      const base = { pocket: ctx.pocket, quoteId, sellerId: rec.sellerId, sku: rec.sku, amount: rec.amount };
+      const pre = await preflight(ctx.pocket, rec, s.intent!.intentHash).catch(() => null);
+      if (pre) bus.publish({ type: "preflight", kind: "predict", ...base, predicted: pre });
       const r = await settle(ctx.pocket, rec, s.intent!.intentHash);
-      if (!r.ok) return refuse(r.reason, r.detail ? { detail: r.detail.slice(0, 200) } : {});
+      const check = pre ? { predicted: pre.outcome, matched: sameOutcome(pre, r.ok, r.ok ? undefined : r.reason) } : undefined;
+      if (pre) bus.publish({ type: "preflight", kind: "result", ...base, predicted: pre, actual: r.ok ? { outcome: "pays", tx: r.tx } : { outcome: "refused", reason: r.reason }, matched: check!.matched });
+      if (!r.ok) return refuse(r.reason, { ...(r.detail ? { detail: r.detail.slice(0, 200) } : {}), ...(check ? { preflight: check } : {}) });
       if (rec.ownerSig) sentinel.release(ctx.pocket);
-      return { ok: true, tx: r.tx, paid: formatUsd(rec.amount), sellerId: rec.sellerId, ...screenFree(ctx, rec.sellerId, r.body) };
+      return { ok: true, tx: r.tx, paid: formatUsd(rec.amount), sellerId: rec.sellerId, ...(check ? { preflight: check } : {}), ...screenFree(ctx, rec.sellerId, r.body) };
     },
   },
 };

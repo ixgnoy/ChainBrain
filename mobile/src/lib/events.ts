@@ -119,7 +119,7 @@ export function summarizeTool(tool: string | undefined, r: any): string {
       return r.free ? (r.refused?.length ? "free, data request refused" : "free") : `US$${r.price}${bad ? `, ${bad}` : r.needsOwnerApproval ? ", needs you" : ""}${risk}`;
     }
     case "ask_owner": return r.approved ? "approved" : r.status === "asked" ? "asked you" : "";
-    case "pay": return r.paid ? `paid US$${r.paid}` : "";
+    case "pay": return r.paid ? `paid US$${r.paid}${r.preflight ? (r.preflight.matched ? " · as predicted" : " · prediction missed") : ""}` : "";
     default: return "";
   }
 }
@@ -279,3 +279,16 @@ export function sentinelEvents(events: WalletEvent[]): SentinelView[] {
 }
 /** "Jev", "Claude Haiku (stand-in for Jev)" or "the built-in network's scripted check": who answered the AI questions. */
 export const aiName = (by?: string) => (by === "jev" ? "Jev (TypeSafe)" : by === "claude-haiku" ? "Claude Haiku, standing in for Jev" : by === "scripted" ? "scripted check (built-in network)" : "rules only");
+
+// ---------------------------------------------------------------- pre-flight (server/src/wallet/preflight.ts)
+
+export type PreflightView = { key: string; at: number; quoteId?: string; sellerId?: string; amount?: bigint; predicted: { outcome: string; reason?: string; by?: string }; actual: { outcome: string; reason?: string; tx?: string }; matched: boolean };
+/** Each payment's prediction and what really happened, oldest first. */
+export function preflightResults(events: WalletEvent[]): PreflightView[] {
+  return events.filter((e) => e.type === "preflight" && e.kind === "result" && e.predicted && e.actual).map((e) => ({
+    key: `pre:${e.at}:${e.quoteId ?? ""}`, at: e.at, quoteId: e.quoteId, sellerId: e.sellerId, amount: atomic(e.amount),
+    predicted: { outcome: String(e.predicted.outcome), reason: e.predicted.reason, by: e.predicted.by }, actual: { outcome: String(e.actual.outcome), reason: e.actual.reason, tx: e.actual.tx }, matched: !!e.matched,
+  }));
+}
+/** "on-chain simulation" (server, eth_call) or "the built-in chain" (dry run of the same rules). */
+export const preflightBy = (by?: string) => (by === "eth_call" ? "a simulation of the exact transfer (eth_call)" : by === "sim" ? "a dry run on the built-in chain" : "the pocket's rules");

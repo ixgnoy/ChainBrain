@@ -7,11 +7,12 @@ import { firstTime } from "../ui/Rise";
 import { SuccessMark } from "../ui/SuccessMark";
 import { cleanText } from "../lib/sanitize";
 import { money } from "../lib/util";
-import type { WalletEvent } from "../lib/events";
+import { preflightResults, type WalletEvent } from "../lib/events";
 import { EventCard } from "./EventCard";
 
 export function PaidCard({ e }: { e: WalletEvent }) {
-  const { sellerName, cfg, ledger, setReceipt } = useApp();
+  const { sellerName, cfg, ledger, setReceipt, events } = useApp();
+  const pre = preflightResults(events).find((x) => x.actual.tx === e.tx);
   const seller = sellerName(e.sellerId);
   const item = cfg?.sellers.find((s) => s.id === e.sellerId)?.items.find((i) => i.sku === e.sku)?.description ?? e.sku;
   const row = ledger.find((r) => r.kind === "payment" && r.tx === e.tx);
@@ -25,6 +26,7 @@ export function PaidCard({ e }: { e: WalletEvent }) {
       body={<>
         <T v="sub" color="muted" numberOfLines={2}>{cleanText(item, 90)}</T>
         {e.cosigned ? <T v="cap" w="medium" color="accent" numberOfLines={1}>Co-signed by you</T> : null}
+        {pre ? <T v="cap" color="muted" numberOfLines={1}>{pre.matched ? "Predicted before paying ✓" : "Predicted first; the result differed"}</T> : null}
       </>}
       onPress={() => row && setReceipt(row)} a11y={`Paid ${seller} ${money(amount)}. Open receipt`}
     />
