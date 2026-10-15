@@ -1,8 +1,11 @@
 export * from "./types";
 export * from "./util";
 export { CATALOG, SHADY_PREVIEW, ATTACKER, sellerById, sellerByPayTo, sellerName } from "./catalog";
-export { createWorld, SIM_AGENT, SIM_FACTORY, type World, type WorldOptions } from "./world";
+export { createWorld, SIM_AGENT, SIM_FACTORY, FORCE_SENDER, type World, type WorldOptions } from "./world";
 export { seedOwner, type SeededPocket, type OwnerTxSeed } from "./seed";
 export { SCENES, type SceneInfo } from "./scenes";
-export { HELLO, FALLBACK } from "./script";
+export { HELLO, FALLBACK, attackOf, type AttackKind } from "./script";
 export { REASONS, renderIntent } from "./intent";
+export * from "./checks";
+export * from "./proof";
+export * from "./explorer";

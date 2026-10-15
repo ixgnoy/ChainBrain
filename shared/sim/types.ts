@@ -35,7 +35,14 @@ export type SimTxKind = "create" | "fund" | "payment" | "return" | "out" | "revo
 export type SimTx = {
   hash: Hex; block: bigint; logIndex: number; pocket: Hex; kind: SimTxKind; amount?: bigint; counterparty?: Hex;
   at: number; from: Hex; status: "success" | "reverted"; label?: string;
+  /** The contract function called (for the in-app explorer). */
+  method?: SimMethod;
+  /** Why a reverted transaction reverted (a Pocket.sol reason, e.g. SELLER_NOT_ALLOWED, NOT_OWNER). */
+  reason?: string;
+  /** The call's arguments, as plain strings (explorer "Input"). */
+  args?: Record<string, string>;
 };
+export type SimMethod = "createPocket" | "transfer" | "transferWithAuthorization" | "revoke" | "returnFunds" | "setSeller" | "setCap" | "setAskAbove" | "setExpiresAt";
 
 export type ChatResult = { reply: string; stopped?: string };
 export type AnswerResult = { ok: true } | { ok: false; error: string };

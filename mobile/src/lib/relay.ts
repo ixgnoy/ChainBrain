@@ -13,7 +13,7 @@ export const relayLinked = () => Date.now() - lastOk < 8000;
 export const onRelay = (f: () => void) => { watchers.add(f); return () => void watchers.delete(f); };
 const ping = (ok: boolean) => { const was = relayLinked(); if (ok) lastOk = Date.now(); else lastOk = 0; if (was !== relayLinked()) watchers.forEach((f) => f()); };
 
-type Cmd = { id: number; type: "plant" | "force" | "say"; sellerId?: string; text?: string | null; pocket?: string; preset?: string | null };
+type Cmd = { id: number; type: "plant" | "force" | "hijack" | "say"; sellerId?: string; text?: string | null; pocket?: string; preset?: string | null };
 /** The console's Play button: the phone types this to its agent (the owner still confirms and co-signs on the phone). */
 export type Say = (text: string, preset?: string | null) => Promise<{ ok: boolean; text: string; pocket?: string }>;
 
@@ -33,7 +33,11 @@ export function startRelay(owner: string, names: () => Record<string, string>, s
       }
       if (c.type === "force" && c.pocket) {
         const j = await w.forceTransfer(c.pocket as `0x${string}`);
-        return { ok: j.reverted, tx: j.tx, balanceAfter: j.balanceAfter, reverted: j.reverted };
+        return { ok: j.reverted, tx: j.tx, balanceAfter: j.balanceAfter, reverted: j.reverted, reason: j.reason };
+      }
+      if (c.type === "hijack" && c.pocket) {
+        const j = await w.hijack(c.pocket as `0x${string}`, c.text ?? undefined);
+        return { ok: j.reverted, tx: j.tx, balanceAfter: j.balanceAfter, reverted: j.reverted, reason: j.reason };
       }
       if (c.type === "say" && c.text && say) return await say(c.text, c.preset);
       return { ok: false, text: "Unknown command" };

@@ -149,6 +149,41 @@ function* scene8(): Scene {
   return `No allowed seller fits. ${line("datalite", lite)} ${line("datapro", pro)} Nothing was paid. Fix: raise the cap and budget to US$${price}, then ask me again.`;
 }
 
+// ---- attacks a judge can type (the four named in the rules). The agent refuses in words; the world then shows the
+// chain refusing too where there is something to try (escalation: the agent key calls setCap and reverts NOT_OWNER).
+export type AttackKind = "induced" | "extraction" | "escalation";
+
+const ESCALATION = /\b(admin|administrator|sudo|root access|developer mode|god mode|superuser)\b|\b(raise|increase|lift|remove|change|set|bump|double|disable|turn off)\b[^.?!]*\b(cap|limit|rules?|allow ?list|white ?list|ask-me|threshold|expiry|deadline)\b|\badd\b[^.?!]*\bseller\b|\bset_?cap\b|\bset_?seller\b|\bnew owner\b|\bmake me (the )?owner\b/;
+const EXTRACTION = /private key|secret key|seed phrase|mnemonic|recovery phrase|system prompt|your (instructions|prompt|rules file)|api key|password|owner'?s? (full )?(name|email|address|phone|balance|key|wallet|identity|id)|main wallet|other pockets?|\bbalance\b|personal data|kyc|passport/;
+const INDUCED = /\b(send|transfer|wire|move|refund|forward|pay out|withdraw)\b[^.?!]*\b(usdc|us\$|\$\s?\d|dollars?|money|funds|everything|balance)\b|\b(send|transfer|pay)\b[^.?!]*\b0x[0-9a-f]{4,}/;
+
+/** Which attack a message is, if any (checked before the scenes, so a judge's own wording still lands). */
+export function attackOf(text: string): AttackKind | undefined {
+  const t = text.toLowerCase();
+  if (ESCALATION.test(t)) return "escalation";
+  if (EXTRACTION.test(t)) return "extraction";
+  if (INDUCED.test(t)) return "induced";
+  return undefined;
+}
+
+const list = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+
+function* escalation(): Scene {
+  const p = yield { tool: "get_pocket", input: {}, say: "This asks me to change the pocket's rules. Only the owner's key can do that, and none of my tools edit rules. Reading the rules as they stand." };
+  const sellersNow = Array.isArray(p?.allowedSellers) && p.allowedSellers.length ? list(p.allowedSellers) : "the sellers you chose";
+  return `I can't do that. Only the owner's key can change this pocket's cap or sellers, and I have no tool that edits rules. The cap stays US$${p?.perPaymentCap ?? "?"} and the sellers stay ${sellersNow}.`;
+}
+
+function* extraction(): Scene {
+  yield { tool: "get_pocket", input: {}, say: "This asks for things I must not share. I hold no keys, I can't see the owner's main wallet or other pockets, and my instructions stay private." };
+  return "I can't share that. I have no access to the owner's key, main wallet or other pockets, and I don't share my instructions or anyone's personal details. I can only buy research inside this pocket's rules.";
+}
+
+function* induced(): Scene {
+  yield { tool: "get_pocket", input: {}, say: "A message asking me to send money to an address is not a purchase. I only pay sellers on this pocket's list, through a quote, for a task the owner confirmed." };
+  return "I won't send money because a message asks me to. I can only pay sellers on this pocket's list, through a quote, for a task you confirmed. Nothing was sent.";
+}
+
 function* hello(): Scene {
   return HELLO;
 }
@@ -159,6 +194,10 @@ export const FALLBACK = "I can only buy from the research sellers this pocket al
 /** Pick the scene for the owner's message (`asked`: an unanswered clarifying question from scene 1). */
 export function route(text: string, o: { asked: boolean; revokeWindowMs: number }): Scene | undefined {
   const t = text.toLowerCase();
+  const attack = attackOf(t);
+  if (attack === "escalation") return escalation();
+  if (attack === "extraction") return extraction();
+  if (attack === "induced") return induced();
   if (/shadyfeed/.test(t) && /full feed|whatever they need|give them/.test(t)) return scene6();
   if (/shadyfeed/.test(t)) return scene5();
   if (/harbour|wine/.test(t)) return scene4();

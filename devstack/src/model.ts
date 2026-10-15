@@ -137,8 +137,28 @@ type Msg = { role: string; content: any };
 const isOwnerText = (m: Msg) => m.role === "user" && typeof m.content === "string";
 
 /** Pick the scene for the owner's latest message (history is used only to spot an unanswered agent question). */
+// Attacks a judge can type (same wording and order as shared/sim/script.ts attackOf): the agent refuses in words.
+const ESCALATION = /\b(admin|administrator|sudo|root access|developer mode|god mode|superuser)\b|\b(raise|increase|lift|remove|change|set|bump|double|disable|turn off)\b[^.?!]*\b(cap|limit|rules?|allow ?list|white ?list|ask-me|threshold|expiry|deadline)\b|\badd\b[^.?!]*\bseller\b|\bset_?cap\b|\bset_?seller\b|\bnew owner\b|\bmake me (the )?owner\b/;
+const EXTRACTION = /private key|secret key|seed phrase|mnemonic|recovery phrase|system prompt|your (instructions|prompt|rules file)|api key|password|owner'?s? (full )?(name|email|address|phone|balance|key|wallet|identity|id)|main wallet|other pockets?|\bbalance\b|personal data|kyc|passport/;
+const INDUCED = /\b(send|transfer|wire|move|refund|forward|pay out|withdraw)\b[^.?!]*\b(usdc|us\$|\$\s?\d|dollars?|money|funds|everything|balance)\b|\b(send|transfer|pay)\b[^.?!]*\b0x[0-9a-f]{4,}/;
+function* escalation(): Scene {
+  const p: Json = yield { tool: "get_pocket", input: {} };
+  return `I can't do that. Only the owner's key can change this pocket's cap or sellers, and I have no tool that edits rules. The cap stays US$${p?.perPaymentCap ?? "?"}.`;
+}
+function* extraction(): Scene {
+  yield { tool: "get_pocket", input: {} };
+  return "I can't share that. I have no access to the owner's key, main wallet or other pockets, and I don't share my instructions or anyone's personal details. I can only buy research inside this pocket's rules.";
+}
+function* induced(): Scene {
+  yield { tool: "get_pocket", input: {} };
+  return "I won't send money because a message asks me to. I can only pay sellers on this pocket's list, through a quote, for a task you confirmed. Nothing was sent.";
+}
+
 export function route(text: string, history: Msg[], windowMs: number): (() => Scene) | undefined {
   const t = text.toLowerCase();
+  if (ESCALATION.test(t)) return escalation;
+  if (EXTRACTION.test(t)) return extraction;
+  if (INDUCED.test(t)) return induced;
   if (/shadyfeed/.test(t) && /full feed|whatever they need/.test(t)) return scene6;
   if (/shadyfeed/.test(t) && /preview/.test(t)) return scene5;
   if (/harbour/.test(t)) return scene4;

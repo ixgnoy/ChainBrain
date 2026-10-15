@@ -31,7 +31,12 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
     if (!r) throw new ChainError(`not a pocket: ${p}`);
     return r;
   };
-  const onlyOwner = (p: PocketRec, from: string) => { if (lower(p.owner) !== lower(from)) throw new ChainError("transaction reverted: NOT_OWNER"); };
+  /** Pocket.onlyOwner: anyone else's call reverts, and the reverted transaction is on the chain like any other. */
+  const onlyOwner = (p: PocketRec, from: string, method: SimTx["method"], args?: Record<string, string>) => {
+    if (lower(p.owner) === lower(from)) return;
+    const tx = record({ pocket: p.address, kind: "rules", from: from as Hex, status: "reverted", label: "Reverted by the pocket", method, reason: "NOT_OWNER", args });
+    throw new ChainError(`transaction reverted: NOT_OWNER (${tx.hash})`);
+  };
 
   function record(t: Omit<SimTx, "hash" | "block" | "logIndex" | "at"> & { at?: number }): SimTx {
     const at = t.at ?? o.now();
@@ -81,7 +86,8 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
     createPocket(from: Hex, a: { agent: Hex; cap: bigint; askAbove: bigint; expiresAt: bigint; sellers: Hex[] }, at?: number) {
       const address = o.rng.hex(20);
       const t = at ?? o.now();
-      const tx = record({ pocket: address, kind: "create", from, counterparty: from, status: "success", at: t });
+      const tx = record({ pocket: address, kind: "create", from, counterparty: from, status: "success", at: t, method: "createPocket",
+        args: { agent: a.agent, cap: a.cap.toString(), askAbove: a.askAbove.toString(), expiresAt: a.expiresAt.toString(), sellers: a.sellers.join(",") } });
       pockets.set(lower(address), {
         address, owner: from, agent: a.agent, cap: a.cap, askAbove: a.askAbove, expiresAt: a.expiresAt, revoked: false,
         allowed: new Set(a.sellers.map(lower)), createdTx: tx.hash, createdBlock: tx.block, createdAt: t,
@@ -94,38 +100,42 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
       setBal(from, bal(from) - amount);
       setBal(to, bal(to) + amount);
       const kind: SimTxKind = pockets.has(lower(to)) ? "fund" : "out";
-      return record({ pocket: pockets.has(lower(to)) ? to : from, kind, from, counterparty: from, amount, status: "success", at }).hash;
+      return record({ pocket: pockets.has(lower(to)) ? to : from, kind, from, counterparty: from, amount, status: "success", at, method: "transfer", args: { to, value: amount.toString() } }).hash;
     },
     revoke(from: Hex, pocket: Hex, at?: number) {
-      const p = get(pocket); onlyOwner(p, from);
+      const p = get(pocket); onlyOwner(p, from, "revoke");
       p.revoked = true;
-      return record({ pocket: p.address, kind: "revoke", from, status: "success", at }).hash;
+      return record({ pocket: p.address, kind: "revoke", from, status: "success", at, method: "revoke" }).hash;
     },
     returnFunds(from: Hex, pocket: Hex, at?: number) {
-      const p = get(pocket); onlyOwner(p, from);
+      const p = get(pocket); onlyOwner(p, from, "returnFunds");
       const amount = bal(p.address);
       setBal(p.address, 0n); setBal(p.owner, bal(p.owner) + amount);
-      return record({ pocket: p.address, kind: "return", from, counterparty: p.owner, amount, status: "success", at }).hash;
+      return record({ pocket: p.address, kind: "return", from, counterparty: p.owner, amount, status: "success", at, method: "returnFunds" }).hash;
     },
     setSeller(from: Hex, pocket: Hex, seller: Hex, ok: boolean) {
-      const p = get(pocket); onlyOwner(p, from);
+      const args = { seller, ok: String(ok) };
+      const p = get(pocket); onlyOwner(p, from, "setSeller", args);
       if (ok) p.allowed.add(lower(seller)); else p.allowed.delete(lower(seller));
-      return record({ pocket: p.address, kind: "rules", from, status: "success", label: ok ? "Seller allowed" : "Seller removed" }).hash;
+      return record({ pocket: p.address, kind: "rules", from, status: "success", label: ok ? "Seller allowed" : "Seller removed", method: "setSeller", args }).hash;
     },
     setCap(from: Hex, pocket: Hex, cap: bigint) {
-      const p = get(pocket); onlyOwner(p, from);
+      const args = { cap: cap.toString() };
+      const p = get(pocket); onlyOwner(p, from, "setCap", args);
       p.cap = cap;
-      return record({ pocket: p.address, kind: "rules", from, status: "success", label: "Cap changed" }).hash;
+      return record({ pocket: p.address, kind: "rules", from, status: "success", label: "Cap changed", method: "setCap", args }).hash;
     },
     setAskAbove(from: Hex, pocket: Hex, x: bigint) {
-      const p = get(pocket); onlyOwner(p, from);
+      const args = { askAbove: x.toString() };
+      const p = get(pocket); onlyOwner(p, from, "setAskAbove", args);
       p.askAbove = x;
-      return record({ pocket: p.address, kind: "rules", from, status: "success", label: "Ask-me limit changed" }).hash;
+      return record({ pocket: p.address, kind: "rules", from, status: "success", label: "Ask-me limit changed", method: "setAskAbove", args }).hash;
     },
     setExpiresAt(from: Hex, pocket: Hex, t: bigint) {
-      const p = get(pocket); onlyOwner(p, from);
+      const args = { expiresAt: t.toString() };
+      const p = get(pocket); onlyOwner(p, from, "setExpiresAt", args);
       p.expiresAt = t;
-      return record({ pocket: p.address, kind: "rules", from, status: "success", label: "Lifetime changed" }).hash;
+      return record({ pocket: p.address, kind: "rules", from, status: "success", label: "Lifetime changed", method: "setExpiresAt", args }).hash;
     },
 
     /**
@@ -137,12 +147,13 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
       const rule = canPay(pocket, to, amount);
       const needs = amount > p.askAbove;
       if (rule !== "OK" || (needs && !o2.ownerSigned)) {
-        const tx = record({ pocket: p.address, kind: "out", from: o2.submitter, counterparty: to, amount, status: "reverted", at: o2.at, label: "Reverted by the pocket" });
-        return { tx: tx.hash, ok: false, reason: rule !== "OK" ? rule : "NEEDS_OWNER_APPROVAL" };
+        const reason = rule !== "OK" ? rule : "NEEDS_OWNER_APPROVAL";
+        const tx = record({ pocket: p.address, kind: "out", from: o2.submitter, counterparty: to, amount, status: "reverted", at: o2.at, label: "Reverted by the pocket", method: "transferWithAuthorization", reason, args: { from: p.address, to, value: amount.toString() } });
+        return { tx: tx.hash, ok: false, reason };
       }
       setBal(p.address, bal(p.address) - amount);
       setBal(to, bal(to) + amount);
-      const tx = record({ pocket: p.address, kind: "payment", from: o2.submitter, counterparty: to, amount, status: "success", at: o2.at });
+      const tx = record({ pocket: p.address, kind: "payment", from: o2.submitter, counterparty: to, amount, status: "success", at: o2.at, method: "transferWithAuthorization", args: { from: p.address, to, value: amount.toString(), cosigned: String(o2.ownerSigned) } });
       return { tx: tx.hash, ok: true };
     },
   };

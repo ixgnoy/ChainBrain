@@ -9,6 +9,8 @@ import { ownerWallet, readPocket, isOwner, type OwnerWallet, type PocketView } f
 import { createKey, loadKey, loadPockets, randomKey, saveKey, savePockets } from "./lib/keystore";
 import { builtin, seedFor } from "./lib/builtin";
 import { startRelay, type Say } from "./lib/relay";
+import { createAutoplay, type AutoplayHost, type HostState } from "./lib/autoplay";
+import { onAutoplay, autoplayRunning } from "./lib/autoplayTargets";
 import { router } from "expo-router";
 import { notify } from "./lib/toast";
 import { haptic } from "./haptics";
@@ -56,6 +58,10 @@ type Ctx = {
   approvalOpen: boolean; setApprovalOpen(b: boolean): void; pickerOpen: boolean; setPickerOpen(b: boolean): void; questionOpen: boolean; setQuestionOpen(b: boolean): void;
   rules: Rules; setRules(r: Rules): void; notice: Notice; setNotice(n: Notice): void;
   receipt: LedgerRow | null; setReceipt(r: LedgerRow | null): void; action: Sheet; setAction(a: Sheet): void; flash: number; fireFlash(): void;
+  /** Hidden video auto-play (long-press the Agent header): plays the wizard and scenes 1-8 through the real screens. */
+  autoplay: { running: boolean; toggle(): void; stop(): void };
+  /** The in-app explorer sheet for one transaction hash (built-in network and local fork), or null. */
+  explorerTx: string | null; setExplorerTx(h: string | null): void;
 };
 
 const AppCtx = createContext<Ctx | null>(null);
@@ -384,6 +390,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!ask) setApprovalOpen(false);
   }, [ask?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ---- hidden auto-play: reads the store through refs so the driver always sees the latest state
+  const hostState = useRef<HostState>({ pending: [], busy: false, pocketCount: 0, lastPaymentAt: 0, ownerTxCount: 0 });
+  hostState.current = {
+    pending: pending.filter((a) => !active || sameAddr(a.pocket, active.address)).map((a) => ({ id: a.id, kind: a.kind })),
+    busy: chatBusy, activeName: active?.name, activeAddress: active?.address, pocketCount: pockets.length,
+    lastPaymentAt: myEvents.reduce((m, e) => (e.type === "payment" && e.at > m ? e.at : m), 0),
+    ownerTxCount: ownerTxs.length,
+  };
+  const hostSubs = useRef(new Set<() => void>());
+  useEffect(() => { hostSubs.current.forEach((f) => f()); });
+  const autoplayRef = useRef<ReturnType<typeof createAutoplay> | null>(null);
+  if (!autoplayRef.current) {
+    const host: AutoplayHost = {
+      navigate: (path) => { try { router.navigate(path); } catch { /* not mounted yet */ } },
+      state: () => hostState.current,
+      subscribe: (f) => { hostSubs.current.add(f); return () => void hostSubs.current.delete(f); },
+      forceTransfer: async (p) => { if (getSource() === "builtin") await builtin().forceTransfer(p as Address); },
+      sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+    };
+    autoplayRef.current = createAutoplay(host);
+  }
+  const [autoplayOn, setAutoplayOn] = useState(false);
+  useEffect(() => onAutoplay(() => setAutoplayOn(autoplayRunning())), []);
+  const autoplay = useMemo(() => ({
+    running: autoplayOn,
+    toggle: () => { const a = autoplayRef.current!; if (a.running) a.stop(); else { haptic.success(); a.start(); } },
+    stop: () => autoplayRef.current?.stop(),
+  }), [autoplayOn]);
+  const [explorerTx, setExplorerTx] = useState<string | null>(null);
+
   // ---- key management and API override
   const importKey = useCallback(async (k: string) => { await saveKey(k); setPk(k.trim() as Hex); }, []);
   const newKey = useCallback(async () => { setPk(await createKey()); }, []);
@@ -392,6 +428,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     resetConfig(); setCfg(null); setConn("connecting"); setPocketsLoaded(false); setBalances(null); setViews({}); setAnswered(new Set()); setTurnsBy({});
     // nothing from the other network may linger on screen (a stale notice could link its hash to BaseScan)
     setNotice(null); setReceipt(null); setAction(null); setRules(null); setApprovalOpen(false); setQuestionOpen(false); setPickerOpen(false); forcedSeen.current = null;
+    setExplorerTx(null); autoplayRef.current?.stop();
     setRuntimeSource(s);
     setRetry((n) => n + 1);
   }, []);
@@ -412,6 +449,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     turns, sendChat, chatBusy, agentState,
     answer, signApprove, answered,
     approvalOpen, setApprovalOpen, pickerOpen, setPickerOpen, questionOpen, setQuestionOpen, rules, setRules, notice, setNotice, receipt, setReceipt, action, setAction, flash, fireFlash: () => setFlash((n) => n + 1),
+    autoplay, explorerTx, setExplorerTx,
   };
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
