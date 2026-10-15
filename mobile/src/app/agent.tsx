@@ -140,7 +140,7 @@ function useRideKeyboard(base: number) {
 export default function AgentChat() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
-  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setPickerOpen, autoplay } = useApp();
+  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, openApproval, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setPickerOpen, autoplay } = useApp();
   const [text, setText] = useState("");
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [kb, setKb] = useState(false);
@@ -375,20 +375,20 @@ export default function AgentChat() {
                 {t.done ? evs.filter((e) => e.type === "trace" && e.phase === "memory").slice(-1).map((e) => <MemoryLine key={`mem${e.at}`} e={e} />) : null}
                 {t.done && active ? <DeadEndCard id={t.id} evs={evs} pocket={active} sellerName={sellerName} onRetry={isLast && !chatBusy ? send : undefined}
                   resolved={t.toAt != null && mine.some((e) => e.type === "payment" && e.at > t.toAt!)} /> : null}
-                {isLast && intent ? <TaskWaiting text={intent.text} onOpen={() => setApprovalOpen(true)} id={intent.id} /> : null}
+                {isLast && intent ? <TaskWaiting text={intent.text} onOpen={() => openApproval(intent.id)} id={intent.id} /> : null}
               </View>
             );
           })}
           {idleAlerts.map((a) => <RadarAlertCard key={a.key} a={a} />)}
           {idleSentinel.map((v) => <SentinelCard key={v.key} v={v} />)}
           {sent ? <View style={{ gap: 14 }}><UserBubble text={sent.text} fresh /></View> : null}
-          {!last && intent ? <TaskWaiting text={intent.text} onOpen={() => setApprovalOpen(true)} id={intent.id} /> : null}
+          {!last && intent ? <TaskWaiting text={intent.text} onOpen={() => openApproval(intent.id)} id={intent.id} /> : null}
           {active?.revoked && turns.length > 0 ? (
             <StoppedCard codes={["POCKET_REVOKED"]} last={stopped} tx={stopTx?.hash} canReturn={active.owned && active.balance > 0n} onReturn={() => setAction({ mode: "return", pocket: active.address })} />
           ) : null}
           {pay && (
             <EventCard tone="waiting" title="Waiting for your OK" body={`${cleanText(sellerName(pay.data?.sellerId), 40)} · US$${cleanText(pay.data?.amount, 10)}`}>
-              <Button label="Review and approve" small onPress={() => setApprovalOpen(true)} />
+              <Button label="Review and approve" small onPress={() => openApproval(pay.id)} />
             </EventCard>
           )}
           {question && (

@@ -113,9 +113,9 @@ export default function BrainTab() {
 
   return (
     <Screen>
-      <PageTitle title="Brain" sub="What your agent's AI understood, checked and remembers" />
+      <PageTitle title="Brain" sub="What ChainBrain's agent understood, checked and remembers, per pocket" />
       <Press kind="row" haptics="select" disabled={pockets.length < 2} onPress={() => setPickerOpen(true)} accessibilityRole="button" accessibilityLabel={`Pocket: ${active.name}. Change pocket`}
-        style={{ marginTop: 8, marginHorizontal: 20, flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: c.fill }}>
+        style={{ marginTop: 8, marginHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", height: 34, paddingHorizontal: 12, borderRadius: 17, backgroundColor: c.card }}>
         <T v="cap" w="semi" color="ink2">{cleanText(active.name, 28)}</T>
         {pockets.length > 1 ? <Icon name="chevronDown" size={14} color={c.muted} /> : null}
       </Press>

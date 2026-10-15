@@ -5,6 +5,7 @@ import { useApp } from "../../store";
 import { c } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
 import { router } from "expo-router";
+import { AgentAvatar } from "../../ui/AgentAvatar";
 import { Avatar, Button, ListCard, ListRow } from "../../ui/kit";
 import { Rise, SHIFT, useStagger } from "../../ui/Rise";
 import { SlidingPills } from "../../ui/SlidingPills";
@@ -25,7 +26,7 @@ type Filter = "all" | "paid" | "refused" | "needs";
 const FILTERS: { key: Filter; label: string }[] = [{ key: "all", label: "All" }, { key: "paid", label: "Paid" }, { key: "refused", label: "Refused" }, { key: "needs", label: "Needs you" }];
 
 export default function Activity() {
-  const { ledger, events, pockets, findPocket, setExplorerTx, pending, setReceipt, setApprovalOpen, setQuestionOpen, sellerName, refreshPockets } = useApp();
+  const { ledger, events, pockets, findPocket, setExplorerTx, pending, setReceipt, setApprovalOpen, setQuestionOpen, sellerName, refreshPockets, agents, openApproval } = useApp();
   const reduce = useReduceMotion();
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
@@ -71,12 +72,12 @@ export default function Activity() {
   const showNeeds = filter === "all" || filter === "needs";
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} />}>
-      <PageTitle title="Activity" sub={paid ? `${paid} paid · ${money(paidTotal(ledger))} spent by your agent` : "What your agent paid and was refused"} />
+      <PageTitle title="Activity" sub={paid ? `${paid} paid · ${money(paidTotal(ledger))} spent by your ${agents.length > 1 ? "agents" : "agent"}` : "What your agents paid and were refused"} />
       {showNeeds && pending.length > 0 ? (
         <Rise dy={10} exit layout style={{ marginTop: 12 }}><ListCard>
           {pending.map((a) => (
-            <ListRow key={a.id} a11y={a.kind === "question" ? "Your agent has a question" : "Needs your OK"} onPress={() => (a.kind === "question" ? setQuestionOpen(true) : setApprovalOpen(true))}
-              avatar={<Avatar icon="clock" tone="warning" />}
+            <ListRow key={a.id} a11y={a.kind === "question" ? "Your agent has a question" : "Needs your OK"} onPress={() => (a.kind === "question" ? setQuestionOpen(true) : openApproval(a.id))}
+              avatar={a.agent && a.agent !== "chainbrain" ? <AgentAvatar kind={a.agent} size={44} /> : <Avatar icon="clock" tone="warning" />}
               title={a.kind === "question" ? "Your agent has a question" : a.kind === "payment" ? cleanText(sellerName(a.data?.sellerId), 30) : "Confirm a task"}
               sub={a.kind === "payment" ? "Waiting for your OK" : cleanText(a.text.split("\n")[0], 60)} right={a.kind === "payment" ? `US$${cleanText(a.data?.amount, 10)}` : undefined} rightSub="Needs you" rightSubTone="warning" />
           ))}
