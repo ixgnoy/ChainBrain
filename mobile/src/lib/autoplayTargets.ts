@@ -40,14 +40,16 @@ export const hasTarget = (name: TargetName) => (stacks.get(name)?.length ?? 0) >
 export const resetTargets = () => { stacks.clear(); changed(); };
 
 /** Waits up to `ms` for the target to be on screen, then runs it. False when it never showed up. */
-export async function pressTarget(name: TargetName, arg?: unknown, ms = 8000): Promise<boolean> {
+export async function pressTarget(name: TargetName, arg?: unknown, ms = 8000, alive: () => boolean = () => true): Promise<boolean> {
   if (!hasTarget(name)) {
     const ok = await new Promise<boolean>((res) => {
-      const t = setTimeout(() => { watchers.delete(on); res(false); }, ms);
-      const on = () => { if (hasTarget(name)) { clearTimeout(t); watchers.delete(on); res(true); } };
+      const done = (v: boolean) => { clearTimeout(t); clearInterval(iv); watchers.delete(on); res(v); };
+      const t = setTimeout(() => done(false), ms);
+      const iv = setInterval(() => { if (!alive()) done(false); }, 200); // a stopped auto-play stops waiting too
+      const on = () => { if (hasTarget(name)) done(true); };
       watchers.add(on);
     });
-    if (!ok) return false;
+    if (!ok || !alive()) return false;
   }
   const s = stacks.get(name)!;
   await s[s.length - 1](arg);
@@ -65,6 +67,8 @@ export function useAutoplayTarget(name: TargetName, handler: Handler, enabled = 
 let running = false;
 const runWatchers = new Set<() => void>();
 export const autoplayRunning = () => running;
+/** For long gestures (typing, slides): true while the auto-play that started them is still running. */
+export const autoplayAlive = () => running;
 export const setAutoplayRunning = (on: boolean) => { if (running !== on) { running = on; runWatchers.forEach((f) => f()); } };
 export const onAutoplay = (f: () => void) => { runWatchers.add(f); return () => void runWatchers.delete(f); };
 

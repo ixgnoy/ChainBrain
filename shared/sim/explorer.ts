@@ -15,7 +15,13 @@ export type ExplorerLog = { index: number; contract: string; contractName: strin
 export type ExplorerTx = {
   hash: string; status: "success" | "reverted"; block?: string; position?: number; at?: number;
   from?: string; to?: string; toName: string; value?: string; method: string; args: Field[]; logs: ExplorerLog[];
-  reason?: string; pocket?: string; summary: string; kind: string;
+  /** The on-chain error a reverted tx carries ("NOT_OWNER", or USDC's "FiatTokenV2: invalid signature"). */
+  revert?: string;
+  /** For a refused pocket payment: the pocket rule that failed (Pocket.canPay), which isValidSignature only reports as INVALID. */
+  rule?: string;
+  /** @deprecated same as `rule ?? revert`. */
+  reason?: string;
+  pocket?: string; summary: string; kind: string;
 };
 export type ExplorerCtx = { usdc: string; factory: string; nameOf?: (address: string) => string | undefined };
 
@@ -34,7 +40,7 @@ function summarize(t: ExplorerInput, name: (a?: string) => string): string {
   const amt = usdText(t.amount);
   if (t.status === "reverted") {
     if (t.reason === "NOT_OWNER") return `A key that is not the owner's tried to change ${name(t.pocket)}'s rules. The pocket reverted it (NOT_OWNER).`;
-    return `A transfer of US$${amt ?? "?"} out of ${name(t.pocket)} to ${name(t.counterparty)} was refused by the pocket contract (${t.reason ?? "reverted"}). No money moved.`;
+    return `A transfer of US$${amt ?? "?"} out of ${name(t.pocket)} to ${name(t.counterparty)} was refused by the pocket contract${t.reason && t.reason !== "REVERTED" ? `: its rule check says ${t.reason}` : ""}. No money moved.`;
   }
   switch (t.kind) {
     case "create": return `${name(t.from)} created ${name(t.pocket)} with its own budget and rules.`;
@@ -83,9 +89,20 @@ export function explainTx(t: ExplorerInput, ctx: ExplorerCtx, all: ExplorerInput
   return {
     hash: t.hash, status, block: blockStr, position: sameBlock.length ? Math.max(0, sameBlock.findIndex((x) => lc(x.hash) === lc(t.hash))) : undefined, at: t.at,
     from: t.from, to, toName, value: t.kind === "payment" || t.kind === "fund" || t.kind === "return" || t.kind === "out" ? usdText(t.amount) : undefined,
-    method, args, logs, reason: status === "reverted" ? t.reason ?? "execution reverted" : undefined, pocket: t.pocket, kind: t.kind,
+    method, args, logs, ...revertOf(t, method, status), pocket: t.pocket, kind: t.kind,
     summary: summarize({ ...t, status }, name),
   };
+}
+
+/** What a revert says on-chain, kept apart from the pocket rule behind it (Pocket.isValidSignature returns only INVALID). */
+function revertOf(t: ExplorerInput, method: string, status: string): { revert?: string; rule?: string; reason?: string } {
+  if (status !== "reverted") return {};
+  if (method === "transferWithAuthorization") {
+    const rule = t.reason && t.reason !== "REVERTED" ? t.reason : undefined;
+    return { revert: "FiatTokenV2: invalid signature", rule, reason: rule ?? "FiatTokenV2: invalid signature" };
+  }
+  const revert = t.reason ?? "execution reverted";
+  return { revert, reason: revert };
 }
 
 export type ExplorerBlock = { number: string; at?: number; txs: ExplorerInput[] };

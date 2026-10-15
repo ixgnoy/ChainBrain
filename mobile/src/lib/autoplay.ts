@@ -37,7 +37,7 @@ const text = (id: string) => SCENES.find((s) => s.id === id)!;
 
 export type Autoplay = { start(): void; stop(): void; readonly running: boolean; done: Promise<void> | null };
 
-export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg?: unknown, ms?: number) => Promise<boolean> = pressTarget): Autoplay {
+export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg?: unknown, ms?: number, alive?: () => boolean) => Promise<boolean> = pressTarget): Autoplay {
   let token = 0;
   let running = false;
   const self: Autoplay = {
@@ -47,7 +47,8 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
       if (running) return;
       const tok = ++token;
       running = true; setAutoplayRunning(true);
-      self.done = play(tok).catch((e) => { if (!(e instanceof Cancelled)) console.warn("auto-play stopped:", (e as Error).message); })
+      const prev = self.done; // a press of a stopped run may still be finishing (typing): let it end first
+      self.done = (prev ?? Promise.resolve()).then(() => play(tok)).catch((e) => { if (!(e instanceof Cancelled)) console.warn("auto-play stopped:", (e as Error).message); })
         .finally(() => { if (tok === token) { running = false; setAutoplayRunning(false); } });
     },
     stop() { token++; running = false; setAutoplayRunning(false); },
@@ -63,18 +64,23 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
       check();
       if (pred(host.state())) return res();
       let done = false;
-      const finish = (err?: Error) => { if (done) return; done = true; off(); clearInterval(iv); clearTimeout(t); if (err) rej(err); else res(); };
+      let off: () => void = () => {};
+      let iv: ReturnType<typeof setInterval> | undefined;
+      let t: ReturnType<typeof setTimeout> | undefined;
+      const finish = (err?: Error) => { if (done) return; done = true; off(); if (iv) clearInterval(iv); if (t) clearTimeout(t); if (err) rej(err); else res(); };
       const test = () => { if (!alive()) finish(new Cancelled()); else if (pred(host.state())) finish(); };
-      const off = host.subscribe(test);
-      const iv = setInterval(test, 250);
-      const t = setTimeout(() => finish(new Error(`timed out waiting for ${what}`)), Math.max(ms * Math.max(pace, 0.05), 2000));
+      iv = setInterval(test, 250);
+      t = setTimeout(() => finish(new Error(`timed out waiting for ${what}`)), Math.max(ms * Math.max(pace, 0.05), 2000));
+      off = host.subscribe(test);
+      if (done) off();
     });
-    const tap = async (name: TargetName, arg?: unknown, ms = 8000) => { check(); const ok = await press(name, arg, ms); check(); return ok; };
+    const soft = (e: unknown) => { if (e instanceof Cancelled) throw e; }; // a wait that may time out, but never hides a stop
+    const tap = async (name: TargetName, arg?: unknown, ms = 8000) => { check(); const ok = await press(name, arg, ms, alive); check(); return ok; };
     const must = async (name: TargetName, arg?: unknown, ms = 8000) => { if (!(await tap(name, arg, ms))) throw new Error(`${name} never appeared`); };
 
     /** Answers whatever the agent asks for until its turn is over (confirm the task, co-sign, nothing else). */
     async function drive() {
-      await until("the agent to start", (s) => s.busy, 6000).catch(() => {});
+      await until("the agent to start", (s) => s.busy, 6000).catch(soft);
       const handled = new Set<string>();
       for (;;) {
         check();
@@ -145,8 +151,8 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
       await wait(700);
       await must("revoke.hold");
     })();
-    await drive();
-    await revoking;
+    revoking.catch(() => {}); // awaited below; never an unhandled rejection while drive() runs
+    await Promise.all([drive(), revoking]);
     await until("the turn to end", (s) => !s.busy, 30_000);
     await wait(2200);
     if (await tap("return.open", undefined, 4000)) { await wait(1200); await tap("return.slide", undefined, 4000); await wait(2600); }

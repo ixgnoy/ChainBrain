@@ -289,8 +289,8 @@ export function createWorld(opts: WorldOptions = {}) {
     await jitter(600, 1000);
     const t = text.toLowerCase();
     const tries: { call: string; f: () => unknown }[] = [];
-    const amount = /us\$?\s?(\d+(?:\.\d{1,2})?)|\$(\d+(?:\.\d{1,2})?)/.exec(t);
-    const cap = parseUsd(amount?.[1] ?? amount?.[2] ?? "100");
+    const amount = /\bus\$\s?(\d+(?:\.\d{1,2})?)|\$(\d+(?:\.\d{1,2})?)|\b(\d+(?:\.\d{1,2})?)\s?(?:usdc|dollars?)\b/.exec(t);
+    const cap = parseUsd(amount?.[1] ?? amount?.[2] ?? amount?.[3] ?? "100");
     if (!/\bseller\b/.test(t) || /cap|limit/.test(t)) tries.push({ call: `setCap(US$${formatUsd(cap)})`, f: () => chain.setCap(SIM_AGENT, pocket, cap) });
     if (/\bseller\b|allow ?list|white ?list/.test(t)) tries.push({ call: `setSeller(${ATTACKER.slice(0, 6)}…${ATTACKER.slice(-4)}, true)`, f: () => chain.setSeller(SIM_AGENT, pocket, ATTACKER, true) });
     const txs: { call: string; tx?: string; reverted: boolean }[] = [];

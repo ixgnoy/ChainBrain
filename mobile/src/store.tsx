@@ -406,7 +406,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       navigate: (path) => { try { router.navigate(path); } catch { /* not mounted yet */ } },
       state: () => hostState.current,
       subscribe: (f) => { hostSubs.current.add(f); return () => void hostSubs.current.delete(f); },
-      forceTransfer: async (p) => { if (getSource() === "builtin") await builtin().forceTransfer(p as Address); },
+      forceTransfer: async (p) => {
+        if (getSource() !== "builtin") { console.warn("auto-play: the forced transfer runs from the console on a server (Judges tab)"); return; }
+        await builtin().forceTransfer(p as Address);
+      },
       sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
     };
     autoplayRef.current = createAutoplay(host);
@@ -415,7 +418,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => onAutoplay(() => setAutoplayOn(autoplayRunning())), []);
   const autoplay = useMemo(() => ({
     running: autoplayOn,
-    toggle: () => { const a = autoplayRef.current!; if (a.running) a.stop(); else { haptic.success(); a.start(); } },
+    toggle: () => { const a = autoplayRef.current!; haptic.medium(); if (a.running) a.stop(); else a.start(); },
     stop: () => autoplayRef.current?.stop(),
   }), [autoplayOn]);
   const [explorerTx, setExplorerTx] = useState<string | null>(null);

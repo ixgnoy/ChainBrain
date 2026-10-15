@@ -20,6 +20,7 @@ export type ProofOptions = AttemptOptions & {
 };
 
 const lc = (a?: string) => (a ?? "").toLowerCase();
+const REPLANNABLE = new Set(["SELLER_NOT_ALLOWED", "OVER_CAP", "OVER_BUDGET", "PRICE_ABOVE_INTENT"]);
 
 export function factsFrom(events: Ev[], txs: ProofTx[], o: ProofOptions = {}): Facts {
   const keep = o.pockets ? new Set(o.pockets.map(lc)) : undefined;
@@ -47,7 +48,9 @@ export function factsFrom(events: Ev[], txs: ProofTx[], o: ProofOptions = {}): F
     if (e.type !== "refusal") return;
     const later = ev.slice(i + 1);
     const nextReply = later.findIndex((x) => x.type === "trace" && x.phase === "reply" && lc(x.pocket) === lc(e.pocket));
-    const pay = later.slice(0, nextReply < 0 ? undefined : nextReply).find((x) => x.type === "payment" && lc(x.pocket) === lc(e.pocket));
+    // re-planned: a refusal the agent could route around, then a different seller paid in the same turn
+    if (!REPLANNABLE.has(e.reason)) return;
+    const pay = later.slice(0, nextReply < 0 ? undefined : nextReply).find((x) => x.type === "payment" && lc(x.pocket) === lc(e.pocket) && x.sellerId !== e.sellerId);
     if (pay) set("refusedReplanned", { at: pay.at, pocket: e.pocket, txs: [pay.tx], detail: `Refused (${e.reason}), then paid an allowed seller instead` });
   });
   // a dead end: a turn whose quotes were all refused before paying and that paid nothing
@@ -62,7 +65,10 @@ export function factsFrom(events: Ev[], txs: ProofTx[], o: ProofOptions = {}): F
     // the fix: an owner rule change on this pocket after the dead-end turn began (event times can run a little ahead of
     // the chain clock, so the turn's start is the safe bound), then a payment after the agent's reply
     const rules = tx.filter((t) => t.kind === "rules" && t.status !== "reverted" && lc(t.pocket) === lc(r.pocket) && (t.at ?? 0) > turnStart);
-    const paid = ev.find((x) => x.type === "payment" && lc(x.pocket) === lc(r.pocket) && x.at > r.at);
+    // the payment must come in the next turn on this pocket (the "Ask again"), not some later unrelated one
+    const nextReplyAt = replies.find((x) => x.at > r.at && lc(x.pocket) === lc(r.pocket))?.at ?? Number.MAX_SAFE_INTEGER;
+    const later = replies.find((x) => x.at > nextReplyAt && lc(x.pocket) === lc(r.pocket))?.at ?? Number.MAX_SAFE_INTEGER;
+    const paid = ev.find((x) => x.type === "payment" && lc(x.pocket) === lc(r.pocket) && x.at > r.at && x.at < Math.min(later, nextReplyAt + 1));
     if (rules.length && paid) set("fixApplied", { at: paid.at, pocket: r.pocket, txs: [...rules.map((t) => t.hash), paid.tx], detail: "The owner applied the fix; asked again, it paid" });
   }
 
@@ -75,7 +81,7 @@ export function factsFrom(events: Ev[], txs: ProofTx[], o: ProofOptions = {}): F
   }
   for (const r of tx.filter((t) => t.kind === "revoke" && t.status !== "reverted")) {
     const stopped = ev.find((x) => x.type === "refusal" && x.reason === "POCKET_REVOKED" && lc(x.pocket) === lc(r.pocket));
-    const back = tx.find((t) => t.kind === "return" && lc(t.pocket) === lc(r.pocket));
+    const back = tx.find((t) => t.kind === "return" && lc(t.pocket) === lc(r.pocket) && (t.at ?? 0) >= (r.at ?? 0));
     set("killSwitch", { at: r.at ?? 0, pocket: r.pocket, txs: [r.hash, ...(back ? [back.hash] : [])], detail: stopped ? "Revoked mid-task: the next payment was refused (POCKET_REVOKED)" : "Revoked by the owner's key: the agent can no longer spend" });
   }
   return f;
@@ -141,8 +147,9 @@ export function evidenceRows(f: Facts, txs: ProofTx[] = []): EvidenceRow[] {
 
 /** Markdown with docs/evidence.md's columns, plus Expected and Actual. `link` makes a hash a link (public chain only). */
 export function evidenceMarkdown(rows: EvidenceRow[], o: { network: string; link?: (hash: string) => string | undefined; at?: Date }): string {
-  const cell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ");
-  const tx = (r: EvidenceRow) => r.txs.length ? r.txs.map((t) => { const u = o.link?.(t.hash); return `${t.label}: ${u ? `[\`${t.hash}\`](${u})` : `\`${t.hash}\``}`; }).join("<br>") : r.status === "pass" ? "_none (refusal)_" : "_pending_";
+  // seller-controlled text (an injected sentence) can land in "actual": keep it inert in Markdown
+  const cell = (s: string) => s.replace(/[\r\n]+/g, " ").replace(/([\\`*_[\]<>|])/g, "\\$1");
+  const tx = (r: EvidenceRow) => r.txs.length ? r.txs.map((t) => { const u = o.link?.(t.hash); return `${cell(t.label)}: ${u ? `[\`${t.hash}\`](${u})` : `\`${t.hash}\``}`; }).join("<br>") : r.status === "pass" ? "_none (refusal)_" : "_pending_";
   return [
     "# Evidence: on-chain transactions per scene", "",
     `Network: ${o.network}. Exported ${(o.at ?? new Date()).toISOString()} from the ChainBrain console.`, "",
@@ -153,7 +160,8 @@ export function evidenceMarkdown(rows: EvidenceRow[], o: { network: string; link
 }
 
 export function evidenceCsv(rows: EvidenceRow[], o: { network: string }): string {
-  const q = (s: string) => `"${s.replace(/"/g, '""')}"`;
+  // quoted, and a leading = + - @ is defused so a spreadsheet never runs a cell as a formula
+  const q = (s: string) => `"${(/^[=+\-@\t\r]/.test(s) ? `'${s}` : s).replace(/"/g, '""')}"`;
   return [
     ["scene", "title", "expected", "actual", "status", "tx_hashes", "network", "proves"].join(","),
     ...rows.map((r) => [r.scene, r.title, r.expected, r.actual, r.status, r.txs.map((t) => t.hash).join(" "), o.network, r.proves].map((x) => q(String(x))).join(",")),
