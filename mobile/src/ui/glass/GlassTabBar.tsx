@@ -1,56 +1,43 @@
-// Floating glass tab bar: iOS 26 Liquid Glass (expo-glass-effect) with a teal highlight that slides between tabs on an
-// interruptible spring, finger scrubbing with selection ticks, and minimize-on-scroll (labels fold away, every icon stays).
-// Older iOS: BlurView material. Android / web / Reduce Transparency: solid white with a hairline.
-// Ported and re-themed from expo-glass-tabs (MIT, © 2026 David Mokos, reference/frontend/glass/expo-glass-tabs/src/glass-tab-bar.tsx).
-import { Children, createContext, use, useCallback, useEffect, useMemo, useState } from "react";
-import { AccessibilityInfo, Platform, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
-import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
-import { BlurView } from "expo-blur";
+// Floating pill tab bar (Neo-Kinetic, after the Stitch vaultbank bar): a solid white capsule on the canvas with a black pill
+// that slides between tabs on an interruptible spring; inside the pill the icon and label turn white. Finger scrubbing
+// with selection ticks, minimize-on-scroll (labels fold away, every icon stays). No glass, blur or gradient: depth is the
+// level-3 shadow only. Gesture engine ported from expo-glass-tabs (MIT, © 2026 David Mokos,
+// reference/frontend/glass/expo-glass-tabs/src/glass-tab-bar.tsx); the file keeps its old name for existing imports.
+import { Children, createContext, use, useCallback, useEffect, useMemo } from "react";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { Extrapolation, interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { TabListProps, TabTriggerSlotProps } from "expo-router/ui";
-import { c, F, motion } from "../../tokens";
+import { c, F, hairline, level3, motion } from "../../tokens";
 import { haptic } from "../../haptics";
 import { Icon, type IconName } from "../Icon";
 import { setMinimized, useMinimizeState } from "./minimize";
 import { useReduceMotion } from "../motion";
 
-const EXPANDED_H = 64;
-const MINIMIZED_H = 48;
-const MINIMIZED_INSET = 34; // per side, when minimized
+const EXPANDED_H = 68;
+const MINIMIZED_H = 52;
+const MINIMIZED_INSET = 30; // per side, when minimized
 const BAR_MARGIN = 16;
-const ROW_PAD_H = 5;
-const ICON = 22;
-const LABEL_H = 15;
-const GAP = 2;
-const PAD_V = 7;
+const ROW_PAD_H = 6;
+const ICON = 21;
+const LABEL_H = 14;
+const GAP = 3;
+const PAD_V = 8;
 const HL_EXPANDED = ICON + LABEL_H + GAP + PAD_V * 2;
-const HL_MINIMIZED = ICON + PAD_V * 2;
+const HL_MINIMIZED = ICON + PAD_V * 2 + 2;
 /** Total space a scrolling screen must leave under its content (bar + margin), without the safe-area inset. */
-export const GLASS_TAB_SPACE = EXPANDED_H + 20;
+export const GLASS_TAB_SPACE = EXPANDED_H + 24;
+export const TAB_SPACE = GLASS_TAB_SPACE;
 
 const SLIDE = motion.spring.pill;
-// The capsule radius animates, so the glass must be an Animated component: handing an animated style to a plain native
-// view makes React Native freeze Reanimated's internal objects in dev ("set the key `current` ... frozen").
-const AnimatedGlassView = Animated.createAnimatedComponent(GlassView);
-const ACTIVE = c.accent;
-const INACTIVE = c.ink2;
+const ON = c.white;
+const OFF = c.muted;
 
 export type GlassTabItem = { name: string; label: string; icon: IconName; badge?: boolean };
-type Bar = { slide: SharedValue<number>; dragging: SharedValue<boolean>; glass: boolean };
+type Bar = { slide: SharedValue<number>; dragging: SharedValue<boolean> };
 const BarCtx = createContext<Bar | null>(null);
-
-function useSolidBar() {
-  const [reduceTransparency, setRT] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceTransparencyEnabled?.().then(setRT).catch(() => {});
-    const sub = AccessibilityInfo.addEventListener?.("reduceTransparencyChanged", setRT);
-    return () => sub?.remove?.();
-  }, []);
-  return reduceTransparency || Platform.OS !== "ios";
-}
 
 export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProps & { onIndexSelected?: (i: number) => void }) {
   const insets = useSafeAreaInsets();
@@ -62,8 +49,6 @@ export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProp
   const dragging = useSharedValue(false);
   const lastTick = useSharedValue(-1);
   const count = Math.max(Children.count(children), 1);
-  const solid = useSolidBar();
-  const liquid = !solid && isLiquidGlassAvailable();
   const reduce = useReduceMotion();
 
   const select = useCallback((i: number) => onIndexSelected?.(i), [onIndexSelected]);
@@ -75,7 +60,7 @@ export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProp
       const item = (barWidthFull - inset * 2 - ROW_PAD_H * 2) / count;
       return Math.min(Math.max((x - ROW_PAD_H) / item - 0.5, 0), count - 1);
     };
-    // Scrub: the highlight follows the finger 1:1 (no spring: it must feel attached), ticks at each tab boundary,
+    // Scrub: the pill follows the finger 1:1 (no spring: it must feel attached), ticks at each tab boundary,
     // navigation only on release so the screen never jumps under the finger.
     const pan = Gesture.Pan()
       .activeOffsetX([-6, 6])
@@ -108,41 +93,30 @@ export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProp
     return Gesture.Race(pan, tap);
   }, [barWidthFull, count, select, dragging, lastTick, slide, minimized, progress, reduce]);
 
-  // Width (not margins) is animated explicitly so the capsule and the highlight geometry always agree, on every platform.
-  const barStyle = useAnimatedStyle(() => ({
-    height: interpolate(progress.value, [0, 1], [EXPANDED_H, MINIMIZED_H], Extrapolation.CLAMP),
-    width: barWidthFull - 2 * interpolate(progress.value, [0, 1], [0, MINIMIZED_INSET], Extrapolation.CLAMP),
-  }));
-  // The capsule shape lives on the glass view itself (iOS renders its own squircle + rim); never clip glass with a mask.
-  const shape = useAnimatedStyle(() => ({ borderRadius: interpolate(progress.value, [0, 1], [EXPANDED_H, MINIMIZED_H], Extrapolation.CLAMP) / 2 }));
-  const highlight = useAnimatedStyle(() => {
+  // Width (not margins) is animated explicitly so the capsule and the pill geometry always agree, on every platform.
+  const barStyle = useAnimatedStyle(() => {
+    const h = interpolate(progress.value, [0, 1], [EXPANDED_H, MINIMIZED_H], Extrapolation.CLAMP);
+    return { height: h, borderRadius: h / 2, width: barWidthFull - 2 * interpolate(progress.value, [0, 1], [0, MINIMIZED_INSET], Extrapolation.CLAMP) };
+  });
+  const pill = useAnimatedStyle(() => {
     const barH = interpolate(progress.value, [0, 1], [EXPANDED_H, MINIMIZED_H], Extrapolation.CLAMP);
     const h = interpolate(progress.value, [0, 1], [HL_EXPANDED, HL_MINIMIZED], Extrapolation.CLAMP);
     const inset = interpolate(progress.value, [0, 1], [0, MINIMIZED_INSET], Extrapolation.CLAMP);
     const item = (barWidthFull - inset * 2 - ROW_PAD_H * 2) / count;
-    return { height: h, width: item, borderRadius: h / 2, top: (barH - h) / 2, transform: [{ translateX: ROW_PAD_H + item * slide.value }] };
+    // the pill stretches a little while it travels (distance from the nearest tab), then settles round
+    const travel = Math.abs(slide.value - Math.round(slide.value));
+    const w = item - 4 + travel * 14;
+    return { height: h, width: w, borderRadius: h / 2, top: (barH - h) / 2, transform: [{ translateX: ROW_PAD_H + item * slide.value + (item - w) / 2 }] };
   });
-  const bottom = Math.max(insets.bottom - 14, 12);
-  const ctx = useMemo(() => ({ slide, dragging, glass: !solid }), [slide, dragging, solid]);
+  const bottom = Math.max(insets.bottom - 12, 12);
+  const ctx = useMemo(() => ({ slide, dragging }), [slide, dragging]);
 
   return (
     <View {...props} pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, alignItems: "center" }}>
-      {/* soft fade so content dissolves into the canvas behind the bar instead of a hard line */}
-      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { top: undefined, height: bottom + EXPANDED_H + 36, experimental_backgroundImage: `linear-gradient(to top, rgba(245,247,248,0.92) 0%, rgba(245,247,248,0.6) 45%, rgba(245,247,248,0) 100%)` } as any]} />
       <View pointerEvents="box-none" style={{ width: barWidthFull, marginBottom: bottom, alignItems: "center" }}>
         <GestureDetector gesture={gesture}>
-          <Animated.View style={barStyle}>
-            {liquid ? (
-              <AnimatedGlassView glassEffectStyle="regular" tintColor="rgba(255,255,255,0.35)" style={[StyleSheet.absoluteFill, { borderCurve: "continuous" } as any, shape]} />
-            ) : !solid ? (
-              <Animated.View style={[StyleSheet.absoluteFill, { overflow: "hidden", borderCurve: "continuous" } as any, shape]}>
-                <BlurView tint="systemChromeMaterialLight" intensity={80} style={StyleSheet.absoluteFill} />
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(255,255,255,0.55)" }]} />
-              </Animated.View>
-            ) : (
-              <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: c.card, borderWidth: StyleSheet.hairlineWidth, borderColor: c.line, shadowColor: c.ink, shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: 6 }, elevation: 6 }, shape]} />
-            )}
-            <Animated.View style={[{ position: "absolute", left: 0, backgroundColor: liquid ? "rgba(15,34,54,0.08)" : c.fill, borderCurve: "continuous" } as any, highlight]} />
+          <Animated.View style={[{ backgroundColor: c.card, borderWidth: StyleSheet.hairlineWidth, borderColor: hairline, borderCurve: "continuous" } as object, level3, { shadowOpacity: 0.12 }, barStyle]}>
+            <Animated.View style={[{ position: "absolute", left: 0, backgroundColor: c.ink, borderCurve: "continuous" } as object, pill]} />
             <View style={{ flex: 1, flexDirection: "row", alignItems: "center", paddingHorizontal: ROW_PAD_H }}>
               <BarCtx.Provider value={ctx}>{children}</BarCtx.Provider>
             </View>
@@ -153,7 +127,7 @@ export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProp
   );
 }
 
-/** One tab: icon + label; tint follows the sliding highlight, label folds away when minimized. */
+/** One tab: icon + label; white inside the travelling pill, muted outside it; the label folds away when minimized. */
 export function GlassTabButton({ item, index, isFocused, onPress, ...props }: TabTriggerSlotProps & { item: GlassTabItem; index: number }) {
   const minimized = useMinimizeState();
   const progress = minimized.progress;
@@ -172,7 +146,7 @@ export function GlassTabButton({ item, index, isFocused, onPress, ...props }: Ta
   const iconPop = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
   const label = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 0.4], [1, 0], Extrapolation.CLAMP),
-    color: slide ? interpolateColor(Math.min(Math.abs(slide.value - index), 1), [0, 1], [ACTIVE, INACTIVE]) : isFocused ? ACTIVE : INACTIVE,
+    color: slide ? interpolateColor(Math.min(Math.abs(slide.value - index), 1), [0, 1], [ON, OFF]) : isFocused ? ON : OFF,
   }));
   const box = useAnimatedStyle(() => ({ height: interpolate(progress.value, [0, 1], [HL_EXPANDED, HL_MINIMIZED], Extrapolation.CLAMP) }));
 
@@ -193,13 +167,13 @@ export function GlassTabButton({ item, index, isFocused, onPress, ...props }: Ta
     >
       <Animated.View style={[{ alignSelf: "stretch", alignItems: "center", paddingTop: PAD_V, overflow: "hidden" }, box]}>
         <Animated.View style={iconPop}>
-          <Icon name={item.icon} size={ICON} color={INACTIVE} />
+          <Icon name={item.icon} size={ICON} color={OFF} />
           <Animated.View style={[StyleSheet.absoluteFill, { alignItems: "center", justifyContent: "center" }, active]}>
-            <Icon name={item.icon} size={ICON} color={ACTIVE} stroke={2.1} />
+            <Icon name={item.icon} size={ICON} color={ON} stroke={2.2} />
           </Animated.View>
-          {item.badge ? <View style={{ position: "absolute", right: -5, top: -3, width: 10, height: 10, borderRadius: 5, backgroundColor: c.negative, borderWidth: 2, borderColor: c.card }} /> : null}
+          {item.badge ? <View style={{ position: "absolute", right: -5, top: -3, width: 10, height: 10, borderRadius: 5, backgroundColor: c.vermillion, borderWidth: 2, borderColor: c.card }} /> : null}
         </Animated.View>
-        <Animated.Text numberOfLines={1} style={[{ fontFamily: F.semi, fontSize: 12, lineHeight: LABEL_H, marginTop: GAP }, label]}>{item.label}</Animated.Text>
+        <Animated.Text numberOfLines={1} style={[{ fontFamily: F.semi, fontSize: 11, lineHeight: LABEL_H, letterSpacing: 0.1, marginTop: GAP }, label]}>{item.label}</Animated.Text>
       </Animated.View>
     </Pressable>
   );

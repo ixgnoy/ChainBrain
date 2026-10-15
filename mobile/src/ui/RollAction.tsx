@@ -1,21 +1,10 @@
-// Round action under a balance (64 px disc + label): Press kind="round" (0.94, spring release) with a Medium haptic.
+// A quick action (older name "round button"): now a Neo-Kinetic tile (kit Tile), white with a stroke, powder blue for a
+// utility action, soft vermillion for a destructive one. Press kind="round" with a Medium haptic.
 import React from "react";
-import { View } from "react-native";
-import { c } from "../tokens";
-import { Press } from "./kit";
 import type { TargetName } from "../lib/autoplayTargets";
-import { Icon, type IconName } from "./Icon";
-import { T } from "./Text";
+import { Tile } from "./kit";
+import type { IconName } from "./Icon";
 
-export function RoundButton({ icon, label, onPress, soft, danger, a11y, auto }: { icon: IconName; label: string; onPress: () => void; soft?: boolean; /** destructive (Revoke): negative tint */ danger?: boolean; a11y?: string; auto?: TargetName }) {
-  const bg = danger ? c.fill : soft ? c.accentSoft : c.accent;
-  const fg = danger ? c.negative : /* neutral soft disc, red icon only */ soft ? c.accent : c.onAccent;
-  return (
-    <Press kind="round" haptics="medium" auto={auto} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label} style={{ alignItems: "center", gap: 8, flex: 1, paddingHorizontal: 2 }}>
-      <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: bg, alignItems: "center", justifyContent: "center" }}>
-        <Icon name={icon} size={26} color={fg} />
-      </View>
-      <T v="cap" w="medium" color="ink2" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ textAlign: "center", fontSize: 13 }}>{label}</T>
-    </Press>
-  );
+export function RoundButton({ icon, label, onPress, soft, danger, a11y, auto }: { icon: IconName; label: string; onPress: () => void; soft?: boolean; /** destructive (Revoke) */ danger?: boolean; a11y?: string; auto?: TargetName }) {
+  return <Tile icon={icon} label={label} onPress={onPress} tone={danger ? "danger" : soft ? "blue" : "white"} a11y={a11y} auto={auto} />;
 }

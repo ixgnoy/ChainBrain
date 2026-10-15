@@ -27,11 +27,15 @@ export function Screen({ children, tabs = true, top = true, scrollY, innerRef, .
   );
 }
 
-/** Serif page title (the only place the serif is used), left aligned, with an optional grey line below. */
-export function PageTitle({ title, sub }: { title: string; sub?: string }) {
+/** Page title: display (Jakarta ExtraBold 32, tight), left aligned, an optional eyebrow above and a quiet line below. */
+export function PageTitle({ title, sub, eyebrow, right }: { title: string; sub?: string; eyebrow?: string; right?: React.ReactNode }) {
   return (
-    <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, gap: 4 }}>
-      <T v="title" accessibilityRole="header">{title}</T>
+    <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8, gap: 4 }}>
+      {eyebrow ? <T v="tab" color="mutedOnCanvas" style={{ textTransform: "uppercase", letterSpacing: 0.9 }}>{eyebrow}</T> : null}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <T v="display" accessibilityRole="header" style={{ flexShrink: 1 }}>{title}</T>
+        {right}
+      </View>
       {sub ? <T v="body" color="ink2">{sub}</T> : null}
     </View>
   );

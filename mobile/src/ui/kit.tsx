@@ -1,8 +1,9 @@
-// Small UI kit: pressable, white card, round action, list row, pill, buttons, section header, field, expandable details.
+// Neo-Kinetic UI kit: pressable, white level-1 card, squircle avatar, quick-action tile, list row, pills, pill buttons,
+// section header, field, expandable details, switch. Shapes and colours from DESIGN.md (tokens.ts).
 import React, { useRef, useState } from "react";
 import { Pressable, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
-import { c, F, motion, radius } from "../tokens";
+import { c, F, hairline, level1, motion, radius, type Tone } from "../tokens";
 import { haptic, type HapticName } from "../haptics";
 import { EASE_OUT, glide, settle, useReduceMotion } from "./motion";
 import { autoplayAlive, autoplayRun, useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
@@ -60,31 +61,47 @@ export function Press({ children, style, onPress, haptics = "light", scale, kind
   );
 }
 
-/** White card, radius 20, no border, no shadow. */
-export function Card({ children, style, pad = 16 }: { children: React.ReactNode; style?: StyleProp<ViewStyle>; pad?: number }) {
-  return <View style={[{ backgroundColor: c.card, borderRadius: radius.card, padding: pad }, style]}>{children}</View>;
+/** Level-1 card: white, radius 24, the ultra-soft ambient shadow and a hairline (DESIGN.md "Elevation"). `flat` drops the shadow
+ *  (cards nested in sheets); `tone` swaps the surface (fill for quiet inner panels). */
+export function Card({ children, style, pad = 16, flat, tone = "card" }: { children: React.ReactNode; style?: StyleProp<ViewStyle>; pad?: number; flat?: boolean; tone?: Tone }) {
+  return <View style={[{ backgroundColor: c[tone], borderRadius: radius.card, padding: pad, borderWidth: tone === "card" ? 1 : 0, borderColor: hairline }, flat || tone !== "card" ? null : level1, style]}>{children}</View>;
 }
 
-export function Avatar({ label, icon, size = 48, tone = "soft" }: { label?: string; icon?: IconName; size?: number; tone?: "soft" | "solid" | "warning" | "negative" | "fill" }) {
-  const bg = tone === "solid" ? c.accent : tone === "warning" ? c.warningSoft : tone === "negative" ? c.negativeSoft : tone === "fill" ? c.fill : c.accentSoft;
-  const fg = tone === "solid" ? c.onAccent : tone === "warning" ? c.warning : tone === "negative" ? c.negative : tone === "fill" ? c.ink2 : c.accent;
+export type AvatarTone = "soft" | "solid" | "warning" | "negative" | "fill" | "blue" | "vermillion" | "positive";
+/** Squircle avatar (DESIGN.md: 14 px smoothed corners at 48, never a harsh circle) with an icon or an initial. */
+export function Avatar({ label, icon, size = 48, tone = "soft" }: { label?: string; icon?: IconName; size?: number; tone?: AvatarTone }) {
+  const bg = { solid: c.ink, warning: c.blueSoft, negative: c.vermillionSoft, fill: c.fill, soft: c.fill, blue: c.blue, vermillion: c.vermillion, positive: c.greenSoft }[tone];
+  const fg = { solid: c.white, warning: c.blueInk, negative: c.vermillionInk, fill: c.ink2, soft: c.ink, blue: c.ink, vermillion: c.white, positive: c.greenInk }[tone];
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: "center", justifyContent: "center" }}>
+    <View style={{ width: size, height: size, borderRadius: Math.round(size * 0.3), borderCurve: "continuous", backgroundColor: bg, alignItems: "center", justifyContent: "center" } as ViewStyle}>
       {icon ? <Icon name={icon} size={Math.round(size * 0.42)} color={fg} /> : <T v="row" w="semi" style={{ color: fg, fontSize: Math.round(size * 0.38) }}>{(label ?? "?").trim().slice(0, 1).toUpperCase()}</T>}
     </View>
   );
 }
 
-/** 64 px round action with a label below: solid accent, or soft accent for secondary actions. */
-export function RoundAction({ icon, label, onPress, soft, a11y }: { icon: IconName; label: string; onPress: () => void; soft?: boolean; a11y?: string }) {
+/** Quick-action tile (DESIGN.md "Quick Action Tiles"): 16-radius, white with a #ECEFEF stroke, powder blue for the one
+ *  utility action ("Connect"), soft vermillion for a destructive one ("Revoke"). Icon in a 40 px disc above a label-lg line. */
+export function Tile({ icon, label, onPress, tone = "white", a11y, auto, style }: {
+  icon: IconName; label: string; onPress: () => void; tone?: "white" | "blue" | "danger" | "ink"; a11y?: string; auto?: TargetName; style?: StyleProp<ViewStyle>;
+}) {
+  const bg = { white: c.card, blue: c.blue, danger: c.vermillionSoft, ink: c.ink }[tone];
+  const disc = { white: c.fill, blue: c.white, danger: c.vermillion, ink: c.white }[tone];
+  const ic = { white: c.ink, blue: c.ink, danger: c.white, ink: c.ink }[tone];
+  const fg = { white: c.ink, blue: c.ink, danger: c.vermillionInk, ink: c.white }[tone];
   return (
-    <Press onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label} style={{ alignItems: "center", gap: 8, flex: 1, paddingHorizontal: 2 }}>
-      <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: soft ? c.accentSoft : c.accent, alignItems: "center", justifyContent: "center" }}>
-        <Icon name={icon} size={26} color={soft ? c.accent : c.onAccent} />
+    <Press kind="round" haptics="medium" auto={auto} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label}
+      style={[{ flex: 1, minHeight: 96, borderRadius: radius.tile, backgroundColor: bg, borderWidth: tone === "white" ? 1 : 0, borderColor: c.tileStroke, alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 14, paddingHorizontal: 6 }, tone === "white" ? level1 : null, style]}>
+      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: disc, alignItems: "center", justifyContent: "center" }}>
+        <Icon name={icon} size={20} color={ic} stroke={2} />
       </View>
-      <T v="cap" w="medium" color="ink2" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ textAlign: "center", fontSize: 13 }}>{label}</T>
+      <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ color: fg, textAlign: "center", fontSize: 13 }}>{label}</T>
     </Press>
   );
+}
+
+/** older name: a tile */
+export function RoundAction({ icon, label, onPress, soft, a11y }: { icon: IconName; label: string; onPress: () => void; soft?: boolean; a11y?: string }) {
+  return <Tile icon={icon} label={label} onPress={onPress} tone={soft ? "blue" : "white"} a11y={a11y} />;
 }
 
 export type PillTone = "accent" | "warning" | "negative" | "fill";
@@ -98,54 +115,64 @@ export function CodePill({ code }: { code: string; tone?: "negative" | "warning"
   );
 }
 
-export function Pill({ label, tone = "accent", icon, onPress, a11y }: { label: string; tone?: PillTone; icon?: IconName; onPress?: () => void; a11y?: string }) {
-  const bg = tone === "accent" ? c.accentSoft : tone === "warning" ? c.warningSoft : tone === "negative" ? c.negativeSoft : c.fill;
-  const fg = tone === "accent" ? c.accent : tone === "warning" ? c.warning : tone === "negative" ? c.negative : c.ink2;
+/** Fact or status pill: neutral (accent/fill), blue (warning = needs you), soft vermillion (negative), green (positive), ink. */
+export function Pill({ label, tone = "accent", icon, onPress, a11y, dot }: { label: string; tone?: PillTone | "positive" | "ink" | "white"; icon?: IconName; onPress?: () => void; a11y?: string; /** a leading status dot in this colour */ dot?: string }) {
+  const bg = { accent: c.fill, fill: c.fill, warning: c.blueSoft, negative: c.vermillionSoft, positive: c.greenSoft, ink: c.ink, white: c.card }[tone];
+  const fg = { accent: c.ink, fill: c.ink2, warning: c.blueInk, negative: c.vermillionInk, positive: c.greenInk, ink: c.white, white: c.ink }[tone];
   const body = (
     <>
+      {dot ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: dot }} /> : null}
       {icon ? <Icon name={icon} size={14} color={fg} /> : null}
       <T v="cap" w="semi" style={{ color: fg }}>{label}</T>
     </>
   );
-  const box = { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, height: onPress ? 32 : 28, borderRadius: radius.pill, backgroundColor: bg, alignSelf: "flex-start" } as const;
+  const box = { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: onPress ? 32 : 28, borderRadius: radius.pill, backgroundColor: bg, alignSelf: "flex-start", borderWidth: tone === "white" ? 1 : 0, borderColor: c.tileStroke } as const;
   return onPress ? <Press haptics="select" onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label} style={box}>{body}</Press> : <View style={box}>{body}</View>;
 }
 
-/** Filter chip: grey pill, accent when selected. */
+/** Filter chip: white pill, black when selected. */
 export function Chip({ label, on, onPress }: { label: string; on?: boolean; onPress: () => void }) {
   return (
-    <Press haptics="select" onPress={onPress} scale={0.96} accessibilityRole="button" accessibilityState={{ selected: !!on }} style={{ height: 40, paddingHorizontal: 16, borderRadius: radius.pill, justifyContent: "center", backgroundColor: on ? c.accent : c.card }}>
+    <Press haptics="select" onPress={onPress} scale={0.96} accessibilityRole="button" accessibilityState={{ selected: !!on }} style={{ height: 40, paddingHorizontal: 16, borderRadius: radius.pill, justifyContent: "center", backgroundColor: on ? c.ink : c.card, borderWidth: on ? 0 : 1, borderColor: c.tileStroke }}>
       <T v="sub" w="semi" style={{ color: on ? c.onAccent : c.ink2 }}>{label}</T>
     </Press>
   );
 }
 
-export function Button({ label, onPress, kind = "primary", icon, disabled, loading, style, small, auto, tapRef }: {
-  label: string; onPress?: () => void; kind?: "primary" | "secondary" | "outline" | "text" | "danger"; icon?: IconName; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>; small?: boolean;
+export type ButtonKind = "primary" | "vermillion" | "secondary" | "outline" | "text" | "danger" | "blue";
+/** Pill CTA (DESIGN.md "Primary Pill CTA", 52 px): black (primary), vermillion (the one onboarding / connect CTA), white with
+ *  a stroke (secondary / outline), soft vermillion (danger: Disconnect, Revoke), powder blue (utility), or a quiet text button. */
+export function Button({ label, onPress, kind = "primary", icon, iconRight, disabled, loading, style, small, auto, tapRef }: {
+  label: string; onPress?: () => void; kind?: ButtonKind; icon?: IconName; iconRight?: IconName; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>; small?: boolean;
   auto?: TargetName; tapRef?: React.MutableRefObject<PressTap | null>;
 }) {
   const off = disabled || loading;
-  const bg = kind === "primary" ? c.accent : kind === "danger" ? c.negativeSoft : kind === "secondary" ? c.fill : "transparent";
-  const fg = kind === "primary" ? c.onAccent : kind === "danger" ? c.negative : kind === "secondary" ? c.ink : kind === "text" ? c.ink2 : c.accent; // teal means go; a text button (Decline, Cancel, Back) is quiet
+  const bg = { primary: c.ink, vermillion: c.vermillion, secondary: c.card, outline: c.card, text: "transparent", danger: c.vermillionSoft, blue: c.blue }[kind];
+  const fg = { primary: c.white, vermillion: c.white, secondary: c.ink, outline: c.ink, text: c.ink2, danger: c.vermillionInk, blue: c.ink }[kind];
+  const stroke = kind === "secondary" || kind === "outline";
   return (
     <Press onPress={off ? undefined : onPress} auto={auto} tapRef={tapRef} disabled={off} haptics={kind === "text" ? "select" : "light"} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!off, busy: !!loading }}
-      style={[{ height: small ? 44 : 56, minWidth: 48, paddingHorizontal: 22, borderRadius: radius.pill, backgroundColor: bg, borderWidth: kind === "outline" ? 1.5 : 0, borderColor: c.accent, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, opacity: disabled ? 0.45 : 1 }, style]}>
-      {icon ? <Icon name={icon} size={18} color={fg} /> : null}
-      <T v="row" w="semi" style={{ color: fg }}>{loading ? "Please wait…" : label}</T>
+      style={[{ height: small ? 44 : 52, minWidth: 48, paddingHorizontal: small ? 18 : 24, borderRadius: radius.pill, backgroundColor: bg, borderWidth: stroke ? 1 : 0, borderColor: kind === "outline" ? c.ink : c.tileStroke, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, opacity: disabled ? 0.4 : 1 }, style]}>
+      {icon ? <Icon name={icon} size={18} color={fg} stroke={2} /> : null}
+      <T v="label" style={{ color: fg, fontSize: small ? 14 : 15, lineHeight: 20 }}>{loading ? "Please wait…" : label}</T>
+      {iconRight ? <Icon name={iconRight} size={18} color={fg} stroke={2} /> : null}
     </Press>
   );
 }
 
-export function SectionHeader({ title, right, action, onAction }: { title: string; right?: string; action?: string; onAction?: () => void }) {
+export function SectionHeader({ title, right, action, onAction, count }: { title: string; right?: string; action?: string; onAction?: () => void; /** a small count badge after the title ("Active pockets 3") */ count?: number }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", paddingHorizontal: 20, marginTop: 28, marginBottom: 12 }}>
-      <T v="section" accessibilityRole="header">{title}</T>
-      {action ? <Press haptics="select" onPress={onAction} hitSlop={10}><T v="sub" w="semi" color="accent">{action}</T></Press> : right ? <T v="sub" color="muted">{right}</T> : null}
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 28, marginBottom: 12, gap: 12 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
+        <T v="section" accessibilityRole="header" numberOfLines={1}>{title}</T>
+        {count != null ? <View style={{ minWidth: 26, height: 24, paddingHorizontal: 8, borderRadius: 12, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}><T v="cap" w="bold">{String(count)}</T></View> : null}
+      </View>
+      {action ? <Press haptics="select" onPress={onAction} hitSlop={10}><T v="sub" w="bold" color="vermillionInk">{action}</T></Press> : right ? <T v="sub" color="mutedOnCanvas">{right}</T> : null}
     </View>
   );
 }
 
-/** A Ryt-style list row: 48 px avatar, title 16/500, grey subtitle, amount right with an optional status line beneath. Rows are >= 64 px. */
+/** Transaction-style row (DESIGN.md "Transaction Item"): squircle avatar left, bold title over a muted line, amount right with a status line beneath. */
 export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink", rightSubTone = "muted", onPress, last, a11y, children, codes, foot, subLines = 2, icon, extra, lit }: {
   avatar?: React.ReactNode; title: string; sub?: string; right?: string; rightSub?: string; rightTone?: "ink" | "positive" | "muted" | "negative"; rightSubTone?: "muted" | "negative" | "warning" | "positive";
   onPress?: () => void; last?: boolean; a11y?: string; children?: React.ReactNode; codes?: string[]; foot?: string; subLines?: number; /** anything under the subtitle (a thin progress bar) */ extra?: React.ReactNode;
@@ -153,7 +180,7 @@ export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink"
   /** a bare 22 px icon instead of an avatar disc (flat lists such as Settings): rows are 56 px and the divider starts after the icon */ icon?: IconName;
 }) {
   const body = (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: icon ? 14 : 16, minHeight: icon ? 56 : 72, paddingHorizontal: 16, backgroundColor: lit ? c.accentSoft : undefined }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: icon ? 14 : 14, minHeight: icon ? 56 : 72, paddingHorizontal: 16, backgroundColor: lit ? c.fill : undefined }}>
       {icon ? <View style={{ width: 24, alignItems: "center" }}><Icon name={icon} size={22} color={c.ink2} /></View> : avatar}
       <View style={{ flex: 1, gap: 2, paddingVertical: icon ? 10 : 12 }}>
         <T v="row" numberOfLines={1}>{title}</T>
@@ -174,7 +201,7 @@ export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink"
   return (
     <View>
       {onPress ? <Press onPress={onPress} haptics="select" scale={0.99} accessibilityRole="button" accessibilityLabel={a11y ?? title}>{body}</Press> : body}
-      {last ? null : <View style={{ height: 1, backgroundColor: c.line, marginLeft: icon ? 54 : 80 }} />}
+      {last ? null : <View style={{ height: 1, backgroundColor: c.fill, marginLeft: icon ? 54 : 70, marginRight: 16 }} />}
     </View>
   );
 }
@@ -183,7 +210,7 @@ export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink"
 export function ListCard({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
   const kids = React.Children.toArray(children).filter(Boolean);
   return (
-    <View style={[{ marginHorizontal: 20, backgroundColor: c.card, borderRadius: radius.card, overflow: "hidden" }, style]}>
+    <View style={[{ marginHorizontal: 16, backgroundColor: c.card, borderRadius: radius.card, borderWidth: 1, borderColor: hairline }, level1, style]}>
       {kids.map((k, i) => (React.isValidElement(k) ? React.cloneElement(k as React.ReactElement<{ last?: boolean }>, { last: i === kids.length - 1 }) : k))}
     </View>
   );
@@ -199,7 +226,7 @@ export function Field(p: TextInputProps & { label?: string }) {
         placeholderTextColor={c.faint} accessibilityLabel={rest.accessibilityLabel ?? label}
         onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
         {...rest}
-        style={[{ minHeight: 52, borderRadius: radius.input, backgroundColor: c.fill, paddingHorizontal: 16, fontFamily: F.regular, fontSize: 16, color: c.ink, borderWidth: 1.5, borderColor: focus ? c.accent : "transparent", outlineStyle: "none" } as object, style]}
+        style={[{ minHeight: 52, borderRadius: radius.input, backgroundColor: c.fill, paddingHorizontal: 16, fontFamily: F.medium, fontSize: 16, color: c.ink, borderWidth: 1.5, borderColor: focus ? c.ink : "transparent", outlineStyle: "none" } as object, style]}
       />
     </View>
   );
@@ -232,21 +259,21 @@ export function Details({ rows = [], title = "Details", children, codes, compact
   );
 }
 
-/** Summary card (the Approval / Receipt / Review grammar): fill surface, radius 20, label muted left, value 15/500 right, no dividers. */
+/** Summary card (the Approval / Receipt / Review grammar): fill surface, radius 16, label muted left, value 15/600 right, no dividers. */
 export function SummaryCard({ rows, surface = "canvas" }: { rows: [string, string][]; surface?: "canvas" | "card" }) {
   return (
-    <View style={{ backgroundColor: surface === "card" ? c.card : c.canvas, borderRadius: radius.card, padding: 16, gap: 14 }}>
+    <View style={{ backgroundColor: surface === "card" ? c.card : c.fill, borderRadius: radius.tile, padding: 16, gap: 14 }}>
       {rows.map(([k, v], i) => (
         <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
           <T v="sub" color="muted">{k}</T>
-          <T v="sub" w="medium" style={{ flexShrink: 1, textAlign: "right", fontSize: 15, lineHeight: 22 }}>{v}</T>
+          <T v="sub" w="semi" style={{ flexShrink: 1, textAlign: "right", fontSize: 15, lineHeight: 22 }}>{v}</T>
         </View>
       ))}
     </View>
   );
 }
 
-/** iOS-style switch (51 x 31): the knob springs across, the track tints teal, a selection tick on change. */
+/** iOS-style switch (51 x 31): the knob springs across, the track turns ink black, a selection tick on change. */
 export function Toggle({ on, onChange, a11y, disabled }: { on: boolean; onChange: (v: boolean) => void; a11y: string; disabled?: boolean }) {
   const reduce = useReduceMotion();
   const x = useSharedValue(on ? 1 : 0);
@@ -257,10 +284,32 @@ export function Toggle({ on, onChange, a11y, disabled }: { on: boolean; onChange
     <Press haptics="select" scale={0.96} disabled={disabled} onPress={() => onChange(!on)} hitSlop={8}
       accessibilityRole="switch" accessibilityLabel={a11y} accessibilityState={{ checked: on, disabled: !!disabled }} style={{ opacity: disabled ? 0.5 : 1 }}>
       <Animated.View style={[{ width: 51, height: 31, borderRadius: 16, padding: 2 }, track]}>
-        <Animated.View style={[{ width: 27, height: 27, borderRadius: 14, backgroundColor: "#FFFFFF", shadowColor: "#0F2236", shadowOpacity: 0.18, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 2 }, knob]} />
+        <Animated.View style={[{ width: 27, height: 27, borderRadius: 14, backgroundColor: "#FFFFFF", shadowColor: c.ink, shadowOpacity: 0.18, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 2 }, knob]} />
       </Animated.View>
     </Press>
   );
 }
 
 export const Hairline = () => <View style={{ height: 1, backgroundColor: c.line }} />;
+
+/** A labelled fact row inside a white card (Approve sheet, Pocket facts): icon + muted label left, value right. */
+export function FactRow({ icon, label, children, last }: { icon?: IconName; label: string; children: React.ReactNode; last?: boolean }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, borderBottomWidth: last ? 0 : 1, borderBottomColor: c.fill }}>
+      {icon ? <Icon name={icon} size={20} color={c.ink2} /> : null}
+      <T v="sub" color="muted" style={{ width: 92 }}>{label}</T>
+      <View style={{ flex: 1, alignItems: "flex-end" }}>{children}</View>
+    </View>
+  );
+}
+
+/** Status pill for activity rows and ledgers: Paid / Settled (neutral), Co-signed (blue), Refused / Blocked (vermillion). */
+export function StatusPill({ label, tone = "fill" }: { label: string; tone?: "fill" | "blue" | "vermillion" | "solidVermillion" | "green" | "ink" }) {
+  const bg = { fill: c.fill, blue: c.blueSoft, vermillion: c.vermillionSoft, solidVermillion: c.vermillion, green: c.greenSoft, ink: c.ink }[tone];
+  const fg = { fill: c.ink2, blue: c.blueInk, vermillion: c.vermillionInk, solidVermillion: c.white, green: c.greenInk, ink: c.white }[tone];
+  return (
+    <View style={{ paddingHorizontal: 10, height: 24, borderRadius: radius.pill, backgroundColor: bg, justifyContent: "center", alignSelf: "flex-end" }}>
+      <T v="cap" w="bold" style={{ color: fg, fontSize: 11, lineHeight: 14 }}>{label}</T>
+    </View>
+  );
+}

@@ -121,10 +121,10 @@ export function Sheet({ visible, onClose, children, maxHeightPct = 0.92 }: { vis
           accessibilityViewIsModal onAccessibilityEscape={onClose}
           style={[{ maxHeight: height * maxHeightPct }, panel]}
         >
-          <View style={{ flexShrink: 1, backgroundColor: c.card, borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card, paddingBottom: insets.bottom + 12, ...lift, shadowOffset: { width: 0, height: -8 } }}>
+          <View style={{ flexShrink: 1, backgroundColor: c.card, borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet, paddingBottom: insets.bottom + 12, ...lift, shadowOffset: { width: 0, height: -8 } }}>
             <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: "100%", height: 320, backgroundColor: c.card }} />{/* covers the gap when the sheet is rubber-banded upward */}
             <View style={{ alignItems: "center", paddingTop: 10, paddingBottom: 6 }}>
-              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: c.line }} />
+              <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: c.line }} />
             </View>
             <SheetCtx.Provider value={ctx}>{children}</SheetCtx.Provider>
           </View>

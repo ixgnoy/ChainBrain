@@ -14,7 +14,7 @@ import { T } from "./Text";
 import { Icon } from "./Icon";
 import { autoplayAlive, autoplayRun, useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
 
-const THUMB = 48, PAD = 4; // track 56 px: solid teal, white grip (a pale track reads as disabled)
+const THUMB = 52, PAD = 5; // track 62 px (Stitch approve sheet): black track, vermillion grip, white label
 const MIN_PENDING_MS = 300;
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -122,25 +122,28 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, d
         accessibilityState={{ disabled: !!disabled, busy: state === "busy" }}
         accessibilityActions={[{ name: "activate" }]}
         onAccessibilityAction={() => { if (!disabled && state === "idle") { haptic.rigid(); x.value = withSpring(max, motion.spring.snappy); void fire(); } }}
-        style={[{ height: THUMB + PAD * 2, borderRadius: R, backgroundColor: c.accent, justifyContent: "center", overflow: "hidden", opacity: disabled ? 0.45 : 1 }, track]}
+        style={[{ height: THUMB + PAD * 2, borderRadius: R, backgroundColor: c.ink, justifyContent: "center", overflow: "hidden", opacity: disabled ? 0.4 : 1 }, track]}
       >
-        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: R, backgroundColor: c.accentPress }, fill]} />
-        <Animated.View style={[{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: c.accent }, doneBg]} />
+        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: R, backgroundColor: "rgba(240,78,35,0.28)" }, fill]} />
+        <Animated.View style={[{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: c.ink }, doneBg]} />
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: THUMB + PAD * 2, right: 20, alignItems: "center" }, labelStyle]}>
-          <T v="row" w="semi" numberOfLines={1} style={{ color: c.onAccent }}>{label}</T>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: c.white, textTransform: "uppercase", letterSpacing: 0.4, fontSize: 15 }}>{label}</T>
+            <Icon name="chevronRight" size={16} color="rgba(255,255,255,0.55)" stroke={2.4} />
+          </View>
         </Animated.View>
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 0, right: THUMB + PAD * 2, alignItems: "center" }, pending]}>
-          <T v="row" w="semi" style={{ color: c.onAccent }}>Signing…</T>
+          <T v="label" style={{ color: c.white, fontSize: 15 }}>Signing…</T>
         </Animated.View>
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 0, right: 0, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8 }, check]}>
-          <Icon name="check" size={22} color={c.onAccent} stroke={2.2} />
-          <T v="row" w="semi" style={{ color: c.onAccent }}>{doneLabel}</T>
+          <Icon name="check" size={22} color={c.green} stroke={2.6} />
+          <T v="label" style={{ color: c.white, fontSize: 15 }}>{doneLabel}</T>
         </Animated.View>
-        <Animated.View style={[{ marginLeft: PAD, width: THUMB, height: THUMB, borderRadius: THUMB / 2, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }, thumb]}>
+        <Animated.View style={[{ marginLeft: PAD, width: THUMB, height: THUMB, borderRadius: THUMB / 2, backgroundColor: c.vermillion, alignItems: "center", justifyContent: "center" }, thumb]}>
           {state === "busy" ? (
-            <Animated.View style={[{ width: 24, height: 24, borderRadius: 12, borderWidth: 2.5, borderColor: c.accentSoft, borderTopColor: c.accent }, spinner]} />
+            <Animated.View style={[{ width: 24, height: 24, borderRadius: 12, borderWidth: 2.5, borderColor: "rgba(255,255,255,0.35)", borderTopColor: c.white }, spinner]} />
           ) : (
-            <Icon name={state === "done" ? "check" : "chevronRight"} size={24} color={c.accent} stroke={2.2} />
+            <Icon name={state === "done" ? "check" : "chevronRight"} size={24} color={c.white} stroke={2.6} />
           )}
         </Animated.View>
       </Animated.View>

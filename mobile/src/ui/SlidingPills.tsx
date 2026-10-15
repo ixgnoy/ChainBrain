@@ -1,15 +1,12 @@
-// Filter pills with one selected background that slides between them (snappy spring) plus a selection haptic. Technique: the row is
-// drawn twice; the second copy (teal pills, white text) sits in a rounded window that slides and resizes to the selected pill, so the
-// background and the label colour travel together. Measured from layout, so any labels work. Reduced motion: the window jumps.
+// Underline filter tabs (DESIGN.md "Segmentation Tabs"): minimal text tabs, the active one bold ink with a 2 px black bar that
+// slides and resizes under it (snappy spring), inactive tabs muted. Selection haptic. Measured from layout, so any labels work.
+// Reduced motion: the bar jumps. (Kept the old component name for its callers.)
 import React, { useEffect, useRef } from "react";
 import { ScrollView, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
-import { c, F, motion, radius } from "../tokens";
+import { c, F, motion } from "../tokens";
 import { Press } from "./kit";
 import { settle, useReduceMotion } from "./motion";
-
-const pill = { height: 36, paddingHorizontal: 16, borderRadius: radius.pill, justifyContent: "center" } as const;
-const label = { fontFamily: F.semi, fontSize: 14, lineHeight: 20 } as const;
 
 export function SlidingPills<K extends string>({ items, value, onChange }: { items: { key: K; label: string }[]; value: K; onChange: (k: K) => void }) {
   const reduce = useReduceMotion();
@@ -22,23 +19,21 @@ export function SlidingPills<K extends string>({ items, value, onChange }: { ite
     settle(x, m.x, reduce, motion.spring.snappy); settle(w, m.w, reduce, motion.spring.snappy);
   };
   useEffect(() => { move(value, !seen.value); }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
-  const win = useAnimatedStyle(() => ({ opacity: seen.value, width: w.value, transform: [{ translateX: x.value }] }));
-  const inner = useAnimatedStyle(() => ({ transform: [{ translateX: -x.value }] }));
+  const bar = useAnimatedStyle(() => ({ opacity: seen.value, width: w.value, transform: [{ translateX: x.value }] }));
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 20 }} keyboardShouldPersistTaps="handled">
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        {items.map((f) => (
-          <Press key={f.key} haptics="select" scale={0.96} onPress={() => onChange(f.key)} accessibilityRole="button" accessibilityLabel={f.label} accessibilityState={{ selected: value === f.key }}
-            onLayout={(e) => { const { x: lx, width } = e.nativeEvent.layout; box.current[f.key] = { x: lx, w: width }; if (f.key === value) move(f.key, !seen.value); }}
-            style={[pill, { backgroundColor: c.fill }]}>
-            <Animated.Text style={[label, { color: c.ink2 }]}>{f.label}</Animated.Text>
-          </Press>
-        ))}
-        <Animated.View pointerEvents="none" aria-hidden importantForAccessibility="no-hide-descendants" style={[{ position: "absolute", left: 0, top: 0, height: 36, overflow: "hidden", borderRadius: radius.pill }, win]}>
-          <Animated.View style={[{ flexDirection: "row", gap: 8, width: 600 }, inner]}>
-            {items.map((f) => <View key={f.key} style={[pill, { backgroundColor: c.ink }]}><Animated.Text style={[label, { color: c.onAccent }]}>{f.label}</Animated.Text></View>)}
-          </Animated.View>
-        </Animated.View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 16 }} keyboardShouldPersistTaps="handled">
+      <View style={{ flexDirection: "row", gap: 24 }}>
+        {items.map((f) => {
+          const on = value === f.key;
+          return (
+            <Press key={f.key} haptics="select" scale={0.96} onPress={() => onChange(f.key)} accessibilityRole="button" accessibilityLabel={f.label} accessibilityState={{ selected: on }}
+              onLayout={(e) => { const { x: lx, width } = e.nativeEvent.layout; box.current[f.key] = { x: lx, w: width }; if (f.key === value) move(f.key, !seen.value); }}
+              style={{ height: 40, justifyContent: "center" }}>
+              <Animated.Text style={{ fontFamily: on ? F.bold : F.medium, fontSize: 15, lineHeight: 20, letterSpacing: -0.15, color: on ? c.ink : c.mutedOnCanvas }}>{f.label}</Animated.Text>
+            </Press>
+          );
+        })}
+        <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 0, bottom: 0, height: 2, borderRadius: 1, backgroundColor: c.ink }, bar]} />
       </View>
     </ScrollView>
   );
