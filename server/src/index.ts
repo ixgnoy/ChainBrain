@@ -12,15 +12,28 @@ import { transferTypedData } from "./wallet/scheme";
 import { directory } from "./wallet/directory";
 import { agentAccount } from "./wallet/pay";
 import { runTurn, type ModelFn } from "./agent/loop";
+import { radarRoutes } from "./radar/api";
+import { startMonitor } from "./radar/monitor";
+import { startSentinel, sentinel } from "./sentinel";
+import { chainSource } from "./radar/chainSource";
+import type { AskModel } from "./radar/ask";
+import { memory, render } from "./brain/memory";
+import { reflect, type ReflectModel } from "./brain/reflect";
+import { trimHistory } from "./brain/window";
+import { compileRules, type RulesModel } from "./rules/compile";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
 
 /** Wallet tool layer + agent API for the app. The LLM only ever reaches the tools; keys stay in this process. */
-export function apiApp(deps: { model?: ModelFn } = {}) {
+export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryModel?: ReflectModel; rulesModel?: RulesModel } = {}) {
   const app = new Hono();
   const chats = new Map<string, Msg[]>();
+  const reflecting = new Map<string, Promise<unknown>>();
+  // Memory is on with a model or a key; BRAIN_MEMORY=off turns it off (history is still trimmed).
+  const memoryOn = () => process.env.BRAIN_MEMORY !== "off" && (!!deps.memoryModel || !!process.env.ANTHROPIC_API_KEY);
   app.use("*", cors({ origin: "*" }));
 
+  app.route("/api/radar", radarRoutes({ model: deps.radarModel }));
   app.get("/api/events", sse);
   // React Native has no EventSource: the mobile app polls this instead (events after `after` ms, for one pocket).
   app.get("/api/events.json", (c) => {
@@ -52,15 +65,46 @@ export function apiApp(deps: { model?: ModelFn } = {}) {
   app.post("/api/chat", async (c) => {
     const { pocket: p, conversationId = p, text } = (await c.req.json()) as { pocket: Address; conversationId?: string; text: string };
     for (const q of approvals.pending(p).filter((x) => x.kind === "question")) approvals.resolve(q.id, { approved: true, answer: text });
-    const out = await runTurn({ pocket: p }, chats.get(conversationId) ?? [], text, { model: deps.model });
-    chats.set(conversationId, out.history);
+    await reflecting.get(conversationId); // the last reflection lands before this turn reads memory
+    const out = await runTurn({ pocket: p }, chats.get(conversationId) ?? [], text, { model: deps.model, memory: render(memory.get(p)) });
+    chats.set(conversationId, trimHistory(out.history)); // only the last few raw turns stay; the rest lives in the snapshot
+    if (memoryOn()) reflecting.set(conversationId, reflect(p, out.history, { model: deps.memoryModel }).catch(() => null));
     return c.json({ reply: out.reply, stopped: out.stopped });
+  });
+
+  // "Speak your rules": one sentence -> proposed rules + a computed proof card. It never creates a pocket; the owner signs that.
+  app.post("/api/rules/compile", async (c) => {
+    const { sentence } = (await c.req.json()) as { sentence?: string };
+    if (!sentence?.trim()) return c.json({ error: "EMPTY_SENTENCE" }, 400);
+    return c.json(await compileRules(sentence, { main: deps.rulesModel }));
+  });
+  app.get("/api/sentinel", async (c) => c.body(toJson(await sentinel.status((c.req.query("pocket") ?? "") as Address)), 200, { "content-type": "application/json" }));
+  app.get("/api/memory", async (c) => {
+    const p = c.req.query("pocket") ?? "";
+    await Promise.all(reflecting.values()); // read after the latest reflection, not before it
+    return c.body(toJson({ snapshot: memory.get(p), log: memory.log(p) }), 200, { "content-type": "application/json" });
+  });
+  // ponytail: no owner auth, like the other demo routes; production needs an owner signature here.
+  app.post("/api/memory/forget", async (c) => {
+    const { pocket: p, id } = (await c.req.json()) as { pocket: string; id: string };
+    return memory.forget(p, id) ? c.json({ ok: true }) : c.json({ error: "NOT_FOUND" }, 404);
   });
   return app;
 }
 
+// ghost checks only look at transfers after the server started (earlier payments are not in this process's event log)
+let sentinelFrom = 0n;
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  sentinelFrom = await import("./wallet/chain").then((m) => m.pub().getBlockNumber()).catch(() => 0n);
   const port = Number(process.env.PORT ?? 8787);
   serve({ fetch: apiApp().fetch, port });
+  startMonitor();
+  // ghost transfers: USDC that left a pocket (seen by Radar's transfer index) with no payment event, not back to the owner
+  startSentinel({
+    ghosts: async (p, paid) => {
+      const owner = (await pocket(p).info()).owner.toLowerCase();
+      return (await chainSource.outbound(p)).filter((t) => !paid.has(t.tx) && t.to.toLowerCase() !== owner && t.block >= sentinelFrom).map((t) => ({ tx: t.tx, to: t.to, amount: t.value }));
+    },
+  });
   console.log(`wallet API on http://localhost:${port}`);
 }

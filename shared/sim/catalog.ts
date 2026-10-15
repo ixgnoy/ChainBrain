@@ -68,3 +68,5 @@ export const sellerById = (id: string) => CATALOG.find((s) => s.id === id);
 export const sellerByPayTo = (a: string) => CATALOG.find((s) => s.payTo.toLowerCase() === a.toLowerCase());
 export const sellerName = (id: string) => sellerById(id)?.name ?? id;
 export const ATTACKER: Hex = "0x000000000000000000000000000000000000ABC0";
+/** A wallet the built-in network labels "drainer" (Radar demo): it pays DataPro in scene 9. */
+export const DRAINER: Hex = "0xd4a1e5f0bad00000000000000000000000000dea";

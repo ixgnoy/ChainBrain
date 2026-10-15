@@ -38,6 +38,10 @@ export const SELLER_REASON: Record<string, string> = {
   SIGNATURE_TYPE_NOT_ALLOWED: "You asked for a signature; the wallet refused",
   SETTLEMENT_FAILED: "The payment didn't go through",
   NOT_THIS_AGENT: "The buyer's agent key didn't match",
+  COUNTERPARTY_HIGH_RISK: "Your wallet's funds trace to a high-risk source",
+  COUNTERPARTY_REVIEW: "Your wallet's funds need the buyer's review",
+  POCKET_FROZEN: "The buyer's pocket was frozen",
+  SENTINEL_HOLD: "Waiting for the buyer's OK",
 };
 export const sellerReason = (codes: string[]) => (codes.length ? SELLER_REASON[codes[0]] ?? "Refused by the buyer's wallet" : "Refused by the buyer's wallet");
 

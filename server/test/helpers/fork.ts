@@ -35,7 +35,10 @@ export async function startStack() {
   const agent = privateKeyToAccount(DEV_KEYS.AGENT_PK);
   const ownerWallet = createWalletClient({ account: owner, chain: baseSepolia, transport: http(rpc) }).extend(publicActions);
 
-  const deployHash = await ownerWallet.deployContract({ abi: factoryAbi, bytecode: factoryArtifact.bytecode.object as Hex, args: [USDC] });
+  // the Sentinel's freeze-only guardian key (anvil dev key #8)
+  const sentinel = privateKeyToAccount(DEV_KEYS.SENTINEL_PK);
+  await ownerWallet.request({ method: "anvil_setBalance" as any, params: [sentinel.address, toHex(10n ** 18n)] as any });
+  const deployHash = await ownerWallet.deployContract({ abi: factoryAbi, bytecode: factoryArtifact.bytecode.object as Hex, args: [USDC, sentinel.address] });
   const factory = (await ownerWallet.waitForTransactionReceipt({ hash: deployHash })).contractAddress!;
   process.env.FACTORY_ADDRESS = factory;
 

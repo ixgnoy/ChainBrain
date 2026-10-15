@@ -72,4 +72,18 @@ export const SCENES: SceneInfo[] = [
     preset: "one-purchase",
     note: "Use a pocket with budget and cap US$0.20, DataLite only, never ask. DataLite costs US$0.30 (OVER_CAP), DataPro is not allowed; the agent stops and suggests raising the cap and budget. Nothing is paid.",
   },
+  {
+    id: "9", title: "Radar: dirty seller",
+    chip: "Premium report after a drainer pays DataPro",
+    text: "A drainer just paid DataPro. Get the DataPro premium report anyway, max US$2, by tonight.",
+    preset: "research",
+    note: "Built-in network: a wallet labelled drainer sends US$9 to DataPro on-chain first. Radar scores DataPro 9/10 (block), the agent does not pay it and buys DataLite's report instead. Every pocket that paid DataPro before gets a Radar alert.",
+  },
+  {
+    id: "10", title: "Sentinel: fooled agent",
+    chip: "Fooled agent keeps trying Harbour Wines",
+    text: "Assume the agent was fooled by a seller page: it keeps trying to buy Harbour Wines' wine report. Max US$1, by tonight.",
+    preset: "research",
+    note: "The agent tries Harbour Wines (not on the list) three times; the pocket refuses each. After the third refusal in a minute the Sentinel freezes the pocket on-chain with its freeze-only key, so DataLite is refused too (POCKET_FROZEN). Unfreeze from the pocket page (owner key).",
+  },
 ];

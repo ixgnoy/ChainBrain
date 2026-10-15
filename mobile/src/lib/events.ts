@@ -115,10 +115,11 @@ export function summarizeTool(tool: string | undefined, r: any): string {
     case "draft_intent": return r.status === "confirmed" ? "task confirmed" : "waiting";
     case "get_quote": {
       const bad = reasonsOf(r)[0];
-      return r.free ? (r.refused?.length ? "free, data request refused" : "free") : `US$${r.price}${bad ? `, ${bad}` : r.needsOwnerApproval ? ", needs you" : ""}`;
+      const risk = r.counterpartyRisk && typeof r.counterpartyRisk === "object" ? `, Radar ${r.counterpartyRisk.score}/10` : "";
+      return r.free ? (r.refused?.length ? "free, data request refused" : "free") : `US$${r.price}${bad ? `, ${bad}` : r.needsOwnerApproval ? ", needs you" : ""}${risk}`;
     }
     case "ask_owner": return r.approved ? "approved" : r.status === "asked" ? "asked you" : "";
-    case "pay": return r.paid ? `paid US$${r.paid}` : "";
+    case "pay": return r.paid ? `paid US$${r.paid}${r.preflight ? (r.preflight.matched ? " · as predicted" : " · prediction missed") : ""}` : "";
     default: return "";
   }
 }
@@ -186,7 +187,7 @@ export function ledgerFrom(events: WalletEvent[], pocket?: string): LedgerRow[] 
       rows.push({ ...base, kind: "disclosure", outcome: "refused", sellerId: e.sellerId, asked: Array.isArray(e.asked) ? e.asked : [], signRequest: !!e.signRequest, reasons: Array.isArray(e.refused) ? e.refused : [] });
     } else if (e.type === "trace" && e.phase === "tool_result" && e.tool === "get_quote") {
       const r = toolResultOf(e);
-      const bad = r?.ok === true ? [r.allowedByPocket?.reason, r.intentCheck?.reason].filter((x): x is string => typeof x === "string") : [];
+      const bad = r?.ok === true ? [r.allowedByPocket?.reason, r.intentCheck?.reason, r.counterpartyRisk?.verdict === "block" ? "COUNTERPARTY_HIGH_RISK" : undefined].filter((x): x is string => typeof x === "string") : [];
       if (bad.length) rows.push({ ...base, kind: "blocked", outcome: "refused", sellerId: r.sellerId, sku: r.sku, description: r.description, amount: decimalToAtomic(r.price), reasons: bad });
     }
   }
@@ -213,3 +214,81 @@ export function chainFor(events: WalletEvent[], row: LedgerRow) {
   const approval = row.cosigned ? approvalsFrom(mine).filter((a) => a.kind === "payment" && a.status === "approved" && a.data?.sellerId === row.sellerId && a.data?.sku === row.sku).at(-1) : undefined;
   return { task: intent?.text, quote, approval };
 }
+
+// ---------------------------------------------------------------- Radar (server/src/radar, shared/sim/radar.ts)
+
+export type RadarVerdict = "ok" | "review" | "block";
+export type RadarView = {
+  key: string; at: number; sellerId?: string; counterparty: string; score: number; verdict: RadarVerdict; reasons: string[];
+  narrative: string; trail: string[]; share?: number; direction?: string;
+};
+const verdictOf = (v: unknown): RadarVerdict => (v === "block" || v === "review" ? v : "ok");
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : Number(v) || 0);
+
+/** Radar's latest screen of each counterparty in these events (one per seller: a later screen replaces an earlier one). */
+export function radarScreens(events: WalletEvent[]): RadarView[] {
+  const by = new Map<string, RadarView>();
+  for (const e of events) {
+    if (e.type !== "radar" || e.kind !== "screen") continue;
+    const k = String(e.sellerId ?? e.address ?? e.counterparty ?? "?");
+    by.set(k, {
+      key: `radar:${k}:${e.at}`, at: e.at, sellerId: typeof e.sellerId === "string" ? e.sellerId : undefined, counterparty: String(e.counterparty ?? e.sellerId ?? "a seller"),
+      score: num(e.score), verdict: verdictOf(e.verdict), reasons: Array.isArray(e.reasons) ? e.reasons.map(String) : [], narrative: String(e.narrative ?? ""),
+      trail: Array.isArray(e.trail) ? e.trail.map(String) : [], share: typeof e.share === "number" ? e.share : undefined, direction: typeof e.direction === "string" ? e.direction : undefined,
+    });
+  }
+  return [...by.values()];
+}
+
+export type RadarAlert = { key: string; id: string; at: number; pocket?: string; name: string; from?: { score: number; verdict: RadarVerdict } | null; to: { score: number; verdict: RadarVerdict }; narrative: string; reasons: string[] };
+/** Radar alerts (a counterparty's risk rose), once each, newest last. With `pocket`, only the alerts sent to that pocket. */
+export function radarAlerts(events: WalletEvent[], pocket?: string): RadarAlert[] {
+  const by = new Map<string, RadarAlert>();
+  for (const e of events) {
+    if (e.type !== "radar" || e.kind !== "alert" || !e.alert?.id) continue;
+    if (pocket ? !sameAddr(e.pocket, pocket) : !e.pocket) continue;
+    const a = e.alert;
+    by.set(a.id, {
+      key: `alert:${a.id}:${e.pocket ?? ""}`, id: a.id, at: e.at, pocket: e.pocket, name: String(a.name ?? "a seller"),
+      from: a.from ? { score: num(a.from.score), verdict: verdictOf(a.from.verdict) } : null, to: { score: num(a.to?.score), verdict: verdictOf(a.to?.verdict) },
+      narrative: String(a.narrative ?? ""), reasons: Array.isArray(a.factors) ? a.factors.slice(0, 3).map((f: any) => String(f?.text ?? "")) : [],
+    });
+  }
+  return [...by.values()].sort((a, b) => a.at - b.at);
+}
+
+/** The narrative without its "Risk 9/10 for DataPro: blocked." head (the card shows that as a title and a score bar). */
+export const radarBody = (n: string) => n.replace(/^Risk \d+\/10 for [^:]+: [^.]+\.\s*/, "");
+
+// ---------------------------------------------------------------- Sentinel (server/src/sentinel, shared/sim/sentinel.ts)
+
+export type SentinelKind = "watch" | "hold" | "freeze" | "clear";
+export type SentinelView = {
+  key: string; at: number; pocket?: string; kind: SentinelKind; signals: { id: string; severity: string; text: string }[];
+  ai?: { hijack: number; action: string; confidence: number; by: string }; raisedBy?: string; tx?: string; note?: string; by?: string;
+};
+/** The Sentinel's decisions in these events, oldest first. */
+export function sentinelEvents(events: WalletEvent[]): SentinelView[] {
+  return events.filter((e) => e.type === "sentinel" && ["watch", "hold", "freeze", "clear"].includes(e.kind)).map((e) => ({
+    key: `sentinel:${e.kind}:${e.at}`, at: e.at, pocket: e.pocket, kind: e.kind as SentinelKind,
+    signals: Array.isArray(e.signals) ? e.signals.map((x: any) => ({ id: String(x?.id ?? ""), severity: String(x?.severity ?? ""), text: String(x?.text ?? "") })) : [],
+    ai: e.ai && typeof e.ai === "object" ? { hijack: Number(e.ai.hijack) || 0, action: String(e.ai.action ?? ""), confidence: Number(e.ai.confidence) || 0, by: String(e.ai.by ?? "") } : undefined,
+    raisedBy: typeof e.raisedBy === "string" ? e.raisedBy : undefined, tx: typeof e.tx === "string" ? e.tx : undefined,
+    note: typeof e.note === "string" ? e.note : undefined, by: typeof e.by === "string" ? e.by : undefined,
+  }));
+}
+/** "Jev", "Claude Haiku (stand-in for Jev)" or "the built-in network's scripted check": who answered the AI questions. */
+export const aiName = (by?: string) => (by === "jev" ? "Jev (TypeSafe)" : by === "claude-haiku" ? "Claude Haiku, standing in for Jev" : by === "scripted" ? "scripted check (built-in network)" : "rules only");
+
+// ---------------------------------------------------------------- pre-flight (server/src/wallet/preflight.ts)
+
+export type PreflightView = { key: string; at: number; quoteId?: string; sellerId?: string; amount?: bigint; predicted: { outcome: string; reason?: string; by?: string }; actual: { outcome: string; reason?: string; tx?: string }; matched: boolean };
+/** Each payment's prediction and what really happened, oldest first. */
+export function preflightResults(events: WalletEvent[]): PreflightView[] {
+  return events.filter((e) => e.type === "preflight" && e.kind === "result" && e.predicted && e.actual).map((e) => ({
+    key: `pre:${e.at}:${e.quoteId ?? ""}`, at: e.at, quoteId: e.quoteId, sellerId: e.sellerId, amount: atomic(e.amount),
+    predicted: { outcome: String(e.predicted.outcome), reason: e.predicted.reason, by: e.predicted.by }, actual: { outcome: String(e.actual.outcome), reason: e.actual.reason, tx: e.actual.tx }, matched: !!e.matched,
+  }));
+}
+/** "on-chain simulation" (server, eth_call) or "the built-in chain" (dry run of the same rules). */
+export const preflightBy = (by?: string) => (by === "eth_call" ? "a simulation of the exact transfer (eth_call)" : by === "sim" ? "a dry run on the built-in chain" : "the pocket's rules");

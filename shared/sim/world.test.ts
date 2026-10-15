@@ -158,3 +158,106 @@ test("scene 1 again on a seeded pocket: the follow-up answers the question (not 
   const intents = w.events(0, research).filter((e) => e.type === "intent" && e.approval.status === "pending");
   assert.match(intents.at(-1)!.approval.text, /^Buy: Durian export market report\nPrice: at most US\$2\.00 each, US\$4\.00 in total, up to 4 items/);
 });
+
+test("scene 9 (Radar): a drainer pays DataPro on-chain; DataPro is blocked, the agent buys DataLite, earlier payers get an alert", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  // this pocket paid DataPro before, so it watches DataPro
+  await w.chat(pocket, "Get the DataPro premium durian report with the 2026 forecast. Max US$2, by tonight.");
+  const clean = w.events(0, pocket).find((e) => e.type === "radar" && e.kind === "screen" && e.sellerId === "datapro");
+  assert.equal(clean?.verdict, "ok");
+  const r = await w.chat(pocket, "A drainer just paid DataPro. Get the DataPro premium report anyway, max US$2, by tonight.");
+  assert.match(r.reply, /^Radar blocked DataPro: 10% or more of the funds trace to a drainer\. I didn't pay it and re-planned\. Bought DataLite's durian export report/);
+  const evs = w.events(0, pocket);
+  const alert = evs.find((e) => e.type === "radar" && e.kind === "alert");
+  assert.equal(alert?.alert.name, "DataPro");
+  assert.equal(alert?.alert.to.verdict, "block");
+  assert.match(alert?.alert.narrative, /^Risk 9\/10 for DataPro: blocked\. \d+% of the money DataPro received traces back to Demo drainer \(drainer\), directly\./);
+  const blocked = evs.filter((e) => e.type === "radar" && e.kind === "screen" && e.sellerId === "datapro").at(-1);
+  assert.equal(blocked?.verdict, "block");
+  // nothing went to DataPro this time; DataLite was paid
+  const pays = evs.filter((e) => e.type === "payment").map((p) => p.sellerId);
+  assert.deepEqual(pays, ["datapro", "datalite"]);
+  assert.ok(w.radar.alerts().length >= 1);
+});
+
+test("Radar screen: a seller the drainer paid scores block; clean sellers stay ok", async () => {
+  const { w } = await setup();
+  assert.equal((await w.radar.screen("datalite")).verdict, "ok");
+  await w.drainerPays("datalite", 50_000_000n);
+  const s = await w.radar.screen("datalite");
+  assert.equal(s.verdict, "block");
+  assert.equal((await w.radar.screen("datapro")).verdict, "ok");
+});
+
+test("brain memory: each turn replaces one snapshot; preferences, purchases and Radar notes are remembered; Forget works", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  await w.chat(pocket, "Buy the DataLite durian report. Max US$1, by tonight. I prefer DataLite.");
+  const m1 = w.memory(pocket).snapshot;
+  assert.equal(m1.version, 1);
+  assert.deepEqual(m1.items.map((i: any) => [i.kind, i.text]), [["preference", "Prefers DataLite"], ["fact", 'Bought "Durian exports to China, 2025 market report" from DataLite for US$0.30']]);
+  const memEv = w.events(0, pocket).find((e) => e.type === "trace" && e.phase === "memory");
+  assert.equal(memEv?.questions[0], "What did the owner ask for that is still open?");
+  await w.chat(pocket, "A drainer just paid DataPro. Get the DataPro premium report anyway, max US$2, by tonight.");
+  const m2 = w.memory(pocket).snapshot;
+  assert.equal(m2.version, 2);
+  assert.ok(m2.items.some((i: any) => i.kind === "seller_note" && /^DataPro: Radar 9\/10/.test(i.text)));
+  assert.match(m2.summary, /Prefers DataLite\. Avoid DataPro\. Already bought 1 item\./); // the same DataLite report twice is one item
+  assert.equal(w.memory(pocket).log.length, 2);
+  const note = m2.items.find((i: any) => i.kind === "seller_note");
+  assert.ok(w.forgetMemory(pocket, note.id));
+  assert.equal(w.memory(pocket).snapshot.version, 3);
+  assert.ok(!w.memory(pocket).snapshot.items.some((i: any) => i.id === note.id));
+});
+
+test("scene 10 (Sentinel): three refusals in a minute freeze the pocket on-chain; DataLite is refused; the owner unfreezes", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  const r = await w.chat(pocket, "Assume the agent was fooled by a seller page: it keeps trying to buy Harbour Wines' wine report. Max US$1, by tonight.");
+  assert.match(r.reply, /The Sentinel saw the pattern and froze the pocket on-chain/);
+  const evs = w.events(0, pocket);
+  const s = evs.filter((e) => e.type === "sentinel");
+  assert.deepEqual(s.map((e) => e.kind), ["watch", "freeze"]);
+  const freeze = s.at(-1)!;
+  assert.equal(freeze.signals[0].id, "REFUSAL_BURST");
+  assert.equal(freeze.ai.by, "scripted");
+  assert.match(freeze.state, /Recent refusals by the wallet: SELLER_NOT_ALLOWED, SELLER_NOT_ALLOWED, SELLER_NOT_ALLOWED/);
+  assert.ok(!/untrusted|Harbour Wines'/.test(freeze.state)); // the AI layer reads a fixed template only
+  const tx = w.txs().find((t) => t.hash === freeze.tx)!;
+  assert.deepEqual([tx.method, tx.status, tx.from], ["freeze", "success", "0x5e471e10000000000000000000000000000c0de5"]);
+  assert.equal(w.chain.view(pocket).frozen, true);
+  assert.equal(w.chain.view(pocket).balance, parseUsd("5"));
+  assert.ok(evs.some((e) => e.type === "trace" && e.phase === "tool_result" && e.tool === "get_quote" && e.result?.allowedByPocket?.reason === "POCKET_FROZEN"));
+  // the guardian key cannot unfreeze; the owner can
+  assert.throws(() => w.chain.unfreeze("0x5e471e10000000000000000000000000000c0de5" as Hex, pocket), /NOT_OWNER/);
+  w.chain.unfreeze(OWNER, pocket);
+  await new Promise((r) => setTimeout(r, 5));
+  assert.equal(w.events(0, pocket).filter((e) => e.type === "sentinel").at(-1)?.kind, "clear");
+  assert.equal(w.sentinel(pocket).status, "ok");
+  const ok = await w.chat(pocket, "Buy the DataLite durian report. Max US$1, by tonight.");
+  assert.match(ok.reply, /Bought DataLite's durian export report/);
+});
+
+test("Sentinel never freezes on normal shopping", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  await w.chat(pocket, "Get me a market report on durian exports, under US$2, by tonight.");
+  await w.chat(pocket, "Per report. Get the premium one too if it adds a forecast.");
+  await w.chat(pocket, "Buy Harbour Wines' fruit and wine trade report. Max US$1, by tonight. Confirmed, go ahead.");
+  assert.equal(w.events(0, pocket).filter((e) => e.type === "sentinel" && (e.kind === "freeze" || e.kind === "hold")).length, 0);
+  assert.equal(w.chain.view(pocket).frozen, false);
+});
+
+test("pre-flight: every payment is predicted, then checked; predictions match outcomes", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  await w.chat(pocket, "Get me a market report on durian exports, under US$2, by tonight.");
+  await w.chat(pocket, "Per report. Get the premium one too if it adds a forecast.");
+  await w.chat(pocket, "Buy Harbour Wines' fruit and wine trade report. Max US$1, by tonight. Confirmed, go ahead.");
+  const results = w.events(0, pocket).filter((e) => e.type === "preflight" && e.kind === "result");
+  assert.deepEqual(results.map((e) => [e.sellerId, e.predicted.outcome, e.predicted.reason ?? "", e.matched]), [
+    ["datalite", "pays", "", true], ["datapro", "pays", "", true], ["harbour-wines", "refused", "SELLER_NOT_ALLOWED", true], ["datalite", "pays", "", true],
+  ]);
+  assert.equal(w.events(0, pocket).filter((e) => e.type === "preflight" && e.kind === "predict").length, 4);
+});

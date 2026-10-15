@@ -17,6 +17,7 @@ import { Icon } from "../../ui/Icon";
 import { T } from "../../ui/Text";
 import { ActivityRow } from "../../components/ActivityRow";
 import { factPills, isExpired, untilText } from "../../components/PocketCard";
+import { UnfreezeButton } from "../../components/SentinelCard";
 import { TxNotice } from "../../components/TxNotice";
 import { PocketFace, cardHeight, toneFor } from "../../components/PocketFace";
 import { useFlight } from "../../ui/cardFlight";
@@ -87,7 +88,7 @@ export default function PocketDetail() {
             {rootW ? <PocketFace pocket={pocket} width={rootW - 40} tone={toneFor(pockets, pocket.address)} buzz /> : <View style={{ height: 200 }} />}
           </View>
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center", paddingHorizontal: 20 }}>
-            {pocket.revoked ? <Rise index={0} step={40} base={50}><Pill label="Revoked" tone="negative" /></Rise> : expired ? <Rise index={0} step={40} base={50}><Pill label="Expired" tone="fill" /></Rise> : null}
+            {pocket.revoked ? <Rise index={0} step={40} base={50}><Pill label="Revoked" tone="negative" /></Rise> : pocket.frozen ? <Rise index={0} step={40} base={50}><Pill label="Frozen by the Sentinel" tone="warning" icon="freeze" /></Rise> : expired ? <Rise index={0} step={40} base={50}><Pill label="Expired" tone="fill" /></Rise> : null}
             {factPills(pocket).map((f, i) => (
               <Rise key={f} index={i + 1} step={40} base={50}>
                 {editable ? <RulePill label={f} onPress={() => setRules({ pocket: pocket.address, field: f.startsWith("Cap") ? "cap" : "ask" })} a11y={`Edit ${f.startsWith("Cap") ? "cap" : "ask-me limit"}: ${f}`} /> : <Pill label={f} />}
@@ -109,6 +110,13 @@ export default function PocketDetail() {
           <Card style={{ marginHorizontal: 20, marginTop: 20 }}><T v="sub" color="ink2">Another key owns this pocket. Add money, return or revoke from the device that created it.</T></Card>
         )}
         <TxNotice pocket={pocket.address} />
+        {pocket.frozen && !pocket.revoked ? (
+          <Card style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
+            <T v="row" w="semi">Frozen by the Sentinel</T>
+            <T v="sub" color="ink2">It saw your agent try payments outside your rules, so it stopped all payments on-chain. No money moved. Its key can only freeze; only yours can unfreeze.</T>
+            <UnfreezeButton pocket={pocket.address} />
+          </Card>
+        ) : null}
         {pocket.revoked ? <T v="sub" color="muted" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 16 }}>Your agent can't spend from this pocket any more.{pocket.balance > 0n ? " Return the money to your main wallet when you like." : ""}</T> : null}
         {err ? <T v="sub" color="negative" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 12 }}>{err}</T> : null}
 

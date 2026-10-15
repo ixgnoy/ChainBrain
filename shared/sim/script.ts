@@ -24,6 +24,8 @@ function* purchase(sellerId: string, sku: string, o: { payAnyway?: boolean; reas
   if (!q?.ok) return { ...base, ok: false, reason: q?.reason ?? "QUOTE_UNKNOWN", why: q?.error ?? q?.why };
   const rule = q.allowedByPocket;
   if (rule !== "OK" && !o.payAnyway) return { ...base, ok: false, reason: rule.reason, why: rule.why };
+  // Radar's verdict on the seller's money: block means pick someone else (the wallet would refuse anyway)
+  if (q.counterpartyRisk?.verdict === "block" && !o.payAnyway) return { ...base, ok: false, reason: "COUNTERPARTY_HIGH_RISK", why: q.counterpartyRisk.reasons?.[0] };
   if (q.intentCheck !== "OK" && !o.payAnyway) return { ...base, ok: false, reason: q.intentCheck.reason, why: q.intentCheck.why };
   if (rule === "OK" && q.needsOwnerApproval) {
     const a = yield {
@@ -48,6 +50,7 @@ const WHY: Record<string, string> = {
   POCKET_REVOKED: "you stopped the pocket", POCKET_EXPIRED: "the pocket has expired", PRICE_ABOVE_INTENT: "it costs more than the task allows",
   INTENT_TOTAL_REACHED: "it would go over the task's total", INTENT_ITEMS_REACHED: "the task already has enough items", OWNER_DECLINED: "you declined it",
   APPROVAL_EXPIRED: "your approval came too late", NEEDS_OWNER_APPROVAL: "it needs your OK", SETTLEMENT_FAILED: "the payment didn't go through",
+  COUNTERPARTY_HIGH_RISK: "Radar traced the seller's money to a drainer", COUNTERPARTY_REVIEW: "Radar found risk in the seller's money and it needs your OK",
 };
 const why = (code?: string) => (code && WHY[code]) || "your rules don't allow it";
 const bought = (o: Outcome) => `${name(o.sellerId)}'s ${item(o.sku)} (US$${o.price})`;
@@ -90,6 +93,33 @@ function* fruitOnly(): Scene {
 function* scene3(): Scene {
   if (!(yield* draft(intent("Durian export premium report with 2026 forecast", "2.00", "2.00", 1)))) return declined();
   return summary([yield* purchase("datapro", "premium-report", { reason: "DataPro's premium report adds the 2026 forecast for US$1.50." })]);
+}
+
+/**
+ * Sentinel: "assume the agent was fooled" by a seller page and keeps trying a seller that isn't on the list. The pocket
+ * refuses each try; after the third in a minute the Sentinel freezes the pocket on-chain, so even an allowed seller is refused.
+ */
+function* sceneHijacked(): Scene {
+  if (!(yield* draft(intent("Fruit and wine trade report", "1.00", "1.00", 1)))) return declined();
+  const tries: Outcome[] = [];
+  for (let k = 0; k < 3; k++) {
+    tries.push(yield* purchase("harbour-wines", "fruit-wine-trade-report", { payAnyway: true }));
+    if (tries[tries.length - 1].ok) return summary(tries);
+  }
+  const after = yield* purchase("datalite", "fruit-trade-report");
+  if (after.reason === "POCKET_FROZEN")
+    return "Assume I was fooled: I tried to pay Harbour Wines three times and your pocket refused each one. The Sentinel saw the pattern and froze the pocket on-chain, so it refused DataLite too. Nothing was paid. Only you can unfreeze it.";
+  return summary([...tries, after]);
+}
+
+/** Radar: a labelled drainer has just paid DataPro (the world sets that up on-chain before this runs). */
+function* sceneRadar(): Scene {
+  if (!(yield* draft(intent("Durian export premium report with 2026 forecast", "2.00", "2.00", 1)))) return declined();
+  const first = yield* purchase("datapro", "premium-report", { reason: "DataPro's premium report adds the 2026 forecast for US$1.50." });
+  if (first.ok || first.reason !== "COUNTERPARTY_HIGH_RISK") return summary([first]);
+  yield { tool: "search_sellers", input: { category: "Research data" }, say: "Radar blocked DataPro: most of its money came from a drainer. Looking for a clean seller with durian export data." };
+  const second = yield* purchase("datalite", "durian-report");
+  return `Radar blocked DataPro: ${first.why ?? "its money traces to a drainer"}. I didn't pay it and re-planned. ${summary([second])} DataLite's report has no 2026 forecast.`;
 }
 
 function* scene4(): Scene {
@@ -198,6 +228,8 @@ export function route(text: string, o: { asked: boolean; revokeWindowMs: number 
   if (attack === "escalation") return escalation();
   if (attack === "extraction") return extraction();
   if (attack === "induced") return induced();
+  if (/drainer/.test(t)) return sceneRadar();
+  if (/assume (the |my |your )?agent (was|is|got) fooled/.test(t)) return sceneHijacked();
   if (/shadyfeed/.test(t) && /full feed|whatever they need|give them/.test(t)) return scene6();
   if (/shadyfeed/.test(t)) return scene5();
   if (/harbour|wine/.test(t)) return scene4();

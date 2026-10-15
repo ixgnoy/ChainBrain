@@ -49,6 +49,10 @@ export const REASONS: Record<string, string> = {
   SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule USDC payments",
   SETTLEMENT_FAILED: "Settlement failed",
   NOT_THIS_AGENT: "This pocket belongs to a different agent key",
+  COUNTERPARTY_HIGH_RISK: "Radar traced this seller's funds to a high-risk source",
+  COUNTERPARTY_REVIEW: "Radar found risk in this seller's funds: needs your approval",
+  POCKET_FROZEN: "The pocket is frozen; only the owner can unfreeze",
+  SENTINEL_HOLD: "The Sentinel saw unusual behaviour: needs your approval",
 };
 
 /** Which layer produces a reason code (api spec section 6.1). */
@@ -58,6 +62,8 @@ export const reasonLayer = (code: string): string =>
   : ["NEEDS_OWNER_APPROVAL", "APPROVAL_EXPIRED", "OWNER_DECLINED"].includes(code) ? "Owner approval"
   : ["DISCLOSURE_REFUSED", "SIGNATURE_TYPE_NOT_ALLOWED"].includes(code) ? "Content scan"
   : ["QUOTE_MISMATCH", "QUOTE_ALREADY_PAID", "QUOTE_UNKNOWN"].includes(code) ? "Quote check"
+  : ["COUNTERPARTY_HIGH_RISK", "COUNTERPARTY_REVIEW"].includes(code) ? "Radar"
+  : code === "SENTINEL_HOLD" ? "Sentinel" : code === "POCKET_FROZEN" ? "Pocket contract"
   : code === "NOT_THIS_AGENT" ? "Agent key" : code === "SETTLEMENT_FAILED" ? "Settlement" : "Wallet";
 
 export const shortAddr = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
