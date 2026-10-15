@@ -12,15 +12,19 @@ import { transferTypedData } from "./wallet/scheme";
 import { directory } from "./wallet/directory";
 import { agentAccount } from "./wallet/pay";
 import { runTurn, type ModelFn } from "./agent/loop";
+import { radarRoutes } from "./radar/api";
+import { startMonitor } from "./radar/monitor";
+import type { AskModel } from "./radar/ask";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
 
 /** Wallet tool layer + agent API for the app. The LLM only ever reaches the tools; keys stay in this process. */
-export function apiApp(deps: { model?: ModelFn } = {}) {
+export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel } = {}) {
   const app = new Hono();
   const chats = new Map<string, Msg[]>();
   app.use("*", cors({ origin: "*" }));
 
+  app.route("/api/radar", radarRoutes({ model: deps.radarModel }));
   app.get("/api/events", sse);
   // React Native has no EventSource: the mobile app polls this instead (events after `after` ms, for one pocket).
   app.get("/api/events.json", (c) => {
@@ -62,5 +66,6 @@ export function apiApp(deps: { model?: ModelFn } = {}) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT ?? 8787);
   serve({ fetch: apiApp().fetch, port });
+  startMonitor();
   console.log(`wallet API on http://localhost:${port}`);
 }

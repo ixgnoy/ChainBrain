@@ -20,6 +20,8 @@ export const REASONS = {
   SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule USDC payments it built itself",
   SETTLEMENT_FAILED: "Settlement failed",
   NOT_THIS_AGENT: "This pocket belongs to a different agent key",
+  COUNTERPARTY_HIGH_RISK: "Radar traced this seller's funds to a high-risk source (e.g. a drainer or sanctioned address); choose another seller",
+  COUNTERPARTY_REVIEW: "Radar found risk in this seller's funds: call ask_owner with this quote first",
 } as const;
 
 export type Reason = keyof typeof REASONS;
