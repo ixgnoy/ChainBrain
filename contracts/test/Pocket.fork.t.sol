@@ -33,6 +33,7 @@ contract PocketForkTest is Test {
     address wines = makeAddr("harbour-wines");
     address attacker = makeAddr("0xABC");
     address facilitator = makeAddr("facilitator");
+    address sentinel = makeAddr("sentinel");
     uint256 salt;
 
     function setUp() public {
@@ -42,7 +43,7 @@ contract PocketForkTest is Test {
         address[] memory sellers = new address[](2);
         sellers[0] = dataLite;
         sellers[1] = dataPro;
-        PocketFactory factory = new PocketFactory(address(USDC));
+        PocketFactory factory = new PocketFactory(address(USDC), sentinel);
         vm.prank(owner);
         // Research preset from the spec: budget 5, cap 2, ask above 1
         pocket = Pocket(factory.create(agent, 2e6, 1e6, uint64(block.timestamp + 1 days), sellers));
@@ -224,11 +225,66 @@ contract PocketForkTest is Test {
     function test_scene8_one_purchase_preset_budget_is_exact_price() public {
         address[] memory one = new address[](1);
         one[0] = dataLite;
-        PocketFactory f = new PocketFactory(address(USDC));
+        PocketFactory f = new PocketFactory(address(USDC), sentinel);
         vm.prank(owner);
         Pocket p = Pocket(f.create(agent, 2e5, type(uint256).max, uint64(block.timestamp + 1 days), one));
         deal(address(USDC), address(p), 2e5);
         assertEq(p.canPay(dataLite, 3e5), bytes32("OVER_CAP")); // every seller costs more: dead end
         assertEq(p.canPay(dataPro, 2e5), bytes32("SELLER_NOT_ALLOWED"));
+    }
+
+    // ---- the Sentinel's freeze ----
+
+    function test_guardian_freeze_stops_payments_owner_unfreezes() public {
+        vm.prank(sentinel);
+        pocket.freeze("REFUSAL_BURST");
+        assertTrue(pocket.frozen());
+        assertEq(pocket.canPay(dataLite, 3e5), bytes32("POCKET_FROZEN"));
+        Auth memory a = _auth(dataLite, 3e5, agentPk);
+        vm.prank(facilitator);
+        vm.expectRevert();
+        USDC.transferWithAuthorization(address(pocket), a.to, a.value, 0, a.validBefore, a.nonce, _env(a, ""));
+        assertEq(USDC.balanceOf(address(pocket)), 5e6);
+        vm.prank(owner);
+        pocket.unfreeze();
+        _submit(_auth(dataLite, 3e5, agentPk), "");
+        assertEq(USDC.balanceOf(dataLite), 3e5);
+    }
+
+    function test_guardian_can_only_freeze() public {
+        vm.startPrank(sentinel);
+        vm.expectRevert(bytes("NOT_OWNER"));
+        pocket.unfreeze();
+        vm.expectRevert(bytes("NOT_OWNER"));
+        pocket.setCap(100e6);
+        vm.expectRevert(bytes("NOT_OWNER"));
+        pocket.setSeller(attacker, true);
+        vm.expectRevert(bytes("NOT_OWNER"));
+        pocket.returnFunds();
+        vm.stopPrank();
+    }
+
+    function test_agent_and_strangers_cannot_freeze_owner_can() public {
+        vm.prank(agent);
+        vm.expectRevert(bytes("NOT_GUARDIAN"));
+        pocket.freeze("X");
+        vm.prank(attacker);
+        vm.expectRevert(bytes("NOT_GUARDIAN"));
+        pocket.freeze("X");
+        vm.prank(owner);
+        pocket.freeze("OWNER");
+        assertTrue(pocket.frozen());
+    }
+
+    function test_no_guardian_factory() public {
+        PocketFactory f = new PocketFactory(address(USDC), address(0));
+        address[] memory one = new address[](1);
+        one[0] = dataLite;
+        vm.prank(owner);
+        Pocket p = Pocket(f.create(agent, 2e5, type(uint256).max, uint64(block.timestamp + 1 days), one));
+        assertEq(p.guardian(), address(0));
+        vm.prank(address(0));
+        vm.expectRevert(bytes("NOT_GUARDIAN"));
+        p.freeze("X");
     }
 }

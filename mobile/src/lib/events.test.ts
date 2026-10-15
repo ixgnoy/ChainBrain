@@ -79,7 +79,7 @@ test("ledger: payment, refusal, disclosure, quote-time block, approvals and task
 });
 
 test("reason codes: complete map, reasonsOf reads every place a code can hide", () => {
-  assert.equal(Object.keys(REASONS).length, 22); // the server's 20 plus Radar's COUNTERPARTY_HIGH_RISK and COUNTERPARTY_REVIEW
+  assert.equal(Object.keys(REASONS).length, 24); // the server's 20, Radar's COUNTERPARTY_HIGH_RISK/REVIEW, the Sentinel's POCKET_FROZEN/SENTINEL_HOLD
   assert.ok(REASONS.QUOTE_UNKNOWN && REASONS.NOT_THIS_AGENT);
   assert.deepEqual(reasonsOf({ ok: false, reason: "OVER_BUDGET", refused: ["DISCLOSURE_REFUSED"], intentCheck: { reason: "PRICE_ABOVE_INTENT" } }), ["OVER_BUDGET", "PRICE_ABOVE_INTENT", "DISCLOSURE_REFUSED"]);
 });

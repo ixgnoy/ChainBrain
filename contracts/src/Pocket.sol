@@ -21,14 +21,19 @@ contract Pocket {
     address public immutable usdc;
     address public immutable owner;
     address public immutable agent;
+    /// ChainBrain's Sentinel key. It can only freeze (stop all payments); only the owner can unfreeze. address(0) = none.
+    address public immutable guardian;
 
     uint256 public perPaymentCap;
     uint256 public askAbove; // payments above this also need the owner's signature; type(uint256).max = never ask
     uint64 public expiresAt;
     bool public revoked;
+    bool public frozen;
     mapping(address => bool) public sellerAllowed;
 
     event Revoked();
+    event Frozen(address indexed by, bytes32 reason);
+    event Unfrozen();
     event RulesChanged();
 
     modifier onlyOwner() {
@@ -37,11 +42,12 @@ contract Pocket {
     }
 
     constructor(
-        address usdc_, address owner_, address agent_, uint256 cap, uint256 askAbove_, uint64 expiresAt_, address[] memory sellers
+        address usdc_, address owner_, address agent_, address guardian_, uint256 cap, uint256 askAbove_, uint64 expiresAt_, address[] memory sellers
     ) {
         usdc = usdc_;
         owner = owner_;
         agent = agent_;
+        guardian = guardian_;
         perPaymentCap = cap;
         askAbove = askAbove_;
         expiresAt = expiresAt_;
@@ -51,6 +57,7 @@ contract Pocket {
     /// Rule check without signatures, for the tool layer and the app. "OK" = allowed.
     function canPay(address to, uint256 value) public view returns (bytes32) {
         if (revoked) return "POCKET_REVOKED";
+        if (frozen) return "POCKET_FROZEN";
         if (block.timestamp >= expiresAt) return "POCKET_EXPIRED";
         if (!sellerAllowed[to]) return "SELLER_NOT_ALLOWED";
         if (value > perPaymentCap) return "OVER_CAP";
@@ -84,7 +91,20 @@ contract Pocket {
         return err == ECDSA.RecoverError.NoError && signer == who;
     }
 
+    // ---- the Sentinel's one power: stop payments. It can never move money, unfreeze or change a rule. ----
+
+    function freeze(bytes32 reason) external {
+        require(msg.sender == owner || (guardian != address(0) && msg.sender == guardian), "NOT_GUARDIAN");
+        frozen = true;
+        emit Frozen(msg.sender, reason);
+    }
+
     // ---- owner only: every edit is an owner-signed transaction ----
+
+    function unfreeze() external onlyOwner {
+        frozen = false;
+        emit Unfrozen();
+    }
 
     function revoke() external onlyOwner {
         revoked = true;

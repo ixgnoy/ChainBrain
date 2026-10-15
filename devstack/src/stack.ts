@@ -22,6 +22,7 @@ export const DEV_KEYS = {
   SELLER_SHADYFEED_PK: "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba",
   FACILITATOR_PK: "0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e",
   FORCE_PK: "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356",
+  SENTINEL_PK: "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97",
 } as const;
 
 const USDC: Address = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
@@ -90,7 +91,10 @@ export async function startDevStack(o: DevStackOptions = {}) {
   const { factoryArtifact, factoryAbi } = await import(server("wallet/chain.ts"));
   const owner = privateKeyToAccount(DEV_KEYS.OWNER_PK);
   const wallet = createWalletClient({ account: owner, chain: baseSepolia, transport: http(rpc) }).extend(publicActions);
-  const deployHash = await wallet.deployContract({ abi: factoryAbi, bytecode: factoryArtifact.bytecode.object as Hex, args: [USDC] });
+  // every pocket gets the Sentinel's freeze-only guardian key (gas for its freeze transactions)
+  const guardian = privateKeyToAccount(DEV_KEYS.SENTINEL_PK).address;
+  await rpcCall(rpc, "anvil_setBalance", [guardian, toHex(10n ** 18n)]);
+  const deployHash = await wallet.deployContract({ abi: factoryAbi, bytecode: factoryArtifact.bytecode.object as Hex, args: [USDC, guardian] });
   const factory = (await wallet.waitForTransactionReceipt({ hash: deployHash })).contractAddress!;
   process.env.FACTORY_ADDRESS = factory;
 
@@ -105,6 +109,8 @@ export async function startDevStack(o: DevStackOptions = {}) {
   const { apiApp } = await import(server("index.ts"));
   const sellersServer = serve({ fetch: sellersApp().fetch, port: sellersPort, hostname: "0.0.0.0" });
   const api = apiApp({ model: scriptedModel({ revokeWindowMs: o.revokeWindowMs }) });
+  const { startSentinel } = await import(server("sentinel/index.ts"));
+  const sentinel = startSentinel();
 
   // Same origin as the real API: /dev/* is handled here, every other path goes straight to the real Hono app.
   const root = new Hono();
@@ -159,6 +165,7 @@ export async function startDevStack(o: DevStackOptions = {}) {
     apiUrl: `http://localhost:${apiPort}`, lanApiUrl: lan ? `http://${lan}:${apiPort}` : undefined,
     sellersUrl: process.env.SELLERS_URL!, rpc, factory, owner: owner.address, lan, apiPort, sellersPort, anvilPort,
     async stop() {
+      sentinel.stop();
       await Promise.all([apiServer, sellersServer].map((s) => new Promise<void>((r) => { (s as any).closeAllConnections?.(); s.close(() => r()); })));
       anvil.kill();
     },

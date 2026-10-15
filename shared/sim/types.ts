@@ -27,6 +27,8 @@ export type SimConfig = { agent: Hex; factory: Hex; usdc: Hex; sellersUrl: strin
 /** What `readPocket` returns on the phone (mobile/src/lib/wallet.ts PocketView), with bigints. */
 export type SimPocketView = {
   address: Hex; owner: Hex; agent: Hex; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean; balance: bigint; allowed: string[];
+  /** Pocket.frozen: the Sentinel (guardian) or the owner stopped all payments; only the owner unfreezes. */
+  frozen?: boolean;
   createdTx?: Hex; createdBlock?: bigint; createdAt?: number;
 };
 
@@ -42,7 +44,7 @@ export type SimTx = {
   /** The call's arguments, as plain strings (explorer "Input"). */
   args?: Record<string, string>;
 };
-export type SimMethod = "createPocket" | "transfer" | "transferWithAuthorization" | "revoke" | "returnFunds" | "setSeller" | "setCap" | "setAskAbove" | "setExpiresAt";
+export type SimMethod = "createPocket" | "transfer" | "transferWithAuthorization" | "revoke" | "returnFunds" | "setSeller" | "setCap" | "setAskAbove" | "setExpiresAt" | "freeze" | "unfreeze";
 
 export type ChatResult = { reply: string; stopped?: string };
 export type AnswerResult = { ok: true } | { ok: false; error: string };

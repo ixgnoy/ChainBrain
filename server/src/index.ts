@@ -14,6 +14,8 @@ import { agentAccount } from "./wallet/pay";
 import { runTurn, type ModelFn } from "./agent/loop";
 import { radarRoutes } from "./radar/api";
 import { startMonitor } from "./radar/monitor";
+import { startSentinel, sentinel } from "./sentinel";
+import { chainSource } from "./radar/chainSource";
 import type { AskModel } from "./radar/ask";
 import { memory, render } from "./brain/memory";
 import { reflect, type ReflectModel } from "./brain/reflect";
@@ -69,6 +71,7 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
     return c.json({ reply: out.reply, stopped: out.stopped });
   });
 
+  app.get("/api/sentinel", async (c) => c.body(toJson(await sentinel.status((c.req.query("pocket") ?? "") as Address)), 200, { "content-type": "application/json" }));
   app.get("/api/memory", async (c) => {
     const p = c.req.query("pocket") ?? "";
     await Promise.all(reflecting.values()); // read after the latest reflection, not before it
@@ -82,9 +85,19 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
   return app;
 }
 
+// ghost checks only look at transfers after the server started (earlier payments are not in this process's event log)
+let sentinelFrom = 0n;
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  sentinelFrom = await import("./wallet/chain").then((m) => m.pub().getBlockNumber()).catch(() => 0n);
   const port = Number(process.env.PORT ?? 8787);
   serve({ fetch: apiApp().fetch, port });
   startMonitor();
+  // ghost transfers: USDC that left a pocket (seen by Radar's transfer index) with no payment event, not back to the owner
+  startSentinel({
+    ghosts: async (p, paid) => {
+      const owner = (await pocket(p).info()).owner.toLowerCase();
+      return (await chainSource.outbound(p)).filter((t) => !paid.has(t.tx) && t.to.toLowerCase() !== owner && t.block >= sentinelFrom).map((t) => ({ tx: t.tx, to: t.to, amount: t.value }));
+    },
+  });
   console.log(`wallet API on http://localhost:${port}`);
 }

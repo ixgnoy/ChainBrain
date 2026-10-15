@@ -5,11 +5,14 @@ import {Pocket} from "./Pocket.sol";
 
 contract PocketFactory {
     address public immutable usdc;
+    /// Every pocket from this factory gets this freeze-only guardian (ChainBrain's Sentinel). address(0) = none.
+    address public immutable guardian;
 
     event PocketCreated(address indexed pocket, address indexed owner, address indexed agent);
 
-    constructor(address usdc_) {
+    constructor(address usdc_, address guardian_) {
         usdc = usdc_;
+        guardian = guardian_;
     }
 
     /// The caller becomes the pocket's owner. Funding is a separate USDC transfer from the owner's wallet.
@@ -17,7 +20,7 @@ contract PocketFactory {
         external
         returns (address)
     {
-        Pocket p = new Pocket(usdc, msg.sender, agent, cap, askAbove, expiresAt, sellers);
+        Pocket p = new Pocket(usdc, msg.sender, agent, guardian, cap, askAbove, expiresAt, sellers);
         emit PocketCreated(address(p), msg.sender, agent);
         return address(p);
     }

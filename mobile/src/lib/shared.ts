@@ -42,6 +42,8 @@ export const REASONS: Record<string, string> = {
   NOT_THIS_AGENT: "This pocket belongs to a different agent key",
   COUNTERPARTY_HIGH_RISK: "Radar traced this seller's funds to a high-risk source; choose another seller",
   COUNTERPARTY_REVIEW: "Radar found risk in this seller's funds: call ask_owner with this quote first",
+  POCKET_FROZEN: "The pocket is frozen (by the Sentinel or the owner); only the owner can unfreeze",
+  SENTINEL_HOLD: "The Sentinel saw unusual behaviour: call ask_owner with this quote; the owner must co-sign the next payment",
 };
 export const reasonText = (code: string) => REASONS[code] ?? code;
 

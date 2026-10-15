@@ -3,7 +3,7 @@ import { streamSSE } from "hono/streaming";
 import type { Context } from "hono";
 
 export type WalletEvent = {
-  type: "trace" | "intent" | "approval" | "payment" | "refusal" | "disclosure" | "question" | "radar";
+  type: "trace" | "intent" | "approval" | "payment" | "refusal" | "disclosure" | "question" | "radar" | "sentinel";
   pocket?: string;
   at?: number;
   [k: string]: unknown;

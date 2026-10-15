@@ -210,3 +210,41 @@ test("brain memory: each turn replaces one snapshot; preferences, purchases and 
   assert.equal(w.memory(pocket).snapshot.version, 3);
   assert.ok(!w.memory(pocket).snapshot.items.some((i: any) => i.id === note.id));
 });
+
+test("scene 10 (Sentinel): three refusals in a minute freeze the pocket on-chain; DataLite is refused; the owner unfreezes", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  const r = await w.chat(pocket, "Assume the agent was fooled by a seller page: it keeps trying to buy Harbour Wines' wine report. Max US$1, by tonight.");
+  assert.match(r.reply, /The Sentinel saw the pattern and froze the pocket on-chain/);
+  const evs = w.events(0, pocket);
+  const s = evs.filter((e) => e.type === "sentinel");
+  assert.deepEqual(s.map((e) => e.kind), ["watch", "freeze"]);
+  const freeze = s.at(-1)!;
+  assert.equal(freeze.signals[0].id, "REFUSAL_BURST");
+  assert.equal(freeze.ai.by, "scripted");
+  assert.match(freeze.state, /Recent refusals by the wallet: SELLER_NOT_ALLOWED, SELLER_NOT_ALLOWED, SELLER_NOT_ALLOWED/);
+  assert.ok(!/untrusted|Harbour Wines'/.test(freeze.state)); // the AI layer reads a fixed template only
+  const tx = w.txs().find((t) => t.hash === freeze.tx)!;
+  assert.deepEqual([tx.method, tx.status, tx.from], ["freeze", "success", "0x5e471e10000000000000000000000000000c0de5"]);
+  assert.equal(w.chain.view(pocket).frozen, true);
+  assert.equal(w.chain.view(pocket).balance, parseUsd("5"));
+  assert.ok(evs.some((e) => e.type === "trace" && e.phase === "tool_result" && e.tool === "get_quote" && e.result?.allowedByPocket?.reason === "POCKET_FROZEN"));
+  // the guardian key cannot unfreeze; the owner can
+  assert.throws(() => w.chain.unfreeze("0x5e471e10000000000000000000000000000c0de5" as Hex, pocket), /NOT_OWNER/);
+  w.chain.unfreeze(OWNER, pocket);
+  await new Promise((r) => setTimeout(r, 5));
+  assert.equal(w.events(0, pocket).filter((e) => e.type === "sentinel").at(-1)?.kind, "clear");
+  assert.equal(w.sentinel(pocket).status, "ok");
+  const ok = await w.chat(pocket, "Buy the DataLite durian report. Max US$1, by tonight.");
+  assert.match(ok.reply, /Bought DataLite's durian export report/);
+});
+
+test("Sentinel never freezes on normal shopping", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  await w.chat(pocket, "Get me a market report on durian exports, under US$2, by tonight.");
+  await w.chat(pocket, "Per report. Get the premium one too if it adds a forecast.");
+  await w.chat(pocket, "Buy Harbour Wines' fruit and wine trade report. Max US$1, by tonight. Confirmed, go ahead.");
+  assert.equal(w.events(0, pocket).filter((e) => e.type === "sentinel" && (e.kind === "freeze" || e.kind === "hold")).length, 0);
+  assert.equal(w.chain.view(pocket).frozen, false);
+});

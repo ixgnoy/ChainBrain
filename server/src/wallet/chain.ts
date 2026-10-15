@@ -46,5 +46,7 @@ export function pocket(address: Address) {
     canPay: async (to: Address, v: bigint): Promise<string> => hexToString(await r("canPay", [to, v]), { size: 32 }).replace(/\0+$/, ""),
     needsOwner: (v: bigint) => r("needsOwner", [v]) as Promise<boolean>,
     sellerAllowed: (s: Address) => r("sellerAllowed", [s]) as Promise<boolean>,
+    /** Pocket.frozen (Sentinel guardian or owner). Pockets from an older factory have no freeze: false. */
+    frozen: () => (r("frozen") as Promise<boolean>).catch(() => false),
   };
 }

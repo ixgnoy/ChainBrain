@@ -1,6 +1,6 @@
 // The Brain tab's data: what the AI understood, planned, adapted, resisted, screened and remembers for one pocket, derived
 // from the same event stream as the chat (server and built-in network alike). Pure: no React Native imports, Node tests load it.
-import { approvalsFrom, radarScreens, reasonsOf, sameAddr, toolResultOf, type RadarView, type WalletEvent } from "./events";
+import { approvalsFrom, radarScreens, reasonsOf, sameAddr, sentinelEvents, toolResultOf, type RadarView, type SentinelView, type WalletEvent } from "./events";
 
 export type Adapt = { from: string; reason: string; to?: string; at: number };
 export type MemoryTrace = { at: number; version: number; questions: string[]; answers: string[]; added: number; removed: number; rejected: string[] };
@@ -17,6 +17,7 @@ export type Brain = {
   adapted: Adapt[];
   resisted: { attacks: number; injections: number; dataRequests: number; forcedBlocked: number; total: number };
   radar: RadarView[];
+  sentinel: SentinelView[];
   memory?: MemoryTrace;
 };
 
@@ -83,6 +84,7 @@ export function brainOf(events: WalletEvent[], pocket: string, sellerName: (id?:
     adapted: adapted.slice(-5).reverse(),
     resisted: { attacks, injections, dataRequests, forcedBlocked, total: attacks + injections + dataRequests + forcedBlocked },
     radar: radarScreens(mine).sort((a, b) => b.score - a.score || b.at - a.at),
+    sentinel: sentinelEvents(mine),
     memory: mem ? {
       at: mem.at, version: Number(mem.version) || 0, questions: Array.isArray(mem.questions) ? mem.questions.map(String) : [], answers: Array.isArray(mem.answers) ? mem.answers.map(String) : [],
       added: applied.filter((a) => a.op === "add").length, removed: applied.filter((a) => a.op === "delete").length, rejected: Array.isArray(mem.rejected) ? mem.rejected.map(String) : [],

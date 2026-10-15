@@ -20,6 +20,8 @@ export function deadEndOf(events: WalletEvent[], pocket: { address: string; cap:
   const mine = events.filter((e) => sameAddr(e.pocket, pocket.address));
   if (mine.some((e) => e.type === "payment")) return null;
   const rows = ledgerFrom(mine).filter((r) => (r.kind === "blocked" || r.kind === "refusal") && r.sellerId);
+  // a frozen pocket is not a dead end the owner fixes by allowing a seller: the Sentinel's card offers Unfreeze instead
+  if (rows.some((r) => r.reasons.includes("POCKET_FROZEN"))) return null;
   const tried: Tried[] = [];
   for (const r of rows) {
     const hit = tried.find((t) => t.sellerId === r.sellerId && t.sku === r.sku);

@@ -9,7 +9,8 @@ contract Deploy is Script {
 
     function run() external {
         vm.startBroadcast(vm.envUint("OWNER_PK"));
-        PocketFactory factory = new PocketFactory(USDC);
+        // the Sentinel's freeze-only key (SENTINEL_PK's address); unset = pockets with no guardian
+        PocketFactory factory = new PocketFactory(USDC, vm.envOr("SENTINEL_ADDRESS", address(0)));
         vm.stopBroadcast();
         string memory json = vm.serializeAddress("d", "PocketFactory", address(factory));
         vm.writeJson(json, string.concat("./deployments/", vm.toString(block.chainid), ".json"));

@@ -8,6 +8,7 @@ export const DEV_KEYS = {
   SELLER_SHADYFEED_PK: "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba",
   FACILITATOR_PK: "0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e",
   FORCE_PK: "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356",
+  SENTINEL_PK: "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97",
 } as const;
 
 export function useDevKeys() {
