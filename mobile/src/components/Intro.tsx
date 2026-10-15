@@ -1,14 +1,20 @@
 // First-launch intro, shown on every launch: three pages, Skip always visible, swipe with the finger (the pager follows it 1:1 and
 // lets go with its velocity), a page indicator that doubles as the auto-advance timer (the whole run takes about 7 s; the first
-// touch hands control to the owner). Each page has one illustration built from app primitives: a pocket card slides out of a
-// wallet, the rules of a contract draw in under a lock, the worst case fills a bar. No gradients, glow or sparkles.
+// touch hands control to the owner). Each page has one illustration built from app primitives (Stitch chainbrain_intro + the
+// vaultbank intro): the pocket cards fan out over a hatch panel (the owner's real pockets once they are read), the rules of a
+// contract draw in under a lock, the worst case fills a hatch bar. No gradients, glow or sparkles.
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { Easing, Extrapolation, cancelAnimation, interpolate, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { c, motion, radius } from "../tokens";
+import { c, deck, level3, motion, radius } from "../tokens";
+import { useApp } from "../store";
+import { Hatch } from "../ui/Hatch";
+import { AgentAvatar } from "../ui/AgentAvatar";
+import { agentInfo } from "../../../shared/sim/agents";
+import { faceOf, toneFor } from "./PocketFace";
 import { haptic } from "../haptics";
 import { Button, Press } from "../ui/kit";
 import { T } from "../ui/Text";
@@ -18,7 +24,7 @@ import { finishIntro } from "../ui/intro";
 
 const PAGE_MS = 2200; // each page is read for about two seconds; three pages end in about 7 s
 const PAGES = [
-  { title: "Give your AI a pocket, not your wallet", sub: "A pocket holds a small budget. Your agent can only spend what you put in it." },
+  { title: "Give your AI a pocket, not your wallet", sub: "A pocket holds a small budget for one agent: ChainBrain's own, Claude or ChatGPT. It can only spend what you put in." },
   { title: "The limits live in a contract you own", sub: "Which sellers, how much per payment, when to ask you. Only your key can change them." },
   { title: "The worst case is the pocket balance", sub: "Even a tricked agent can only pay sellers you allowed, and never more than the pocket holds." },
 ] as const;
@@ -36,26 +42,45 @@ function usePlay(active: boolean, reduce: boolean, ms = 1100, delay = 120) {
 /** A 0-1 window of the page's play value: starts at `a`, done at `b`. */
 const win = (t: number, a: number, b: number) => { "worklet"; return interpolate(t, [a, b], [0, 1], Extrapolation.CLAMP); };
 
-// ---- page 1: a pocket card slides out of a wallet
-function WalletArt({ active, reduce }: { active: boolean; reduce: boolean }) {
-  const t = usePlay(active, reduce, 1000, 250);
-  const card = useAnimatedStyle(() => ({ transform: [{ translateY: 44 - 98 * win(t.value, 0, 1) }, { rotate: `${-3 * win(t.value, 0.3, 1)}deg` }] }));
-  const print = useAnimatedStyle(() => ({ opacity: win(t.value, 0.55, 1) }));
+// ---- page 1: the pocket cards fan out over a hatch panel (DESIGN.md "Card Deck Component")
+const FAN = [{ rot: -9, x: -6, y: 18 }, { rot: 4, x: 22, y: -2 }, { rot: -2, x: 8, y: 40 }]; // back to front
+// before the network is read: the seeded pockets by name, on their own faces (back to front)
+const FALLBACK = [{ name: "Trade quotes", agent: "chatgpt", tail: "", tone: 2 }, { name: "Market news", agent: "claude", tail: "", tone: 1 }, { name: "Research data", agent: "chainbrain", tail: "", tone: 0 }];
+function DeckArt({ active, reduce }: { active: boolean; reduce: boolean }) {
+  const { pockets } = useApp();
+  const t = usePlay(active, reduce, 1200, 150);
+  // the owner's own pockets, oldest three, once the network has read them (the seed: Research data, Market news, Trade quotes)
+  // the same face each pocket has on Home's deck (creation order), oldest in front
+  const real = pockets.filter((p) => !p.revoked).slice(-3).map((p) => ({ name: p.name, agent: p.agentId ?? "chainbrain", tail: p.address.slice(-4).toUpperCase(), tone: toneFor(pockets, p.address) }));
+  const cards = real.length === 3 ? real : FALLBACK; // back to front
   return (
-    <View style={{ width: 280, height: 240 }}>
-      <View style={{ position: "absolute", left: 25, bottom: 0, width: 230, height: 130, borderRadius: 26, backgroundColor: c.ink }} />
-      <Animated.View style={[{ position: "absolute", left: 55, bottom: 52, width: 170, height: 107, borderRadius: 16, backgroundColor: c.accent, padding: 14, justifyContent: "space-between" }, card]}>
-        <Animated.View style={[{ gap: 2 }, print]}>
-          <T v="cap" w="semi" style={{ color: c.onAccent, fontSize: 13 }}>Research data</T>
-          <T v="amount" style={{ color: c.onAccent, fontSize: 22, lineHeight: 28 }}>US$5.00</T>
-        </Animated.View>
-        <Animated.View style={[{ width: 26, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.55)" }, print]} />
-      </Animated.View>
-      <View style={{ position: "absolute", left: 25, bottom: 0, width: 230, height: 92, borderRadius: 26, backgroundColor: c.ink, borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.14)" }}>
-        <View style={{ position: "absolute", right: 22, top: 30, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.18)" }} />
-        <View style={{ position: "absolute", left: 22, top: 38, width: 60, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.14)" }} />
-      </View>
+    <View style={{ width: 300, height: 250, alignItems: "center", justifyContent: "center" }}>
+      <View style={{ position: "absolute", left: 0, right: 0, top: 6, bottom: 6, borderRadius: 24, overflow: "hidden" }}><Hatch color={c.line} pitch={10} stroke={1.6} /></View>
+      {cards.map((k, i) => <FanCard key={k.name} i={i} t={t} face={faceOf(k.tone)} name={k.name} agent={k.agent} tail={k.tail} />)}
     </View>
+  );
+}
+function FanCard({ i, t, face, name, agent, tail }: { i: number; t: SharedValue<number>; face: (typeof deck)[number]; name: string; agent: string; tail: string }) {
+  const f = FAN[i];
+  const a = useAnimatedStyle(() => {
+    const k = win(t.value, i * 0.12, 0.55 + i * 0.15);
+    return { transform: [{ translateX: f.x * k }, { translateY: 30 - (30 - f.y) * k }, { rotate: `${f.rot * k}deg` }], opacity: win(t.value, i * 0.08, 0.25 + i * 0.08) };
+  });
+  const who = agentInfo(agent);
+  return (
+    <Animated.View style={[{ position: "absolute", width: 210, height: 132, borderRadius: 18, backgroundColor: face.face, padding: 14, justifyContent: "space-between", ...level3 }, a]}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View style={{ height: 22, paddingLeft: 3, paddingRight: 8, borderRadius: 11, backgroundColor: face.chip, flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <AgentAvatar kind={agent} size={16} />
+          <T v="cap" w="bold" style={{ color: face.ink, fontSize: 11 }}>{who?.name ?? "Agent"}</T>
+        </View>
+        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.vermillion }} />
+      </View>
+      <View style={{ gap: 2 }}>
+        <T v="mono" style={{ color: face.ink }}>{tail ? `•••• ${tail}` : "••••"}</T>
+        <T v="row" w="bold" numberOfLines={1} style={{ color: face.ink }}>{name}</T>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -66,15 +91,15 @@ function ContractArt({ active, reduce }: { active: boolean; reduce: boolean }) {
   const shackle = useAnimatedStyle(() => ({ transform: [{ translateY: -7 * (1 - win(t.value, 0.05, 0.3)) }] }));
   const key = useAnimatedStyle(() => ({ opacity: win(t.value, 0.8, 1) }));
   return (
-    <View style={{ width: 290, backgroundColor: c.card, borderRadius: radius.card, paddingHorizontal: 20, paddingTop: 34, paddingBottom: 18 }}>
-      <View style={{ position: "absolute", top: -26, alignSelf: "center", width: 52, height: 52, borderRadius: 26, backgroundColor: c.accent, alignItems: "center", justifyContent: "center", borderWidth: 4, borderColor: c.canvas }}>
+    <View style={{ width: 290, backgroundColor: c.card, borderRadius: radius.card, paddingHorizontal: 20, paddingTop: 34, paddingBottom: 18, ...level3, shadowOpacity: 0.08 }}>
+      <View style={{ position: "absolute", top: -26, alignSelf: "center", width: 52, height: 52, borderRadius: 16, backgroundColor: c.ink, alignItems: "center", justifyContent: "center", borderWidth: 4, borderColor: c.canvas }}>
         <Animated.View style={[{ width: 15, height: 12, borderTopLeftRadius: 8, borderTopRightRadius: 8, borderWidth: 2.5, borderBottomWidth: 0, borderColor: c.onAccent, marginBottom: -1 }, shackle]} />
         <View style={{ width: 22, height: 15, borderRadius: 4, backgroundColor: c.onAccent }} />
       </View>
       {RULES.map(([k, v], i) => <Rule key={k} k={k} v={v} t={t} from={0.2 + i * 0.17} />)}
       <Animated.View style={[{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 }, key]}>
-        <Icon name="key" size={16} color={c.accent} />
-        <T v="cap" w="medium" color="accent">Only your key can change these</T>
+        <Icon name="key" size={16} color={c.vermillion} />
+        <T v="cap" w="bold" color="vermillionInk">Only your key can change these</T>
       </Animated.View>
     </View>
   );
@@ -103,10 +128,11 @@ function WorstArt({ active, reduce }: { active: boolean; reduce: boolean }) {
       <View style={{ gap: 10 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <T v="cap" w="medium" color="muted">Everything you own</T>
-          <Animated.View style={label}><T v="cap" w="semi" color="accent">Pocket · US$5.00</T></Animated.View>
+          <Animated.View style={label}><T v="cap" w="bold" color="vermillionInk">Pocket · US$5.00</T></Animated.View>
         </View>
-        <View style={{ height: 22, borderRadius: 11, backgroundColor: c.line, overflow: "hidden" }}>
-          <Animated.View style={[{ height: 22, borderRadius: 11, backgroundColor: c.accent }, seg]} />
+        <View style={{ height: 26, borderRadius: 13, backgroundColor: c.card, overflow: "hidden" }}>
+          <Hatch color={c.line} pitch={7} stroke={1.5} />
+          <Animated.View style={[{ height: 26, borderRadius: 13, backgroundColor: c.vermillion }, seg]} />
         </View>
       </View>
       <View style={{ gap: 10 }}>
@@ -123,9 +149,9 @@ function WorstArt({ active, reduce }: { active: boolean; reduce: boolean }) {
 function Chip({ t, from, label, ok }: { t: SharedValue<number>; from: number; label: string; ok?: boolean }) {
   const a = useAnimatedStyle(() => ({ opacity: win(t.value, from, from + 0.15), transform: [{ translateY: 6 * (1 - win(t.value, from, from + 0.15)) }] }));
   return (
-    <Animated.View style={[{ flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: ok ? c.accentSoft : c.fill }, a]}>
-      <Icon name={ok ? "check" : "ban"} size={15} color={ok ? c.accent : c.muted} stroke={2.2} />
-      <T v="sub" w="semi" style={{ color: ok ? c.accent : c.muted }}>{label}</T>
+    <Animated.View style={[{ flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: ok ? c.greenSoft : c.vermillionSoft }, a]}>
+      <Icon name={ok ? "check" : "ban"} size={15} color={ok ? c.greenInk : c.vermillionInk} stroke={2.4} />
+      <T v="sub" w="bold" style={{ color: ok ? c.greenInk : c.vermillionInk }}>{label}</T>
     </Animated.View>
   );
 }
@@ -134,7 +160,7 @@ function Chip({ t, from, label, ok }: { t: SharedValue<number>; from: number; la
 function Page({ i, w, pos, active, reduce }: { i: number; w: number; pos: SharedValue<number>; active: boolean; reduce: boolean }) {
   const art = useAnimatedStyle(() => {
     const o = w > 0 ? (pos.value - i * w) / w : 0;
-    return { opacity: 1 - Math.min(Math.abs(o), 1) * 0.85, transform: [{ translateX: -o * 46 }, { scale: 1.25 }] };
+    return { opacity: 1 - Math.min(Math.abs(o), 1) * 0.85, transform: [{ translateX: -o * 46 }, { scale: 1.12 }] };
   });
   const text = useAnimatedStyle(() => {
     const o = w > 0 ? (pos.value - i * w) / w : 0;
@@ -143,10 +169,10 @@ function Page({ i, w, pos, active, reduce }: { i: number; w: number; pos: Shared
   return (
     <View style={{ width: w, flex: 1, paddingHorizontal: 24 }}>
       <Animated.View style={[{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 12 }, art]}>
-        {i === 0 ? <WalletArt active={active} reduce={reduce} /> : i === 1 ? <ContractArt active={active} reduce={reduce} /> : <WorstArt active={active} reduce={reduce} />}
+        {i === 0 ? <DeckArt active={active} reduce={reduce} /> : i === 1 ? <ContractArt active={active} reduce={reduce} /> : <WorstArt active={active} reduce={reduce} />}
       </Animated.View>
       <Animated.View style={[{ gap: 12, paddingBottom: 20 }, text]}>
-        <T v="title" accessibilityRole="header">{PAGES[i].title}</T>
+        <T v="display" accessibilityRole="header" style={{ fontSize: 34, lineHeight: 40 }}>{PAGES[i].title}</T>
         <T v="body" color="ink2">{PAGES[i].sub}</T>
       </Animated.View>
     </View>
@@ -165,7 +191,7 @@ function Dot({ i, w, pos, fill, auto }: { i: number; w: number; pos: SharedValue
   });
   return (
     <Animated.View style={[{ height: 8, borderRadius: 4, backgroundColor: c.line, overflow: "hidden" }, box]}>
-      <Animated.View style={[{ height: 8, borderRadius: 4, backgroundColor: c.accent }, on]} />
+      <Animated.View style={[{ height: 8, borderRadius: 4, backgroundColor: c.ink }, on]} />
     </Animated.View>
   );
 }
@@ -231,10 +257,19 @@ export function Intro({ onDone }: { onDone: () => void }) {
     <Animated.View onLayout={(e) => { const nw = e.nativeEvent.layout.width; if (nw !== w) { setW(nw); pos.value = page * nw; } }}
       style={[StyleSheet.absoluteFill, { zIndex: 100, backgroundColor: c.canvas }, root]} accessibilityViewIsModal>
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center", minHeight: 56 + insets.top }}>
-        <T v="row" w="semi" color="ink2" accessibilityRole="header">ChainBrain</T>
-        <Press kind="button" haptics="light" onPress={finish} hitSlop={10} accessibilityRole="button" accessibilityLabel="Skip" style={{ height: 44, paddingHorizontal: 12, justifyContent: "center" }}>
-          <T v="row" w="semi" color="accent">Skip</T>
-        </Press>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <AgentAvatar kind="chainbrain" size={36} />
+          <T v="head" accessibilityRole="header">ChainBrain</T>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View style={{ height: 28, paddingHorizontal: 10, borderRadius: 14, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.vermillion }} />
+            <T v="cap" w="semi">Test network</T>
+          </View>
+          <Press kind="button" haptics="light" onPress={finish} hitSlop={10} accessibilityRole="button" accessibilityLabel="Skip" style={{ height: 44, paddingHorizontal: 10, justifyContent: "center" }}>
+            <T v="row" w="bold">Skip</T>
+          </Press>
+        </View>
       </View>
       <GestureDetector gesture={pan}>
         <View style={{ flex: 1, overflow: "hidden" }}>
@@ -249,7 +284,11 @@ export function Intro({ onDone }: { onDone: () => void }) {
         <View accessible accessibilityLabel={`Page ${page + 1} of ${PAGES.length}`} style={{ flexDirection: "row", gap: 6, justifyContent: "center", alignItems: "center", height: 12 }}>
           {PAGES.map((_, i) => <Dot key={i} i={i} w={w} pos={pos} fill={fill} auto={auto && page === i} />)}
         </View>
-        <Button label={last ? "Get started" : "Next"} onPress={() => (last ? finish() : go(page + 1))} />
+        <Button label={last ? "Get started" : "Next"} kind="vermillion" iconRight="arrowUpRight" onPress={() => (last ? finish() : go(page + 1))} />
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: -6 }}>
+          <Icon name="shieldCheck" size={13} color={c.mutedOnCanvas} />
+          <T v="cap" color="mutedOnCanvas">Test network · no real money</T>
+        </View>
       </View>
     </Animated.View>
   );
