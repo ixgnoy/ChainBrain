@@ -1,6 +1,6 @@
 // Presenter mode's scorecard: what the judges score (Task 40, Security 30, Interaction 30) ticking live from what really
 // ran, read off the same facts the Evidence tab uses (shared/sim/proof.ts). Scoped to the pockets being presented.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { factsFrom, scorecard, type ScoreItem } from "@sim/proof";
 import { useNetwork } from "./useNetwork";
@@ -50,6 +50,8 @@ export function Scorecard({ pocket }: { pocket?: string }) {
   const scope = useMemo(() => proofPockets({ linked, builtin, phonePockets, pockets }), [linked, builtin, phonePockets, pockets]);
   const [since, setSince] = useState(() => horizon(events, allTxs, scope));
   const [all, setAll] = useState(false);
+  const reset = () => { setAll(false); setSince(horizon(events, allTxs, scope)); };
+  useEffect(() => { const on = () => reset(); addEventListener("cb:reset-score", on); return () => removeEventListener("cb:reset-score", on); }); // eslint-disable-line react-hooks/exhaustive-deps
   const { facts } = useFacts(all ? 0 : since);
   const groups = scorecard(facts);
   const done = groups.reduce((n, g) => n + g.items.filter((i) => i.done).length, 0);
@@ -60,7 +62,7 @@ export function Scorecard({ pocket }: { pocket?: string }) {
         <h2 className="text-[15px] font-semibold leading-5">Scorecard</h2>
         <div className="flex items-center gap-2 text-[12px] text-muted">
           <span className="num font-semibold text-ink" data-testid="score-total">{done} of {total}</span>
-          <button type="button" onClick={() => { setAll(false); setSince(horizon(events, allTxs, scope)); }} className="relative inline-flex h-8 items-center rounded-full px-2 text-[13px] font-semibold text-accent before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-accent-soft">Reset</button>
+          <button type="button" onClick={reset} className="relative inline-flex h-8 items-center rounded-full px-2 text-[13px] font-semibold text-accent before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-accent-soft">Reset</button>
         </div>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3 sm:px-5">

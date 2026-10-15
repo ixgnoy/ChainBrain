@@ -36,3 +36,8 @@ Not used: anything from blockscout/frontend (restrictive licence) or originui ou
 ## Frontend wow round (checks path, arena, scorecard, evidence, explorer)
 
 Written fresh for ChainBrain; no code copied. Patterns only, from public product UIs: the checks path follows the rule-evaluation lists of Stripe Radar and the step-by-step trace views of Datadog / Honeycomb (ordered stages, the deciding stage called out); the explorer's transaction page follows the general Etherscan layout (status, block, from/to, method, input, logs). No Blockscout code was read or used. The checklist tick and the gate list reuse the `Tracker` / `Kbd` conventions already credited above.
+
+### Round 4 research notes (ideas only, no code copied)
+- Stripe Radar docs (rule order and short-circuiting, "Not evaluated" kept apart from "Normal", per-signal explanations, rule-impact "what would have happened"): the checks path shows skipped gates as "Not needed" / "Bypassed" and each blocked transfer says how much would have left the pocket.
+- Etherscan transaction page and its Transaction Debugger write-up (verdict first, status banner, the native "Value" field misleading for token transfers, decoded input and logs behind progressive disclosure): the explorer tx page leads with the amount and "Did not move".
+- Datadog TV mode and large-screen dashboard guidance (one screen, no scrolling, primary indicator large, red means act): the presenter fits one screen, with a persistent "N attacks stopped · US$0.00 lost" and keyboard control.

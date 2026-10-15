@@ -2,7 +2,7 @@
 // expected outcome and the same Play logic as the Judges tab (typed on the linked phone, or played by the built-in network).
 // Its status line comes from the phone's own events (story.ts): what to do next on the phone, "Working…", "Done".
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Check, Play } from "lucide-react";
+import { Check, CircleHelp, Play } from "lucide-react";
 import { useNetwork } from "./useNetwork";
 import { usePlay } from "./play";
 import { copyFor } from "./sceneCopy";
@@ -57,15 +57,19 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
   }, [storyScene, linked, scenes]);
 
   // keyboard: left and right step through the scenes, Space plays, Escape leaves (typing in a field is left alone)
-  const keys = useRef({ n: 0, go: () => {}, exit: () => {} });
+  const [help, setHelp] = useState(false);
+  const keys = useRef({ n: 0, go: () => {}, exit: () => {}, help: false, setHelp: (() => {}) as (v: boolean) => void });
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (e.metaKey || e.ctrlKey || e.altKey || t?.closest("input, textarea, select, [contenteditable], [role='dialog']")) return;
       if (e.key === "ArrowRight") { setI((x) => Math.min(x + 1, keys.current.n - 1)); e.preventDefault(); }
       else if (e.key === "ArrowLeft") { setI((x) => Math.max(x - 1, 0)); e.preventDefault(); }
-      else if (e.key === " " && !t?.closest("button, a")) { keys.current.go(); e.preventDefault(); }
-      else if (e.key === "Escape") keys.current.exit();
+      else if ((e.key === " " || e.key === "Enter") && !t?.closest("button, a")) { keys.current.go(); e.preventDefault(); }
+      else if (e.key === "r" || e.key === "R") window.dispatchEvent(new Event("cb:reset-score"));
+      else if (e.key === "e" || e.key === "E") location.hash = "evidence";
+      else if (e.key === "?") keys.current.setHelp(!keys.current.help);
+      else if (e.key === "Escape") { if (keys.current.help) keys.current.setHelp(false); else keys.current.exit(); }
     };
     addEventListener("keydown", on);
     return () => removeEventListener("keydown", on);
@@ -83,7 +87,7 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
   const c = copyFor(s.id);
   const begin = (fn: () => Promise<void>) => { setStarted({ id: s.id, at: Date.now() }); return fn(); };
   const failed = mine && !mine.busy && !mine.ok;
-  keys.current = { n: scenes.length, go: () => { if (canPlay && !state?.busy && !driven) void begin(() => play(s)); }, exit: () => onExit?.() };
+  keys.current = { n: scenes.length, go: () => { if (canPlay && !state?.busy && !driven) void begin(() => play(s)); }, exit: () => onExit?.(), help, setHelp };
   const storyLine = storyScene === "A" ? "Playing · privilege escalation" : storyScene ? `Playing · scene ${storyScene}` : "";
   const line = failed ? mine.text : driven ? storyLine : mine?.busy ? (linked ? "Sent to the phone…" : "Playing…") : status.text;
   const kind = failed ? "error" : driven ? "working" : status.kind;
@@ -110,11 +114,19 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
           <p role="status" data-testid="stepper-status" data-kind={kind} className={cn("min-w-0 truncate text-[14px] leading-5", tone)}>{line}{!failed && !driven && status.kind === "done" && started && <span className="font-normal text-muted"> · scene {started.id} finished</span>}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="mr-1 hidden items-center gap-1.5 text-[12px] text-muted 2xl:inline-flex" aria-hidden><Kbd>←</Kbd><Kbd>→</Kbd>step<Kbd>Space</Kbd>play</span>
+          <button type="button" aria-label="Keyboard shortcuts" aria-expanded={help} onClick={() => setHelp((h) => !h)} className="hidden size-10 place-items-center rounded-full text-muted hover:bg-fill hover:text-ink md:grid"><CircleHelp className="size-5" strokeWidth={1.75} aria-hidden /></button>
           {mine?.ok && s.followUp && mine.step === "scene" && <Button variant="outline" className="h-10 px-4" disabled={mine.busy} onClick={() => void begin(() => followUp(s))}>Then send</Button>}
           <Button className="h-11 px-5 max-md:size-11 max-md:px-0 md:h-10" aria-label={`Play scene ${s.id}`} disabled={!canPlay || !!state?.busy || driven} onClick={() => void begin(() => play(s))}><Play className="size-4" strokeWidth={1.75} /><span className="max-md:sr-only">{mine?.busy ? "Playing…" : driven ? "Story playing" : "Play"}</span></Button>
         </div>
       </div>
+      {help && (
+        <div data-testid="shortcuts" role="dialog" aria-label="Keyboard shortcuts" className="absolute bottom-full right-0 mb-2 w-[min(320px,100%)] rounded-[20px] bg-card p-4 shadow-[0_8px_24px_rgba(17,19,24,0.08)]">
+          <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted">Shortcuts</h3>
+          <dl className="space-y-2 text-[14px]">
+            {([["Space / Enter", "Play the selected scene"], ["← →", "Previous / next scene"], ["R", "Reset the scorecard"], ["E", "Open Evidence"], ["?", "This list"], ["Esc", "Exit presenter"]] as const).map(([k, v]) => <div key={k} className="flex items-center justify-between gap-4"><dt><Kbd>{k}</Kbd></dt><dd className="text-ink2">{v}</dd></div>)}
+          </dl>
+        </div>
+      )}
       <p role="status" aria-hidden className={cn("mt-1.5 truncate text-[13px] leading-5 md:hidden", tone)}>{s.title}{line ? ` · ${line}` : ""}</p>
     </section>
   );

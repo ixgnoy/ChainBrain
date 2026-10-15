@@ -4,7 +4,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Check, Minus, RotateCcw, ShieldCheck, TriangleAlert } from "lucide-react";
 import type { Attempt, Gate, GateState } from "@sim/checks";
-import { attemptWord, collapsiblePrefix, gateWord, groupGates, headlineParts, idlePath, sequenceLength, tokenTone } from "./checksView";
+import { LAYER_TAG, attemptWord, collapsiblePrefix, gateWord, groupGates, headlineParts, idlePath, sequenceLength, tokenTone } from "./checksView";
 import { clock } from "./parts";
 import { cn } from "../lib/cn";
 
@@ -98,14 +98,15 @@ export function ChecksPath({ attempt, run = 0, big, compact }: { attempt?: Attem
   return (
     <div ref={wrap} data-testid="checks-path" data-kind={attempt?.kind ?? "none"} data-verdict={attempt?.verdict ?? "none"} data-attempt={attempt?.id} data-done={finished ? "true" : "false"} className="relative">
       {fold > 0 && revealed >= fold && <p data-testid="checks-folded" className="mb-3 flex items-center gap-2 text-[14px] font-semibold text-ink2 lg:hidden"><GateIcon state="pass" size={24} />{fold} checks passed</p>}
-      <div className="gate-row">
+      <div className={cn("gate-row", !attempt && "max-lg:hidden")}>
         {groups.map((g, gi) => {
           const hidden = (x: (typeof groups)[number]) => x.offset + x.gates.length <= fold;
           return (
           <Fragment key={g.layer}>
             {gi > 0 && <span aria-hidden className={cn("gate-arrow", (hidden(g) || hidden(groups[gi - 1])) && "max-lg:hidden")}><ArrowRight className="size-4" strokeWidth={1.75} /></span>}
             <section aria-label={g.title} className={cn(GroupBg, hidden(g) && "max-lg:hidden")} style={{ flexGrow: g.layer === "contract" ? g.gates.length : 1.4, flexBasis: 0 }}>
-              <h3 className="mb-3 text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-muted lg:text-center">{g.title}</h3>
+              <h3 className="text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-muted lg:text-center">{g.title}</h3>
+              <p data-testid={`layer-${g.layer}`} className={cn("mb-3 mt-0.5 text-[12px] leading-4 lg:text-center", LAYER_TAG[g.layer].strong ? "font-semibold text-accent" : "text-muted")}>{LAYER_TAG[g.layer].text}</p>
               <ol className="gate-list">
                 {g.gates.map((gate, k) => {
                   const idx = g.offset + k;
@@ -150,6 +151,7 @@ export function AttemptHeadline({ a, show = true, big }: { a: Attempt; show?: bo
   const { main, sub } = headlineParts(a);
   const stop = a.gates.find((g) => g.state === "stop");
   const word = attemptWord(a);
+  const kept = (a.kind === "hijack" || a.kind === "forced") && a.verdict === "blocked" && !!a.amount;
   return (
     <div data-testid="checks-headline" className={cn("flex items-start gap-3 rounded-[14px] bg-canvas px-4 py-3.5 transition-opacity duration-200", show ? "opacity-100" : "opacity-0")}>
       <span aria-hidden className={cn("mt-0.5 grid size-7 shrink-0 place-items-center rounded-full", a.aiFooled ? "bg-warning-soft text-warning" : a.verdict === "paid" && !a.attack ? "bg-accent-soft text-accent" : "bg-accent-soft text-accent")}>
@@ -158,6 +160,7 @@ export function AttemptHeadline({ a, show = true, big }: { a: Attempt; show?: bo
       <div className="min-w-0 flex-1">
         <p className={cn("font-semibold leading-6 [overflow-wrap:anywhere]", big ? "text-[19px] leading-7" : "text-[16px]")}>{main}</p>
         {sub && <p className={cn("mt-0.5 text-ink2 [overflow-wrap:anywhere]", big ? "text-[16px] leading-6" : "text-[14px] leading-5")}>{sub}</p>}
+        {kept && <p data-testid="checks-kept" className={cn("mt-1 font-semibold text-accent", big ? "text-[16px] leading-6" : "text-[14px] leading-5")}>US${a.amount} would have left the pocket. US$0.00 did.</p>}
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1.5">
         <span className={cn("inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-semibold", VERDICT_TONE[word])}>{word}</span>

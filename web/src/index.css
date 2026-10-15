@@ -80,6 +80,7 @@ button, a, select, [role="tab"] { cursor: pointer; }
 .chip-row { scrollbar-width: none; }
 .chip-row::-webkit-scrollbar { display: none; }
 
+@layer components {
 /* Checks path: the gates of one attempt, stacked on a phone, in one row from lg. */
 .gate-list { display: flex; flex-direction: column; }
 .gate { position: relative; display: flex; gap: 12px; padding-bottom: 16px; }
@@ -100,11 +101,13 @@ button, a, select, [role="tab"] { cursor: pointer; }
   .gate::before { left: calc(50% + 20px); right: calc(-50% + 20px); top: 15px; bottom: auto; width: auto; height: 2px; }
   .gate-body { padding-top: 0; flex: none; width: 100%; }
 }
+}
 @keyframes ring-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
 .ring-shake { animation: ring-shake 360ms ease-out both; }
 @keyframes draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
 .tick-draw { stroke-dasharray: 24; animation: draw 320ms ease-out both; }
 
+@layer components {
 /* Explorer transaction row: pill, title, subtitle, amount and hash stack on a phone and sit in three columns from sm. */
 .txline { display: grid; align-items: center; gap: 2px 12px; grid-template-columns: auto 1fr; grid-template-areas: "pill amount" "title title" "sub sub" "hash hash"; }
 .txline > .tl-pill { grid-area: pill; margin-bottom: 4px; }
@@ -115,4 +118,5 @@ button, a, select, [role="tab"] { cursor: pointer; }
 @media (min-width: 640px) {
   .txline { grid-template-columns: 76px minmax(0, 1fr) auto; grid-template-areas: "pill title amount" "pill sub hash"; column-gap: 16px; }
   .txline > .tl-pill { margin-bottom: 0; }
+}
 }

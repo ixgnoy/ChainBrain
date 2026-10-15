@@ -14,7 +14,7 @@ const STATUS = { pass: { tone: "accent", text: "Proven", icon: Check }, pending:
 
 function Txs({ r }: { r: EvidenceRow }) {
   if (!r.txs.length) return <span className="text-[13px] text-muted">{r.status === "pass" ? "No transaction (a refusal)" : "–"}</span>;
-  return <ul className="space-y-1.5">{r.txs.map((t) => <li key={t.hash} className="flex flex-wrap items-baseline gap-x-2"><span className={cn("text-[12px] font-semibold", t.reverted ? "text-negative" : "text-muted")}>{t.label}</span><TxHash hash={t.hash} /></li>)}</ul>;
+  return <ul className="space-y-1.5">{r.txs.map((t) => <li key={t.hash} className="flex flex-wrap items-baseline gap-x-2"><span className={cn("text-[12px] font-semibold", t.reverted ? "text-ink" : "text-muted")}>{t.label}</span><TxHash hash={t.hash} /></li>)}</ul>;
 }
 
 export function Evidence() {

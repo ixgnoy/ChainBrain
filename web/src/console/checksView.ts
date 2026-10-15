@@ -1,6 +1,14 @@
 // Pure helpers behind the checks path: how a gate is worded, which gates the token travels, how gates group into layers.
 import { GATES, PAY_PATH, type Attempt, type Gate, type Layer } from "@sim/checks";
 
+/** What each layer is trusted with, in a few words (the trust boundary the whole product is about). */
+export const LAYER_TAG: Record<Layer, { text: string; strong?: boolean }> = {
+  agent: { text: "Can be fooled" },
+  tools: { text: "Wallet software" },
+  contract: { text: "Enforced on-chain: cannot be fooled", strong: true },
+  seller: { text: "Gets paid" },
+};
+
 export const LAYER_TITLE: Record<Layer, string> = { agent: "Agent", tools: "Wallet tools", contract: "Pocket contract · ERC-1271", seller: "Seller" };
 
 /** Quiet word for a gate that did not run: "Bypassed" (the attack skipped it) or "Not needed". */

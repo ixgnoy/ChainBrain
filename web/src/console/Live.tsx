@@ -114,8 +114,8 @@ function TraceItem({ r, turnAt, present, inj }: { r: TraceRow; turnAt: number; p
         {r.reasons.length > 0 && <div className="mt-1 space-y-0.5">{r.reasons.map((c) => <Reason key={c} code={c} />)}</div>}
         {hasCall && <CallDetails r={r} />}
         {untrusted && !inj && (
-          <div className={cn("mt-2 rounded-[12px] px-3.5 py-2.5 text-[13px] leading-5", untrusted.injection ? "bg-negative-soft text-ink" : "bg-fill text-ink2")}>
-            <div className={cn("mb-1 flex items-center gap-1.5 text-[12px] font-semibold", untrusted.injection ? "text-negative" : "text-muted")}>{untrusted.injection && <ShieldAlert className="size-3.5" {...I} />}{untrusted.injection ? "Instruction-like text from a seller · treated as data, not obeyed" : `Seller content${untrusted.source ? ` · ${untrusted.source}` : ""} · treated as data`}</div>
+          <div className={cn("mt-2 rounded-[12px] px-3.5 py-2.5 text-[13px] leading-5", untrusted.injection ? "bg-warning-soft text-ink" : "bg-fill text-ink2")}>
+            <div className={cn("mb-1 flex items-center gap-1.5 text-[12px] font-semibold", untrusted.injection ? "text-warning" : "text-muted")}>{untrusted.injection && <ShieldAlert className="size-3.5" {...I} />}{untrusted.injection ? "Instruction-like text from a seller · treated as data, not obeyed" : `Seller content${untrusted.source ? ` · ${untrusted.source}` : ""} · treated as data`}</div>
             <p className="line-clamp-4 whitespace-pre-wrap break-words">{untrusted.text}</p>
           </div>
         )}

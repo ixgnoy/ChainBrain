@@ -77,7 +77,7 @@ function Addr({ address, full }: { address?: string; full?: boolean }) {
   if (!address) return <span className="text-muted">–</span>;
   const k = who.kindOf(address);
   return (
-    <span className="inline-flex min-w-0 flex-wrap items-baseline justify-end gap-x-2 sm:justify-start">
+    <span className="inline-flex min-w-0 flex-wrap items-baseline gap-x-2">
       {k.name && <span className="font-medium text-ink">{k.name}</span>}
       <a href={explorerHref.address(address)} className="num break-all text-accent hover:underline">{full ? address : shortAddr(address)}</a>
     </span>
@@ -208,6 +208,7 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
       <Crumbs here="Transaction" />
       <header className="mb-6">
         <div className="flex flex-wrap items-center gap-3"><h1 className="title-serif text-[32px] leading-10 sm:text-[40px] sm:leading-[46px]">Transaction</h1><StatusPill status={x.status} /></div>
+        {x.value && <p data-testid="tx-amount" className="mt-3 flex flex-wrap items-center gap-3"><span className="num text-[28px] font-bold leading-9">US${x.value}</span>{x.status === "reverted" ? <Pill tone="accent">Did not move</Pill> : <Pill tone="neutral">Moved</Pill>}</p>}
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1"><span className="num break-all text-[13px] text-ink2" data-testid="tx-hash-full">{hash}</span><CopyButton text={hash} /></div>
       </header>
       <Card className="p-5 sm:p-6">

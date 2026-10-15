@@ -13,6 +13,7 @@ import { Stepper } from "./Stepper";
 import { Kbd } from "./kit";
 import { eventPocket } from "../lib/events";
 import { Settings } from "./Settings";
+import { Protected } from "./Protected";
 import { PageTitle, PillSelect } from "../seller/ui";
 import { cn } from "../lib/cn";
 import { parseExplorer, splitHash, type ExplorerRoute } from "./route";
@@ -91,7 +92,8 @@ function Shell() {
       {present ? (
         <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 pb-1 pt-2 sm:px-8">
           <div className="flex min-w-0 items-center gap-3 text-[15px] font-semibold"><Mark size={28} />ChainBrain</div>
-          <div className="min-w-0 max-sm:order-3 max-sm:w-full sm:mr-auto sm:ml-3 [&_label]:max-w-full"><PocketPicker value={pocket} onChange={(a) => go({ pocket: a })} /></div>
+          <div className="min-w-0 max-sm:order-3 max-sm:w-full sm:ml-3 [&_label]:max-w-full"><PocketPicker value={pocket} onChange={(a) => go({ pocket: a })} /></div>
+          <span className="ml-auto mr-2 hidden sm:block"><Protected big /></span>
           <button type="button" onClick={() => go({ present: false })} className="inline-flex h-10 items-center gap-2 rounded-full px-4 text-[14px] font-semibold text-ink2 hover:bg-card"><X className="size-4" strokeWidth={1.75} />Exit presenter<Kbd className="ml-1 hidden sm:inline-flex">Esc</Kbd></button>
         </div>
       ) : (
@@ -109,6 +111,7 @@ function Shell() {
             <h1 className="sr-only">Live</h1>
             {!present && <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
               <PocketPicker value={pocket} onChange={(a) => go({ pocket: a })} />
+              <Protected className="max-sm:order-last" />
               {linked && following && <span data-testid="following" className="inline-flex items-center gap-2 text-[14px] font-medium text-ink2"><span className="size-2 rounded-full bg-accent" aria-hidden />Following your phone</span>}
               {!following && <button type="button" onClick={() => go({ pocket: null })} className="inline-flex h-11 items-center rounded-full px-3 text-[14px] font-semibold text-accent hover:bg-accent-soft">{linked ? "Follow your phone" : "Follow the story"}</button>}
             </div>}
