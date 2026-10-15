@@ -64,8 +64,11 @@ function Bar({ i, h, peak, parts, tag }: { i: number; h: number; peak: boolean; 
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
       {tag ? (
-        <Animated.View style={[{ marginBottom: 6, backgroundColor: c.ink, borderRadius: 7, paddingHorizontal: 6, height: 22, justifyContent: "center", borderWidth: 1, borderColor: c.white }, tagIn]}>
-          <T v="cap" w="bold" style={{ color: c.white, fontSize: 10.5 }}>{tag}</T>
+        // wider than its bar when it needs to be (Clash figures are wide), centred over it
+        <Animated.View style={[{ marginBottom: 6, width: 76, alignItems: "center" }, tagIn]}>
+          <View style={{ backgroundColor: c.ink, borderRadius: 7, paddingHorizontal: 7, height: 22, justifyContent: "center", borderWidth: 1, borderColor: c.white }}>
+            <T v="cap" w="bold" numberOfLines={1} style={{ color: c.white, fontSize: 10.5 }}>{tag}</T>
+          </View>
         </Animated.View>
       ) : null}
       <Animated.View style={[{ width: "100%", borderRadius: 6, overflow: "hidden", backgroundColor: peak ? c.ink : c.fill, justifyContent: "flex-end" }, grow]}>

@@ -88,7 +88,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     check("pockets are cards (cap, ask-me limit, expiry)", /Cap US\$/.test(t) && /asks above|never asks|asks every time/.test(t) && /Exp\. \d\d\/\d\d|Ends \d\d:\d\d/.test(t));
     check("the deck shows every pocket as a button", (await page.getByRole("button", { name: /Research data pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /One purchase pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /Market news pocket/ }).count()) === 1);
     check("the agents that hold them are named", /ChainBrain/.test(t) && /Claude/.test(t) && /ChatGPT/.test(t));
-    check("spending this week is computed (vs last week)", /Spent by your agents/.test(t) && /vs last week/.test(t));
+    check("spending this week is computed (vs last week)", /Weekly spending by your agents/.test(t) && /vs last week/.test(t));
     check("main wallet shows US$54.80", /54\.80/.test(t), t.slice(0, 200));
     check("no demo / sample / mock wording", !/\bdemo\b|sample data|mock|simulat/i.test(t));
     check("no BaseScan links", (await page.locator('a[href*="basescan"]').count()) === 0);

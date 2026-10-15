@@ -4,7 +4,7 @@ import { F, c, type Tone } from "../tokens";
 
 // Type scale after VaultBank: Clash Display (wide grotesk) for what you read first, General Sans for everything else.
 // Letter spacing in RN is in points: em × size.
-//   display  32/38 Clash Semibold −0.02em   (page titles)
+//   display  28/34 Clash Semibold −0.015em  (page titles)
 //   balance  40/48 Clash Medium −0.02em     (total balances)
 //   amount   28/34 Clash Medium −0.015em
 //   section  21/26 Clash Semibold −0.01em   (section headings: "Recent activity")
@@ -17,8 +17,8 @@ import { F, c, type Tone } from "../tokens";
 //   tab      11/14 General Sans Semibold +0.03em (eyebrows, tab labels)
 //   mono     13/16 Clash Semibold +0.05em uppercase (pocket numbers, card data)
 const V = {
-  display: { family: F.displaySemi, size: 32, line: 38, ls: -0.64 },
-  title: { family: F.displaySemi, size: 32, line: 38, ls: -0.64 },
+  display: { family: F.displaySemi, size: 28, line: 34, ls: -0.42 },
+  title: { family: F.displaySemi, size: 28, line: 34, ls: -0.42 },
   balance: { family: F.display, size: 40, line: 48, ls: -0.8 },
   amount: { family: F.display, size: 28, line: 34, ls: -0.42 },
   section: { family: F.displaySemi, size: 21, line: 26, ls: -0.21 },

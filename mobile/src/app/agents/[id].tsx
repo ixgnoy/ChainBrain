@@ -2,19 +2,19 @@
 // (blue hatch cards: balance, cap, ask-me limit, state), what it spent today, its own step-by-step ledger, and the controls:
 // give it another pocket, chat (built-in agent) or Disconnect (an outside agent: it stops, the money stays in the pocket).
 import React, { useMemo, useState } from "react";
-import { View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "../../store";
-import { c, radius } from "../../tokens";
+import { c } from "../../tokens";
 import { Screen } from "../../ui/Screen";
 import { BackHeader, BACK_HEADER_H } from "../../ui/BackHeader";
 import { Button, Card, Press, StatusPill } from "../../ui/kit";
 import { T, Eyebrow } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { Money } from "../../ui/Money";
-import { Hatch, HatchBar } from "../../ui/Hatch";
+import { HatchBar } from "../../ui/Hatch";
 import { Reveal } from "../../ui/Reveal";
 import { AgentAvatar } from "../../ui/AgentAvatar";
 import { HoldToRevoke } from "../../ui/HoldToRevoke";
@@ -22,8 +22,8 @@ import { agentSteps, ago, activityLine, type AgentId, type AgentStep } from "../
 import { plainReason } from "../../lib/plain";
 import { money, usd } from "../../lib/util";
 import { cleanText } from "../../lib/sanitize";
-import { NEVER } from "../../lib/shared";
 import type { Pocket } from "../../store";
+import { PocketFace, toneFor } from "../../components/PocketFace";
 
 const ICON: Record<AgentStep["kind"], "search" | "file" | "hourglass" | "checks" | "circleCheck" | "ban" | "link" | "unlink"> = {
   search: "search", quote: "file", ask: "hourglass", task: "checks", paid: "circleCheck", refused: "ban", connected: "link", disconnected: "unlink",
@@ -132,32 +132,16 @@ export default function AgentDetail() {
 }
 
 /** A pocket the agent holds, as a blue hatch card (white hatch once it is revoked). Opens the pocket page. */
+/** A pocket the agent holds, as the same 2.5D card as Home's deck; tap to open the pocket. */
 function HeldPocket({ p }: { p: Pocket }) {
-  const ask = p.askAbove === NEVER || p.askAbove > p.cap ? "Never" : money(p.askAbove);
-  const state = p.revoked ? "Revoked" : p.frozen ? "Frozen" : "Active";
+  const { pockets } = useApp();
+  const { width } = useWindowDimensions();
+  const w = Math.min(width, 480) - 32;
+  const state = p.revoked ? "revoked" : p.frozen ? "frozen" : "active";
   return (
     <Press kind="row" haptics="light" onPress={() => router.push({ pathname: "/pocket/[id]", params: { id: p.address } })}
-      accessibilityRole="button" accessibilityLabel={`${cleanText(p.name, 28)}, ${state}, balance ${money(p.balance)}`}
-      style={{ marginHorizontal: 16, borderRadius: radius.card, overflow: "hidden", backgroundColor: p.revoked ? c.card : c.blue, padding: 18, gap: 14 }}>
-      <Hatch color={p.revoked ? c.line : c.ink} pitch={8} stroke={1.3} opacity={p.revoked ? 0.8 : 0.1} />
-      <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
-        <View style={{ gap: 2, flexShrink: 1 }}>
-          <T v="cap" color={p.revoked ? "muted" : "blueInk"}>Pocket</T>
-          <T v="section" numberOfLines={1} color={p.revoked ? "muted" : "ink"}>{cleanText(p.name, 24)}</T>
-        </View>
-        <View style={{ height: 24, paddingHorizontal: 10, borderRadius: 6, backgroundColor: p.revoked ? c.vermillionSoft : c.ink, justifyContent: "center" }}>
-          <T v="tab" w="bold" style={{ color: p.revoked ? c.vermillionInk : c.white, letterSpacing: 0.9, textTransform: "uppercase" }}>{state}</T>
-        </View>
-      </View>
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        {[["Balance", money(p.balance)], ["Cap", money(p.cap)], ["Ask above", ask]].map(([k, v]) => (
-          <View key={k} style={{ gap: 1 }}>
-            <T v="cap" color={p.revoked ? "muted" : "blueInk"}>{k}</T>
-            <T v="head" color={p.revoked ? "muted" : "ink"}>{v}</T>
-          </View>
-        ))}
-      </View>
-      <T v="mono" color={p.revoked ? "muted" : "ink"} style={{ fontSize: 12 }}>{`••••  ${p.address.slice(-4).toUpperCase()}`}</T>
+      accessibilityRole="button" accessibilityLabel={`${cleanText(p.name, 28)}, ${state}, balance ${money(p.balance)}`} style={{ alignSelf: "center" }}>
+      <PocketFace pocket={p} width={w} tone={toneFor(pockets, p.address)} />
     </Press>
   );
 }

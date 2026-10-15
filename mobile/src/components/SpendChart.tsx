@@ -1,6 +1,7 @@
-// Agent spending on Home (vaultbank "Weekly Spending", made true): settled payments per day from the ledger, as a smooth 2 px ink
-// curve over a 45° hatch underfill that draws in from the left, a black value tag on the biggest day, and "vs last week" only
-// when the history really covers last week (lib/agents weekOverWeek). Nothing here is typed in.
+// Agent spending on Home (VaultBank "Weekly Spending", made true): settled payments per day from the ledger, as a smooth 2 px ink
+// curve over VaultBank's vertical-line underfill that draws in from the left. Today carries a vermillion stem tooltip ("+53%
+// vs last week", only when the history really covers last week: lib/agents weekOverWeek) down to a ringed marker; the
+// biggest day keeps a black value tag. Nothing here is typed in.
 import React, { useMemo, useState } from "react";
 import { View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
@@ -8,15 +9,14 @@ import Svg, { Circle, Defs, Line, Path, Pattern } from "react-native-svg";
 import { c, motion } from "../tokens";
 import { Card } from "../ui/kit";
 import { T } from "../ui/Text";
-import { Icon } from "../ui/Icon";
 import { Money } from "../ui/Money";
 import { SlidingPills } from "../ui/SlidingPills";
-import { hatchTile, useDrawIn } from "../ui/Hatch";
+import { useDrawIn } from "../ui/Hatch";
 import { dailySpend, weekOverWeek, type AgentId } from "../lib/agents";
 import type { LedgerRow } from "../lib/events";
 import { usd } from "../lib/util";
 
-const H = 132, TOP = 26, BOTTOM = 6;
+const H = 150, TOP = 46, BOTTOM = 6;
 const DAY = ["S", "M", "T", "W", "T", "F", "S"];
 
 /** Monotone-ish smoothing: Catmull-Rom through the points, as cubic Béziers (y clamped to the plot so it never dips below 0). */
@@ -53,45 +53,55 @@ export function SpendChart({ ledger, agentOf, play = true }: { ledger: LedgerRow
     const line = smooth(pts, floor);
     const area = `${line} L${pts[pts.length - 1][0]},${H} L${pts[0][0]},${H} Z`;
     const peak = series.findIndex((d) => d.total === max && max > 0n);
-    return { pts, line, area, peak, step };
+    const today = pts.length - 1;
+    return { pts, line, area, peak, step, today };
   }, [w, series, max]);
 
   const up = wow.delta != null && wow.delta > 0;
-  const pct = wow.delta != null ? `${up ? "+" : wow.delta < 0 ? "−" : ""}${Math.abs(Math.round(wow.delta * 100))}% vs last week` : null;
-  const label = range === "7" ? "Spent by your agents this week" : "Spent by your agents, 14 days";
+  const pct = wow.delta != null && range === "7" ? `${up ? "+" : wow.delta < 0 ? "−" : ""}${Math.abs(Math.round(wow.delta * 100))}% vs last week` : null;
+  const label = range === "7" ? "Weekly spending by your agents" : "Spending by your agents, 14 days";
+  // the stem tooltip on today: the week-over-week change, or today's own figure when there is no last week to compare
+  const stem = plot ? (pct ?? `Today US$${usd(series[plot.today].total)}`) : null;
+  const STEM_W = 168;
+  // the peak's black tag only when it is not today and has room beside the stem
+  const tag = plot && plot.peak >= 0 && plot.peak !== plot.today && Math.abs(plot.pts[plot.peak][0] - plot.pts[plot.today][0]) > STEM_W / 2 + 40;
   return (
     <Card pad={20} style={{ marginHorizontal: 16, gap: 4 }}>
       <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
         <View style={{ gap: 2, flexShrink: 1 }}>
-          <T v="sub" color="muted">{label}</T>
+          <T v="sub" color="ink2">{label}</T>
           <Money v="section" value={usd(total)} label={`${label} ${usd(total)} US dollars`} />
         </View>
-        {pct && range === "7" ? (
-          <View accessibilityLabel={pct} style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 28, paddingHorizontal: 10, borderRadius: 14, backgroundColor: up ? c.vermillion : c.fill }}>
-            <Icon name={up ? "arrowUpRight" : "arrowDown"} size={14} color={up ? c.white : c.ink} stroke={2.4} />
-            <T v="cap" w="bold" style={{ color: up ? c.white : c.ink }}>{pct}</T>
-          </View>
-        ) : null}
       </View>
       <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: H + 28, marginTop: 8 }} accessible accessibilityLabel={series.map((d) => `${new Date(d.day).toLocaleDateString("en-GB", { weekday: "short" })} US$${usd(d.total)}`).join(", ")}>
         {plot ? (
           <>
             <Svg width={w} height={H}>
               <Defs>
-                <Pattern id="spend-hatch" patternUnits="userSpaceOnUse" width={6} height={6}>
-                  <Path d={hatchTile(6)} stroke={c.ink} strokeWidth={1.4} strokeLinecap="square" />
+                {/* VaultBank's underfill: fine vertical lines */}
+                <Pattern id="spend-lines" patternUnits="userSpaceOnUse" width={5} height={8}>
+                  <Line x1={2.5} x2={2.5} y1={0} y2={8} stroke={c.ink} strokeWidth={1.3} />
                 </Pattern>
               </Defs>
               <Line x1={0} x2={w} y1={H - BOTTOM} y2={H - BOTTOM} stroke={c.line} strokeWidth={1} />
-              <Path d={plot.area} fill="url(#spend-hatch)" opacity={0.85} />
+              <Path d={plot.area} fill="url(#spend-lines)" opacity={0.9} />
               <Path d={plot.line} stroke={c.ink} strokeWidth={2.2} fill="none" strokeLinecap="round" />
-              {plot.peak >= 0 ? <Circle cx={plot.pts[plot.peak][0]} cy={plot.pts[plot.peak][1]} r={5.5} fill={c.vermillion} stroke={c.white} strokeWidth={2.5} /> : null}
+              {/* the stem from the tooltip down to today's point, and its ringed marker */}
+              <Line x1={plot.pts[plot.today][0]} x2={plot.pts[plot.today][0]} y1={26} y2={plot.pts[plot.today][1] - 6} stroke={c.vermillion} strokeWidth={2} />
+              <Circle cx={plot.pts[plot.today][0]} cy={plot.pts[plot.today][1]} r={6} fill={c.white} stroke={c.vermillion} strokeWidth={3} />
             </Svg>
             <Animated.View pointerEvents="none" style={[{ position: "absolute", top: 0, right: 0, height: H, backgroundColor: c.card }, cover]} />
-            {plot.peak >= 0 ? (
-              <View pointerEvents="none" style={{ position: "absolute", top: Math.max(plot.pts[plot.peak][1] - 34, -6), left: Math.min(Math.max(plot.pts[plot.peak][0] - 34, 0), w - 68), width: 68, alignItems: "center" }}>
-                <View style={{ backgroundColor: c.ink, borderRadius: 8, paddingHorizontal: 8, height: 24, justifyContent: "center", borderWidth: 1, borderColor: c.white }}>
+            {tag ? (
+              <View pointerEvents="none" style={{ position: "absolute", top: Math.max(plot.pts[plot.peak][1] - 34, 0), left: Math.min(Math.max(plot.pts[plot.peak][0] - 34, 0), w - 68), width: 68, alignItems: "center" }}>
+                <View style={{ backgroundColor: c.ink, borderRadius: 7, paddingHorizontal: 8, height: 24, justifyContent: "center", borderWidth: 1, borderColor: c.white }}>
                   <T v="cap" w="bold" style={{ color: c.white }}>{`US$${usd(series[plot.peak].total)}`}</T>
+                </View>
+              </View>
+            ) : null}
+            {stem ? (
+              <View pointerEvents="none" accessibilityLabel={stem} style={{ position: "absolute", top: 0, left: Math.min(Math.max(plot.pts[plot.today][0] - STEM_W / 2, 0), w - STEM_W), width: STEM_W, alignItems: plot.pts[plot.today][0] > w - STEM_W / 2 ? "flex-end" : "center" }}>
+                <View style={{ backgroundColor: up || !pct ? c.vermillion : c.ink, borderRadius: 7, paddingHorizontal: 9, height: 26, justifyContent: "center" }}>
+                  <T v="cap" w="bold" style={{ color: c.white }} numberOfLines={1}>{stem}</T>
                 </View>
               </View>
             ) : null}

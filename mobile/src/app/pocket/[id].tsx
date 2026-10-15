@@ -17,7 +17,7 @@ import { WorstCase } from "../../components/WorstCase";
 import { SpendBars } from "../../components/SpendBars";
 import { Reveal as Rise } from "../../ui/Reveal";
 import { AnimatedList } from "../../ui/AnimatedList";
-import { Icon, type IconName } from "../../ui/Icon";
+import { Icon } from "../../ui/Icon";
 import { T } from "../../ui/Text";
 import { AgentAvatar } from "../../ui/AgentAvatar";
 import { ActivityRow } from "../../components/ActivityRow";
@@ -37,17 +37,21 @@ import { haptic } from "../../haptics";
 import { agentInfo } from "../../../../shared/sim/agents";
 
 /** A rule chip: white pill with a muted label and a bold value; editable ones open the rule sheet. */
-function RuleChip({ icon, label, value, onPress, a11y }: { icon: IconName; label: string; value: string; onPress?: () => void; a11y: string }) {
+/** A rule as VaultBank's category tile: a coloured dot, the figure big, what it means under it; a pencil when you can edit it. */
+function RuleTile({ dot, label, value, onPress, a11y }: { dot: string; label: string; value: string; onPress?: () => void; a11y: string }) {
   const body = (
     <>
-      <Icon name={icon} size={15} color={onPress ? c.vermillion : c.ink2} stroke={2} />
-      <T v="cap" color="muted">{label}</T>
-      <T v="cap" w="bold">{value}</T>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: dot }} />
+        {onPress ? <Icon name="edit" size={14} color={c.muted} stroke={1.8} /> : null}
+      </View>
+      <T v="head" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: 19, lineHeight: 24, marginTop: 6 }}>{value}</T>
+      <T v="cap" color="muted" numberOfLines={2}>{label}</T>
     </>
   );
-  const style = { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: 36, borderRadius: radius.pill, backgroundColor: c.card, borderWidth: 1, borderColor: onPress ? c.ink : c.tileStroke } as const;
+  const style = { flex: 1, padding: 12, borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: c.card, borderWidth: 1, borderColor: c.tileStroke } as const;
   return onPress
-    ? <Press haptics="select" scale={0.95} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y} hitSlop={4} style={style}>{body}</Press>
+    ? <Press haptics="select" scale={0.96} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y} style={style}>{body}</Press>
     : <View accessible accessibilityLabel={a11y} style={style}>{body}</View>;
 }
 
@@ -121,11 +125,10 @@ export default function PocketDetail() {
 
         {!pocket.revoked ? (
           <Rise index={1} base={60}>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: PAGE_MARGIN, marginTop: 16 }}>
-              <RuleChip icon="gauge" label="Cap" value={`${money(pocket.cap)} / payment`} a11y={`Edit cap: Cap ${money(pocket.cap)}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "cap" }) : undefined} />
-              <RuleChip icon="bell" label="Ask above" value={ask} a11y={`Edit ask-me limit: Ask above ${ask}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "ask" }) : undefined} />
-              <RuleChip icon="clock" label={expired ? "Ended" : "Until"} value={untilText(pocket.expiresAt).replace(/^until /, "")} a11y={untilText(pocket.expiresAt)} />
-              {pocket.frozen ? <RuleChip icon="freeze" label="Frozen" value="by the Sentinel" a11y="Frozen by the Sentinel" /> : null}
+            <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: PAGE_MARGIN, marginTop: 16 }}>
+              <RuleTile dot={c.ink} label="Cap per payment" value={money(pocket.cap)} a11y={`Edit cap: Cap ${money(pocket.cap)}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "cap" }) : undefined} />
+              <RuleTile dot={c.vermillion} label="Asks you above" value={ask} a11y={`Edit ask-me limit: Ask above ${ask}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "ask" }) : undefined} />
+              <RuleTile dot={c.blue} label={expired ? "Ended" : pocket.frozen ? "Frozen by the Sentinel" : "Ends"} value={untilText(pocket.expiresAt).replace(/^until /, "")} a11y={pocket.frozen ? "Frozen by the Sentinel" : untilText(pocket.expiresAt)} />
             </View>
           </Rise>
         ) : null}
