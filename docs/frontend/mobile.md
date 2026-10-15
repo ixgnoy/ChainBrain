@@ -73,4 +73,8 @@ Dev note: after Fast Refresh of a file with Reanimated styles (`Hatch.tsx`, `Sli
 
 ## Not verified
 
-Not run on a physical phone: haptics, 120 Hz motion, the deck's swipe under a real finger, and iOS edge swipe-back on the pocket page. No dark mode. The app icon and splash still carry the old teal chain logo (`assets/`, `app.json`).
+Not run on a physical phone: haptics, 120 Hz motion, the deck's swipe under a real finger, and iOS edge swipe-back on the pocket page. No dark mode. The native splash (slate canvas with the mark, `expo-splash-screen` in `app.json`) only shows in a development or store build; Expo Go shows the app icon on its own loading card instead.
+
+## App icon and splash
+
+ChainBrain's in-app mark: the Lucide brain in white on ink, with the pocket cards' 45° hatch on the right. SVG sources and the render script are in `assets/src/` (`assets/src/build.sh`, needs `rsvg-convert`); it writes the iOS icon, the Android adaptive layers, the splash mark and the favicon. Expo Go caches the icon by URL: after changing it, delete Expo Go's `Library/Caches` in the simulator (`xcrun simctl get_app_container booted host.exp.Exponent data`) to see the new one. The web console's favicon (`web/public/logo.svg`) still uses the two-link mark.
