@@ -158,3 +158,34 @@ test("scene 1 again on a seeded pocket: the follow-up answers the question (not 
   const intents = w.events(0, research).filter((e) => e.type === "intent" && e.approval.status === "pending");
   assert.match(intents.at(-1)!.approval.text, /^Buy: Durian export market report\nPrice: at most US\$2\.00 each, US\$4\.00 in total, up to 4 items/);
 });
+
+test("scene 9 (Radar): a drainer pays DataPro on-chain; DataPro is blocked, the agent buys DataLite, earlier payers get an alert", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  // this pocket paid DataPro before, so it watches DataPro
+  await w.chat(pocket, "Get the DataPro premium durian report with the 2026 forecast. Max US$2, by tonight.");
+  const clean = w.events(0, pocket).find((e) => e.type === "radar" && e.kind === "screen" && e.sellerId === "datapro");
+  assert.equal(clean?.verdict, "ok");
+  const r = await w.chat(pocket, "A drainer just paid DataPro. Get the DataPro premium report anyway, max US$2, by tonight.");
+  assert.match(r.reply, /^Radar blocked DataPro: 10% or more of the funds trace to a drainer\. I didn't pay it and re-planned\. Bought DataLite's durian export report/);
+  const evs = w.events(0, pocket);
+  const alert = evs.find((e) => e.type === "radar" && e.kind === "alert");
+  assert.equal(alert?.alert.name, "DataPro");
+  assert.equal(alert?.alert.to.verdict, "block");
+  assert.match(alert?.alert.narrative, /^Risk 9\/10 for DataPro: blocked\. \d+% of the money DataPro received traces back to Demo drainer \(drainer\), directly\./);
+  const blocked = evs.filter((e) => e.type === "radar" && e.kind === "screen" && e.sellerId === "datapro").at(-1);
+  assert.equal(blocked?.verdict, "block");
+  // nothing went to DataPro this time; DataLite was paid
+  const pays = evs.filter((e) => e.type === "payment").map((p) => p.sellerId);
+  assert.deepEqual(pays, ["datapro", "datalite"]);
+  assert.ok(w.radar.alerts().length >= 1);
+});
+
+test("Radar screen: a seller the drainer paid scores block; clean sellers stay ok", async () => {
+  const { w } = await setup();
+  assert.equal((await w.radar.screen("datalite")).verdict, "ok");
+  await w.drainerPays("datalite", 50_000_000n);
+  const s = await w.radar.screen("datalite");
+  assert.equal(s.verdict, "block");
+  assert.equal((await w.radar.screen("datapro")).verdict, "ok");
+});

@@ -10,8 +10,8 @@ Rules for every phase: AI only tightens; seller text never reaches a free-text m
 
 ## Phases and status
 
-- [ ] A. Radar core moved to `shared/sim/radar.ts` (one source for server + sim); sim emits `radar` events and COUNTERPARTY_* refusals; a drainer scene in the built-in network
-- [ ] A2. Phone: Radar card in the chat (score, verdict, plain narrative, path), approval sheet shows risk, Activity shows Radar alerts
+- [x] A. Radar core moved to `shared/sim/radar.ts` (one source for server + sim); sim emits `radar` events and COUNTERPARTY_* refusals; a drainer scene in the built-in network
+- [x] A2. Phone: Radar card in the chat (score, verdict, plain narrative, path), approval sheet shows risk, Activity shows Radar alerts
 - [ ] B. Phone: "Brain" tab, one place showing what the brain Understood (1), Planned (2, 9), Adapted (3), Blocked (4), Screened (5), Watches (6), Remembers (7), Your rules (8)
 - [ ] C. Memory: server per `2026-10-15-brain-memory.md`, sim mirror, phone memory card with Forget
 - [ ] D. Sentinel: Pocket.sol guardian freeze + tests, server rules + typed AI score, sim, phone feed + frozen state + unfreeze
