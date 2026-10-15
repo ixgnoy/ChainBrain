@@ -48,7 +48,7 @@ type Ctx = {
   balances: { usdc: bigint; eth: bigint } | null;
   // pockets
   pockets: Pocket[]; pocketsLoaded: boolean; active?: Pocket; setActive(a: string): void;
-  addPocket(a: Address, meta?: PocketMeta): Promise<void>; refreshPockets(): Promise<void>; findPocket(a?: string): Pocket | undefined;
+  addPocket(a: Address, meta?: PocketMeta, o?: { activate?: boolean }): Promise<void>; refreshPockets(): Promise<void>; findPocket(a?: string): Pocket | undefined;
   // events and derived
   ownerTxs: OwnerTx[]; recordTx(t: Omit<OwnerTx, "at">): void;
   events: WalletEvent[]; ledger: LedgerRow[]; pending: Approval[]; sellerName(id?: string): string;
@@ -243,11 +243,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const active = pockets.find((p) => sameAddr(p.address, activeAddr)) ?? pockets[0];
 
-  const addPocket = useCallback(async (a: Address, m?: PocketMeta) => {
+  const addPocket = useCallback(async (a: Address, m?: PocketMeta, o: { activate?: boolean } = {}) => {
     if (!wallet) return;
     const next = [a, ...addrRef.current.filter((x) => !sameAddr(x, a))];
     addrRef.current = next;
-    setAddresses(next); setActiveAddr(a);
+    setAddresses(next); if (o.activate !== false) setActiveAddr(a); // a pocket for an outside agent never becomes the chat's pocket
     if (!local) await savePockets(wallet.address, next);
     if (m) { const nm = { ...meta, [a.toLowerCase()]: m }; setMeta(nm); if (!local) await saveMeta(wallet.address, nm); }
     await refreshPockets();

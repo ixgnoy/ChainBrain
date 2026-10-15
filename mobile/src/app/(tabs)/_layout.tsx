@@ -12,7 +12,7 @@ import { renderTabScreen } from "../../ui/glass/TabTransition";
 
 const ITEMS: (GlassTabItem & { href: string })[] = [
   { name: "index", href: "/", label: "Home", icon: "home" },
-  { name: "agent", href: "/agent", label: "Agent", icon: "chat" },
+  { name: "agents", href: "/agents", label: "Agents", icon: "bot" },
   { name: "brain", href: "/brain", label: "Brain", icon: "brain" },
   { name: "activity", href: "/activity", label: "Activity", icon: "activity" },
   { name: "settings", href: "/settings", label: "Settings", icon: "settings" },
@@ -30,7 +30,7 @@ export default function TabsLayout() {
             <GlassTabBar onIndexSelected={(i) => router.navigate(ITEMS[i].href as never)}>
               {ITEMS.map(({ href, ...item }, index) => (
                 <TabTrigger key={item.name} name={item.name} href={href as never} asChild>
-                  <GlassTabButton item={{ ...item, badge: item.name === "agent" && pending.length > 0 }} index={index} />
+                  <GlassTabButton item={{ ...item, badge: item.name === "agents" && pending.length > 0 }} index={index} />
                 </TabTrigger>
               ))}
             </GlassTabBar>

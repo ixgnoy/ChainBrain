@@ -23,6 +23,14 @@ export type TargetName =
   | "deadend.fix"         // dead-end card: "Raise cap and budget to …"
   | "rules.slide"         // rules sheet: slide to save
   | "deadend.askAgain"    // dead-end card after the fix: "Ask again, max …"
+  | "home.connect"        // Home: "Connect" tile (opens Connect)
+  | "connect.agent"       // Connect: pick the agent `arg` ("claude" | "chatgpt")
+  | "connect.copy"        // Connect: Copy link (the agent then opens it and asks for consent)
+  | "consent.allow"       // consent sheet: slide to allow (creates and funds the agent's new pocket)
+  | "consent.done"        // consent success: "See Claude" (opens the agent's page)
+  | "inbox.open"          // Home header: the bell (opens the Approvals inbox)
+  | "inbox.review"        // Approvals inbox: review the first waiting request of agent `arg` (opens the approval sheet)
+  | "radar.open"          // a Radar alert card or row: open the Radar alert page
   | "sheet.close";        // any open sheet that should be dismissed (success screens)
 
 /** Return false when the control cannot act yet (not laid out, disabled): the press is retried. */

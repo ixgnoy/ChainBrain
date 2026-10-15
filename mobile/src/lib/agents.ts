@@ -49,7 +49,7 @@ export function agentViews(o: {
       requestsToday: evs.filter((e) => e.type === "trace" && e.phase === "tool_call" && e.at >= dayStart).length,
       pending: o.pending.filter((x) => has(x.pocket)).length,
       payments: pays.length,
-      refusals: rows.filter((r) => r.outcome === "refused").length,
+      refusals: rows.filter((r) => r.kind === "refusal").length, // pay-time refusals only (a quote-time block of the same attempt is not counted twice)
     };
   });
 }
@@ -110,4 +110,58 @@ export function ago(t: number, now = Date.now()): string {
   if (h < 24) return `${h} h ago`;
   const d = Math.round(h / 24);
   return d === 1 ? "yesterday" : `${d} days ago`;
+}
+
+// ---- an agent's own ledger (Agent detail): what it did, step by step, in plain words, newest first
+
+export type AgentStep = {
+  key: string; at: number; pocket: string;
+  kind: "search" | "quote" | "ask" | "task" | "paid" | "refused" | "connected" | "disconnected";
+  title: string; detail?: string; amount?: bigint; tx?: string;
+  status: { label: string; tone: "fill" | "blue" | "vermillion" | "green" | "ink" };
+  approvalId?: string; note?: string;
+};
+
+const atomic = (v: unknown): bigint | undefined => { try { return v == null ? undefined : BigInt(String(v)); } catch { return undefined; } };
+const cents = (s?: string): bigint | undefined => {
+  if (!s || !/^\d+(\.\d+)?$/.test(s)) return undefined;
+  const [a, b = ""] = s.split(".");
+  return BigInt(a) * 1_000_000n + BigInt((b + "000000").slice(0, 6));
+};
+
+/** Steps for the given pockets (an agent's), from the events the phone already holds. `name` names a seller id. */
+export function agentSteps(events: WalletEvent[], pockets: string[], name: (sellerId?: string) => string, plainReason: (code?: string) => string): AgentStep[] {
+  const mine = (p?: string) => pockets.some((x) => sameAddr(x, p));
+  const out: AgentStep[] = [];
+  const approvals = new Map<string, AgentStep>();
+  for (const e of events) {
+    if (!mine(e.pocket)) continue;
+    const base = { key: `${e.id ?? e.at}:${e.type}`, at: e.at, pocket: e.pocket! };
+    if (e.type === "trace" && e.phase === "tool_result") {
+      const r = typeof e.result === "string" ? (() => { try { return JSON.parse(e.result); } catch { return {}; } })() : e.result ?? {};
+      if (e.tool === "search_sellers" && r.ok) {
+        const all = Array.isArray(r.sellers) ? r.sellers : [];
+        const ok = all.filter((s: any) => s.allowedByPocket).map((s: any) => s.name);
+        out.push({ ...base, kind: "search", title: "Searched sellers", detail: ok.length ? `Allowed here: ${ok.join(", ")}` : "None allowed in this pocket", status: { label: "Checked", tone: "fill" } });
+      } else if (e.tool === "get_quote" && r.ok && !r.free) {
+        const blocked = r.allowedByPocket !== "OK";
+        out.push({ ...base, kind: "quote", title: `Quote from ${name(r.sellerId)}`, detail: r.description, amount: cents(r.price),
+          status: blocked ? { label: "Not allowed", tone: "vermillion" } : r.counterpartyRisk ? { label: `Risk ${r.counterpartyRisk.score}/10`, tone: r.counterpartyRisk.verdict === "ok" ? "fill" : "vermillion" } : { label: "Checked", tone: "fill" } });
+      }
+    } else if (e.type === "payment") {
+      out.push({ ...base, kind: "paid", title: `Paid ${name(e.sellerId)}`, amount: atomic(e.amount), tx: e.tx, detail: e.cosigned ? "Co-signed by you" : "Inside the pocket's limits", status: { label: "Paid", tone: "green" } });
+    } else if (e.type === "refusal") {
+      out.push({ ...base, kind: "refused", title: `Asked to pay ${name(e.sellerId)}`, amount: atomic(e.amount), detail: plainReason(e.reason), status: { label: "Refused", tone: "vermillion" } });
+    } else if (e.approval?.id && (e.approval.kind === "payment" || e.approval.kind === "intent")) {
+      const a = e.approval;
+      const st = a.status === "pending" ? { label: "Waiting for you", tone: "blue" as const } : a.status === "approved" ? { label: a.kind === "payment" ? "Co-signed" : "Confirmed", tone: "ink" as const }
+        : a.status === "timeout" ? { label: "Expired", tone: "fill" as const } : { label: "Declined", tone: "fill" as const };
+      const step: AgentStep = a.kind === "payment"
+        ? { ...base, key: `approval:${a.id}`, kind: "ask", title: `Asked to pay ${name(a.data?.sellerId)}`, amount: cents(a.data?.amount), detail: a.data?.description, note: a.text, status: st, approvalId: a.id }
+        : { ...base, key: `approval:${a.id}`, kind: "task", title: "Asked you to confirm a task", detail: String(a.text ?? "").split("\n")[0]?.replace(/^Buy:\s*/, ""), status: st, approvalId: a.id };
+      const old = approvals.get(a.id);
+      if (old) Object.assign(old, { status: st, at: e.at }); else { approvals.set(a.id, step); out.push(step); }
+    }
+  }
+  return out.sort((x, y) => y.at - x.at);
 }

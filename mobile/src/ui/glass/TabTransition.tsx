@@ -8,7 +8,7 @@ import type { TabsDescriptor, TabsSlotRenderOptions } from "expo-router/ui";
 import { motion } from "../../tokens";
 import { EASE_OUT, isReducedMotion } from "../motion";
 
-const ORDER = ["index", "agent", "activity", "settings"];
+const ORDER = ["index", "agents", "brain", "activity", "settings"];
 let lastIndex = 0;
 const SHIFT = 28;
 

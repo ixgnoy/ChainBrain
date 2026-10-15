@@ -2,7 +2,7 @@
 // on the phone. The app opens on it every launch, already lived in (two pockets, earlier purchases). No React Native
 // imports, so Node tests can load it.
 import { recoverTypedDataAddress, type Hex } from "viem";
-import { createWorld, seedOwner, claudeAsksForPremium, type World, type SeededPocket, type OwnerTxSeed } from "../../../shared/sim";
+import { createWorld, seedOwner, claudeAsksForPremium, errand, firstRun, type World, type SeededPocket, type OwnerTxSeed, type AgentId } from "../../../shared/sim";
 import { transferTypedData, type Authorization } from "./typed";
 
 let world: World | null = null;
@@ -38,6 +38,17 @@ export function startOutsideAgents(pockets: SeededPocket[], delayMs = 12_000) {
   const news = pockets.find((p) => p.agent === "claude");
   if (!news) return;
   setTimeout(() => { if (world === w) void claudeAsksForPremium(w, news.address).catch(() => {}); }, delayMs);
+}
+
+/** The owner allowed an outside agent and gave it a new pocket (Connect, consent sheet): it connects, reads the pocket, then
+ *  starts the task it came for. That task needs the owner twice, in the Approvals inbox: confirm the task, then co-sign the
+ *  premium report (US$1.50, above the pocket's US$0.50 ask-me limit). Resolves when its run ends. */
+export async function startGrantedAgent(id: AgentId, pocket: Hex) {
+  const w = builtin();
+  w.connect(id);
+  await w.act(id, pocket, firstRun());
+  await w.sleep(1800);
+  return w.act(id, pocket, errand({ what: "Durian 2026 forecast for this week's market brief", maxPrice: "2.00", maxTotal: "2.00", buys: [["datapro", "premium-report"]], say: "Writing down what I'd like to buy, so you can confirm it before I spend anything." }));
 }
 
 /** Tests: start over. */

@@ -44,6 +44,11 @@ function Shell() {
             <Stack.Screen name="(tabs)" />
             {/* fade: the pocket page's card arrives by the card flight (components/CardFlight.tsx), not by sliding in */}
             <Stack.Screen name="pocket/[id]" options={{ animation: "fade", gestureEnabled: true, fullScreenGestureEnabled: Platform.OS === "ios" }} />
+            <Stack.Screen name="agent" />
+            <Stack.Screen name="agents/[id]" />
+            <Stack.Screen name="connect" />
+            <Stack.Screen name="approvals" />
+            <Stack.Screen name="radar" />
             <Stack.Screen name="create" options={{ presentation: Platform.OS === "web" ? undefined : "modal", animation: Platform.OS === "web" ? "fade" : Platform.OS === "ios" ? "default" : "slide_from_bottom", gestureEnabled: true }} />
           </Stack>
           <CardFlightHost />
