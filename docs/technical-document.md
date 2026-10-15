@@ -76,7 +76,7 @@ The owner confirms a structured intent rendered from a **fixed template** (deadl
 | Expo | Generated (`getRandomBytesAsync`) or imported; stored in Keychain / Keystore via `expo-secure-store` | viem `signTypedData` |
 | Native Android | Generated (`SecureRandom`, range-checked) or imported; encrypted with an AES-GCM key held in the Android Keystore | web3j `Sign.signMessage` over the EIP-712 digest |
 
-The Kotlin signer is tested to be byte-identical to viem (`android/app/src/test/.../LogicTest.kt`). Testnet keys only; production would use WalletConnect / MetaMask mobile (needs a development build and a Reown project ID).
+The Kotlin signer is tested to be byte-identical to viem (`android/app/src/test/.../LogicTest.kt`). Testnet keys only. MetaMask mobile via WalletConnect (Reown AppKit) needs a Reown project ID; its native dependencies are bundled in Expo Go, so a development build is not strictly required (see [MetaMask on the phone](04-build/metamask-expo-go.md)).
 
 ## 7. Deployment and evidence
 
