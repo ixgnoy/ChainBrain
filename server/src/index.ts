@@ -20,11 +20,12 @@ import type { AskModel } from "./radar/ask";
 import { memory, render } from "./brain/memory";
 import { reflect, type ReflectModel } from "./brain/reflect";
 import { trimHistory } from "./brain/window";
+import { compileRules, type RulesModel } from "./rules/compile";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
 
 /** Wallet tool layer + agent API for the app. The LLM only ever reaches the tools; keys stay in this process. */
-export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryModel?: ReflectModel } = {}) {
+export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryModel?: ReflectModel; rulesModel?: RulesModel } = {}) {
   const app = new Hono();
   const chats = new Map<string, Msg[]>();
   const reflecting = new Map<string, Promise<unknown>>();
@@ -71,6 +72,12 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
     return c.json({ reply: out.reply, stopped: out.stopped });
   });
 
+  // "Speak your rules": one sentence -> proposed rules + a computed proof card. It never creates a pocket; the owner signs that.
+  app.post("/api/rules/compile", async (c) => {
+    const { sentence } = (await c.req.json()) as { sentence?: string };
+    if (!sentence?.trim()) return c.json({ error: "EMPTY_SENTENCE" }, 400);
+    return c.json(await compileRules(sentence, { main: deps.rulesModel }));
+  });
   app.get("/api/sentinel", async (c) => c.body(toJson(await sentinel.status((c.req.query("pocket") ?? "") as Address)), 200, { "content-type": "application/json" }));
   app.get("/api/memory", async (c) => {
     const p = c.req.query("pocket") ?? "";

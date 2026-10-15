@@ -4,6 +4,7 @@
 // the real server, so every screen behaves the same in both.
 import { CATALOG, sellerById, sellerByPayTo, sellerName, sellers, ATTACKER, DRAINER } from "./catalog";
 import { createMemory, consolidate } from "./memory";
+import { parseSentence, proof } from "./speak";
 import { rules as sentinelRules, ruleSeverity, gate, scriptedAi, stateText, PROBE_REASONS, RANK, type Severity, type Signal, type AiAnswer } from "./sentinel";
 import { ownerEvidence, scriptedReflection } from "./reflect";
 import { createLabels, exposure, memorySource, narrate, score as radarScore, shortAddr, trailOf, type Factor, type Verdict } from "./radar";
@@ -322,26 +323,42 @@ export function createWorld(opts: WorldOptions = {}) {
         return refuse(held, { radar: risk.narrative });
       }
       if (q.paid) return refuse("QUOTE_ALREADY_PAID");
-      q.paid = true;
-      await jitter(350, 600); // x402: 402 → sign → retry with X-PAYMENT
-      const rule = chain.canPay(pocket, q.payTo, q.amount);
-      if (rule !== "OK") return fail(rule, rule);
-      if (watch(pocket).hold && !q.ownerSig) return fail("SENTINEL_HOLD"); // after the pocket's rules, so probes still count
-      if (chain.needsOwner(pocket, q.amount) && !q.ownerSig) return fail("NEEDS_OWNER_APPROVAL");
-      if (q.auth && BigInt(q.auth.validBefore) <= BigInt(Math.floor(now() / 1000) + 10)) return fail("APPROVAL_EXPIRED");
-      const auth = (q.auth ??= buildAuthorization(pocket, q.payTo, q.amount));
-      await jitter(900, 1500); // facilitator verifies and settles on Base
-      const rule2 = chain.canPay(pocket, q.payTo, q.amount); // the owner may have revoked while it settled: the chain decides
-      if (rule2 !== "OK") return fail(rule2, rule2);
-      const s = chain.settle(pocket, q.payTo, q.amount, { submitter: SIM_AGENT, ownerSigned: !!q.ownerSig });
-      if (!s.ok) return fail(s.reason ?? "SETTLEMENT_FAILED");
-      t.spent += q.amount; t.items += 1;
-      if (q.ownerSig && watch(pocket).hold) sentinelClear(pocket, "cosign");
-      publish({ type: "payment", pocket, sellerId: q.sellerId, sku: q.sku, amount: q.amount, tx: s.tx, nonce: auth.nonce, intentHash: t.intent!.intentHash, cosigned: !!q.ownerSig });
-      const it = sellerById(q.sellerId)!.items.find((i) => i.sku === q.sku)!;
-      return { ok: true, tx: s.tx, paid: formatUsd(q.amount), sellerId: q.sellerId, ...screenFree(pocket, q.sellerId, delivered(q.sellerId, it.content, false)) };
+      // pre-flight (server: wallet/preflight.ts eth_call): predict this exact transfer on the current chain, then check it
+      const rule0 = chain.canPay(pocket, q.payTo, q.amount);
+      const predicted = rule0 !== "OK" ? { outcome: "refused", reason: rule0, by: "sim" }
+        : watch(pocket).hold && !q.ownerSig ? { outcome: "refused", reason: "SENTINEL_HOLD", by: "sim" }
+        : chain.needsOwner(pocket, q.amount) && !q.ownerSig ? { outcome: "refused", reason: "NEEDS_OWNER_APPROVAL", by: "sim" }
+        : { outcome: "pays", by: "sim", balanceAfter: (chain.balanceOf(pocket) - q.amount).toString() };
+      const base = { pocket, quoteId, sellerId: q.sellerId, sku: q.sku, amount: q.amount };
+      publish({ type: "preflight", kind: "predict", ...base, predicted });
+      const r: any = await settleQuoteFor(pocket, q, t, fail);
+      const matched = (predicted.outcome === "pays") === !!r.ok && (r.ok || !predicted.reason || predicted.reason === r.reason);
+      publish({ type: "preflight", kind: "result", ...base, predicted, actual: r.ok ? { outcome: "pays", tx: r.tx } : { outcome: "refused", reason: r.reason }, matched });
+      return { ...r, preflight: { predicted: predicted.outcome, matched } };
     },
   };
+
+  /** pay's settlement half (split out so pre-flight can wrap it). */
+  async function settleQuoteFor(pocket: Hex, q: Quote, t: Task, fail: (reason: string, detail?: string) => any): Promise<any> {
+    q.paid = true;
+    await jitter(350, 600); // x402: 402 → sign → retry with X-PAYMENT
+    const rule = chain.canPay(pocket, q.payTo, q.amount);
+    if (rule !== "OK") return fail(rule, rule);
+    if (watch(pocket).hold && !q.ownerSig) return fail("SENTINEL_HOLD"); // after the pocket's rules, so probes still count
+    if (chain.needsOwner(pocket, q.amount) && !q.ownerSig) return fail("NEEDS_OWNER_APPROVAL");
+    if (q.auth && BigInt(q.auth.validBefore) <= BigInt(Math.floor(now() / 1000) + 10)) return fail("APPROVAL_EXPIRED");
+    const auth = (q.auth ??= buildAuthorization(pocket, q.payTo, q.amount));
+    await jitter(900, 1500); // facilitator verifies and settles on Base
+    const rule2 = chain.canPay(pocket, q.payTo, q.amount); // the owner may have revoked while it settled: the chain decides
+    if (rule2 !== "OK") return fail(rule2, rule2);
+    const s = chain.settle(pocket, q.payTo, q.amount, { submitter: SIM_AGENT, ownerSigned: !!q.ownerSig });
+    if (!s.ok) return fail(s.reason ?? "SETTLEMENT_FAILED");
+    t.spent += q.amount; t.items += 1;
+    if (q.ownerSig && watch(pocket).hold) sentinelClear(pocket, "cosign");
+    publish({ type: "payment", pocket, sellerId: q.sellerId, sku: q.sku, amount: q.amount, tx: s.tx, nonce: auth.nonce, intentHash: t.intent!.intentHash, cosigned: !!q.ownerSig });
+    const it = sellerById(q.sellerId)!.items.find((i) => i.sku === q.sku)!;
+    return { ok: true, tx: s.tx, paid: formatUsd(q.amount), sellerId: q.sellerId, ...screenFree(pocket, q.sellerId, delivered(q.sellerId, it.content, false)) };
+  }
 
   async function runTool(pocket: Hex, name: string, args: object) {
     trace(pocket, "tool_call", { tool: name, args });
@@ -522,6 +539,8 @@ export function createWorld(opts: WorldOptions = {}) {
     /** GET /api/memory and POST /api/memory/forget */
     memory: (pocket: string) => wire({ snapshot: memory.get(pocket), log: memory.log(pocket) }),
     forgetMemory: (pocket: string, id: string) => memory.forget(pocket, id),
+    /** POST /api/rules/compile: the built-in network reads the sentence with the fixed parser (the server uses two Claude readings). */
+    compileRules: (sentence: string) => { const c = parseSentence(sentence, sellers()); return wire({ ...c, proof: proof(c.draft, sellers()) }); },
     /** GET /api/sentinel?pocket= */
     sentinel: (pocket: string) => { const w = watch(pocket); return wire({ status: chain.isPocket(pocket) && chain.view(pocket).frozen ? "freeze" : w.status, hold: w.hold, decisions: w.decisions.slice(-10) }); },
     radar: {

@@ -15,8 +15,10 @@ import { cleanText } from "../../lib/sanitize";
 import { money } from "../../lib/util";
 import { plainReason } from "../../lib/plain";
 import { brainOf, MEMORY_KIND, sourceWords, type MemoryItem, type MemorySnapshot } from "../../lib/brain";
-import { aiName, sameAddr } from "../../lib/events";
+import { aiName, preflightBy, sameAddr } from "../../lib/events";
 import { UnfreezeButton } from "../../components/SentinelCard";
+import { proof } from "../../../../shared/sim/speak";
+import { formatUsd, NEVER } from "../../lib/shared";
 import * as api from "../../lib/api";
 import { parseIntent } from "../../components/IntentCard";
 import { injectionsOf } from "../../components/InjectionCard";
@@ -76,7 +78,7 @@ function MemoryRow({ m, onForget }: { m: MemoryItem; onForget(): void }) {
 }
 
 export default function BrainTab() {
-  const { active, events, sellerName, setPickerOpen, pockets } = useApp();
+  const { active, events, sellerName, setPickerOpen, pockets, cfg } = useApp();
   const mine = useMemo(() => (active ? events.filter((e) => sameAddr(e.pocket, active.address)) : []), [events, active]);
   const injections = useMemo(() => injectionsOf(mine).length, [mine]);
   const b = useMemo(() => (active ? brainOf(events, active.address, sellerName, injections) : null), [events, active, sellerName, injections]);
@@ -124,6 +126,19 @@ export default function BrainTab() {
         <Stat value={mem?.version ? `v${mem.version}` : "–"} label="memory version" />
       </Rise>
 
+      {(() => {
+        // the pocket's live rules as a proof card: computed from the contract's values, the same way as "Speak your rules"
+        const sellers = (cfg?.sellers ?? []).map((s) => ({ id: s.id, name: s.name }));
+        const p = proof({ sellers: active.allowed, cap: formatUsd(active.cap), budget: formatUsd(active.balance), askAbove: active.askAbove === NEVER ? "never" : active.askAbove === 0n ? "0" : formatUsd(active.askAbove), lifetime: "ongoing" }, sellers);
+        return (
+          <Section icon="lock" title="Your rules" delay={20} status={`Worst case right now: US$${p.worstCase}, even if your agent is fooled`}>
+            {p.lines.slice(0, 3).map((l, i) => <Line key={i} icon="check" tone="accent" text={l} />)}
+            {p.neverPayable.length ? <Line icon="ban" text={`Can never pay ${p.neverPayable.join(", ")} or any other address`} /> : null}
+            <T v="cap" color="faint">Enforced by the pocket contract you own. Only your key can change them.</T>
+          </Section>
+        );
+      })()}
+
       <Section icon="target" title="Understood" delay={40} status={b.task ? (b.task.status === "approved" ? "The task you confirmed" : b.task.status === "pending" ? "Waiting for you to confirm" : "You declined the last task") : "No task yet. Ask your agent to buy something."}>
         {task.length ? task.map((r, i) => (
           <View key={i} style={{ gap: 1 }}>
@@ -166,6 +181,14 @@ export default function BrainTab() {
             {r.verdict !== "ok" && r.trail.length > 1 ? <T v="cap" color="muted">Money from {r.trail.slice(0, -1).map((n) => cleanText(n, 24)).join(" → ")}</T> : null}
           </View>
         ))}
+      </Section>
+
+      <Section icon="gauge" title="Pre-flight" delay={210} status={b.preflight.length ? `Predicted ${b.preflight.filter((x) => x.matched).length} of ${b.preflight.length} payments correctly before sending them` : "Predicts each payment before sending it"}>
+        {b.preflight.slice(-4).reverse().map((x) => (
+          <Line key={x.key} icon={x.matched ? "check" : "alert"} tone={x.matched ? "accent" : "warning"}
+            text={`${cleanText(sellerName(x.sellerId), 24)}${x.amount != null ? ` ${money(x.amount)}` : ""}: predicted ${x.predicted.outcome === "pays" ? "it pays" : `refused (${plainReason(x.predicted.reason ?? "")})`} → ${x.actual.outcome === "pays" ? "paid" : `refused (${plainReason(x.actual.reason ?? "")})`}${x.matched ? "" : ". Something changed on-chain while it settled"}`} />
+        ))}
+        {b.preflight.length ? <T v="cap" color="faint">Checked with {preflightBy(b.preflight.at(-1)?.predicted.by)} before any money moved.</T> : null}
       </Section>
 
       <Section icon="eye" title="Sentinel" delay={220} status={active.frozen ? "Froze this pocket on-chain. Only you can unfreeze it." : b.sentinel.length ? `${b.sentinel.filter((v) => v.kind !== "clear").length} ${b.sentinel.length === 1 ? "decision" : "decisions"}; now ${b.sentinel.at(-1)?.kind === "clear" ? "all clear" : b.sentinel.at(-1)?.kind === "hold" ? "waiting for your OK" : "watching"}` : "Watching every refusal, attack and payment. All clear."}>
