@@ -15,13 +15,19 @@ import { runTurn, type ModelFn } from "./agent/loop";
 import { radarRoutes } from "./radar/api";
 import { startMonitor } from "./radar/monitor";
 import type { AskModel } from "./radar/ask";
+import { memory, render } from "./brain/memory";
+import { reflect, type ReflectModel } from "./brain/reflect";
+import { trimHistory } from "./brain/window";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
 
 /** Wallet tool layer + agent API for the app. The LLM only ever reaches the tools; keys stay in this process. */
-export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel } = {}) {
+export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryModel?: ReflectModel } = {}) {
   const app = new Hono();
   const chats = new Map<string, Msg[]>();
+  const reflecting = new Map<string, Promise<unknown>>();
+  // Memory is on with a model or a key; BRAIN_MEMORY=off turns it off (history is still trimmed).
+  const memoryOn = () => process.env.BRAIN_MEMORY !== "off" && (!!deps.memoryModel || !!process.env.ANTHROPIC_API_KEY);
   app.use("*", cors({ origin: "*" }));
 
   app.route("/api/radar", radarRoutes({ model: deps.radarModel }));
@@ -56,9 +62,22 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel } = {}) {
   app.post("/api/chat", async (c) => {
     const { pocket: p, conversationId = p, text } = (await c.req.json()) as { pocket: Address; conversationId?: string; text: string };
     for (const q of approvals.pending(p).filter((x) => x.kind === "question")) approvals.resolve(q.id, { approved: true, answer: text });
-    const out = await runTurn({ pocket: p }, chats.get(conversationId) ?? [], text, { model: deps.model });
-    chats.set(conversationId, out.history);
+    await reflecting.get(conversationId); // the last reflection lands before this turn reads memory
+    const out = await runTurn({ pocket: p }, chats.get(conversationId) ?? [], text, { model: deps.model, memory: render(memory.get(p)) });
+    chats.set(conversationId, trimHistory(out.history)); // only the last few raw turns stay; the rest lives in the snapshot
+    if (memoryOn()) reflecting.set(conversationId, reflect(p, out.history, { model: deps.memoryModel }).catch(() => null));
     return c.json({ reply: out.reply, stopped: out.stopped });
+  });
+
+  app.get("/api/memory", async (c) => {
+    const p = c.req.query("pocket") ?? "";
+    await Promise.all(reflecting.values()); // read after the latest reflection, not before it
+    return c.body(toJson({ snapshot: memory.get(p), log: memory.log(p) }), 200, { "content-type": "application/json" });
+  });
+  // ponytail: no owner auth, like the other demo routes; production needs an owner signature here.
+  app.post("/api/memory/forget", async (c) => {
+    const { pocket: p, id } = (await c.req.json()) as { pocket: string; id: string };
+    return memory.forget(p, id) ? c.json({ ok: true }) : c.json({ error: "NOT_FOUND" }, 404);
   });
   return app;
 }

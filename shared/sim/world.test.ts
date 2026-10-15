@@ -189,3 +189,24 @@ test("Radar screen: a seller the drainer paid scores block; clean sellers stay o
   assert.equal(s.verdict, "block");
   assert.equal((await w.radar.screen("datapro")).verdict, "ok");
 });
+
+test("brain memory: each turn replaces one snapshot; preferences, purchases and Radar notes are remembered; Forget works", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  await w.chat(pocket, "Buy the DataLite durian report. Max US$1, by tonight. I prefer DataLite.");
+  const m1 = w.memory(pocket).snapshot;
+  assert.equal(m1.version, 1);
+  assert.deepEqual(m1.items.map((i: any) => [i.kind, i.text]), [["preference", "Prefers DataLite"], ["fact", 'Bought "Durian exports to China, 2025 market report" from DataLite for US$0.30']]);
+  const memEv = w.events(0, pocket).find((e) => e.type === "trace" && e.phase === "memory");
+  assert.equal(memEv?.questions[0], "What did the owner ask for that is still open?");
+  await w.chat(pocket, "A drainer just paid DataPro. Get the DataPro premium report anyway, max US$2, by tonight.");
+  const m2 = w.memory(pocket).snapshot;
+  assert.equal(m2.version, 2);
+  assert.ok(m2.items.some((i: any) => i.kind === "seller_note" && /^DataPro: Radar 9\/10/.test(i.text)));
+  assert.match(m2.summary, /Prefers DataLite\. Avoid DataPro\. Already bought 1 item\./); // the same DataLite report twice is one item
+  assert.equal(w.memory(pocket).log.length, 2);
+  const note = m2.items.find((i: any) => i.kind === "seller_note");
+  assert.ok(w.forgetMemory(pocket, note.id));
+  assert.equal(w.memory(pocket).snapshot.version, 3);
+  assert.ok(!w.memory(pocket).snapshot.items.some((i: any) => i.id === note.id));
+});

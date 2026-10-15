@@ -3,6 +3,8 @@
 // (devstack/src/model.ts), on top of the in-memory chain. The apps talk to it through the same calls they use for
 // the real server, so every screen behaves the same in both.
 import { CATALOG, sellerById, sellerByPayTo, sellerName, sellers, ATTACKER, DRAINER } from "./catalog";
+import { createMemory, consolidate } from "./memory";
+import { ownerEvidence, scriptedReflection } from "./reflect";
 import { createLabels, exposure, memorySource, narrate, score as radarScore, shortAddr, trailOf, type Factor, type Verdict } from "./radar";
 import { createChain, ChainError, type Chain } from "./chain";
 import { checkAgainstIntent, renderIntent, REASONS, scanRequests, wrapUntrusted, type Intent, type IntentInput } from "./intent";
@@ -160,6 +162,18 @@ export function createWorld(opts: WorldOptions = {}) {
     const x = await screen(q.payTo);
     publish({ type: "radar", kind: "screen", pocket, sellerId: q.sellerId, ...brief(x), narrative: x.narrative, ...trailOf(x.factors[0], nameOf) });
     return x;
+  }
+
+  // ---- brain memory (server/src/brain): after each turn one reflection replaces the pocket's snapshot
+  const memory = createMemory(now);
+  function reflectTurn(pocket: string, text: string, fromAt: number) {
+    const evs = recent.filter((e) => e.at > fromAt && same(e.pocket, pocket));
+    const prev = memory.get(pocket);
+    const { reflection, evidence } = scriptedReflection(prev, [ownerEvidence(text)], evs);
+    const { next, applied, rejected } = consolidate(prev, reflection, new Set(evidence.map((e) => e.id)), now());
+    if (!applied.some((a) => a.op !== "keep") && !rejected.length && next.summary === prev.summary) return; // nothing new to remember
+    memory.set(next, applied, rejected);
+    trace(pocket, "memory", { version: next.version, questions: reflection.questions.map((q) => q.q), answers: reflection.questions.map((q) => q.a), applied, rejected: rejected.map((r) => r.why) });
   }
 
   // ---- the wallet tools (server/src/wallet/tools.ts), with realistic latency
@@ -397,7 +411,12 @@ export function createWorld(opts: WorldOptions = {}) {
       if (!chain.isPocket(pocket)) return { reply: "I can't find that pocket.", stopped: "llm_error" };
       if (busy.has(lower(pocket))) return { reply: "I'm still working on your last message.", stopped: "llm_error" };
       busy.add(lower(pocket));
-      try { return await runTurn(pocket, text); } finally { busy.delete(lower(pocket)); }
+      const fromAt = lastAt;
+      try {
+        const r = await runTurn(pocket, text);
+        reflectTurn(pocket, text, fromAt);
+        return r;
+      } finally { busy.delete(lower(pocket)); }
     },
     isBusy: (pocket: string) => busy.has(lower(pocket)),
 
@@ -450,6 +469,9 @@ export function createWorld(opts: WorldOptions = {}) {
       await screen(s.payTo);
       return { tx };
     },
+    /** GET /api/memory and POST /api/memory/forget */
+    memory: (pocket: string) => wire({ snapshot: memory.get(pocket), log: memory.log(pocket) }),
+    forgetMemory: (pocket: string, id: string) => memory.forget(pocket, id),
     radar: {
       screen: async (who: string) => { const a = sellerById(who)?.payTo ?? who; const x = await screen(a); return { ...brief(x), factors: x.factors, narrative: x.narrative }; },
       alerts: () => wire(radarAlerts.slice().reverse()),

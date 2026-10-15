@@ -17,14 +17,16 @@ const defaultModel: ModelFn = (req) => (client ??= new Anthropic()).beta.message
  * `temperature` is rejected (400), so repeatability comes from the fixed seller list, not sampling;
  * effort is explicit (Opus 5.5 defaults to medium); server-side refusal fallback is on.
  */
-export function buildRequest(tools: ToolMap, messages: Msg[]): Req {
+export function buildRequest(tools: ToolMap, messages: Msg[], memory = ""): Req {
   return {
     model: process.env.AGENT_MODEL ?? "claude-opus-5-5",
     max_tokens: 16000,
     output_config: { effort: (process.env.AGENT_EFFORT as "low" | "medium" | "high") ?? "high" },
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
-    system: systemPrompt(),
+    system: memory ? `${systemPrompt()}
+
+${memory}` : systemPrompt(), // the brain's current memory snapshot, never the old ones
     tools: Object.entries(tools).map(([name, t]) => {
       const { $schema: _drop, ...schema } = t.input_schema as Record<string, unknown>; // zod adds $schema; keep the plain JSON Schema
       return { name, description: t.description, input_schema: schema as Anthropic.Beta.Messages.BetaTool.InputSchema };
@@ -34,7 +36,7 @@ export function buildRequest(tools: ToolMap, messages: Msg[]): Req {
 }
 
 /** One owner message → as many model/tool steps as the model wants. No scripted fallback: the model decides. */
-export async function runTurn(ctx: { pocket: Address }, history: Msg[], userText: string, deps: { model?: ModelFn; tools?: ToolMap; maxSteps?: number } = {}): Promise<TurnResult> {
+export async function runTurn(ctx: { pocket: Address }, history: Msg[], userText: string, deps: { model?: ModelFn; tools?: ToolMap; maxSteps?: number; memory?: string } = {}): Promise<TurnResult> {
   const model = deps.model ?? defaultModel;
   const tools = deps.tools ?? walletTools;
   const h: Msg[] = [...history, { role: "user", content: userText }];
@@ -46,7 +48,7 @@ export async function runTurn(ctx: { pocket: Address }, history: Msg[], userText
   for (let step = 0; step < (deps.maxSteps ?? 24); step++) {
     let res: Anthropic.Beta.Messages.BetaMessage;
     try {
-      res = await model(buildRequest(tools, h));
+      res = await model(buildRequest(tools, h, deps.memory));
     } catch (e) {
       return stop(`I stopped: the model is unavailable (${(e as Error).message}). ${done()}`, "llm_error");
     }

@@ -27,3 +27,27 @@ it("approving an unknown or settled approval is a 404, not a crash", async () =>
   const r = await api.request("/api/approvals/nope", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
   expect(r.status).toBe(404);
 });
+
+it("chat: trims history, reflects after the turn, next turn sees the new snapshot; owner can forget", async () => {
+  const { apiApp } = await import("../src/index");
+  const systems: string[] = [];
+  const reply = (t: string) => ({ stop_reason: "end_turn", content: [{ type: "text", text: t }] }) as any;
+  let n = 0;
+  const app = apiApp({
+    model: async (req: any) => (systems.push(req.system), reply(`r${n++}`)),
+    memoryModel: async (req: any) => {
+      const ev = JSON.parse(req.messages[0].content).evidence;
+      return { stop_reason: "tool_use", content: [{ type: "tool_use", id: "w", name: "write_memory", input: { questions: [], ops: [{ op: "add", kind: "preference", text: "Prefers DataLite", source: ev[0].id }], summary: "Likes DataLite." } }] } as any;
+    },
+  });
+  const post = (text: string) => app.request("/api/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pocket: "0xmem", text }) });
+  await post("I prefer DataLite");
+  await post("buy a durian report");
+  expect(systems[1]).toContain("Prefers DataLite");
+  const m = await (await app.request("/api/memory?pocket=0xmem")).json();
+  expect(m.snapshot).toMatchObject({ version: 2 });
+  const id = m.snapshot.items[0].id;
+  const f = await app.request("/api/memory/forget", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pocket: "0xmem", id }) });
+  expect(f.status).toBe(200);
+  expect((await (await app.request("/api/memory?pocket=0xmem")).json()).snapshot.items).toHaveLength(0);
+});

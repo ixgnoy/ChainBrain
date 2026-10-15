@@ -70,3 +70,11 @@ it("the real tool schemas are plain JSON Schema objects the API accepts", async 
   const intent = (req.tools as any[]).find((t) => t.name === "draft_intent").input_schema;
   expect(intent.required).toEqual(expect.arrayContaining(["request", "description", "maxPricePerItem", "maxTotal", "maxItems", "deadline"]));
 });
+
+it("puts the memory snapshot after the system prompt, and only when there is one", async () => {
+  const seen: any[] = [];
+  await runTurn(ctx, [], "hi", { model: async (req) => (seen.push(req), msg([{ type: "text", text: "ok" }])), tools: fakeTools({}), memory: '<memory version="2">\n- [preference] Prefers DataLite (m:1)\n</memory>' });
+  expect(seen[0].system).toMatch(/You are the owner's buying agent[\s\S]*<memory version="2">/);
+  await runTurn(ctx, [], "hi", { model: async (req) => (seen.push(req), msg([{ type: "text", text: "ok" }])), tools: fakeTools({}) });
+  expect(seen[1].system).not.toContain("<memory");
+});

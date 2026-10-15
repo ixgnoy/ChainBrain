@@ -12,11 +12,12 @@ Rules for every phase: AI only tightens; seller text never reaches a free-text m
 
 - [x] A. Radar core moved to `shared/sim/radar.ts` (one source for server + sim); sim emits `radar` events and COUNTERPARTY_* refusals; a drainer scene in the built-in network
 - [x] A2. Phone: Radar card in the chat (score, verdict, plain narrative, path), approval sheet shows risk, Activity shows Radar alerts
-- [ ] B. Phone: "Brain" tab, one place showing what the brain Understood (1), Planned (2, 9), Adapted (3), Blocked (4), Screened (5), Watches (6), Remembers (7), Your rules (8)
-- [ ] C. Memory: server per `2026-10-15-brain-memory.md`, sim mirror, phone memory card with Forget
+- [~] B. Phone: "Brain" tab (built: Understood, Planned, Adapted, Resisted, Radar, Memory; Sentinel, Your rules and Pre-flight sections come with D–F), one place showing what the brain Understood (1), Planned (2, 9), Adapted (3), Blocked (4), Screened (5), Watches (6), Remembers (7), Your rules (8)
+- [x] C. Memory: server per `2026-10-15-brain-memory.md`, sim mirror, phone memory card with Forget
 - [ ] D. Sentinel: Pocket.sol guardian freeze + tests, server rules + typed AI score, sim, phone feed + frozen state + unfreeze
 - [ ] E. Pre-flight: server `preflight` tool, sim, phone predicted-vs-actual on the trace and paid card, accuracy counter
 - [ ] F. Speak your rules: server compile endpoint + proof card, sim, phone create flow from one sentence
 
 ## Log
 - 15 Oct: Radar built on the server (`server/src/radar/`), tests green. Phone deps not installed in the repo (`mobile/node_modules` missing): `npm ci` in `mobile/`.
+- 15 Oct: Radar on phone + built-in network merged (PR #1, #2). Memory on server (Claude Haiku, forced tool with auto fallback) and built-in network (scripted reflection, same consolidate()); Brain tab; Forget tested in the browser build.
