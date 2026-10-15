@@ -35,14 +35,19 @@ export const parseRoute = (hash = location.hash): Route => {
 };
 const toHash = (r: Route) => (r.present ? "present" : r.tab) + (r.pocket ? `/${r.pocket}` : "");
 
+/** ChainBrain's mark: four tiles (hatch, vermillion, ink, hatch), pockets walled off from each other (same as the phone). */
 export function Mark({ size = 36 }: { size?: number }) {
   return (
     <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden>
-      <rect width="64" height="64" rx="18" fill="#111215" />
-      <g fill="none" stroke="#FFFFFF" strokeWidth="5" strokeLinecap="round">
-        <rect x="11" y="24" width="26" height="16" rx="8" transform="rotate(-35 24 32)" />
-        <rect x="27" y="24" width="26" height="16" rx="8" transform="rotate(-35 40 32)" />
-      </g>
+      <defs>
+        <pattern id="mark-hatch" patternUnits="userSpaceOnUse" width="7" height="7">
+          <path d="M0,7 L7,0 M-1.75,1.75 L1.75,-1.75 M5.25,8.75 L8.75,5.25" stroke="#111215" strokeWidth="2.4" strokeLinecap="square" />
+        </pattern>
+      </defs>
+      <rect x="2" y="2" width="27" height="27" rx="2.5" fill="url(#mark-hatch)" />
+      <rect x="35" y="2" width="27" height="27" rx="2.5" fill="#F04E23" />
+      <rect x="2" y="35" width="27" height="27" rx="2.5" fill="#111215" />
+      <rect x="35" y="35" width="27" height="27" rx="2.5" fill="url(#mark-hatch)" />
     </svg>
   );
 }

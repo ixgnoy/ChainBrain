@@ -1,12 +1,8 @@
 @import "tailwindcss";
-@import "@fontsource/plus-jakarta-sans/400.css";
-@import "@fontsource/plus-jakarta-sans/500.css";
-@import "@fontsource/plus-jakarta-sans/600.css";
-@import "@fontsource/plus-jakarta-sans/700.css";
-@import "@fontsource/plus-jakarta-sans/800.css";
 
-/* Neo-Kinetic Fintech, light only (design-system/chainbrain/MASTER.md). Black ink on white cards over a slate canvas,
-   vermillion and powder blue as the only accents, 45° hatch instead of fills. Older role names map onto the new palette. */
+/* Neo-Kinetic Fintech after VaultBank, light only (design-system/chainbrain/MASTER.md). Black ink on white cards over a warm
+   paper-grey canvas, vermillion and powder blue as the only accents, hatch instead of fills, Clash Display for what you read
+   first and General Sans for the rest (index.html loads both from Fontshare). Older role names map onto the new palette. */
 @theme {
   --color-canvas: #e7e6e2;
   --color-card: #ffffff;
@@ -47,12 +43,13 @@
   --color-lilac: #d1e4ff;
   --color-lilac-ink: #124977;
 
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "General Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Clash Display", "General Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-display);
 
-  --radius-card: 24px;
+  --radius-card: 20px;
   --radius-tile: 16px;
-  --radius-input: 16px;
+  --radius-input: 14px;
 
   --shadow-level1: 0 4px 20px -2px rgba(17, 18, 21, 0.04), 0 1px 2px rgba(17, 18, 21, 0.02);
   --shadow-level3: 0 12px 32px -4px rgba(17, 18, 21, 0.16);
@@ -75,10 +72,12 @@ body {
 button, a, select, [role="tab"] { cursor: pointer; }
 
 .num { font-variant-numeric: tabular-nums; }
-/* Page titles: Jakarta ExtraBold with tight tracking (the old serif class name is kept for callers). */
-.title-serif, .display { font-family: var(--font-sans); font-weight: 800; letter-spacing: -0.03em; }
-/* Balances and financial figures: display-lg tracking (DESIGN.md "Financial Figures"). */
-.figure { font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+/* Page titles: Clash Display Semibold (the old serif class name is kept for callers). */
+.title-serif, .display { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.015em; }
+/* Balances and financial figures: Clash Display Medium, VaultBank's calm figures. */
+.figure { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+/* Every extra-bold heading in the console is a Clash Display heading (unlayered, so it wins over the tracking utilities). */
+.font-extrabold { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; }
 .figure .cur { font-size: 0.75em; }
 /* 45° hatch: 2 px stroke on a 4 px pitch (DESIGN.md "Hatch Infill"). */
 .hatch { background-image: repeating-linear-gradient(45deg, var(--hatch, var(--color-ink)) 0 2px, transparent 2px 6px); }
@@ -97,9 +96,13 @@ button, a, select, [role="tab"] { cursor: pointer; }
   .band-run { background-color: var(--color-blue-soft); --hatch: rgba(18, 73, 119, 0.30); }
   .band-ok { background-color: var(--color-green-soft); --hatch: rgba(21, 128, 61, 0.38); }
   .band-bad { background-color: var(--color-vermillion-soft); --hatch: rgba(240, 78, 35, 0.55); }
-  /* Pocket card: powder blue with a fine ink hatch, like the phone. */
-  .pocket-blue { background-color: var(--color-blue); --hatch: rgba(17, 18, 21, 0.07); }
-  .pocket-frozen { background-color: var(--color-card); --hatch: rgba(17, 18, 21, 0.22); }
+  /* Pocket card, VaultBank's anatomy like the phone: a face with its side showing under it (2.5D), a top light and a
+     specular band, and a black stripe across the card. */
+  .pocket-face { position: relative; border-radius: 18px; overflow: hidden; box-shadow: 0 4px 0 var(--edge, #6e9fd8), var(--shadow-level3); }
+  .pocket-face::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 55%), linear-gradient(118deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.16) 42%, rgba(255,255,255,0) 54%); }
+  .pocket-blue { background-color: var(--color-blue); --edge: #6e9fd8; }
+  .pocket-frozen { background-color: var(--color-card); --edge: #c9c8c3; --hatch: rgba(17, 18, 21, 0.18); }
+  .pocket-band { background-color: var(--color-ink); }
 }
 @keyframes bar-grow { from { transform: scaleX(0); } to { transform: none; } }
 .bar-grow { transform-origin: left center; animation: bar-grow 500ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }

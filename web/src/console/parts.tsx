@@ -54,8 +54,9 @@ export function PhoneTag() {
 
 export function TestnetChip() {
   const { dev, builtin } = useNetwork();
-  const text = builtin || dev ? "Test network · no real money" : "Testnet · Base Sepolia · no real money";
-  return <span className="inline-flex h-8 items-center gap-2 rounded-full bg-ink/[0.07] px-3.5 text-[12px] font-semibold text-ink2"><span className="size-2 rounded-full bg-vermillion" aria-hidden />{text}</span>;
+  const text = builtin || dev ? "Test network" : "Testnet · Base Sepolia";
+  // "no real money" joins the label when the header has room (Clash and General Sans run wider than the old face)
+  return <span title={`${text} · no real money`} className="inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-ink/[0.07] px-3.5 text-[12px] font-semibold text-ink2"><span className="size-2 shrink-0 rounded-full bg-vermillion" aria-hidden />{text}<span className="hidden xl:inline"> · no real money</span></span>;
 }
 
 export function pocketStatus(p: PocketState): { label: string; kind: ChipKind } {

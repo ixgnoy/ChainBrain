@@ -2,7 +2,7 @@
 // (spec "Demo layout": chat with trace on the left, the active pocket on the right).
 // Every column is keyed on the ONE pocket passed in, so a render never mixes one pocket's trace with another's balance.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ShieldAlert, ShieldCheck, Check, Minus, Wallet, Clock, BellRing, Timer, Bot } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Check, Minus, Wallet, Clock, Timer, Bot } from "lucide-react";
 import { useNetwork } from "./useNetwork";
 import { Expected, PhoneTag, Reason, TxHash, Verdict, clock, pocketStatus, usd, NEVER, AgentTag } from "./parts";
 import { argsOf, evidenceOf, injectionOf, plainSummary, type Injection } from "./story";
@@ -188,34 +188,42 @@ function EvidenceStrip({ ev, decisions }: { ev: ReturnType<typeof evidenceOf>; d
   );
 }
 
-/** The pocket as a card: powder-blue hatch (white hatch with muted text when stopped), name, the balance as a figure, a short pocket number, rules as chips. */
+/** The pocket as a card, VaultBank's anatomy like the phone: the name, a black stripe carrying the holding agent on a white pill,
+ *  the balance as a figure, the rules in one line, the short pocket number big at the bottom with the expiry. Stopped: the
+ *  white hatch face. Owner and holder under the card. */
 function PocketCard({ p, name, phone, stopped, status, present }: { p: PocketState; name: string; phone: boolean; stopped: boolean; status?: ReturnType<typeof pocketStatus>; present?: boolean }) {
   const { cfg } = useNetwork();
-  const ask = p.askAbove === NEVER ? "Never asks" : p.askAbove === 0n ? "Asks every time" : `Ask above ${usd(p.askAbove)}`;
+  const ask = p.askAbove === NEVER ? "never asks" : p.askAbove === 0n ? "asks every time" : `asks above ${usd(p.askAbove)}`;
   const ends = new Date(p.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-  const chip = "inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[12px] font-bold text-ink shadow-[inset_0_0_0_1px_var(--color-tile-stroke)]";
   return (
-    <div className={cn("card hatch relative overflow-hidden p-5", stopped ? "pocket-frozen" : "pocket-blue")}>
-      <div className="flex items-start justify-between gap-3">
-        <span className="inline-flex min-w-0 items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-ink"><span aria-hidden className={cn("size-2 shrink-0 rounded-full", stopped ? "bg-vermillion" : "bg-green")} /><span className="truncate">{stopped ? "Stopped" : "Agent pocket"}</span></span>
-        {status && <Verdict kind={status.kind}>{status.label}</Verdict>}
-      </div>
-      <h2 className="mt-4 flex min-w-0 flex-wrap items-center text-[22px] font-extrabold leading-7 tracking-[-0.03em]">{name}{phone && <PhoneTag />}</h2>
-      <div className={cn("mt-3 text-[13px] font-semibold leading-5", stopped ? "text-muted" : "text-blue-ink")}>{stopped ? "Held in a stopped pocket" : "Balance, the agent's whole budget"}</div>
-      <div className={cn("figure mt-0.5 text-[48px] leading-[52px]", stopped && "text-ink2")} data-testid="pocket-balance" data-stopped={stopped ? "true" : undefined}><Fig text={usd(p.balance)} />{stopped && p.balance > 0n && <span className="ml-2 text-[16px] font-bold tracking-normal"> to return</span>}</div>
-      {!present && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className={chip}><ShieldCheck className="size-3.5" {...I} aria-hidden />Cap {usd(p.cap)}</span>
-          <span className={chip}><BellRing className="size-3.5" {...I} aria-hidden />{ask}</span>
+    <div>
+      <div className={cn("pocket-face", stopped ? "pocket-frozen hatch" : "pocket-blue")}>
+        <div className="flex items-center justify-between gap-3 px-5 pt-4">
+          <h2 className="flex min-w-0 flex-wrap items-center font-extrabold text-[22px] leading-7">{name}{phone && <PhoneTag />}</h2>
+          {status && <Verdict kind={status.kind}>{status.label}</Verdict>}
         </div>
-      )}
-      <div className="mt-5 flex items-end justify-between gap-3 text-[13px] font-bold">
-        <span className="num tracking-[0.12em]">{"•••• "}{p.address.slice(-4).toUpperCase()}</span>
-        <span className="num inline-flex items-center gap-1.5 font-semibold"><Timer className="size-3.5" {...I} aria-hidden />Valid until {ends}</span>
+        <div className={cn("pocket-band mt-3 flex h-11 items-center gap-2 px-5", stopped && "bg-ink2")}>
+          <span className="inline-flex min-w-0 items-center gap-2 rounded-full bg-white py-1 pl-1 pr-3 text-[12px] font-semibold text-ink">
+            <AgentTag agentKey={p.agent} serverAgent={cfg.agent} className="bg-transparent px-0" />
+            <span aria-hidden className={cn("size-2 shrink-0 rounded-full", stopped ? "bg-vermillion" : "bg-green")} />
+            <span className="truncate">{stopped ? "Stopped" : "Agent pocket"}</span>
+          </span>
+        </div>
+        <div className="px-5 pt-3">
+          <div className={cn("eyebrow", stopped ? "text-muted" : "text-blue-ink")}>{stopped ? "Held in a stopped pocket" : "Available"}</div>
+          <div className={cn("figure mt-0.5 text-[48px] leading-[52px]", stopped && "text-ink2")} data-testid="pocket-balance" data-stopped={stopped ? "true" : undefined}><Fig text={usd(p.balance)} />{stopped && p.balance > 0n && <span className="ml-2 font-sans text-[16px] font-bold tracking-normal"> to return</span>}</div>
+        </div>
+        <div className="flex items-end justify-between gap-3 px-5 pb-4 pt-4">
+          <div className="min-w-0">
+            {!present && <div className="text-[13px] font-medium leading-5 text-ink2"><ShieldCheck className="mr-1 inline size-3.5 align-[-2px]" {...I} aria-hidden />Cap {usd(p.cap)} · {ask}</div>}
+            <div className="font-extrabold num text-[26px] leading-8">*{p.address.slice(-4).toUpperCase()}</div>
+          </div>
+          <span className="num inline-flex shrink-0 items-center gap-1.5 pb-1 text-[13px] font-semibold"><Timer className="size-3.5" {...I} aria-hidden />Until {ends}</span>
+        </div>
       </div>
       {!present && (
-        <dl className="mt-4 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1.5 border-t border-ink/15 pt-3 text-[12px] leading-4">
-          <dt className="flex items-center gap-1.5 font-semibold"><Bot className="size-3.5" {...I} aria-hidden />Held by</dt><dd className="text-right"><AgentTag agentKey={p.agent} serverAgent={cfg.agent} className="bg-white/60" /></dd>
+        <dl className="mt-3 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1.5 px-1 text-[12px] leading-4 text-ink2">
+          <dt className="flex items-center gap-1.5 font-semibold"><Bot className="size-3.5" {...I} aria-hidden />Held by</dt><dd className="text-right"><AgentTag agentKey={p.agent} serverAgent={cfg.agent} /></dd>
           <dt className="font-semibold">Owner</dt><dd className="num text-right font-bold">{shortAddr(p.owner)}</dd>
         </dl>
       )}
