@@ -13,7 +13,11 @@ Branch: `feat/fisco-bcos-ehkd`. Decisions (owner, 15 Oct):
 
 ## Steps
 
-- [ ] **F1 Local chain.** `scripts/fisco/{setup,start,stop}.sh`: download v3.16.4 binary + `build_chain.sh` into `.fisco/` (gitignored), build a 1-node group, enable `[web3_rpc]`, set the executor version for Ethereum compatibility, start. Verify with viem: `eth_chainId` = 20200, deploy a contract, read its receipt. Record every RPC gap found (fee fields, estimateGas, tx type) in this plan.
+- [x] **F1 Local chain.** `scripts/fisco/{setup,start,stop}.sh`: download v3.16.4 binary + `build_chain.sh` into `.fisco/` (gitignored), build a 1-node group, enable `[web3_rpc]`, set the executor version for Ethereum compatibility, start. Verify with viem: `eth_chainId` = 20200, deploy a contract, read its receipt. Record every RPC gap found (fee fields, estimateGas, tx type) in this plan.
+  > Done: `scripts/fisco/setup.sh` builds v3.16.4 (Air, 1 node) from scratch; viem deploys and reads a contract with both EIP-1559 and legacy txs (`eth_chainId` 0x4ee8, gas price 0, `eth_estimateGas` works). **RPC gaps found:**
+  > 1. web3 `eth_sendRawTransaction` rejects any sender with native balance 0 (`InsufficientFunds`, bcos-rpc `checkSenderBalance`), regardless of gas price. Fix: genesis `[features] feature_balance=1, feature_balance_precompiled=1`, chain built in auth mode with the console account as governor, then `scripts/fisco/fund.sh <addr>` (console `addBalance`). Every sender (owner, facilitator, force script, app keys) must be funded once.
+  > 2. Genesis `alloc` is not parsed in 3.16.4 (`NodeConfig::loadAlloc` reads it as features), so balances can't be pre-set.
+  > 3. `executor.version=2` in the genesis crashes the node on start (`std::out_of_range`); version 1 works with the web3 RPC.
 - [ ] **F2 Token contract.** `contracts/src/MockEHKD.sol` + `contracts/test/MockEHKD.t.sol` (EOA and ERC-1271 authorizations, replay, expiry, cancel, mint only owner). `contracts/test/Pocket.ehkd.t.sol`: the 20 pocket cases against a locally deployed MockEHKD (no fork). Base fork tests still pass.
 - [ ] **F3 Deploy to FISCO.** Deploy MockEHKD + PocketFactory on the local chain, mint to OWNER, write `contracts/deployments/20200.json` (`PocketFactory`, `Token`). Verify code at both addresses.
 - [ ] **F4 Server chain switch.** `server/src/chains.ts` (id, rpc, token, EIP-712 domain, currency label, tx URL, x402 network). Replace every hard-coded USDC / Base Sepolia / 84532 in server code, scripts and test helpers. Price sheet per currency. `/api/config` exposes the chain. `/api/tx/:hash`.
