@@ -12,3 +12,6 @@ mobile/dist/
 # Downloaded third-party material (untrusted; never run code from here)
 reference/
 .DS_Store
+
+# Private research notes
+/research/
