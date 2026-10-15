@@ -9,6 +9,7 @@ import { c, lift, motion } from "../tokens";
 import { haptic } from "../haptics";
 import { Money } from "../ui/Money";
 import { T } from "../ui/Text";
+import { Icon } from "../ui/Icon";
 import { EASE_OUT, useReduceMotion } from "../ui/motion";
 import { NEVER } from "../lib/shared";
 import { cleanText } from "../lib/sanitize";
@@ -47,15 +48,17 @@ function Frost({ w, h, fr }: { w: number; h: number; fr: SharedValue<number> }) 
 }
 function FrostLine({ d, fr, i }: { d: string; fr: SharedValue<number>; i: number }) {
   const p = useAnimatedProps(() => ({ strokeDashoffset: 420 * (1 - Math.min(1, Math.max(0, (fr.value - i * 0.06) / 0.7))) }));
-  return <APath d={d} stroke="rgba(255,255,255,0.18)" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" fill="none" strokeDasharray="420 420" animatedProps={p} />;
+  return <APath d={d} stroke="rgba(255,255,255,0.34)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none" strokeDasharray="420 420" animatedProps={p} />;
 }
 
-const validThru = (expiresAt: bigint | number) => {
+/** One expiry format on every card: "23:59" when it ends today, "16 OCT" later. */
+export const validThru = (expiresAt: bigint | number) => {
   const d = new Date(Number(expiresAt) * 1000);
-  return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }).toUpperCase();
 };
 
-export function PocketFace({ pocket, width, tone, buzz, shadow, still }: { pocket: Pocket; width: number; tone: Tone; /** Warning haptic when it freezes in view */ buzz?: boolean; /** the single sheet-level shadow (lifts a card off the one behind it) */ shadow?: boolean; /** no entrance of its own */ still?: boolean }) {
+export function PocketFace({ pocket, width, tone, buzz, shadow, focused = true }: { pocket: Pocket; width: number; tone: Tone; /** Warning haptic when it freezes in view */ buzz?: boolean; /** the single soft shadow (lifts a card off the one behind it) */ shadow?: boolean;
+  /** the screen showing this card is in front: a freeze that happened while it was away plays when it comes back */ focused?: boolean; still?: boolean }) {
   const reduce = useReduceMotion();
   const k = width / 350;
   const h = cardHeight(width);
@@ -64,38 +67,51 @@ export function PocketFace({ pocket, width, tone, buzz, shadow, still }: { pocke
   const grey = useSharedValue(off ? 1 : 0);
   const dip = useSharedValue(1);
   const was = useRef(pocket.revoked);
+  const owed = useRef(false); // a freeze happened out of sight: play it when the card is seen
+  const play = () => {
+    grey.value = reduce ? 1 : withTiming(1, { duration: 700, easing: EASE_OUT });
+    fr.value = reduce ? 1 : withTiming(1, { duration: 1100, easing: EASE_OUT });
+    if (!reduce) dip.value = withSequence(withTiming(0.985, { duration: 160, easing: EASE_OUT }), withSpring(1, motion.spring.press));
+    if (buzz) haptic.warning();
+  };
   useEffect(() => {
-    grey.value = reduce ? (off ? 1 : 0) : withTiming(off ? 1 : 0, { duration: 700, easing: EASE_OUT });
-    if (pocket.revoked && !was.current) {
-      fr.value = reduce ? 1 : withTiming(1, { duration: 1100, easing: EASE_OUT });
-      if (!reduce) dip.value = withSequence(withTiming(0.985, { duration: 160, easing: EASE_OUT }), withSpring(1, motion.spring.press));
-      if (buzz) haptic.warning();
-    }
-    if (!pocket.revoked) fr.value = 0;
+    if (pocket.revoked && !was.current) { if (focused) play(); else owed.current = true; }
+    else if (!pocket.revoked) { fr.value = 0; grey.value = reduce ? (off ? 1 : 0) : withTiming(off ? 1 : 0, { duration: 700, easing: EASE_OUT }); owed.current = false; }
     was.current = pocket.revoked;
   }, [pocket.revoked, off]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (focused && owed.current) { owed.current = false; fr.value = 0; grey.value = 0; setTimeout(play, 250); } }, [focused]); // eslint-disable-line react-hooks/exhaustive-deps
   const face = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(grey.value, [0, 1], [FACE[tone], FROZEN]), transform: [{ scale: dip.value }] }));
   const ask = pocket.askAbove === NEVER || pocket.askAbove > pocket.cap ? "Never" : pocket.askAbove === 0n ? "Every payment" : money(pocket.askAbove);
   const tail = pocket.address.slice(-4).toUpperCase();
-  const label = (t: string) => <T v="cap" w="medium" style={{ color: "rgba(255,255,255,0.62)", fontSize: 10.5 * Math.max(k, 0.9), lineHeight: 14, letterSpacing: 0.8 }}>{t}</T>;
+  const line = "rgba(255,255,255,0.5)";
+  const label = (t: string) => <T v="cap" w="semi" style={{ color: "rgba(255,255,255,0.58)", fontSize: 10.5, lineHeight: 14, letterSpacing: 1.1 }}>{t}</T>;
   const val = (t: string) => <T v="sub" w="semi" numberOfLines={1} style={{ color: c.onAccent, fontSize: 14, lineHeight: 20 }}>{t}</T>;
+  const state = pocket.revoked ? (pocket.balance > 0n ? "Frozen · return funds" : "Stopped") : isExpired(pocket) ? "Ended" : null;
   return (
-    <Animated.View style={[{ width, height: h, borderRadius: 20, overflow: "hidden" }, shadow ? { ...lift, shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.1 } : null, face]}>
-      <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, height: 1.5, backgroundColor: "rgba(255,255,255,0.16)" }} />
+    <Animated.View style={[{ width, height: h, borderRadius: 20, overflow: "hidden" }, shadow ? { ...lift, shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.09, shadowRadius: 14 } : null, face]}>
+      <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.10)" }} />
       <Frost w={width} h={h} fr={fr} />
-      <View style={{ position: "absolute", left: 20, right: 20, top: 17, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <View style={{ position: "absolute", left: 20, right: 20, top: 15, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <T v="row" w="semi" numberOfLines={1} style={{ color: c.onAccent, flexShrink: 1, fontSize: 17 }}>{cleanText(pocket.name, 24)}</T>
-        <Money v="section" value={usd(pocket.balance)} color="onAccent" label={`${cleanText(pocket.name, 24)} balance`} decorative />
+        <View style={{ opacity: off ? 0.6 : 1 }}><Money v="section" value={usd(pocket.balance)} color="onAccent" label={`${cleanText(pocket.name, 24)} balance`} decorative /></View>
       </View>
-      <View style={{ position: "absolute", left: 20, top: 74 * k, flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <View style={{ width: 36, height: 27, borderRadius: 6, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.5)", alignItems: "center", justifyContent: "center" }}>
-          <View style={{ position: "absolute", top: 8, left: 0, right: 0, height: 1.5, backgroundColor: "rgba(255,255,255,0.35)" }} />
-          <View style={{ position: "absolute", bottom: 8, left: 0, right: 0, height: 1.5, backgroundColor: "rgba(255,255,255,0.35)" }} />
-          <View style={{ position: "absolute", left: 11, top: 0, bottom: 0, width: 1.5, backgroundColor: "rgba(255,255,255,0.35)" }} />
+      {state ? (
+        <View accessibilityLabel={state} style={{ position: "absolute", left: 20, top: 41, height: 20, paddingHorizontal: 8, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.2)", flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <Icon name="lock" size={11} color={c.onAccent} stroke={2.2} />
+          <T v="cap" w="semi" style={{ color: c.onAccent, fontSize: 11, lineHeight: 14 }}>{state}</T>
         </View>
-        {pocket.revoked ? <T v="cap" w="semi" style={{ color: c.onAccent, letterSpacing: 1 }}>REVOKED</T> : isExpired(pocket) ? <T v="cap" w="semi" style={{ color: c.onAccent, letterSpacing: 1 }}>ENDED</T> : null}
+      ) : null}
+      <View style={{ position: "absolute", left: 20, right: 20, top: 80 * k, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View style={{ width: 40, height: 30, borderRadius: 7, borderWidth: 1.2, borderColor: line, backgroundColor: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+          <View style={{ position: "absolute", left: 0, right: 0, top: 9, height: 1, backgroundColor: line }} />
+          <View style={{ position: "absolute", left: 0, right: 0, bottom: 9, height: 1, backgroundColor: line }} />
+          <View style={{ position: "absolute", top: 0, bottom: 0, left: 13, width: 1, backgroundColor: line }} />
+          <View style={{ position: "absolute", top: 0, bottom: 0, right: 13, width: 1, backgroundColor: line }} />
+          <View style={{ position: "absolute", left: 13, right: 13, top: 9, bottom: 9, borderWidth: 1, borderColor: line, borderRadius: 3 }} />
+        </View>
+        <T v="cap" w="semi" style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, lineHeight: 16, letterSpacing: 0.4 }}>ChainBrain</T>
       </View>
-      <T v="row" w="medium" style={{ position: "absolute", left: 20, top: 118 * k, color: "rgba(255,255,255,0.92)", fontSize: 18, lineHeight: 24, letterSpacing: 2.2 }}>{"••••  ••••  "}{tail}</T>
+      <T v="row" w="medium" style={{ position: "absolute", left: 20, top: 122 * k, color: "rgba(255,255,255,0.92)", fontSize: 18, lineHeight: 24, letterSpacing: 2.2 }}>{"••••  ••••  "}{tail}</T>
       <View style={{ position: "absolute", left: 20, right: 20, bottom: 16, flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
         <View style={{ gap: 1, flexShrink: 1 }}>{label("CAP")}{val(money(pocket.cap))}</View>
         <View style={{ gap: 1, flexShrink: 1 }}>{label("ASK ME ABOVE")}{val(ask)}</View>

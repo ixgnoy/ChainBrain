@@ -22,8 +22,10 @@ import { cleanText } from "../../lib/sanitize";
 import { visibleRows } from "../../lib/plain";
 import { usd, money } from "../../lib/util";
 import { Rise as RiseIn } from "../../ui/Rise";
+import { GLASS_TAB_SPACE as TAB_SPACE } from "../../ui/glass/GlassTabBar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-/** Header: owner avatar, the "Testnet" chip, bell. (Ask agent lives in the round actions and the Agent tab, once.) */
+/** Header: owner avatar, the "Test network" chip, bell. (Ask agent lives in the round actions and the Agent tab, once.) */
 function Header() {
   const { pending, setApprovalOpen, setQuestionOpen } = useApp();
   const needs = pending.length > 0;
@@ -32,7 +34,7 @@ function Header() {
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <Press onPress={() => router.navigate("/settings")} accessibilityRole="button" accessibilityLabel="Settings and wallet" kind="round" haptics="light" hitSlop={4}><Avatar icon="user" tone="solid" size={40} /></Press>
         <View accessibilityLabel="Test network, no real money" style={{ height: 24, paddingHorizontal: 10, borderRadius: 12, backgroundColor: c.fill, justifyContent: "center" }}>
-          <T v="cap" w="medium" color="muted" style={{ fontSize: 12, lineHeight: 16 }}>Testnet</T>
+          <T v="cap" w="medium" color="muted" style={{ fontSize: 12, lineHeight: 16 }}>Test network</T>
         </View>
       </View>
       <Press
@@ -96,9 +98,11 @@ function LiveStrip() {
 function Home({ ready }: { ready: boolean }) {
   const { pockets, pocketsLoaded, conn, balances, ledger, setReceipt, setAction, refreshPockets } = useApp();
   const reduce = useReduceMotion();
+  const insets = useSafeAreaInsets();
   const play = useRef(ready && !introPlayed).current;
   useEffect(() => { if (ready) introPlayed = true; }, [ready]);
   const sumAll = pockets.reduce((n, p) => n + (p.revoked ? 0n : p.balance), 0n);
+  const frozen = pockets.reduce((n, p) => n + (p.revoked ? p.balance : 0n), 0n);
   const recent = useMemo(() => visibleRows([...ledger].reverse()).slice(0, 3), [ledger]);
   const loading = !pocketsLoaded && conn !== "offline";
 
@@ -120,7 +124,7 @@ function Home({ ready }: { ready: boolean }) {
   };
 
   return (
-    <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={c.accent} colors={[c.accent]} />}>
+    <Screen contentContainerStyle={{ paddingBottom: TAB_SPACE + insets.bottom + 56 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={c.accent} colors={[c.accent]} />}>
       <Header />
       <Rise play={play} index={0}>
         <Animated.View style={pulseStyle}>
@@ -136,6 +140,7 @@ function Home({ ready }: { ready: boolean }) {
                 </>
               ) : <T v="sub" color="muted">{loading ? "Main wallet, loading…" : "Main wallet"}</T>}
             </View>
+            {frozen > 0n ? <T v="cap" color="muted" style={{ marginTop: 4 }}>{`Not counted: ${money(frozen)} frozen in a stopped pocket`}</T> : null}
             <Rise play={play} index={1} style={{ alignSelf: "stretch" }}>
               <View style={{ flexDirection: "row", marginTop: 24, alignSelf: "stretch" }}>
                 <RoundButton icon="plus" label="Add money" onPress={() => setAction({ mode: "fund" })} />

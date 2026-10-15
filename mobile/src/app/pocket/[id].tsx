@@ -87,18 +87,18 @@ export default function PocketDetail() {
             {rootW ? <PocketFace pocket={pocket} width={rootW - 40} tone={toneFor(pockets, pocket.address)} buzz /> : <View style={{ height: 200 }} />}
           </View>
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center", paddingHorizontal: 20 }}>
-            {pocket.revoked ? <Rise index={0} step={40} base={140}><Pill label="Revoked" tone="negative" /></Rise> : expired ? <Rise index={0} step={40} base={140}><Pill label="Expired" tone="fill" /></Rise> : null}
+            {pocket.revoked ? <Rise index={0} step={40} base={50}><Pill label="Revoked" tone="negative" /></Rise> : expired ? <Rise index={0} step={40} base={50}><Pill label="Expired" tone="fill" /></Rise> : null}
             {factPills(pocket).map((f, i) => (
-              <Rise key={f} index={i + 1} step={40} base={140}>
+              <Rise key={f} index={i + 1} step={40} base={50}>
                 {editable ? <RulePill label={f} onPress={() => setRules({ pocket: pocket.address, field: f.startsWith("Cap") ? "cap" : "ask" })} a11y={`Edit ${f.startsWith("Cap") ? "cap" : "ask-me limit"}: ${f}`} /> : <Pill label={f} />}
               </Rise>
             ))}
-            {!off ? <Rise index={factPills(pocket).length + 1} step={40} base={140}><Pill label={untilText(pocket.expiresAt).replace("until", "Ends")} tone="fill" icon="clock" /></Rise> : null}
+            {!off ? <Rise index={factPills(pocket).length + 1} step={40} base={50}><Pill label={untilText(pocket.expiresAt).replace("until", "Ends")} tone="fill" icon="clock" /></Rise> : null}
           </View>
         </View>
 
         {owned ? (
-          <Rise index={0} base={300}>
+          <Rise index={0} base={90}>
             <View style={{ flexDirection: "row", paddingHorizontal: 20, marginTop: 24 }}>
               <RoundButton soft icon="plus" label="Add" a11y="Add money" onPress={() => setAction({ mode: "fund", pocket: pocket.address })} />
               <RoundButton soft icon="undo" label="Return" a11y="Return funds" onPress={() => setAction({ mode: "return", pocket: pocket.address })} />
@@ -112,7 +112,7 @@ export default function PocketDetail() {
         {pocket.revoked ? <T v="sub" color="muted" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 16 }}>Your agent can't spend from this pocket any more.{pocket.balance > 0n ? " Return the money to your main wallet when you like." : ""}</T> : null}
         {err ? <T v="sub" color="negative" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 12 }}>{err}</T> : null}
 
-        <Rise index={0} base={360} dy={6}>
+        <Rise index={0} base={130} dy={6}>
           <Card style={{ marginHorizontal: 20, marginTop: 20 }}>
             <WorstCase pocket={pocket} sellers={sellerNames} off={off} />
           </Card>

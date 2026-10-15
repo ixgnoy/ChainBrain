@@ -59,7 +59,7 @@ export function ToastHost() {
 
 const TONE = {
   success: { icon: "check", bg: c.accentSoft, fg: c.accent },
-  warning: { icon: "clock", bg: c.warningSoft, fg: c.warning },
+  warning: { icon: "shield", bg: c.warningSoft, fg: c.warning },
   error: { icon: "alert", bg: c.negativeSoft, fg: c.negative },
 } as const;
 

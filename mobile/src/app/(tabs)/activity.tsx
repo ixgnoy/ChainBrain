@@ -13,7 +13,7 @@ import { useReduceMotion } from "../../ui/motion";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { ActivityItem } from "../../components/ActivityRow";
-import { AttackActivityRow, attackInfo, isAttackEvent } from "../../components/AttackCard";
+import { AttackActivityRow, NoteRow, attackInfo, isAttackEvent } from "../../components/AttackCard";
 import { cleanText } from "../../lib/sanitize";
 import { describeRow, visibleRows } from "../../lib/plain";
 import { dayLabel, money } from "../../lib/util";
@@ -23,14 +23,26 @@ type Filter = "all" | "paid" | "refused" | "needs";
 const FILTERS: { key: Filter; label: string }[] = [{ key: "all", label: "All" }, { key: "paid", label: "Paid" }, { key: "refused", label: "Refused" }, { key: "needs", label: "Needs you" }];
 
 export default function Activity() {
-  const { ledger, events, setExplorerTx, pending, setReceipt, setApprovalOpen, setQuestionOpen, sellerName, refreshPockets } = useApp();
+  const { ledger, events, findPocket, setExplorerTx, pending, setReceipt, setApprovalOpen, setQuestionOpen, sellerName, refreshPockets } = useApp();
   const reduce = useReduceMotion();
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
 
-  type Item = { key: string; at: number; row?: LedgerRow; atk?: WalletEvent };
+  type Item = { key: string; at: number; row?: LedgerRow; atk?: WalletEvent; note?: { title: string; sub: string } };
   const groups = useMemo(() => {
-    const rows: Item[] = visibleRows([...ledger].reverse()).filter((r) => filter === "all" || describeRow(r, "", "").filter === filter).map((r) => ({ key: r.key, at: r.at, row: r }));
+    const shown = visibleRows([...ledger].reverse()).filter((r) => filter === "all" || describeRow(r, "", "").filter === filter);
+    // a run of refusals because the pocket was off is one line: "3 refused after you stopped it"
+    const off = (r: LedgerRow) => (r.kind === "refusal" || r.kind === "blocked") && r.reasons[0] === "POCKET_REVOKED";
+    const rows: Item[] = [];
+    for (let i = 0; i < shown.length; i++) {
+      let j = i;
+      while (off(shown[i]) && j + 1 < shown.length && off(shown[j + 1]) && shown[j + 1].pocket === shown[i].pocket) j++;
+      if (j > i) {
+        const name = findPocket(shown[i].pocket)?.name;
+        rows.push({ key: `run:${shown[i].key}`, at: shown[i].at, note: { title: `${j - i + 1} refused after you stopped it`, sub: [name ? cleanText(name, 24) : undefined, "The pocket was off"].filter(Boolean).join(" · ") } });
+        i = j;
+      } else rows.push({ key: shown[i].key, at: shown[i].at, row: shown[i] });
+    }
     // attacks the chat refused (privilege escalation, data extraction, "send money to…") are not payments: they join the list here
     const atks: Item[] = filter === "all" || filter === "refused" ? events.filter((e) => isAttackEvent(e) && e.type === "attack").map((e) => ({ key: `atk:${e.at}:${e.attack}`, at: e.at, atk: e })) : [];
     const all = [...rows, ...atks].sort((a, b) => b.at - a.at);
@@ -78,7 +90,7 @@ export default function Activity() {
       ) : groups.map((g) => (
         <Animated.View key={g.day} layout={reduce ? undefined : SHIFT}>
           <T v="cap" w="semi" color="muted" accessibilityRole="header" style={{ paddingHorizontal: 20, marginTop: 24, marginBottom: 8 }}>{g.day}</T>
-          <ListCard>{g.rows.map((r) => r.atk ? <AttackActivityRow key={r.key} delay={delays[r.key] ?? 0} e={r.atk} onPress={() => { const t = attackInfo(r.atk!)?.tx; if (t) setExplorerTx(t); }} /> : <ActivityItem key={r.key} delay={delays[r.key] ?? 0} row={r.row!} showPocket timeOnly onPress={() => setReceipt(r.row!)} />)}</ListCard>
+          <ListCard>{g.rows.map((r) => r.note ? <NoteRow key={r.key} delay={delays[r.key] ?? 0} title={r.note.title} sub={r.note.sub} right="Refused" /> : r.atk ? <AttackActivityRow key={r.key} delay={delays[r.key] ?? 0} e={r.atk} onPress={() => { const t = attackInfo(r.atk!)?.tx; if (t) setExplorerTx(t); }} /> : <ActivityItem key={r.key} delay={delays[r.key] ?? 0} row={r.row!} showPocket timeOnly onPress={() => setReceipt(r.row!)} />)}</ListCard>
         </Animated.View>
       ))}
     </Screen>

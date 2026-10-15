@@ -19,6 +19,8 @@ export function ActivityRow({ row, onPress, last, showPocket, timeOnly }: { row:
   const v = describeRow(row, seller, timeOnly ? new Date(row.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : stamp(row.at), pocket ? cleanText(pocket.name, 24) : undefined);
   // owner transactions are neutral grey; amounts carry a sign only when money moves: "-" paid out, "+" funding and returns
   const owner = row.kind === "owner" && row.ownerKind !== "revoke";
+  // a refusal is the guard doing its job: neutral shield, not red (red stays for Revoke and money that moved)
+  const guard = v.filter === "refused" && row.kind !== "owner" && row.outcome !== "paid";
   const money = v.right && row.kind === "payment" ? `-${v.right}` : v.right && row.kind === "owner" && (row.ownerKind === "fund" || row.ownerKind === "return") ? `+${v.right}` : v.right;
   const taskCap = !v.right && row.kind === "intent" ? /Price:[^\n]*?(US\$\d+(?:\.\d+)?)/.exec(row.text ?? "")?.[1] : undefined;
   const right = money ?? taskCap;
@@ -26,15 +28,15 @@ export function ActivityRow({ row, onPress, last, showPocket, timeOnly }: { row:
   // one line each: the plain sentence only (reason codes and hashes live in the receipt's Details)
   const body = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 56, paddingHorizontal: 16 }}>
-      <Avatar label={v.avatar.label} icon={v.avatar.icon} tone={owner ? "fill" : v.avatar.tone} size={40} />
+      <Avatar label={v.avatar.label} icon={guard ? "shield" : v.avatar.icon} tone={owner ? "fill" : guard ? "fill" : v.avatar.tone} size={40} />
       <View style={{ flex: 1, gap: 1, paddingVertical: 8 }}>
         <T v="row" numberOfLines={1}>{v.title}</T>
-        {v.sub ? <T v="sub" color="muted" numberOfLines={1}>{v.sub}</T> : null}
+        {v.sub ? <T v="sub" color="muted" numberOfLines={2}>{v.sub}</T> : null}
       </View>
       {right || v.rightSub ? (
         <View style={{ alignItems: "flex-end", gap: 1 }}>
           {right ? <T v="row" w="semi" color={rightTone}>{right}</T> : null}
-          {v.rightSub ? <T v="cap" w="medium" color={v.rightSubTone}>{v.rightSub}</T> : null}
+          {v.rightSub ? <T v="cap" w="medium" color={guard && v.rightSubTone === "negative" ? "ink2" : v.rightSubTone}>{v.rightSub}</T> : null}
         </View>
       ) : null}
     </View>

@@ -89,7 +89,7 @@ export default function Settings() {
         <ListRow a11y="Add an existing pocket" onPress={() => setAdding(!adding)} icon="layers" title="Add an existing pocket" sub="Track a pocket by its address"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} icon="key" title="Import a key" sub="Use a test key you already have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
       </ListCard>
-      <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 8 }}>Testnet only. This wallet holds test money: do not put real money on it.</T>
+      <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 8 }}>Test network only. This wallet holds test money: do not put real money on it.</T>
       {adding ? (
         <Animated.View entering={FadeInDown.springify(motion.spring.smooth.duration).dampingRatio(1).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })} exiting={FadeOut.duration(motion.exit)}>
           <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
@@ -119,14 +119,14 @@ export default function Settings() {
           <View style={{ transform: [{ rotate: about ? "90deg" : "0deg" }] }}><Icon name="chevronRight" size={18} color={c.muted} /></View>
         </ListRow>
       </ListCard>
-      {about ? <T v="sub" color="ink2" style={{ paddingHorizontal: 24, paddingTop: 10 }}>Testnet assets only. Not offered in mainland China. Target: Hong Kong and APEC, settling in licensed stablecoins or tokenized deposits.</T> : null}
+      {about ? <T v="sub" color="ink2" style={{ paddingHorizontal: 24, paddingTop: 10 }}>Test network assets only. Not offered in mainland China. Target: Hong Kong and APEC, settling in licensed stablecoins or tokenized deposits.</T> : null}
 
       <Group title="Advanced" />
       <ListCard>
         <ListRow icon="globe" title="Custom server" sub={custom ? apiUrl.replace(/^https?:\/\//, "") : editing ? "Enter the address below" : "Off"}>
           <Toggle on={serverOpen} onChange={(v) => void toggleServer(v)} a11y="Custom server" />
         </ListRow>
-        {!custom && linked ? <ListRow icon="activity" title="Laptop console" sub={`Linked · ${getApi().replace(/^https?:\/\//, "")}`} /> : null}
+        {!custom && linked ? <ListRow icon="activity" title="Laptop console" sub="Linked" /> : null}
       </ListCard>
       {serverOpen ? (
         <Animated.View entering={FadeInDown.springify(motion.spring.smooth.duration).dampingRatio(1).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })} exiting={FadeOut.duration(motion.exit)}>

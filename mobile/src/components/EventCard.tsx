@@ -16,7 +16,7 @@ import { haptic } from "../haptics";
 export type EventTone = "paid" | "refused" | "blocked" | "stopped" | "waiting";
 const TONES: Record<EventTone, { bg: string; fg: string; icon: IconName }> = {
   paid: { bg: c.accentSoft, fg: c.accent, icon: "check" },
-  refused: { bg: c.negativeSoft, fg: c.negative, icon: "ban" },
+  refused: { bg: c.fill, fg: c.ink, icon: "shield" }, // the guard doing its job: neutral navy shield, never red
   blocked: { bg: c.warningSoft, fg: c.warning, icon: "shield" },
   stopped: { bg: c.fill, fg: c.ink2, icon: "lock" },
   waiting: { bg: c.warningSoft, fg: c.warning, icon: "clock" },

@@ -88,7 +88,8 @@ export function lastStepText(events: WalletEvent[], sellerName: (id?: string) =>
     }
     if (e.type === "trace" && e.phase === "tool_result" && e.tool) {
       const sum = summarizeTool(e.tool, toolResultOf(e));
-      return `${STEP[e.tool] ?? "Took a step"}${sum ? `: ${cleanText(sum, 60)}` : ""}`;
+      const plain = sum.replace(/,\s*[A-Z][A-Z_]{3,}$/, ""); // reason codes live under "Why", never in a sentence
+      return `${STEP[e.tool] ?? "Took a step"}${plain && !/^[A-Z][A-Z_]{3,}$/.test(plain) ? `: ${cleanText(plain, 60)}` : ""}`;
     }
   }
   return null;
@@ -200,9 +201,21 @@ export default function AgentChat() {
   const chips = chipItems.map((x) => x.label);
   const chipDelay = useStagger(chips, 40, 8);
   const last = turns.at(-1);
+  // the same planted order is shown once: a later turn that reads the same seller text again does not repeat the card
+  const seenInj = useMemo(() => {
+    const out = new Map<string, Set<string>>();
+    const shown = new Set<string>();
+    for (const t of turns) {
+      const dup = new Set<string>();
+      for (const x of injectionsOf(sliceTurn(mine, t.fromAt, t.toAt))) { const k = JSON.stringify(x); if (shown.has(k)) dup.add(k); shown.add(k); }
+      out.set(t.id, dup);
+    }
+    return out;
+  }, [turns, mine]);
   const hidden = showAll ? 0 : Math.max(0, turns.length - 3);
   const canStop = !!active && active.owned && !!wallet && !active.revoked && Number(active.expiresAt) * 1000 > Date.now();
-  const stopped = active?.revoked ? lastStepText(mine, sellerName) : null;
+  // the last step of THIS task only (an earlier task's payment must not read as this one's)
+  const stopped = active?.revoked ? lastStepText(last ? sliceTurn(mine, last.fromAt, last.toAt) : [], sellerName) : null;
   const stopTx = active ? ownerTxs.filter((t) => t.kind === "revoke" && sameAddr(t.pocket, active.address)).at(-1) : undefined;
   const waitingHere = !!(intent || pay || question);
   const busyHere = chatBusy || waitingHere;
@@ -294,12 +307,12 @@ export default function AgentChat() {
                     why={{ codes: (d.refused ?? []).map((r: string) => cleanText(r, 40)) }} />
                 ))}
                 {refusals.map((r) => <SellerRefusal key={r.sellerId} id={`${t.id}:r${r.sellerId}`} seller={sellerName(r.sellerId)} reasons={r.reasons} />)}
-                {injectionsOf(evs).map((x, k) => <InjectionCard key={`${t.id}:i${k}`} id={`${t.id}:${k}`} seller={sellerName(x.sellerId)} lines={x.lines} />)}
+                {injectionsOf(evs).filter((x) => !(seenInj.get(t.id) ?? new Set()).has(JSON.stringify(x))).map((x, k) => <InjectionCard key={`${t.id}:i${k}`} id={`${t.id}:${k}`} seller={sellerName(x.sellerId)} lines={x.lines} />)}
                 {evs.filter(isAttackEvent).map((e, k) => <AttackCard key={`${e.type}${e.at}${k}`} e={e} />)}
                 {!t.done ? (
                   <View style={{ gap: 4 }}>
-                    {pending.length ? <T v="body" color="muted">Waiting for you…</T> : !traceLines(evs).length ? <WorkingLine on /> : null}
-                    <TraceBlock events={evs} live={!pending.length} />
+                    {pending.length ? <T v="body" color="muted">Waiting for you…</T> : !traceLines(evs).length && !(active?.revoked && isLast) ? <WorkingLine on /> : null}
+                    <TraceBlock events={evs} live={!pending.length && !(active?.revoked && isLast)} />
                     {evs.filter((e) => e.type === "payment").map((e) => <View key={e.tx} style={{ marginTop: 10 }}><PaidCard e={e} /></View>)}
                   </View>
                 ) : (
@@ -319,7 +332,7 @@ export default function AgentChat() {
           {sent ? <View style={{ gap: 14 }}><UserBubble text={sent.text} fresh /></View> : null}
           {!last && intent ? <TaskWaiting text={intent.text} onOpen={() => setApprovalOpen(true)} id={intent.id} /> : null}
           {active?.revoked && turns.length > 0 ? (
-            <StoppedCard last={stopped} tx={stopTx?.hash} canReturn={active.owned && active.balance > 0n} onReturn={() => setAction({ mode: "return", pocket: active.address })} />
+            <StoppedCard codes={["POCKET_REVOKED"]} last={stopped} tx={stopTx?.hash} canReturn={active.owned && active.balance > 0n} onReturn={() => setAction({ mode: "return", pocket: active.address })} />
           ) : null}
           {pay && (
             <EventCard tone="waiting" title="Waiting for your OK" body={`${cleanText(sellerName(pay.data?.sellerId), 40)} · US$${cleanText(pay.data?.amount, 10)}`}>
@@ -368,7 +381,7 @@ export default function AgentChat() {
         <View style={{ paddingHorizontal: 16 }}>
           <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 20, paddingRight: 8, borderRadius: 26, backgroundColor: c.fill, minHeight: 52 }}>
             <TextInput
-              value={text} onChangeText={setText} placeholder={question ? "Answer your agent" : "Ask your agent to buy something"} placeholderTextColor={c.faint}
+              value={text} onChangeText={setText} placeholder={text ? "" : question ? "Answer your agent" : "Ask your agent to buy something"} placeholderTextColor={c.faint}
               onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}
               style={[{ flex: 1, color: c.ink, fontFamily: F.regular, fontSize: 16, lineHeight: 24, height: 48, paddingVertical: 0 }, Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null]}
             />

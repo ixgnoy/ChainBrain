@@ -134,7 +134,7 @@ function Chip({ t, from, label, ok }: { t: SharedValue<number>; from: number; la
 function Page({ i, w, pos, active, reduce }: { i: number; w: number; pos: SharedValue<number>; active: boolean; reduce: boolean }) {
   const art = useAnimatedStyle(() => {
     const o = w > 0 ? (pos.value - i * w) / w : 0;
-    return { opacity: 1 - Math.min(Math.abs(o), 1) * 0.85, transform: [{ translateX: -o * 46 }] };
+    return { opacity: 1 - Math.min(Math.abs(o), 1) * 0.85, transform: [{ translateX: -o * 46 }, { scale: 1.25 }] };
   });
   const text = useAnimatedStyle(() => {
     const o = w > 0 ? (pos.value - i * w) / w : 0;

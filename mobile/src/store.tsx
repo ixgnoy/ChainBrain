@@ -14,6 +14,7 @@ import { onAutoplay, autoplayRunning } from "./lib/autoplayTargets";
 import { router } from "expo-router";
 import { notify } from "./lib/toast";
 import { haptic } from "./haptics";
+import { usd } from "./lib/util";
 import { loadMeta, saveMeta, type PocketMeta } from "./lib/pocketNames";
 import * as api from "./lib/api";
 import {
@@ -305,7 +306,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (forcedSeen.current.has(String(e.tx))) continue;
       forcedSeen.current.add(String(e.tx));
       const name = meta[String(e.pocket).toLowerCase()]?.name ?? "your pocket";
-      if (e.reverted) { notify(`Blocked a transfer out of ${name}. It reverted on-chain.`); haptic.warning(); }
+      if (e.reverted) { let a = 0n; try { a = BigInt(e.amount ?? 0); } catch { /* shown without an amount */ } notify(a > 0n ? `Blocked a US$${usd(a)} transfer` : `Blocked a transfer out of ${name}`); haptic.warning(); }
     }
   }, [myEvents, events.length, meta]);
   const pending = useMemo(() => livePending(myEvents, { pendingIds }).filter((a) => !answered.has(a.id)), [myEvents, pendingIds, answered]);

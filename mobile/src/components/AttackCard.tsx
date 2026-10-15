@@ -67,17 +67,34 @@ export function AttackActivityRow({ e, onPress, last, delay = 0 }: { e: WalletEv
   const pocket = findPocket(e.pocket);
   const body = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 56, paddingHorizontal: 16 }}>
-      <Avatar icon="shield" tone="warning" size={40} />
+      <Avatar icon="shield" tone="fill" size={40} />
       <View style={{ flex: 1, gap: 1, paddingVertical: 8 }}>
         <T v="row" numberOfLines={1}>{a.title}</T>
         <T v="sub" color="muted" numberOfLines={1}>{[pocket ? cleanText(pocket.name, 24) : undefined, new Date(e.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })].filter(Boolean).join(" · ")}</T>
       </View>
-      <T v="cap" w="medium" color="negative">{a.verdict}</T>
+      <T v="cap" w="medium" color="ink2">{a.verdict}</T>
     </View>
   );
   return (
     <Rise delay={Math.max(delay, 0)} instant={delay < 0} dy={10} layout>
       {onPress ? <Press kind="row" onPress={onPress} haptics="light" accessibilityRole="button" accessibilityLabel={`${a.title}. ${a.verdict}`}>{body}</Press> : body}
+      {last ? null : <View style={{ height: 1, backgroundColor: c.line, marginLeft: 70 }} />}
+    </Rise>
+  );
+}
+
+/** A quiet one-line Activity row for a run of repeats ("3 refused after you stopped it"). */
+export function NoteRow({ title, sub, right, last, delay = 0 }: { title: string; sub: string; right?: string; last?: boolean; delay?: number }) {
+  return (
+    <Rise delay={Math.max(delay, 0)} instant={delay < 0} dy={10} layout>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 56, paddingHorizontal: 16 }}>
+        <Avatar icon="shield" tone="fill" size={40} />
+        <View style={{ flex: 1, gap: 1, paddingVertical: 8 }}>
+          <T v="row" numberOfLines={2}>{title}</T>
+          <T v="sub" color="muted" numberOfLines={2}>{sub}</T>
+        </View>
+        {right ? <T v="cap" w="medium" color="ink2">{right}</T> : null}
+      </View>
       {last ? null : <View style={{ height: 1, backgroundColor: c.line, marginLeft: 70 }} />}
     </Rise>
   );

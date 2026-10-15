@@ -28,7 +28,7 @@ const ACTIVE: Record<string, string> = {
   ask_owner: "Waiting for you…", pay: "Paying…", ask_user: "Asking you a question…",
 };
 
-const DOT = { ok: c.accent, idle: c.faint, refused: c.negative, ask: c.warning } as const;
+const DOT = { ok: c.accent, idle: c.faint, refused: c.ink2, ask: c.warning } as const;
 /** 8 px dot (the turning ring while the step runs); the timeline line passes behind it. */
 function Dot({ state }: { state: TraceLine["state"] | "idle" }) {
   if (state === "run") return <RunRing size={14} />;

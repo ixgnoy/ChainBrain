@@ -32,9 +32,9 @@ export function ExplorerSheet() {
   );
 }
 
-const MARK: Record<Gate["state"], { bg: string; fg: string; icon: "check" | "x" | "alert" | null; word: string }> = {
+const MARK: Record<Gate["state"], { bg: string; fg: string; icon: "check" | "shield" | "alert" | null; word: string }> = {
   pass: { bg: c.accent, fg: c.onAccent, icon: "check", word: "Passed" },
-  stop: { bg: c.negative, fg: c.onAccent, icon: "x", word: "Stopped here" },
+  stop: { bg: c.ink, fg: c.onAccent, icon: "shield", word: "Stopped here" },
   fooled: { bg: c.warning, fg: c.onAccent, icon: "alert", word: "Was fooled" },
   skip: { bg: c.fill, fg: c.muted, icon: null, word: "Not needed" },
   idle: { bg: c.card, fg: c.faint, icon: null, word: "Never reached" },
@@ -45,7 +45,7 @@ function GatePath({ attempt }: { attempt: Attempt }) {
   return (
     <View accessibilityLabel="Checks path" style={{ gap: 0 }}>
       {gates.map((g, i) => {
-        const m = MARK[g.state];
+        const m = g.state === "stop" && g.id === "agent" ? { ...MARK.stop, bg: c.accent } : MARK[g.state]; // the agent's own refusal is teal, a gate that held is a navy shield
         const lastRow = i === gates.length - 1;
         return (
           <View key={`${g.id}${i}`} accessible accessibilityLabel={`${g.title}: ${m.word}${g.note ? `. ${g.note}` : ""}`} style={{ flexDirection: "row", gap: 12 }}>
@@ -57,7 +57,7 @@ function GatePath({ attempt }: { attempt: Attempt }) {
             </View>
             <View style={{ flex: 1, paddingBottom: lastRow ? 0 : 12 }}>
               <T v="sub" w="semi" color={g.state === "idle" ? "faint" : "ink"} style={{ color: g.state === "idle" ? c.muted : undefined }}>{g.title}</T>
-              <T v="cap" color={g.state === "stop" ? "negative" : g.state === "fooled" ? "warning" : "muted"}>{g.note ?? m.word}</T>
+              <T v="cap" color={g.state === "fooled" ? "warning" : g.state === "stop" ? "ink2" : "muted"}>{g.note ?? m.word}</T>
             </View>
           </View>
         );
@@ -107,7 +107,7 @@ function Body({ hash, close }: { hash: string; close: () => void }) {
           <>
             <View style={{ alignItems: "center", gap: 10 }}>
               {tx.value ? <Money v="balance" value={tx.value} color={bad ? "muted" : "ink"} strike={bad} /> : null}
-              <Pill label={bad ? "Reverted · nothing moved" : "Success"} tone={bad ? "negative" : "accent"} />
+              <Pill label={bad ? "Reverted · nothing moved" : "Success"} tone={bad ? "fill" : "accent"} />
             </View>
             <T v="body" color="ink2" style={{ textAlign: "center" }}>{tx.summary}</T>
             {attempt ? (

@@ -153,9 +153,13 @@ function Done({ name, budget, createTx, fundTx, first, onOpen }: { name: string;
 
 export function uniqueName(base: string, taken: string[]): string {
   if (!taken.includes(base)) return base;
+  // a second pocket of the same kind is told apart by the day: "Research data · 15 Oct"
+  const day = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const dated = `${base.slice(0, 24 - day.length - 3)} · ${day}`;
+  if (!taken.includes(dated)) return dated;
   let n = 2;
-  while (taken.includes(`${base} ${n}`)) n++;
-  return `${base} ${n}`;
+  while (taken.includes(`${dated} ${n}`)) n++;
+  return `${dated} ${n}`;
 }
 
 export default function Create() {

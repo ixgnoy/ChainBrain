@@ -35,7 +35,7 @@ export function InjectionCard({ id, seller, lines }: { id: string; seller: strin
       why={{ title: "Why", codes: ["IGNORED"], children: (
         <View style={{ gap: 6 }}>
           <T v="cap" color="muted">What the seller's text said</T>
-          {lines.slice(0, 3).map((l, i) => <T key={i} v="sub" color="ink2">“{l}”</T>)}
+          {lines.slice(0, 3).map((l, i) => <T key={i} v="sub" color="ink2">“{l.replace(/0x[0-9a-fA-F]{8,}/g, (a) => `${a.slice(0, 6)}…${a.slice(-4)}`)}”</T>)}
         </View>
       ) }}
     />

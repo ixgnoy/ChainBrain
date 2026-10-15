@@ -23,7 +23,7 @@ export function PaidCard({ e }: { e: WalletEvent }) {
       tone="paid" instant={!fresh} title={`Paid ${cleanText(seller, 30)}`} amount={money(amount)}
       mark={<SuccessMark size={40} delay={180} still={!fresh} />}
       body={<>
-        <T v="sub" color="muted" numberOfLines={1}>{cleanText(item, 60)}</T>
+        <T v="sub" color="muted" numberOfLines={2}>{cleanText(item, 90)}</T>
         {e.cosigned ? <T v="cap" w="medium" color="accent" numberOfLines={1}>Co-signed by you</T> : null}
       </>}
       onPress={() => row && setReceipt(row)} a11y={`Paid ${seller} ${money(amount)}. Open receipt`}
