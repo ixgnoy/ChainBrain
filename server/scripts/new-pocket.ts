@@ -6,6 +6,7 @@ import "dotenv/config";
 import { createWalletClient, http, publicActions, parseEventLogs, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { cfg, presets } from "../src/chains";
+import { record } from "./evidence";
 import { factoryAbi, factoryAddress, erc20Abi, tokenBalance } from "../src/wallet/chain";
 import { sellerPayTo } from "../src/sellers";
 
@@ -29,5 +30,7 @@ const create = await w.writeContract({
 const [ev] = parseEventLogs({ abi: factoryAbi, logs: (await w.waitForTransactionReceipt({ hash: create })).logs, eventName: "PocketCreated" }) as any[];
 const fund = await w.writeContract({ address: cfg().token, abi: erc20Abi, functionName: "transfer", args: [ev.args.pocket, p.budget] });
 await w.waitForTransactionReceipt({ hash: fund });
+record(`new-pocket ${kind}: create`, create, "success", "PocketCreated(address,address,address)");
+record(`new-pocket ${kind}: fund`, fund, "success", "Transfer(address,address,uint256)");
 console.log(`create ${cfg().txUrl(create)}\nfund   ${cfg().txUrl(fund)}`);
 console.log(`POCKET=${ev.args.pocket} balance=${await tokenBalance(ev.args.pocket)}`);

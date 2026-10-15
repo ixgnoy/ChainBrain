@@ -48,7 +48,13 @@ beforeAll(async () => {
   api = (await import("../src/index")).apiApp();
   stopOwner = autoOwner({ api, sign: s.ownerSignTransfer });
 });
-afterAll(async () => { stopOwner(); await s?.stop(); });
+afterAll(async () => {
+  stopOwner();
+  // EVIDENCE_FILE: every settled payment of these scenes, re-checked on-chain by scripts/verify-evidence.ts
+  const { record } = await import("../scripts/evidence");
+  for (const e of bus.recent()) if (e.type === "payment") record(`scene payment: ${e.sellerId} ${e.sku}${e.cosigned ? " (owner co-signed)" : ""}`, e.tx as string, "success", "AuthorizationUsed(address,bytes32)");
+  await s?.stop();
+});
 
 describe.skipIf(!process.env.SCENES)(`scenes (${REAL ? "real model" : "replay model"})`, () => {
   it("scenes 1–3: one question, confirmed intent, DataLite paid, DataPro paid with the owner's co-sign", async () => {

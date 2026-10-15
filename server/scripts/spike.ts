@@ -7,6 +7,7 @@ import { serve } from "@hono/node-server";
 import { createWalletClient, http, publicActions, parseEventLogs, keccak256, toHex, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { cfg, presets } from "../src/chains";
+import { record } from "./evidence";
 import { sellersApp, sellerPayTo } from "../src/sellers";
 import { factoryAbi, factoryAddress, erc20Abi, tokenBalance } from "../src/wallet/chain";
 
@@ -29,12 +30,15 @@ const pocket = ev.args.pocket;
 const fund = await w.writeContract({ address: cfg().token, abi: erc20Abi, functionName: "transfer", args: [pocket, p.budget] });
 await w.waitForTransactionReceipt({ hash: fund });
 console.log("pocket", pocket, "\n create", create, "\n fund  ", fund);
+record("spike: create research pocket", create, "success", "PocketCreated(address,address,address)");
+record("spike: fund research pocket", fund, "success", "Transfer(address,address,uint256)");
 
 const intentHash = keccak256(toHex(`spike-${Date.now()}`));
 const q1 = await fetchQuote("datalite", "durian-report");
 if (q1.kind !== "priced") throw new Error("expected 402");
 const r1 = await settle(pocket, track(pocket, q1.quote), intentHash);
 console.log("agent-only    →", r1);
+if (r1.ok) record("spike: DataLite paid by the agent key alone (x402, EIP-3009 + ERC-1271)", r1.tx, "success", "AuthorizationUsed(address,bytes32)");
 
 const q2 = await fetchQuote("datapro", "premium-report");
 if (q2.kind !== "priced") throw new Error("expected 402");
@@ -42,6 +46,7 @@ const rec = track(pocket, q2.quote);
 rec.ownerSig = await owner.signTypedData(transferTypedData(prepareApproval(pocket, rec, intentHash)));
 const r2 = await settle(pocket, rec, intentHash);
 console.log("owner co-sign →", r2);
+if (r2.ok) record("spike: DataPro above ask-me, owner co-signed", r2.tx, "success", "AuthorizationUsed(address,bytes32)");
 console.log("pocket balance", await tokenBalance(pocket));
 server.close();
 process.exit(r1.ok && r2.ok ? 0 : 1);
