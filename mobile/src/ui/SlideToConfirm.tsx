@@ -13,7 +13,7 @@ import { c, motion } from "../tokens";
 import { T } from "./Text";
 import { Icon } from "./Icon";
 
-const THUMB = 56, PAD = 4;
+const THUMB = 48, PAD = 4; // track 56 px: solid teal, white grip (a pale track reads as disabled)
 const MIN_PENDING_MS = 300;
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -104,12 +104,12 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, d
         accessibilityState={{ disabled: !!disabled, busy: state === "busy" }}
         accessibilityActions={[{ name: "activate" }]}
         onAccessibilityAction={() => { if (!disabled && state === "idle") { haptic.rigid(); x.value = withSpring(max, motion.spring.snappy); void fire(); } }}
-        style={[{ height: THUMB + PAD * 2, borderRadius: R, backgroundColor: c.accentSoft, justifyContent: "center", overflow: "hidden", opacity: disabled ? 0.45 : 1 }, track]}
+        style={[{ height: THUMB + PAD * 2, borderRadius: R, backgroundColor: c.accent, justifyContent: "center", overflow: "hidden", opacity: disabled ? 0.45 : 1 }, track]}
       >
-        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: R, backgroundColor: c.accent }, fill]} />
+        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: R, backgroundColor: c.accentPress }, fill]} />
         <Animated.View style={[{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: c.accent }, doneBg]} />
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: THUMB + PAD * 2, right: 20, alignItems: "center" }, labelStyle]}>
-          <T v="row" w="semi" color="accent" numberOfLines={1}>{label}</T>
+          <T v="row" w="semi" numberOfLines={1} style={{ color: c.onAccent }}>{label}</T>
         </Animated.View>
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 0, right: THUMB + PAD * 2, alignItems: "center" }, pending]}>
           <T v="row" w="semi" style={{ color: c.onAccent }}>Signing…</T>

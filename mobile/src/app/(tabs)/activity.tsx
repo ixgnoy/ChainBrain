@@ -4,7 +4,8 @@ import { RefreshControl, View } from "react-native";
 import { useApp } from "../../store";
 import { c } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
-import { Avatar, ListCard, ListRow } from "../../ui/kit";
+import { router } from "expo-router";
+import { Avatar, Button, ListCard, ListRow } from "../../ui/kit";
 import { Rise, SHIFT, useStagger } from "../../ui/Rise";
 import { SlidingPills } from "../../ui/SlidingPills";
 import { haptic } from "../../haptics";
@@ -59,18 +60,19 @@ export default function Activity() {
           ))}
         </ListCard></Rise>
       ) : null}
-      <Animated.View layout={reduce ? undefined : SHIFT} style={{ marginTop: 16 }}><SlidingPills items={FILTERS} value={filter} onChange={setFilter} /></Animated.View>
+      <Animated.View layout={reduce ? undefined : SHIFT} style={{ marginTop: 16 }}><SlidingPills items={FILTERS.map((f) => (f.key === "needs" && pending.length ? { ...f, label: `${f.label} · ${pending.length}` } : f))} value={filter} onChange={setFilter} /></Animated.View>
       {groups.length === 0 ? (
         <Rise dy={8} duration={240}>
           <View style={{ alignItems: "center", paddingTop: 56, gap: 8, paddingHorizontal: 40 }}>
-            <Icon name="activity" size={28} color={c.faint} />
-            <T v="row" color="ink2">Nothing here yet</T>
-            <T v="sub" color="muted" style={{ textAlign: "center" }}>Payments, refusals and approvals from your agent show up here.</T>
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: c.fill, alignItems: "center", justifyContent: "center", marginBottom: 8 }}><Icon name="activity" size={28} color={c.ink2} /></View>
+            <T v="section">No activity yet</T>
+            <T v="sub" color="muted" style={{ textAlign: "center" }}>Your agent's purchases and your changes show up here.</T>
+            <Button label="Ask agent" kind="outline" small onPress={() => router.navigate("/agent")} style={{ marginTop: 12 }} />
           </View>
         </Rise>
       ) : groups.map((g) => (
         <Animated.View key={g.day} layout={reduce ? undefined : SHIFT}>
-          <T v="section" style={{ paddingHorizontal: 20, marginTop: 24, marginBottom: 12 }}>{g.day}</T>
+          <T v="cap" w="semi" color="muted" accessibilityRole="header" style={{ paddingHorizontal: 20, marginTop: 24, marginBottom: 8 }}>{g.day}</T>
           <ListCard>{g.rows.map((r) => <ActivityItem key={r.key} delay={delays[r.key] ?? 0} row={r} showPocket timeOnly onPress={() => setReceipt(r)} />)}</ListCard>
         </Animated.View>
       ))}

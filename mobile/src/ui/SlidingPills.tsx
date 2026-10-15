@@ -8,7 +8,7 @@ import { c, F, motion, radius } from "../tokens";
 import { Press } from "./kit";
 import { settle, useReduceMotion } from "./motion";
 
-const pill = { height: 40, paddingHorizontal: 16, borderRadius: radius.pill, justifyContent: "center" } as const;
+const pill = { height: 36, paddingHorizontal: 16, borderRadius: radius.pill, justifyContent: "center" } as const;
 const label = { fontFamily: F.semi, fontSize: 14, lineHeight: 20 } as const;
 
 export function SlidingPills<K extends string>({ items, value, onChange }: { items: { key: K; label: string }[]; value: K; onChange: (k: K) => void }) {
@@ -30,13 +30,13 @@ export function SlidingPills<K extends string>({ items, value, onChange }: { ite
         {items.map((f) => (
           <Press key={f.key} haptics="select" scale={0.96} onPress={() => onChange(f.key)} accessibilityRole="button" accessibilityLabel={f.label} accessibilityState={{ selected: value === f.key }}
             onLayout={(e) => { const { x: lx, width } = e.nativeEvent.layout; box.current[f.key] = { x: lx, w: width }; if (f.key === value) move(f.key, !seen.value); }}
-            style={[pill, { backgroundColor: c.card }]}>
+            style={[pill, { backgroundColor: c.fill }]}>
             <Animated.Text style={[label, { color: c.ink2 }]}>{f.label}</Animated.Text>
           </Press>
         ))}
-        <Animated.View pointerEvents="none" aria-hidden importantForAccessibility="no-hide-descendants" style={[{ position: "absolute", left: 0, top: 0, height: 40, overflow: "hidden", borderRadius: radius.pill }, win]}>
+        <Animated.View pointerEvents="none" aria-hidden importantForAccessibility="no-hide-descendants" style={[{ position: "absolute", left: 0, top: 0, height: 36, overflow: "hidden", borderRadius: radius.pill }, win]}>
           <Animated.View style={[{ flexDirection: "row", gap: 8, width: 600 }, inner]}>
-            {items.map((f) => <View key={f.key} style={[pill, { backgroundColor: c.accent }]}><Animated.Text style={[label, { color: c.onAccent }]}>{f.label}</Animated.Text></View>)}
+            {items.map((f) => <View key={f.key} style={[pill, { backgroundColor: c.ink }]}><Animated.Text style={[label, { color: c.onAccent }]}>{f.label}</Animated.Text></View>)}
           </Animated.View>
         </Animated.View>
       </View>

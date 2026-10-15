@@ -26,3 +26,11 @@ export function worstCase(p: PocketState, txs: ChainTx[], sellerName: (id: strin
 
 /** "DataLite", "DataLite or DataPro", "DataLite, DataPro or Harbour Wines". */
 export const orList = (xs: string[]) => (xs.length === 0 ? "nobody" : xs.length === 1 ? xs[0] : `${xs.slice(0, -1).join(", ")} or ${xs[xs.length - 1]}`);
+
+export type Segment = { key: "spent" | "risk" | "safe"; label: string; value: bigint };
+/** The funding split for the meter: what already left, what could still be lost, or (stopped) what no longer can be. */
+export function worstSegments(w: Worst): Segment[] {
+  if (w.stopped) return w.funded > 0n ? [{ key: "safe", label: "No longer at risk", value: w.funded }] : [];
+  const spent = w.funded > w.max ? w.funded - w.max : 0n;
+  return [...(spent > 0n ? [{ key: "spent" as const, label: "Spent so far", value: spent }] : []), ...(w.max > 0n ? [{ key: "risk" as const, label: "Can still be lost", value: w.max }] : [])];
+}

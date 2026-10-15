@@ -129,3 +129,30 @@ it("a hash a screen shows always resolves: chain tx, then the event that carried
   expect(d).toMatchObject({ label: "Payment", status: "success", from: A, to: C, amount: 300000n });
   expect(lookupTx("0x" + "8".repeat(64), [], [], [], () => undefined).status).toBe("pending");
 });
+
+it("keeps the phone's events across a quiet spell and shows them again when it resumes", async () => {
+  const { feed, es } = await link();
+  es.push({ kind: "hello", linked: true, snapshot: snap([A]), events: [{ type: "payment", pocket: A, at: 1 }] });
+  es.push({ kind: "beat", linked: false });
+  expect(feed.snapshot().linked).toBeFalsy(); // quiet: the console is not driven by it
+  es.push({ kind: "events", events: [{ type: "refusal", pocket: A, at: 2 }] });
+  es.push({ kind: "snapshot", snapshot: snap([A]) });
+  const s = feed.snapshot();
+  expect(s.linked).toBe(true);
+  expect(s.events.map((e) => e.type)).toEqual(["payment", "refusal"]);
+  feed.stop();
+});
+
+it("a failed force on the phone is an error, never 'NOT refused'", async () => {
+  const { feed, es } = await link();
+  es.push({ kind: "hello", linked: true, snapshot: snap([A]), events: [] });
+  const done = feed.actions.forceTransfer!(A);
+  await vi.waitFor(() => expect(commands.length).toBe(1)); await new Promise((r) => setTimeout(r, 0));
+  es.push({ kind: "result", id: 1, result: { ok: false, text: "not a pocket" } });
+  expect(await done).toEqual({ ok: false, text: "not a pocket" });
+  const done2 = feed.actions.forceTransfer!(A);
+  await vi.waitFor(() => expect(commands.length).toBe(2)); await new Promise((r) => setTimeout(r, 0));
+  es.push({ kind: "result", id: 2, result: { ok: false, reverted: false } });
+  expect((await done2).text).toBe("The transfer was NOT refused.");
+  feed.stop();
+});

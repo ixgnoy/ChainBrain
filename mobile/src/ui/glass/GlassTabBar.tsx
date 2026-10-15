@@ -142,7 +142,7 @@ export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProp
             ) : (
               <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: c.card, borderWidth: StyleSheet.hairlineWidth, borderColor: c.line, shadowColor: c.ink, shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: 6 }, elevation: 6 }, shape]} />
             )}
-            <Animated.View style={[{ position: "absolute", left: 0, backgroundColor: liquid ? "rgba(0,114,127,0.12)" : c.accentSoft, borderCurve: "continuous" } as any, highlight]} />
+            <Animated.View style={[{ position: "absolute", left: 0, backgroundColor: liquid ? "rgba(15,34,54,0.08)" : c.fill, borderCurve: "continuous" } as any, highlight]} />
             <View style={{ flex: 1, flexDirection: "row", alignItems: "center", paddingHorizontal: ROW_PAD_H }}>
               <BarCtx.Provider value={ctx}>{children}</BarCtx.Provider>
             </View>
@@ -199,7 +199,7 @@ export function GlassTabButton({ item, index, isFocused, onPress, ...props }: Ta
           </Animated.View>
           {item.badge ? <View style={{ position: "absolute", right: -5, top: -3, width: 10, height: 10, borderRadius: 5, backgroundColor: c.negative, borderWidth: 2, borderColor: c.card }} /> : null}
         </Animated.View>
-        <Animated.Text numberOfLines={1} style={[{ fontFamily: F.semi, fontSize: 11, lineHeight: LABEL_H, marginTop: GAP }, label]}>{item.label}</Animated.Text>
+        <Animated.Text numberOfLines={1} style={[{ fontFamily: F.semi, fontSize: 12, lineHeight: LABEL_H, marginTop: GAP }, label]}>{item.label}</Animated.Text>
       </Animated.View>
     </Pressable>
   );

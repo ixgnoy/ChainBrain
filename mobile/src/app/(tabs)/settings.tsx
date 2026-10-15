@@ -9,18 +9,25 @@ import { onRelay, relayLinked } from "../../lib/relay";
 import { isPrivateKey } from "../../lib/keystore";
 import { c, motion } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
-import { Avatar, Button, Card, Field, ListCard, ListRow, SectionHeader, Toggle } from "../../ui/kit";
+import { Button, Card, Field, ListCard, ListRow, Toggle } from "../../ui/kit";
+import { isAddress, type Address } from "viem";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { haptic } from "../../haptics";
 import { money, shortAddr } from "../../lib/util";
 
+/** Flat section header: 13/600 muted, 24 above, 8 below. */
+const Group = ({ title }: { title: string }) => <T v="cap" w="semi" color="muted" accessibilityRole="header" style={{ paddingHorizontal: 24, marginTop: 24, marginBottom: 8 }}>{title}</T>;
+
 export default function Settings() {
-  const { apiUrl, setApiUrl, conn, connError, dev, source, setSource, wallet, balances, importKey, refreshPockets, pending } = useApp();
+  const { addPocket, apiUrl, setApiUrl, conn, connError, dev, source, setSource, wallet, balances, importKey, refreshPockets, pending } = useApp();
   const [draft, setDraft] = useState(apiUrl);
   const [test, setTest] = useState<{ state: "idle" | "busy" | "ok" | "fail"; text?: string }>({ state: "idle" });
   const [copied, setCopied] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [addr, setAddr] = useState("");
+  const [about, setAbout] = useState(false);
   const [pk, setPk] = useState("");
   const [keyErr, setKeyErr] = useState("");
   const [funds, setFunds] = useState<{ state: "idle" | "busy" | "ok" | "fail"; text?: string }>({ state: "idle" });
@@ -73,14 +80,27 @@ export default function Settings() {
     <Screen innerRef={scroller}>
       <PageTitle title="Settings" sub={pending.length ? `${pending.length} request${pending.length > 1 ? "s" : ""} waiting for you` : undefined} />
 
-      <SectionHeader title="Wallet" />
+      <Group title="Wallet" />
       <ListCard>
-        <ListRow a11y="Copy wallet address" avatar={<Avatar icon="wallet" />} title="Your wallet" sub={wallet ? shortAddr(wallet.address) : "Not ready"}
+        <ListRow a11y="Copy wallet address" icon="wallet" title="Your wallet" sub={wallet ? shortAddr(wallet.address) : "Not ready"}
           onPress={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }}
           right={copied ? "Copied" : balances ? money(balances.usdc) : undefined} rightTone={copied ? "positive" : "ink"} />
-        {dev || !custom ? <ListRow a11y="Get test funds" onPress={getFunds} avatar={<Avatar icon="plus" />} title="Get test funds" sub={funds.text ?? "Adds test money to your wallet"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
-        <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} avatar={<Avatar icon="key" />} title="Import a key" sub="Use a test key you already have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
+        {dev || !custom ? <ListRow a11y="Get test funds" onPress={getFunds} icon="plus" title="Get test funds" sub={funds.text ?? "Adds test money to your wallet"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
+        <ListRow a11y="Add an existing pocket" onPress={() => setAdding(!adding)} icon="layers" title="Add an existing pocket" sub="Track a pocket by its address"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
+        <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} icon="key" title="Import a key" sub="Use a test key you already have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
       </ListCard>
+      <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 8 }}>Testnet only. This wallet holds test money: do not put real money on it.</T>
+      {adding ? (
+        <Animated.View entering={FadeInDown.springify(motion.spring.smooth.duration).dampingRatio(1).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })} exiting={FadeOut.duration(motion.exit)}>
+          <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
+            <Field value={addr} onChangeText={setAddr} placeholder="Pocket address (0x…)" autoCapitalize="none" autoCorrect={false} accessibilityLabel="Pocket address" />
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Button label="Cancel" kind="secondary" small style={{ flex: 1 }} onPress={() => { setAdding(false); setAddr(""); }} />
+              <Button label="Add pocket" small style={{ flex: 1 }} disabled={!isAddress(addr.trim())} onPress={async () => { await addPocket(addr.trim() as Address); setAddr(""); setAdding(false); }} />
+            </View>
+          </Card>
+        </Animated.View>
+      ) : null}
       {importing ? (
         <Animated.View entering={FadeInDown.springify(motion.spring.smooth.duration).dampingRatio(1).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })} exiting={FadeOut.duration(motion.exit)}>
         <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
@@ -93,19 +113,20 @@ export default function Settings() {
         </Animated.View>
       ) : null}
 
-      <SectionHeader title="About" />
+      <Group title="About" />
       <ListCard>
-        <ListRow avatar={<Avatar icon="shield" />} title="Test money only" sub="Do not put real money on this wallet" />
-        <ListRow a11y="Compliance" avatar={<Avatar icon="globe" />} title="Compliance" subLines={6} sub="Testnet assets only. Not offered in mainland China. Target: Hong Kong and APEC, settling in licensed stablecoins or tokenized deposits." />
-        <ListRow avatar={<Avatar icon="bolt" />} title="ChainBrain" sub="Your agent spends only from the pockets you fund" />
+        <ListRow a11y="About and compliance" icon="globe" title="About and compliance" sub="ChainBrain · your agent spends only from the pockets you fund" onPress={() => setAbout(!about)}>
+          <View style={{ transform: [{ rotate: about ? "90deg" : "0deg" }] }}><Icon name="chevronRight" size={18} color={c.muted} /></View>
+        </ListRow>
       </ListCard>
+      {about ? <T v="sub" color="ink2" style={{ paddingHorizontal: 24, paddingTop: 10 }}>Testnet assets only. Not offered in mainland China. Target: Hong Kong and APEC, settling in licensed stablecoins or tokenized deposits.</T> : null}
 
-      <SectionHeader title="Advanced" />
+      <Group title="Advanced" />
       <ListCard>
-        <ListRow avatar={<Avatar icon="globe" tone="fill" />} title="Custom server" sub={custom ? apiUrl.replace(/^https?:\/\//, "") : editing ? "Enter the address below" : "Off"}>
+        <ListRow icon="globe" title="Custom server" sub={custom ? apiUrl.replace(/^https?:\/\//, "") : editing ? "Enter the address below" : "Off"}>
           <Toggle on={serverOpen} onChange={(v) => void toggleServer(v)} a11y="Custom server" />
         </ListRow>
-        {!custom && linked ? <ListRow avatar={<Avatar icon="activity" tone="fill" />} title="Laptop console" sub={`Linked · ${getApi().replace(/^https?:\/\//, "")}`} /> : null}
+        {!custom && linked ? <ListRow icon="activity" title="Laptop console" sub={`Linked · ${getApi().replace(/^https?:\/\//, "")}`} /> : null}
       </ListCard>
       {serverOpen ? (
         <Animated.View entering={FadeInDown.springify(motion.spring.smooth.duration).dampingRatio(1).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })} exiting={FadeOut.duration(motion.exit)}>

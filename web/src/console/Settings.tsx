@@ -1,7 +1,8 @@
 // Settings: a quiet gear in the header. One section, "Connection": use a custom server instead of the built-in network.
 import { useId, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Settings as Gear, X } from "lucide-react";
+import { Check, Settings as Gear, X } from "lucide-react";
+import { Kbd } from "./kit";
 import { DEFAULT_API, cleanUrl, isHttpUrl, savedUrl, setSource, testConnection, useSource, type Probe } from "../source/source";
 import { cn } from "../lib/cn";
 
@@ -33,23 +34,23 @@ export function Settings({ presenter }: { presenter?: () => void }) {
     <Dialog.Root open={open} onOpenChange={reset}>
       <Dialog.Trigger aria-label="Settings" className="grid size-11 place-items-center rounded-full text-muted transition-colors hover:bg-card hover:text-ink"><Gear className="size-5" strokeWidth={1.75} /></Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-[rgba(17,19,24,0.24)]" />
-        <Dialog.Content className="sheet-in fixed left-1/2 top-[18vh] z-50 w-[min(440px,calc(100vw-24px))] -translate-x-1/2 rounded-[20px] bg-card p-6 outline-none">
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-[rgba(15,34,54,0.24)]" />
+        <Dialog.Content className="sheet-in fixed z-50 bg-card p-5 outline-none max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[90dvh] max-sm:overflow-y-auto max-sm:rounded-t-[20px] sm:left-1/2 sm:top-[12vh] sm:w-[min(440px,calc(100vw-24px))] sm:-translate-x-1/2 sm:rounded-[20px] sm:p-6">
           <div className="flex items-center justify-between">
-            <Dialog.Title className="text-[17px] font-semibold">Settings</Dialog.Title>
+            <Dialog.Title className="text-[15px] font-semibold">Settings</Dialog.Title>
             <Dialog.Close aria-label="Close" className="grid size-11 place-items-center rounded-full bg-fill text-ink2 hover:bg-line"><X className="size-5" strokeWidth={1.75} /></Dialog.Close>
           </div>
           <Dialog.Description className="sr-only">Connection settings</Dialog.Description>
           {presenter && (
             <>
-              <h3 className="mb-2 mt-4 text-[13px] font-semibold uppercase tracking-[0.06em] text-muted">Presenting</h3>
+              <h3 className="mb-2 mt-4 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted">Presenting</h3>
               <div className="flex items-center gap-4 rounded-[14px] bg-canvas px-4 py-3.5">
                 <div className="min-w-0 flex-1"><div className="text-[15px] font-medium">Presenter mode</div><div className="text-[13px] leading-5 text-muted">Larger Live view, no menus, and the eight scenes at the bottom.</div></div>
                 <button type="button" onClick={() => { setOpen(false); presenter(); }} className="h-11 rounded-full bg-accent px-5 text-[14px] font-semibold text-on-accent hover:bg-accent-press">Start</button>
               </div>
             </>
           )}
-          <h3 className="mb-2 mt-4 text-[13px] font-semibold uppercase tracking-[0.06em] text-muted">Connection</h3>
+          <h3 className="mb-2 mt-4 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted">Connection</h3>
           <div className="flex items-center gap-4 rounded-[14px] bg-canvas px-4 py-3.5">
             <div className="min-w-0 flex-1"><div className="text-[15px] font-medium">Custom server</div><div className="text-[13px] leading-5 text-muted">Use your own ChainBrain server instead of the built-in network.</div></div>
             <Switch checked={on} onChange={toggle} label="Custom server" />
@@ -60,14 +61,15 @@ export function Settings({ presenter }: { presenter?: () => void }) {
               <input id={field} value={url} onChange={(e) => { setUrl(e.target.value); setProbe(undefined); }} placeholder={DEFAULT_API} inputMode="url" autoCapitalize="off" spellCheck={false}
                 className="num h-12 w-full rounded-[12px] bg-fill px-4 text-[15px] outline-none placeholder:text-faint focus:bg-card focus:ring-2 focus:ring-accent" />
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button type="button" disabled={!valid || probe === "testing"} onClick={() => void test()} className="h-10 rounded-full bg-fill px-5 text-[14px] font-semibold text-ink hover:bg-line disabled:opacity-40">{probe === "testing" ? "Testing…" : "Test connection"}</button>
-                <button type="button" disabled={!valid} onClick={use} className="h-10 rounded-full bg-accent px-5 text-[14px] font-semibold text-on-accent hover:bg-accent-press disabled:opacity-40">Use this server</button>
+                <button type="button" disabled={!valid || probe === "testing"} onClick={() => void test()} className="h-12 w-full rounded-full bg-fill px-5 text-[14px] font-semibold text-ink hover:bg-line disabled:opacity-40 sm:h-10 sm:w-auto">{probe === "testing" ? "Testing…" : "Test connection"}</button>
+                <button type="button" disabled={!valid} onClick={use} className="h-12 w-full rounded-full bg-accent px-5 text-[14px] font-semibold text-on-accent hover:bg-accent-press disabled:opacity-40 sm:h-10 sm:w-auto">Use this server</button>
               </div>
-              <p role="status" className={cn("mt-3 min-h-5 text-[14px]", probe && probe !== "testing" ? (probe.ok ? "text-positive" : "text-negative") : "text-muted")}>
-                {!valid ? "Enter a full address, for example http://localhost:8787" : probe && probe !== "testing" ? (probe.ok ? `Connected in ${probe.ms} ms` : probe.error) : ""}
+              <p role="status" className={cn("mt-3 flex min-h-5 items-center gap-2 text-[14px]", probe && probe !== "testing" ? (probe.ok ? "text-positive" : "text-negative") : "text-muted")}>
+                {!valid ? "Enter a full address, for example http://localhost:8787" : probe && probe !== "testing" ? <>{probe.ok ? <Check className="size-4 shrink-0" strokeWidth={2} aria-hidden /> : <X className="size-4 shrink-0" strokeWidth={2} aria-hidden />}{probe.ok ? `Connected in ${probe.ms} ms` : probe.error}</> : ""}
               </p>
             </div>
           )}
+          <p className="mt-5 hidden items-center justify-end gap-1.5 text-[12px] text-muted sm:flex"><Kbd>Esc</Kbd>to close</p>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

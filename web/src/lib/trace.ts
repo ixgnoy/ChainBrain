@@ -14,6 +14,10 @@ export type TraceRow = {
   kind: ChipKind; verdict: string; actor: Actor; label: string; title: string; reasons: string[]; running?: boolean; tx?: string;
 };
 
+// what a seller asked for, in words ("owner_full_name" -> "the owner's full name")
+const ASK: Record<string, string> = { owner_full_name: "the owner's full name", owner_email: "the owner's email", wallet_history: "the wallet history", other_pockets: "the owner's other pockets", owner_phone: "the owner's phone number" };
+const plainAsk = (x: string) => ASK[x] ?? x.replace(/^owner_/, "the owner's ").replace(/_/g, " ");
+
 const atomicUsd = (x: unknown) => { try { return `US$${usd(BigInt(x as string))}`; } catch { return ""; } };
 const priceUsd = (p: unknown) => { try { return typeof p === "string" ? `US$${usd(parseUsd(p))}` : ""; } catch { return ""; } };
 
@@ -104,7 +108,7 @@ export function traceRows(events: WalletEvent[]): TraceRow[] {
     } else if (e.type === "refusal") {
       rows.push({ ...base, kind: "refused", verdict: "Refused", actor: "Policy", label: "refusal", title: `${e.sellerId}/${e.sku}  ${atomicUsd(e.amount)}`, reasons: reasonsOf(e) });
     } else if (e.type === "disclosure") {
-      const asked = [...(Array.isArray(e.asked) ? e.asked : []).map((x: string) => cleanText(x, 30)), e.signRequest ? "a signature" : ""].filter(Boolean).join(", ");
+      const asked = [...(Array.isArray(e.asked) ? e.asked : []).slice(0, 6).map((x: string) => plainAsk(cleanText(x, 30))), e.signRequest ? "an approval signature" : ""].filter(Boolean).join(", ");
       rows.push({ ...base, kind: "refused", verdict: "Refused", actor: "Policy", label: "disclosure", title: `${cleanText(e.sellerId, 30)} asked for ${asked || "extra data"}`, reasons: reasonsOf(e) });
     } else if (e.type === "forced") {
       // dev stack /dev/force-transfer: a third party submits a transfer the (compromised) agent key really signed

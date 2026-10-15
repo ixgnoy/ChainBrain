@@ -4,6 +4,7 @@ import { View } from "react-native";
 import { ListRow, Avatar } from "../ui/kit";
 import { Money } from "../ui/Money";
 import { T } from "../ui/Text";
+import { c } from "../tokens";
 import { cleanText } from "../lib/sanitize";
 import { NEVER } from "../lib/shared";
 import { usd, money, dateLabel, shortAddr } from "../lib/util";
@@ -40,19 +41,24 @@ export function factPills(p: Pick<Pocket, "cap" | "askAbove">): string[] {
 }
 
 export function PocketRow({ pocket, onPress, last }: { pocket: Pocket; onPress: () => void; last?: boolean }) {
-  const { pending } = useApp();
+  const { pending, ledger } = useApp();
   const state = pocketState(pocket, pending.some((a) => a.pocket.toLowerCase() === pocket.address.toLowerCase()));
+  // a thin bar under the subtitle: how much of this pocket's money the agent has used (only once it has spent something)
+  const spent = React.useMemo(() => ledger.filter((r) => r.kind === "payment" && r.pocket.toLowerCase() === pocket.address.toLowerCase()).reduce((n, r) => n + (r.amount ?? 0n), 0n), [ledger, pocket.address]);
+  const total = spent + pocket.balance;
+  const share = total > 0n ? Math.min(1, Number((spent * 1000n) / total) / 1000) : 0;
   return (
     <ListRow
       last={last} onPress={onPress}
       a11y={`${cleanText(pocket.name, 30)} pocket, ${usd(pocket.balance)} USDC`}
       avatar={<Avatar label={pocket.name} tone={pocket.revoked || isExpired(pocket) ? "fill" : "soft"} />}
       title={cleanText(pocket.name, 30)} sub={pocketLine(pocket)}
+      extra={spent > 0n ? <View accessibilityLabel={`${usd(spent)} of ${usd(total)} used`} style={{ height: 4, borderRadius: 2, backgroundColor: c.fill, marginTop: 6, overflow: "hidden" }}><View style={{ width: `${share * 100}%`, height: 4, borderRadius: 2, backgroundColor: c.accent }} /></View> : undefined}
     >
-      {/* the balance rolls when it changes while the row is on screen (no count-in, no colour flash) */}
+      {/* the balance rolls when it changes while the row is on screen; the state shows only when it is not Active (noise otherwise) */}
       <View style={{ alignItems: "flex-end", gap: 2 }}>
         <Money value={usd(pocket.balance)} v="row" decorative />
-        <T v="sub" color={STATE_TONE[state]}>{state}</T>
+        {state !== "Active" ? <T v="sub" color={STATE_TONE[state]}>{state}</T> : null}
       </View>
     </ListRow>
   );

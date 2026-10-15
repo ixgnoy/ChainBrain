@@ -14,4 +14,7 @@ export const SCENE_COPY: Record<string, SceneCopy> = {
   "8": { doing: "Ask for a report with only US$0.20 to spend.", seeing: "No allowed shop fits, nothing is paid and the agent suggests raising the limit.", outcome: "Nothing paid", tone: "neutral" },
 };
 
+/** One or two words under each step number in the presenter's stepper. */
+export const SHORT_LABEL: Record<string, string> = { "1": "Ask", "2": "Pay", "3": "Approve", "4": "Refuse", "5": "Injection", "6": "Data grab", "7": "Revoke", "8": "Dead end" };
+export const shortFor = (id: string) => SHORT_LABEL[id] ?? `Scene ${id}`;
 export const copyFor = (id: string): SceneCopy | undefined => SCENE_COPY[id];

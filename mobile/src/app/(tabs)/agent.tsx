@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Keyboard, Platform, ScrollView, TextInput, View } from "react-native";
-import Animated, { useAnimatedKeyboard, useAnimatedReaction, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, useAnimatedKeyboard, useAnimatedReaction, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { useApp, type Turn } from "../../store";
-import { c, F } from "../../tokens";
+import { c, F, lift } from "../../tokens";
 import { Avatar, Button, Press } from "../../ui/kit";
 import { StatusDot, type DotState } from "../../ui/StatusDot";
 import { GLASS_TAB_SPACE as TAB_H } from "../../ui/glass/GlassTabBar";
@@ -13,7 +14,8 @@ import { useReduceMotion } from "../../ui/motion";
 import { TraceBlock, STEP } from "../../components/TraceBlock";
 import { parseIntent } from "../../components/IntentCard";
 import { DeadEndCard } from "../../components/DeadEndCard";
-import { RefusalCard, SellerRefusal, refusalsOf } from "../../components/RefusalCard";
+import { SellerRefusal, refusalsOf } from "../../components/RefusalCard";
+import { EventCard } from "../../components/EventCard";
 import { StoppedCard } from "../../components/StoppedCard";
 import { Rise, useStagger, firstTime } from "../../ui/Rise";
 import { StreamText } from "../../ui/StreamText";
@@ -28,7 +30,6 @@ import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, 
 import { deadEndOf } from "../../lib/deadend";
 import { money, usd } from "../../lib/util";
 import { plainAsks } from "../../lib/plain";
-import { CodePill } from "../../ui/kit";
 import { haptic } from "../../haptics";
 
 type ChipItem = { label: string; text: string };
@@ -48,21 +49,12 @@ export function answerOptions(q: string): string[] {
   return a.length <= 24 && b.length <= 24 ? [cap(a), cap(b)] : [];
 }
 
-/** The task waits for the owner: one compact row in the chat (the sheet holds the full card). */
+/** The task waits for the owner: one compact card in the chat (the sheet holds the full task). */
 function TaskWaiting({ text, onOpen, id }: { text: string; onOpen(): void; id: string }) {
   const what = parseIntent(text).find((r) => r.k === "Buy")?.v ?? "A new task";
   return (
-    <Rise from={0.96} dy={12} spring="snappy" exit layout onEnter={() => { if (firstTime(`intent:${id}`)) haptic.medium(); }}>
-      <Press kind="row" haptics="select" onPress={onOpen} accessibilityRole="button" accessibilityLabel={`Review task: ${what}`}
-        style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 20, backgroundColor: c.warningSoft }}>
-        <Icon name="clock" size={18} color={c.warning} />
-        <View style={{ flex: 1, gap: 2 }}>
-          <T v="row" w="semi" numberOfLines={1}>Confirm the task</T>
-          <T v="sub" color="ink2" numberOfLines={1}>{cleanText(what, 80)}</T>
-        </View>
-        <T v="sub" w="semi" color="accent">Review</T>
-      </Press>
-    </Rise>
+    <EventCard tone="waiting" title="Confirm the task" body={cleanText(what, 80)} onPress={onOpen} a11y={`Review task: ${what}`}
+      onEnter={() => { if (firstTime(`intent:${id}`)) haptic.medium(); }} amount="Review" />
   );
 }
 
@@ -127,6 +119,8 @@ export default function AgentChat() {
   useEffect(() => setShowAll(false), [active?.address]);
   const scroll = useRef<ScrollView>(null);
   const stick = useRef(true);
+  const dragging = useRef(false); // the owner is scrolling by hand: only then does the position decide following / "Jump to latest"
+  const [away, setAway] = useState(false); // scrolled well above the latest message: show "Jump to latest"
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { if (dev || source === "builtin") devScenes().then(setScenes).catch(() => {}); else setScenes([]); }, [dev, source]);
@@ -175,6 +169,7 @@ export default function AgentChat() {
   const used = new Set(turns.map((t) => t.text.trim()));
   const offers = (scenes.length ? ordered.map((s) => ({ label: s.chip ?? s.text, text: s.text })) : DEFAULTS).filter((x) => !used.has(x.text));
   const chipItems = (question ? follow : chatBusy ? [] : offers).slice(0, 12);
+  const prompts = chipItems.slice(0, 3); // the empty chat leads with full-width prompt rows instead of chips
   const chips = chipItems.map((x) => x.label);
   const chipDelay = useStagger(chips, 40, 8);
   const last = turns.at(-1);
@@ -188,6 +183,10 @@ export default function AgentChat() {
   const headStatus = !active ? "Create a pocket first" : active.revoked ? "Stopped · this pocket is off"
     : waitingHere ? "Waiting for you" : chatBusy ? "Working…" : `Ready · ${money(active.balance)} left`;
   const ready = !!text.trim() && !chatBusy;
+  // the stop path is revoking the pocket (confirmed by the hold-to-revoke sheet); without one, send simply hides while the agent works
+  const showStop = canStop && chatBusy;
+  const typing = text.trim().length > 0;
+  const empty = turns.length === 0 && !sent;
 
   return (
     <View style={{ flex: 1, backgroundColor: c.card }}>
@@ -195,7 +194,7 @@ export default function AgentChat() {
         <Press kind="row" haptics="select" disabled={pockets.length < 2} onPress={() => setPickerOpen(true)} hitSlop={6}
           accessibilityRole="button" accessibilityLabel={active ? `${active.name}, ${headStatus}. Change pocket` : "No pocket yet"}
           style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48 }}>
-          <Avatar label={active?.name ?? "?"} size={40} />
+          <Avatar label={active?.name ?? "?"} size={32} />
           <View style={{ flex: 1, gap: 2 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
               <T v="row" w="semi" numberOfLines={1} accessibilityRole="header" style={{ flexShrink: 1 }}>{active ? cleanText(active.name, 28) : "Your agent"}</T>
@@ -207,28 +206,37 @@ export default function AgentChat() {
             </View>
           </View>
         </Press>
-        {canStop && busyHere ? (
-          <Rise dy={4}>
-            <Press onPress={() => setAction({ mode: "revoke", pocket: active!.address })} accessibilityRole="button" accessibilityLabel="Stop agent" style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: c.negativeSoft, flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Icon name="lock" size={14} color={c.negative} />
-              <T v="sub" w="semi" color="negative">Stop</T>
-            </Press>
-          </Rise>
-        ) : null}
       </View>
 
       <View style={{ flex: 1 }}>
         <ScrollView
-          ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 20, gap: 20, flexGrow: 1 }} keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}
+          ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 28, gap: 24, flexGrow: 1 }} keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}
           scrollEventThrottle={32}
-          onScroll={(e) => { const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent; stick.current = contentSize.height - (contentOffset.y + layoutMeasurement.height) < 160; }}
+          onScroll={(e) => { const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent; const gap = contentSize.height - (contentOffset.y + layoutMeasurement.height); if (gap < 80) { stick.current = true; setAway(false); } else if (dragging.current) { stick.current = false; setAway(gap > 140); } }}
+          onScrollBeginDrag={() => { dragging.current = true; }} onScrollEndDrag={() => { setTimeout(() => { dragging.current = false; }, 400); }}
           onContentSizeChange={toEnd}
         >
-          {turns.length === 0 && !sent && (
+          {empty && (
             <Rise dy={8} duration={260}>
-              <View style={{ flex: 1, justifyContent: "center", gap: 8, paddingVertical: 40 }}>
-                <T v="section">{active ? "What should I buy?" : "Create a pocket first"}</T>
-                <T v="body" color="ink2">{active ? "I only spend from the pocket you funded, within the limits you set. For bigger payments I wait for your OK." : "Your agent works inside a pocket. Create one on Home, then come back."}</T>
+              <View style={{ flex: 1, justifyContent: "center", gap: 20, paddingVertical: 24 }}>
+                <View style={{ gap: 8 }}>
+                  <T v="section">{active ? "What should I buy?" : "Create a pocket first"}</T>
+                  <T v="body" color="ink2">{active ? "I only spend from the pocket you funded, within the limits you set. For bigger payments I wait for your OK." : "Your agent works inside a pocket. Create one on Home, then come back."}</T>
+                </View>
+                {active && prompts.length ? (
+                  <View style={{ gap: 8 }}>
+                    {prompts.map(({ label, text: say }, i) => (
+                      <Rise key={label} delay={80 + i * 50} dy={8}>
+                        <Press kind="row" haptics="select" onPress={() => send(say)} disabled={chatBusy} accessibilityRole="button" accessibilityLabel={cleanText(say, 160)}
+                          style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 16, borderRadius: 16, backgroundColor: c.canvas }}>
+                          <Icon name={i === 0 ? "chat" : "bolt"} size={20} color={c.accent} />
+                          <T v="row" style={{ flex: 1, fontSize: 15, lineHeight: 22 }} numberOfLines={2}>{cleanText(label, 80)}</T>
+                          <Icon name="chevronRight" size={16} color={c.faint} />
+                        </Press>
+                      </Rise>
+                    ))}
+                  </View>
+                ) : null}
               </View>
             </Rise>
           )}
@@ -247,24 +255,21 @@ export default function AgentChat() {
             const isLast = i === turns.length - 1;
             const dead = t.done && active ? deadEndOf(evs, active) : null;
             const refusals = dead ? [] : refusalsOf(evs);
-            const running = !t.done && traceLines(evs).some((l) => l.kind === "tool" && l.state === "run");
             return (
-              <View key={t.id} style={{ gap: 14 }}>
+              <View key={t.id} style={{ gap: 10 }}>
                 <UserBubble text={t.text} fresh={false} />
                 {disclosures.map((d, k) => (
-                  <RefusalCard key={k} id={`${t.id}:d${k}`}>
-                    <T v="sub" w="semi" color="warning">{cleanText(sellerName(d.sellerId), 40)} asked for {plainAsks(d.asked ?? [], !!d.signRequest)}</T>
-                    <T v="sub" color="ink2">Your wallet refused and nothing was shared. Only payments inside your rules get signed.</T>
-                    <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>{(d.refused ?? []).map((r: string) => <CodePill key={r} code={cleanText(r, 40)} tone="warning" />)}</View>
-                  </RefusalCard>
+                  <EventCard key={k} tone="refused" alert={`${t.id}:d${k}`} title={`${cleanText(sellerName(d.sellerId), 40)} asked for more data`}
+                    body={`It asked for ${plainAsks(d.asked ?? [], !!d.signRequest)}. Your wallet refused and nothing was shared.`}
+                    why={{ codes: (d.refused ?? []).map((r: string) => cleanText(r, 40)) }} />
                 ))}
                 {refusals.map((r) => <SellerRefusal key={r.sellerId} id={`${t.id}:r${r.sellerId}`} seller={sellerName(r.sellerId)} reasons={r.reasons} />)}
                 {injectionsOf(evs).map((x, k) => <InjectionCard key={`${t.id}:i${k}`} id={`${t.id}:${k}`} seller={sellerName(x.sellerId)} lines={x.lines} />)}
                 {evs.filter((e) => e.type === "forced").map((e) => <BlockedCard key={String(e.tx)} e={e} />)}
                 {!t.done ? (
                   <View style={{ gap: 4 }}>
-                    {pending.length ? <T v="body" color="muted">Waiting for you…</T> : <WorkingLine on={!running} />}
-                    <TraceBlock events={evs} live />
+                    {pending.length ? <T v="body" color="muted">Waiting for you…</T> : !traceLines(evs).length ? <WorkingLine on /> : null}
+                    <TraceBlock events={evs} live={!pending.length} />
                     {evs.filter((e) => e.type === "payment").map((e) => <View key={e.tx} style={{ marginTop: 10 }}><PaidCard e={e} /></View>)}
                   </View>
                 ) : (
@@ -287,55 +292,60 @@ export default function AgentChat() {
             <StoppedCard last={stopped} tx={stopTx?.hash} canReturn={active.owned && active.balance > 0n} onReturn={() => setAction({ mode: "return", pocket: active.address })} />
           ) : null}
           {pay && (
-            <Rise dy={12} layout exit>
-              <View style={{ padding: 16, borderRadius: 20, backgroundColor: c.canvas, gap: 12 }}>
-                <View style={{ gap: 2 }}>
-                  <T v="row" w="semi">Waiting for your OK</T>
-                  <T v="sub" color="ink2">{cleanText(sellerName(pay.data?.sellerId), 40)} · US${cleanText(pay.data?.amount, 10)}</T>
-                </View>
-                <Button label="Review and approve" small onPress={() => setApprovalOpen(true)} />
-              </View>
-            </Rise>
+            <EventCard tone="waiting" title="Waiting for your OK" body={`${cleanText(sellerName(pay.data?.sellerId), 40)} · US$${cleanText(pay.data?.amount, 10)}`}>
+              <Button label="Review and approve" small onPress={() => setApprovalOpen(true)} />
+            </EventCard>
           )}
           {question && (
-            <Rise dy={16} layout exit>
-              <View style={{ padding: 16, borderRadius: 20, backgroundColor: c.canvas, gap: 12 }}>
-                <View style={{ gap: 2 }}>
-                  <T v="row" w="semi">Your agent has a question</T>
-                  <T v="sub" color="ink2">One tap to answer, or type your own below.</T>
+            <EventCard tone="waiting" title="Your agent has a question" body="One tap to answer, or type your own below.">
+              {answerOptions(question.text).length ? (
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {answerOptions(question.text).map((o) => <Button key={o} label={o} kind="secondary" small onPress={() => send(o)} style={{ flex: 1, paddingHorizontal: 12 }} />)}
                 </View>
-                {answerOptions(question.text).length ? (
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    {answerOptions(question.text).map((o) => <Button key={o} label={o} kind="secondary" small onPress={() => send(o)} style={{ flex: 1, paddingHorizontal: 12 }} />)}
-                  </View>
-                ) : <Button label="Answer" kind="secondary" small onPress={() => setQuestionOpen(true)} />}
-              </View>
-            </Rise>
+              ) : <Button label="Answer" kind="secondary" small onPress={() => setQuestionOpen(true)} />}
+            </EventCard>
           )}
         </ScrollView>
 
-        <Animated.View style={[{ gap: 10 }, Platform.OS === "ios" ? ride : { paddingBottom: kb ? 8 : base }]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }} style={{ flexGrow: 0 }} keyboardShouldPersistTaps="handled">
-            {chipItems.map(({ label, text: say }) => (
-              <Rise key={label} delay={Math.max(chipDelay[label] ?? 0, 0)} instant={(chipDelay[label] ?? 0) < 0} dy={6}>
-                <Press haptics="select" scale={0.96} onPress={() => send(say)} disabled={chatBusy || !active} accessibilityRole="button" accessibilityLabel={cleanText(say, 160)} style={{ minHeight: 40, maxWidth: 260, paddingHorizontal: 16, borderRadius: 9999, justifyContent: "center", backgroundColor: c.fill, opacity: chatBusy ? 0.5 : 1 }}>
-                  <T v="sub" w="medium" color="ink2" numberOfLines={1}>{cleanText(label, 60)}</T>
-                </Press>
-              </Rise>
-            ))}
-          </ScrollView>
-          <View style={{ paddingHorizontal: 16 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 20, paddingRight: 6, borderRadius: 9999, backgroundColor: c.fill, minHeight: 56 }}>
-              <TextInput
-                value={text} onChangeText={setText} placeholder={question ? "Answer your agent" : "Ask your agent to buy something"} placeholderTextColor={c.faint}
-                onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}
-                style={[{ flex: 1, color: c.ink, fontFamily: F.regular, fontSize: 16, height: 48, paddingVertical: 0 }, Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null]}
-              />
-              <SendButton ready={ready} busy={chatBusy} onPress={() => send(text)} />
-            </View>
-          </View>
-        </Animated.View>
+        {away ? (
+          <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(120)} style={{ position: "absolute", right: 16, bottom: 12, zIndex: 5 }} pointerEvents="box-none">
+            <Press kind="icon" haptics="select" onPress={() => { stick.current = true; setAway(false); scroll.current?.scrollToEnd({ animated: !reduce }); }} accessibilityRole="button" accessibilityLabel="Jump to latest"
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: c.card, alignItems: "center", justifyContent: "center", ...lift }}>
+              <Icon name="arrowDown" size={18} color={c.ink} stroke={2} />
+            </Press>
+          </Animated.View>
+        ) : null}
       </View>
+
+      <Animated.View style={[{ gap: 10, backgroundColor: c.card }, Platform.OS === "ios" ? ride : { paddingBottom: kb ? 8 : base }]}>
+        {/* suggestions: whole phrases only, faded (not cut) at the right edge, gone while the owner types */}
+        {!typing && !empty && chipItems.length ? (
+          <Animated.View exiting={FadeOut.duration(120)} style={{ height: 40 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 20, paddingRight: 36, gap: 8 }} style={{ flexGrow: 0 }} keyboardShouldPersistTaps="handled">
+              {chipItems.map(({ label, text: say }) => (
+                <Rise key={label} delay={Math.max(chipDelay[label] ?? 0, 0)} instant={(chipDelay[label] ?? 0) < 0} dy={6}>
+                  <Press haptics="select" scale={0.96} onPress={() => send(say)} disabled={chatBusy || !active} accessibilityRole="button" accessibilityLabel={cleanText(say, 160)} style={{ height: 40, maxWidth: 280, paddingHorizontal: 16, borderRadius: 9999, justifyContent: "center", backgroundColor: c.fill, opacity: chatBusy ? 0.5 : 1 }}>
+                    <T v="sub" w="medium" color="ink2" numberOfLines={1}>{cleanText(label, 60)}</T>
+                  </Press>
+                </Rise>
+              ))}
+            </ScrollView>
+            <View pointerEvents="none" style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 32 }}>
+              <Svg width={32} height={40}><Defs><LinearGradient id="fade" x1="0" y1="0" x2="1" y2="0"><Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} /><Stop offset="1" stopColor="#FFFFFF" stopOpacity={1} /></LinearGradient></Defs><Rect width={32} height={40} fill="url(#fade)" /></Svg>
+            </View>
+          </Animated.View>
+        ) : null}
+        <View style={{ paddingHorizontal: 16 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 20, paddingRight: 8, borderRadius: 26, backgroundColor: c.fill, minHeight: 52 }}>
+            <TextInput
+              value={text} onChangeText={setText} placeholder={question ? "Answer your agent" : "Ask your agent to buy something"} placeholderTextColor={c.faint}
+              onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}
+              style={[{ flex: 1, color: c.ink, fontFamily: F.regular, fontSize: 16, lineHeight: 24, height: 48, paddingVertical: 0 }, Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null]}
+            />
+            <SendButton ready={ready} stop={showStop} onPress={() => send(text)} onStop={() => active && setAction({ mode: "revoke", pocket: active.address })} />
+          </View>
+        </View>
+      </Animated.View>
     </View>
   );
 }

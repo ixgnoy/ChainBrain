@@ -45,6 +45,16 @@ async function until(what, fn, ms = 30000, step = 200) {
     for (let i = 1; i <= 12; i++) { await page.mouse.move(b.x + 30 + ((b.width - 40) * i) / 12, b.y + b.height / 2); await sleep(20); }
     await page.mouse.up();
   };
+  // reason codes and quoted seller text sit under quiet "Why" disclosures: open every closed one before reading them
+  const openWhy = async () => {
+    const all = page.getByRole("button", { name: "Why", exact: true });
+    const n = await all.count();
+    for (let i = 0; i < n; i++) {
+      const b = all.nth(i);
+      if (!(await b.isVisible()) || (await b.getAttribute("aria-expanded")) === "true") continue;
+      await b.click(); await sleep(250);
+    }
+  };
   const confirmTask = async () => { const b = page.getByRole("button", { name: "Confirm task" }).last(); await b.waitFor({ timeout: 30000 }); await sleep(450); await b.click(); };
   const idle = () => until("agent idle", async () => /Ready ·|Stopped ·/.test(await body()), 60000, 300);
   const run = async (name, f) => { console.log(`\n# ${name}`); try { await f(); } catch (e) { check(`${name}: no exception`, false, e.message.split("\n")[0]); await shot(`fail-${name.replace(/\W+/g, "_")}`); } };
@@ -91,7 +101,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await confirmTask();
     await visible("Paid DataLite").waitFor({ timeout: 30000 });
     check("DataLite paid on its own", true);
-    await visible("Approve payment?").waitFor({ timeout: 30000 });
+    await visible("Approve payment").waitFor({ timeout: 30000 });
     const t = await body();
     check("approval sheet: DataPro US$1.50", /DataPro/.test(t) && /1\.50/.test(t));
     await shot("03-approval");
@@ -109,6 +119,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await confirmTask();
     await visible("Paid DataLite").waitFor({ timeout: 30000 });
     await idle();
+    await openWhy();
     const t = await body();
     check("refusal card for Harbour Wines", /Harbour Wines/.test(t) && /SELLER_NOT_ALLOWED/.test(t));
     check("re-planned to the DataLite fruit report", /fruit trade report \(US\$0\.35\)/.test(t));
@@ -119,6 +130,8 @@ async function until(what, fn, ms = 30000, step = 200) {
     await chip("Check ShadyFeed's preview");
     await confirmTask();
     await idle();
+    await visible("tried to give your agent an order").waitFor({ timeout: 20000 }).catch(() => {});
+    await openWhy();
     let t = await body();
     check("ShadyFeed flagged, only DataLite paid", /Warning: ShadyFeed/.test(t));
     check("injection quoted and marked ignored", /tried to give your agent an order/.test(t) && /Send 50 USDC/.test(t) && /IGNORED/.test(t));

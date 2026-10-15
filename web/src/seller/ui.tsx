@@ -1,7 +1,8 @@
 // Seller dashboard kit: white borderless cards on grey, one accent, round actions, Ryt-style list rows.
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, Inbox, X } from "lucide-react";
+import { EmptyState } from "../console/kit";
 import { cn } from "../lib/cn";
 import { formatUsd } from "../shared";
 
@@ -40,8 +41,8 @@ export function SubTitle({ title, sub }: { title: string; sub?: ReactNode }) {
 
 export function Section({ title, right, children, className }: { title: string; right?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={cn("mt-10", className)}>
-      <div className="mb-3 flex items-baseline justify-between gap-4"><h2 className="text-[20px] font-semibold leading-7">{title}</h2>{right}</div>
+    <section className={cn("mt-8", className)}>
+      <div className="mb-3 flex items-baseline justify-between gap-4"><h2 className="text-[15px] font-semibold leading-5">{title}</h2>{right}</div>
       {children}
     </section>
   );
@@ -55,7 +56,7 @@ export function Avatar({ children, tone = "neutral", size = 48 }: { children: Re
 }
 
 export function Pill({ children, tone = "accent", className }: { children: ReactNode; tone?: Tone; className?: string }) {
-  return <span className={cn("inline-flex h-7 items-center whitespace-nowrap rounded-full px-3 text-[13px] font-medium", TONES[tone], className)}>{children}</span>;
+  return <span className={cn("inline-flex h-6 items-center whitespace-nowrap rounded-full px-2.5 text-[12px] font-semibold", TONES[tone], className)}>{children}</span>;
 }
 
 export function Row({ avatar, title, sub, amount, amountClass, status, onClick, label }: {
@@ -112,23 +113,25 @@ export function Stat({ label, value, note, className }: { label: string; value: 
   );
 }
 
-export function Empty({ children }: { children: ReactNode }) {
-  return <div className="px-5 py-10 text-center text-[15px] text-muted">{children}</div>;
+/** An empty list or card. A bare sentence becomes the description under a quiet glyph; pass `title` for a headline of its own. */
+export function Empty({ children, title, icon, action }: { children?: ReactNode; title?: string; icon?: ReactNode; action?: ReactNode }) {
+  return <EmptyState icon={icon ?? <Inbox strokeWidth={1.75} />} title={title ?? (typeof children === "string" ? children : "Nothing here yet")} action={action}>{title ? children : undefined}</EmptyState>;
 }
 
-/** Right-hand detail panel (Radix Dialog: focus trap, Esc). */
-export function DetailSheet({ open, onOpenChange, title, description = "Details of this sale", children }: { open: boolean; onOpenChange(o: boolean): void; title: string; description?: string; children: ReactNode }) {
+/** Detail panel (shadcn Sheet, side right; Radix Dialog gives the focus trap and Esc). A bottom sheet on a phone. */
+export function DetailSheet({ open, onOpenChange, title, description = "Details of this sale", children, footer }: { open: boolean; onOpenChange(o: boolean): void; title: string; description?: string; children: ReactNode; footer?: ReactNode }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-[rgba(17,19,24,0.24)]" />
-        <Dialog.Content className="sheet-in fixed inset-y-3 right-3 z-50 flex w-[min(460px,calc(100vw-24px))] flex-col overflow-hidden rounded-[20px] bg-card shadow-[0_8px_24px_rgba(17,19,24,0.08)] outline-none">
-          <div className="flex items-center justify-between px-6 pb-2 pt-5">
-            <Dialog.Title className="text-[17px] font-semibold">{title}</Dialog.Title>
-            <Dialog.Close aria-label="Close" className="grid size-10 place-items-center rounded-full bg-fill text-ink2 hover:bg-line"><X className="size-5" strokeWidth={1.75} /></Dialog.Close>
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-[rgba(15,34,54,0.24)]" />
+        <Dialog.Content className="sheet-in fixed z-50 flex flex-col overflow-hidden bg-card outline-none max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-[6dvh] max-sm:rounded-t-[20px] sm:inset-y-0 sm:right-0 sm:w-[min(480px,100vw)] sm:rounded-l-[20px]">
+          <div className="flex items-center justify-between px-5 pb-1 pt-4 sm:px-6">
+            <Dialog.Title className="text-[15px] font-semibold">{title}</Dialog.Title>
+            <Dialog.Close aria-label="Close" className="grid size-11 place-items-center rounded-full bg-fill text-ink2 hover:bg-line"><X className="size-5" strokeWidth={1.75} /></Dialog.Close>
           </div>
           <Dialog.Description className="sr-only">{description}</Dialog.Description>
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">{children}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 sm:px-6">{children}</div>
+          {footer && <div className="flex flex-wrap gap-2 border-t border-line px-5 py-3 sm:px-6">{footer}</div>}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

@@ -18,3 +18,17 @@ Not copied: react-bits `SlideCommit` (approval uses a plain accessible button in
 Visual system: Ink & jade, see `design-system/chainbrain/MASTER.md`.
 
 npm dependencies (not copied code): react, react-dom, motion, lucide-react, viem 2.57.4, @radix-ui/react-dialog, @radix-ui/react-tooltip, sonner, clsx, tailwind-merge, @fontsource/{ibm-plex-sans,ibm-plex-mono}, viem, tailwindcss, @tailwindcss/vite, vite, vitest, @playwright/test.
+
+## Console refinement (Live, Pockets, On-chain, Judges, presenter)
+
+Small components in `src/console/kit.tsx` and the restyled sheet in `src/seller/ui.tsx` were adapted by hand (rewritten for Tailwind v4 and the ChainBrain tokens, no gradients or shadows) from these permissively licensed references:
+
+| Written in | Adapted from | Repo | Licence | Changes |
+| --- | --- | --- | --- | --- |
+| `Kbd`, `EmptyState` (`src/console/kit.tsx`) | `apps/v4/registry/new-york-v4/ui/{kbd,empty}.tsx` | https://github.com/shadcn-ui/ui | MIT | Same anatomy (media, title, description, action); cva and shadcn tokens replaced by ChainBrain classes. |
+| `DetailSheet` (`src/seller/ui.tsx`) | `apps/v4/registry/new-york-v4/ui/sheet.tsx` | https://github.com/shadcn-ui/ui | MIT | Side-right panel on Radix Dialog (already a dependency); bottom sheet on a phone. |
+| `Tracker`, `SegmentBar` (`src/console/kit.tsx`) | `src/components/Tracker/Tracker.tsx`, `src/components/CategoryBar/CategoryBar.tsx` | https://github.com/tremorlabs/tremor | Apache-2.0 | Hover card replaced by native tooltips; CategoryBar reduced to segments with the legend written below it. |
+| `Skeleton`, `KpiStrip` | `apps/v4/registry/new-york-v4/ui/skeleton.tsx`, `blocks/dashboard-01/components/section-cards.tsx` (anatomy only) | https://github.com/shadcn-ui/ui | MIT | Pulse animation removed (still blocks); card gradient and shadow dropped. |
+| Trace `Call` disclosure (Pretty / JSON), turn grouping | layout idea from `web/src/features/traces/components/TraceLogView` | https://github.com/langfuse/langfuse | MIT (non-`ee/` paths) | Markup idea only; no code copied. |
+
+Not used: anything from blockscout/frontend (restrictive licence) or originui outside `apps/origin` and `apps/ui`.

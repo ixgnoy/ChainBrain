@@ -2,10 +2,11 @@ import { useMemo, useState } from "react";
 import { ArrowDownLeft, Ban, Tag, Copy, Check } from "lucide-react";
 import { useSeller } from "./useSeller";
 import { buyerTag, type SaleRow } from "./data";
-import { Avatar, Button, Card, DetailSheet, Empty, Pill, Row, Section, Stat, SubTitle, money, moneyCents, tabPill, when } from "./ui";
+import { Avatar, Button, Card, DetailSheet, Empty, Pill, Row, Section, SubTitle, money, moneyCents, tabPill, when } from "./ui";
 import { REASONS, shortAddr } from "../shared";
 import { cleanText } from "../lib/sanitize";
 import { cn } from "../lib/cn";
+import { Disclosure, KpiStrip } from "../console/kit";
 
 export type Page = "overview" | "sales" | "catalogue";
 const ICON = { strokeWidth: 1.75 };
@@ -52,14 +53,13 @@ function SaleDetail({ r, onClose }: { r?: SaleRow; onClose(): void }) {
               ))}
             </dl>
           </Card>
-          <details className="mt-4 rounded-[20px] bg-canvas px-5 py-3.5 text-[14px] text-ink2">
-            <summary className="cursor-pointer font-medium text-ink">Technical details</summary>
-            <dl className="mt-3 space-y-2">
+          <Disclosure className="mt-4" summary="Technical details">
+            <dl className="space-y-2 rounded-[14px] bg-canvas px-4 py-3 text-[14px] text-ink2">
               <div><dt className="text-muted">Pocket</dt><dd className="num break-all">{r.pocket || "–"}</dd></div>
               {r.tx && <div><dt className="text-muted">Transaction</dt><dd className="num break-all">{r.tx}</dd></div>}
               {r.reasons.map((c) => <div key={c}><dt className="text-muted">Reason code</dt><dd>{c} · {REASONS[c] ?? ""}</dd></div>)}
             </dl>
-          </details>
+          </Disclosure>
         </div>
       )}
     </DetailSheet>
@@ -90,11 +90,11 @@ export function Overview({ go }: { go(p: Page): void }) {
           <Button variant="soft" onClick={() => go("catalogue")}><Tag className="size-4" {...ICON} />Catalogue</Button>
         </div>
       </Card>
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Stat label="Payments" value={summary.paid} />
-        <Stat label="Average sale" value={moneyCents(summary.average)} />
-        <Stat label="Refused by buyers' wallets" value={summary.refused} note={summary.refused ? "Before any money moved" : undefined} className="col-span-2 sm:col-span-1" />
-      </div>
+      <KpiStrip className="mt-3" items={[
+        { label: "Payments", value: summary.paid, note: summary.buyers ? `From ${summary.buyers} buyer ${summary.buyers === 1 ? "agent" : "agents"}` : undefined },
+        { label: "Average sale", value: moneyCents(summary.average), note: "Per payment" },
+        { label: "Refused by buyers' wallets", value: summary.refused, note: summary.refused ? "Before any money moved" : "None yet", accent: true },
+      ]} />
       <Section title="Recent sales" right={rows.length > 5 && <button type="button" onClick={() => go("sales")} className="text-[15px] font-semibold text-accent hover:underline">View all</button>}>
         <SalesList rows={rows.slice(0, 5)} empty="No agent has bought from you yet." />
       </Section>

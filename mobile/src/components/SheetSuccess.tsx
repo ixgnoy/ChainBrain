@@ -8,11 +8,12 @@ import { c } from "../tokens";
 import { EASE_OUT, useReduceMotion } from "../ui/motion";
 import { SuccessMark, landingDip } from "../ui/SuccessMark";
 import { T } from "../ui/Text";
+import { Button } from "../ui/kit";
 import { TxLink } from "./TxLink";
 
 const HASH_DELAY = 140 + 260 + 60; // the check starts at 140 ms and draws for 260 ms; the hash follows 60 ms later
 
-export function SheetSuccess({ title, sub, txs, minHeight = 0 }: { title: string; sub?: string; txs?: { label?: string; hash: string }[]; minHeight?: number }) {
+export function SheetSuccess({ title, sub, txs, minHeight = 0, action }: { title: string; sub?: string; txs?: { label?: string; hash: string }[]; minHeight?: number; /** a quiet text link under the card ("View receipt") */ action?: { label: string; onPress: () => void } }) {
   const reduce = useReduceMotion();
   const scale = useSharedValue(1);
   const rise = useSharedValue(reduce ? 1 : 0);
@@ -32,6 +33,7 @@ export function SheetSuccess({ title, sub, txs, minHeight = 0 }: { title: string
           {sub ? <T v="sub" color="ink2" style={{ textAlign: "center" }}>{sub}</T> : null}
         </View>
       </Animated.View>
+      {action ? <Animated.View style={rows}><Button label={action.label} kind="text" onPress={action.onPress} /></Animated.View> : null}
       {txs?.length ? (
         <Animated.View style={[{ gap: 8, paddingHorizontal: 4 }, rows]}>
           {txs.map((t) => (

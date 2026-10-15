@@ -1,41 +1,68 @@
 import { useMemo, useState } from "react";
 import { usePlay } from "./play";
 import { copyFor } from "./sceneCopy";
-import { Copy, Check, ShieldCheck } from "lucide-react";
+import { Copy, Check, ShieldCheck, ShieldAlert, Wallet, ArrowLeftRight } from "lucide-react";
 import { useNetwork, txLabel } from "./network";
 import { PhoneTag, TxHash, Verdict, pocketStatus, useViewTx, usd, NEVER } from "./parts";
 import { TX_LABEL, type TxKind } from "./chain";
-import { Avatar, Button, Card, Empty, PageTitle, Pill, PillSelect, Row, Section, Stat, tabPill } from "../seller/ui";
+import { Disclosure, KpiStrip, chip } from "./kit";
+import { ago, dayLabel } from "./liveRules";
+import { worstCase } from "./worst";
+import { Button, Card, Empty, PageTitle, Pill, PillSelect, Section } from "../seller/ui";
 import { shortAddr } from "../shared";
 import { cn } from "../lib/cn";
 
+const I = { strokeWidth: 1.75 } as const;
+const COUNT = ({ n }: { n: number }) => <span className="num text-[12px] opacity-70">{n}</span>;
+
 // ------------------------------------------------------------------ Pockets
+type PocketFilter = "all" | "active" | "stopped";
 export function Pockets({ open }: { open(addr: string): void }) {
-  const { listed, cfg, chainError, nameOf, isPhone } = useNetwork();
+  const { listed, cfg, txs, chainError, nameOf, isPhone } = useNetwork();
+  const [f, setF] = useState<PocketFilter>("all");
   const pockets = listed([], { all: true });
   const names = new Map(cfg.sellers.map((s) => [s.id, s.name]));
   const total = pockets.reduce((n, p) => n + p.balance, 0n);
+  const active = pockets.filter((p) => pocketStatus(p).label === "Active");
+  const shown = f === "all" ? pockets : f === "active" ? active : pockets.filter((p) => pocketStatus(p).label !== "Active");
+  const FILTERS: [PocketFilter, string, number][] = [["all", "All", pockets.length], ["active", "Active", active.length], ["stopped", "Stopped", pockets.length - active.length]];
   return (
     <div className="fade-up">
       <PageTitle title="Pockets" sub="Every pocket on the network, read from the chain. Each holds its own budget and rules; only its owner can change them." />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Stat label="Pockets" value={pockets.length} />
-        <Stat label="Active" value={pockets.filter((p) => pocketStatus(p).label === "Active").length} />
-        <Stat label="Held for agents" value={usd(total)} className="col-span-2 sm:col-span-1" />
-      </div>
+      <KpiStrip items={[
+        { label: "Pockets", value: pockets.length, note: `${active.length} active` },
+        { label: "Held for agents", value: usd(total), note: "Across all pockets" },
+        { label: "Most any agent can lose", value: usd(pockets.reduce((n, p) => n + worstCase(p, txs, (id) => names.get(id) ?? id).max, 0n)), note: "Only to each pocket's allowed sellers", accent: true, icon: <ShieldCheck className="size-4" {...I} aria-hidden /> },
+      ]} />
       {chainError && <p role="alert" className="mt-4 text-[14px] text-negative">Could not read the chain: {chainError}</p>}
       <Section title="All pockets">
-        <Card className="divide-y divide-line overflow-hidden">
-          {pockets.length ? pockets.map((p) => {
-            const st = pocketStatus(p);
-            return (
-              <Row key={p.address} onClick={() => open(p.address)} label={`${nameOf(p.address)} ${usd(p.balance)}`}
-                avatar={<Avatar tone={st.label === "Active" ? "accent" : "neutral"}>{nameOf(p.address)[0].toUpperCase()}</Avatar>}
-                title={<>{nameOf(p.address)}{isPhone(p.address) && <PhoneTag />}</>}
-                sub={`Owner ${shortAddr(p.owner)} · cap ${usd(p.cap)} · ${p.askAbove === NEVER ? "never asks" : `asks above ${usd(p.askAbove)}`} · ${p.allowed.map((i) => names.get(i) ?? i).join(", ") || "no sellers"}`}
-                amount={usd(p.balance)} status={st.label} />
-            );
-          }) : <Empty>No pockets yet.</Empty>}
+        <div role="tablist" aria-label="Filter pockets" className="chip-row -mx-4 mb-3 flex snap-x gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          {FILTERS.map(([k, label, n]) => <button key={k} type="button" role="tab" aria-selected={f === k} onClick={() => setF(k)} className={chip(f === k)}>{label}<COUNT n={n} /></button>)}
+        </div>
+        <Card className="overflow-hidden">
+          <div aria-hidden className="hidden h-10 grid-cols-[minmax(0,1.5fr)_110px_100px_110px_120px_120px] items-center gap-x-4 border-b border-line px-5 text-[12px] font-semibold uppercase tracking-[0.06em] text-muted lg:grid">
+            <span>Pocket</span><span>Agent</span><span>Status</span><span className="text-right">Balance</span><span className="text-right">Max loss</span><span className="pl-3">Ends</span>
+          </div>
+          <div className="divide-y divide-line">
+            {shown.length ? shown.map((p) => {
+              const st = pocketStatus(p);
+              const w = worstCase(p, txs, (id) => names.get(id) ?? id);
+              return (
+                <button key={p.address} type="button" onClick={() => open(p.address)} aria-label={`${nameOf(p.address)} ${usd(p.balance)}`}
+                  className="grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 px-4 py-3.5 text-left transition-colors hover:bg-canvas lg:min-h-16 lg:grid-cols-[minmax(0,1.5fr)_110px_100px_110px_120px_120px] lg:px-5 lg:py-2">
+                  <span className="min-w-0 max-lg:order-1">
+                    <span className="block truncate text-[14px] font-medium leading-5">{nameOf(p.address)}{isPhone(p.address) && <PhoneTag />}</span>
+                    <span className="block truncate text-[12px] leading-4 text-muted">Owner {shortAddr(p.owner)} · cap {usd(p.cap)} · {p.askAbove === NEVER ? "never asks" : `asks above ${usd(p.askAbove)}`} · {p.allowed.map((i) => names.get(i) ?? i).join(", ") || "no sellers"}</span>
+                  </span>
+                  <span className="num hidden text-[13px] text-ink2 lg:block">{shortAddr(p.agent)}</span>
+                  <span className="max-lg:order-3"><Verdict kind={st.kind}>{st.label}</Verdict></span>
+                  <span className="num text-right text-[16px] font-semibold leading-5 max-lg:order-2">{usd(p.balance)}</span>
+                  <span className="num text-right text-[13px] text-ink2 max-lg:order-4"><span className="text-muted lg:hidden">Max loss </span>{usd(w.max)}</span>
+                  <span className="num hidden pl-3 text-[13px] text-ink2 lg:block">{new Date(p.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                </button>
+              );
+            }) : <Empty icon={<Wallet {...I} />} title="No pockets here">{f === "all" ? "Pockets appear once an owner creates one in the phone app." : "Nothing matches this filter."}</Empty>}
+          </div>
         </Card>
       </Section>
     </div>
@@ -44,41 +71,71 @@ export function Pockets({ open }: { open(addr: string): void }) {
 
 // ------------------------------------------------------------------ On-chain
 const KINDS: (TxKind | "all")[] = ["all", "create", "fund", "payment", "revoke", "return", "rules"];
+type Line = { key: string; at?: number; label: string; ok: boolean; sub: string; amount?: bigint; hash: string; onClick(): void };
 export function OnChain({ open }: { open(addr: string): void }) {
   const { txs, events, explorer, nameOf } = useNetwork();
   const view = useViewTx();
   const [kind, setKind] = useState<TxKind | "all">("all");
   const forced = events.filter((e) => e.type === "forced");
   const rows = useMemo(() => [...txs].reverse().filter((t) => kind === "all" || t.kind === kind), [txs, kind]);
+  const count = (k: TxKind | "all") => (k === "all" ? txs.length : txs.filter((t) => t.kind === k).length);
   const paid = txs.filter((t) => t.kind === "payment").reduce((n, t) => n + (t.amount ?? 0n), 0n);
+  const refused = forced.filter((e) => e.reverted);
+  const lines: Line[] = rows.map((t) => ({
+    key: `${t.hash}-${t.kind}-${t.logIndex}`, at: t.at, label: txLabel(t), ok: t.status !== "reverted", hash: t.hash, amount: t.amount,
+    sub: `${nameOf(t.pocket)}${t.counterparty ? ` · ${t.kind === "payment" ? "to" : t.kind === "fund" ? "from" : "with"} ${shortAddr(t.counterparty)}` : ""} · block ${t.block}`,
+    onClick: () => (explorer ? open(t.pocket) : view(t.hash)),
+  }));
+  const groups = useMemo(() => {
+    const g: [string, Line[]][] = [];
+    for (const l of lines) {
+      const d = l.at ? dayLabel(l.at) : "Recent";
+      if (g.at(-1)?.[0] === d) g.at(-1)![1].push(l); else g.push([d, [l]]);
+    }
+    return g;
+  }, [lines]); // eslint-disable-line react-hooks/exhaustive-deps
+  const LineRow = ({ l }: { l: Line }) => (
+    <button type="button" onClick={l.onClick} className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-3 px-4 py-3 text-left transition-colors hover:bg-canvas sm:px-5">
+      <span className="w-[72px]"><Pill tone={l.ok ? "mint" : "negative"}>{l.ok ? "Success" : "Reverted"}</Pill></span>
+      <span className="min-w-0">
+        <span className="block truncate text-[14px] font-medium leading-5">{l.label}</span>
+        <span className="block truncate text-[12px] leading-4 text-muted">{l.sub}</span>
+      </span>
+      <span className="text-right">
+        {l.amount != null && l.amount > 0n ? <span className="num block text-[15px] font-semibold leading-5">{usd(l.amount)}</span> : <span className="block h-5" />}
+        <span className="flex items-center justify-end gap-2"><TxHash hash={l.hash} inert className="max-w-[11ch] truncate text-accent sm:max-w-none" />{l.at && <span className="num hidden text-[12px] text-muted sm:inline">{ago(l.at)}</span>}</span>
+      </span>
+    </button>
+  );
   return (
     <div className="fade-up">
       <PageTitle title="On-chain" sub={explorer ? "Every transaction, linked to BaseScan." : "Every transaction on the test chain. Open one to see who sent what, and when."} />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Stat label="Transactions" value={txs.length + forced.length} />
-        <Stat label="Agent payments" value={txs.filter((t) => t.kind === "payment").length} note={`${usd(paid)} paid to sellers`} />
-        <Stat label="Forced transfers refused" value={forced.filter((e) => e.reverted).length} note="Reverted by the pocket contract" className="col-span-2 sm:col-span-1" />
-      </div>
+      <KpiStrip items={[
+        { label: "Transactions", value: txs.length + forced.length, note: "Across all pockets" },
+        { label: "Agent payments", value: txs.filter((t) => t.kind === "payment").length, note: `${usd(paid)} paid to sellers` },
+        { label: "Forced transfers refused", value: refused.length, note: refused.length ? "Reverted by the pocket contract" : "None yet", accent: true, icon: <ShieldCheck className="size-4" {...I} aria-hidden /> },
+      ]} />
       {forced.length > 0 && (
         <Section title="Forced transfers (scene 5)">
           <Card className="divide-y divide-line overflow-hidden">{forced.map((e) => (
-            <Row key={e.tx} onClick={() => (explorer ? open(e.pocket ?? "") : view(e.tx))} avatar={<Avatar tone={e.reverted ? "accent" : "negative"}><ShieldCheck className="size-5" strokeWidth={1.75} /></Avatar>}
-              title={e.reverted ? "Blocked by the pocket" : "NOT refused"} sub={`${nameOf(e.pocket ?? "")} · ${usd(BigInt(e.amount))} refused · balance stays ${usd(BigInt(e.balanceAfter))}`}
-              amount={usd(BigInt(e.amount))} status={<TxHash hash={e.tx} inert />} />
+            <button key={e.tx} type="button" onClick={() => (explorer ? open(e.pocket ?? "") : view(e.tx))} className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-3 px-4 py-3 text-left transition-colors hover:bg-canvas sm:px-5">
+              <span className="w-[72px]"><Pill tone={e.reverted ? "negative" : "warning"}>{e.reverted ? "Reverted" : "Settled"}</Pill></span>
+              <span className="min-w-0"><span className="block truncate text-[14px] font-medium leading-5">{e.reverted ? "Blocked by the pocket" : "NOT refused"}</span><span className="block truncate text-[12px] leading-4 text-muted">{nameOf(e.pocket ?? "")} · pocket held {usd(BigInt(e.balanceAfter))}</span></span>
+              <span className="text-right"><span className="num block text-[15px] font-semibold leading-5">{usd(BigInt(e.amount))}</span><TxHash hash={e.tx} inert className="text-accent" /></span>
+            </button>
           ))}</Card>
         </Section>
       )}
       <Section title="Transactions">
-        <div role="tablist" aria-label="Filter transactions" className="mb-4 flex flex-wrap gap-2">
-          {KINDS.map((k) => <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={tabPill(kind === k)}>{k === "all" ? "All" : TX_LABEL[k]}</button>)}
+        <div role="tablist" aria-label="Filter transactions" className="chip-row -mx-4 mb-3 flex snap-x gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+          {KINDS.map((k) => <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={chip(kind === k)}>{k === "all" ? "All" : TX_LABEL[k]}<COUNT n={count(k)} /></button>)}
         </div>
-        <Card className="divide-y divide-line overflow-hidden">
-          {rows.length ? rows.map((t) => (
-            <Row key={`${t.hash}-${t.kind}-${t.logIndex}`} onClick={() => (explorer ? open(t.pocket) : view(t.hash))} avatar={<Avatar tone={t.kind === "revoke" ? "negative" : t.kind === "payment" ? "accent" : "lilac"}>{TX_LABEL[t.kind][0]}</Avatar>}
-              title={txLabel(t)} sub={`${nameOf(t.pocket)} · block ${t.block}${t.counterparty ? ` · ${t.kind === "payment" ? "to" : t.kind === "fund" ? "from" : "with"} ${shortAddr(t.counterparty)}` : ""}`}
-              amount={t.amount != null ? usd(t.amount) : undefined} status={<TxHash hash={t.hash} inert />} />
-          )) : <Empty>No transactions yet.</Empty>}
-        </Card>
+        {groups.length ? groups.map(([day, ls]) => (
+          <div key={day} className="mb-4">
+            <h3 className="sticky top-[72px] z-10 bg-canvas py-2 text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-muted">{day}</h3>
+            <Card className="divide-y divide-line overflow-hidden">{ls.map((l) => <LineRow key={l.key} l={l} />)}</Card>
+          </div>
+        )) : <Card><Empty icon={<ArrowLeftRight {...I} />} title="No transactions yet">Payments, funding and refusals show up here as they happen.</Empty></Card>}
       </Section>
     </div>
   );
@@ -95,10 +152,26 @@ function CopyLine({ text }: { text: string }) {
   return <button type="button" onClick={() => void navigator.clipboard?.writeText(text).then(() => { setOk(true); setTimeout(() => setOk(false), 1400); })} className="relative inline-flex items-center gap-1.5 text-[14px] font-semibold text-accent before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] hover:underline" aria-label={`Copy: ${text}`}>{ok ? <Check className="size-4" /> : <Copy className="size-4" strokeWidth={1.75} />}{ok ? "Copied" : "Copy"}</button>;
 }
 
-const field = "w-full rounded-[12px] bg-fill px-4 text-[15px] outline-none placeholder:text-faint focus:bg-card focus:ring-2 focus:ring-accent";
+const field = "w-full resize-none rounded-[12px] border border-line bg-card px-4 text-[14px] leading-5 outline-none placeholder:text-faint focus:border-accent focus:ring-1 focus:ring-accent";
+
+/** One numbered test: what to do, and what a correct wallet does about it, before anything is run. */
+function Test({ n, title, expected, children }: { n: number; title: string; expected: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-4 first:mt-0">
+      <Card className="p-5 sm:p-6">
+        <header className="flex items-start gap-3">
+          <span aria-hidden className="num grid size-8 shrink-0 place-items-center rounded-full bg-fill text-[14px] font-semibold text-ink2">{n}</span>
+          <div className="min-w-0"><h2 className="text-[15px] font-semibold leading-5">{title}</h2><p className="mt-0.5 text-[13px] leading-5 text-muted">Expected: {expected}</p></div>
+        </header>
+        <div className="mt-4">{children}</div>
+      </Card>
+    </section>
+  );
+}
 
 export function Judges({ pocket, open }: { pocket?: string; open(addr: string): void }) {
   const { cfg, scenes, pockets, listed, actions, follow, linked, refresh, nameOf, isPhone } = useNetwork();
+  const view = useViewTx();
   const [seller, setSeller] = useState("shadyfeed");
   const [text, setText] = useState(SAMPLES[0].text);
   const [msg, setMsg] = useState<{ ok: boolean; text: string }>();
@@ -110,84 +183,93 @@ export function Judges({ pocket, open }: { pocket?: string; open(addr: string): 
   const doPlant = async (t: string | null) => {
     if (!plant) return;
     setBusy(t == null ? "clear" : "plant"); setMsg(undefined);
-    try { setMsg(await plant(seller, t)); } finally { setBusy(undefined); }
+    try { setMsg(await plant(seller, t)); } catch (e) { setMsg({ ok: false, text: (e as Error).message }); } finally { setBusy(undefined); }
   };
   const aim = target || pocket || listed()[0]?.address || "";
   const force = async () => {
     if (!aim || !forceTransfer) return;
     setBusy("force"); setForced(undefined);
-    try { setForced(await forceTransfer(aim)); refresh(); } finally { setBusy(undefined); }
+    try { setForced(await forceTransfer(aim)); refresh(); } catch (e) { setForced({ ok: false, text: `Could not run it: ${(e as Error).message}` }); } finally { setBusy(undefined); }
   };
   const playing = !!player.state?.busy;
   const sellerName = cfg.sellers.find((s) => s.id === seller)?.name ?? seller;
+  const link = "relative font-semibold text-accent before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:underline";
   return (
     <div className="fade-up">
       <PageTitle title="Judges" sub="Try to break it. Every attack below is refused by the wallet's tool layer or by the pocket contract itself." />
 
-      <Section title="Plant text in a seller's response" className="mt-0">
-        <Card className="p-5 sm:p-6">
-          <p className="text-[15px] text-ink2">The agent reads seller pages as data, never as instructions. Plant a message, then play scene 5.</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-[220px_1fr]">
-            <div><span className="mb-1.5 block text-[14px] font-medium">Seller</span>
-              <PillSelect tone="fill" label="Seller" value={seller} onChange={setSeller} shown={sellerName}>{cfg.sellers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</PillSelect></div>
-            <label className="block"><span className="mb-1.5 block text-[14px] font-medium">Text to plant</span>
-              <textarea aria-label="Text to plant" rows={3} value={text} onChange={(e) => setText(e.target.value)} className={cn(field, "resize-y py-3 leading-6")} /></label>
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {SAMPLES.map((x) => <button key={x.label} type="button" aria-pressed={text === x.text} onClick={() => setText(x.text)} className={cn("h-11 rounded-full px-4 text-[14px] font-medium transition-colors", text === x.text ? "bg-accent-soft text-accent" : "bg-fill text-ink2 hover:bg-line")}>{x.label}</button>)}
-            <span className="ml-auto flex gap-2"><Button variant="outline" disabled={!!busy || !plant} onClick={() => void doPlant(null)}>Clear</Button><Button disabled={!!busy || !plant || !text.trim()} onClick={() => void doPlant(text)}>Plant</Button></span>
-          </div>
-          {!plant && <p className="mt-3 text-[14px] text-muted">This server has no seller admin address, so text cannot be planted from here.</p>}
-          {msg && <p role="status" className={cn("mt-3 text-[14px]", msg.ok ? "text-positive" : "text-negative")}>{msg.text}</p>}
-          <details className="mt-4 text-[13px] text-muted"><summary className="cursor-pointer font-medium text-ink2">Details</summary><p className="mt-2">The text is used once, in that seller's next response, then cleared.{cfg.sellersUrl ? ` Sent to the seller server at ${cfg.sellersUrl}.` : ""}</p></details>
-        </Card>
-      </Section>
+      <Test n={1} title="Plant text in a seller's response" expected="the agent reads it as data, never as an instruction, and buys only from allowed sellers.">
+        <p className="text-[14px] leading-5 text-ink2">Plant a message, then play scene 5 below to see the agent ignore it.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-[220px_1fr]">
+          <div><span className="mb-1.5 block text-[13px] font-medium">Seller</span>
+            <PillSelect tone="fill" label="Seller" value={seller} onChange={setSeller} shown={sellerName}>{cfg.sellers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</PillSelect></div>
+          <label className="block"><span className="mb-1.5 block text-[13px] font-medium">Text to plant</span>
+            <textarea aria-label="Text to plant" rows={3} value={text} onChange={(e) => setText(e.target.value)} className={cn(field, "py-3")} /></label>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {SAMPLES.map((x) => <button key={x.label} type="button" aria-pressed={text === x.text} onClick={() => setText(x.text)} className={cn("h-11 rounded-full border-[1.5px] px-4 text-[14px] font-medium transition-colors", text === x.text ? "border-accent bg-accent-soft text-accent" : "border-line text-ink2 hover:bg-fill")}>{x.label}</button>)}
+          <span className="ml-auto flex gap-2"><Button variant="outline" disabled={!!busy || !plant} onClick={() => void doPlant(null)}>Clear</Button><Button disabled={!!busy || !plant || !text.trim()} onClick={() => void doPlant(text)}>Plant</Button></span>
+        </div>
+        {!plant && <p className="mt-3 text-[14px] text-muted">This server has no seller admin address, so text cannot be planted from here.</p>}
+        {msg && <p role="status" className={cn("mt-3 flex items-center gap-2 text-[14px] font-medium", msg.ok ? "text-positive" : "text-negative")}>{msg.ok ? <Check className="size-4 shrink-0" {...I} aria-hidden /> : <ShieldAlert className="size-4 shrink-0" {...I} aria-hidden />}{msg.text}</p>}
+        <Disclosure className="mt-4" summary="Details"><p className="text-[13px] leading-5 text-muted">The text is used once, in that seller's next response, then cleared.{cfg.sellersUrl ? ` Sent to the seller server at ${cfg.sellersUrl}.` : ""}</p></Disclosure>
+      </Test>
 
-      <Section title="Force a transfer past the agent">
-        <Card className="p-5 sm:p-6">
-          <p className="text-[15px] text-ink2">Assume the agent's key is stolen and someone submits "send 50 USDC" straight to the token. The pocket contract refuses it, the transaction reverts and the balance does not move.</p>
-          {forceTransfer ? (
-            <div className="mt-4 flex flex-wrap items-end gap-3">
-              <div><span className="mb-1.5 block text-[14px] font-medium">Pocket</span>
-                <PillSelect tone="fill" className="min-w-[260px]" label="Pocket to attack" value={aim} onChange={setTarget} shown={aim ? <>{nameOf(aim)}{isPhone(aim) && <PhoneTag />}</> : "No pocket"}>{listed([aim]).map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {usd(p.balance)}</option>)}</PillSelect></div>
-              <Button disabled={!!busy || !pockets.length} onClick={() => void force()}>{busy === "force" ? "Submitting…" : "Force the transfer"}</Button>
+      <Test n={2} title="Force a transfer past the agent" expected="the pocket reverts it and the balance does not move.">
+        <p className="text-[14px] leading-5 text-ink2">Assume the agent's key is stolen and someone submits "send 50 USDC" straight to the token.</p>
+        {forceTransfer ? (
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <div><span className="mb-1.5 block text-[13px] font-medium">Pocket</span>
+              <PillSelect tone="fill" className="min-w-[260px]" label="Pocket to attack" value={aim} onChange={setTarget} shown={aim ? <>{nameOf(aim)}{isPhone(aim) && <PhoneTag />}</> : "No pocket"}>{listed([aim]).map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {usd(p.balance)}</option>)}</PillSelect></div>
+            <Button disabled={!!busy || !pockets.length} onClick={() => void force()}>{busy === "force" ? "Submitting…" : "Force the transfer"}</Button>
+          </div>
+        ) : <p className="mt-3 text-[14px] text-muted">On the real chain this runs from <code>server/scripts/force-transfer.ts</code>; the reverted transaction then appears under On-chain.</p>}
+        {forced && (
+          <div role="status" className="fade-up mt-4 flex items-start gap-3 rounded-[14px] bg-canvas p-4">
+            {forced.ok ? <ShieldCheck className="size-6 shrink-0 text-accent" {...I} aria-hidden /> : <ShieldAlert className="size-6 shrink-0 text-negative" {...I} aria-hidden />}
+            <div className="min-w-0">
+              <p className={cn("text-[18px] font-semibold leading-6", !forced.ok && "text-negative")}>{forced.text}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px]">
+                {forced.tx && <TxHash hash={forced.tx} />}
+                {forced.tx && <button type="button" className={link} onClick={() => view(forced.tx!)}>Open details</button>}
+                {forced.ok && aim && <button type="button" className={link} onClick={() => open(aim)}>Watch it in Live</button>}
+              </div>
             </div>
-          ) : <p className="mt-3 text-[14px] text-muted">On the real chain this runs from <code>server/scripts/force-transfer.ts</code>; the reverted transaction then appears under On-chain.</p>}
-          {forced && <div role="status" className={cn("mt-4 flex flex-wrap items-center gap-3 rounded-[14px] px-4 py-3 text-[15px]", forced.ok ? "bg-accent-soft text-ink" : "bg-negative-soft text-negative")}><Verdict kind={forced.ok ? "ok" : "refused"}>{forced.ok ? "Reverted" : "Failed"}</Verdict>{forced.text}{forced.tx && <TxHash hash={forced.tx} />}{forced.ok && aim && <button type="button" className="relative font-semibold text-accent before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:underline" onClick={() => open(aim)}>Watch it in Live</button>}</div>}
-        </Card>
-      </Section>
+          </div>
+        )}
+      </Test>
 
-      <Section title="The eight scenes" right={linked ? <span className="text-[13px] text-muted">Played on your phone</span> : undefined}>
+      <Section title="3. The eight scenes" right={linked ? <span className="text-[13px] text-muted">Played on your phone</span> : undefined}>
         <Card className="divide-y divide-line overflow-hidden">
           {scenes.length ? scenes.map((s) => {
             const c = copyFor(s.id);
             const mine = player.state?.id === s.id ? player.state : undefined;
             const watch = mine?.pocket ?? follow;
             return (
-              <div key={s.id} className="px-5 py-4" data-testid={`scene-${s.id}`}>
+              <div key={s.id} className="px-4 py-4 sm:px-5" data-testid={`scene-${s.id}`}>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                   <span className="num grid size-8 shrink-0 place-items-center rounded-full bg-fill text-[14px] font-semibold text-ink2" aria-hidden>{s.id}</span>
-                  <span className="min-w-0 flex-1 text-[16px] font-semibold"><span className="sr-only">Scene {s.id}: </span>{s.title}</span>
+                  <span className="min-w-0 flex-1 text-[15px] font-semibold leading-5"><span className="sr-only">Scene {s.id}: </span>{s.title}</span>
                   {c && <Pill tone={c.tone}>{c.outcome}</Pill>}
                   {player.canPlay && <Button variant="outline" className="h-11 px-5" aria-label={`Play scene ${s.id}`} disabled={playing} onClick={() => void player.play(s)}>{mine?.busy && mine.step === "scene" ? "Playing…" : "Play"}</Button>}
                 </div>
-                <p className="mt-1.5 pl-11 text-[15px] leading-6 text-ink2">{c ? <>{c.doing} <span className="text-muted">{c.seeing}</span></> : s.note}</p>
+                <p className="mt-1.5 pl-11 text-[14px] leading-5 text-ink2">{c ? <>{c.doing} <span className="text-muted">{c.seeing}</span></> : s.note}</p>
                 {mine && (mine.busy || mine.text) && (
                   <div className="mt-2 pl-11">
                     {mine.busy ? <p role="status" className="text-[14px] text-muted">{linked ? "Sent to your phone. Waiting for it…" : "Playing…"}</p> : (
-                      <p role="status" className={cn("text-[14px]", mine.ok ? "text-ink2" : "text-negative")}>{mine.text}{mine.ok && watch && <> <button type="button" className="relative font-semibold text-accent before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:underline" onClick={() => open(watch)}>Watch it in Live</button></>}</p>
+                      <p role="status" className={cn("text-[14px]", mine.ok ? "text-ink2" : "text-negative")}>{mine.text}{mine.ok && watch && <> <button type="button" className={link} onClick={() => open(watch)}>Watch it in Live</button></>}</p>
                     )}
                   </div>
                 )}
                 {linked && s.followUp && mine?.ok && mine.step === "scene" && !mine.busy && (
                   <div className="mt-2 pl-11"><Button variant="soft" className="h-11 max-w-full whitespace-normal py-2 text-left" disabled={playing} onClick={() => void player.followUp(s)}>Then send: “{s.followUp}”</Button></div>
                 )}
-                <details className="mt-2 pl-11 text-[13px] text-muted"><summary className="cursor-pointer font-medium text-ink2">Details</summary>
-                  <div className="mt-2 space-y-1.5"><p>You say: “{s.text}”</p>{s.followUp && <p>Then: “{s.followUp}”</p>}{s.note && <p>{s.note}</p>}<CopyLine text={s.text} /></div>
-                </details>
+                <Disclosure className="mt-2 pl-11" summary="Details">
+                  <div className="space-y-1.5 text-[13px] leading-5 text-muted"><p>You say: “{s.text}”</p>{s.followUp && <p>Then: “{s.followUp}”</p>}{s.note && <p>{s.note}</p>}<CopyLine text={s.text} /></div>
+                </Disclosure>
               </div>
             );
-          }) : <Empty>The scenes appear once the network is running.</Empty>}
+          }) : <Empty title="The scenes appear once the network is running" />}
         </Card>
       </Section>
     </div>

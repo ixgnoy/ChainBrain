@@ -37,6 +37,7 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
   const listeners = new Set<() => void>();
   const emit = () => { for (const f of listeners) f(); };
   let phone: Phone | null = null;
+  let quiet = false; // the phone has been silent: its data is kept (it resumes with the same session) but it is not driving the console
   let es: EventSource | null = null;
   let probe: ReturnType<typeof setTimeout> | undefined;
   let held = false, stopped = true, gen = 0, offLocal = () => {};
@@ -60,14 +61,14 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
     let m: Wire;
     try { m = JSON.parse(raw); } catch { return; }
     if (m.kind === "hello") {
-      phone = null;
+      phone = null; quiet = false;
       if (m.linked && m.snapshot) { applySnapshot(m.snapshot, m.lastSeen); phone!.events = m.events ?? []; }
-    } else if (m.kind === "reset") phone = { events: [], pockets: [], txs: [], names: {}, lastSeen: Date.now() }; // a new phone session: nothing of the old one stays, and its first events must not be lost
-    else if (m.kind === "events" && phone) phone.events = [...phone.events, ...(m.events ?? [])].slice(-3000);
-    else if (m.kind === "snapshot") { const ev = phone?.events ?? []; applySnapshot(m.snapshot, m.lastSeen); phone!.events = ev; }
+    } else if (m.kind === "reset") { quiet = false; phone = { events: [], pockets: [], txs: [], names: {}, lastSeen: Date.now() }; } // a new phone session: nothing of the old one stays, and its first events must not be lost
+    else if (m.kind === "events") { phone ??= { events: [], pockets: [], txs: [], names: {}, lastSeen: Date.now() }; quiet = false; phone.events = [...phone.events, ...(m.events ?? [])].slice(-3000); }
+    else if (m.kind === "snapshot") { const ev = phone?.events ?? []; quiet = false; applySnapshot(m.snapshot, m.lastSeen); if (phone) phone.events = ev; }
     else if (m.kind === "result") { waiting.get(m.id)?.(m.result); waiting.delete(m.id); return; }
-    else if (m.kind === "beat" && !m.linked) phone = null;
-    setLinked(!!phone);
+    else if (m.kind === "beat") quiet = !m.linked;
+    setLinked(!!phone && !quiet);
     emit();
   };
   const close = () => { es?.close(); es = null; };
@@ -82,7 +83,7 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
       if (linked) {
         es = new EventSource(`${relay}/stream`);
         es.onmessage = (e) => onMessage(e.data);
-        es.onerror = () => { close(); phone = null; setLinked(false); emit(); probe = setTimeout(look, 4000); };
+        es.onerror = () => { close(); phone = null; quiet = false; setLinked(false); emit(); probe = setTimeout(look, 4000); };
         return;
       }
     } catch { /* no relay on this laptop */ }
@@ -93,19 +94,20 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
     if (!r.ok) throw new Error(r.status === 409 ? "The phone is not connected" : `Relay answered ${r.status}`);
     const { id } = await r.json();
     return new Promise((res, rej) => {
-      waiting.set(id, res);
-      setTimeout(() => { if (waiting.delete(id)) rej(new Error("The phone did not answer")); }, ms);
+      const t = setTimeout(() => { if (waiting.delete(id)) rej(new Error("The phone did not answer")); }, ms);
+      waiting.set(id, (v) => { clearTimeout(t); res(v); });
     });
   };
-  const isPhonePocket = (p: string) => !!phone?.pockets.some((x) => x.address.toLowerCase() === p.toLowerCase());
+  const live = () => (quiet ? null : phone);
+  const isPhonePocket = (p: string) => !!live()?.pockets.some((x) => x.address.toLowerCase() === p.toLowerCase());
 
   return {
     cfg: local.cfg, scenes: local.scenes,
-    linked: () => !!phone,
-    phoneNames: () => phone?.names ?? {},
+    linked: () => !!live(),
+    phoneNames: () => live()?.names ?? {},
     actions: {
       async plant(sellerId, text) {
-        if (!phone) return local.actions.plant!(sellerId, text);
+        if (!live()) return local.actions.plant!(sellerId, text);
         try { const r = await command({ type: "plant", sellerId, text }); return { ok: !!r?.ok, text: r?.text ?? "Planted on the phone's network." }; }
         catch (e) { return { ok: false, text: (e as Error).message }; }
       },
@@ -113,24 +115,26 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
         if (!isPhonePocket(pocket)) return local.actions.forceTransfer!(pocket);
         try {
           const r = await command({ type: "force", pocket });
+          if (typeof r?.reverted !== "boolean") return { ok: false, text: r?.text ?? "The phone could not run it" }; // an error is not a verdict
           const left = r?.balanceAfter ? (Number(BigInt(r.balanceAfter)) / 1e6).toFixed(2) : undefined;
           return { ok: !!r?.reverted, tx: r?.tx, text: r?.reverted ? `Reverted on-chain. The pocket still holds US$${left}.` : "The transfer was NOT refused." };
         } catch (e) { return { ok: false, text: (e as Error).message }; }
       },
       runScene: local.actions.runScene,
       async say(text, preset) {
-        if (!phone) throw new Error("The phone is not connected");
+        if (!live()) throw new Error("The phone is not connected");
         const r = await command({ type: "say", text, ...(preset ? { preset } : {}) }, 20_000);
         return { ok: !!r?.ok, text: String(r?.text ?? ""), pocket: r?.pocket };
       },
     },
     snapshot(): FeedSnapshot {
       const s = local.snapshot();
+      const phone = live();
       if (!phone) return s;
       const byAt = <T extends { at?: number }>(a: T, b: T) => (a.at ?? 0) - (b.at ?? 0);
       return {
         events: [...s.events, ...phone.events].sort(byAt),
-        pockets: [...phone.pockets, ...s.pockets.filter((p) => !phone!.pockets.some((x) => x.address.toLowerCase() === p.address.toLowerCase()))],
+        pockets: [...phone.pockets, ...s.pockets.filter((p) => !phone.pockets.some((x) => x.address.toLowerCase() === p.address.toLowerCase()))],
         txs: [...s.txs, ...phone.txs.filter((t) => t.status !== "reverted")].sort(byAt),
         allTxs: [...s.allTxs, ...phone.txs].sort(byAt),
         follow: latestPocket(phone.events, phone.txs, phone.pockets) ?? s.follow,

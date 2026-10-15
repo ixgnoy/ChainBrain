@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { makeFeed } from "../source/localFeed";
 import type { NetworkFeed } from "../source/feed";
+import { Skeleton } from "./kit";
 import { NetworkCtx, lookupTx, pocketLookups, type Network } from "./network";
 
 export function FeedNetwork({ children, make = makeFeed }: { children: ReactNode; make?: () => NetworkFeed }) {
@@ -24,6 +25,6 @@ export function FeedNetwork({ children, make = makeFeed }: { children: ReactNode
     txDetail: (hash) => lookupTx(hash, snap.allTxs, snap.events, snap.pockets, (id) => feed.cfg.sellers.find((s) => s.id === id)?.payTo),
     refresh: () => setSnap(feed.snapshot()),
   }), [feed, snap]);
-  if (!snap.pockets.length) return <div className="grid min-h-dvh place-items-center bg-canvas text-sm text-muted">Loading…</div>;
+  if (!snap.pockets.length) return <div role="status" aria-label="Loading" className="mx-auto max-w-[1680px] space-y-3 px-4 py-6 sm:px-8"><Skeleton className="h-12 w-64" /><Skeleton className="h-12" /><div className="grid gap-3 xl:grid-cols-3"><Skeleton className="h-72" /><Skeleton className="h-72" /><Skeleton className="h-72" /></div></div>;
   return <NetworkCtx.Provider value={value}>{children}</NetworkCtx.Provider>;
 }

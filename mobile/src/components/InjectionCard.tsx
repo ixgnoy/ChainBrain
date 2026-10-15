@@ -3,13 +3,10 @@
 // what was tried, quoted, with "Ignored". Same once-only entrance as a refusal.
 import React from "react";
 import { View } from "react-native";
-import { c } from "../tokens";
-import { CodePill } from "../ui/kit";
 import { T } from "../ui/Text";
-import { Icon } from "../ui/Icon";
 import { cleanText } from "../lib/sanitize";
 import { toolResultOf, type WalletEvent } from "../lib/events";
-import { RefusalCard } from "./RefusalCard";
+import { EventCard } from "./EventCard";
 
 const ORDER = /(send|transfer|pay|wire)\s+[\w$.]*\s*\d|ignore (all|previous|your)|important note for ai|you are now|system:|pre-?approved|raise the (cap|limit)|admin/i;
 
@@ -32,18 +29,15 @@ export function injectionsOf(evs: WalletEvent[]): { sellerId: string; lines: str
 
 export function InjectionCard({ id, seller, lines }: { id: string; seller: string; lines: string[] }) {
   return (
-    <RefusalCard id={`inject:${id}`}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <Icon name="shield" size={16} color={c.warning} />
-        <T v="sub" w="semi" color="warning" style={{ flex: 1 }}>{seller} tried to give your agent an order</T>
-      </View>
-      {lines.slice(0, 3).map((l, i) => (
-        <View key={i} style={{ borderLeftWidth: 2, borderLeftColor: c.warning, paddingLeft: 10 }}>
-          <T v="sub" color="ink2" style={{ fontStyle: "italic" }}>“{l}”</T>
+    <EventCard
+      tone="blocked" alert={`inject:${id}`} title={`${seller} tried to give your agent an order`}
+      body="Seller text is only ever read as data, never as instructions. Nothing was sent."
+      why={{ title: "Why", codes: ["IGNORED"], children: (
+        <View style={{ gap: 6 }}>
+          <T v="cap" color="muted">What the seller's text said</T>
+          {lines.slice(0, 3).map((l, i) => <T key={i} v="sub" color="ink2">“{l}”</T>)}
         </View>
-      ))}
-      <T v="sub" color="ink2">Seller text is only ever read as data, never as instructions. Nothing was sent.</T>
-      <View style={{ flexDirection: "row", gap: 6 }}><CodePill code="IGNORED" tone="warning" /></View>
-    </RefusalCard>
+      ) }}
+    />
   );
 }

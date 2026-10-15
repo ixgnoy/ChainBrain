@@ -11,7 +11,7 @@ import { T } from "./Text";
 import { useReduceMotion } from "./motion";
 
 const Round = ({ icon, label, onPress }: { icon: "chevronLeft" | "x"; label: string; onPress: () => void }) => (
-  <Press kind="round" onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: c.card, alignItems: "center", justifyContent: "center", ...lift, shadowOpacity: 0.04 }}>
+  <Press kind="round" onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.card, alignItems: "center", justifyContent: "center", ...lift, shadowOpacity: 0.04 }}>
     <Icon name={icon} size={22} />
   </Press>
 );
@@ -22,8 +22,8 @@ export const BACK_HEADER_H = 64;
 /** Round white back button on the left, centred title and optional subtitle (Ryt "Main Account" header).
  *  With `scrollY` (a shared value fed by Screen) the header floats over the content: the title is hidden at rest, fades in
  *  as the page's big title scrolls past `revealAt`, and a blur (iOS) / solid canvas with a hairline fades in behind it. */
-export function BackHeader({ title, sub, right, onBack, close, scrollY, revealAt = 120 }: {
-  title?: string; sub?: string; right?: React.ReactNode; onBack?: () => void; close?: boolean; scrollY?: SharedValue<number>; revealAt?: number;
+export function BackHeader({ title, sub, right, onBack, close, scrollY, revealAt = 120, muted }: {
+  title?: string; sub?: string; right?: React.ReactNode; onBack?: () => void; close?: boolean; scrollY?: SharedValue<number>; revealAt?: number; /** title as a 13/18 muted caption (wizard step counter) */ muted?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const reduce = useReduceMotion();
@@ -44,10 +44,10 @@ export function BackHeader({ title, sub, right, onBack, close, scrollY, revealAt
       ) : null}
       <Round icon={close ? "x" : "chevronLeft"} label={close ? "Close" : "Back"} onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace("/")))} />
       <Animated.View style={[{ flex: 1, alignItems: "center" }, ttl]}>
-        <T v="row" w="semi" numberOfLines={1}>{title}</T>
+        {muted ? <T v="cap" color="muted" numberOfLines={1}>{title}</T> : <T v="row" w="semi" numberOfLines={1}>{title}</T>}
         {sub ? <T v="cap" color="muted" numberOfLines={1}>{sub}</T> : null}
       </Animated.View>
-      <View style={{ width: 48, alignItems: "flex-end" }}>{right}</View>
+      <View style={{ width: 44, alignItems: "flex-end" }}>{right}</View>
     </View>
   );
 }

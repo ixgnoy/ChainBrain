@@ -4,7 +4,7 @@ import { ScrollView, View } from "react-native";
 import { c } from "../tokens";
 import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
-import { Button, CodePill, Details, Pill } from "../ui/kit";
+import { Button, Details, Pill } from "../ui/kit";
 import { Money } from "../ui/Money";
 import { Reveal } from "../ui/Reveal";
 import { T } from "../ui/Text";
@@ -43,7 +43,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
   const noMoney = row.amount == null || row.kind === "disclosure" || row.kind === "intent" || (row.kind === "owner" && row.amount == null);
   const headline = row.kind === "owner" ? row.text : row.kind === "disclosure" ? "Nothing was shared" : row.kind === "intent" ? (row.outcome === "approved" ? "Task confirmed" : "Task declined") : null;
   const got = useMemo(() => (row.kind === "payment" ? deliveredLines(events, row.tx) : []), [events, row]);
-  const status = row.kind === "forced" ? (bad ? "Reverted on chain" : "Sent") : row.kind === "owner" ? "Confirmed on chain" : row.kind === "payment" ? (row.cosigned ? "Paid, co-signed by you" : "Paid") : row.outcome === "pending" ? "Waiting for your OK" : bad ? "Refused" : row.outcome === "approved" ? "Approved" : "Done";
+  const status = row.kind === "forced" ? (bad ? "Reverted on chain" : "Sent") : row.kind === "owner" ? "Confirmed on chain" : row.kind === "payment" ? (row.cosigned ? "Paid · co-signed by you" : "Paid") : row.outcome === "pending" ? "Waiting for your OK" : bad ? "Refused" : row.outcome === "approved" ? "Approved" : "Done";
   const sentence = row.kind === "forced"
     ? bad ? "Someone submitted a transfer out of this pocket with the agent's signature, straight to the token contract. The pocket checks every transfer on-chain: this address is not allowed, so it reverted and nothing moved." : "Money left the pocket to an address outside your list."
     : row.kind === "owner" ? `${row.text}${row.detail ? ` (${cleanText(row.detail, 80)})` : ""}. You signed this on your phone.`
@@ -67,8 +67,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
   if (row.description) facts.push(["Item", cleanText(row.description, 80)]);
   facts.push(["Pocket", pocket ? cleanText(pocket.name, 40) : "n/a"], ["When", stamp(row.at)]);
   const tech: [string, string][] = [["Network", dev ? "Local test network" : source === "builtin" ? "Test network" : "Base Sepolia (test network)"]];
-  if (row.reasons.length) tech.push(["Reason code", row.reasons.join(", ")]);
-  if (row.detail && row.kind !== "forced") tech.push(["Detail", cleanText(row.detail, 200)]);
+    if (row.detail && row.kind !== "forced") tech.push(["Detail", cleanText(row.detail, 200)]);
   if (row.sku) tech.push(["Item code", cleanText(row.sku, 60)]);
   if (row.intentHash) tech.push(["Task id", shortHex(row.intentHash)]);
   if (chain?.task) tech.push(["Task you confirmed", cleanText(chain.task, 300)]);
@@ -90,24 +89,19 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
         </View>
         {got.length ? (
           <Reveal {...R(3 + facts.length)}>
-            <View style={{ backgroundColor: c.canvas, borderRadius: 20, padding: 16, gap: 8 }}>
-              <T v="sub" w="semi" color="ink2">What you got</T>
+            <View style={{ backgroundColor: c.canvas, borderRadius: 20, padding: 16, gap: 10 }}>
+              <T v="row" w="semi" style={{ fontSize: 15, lineHeight: 22 }}>What you got</T>
               {got.map((l, i) => l.startsWith("#")
-                ? <T key={i} v="row" w="semi">{cleanText(l.replace(/^#+\s*/, ""), 120)}</T>
-                : <View key={i} style={{ flexDirection: "row", gap: 8 }}><T v="sub" color="accent">•</T><T v="sub" color="ink2" style={{ flex: 1 }}>{cleanText(l.replace(/^[-*]\s*/, ""), 160)}</T></View>)}
+                ? <T key={i} v="row" w="semi" style={{ fontSize: 15, lineHeight: 22 }}>{cleanText(l.replace(/^#+\s*/, ""), 120)}</T>
+                : <View key={i} style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}><View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.accent, marginTop: 8 }} /><T v="sub" color="ink2" style={{ flex: 1, fontSize: 15, lineHeight: 22 }}>{cleanText(l.replace(/^[-*]\s*/, ""), 160)}</T></View>)}
             </View>
           </Reveal>
         ) : null}
-        {row.tx ? (
-          <Reveal {...R(3 + facts.length)}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-              <T v="sub" color="muted">Transaction</T>
-              <TxLink tx={row.tx} />
-            </View>
-          </Reveal>
-        ) : null}
-        {row.reasons.length ? <Reveal {...R(4 + facts.length)}><View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>{row.reasons.map((k) => <CodePill key={k} code={k} />)}</View></Reveal> : null}
-        <Reveal {...R(5 + facts.length)}><Details rows={tech} /></Reveal>
+        <Reveal {...R(5 + facts.length)}>
+          <Details rows={tech} codes={row.reasons}>
+            {row.tx ? <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 }}><T v="cap" color="muted">Transaction</T><TxLink tx={row.tx} /></View> : null}
+          </Details>
+        </Reveal>
       </ScrollView>
       <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
         <Button label="Done" onPress={close} />

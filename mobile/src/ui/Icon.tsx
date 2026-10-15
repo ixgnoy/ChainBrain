@@ -2,7 +2,7 @@
 import React from "react";
 import {
   Activity, ArrowDownLeft, ArrowUp, Bell, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Clock, Copy, Globe, House, KeyRound, Layers, Lock, MessageCircle,
-  MoreHorizontal, Plus, RefreshCw, Send, ShieldAlert, SlidersHorizontal, Undo2, User, Wallet, X, Zap, TriangleAlert, CircleHelp, Ban, Pencil,
+  MoreHorizontal, Plus, RefreshCw, Send, ShieldAlert, SlidersHorizontal, Undo2, User, Wallet, X, Zap, TriangleAlert, CircleHelp, Ban, Pencil, ArrowDown, SquarePlus, Square, Info,
   type LucideIcon,
 } from "lucide-react-native";
 
@@ -10,7 +10,7 @@ const I = {
   home: House, chat: MessageCircle, activity: Activity, settings: SlidersHorizontal, plus: Plus, undo: Undo2, lock: Lock, x: X, check: Check,
   chevronRight: ChevronRight, chevronLeft: ChevronLeft, chevronDown: ChevronDown, chevronUp: ChevronUp, copy: Copy, clock: Clock, send: Send, arrowUp: ArrowUp, arrowIn: ArrowDownLeft,
   user: User, key: KeyRound, globe: Globe, layers: Layers, wallet: Wallet, alert: TriangleAlert, refresh: RefreshCw, bell: Bell,
-  more: MoreHorizontal, bolt: Zap, shield: ShieldAlert, help: CircleHelp, ban: Ban, edit: Pencil,
+  more: MoreHorizontal, bolt: Zap, shield: ShieldAlert, help: CircleHelp, ban: Ban, edit: Pencil, arrowDown: ArrowDown, squarePlus: SquarePlus, stop: Square, info: Info,
 } satisfies Record<string, LucideIcon>;
 export type IconName = keyof typeof I;
 

@@ -2,21 +2,20 @@
 // USDC TransferWithAuthorization the wallet built (POST /api/approvals/:id {approved, signature}).
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
+import { router } from "expo-router";
 import Animated from "react-native-reanimated";
 import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
 import { SheetScroll } from "../ui/SheetScroll";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
-import { Avatar, Button, CodePill, Details } from "../ui/kit";
+import { Avatar, Button, Details, SummaryCard } from "../ui/kit";
 import { T } from "../ui/Text";
-import { Icon } from "../ui/Icon";
 import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
-import { authOf, authExpired, type Approval } from "../lib/events";
+import { authOf, authExpired, sameAddr, type Approval } from "../lib/events";
 import { NEVER } from "../lib/shared";
 import { parseUsd } from "../lib/shared";
 import { usd, shortAddr } from "../lib/util";
-import { c } from "../tokens";
 import { IntentCard, parseIntent } from "./IntentCard";
 import { SheetSuccess } from "./SheetSuccess";
 import { ErrorNote } from "./ErrorNote";
@@ -28,6 +27,9 @@ export function describeApprovalError(code: string): string {
     case "NOT_OWNER": return "This phone's key does not own this pocket, so it cannot co-sign here.";
     case "AUTH_EXPIRED": return "The 10-minute approval window has passed. Ask your agent again.";
     case "NO_AUTH": return "This request is missing the details needed to sign it.";
+    case "AUTH_WRONG_POCKET":
+    case "AUTH_WRONG_SELLER":
+    case "AUTH_WRONG_AMOUNT": return "This request doesn't match what you're approving (pocket, seller or amount), so nothing was signed.";
     case "SIGN_FAILED": return "Could not sign on this phone. Try again.";
     case "NETWORK": return "Could not reach the server. Check the connection and try again.";
     default: return "Could not send your answer. Check the connection and try again.";
@@ -43,6 +45,9 @@ export function ApprovalSheet() {
   const shown = current ?? last.current;
   // while the owner's signature is in flight (and the success moment plays) the sheet stays up even though the request is already answered
   const [hold, setHold] = useState(false);
+  // another approval replacing the one being signed must not leave the sheet held open
+  const seen = useRef<string | undefined>(current?.id);
+  useEffect(() => { if (current && current.id !== seen.current) setHold(false); if (current) seen.current = current.id; }, [current?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <Sheet visible={(approvalOpen && !!current) || hold} onClose={() => { setHold(false); setApprovalOpen(false); }}>
       {shown ? <Body key={shown.id} a={shown} queue={pending.filter((x) => x.kind !== "question").length} hold={setHold} /> : null}
@@ -51,7 +56,7 @@ export function ApprovalSheet() {
 }
 
 function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolean) => void }) {
-  const { findPocket, sellerName, answer, signApprove, wallet, setApprovalOpen, cfg } = useApp();
+  const { findPocket, sellerName, answer, signApprove, wallet, setApprovalOpen, cfg, ledger, setReceipt } = useApp();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<"form" | "success">("form");
@@ -68,9 +73,10 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const owned = pocket ? pocket.owned : true;
   const seller = cleanText(sellerName(a.data?.sellerId), 60);
   const amount = safeUsd(a.data?.amount);
-  const needsText = !pocket || pocket.askAbove === NEVER ? "Needs you because it is above your ask-me limit"
-    : pocket.askAbove === 0n ? "Needs you because this pocket asks you about every payment"
-    : `Needs you because it is above your US$${usd(pocket.askAbove)} ask-me limit`;
+  const limitText = !pocket || pocket.askAbove === NEVER ? "Above your ask-me limit"
+    : pocket.askAbove === 0n ? "This pocket asks about every payment"
+    : `Above your US$${usd(pocket.askAbove)} ask-me limit`;
+  const item = cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment";
 
   const approve = async () => {
     setError(null);
@@ -81,7 +87,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   // the slide has shown its done state; swap to the success moment, then let the sheet go (about 900 ms of success on screen)
   useEffect(() => {
     if (phase !== "success") return;
-    const t = setTimeout(() => { hold(false); setApprovalOpen(false); }, 1000);
+    const t = setTimeout(() => { hold(false); setApprovalOpen(false); }, 1400);
     return () => clearTimeout(t);
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   const decline = async () => {
@@ -97,41 +103,42 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
     if (!r.ok && r.error !== "NOT_PENDING") setError(describeApprovalError(r.error)); else haptic.success();
   };
 
+  // "View receipt": the payment row appears once the agent's payment settles; until then Activity is the honest place to look
+  const viewReceipt = () => {
+    const row = [...ledger].reverse().find((r) => r.kind === "payment" && r.sellerId === a.data?.sellerId && sameAddr(r.pocket, a.pocket));
+    hold(false); setApprovalOpen(false);
+    if (row) setReceipt(row); else router.navigate("/activity");
+  };
   if (phase === "success") {
-    return <SheetSuccess minHeight={formH.current} title={`Approved · paid US$${amount ?? "?"}`} sub={`To ${seller}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}`} />;
+    return <SheetSuccess minHeight={formH.current} title={`Paid US$${amount ?? "?"}`} sub={`To ${seller}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}`} action={{ label: "View receipt", onPress: viewReceipt }} />;
   }
   return (
     <Animated.View style={{ flexShrink: 1 }} onLayout={(e) => { formH.current = e.nativeEvent.layout.height; }}>
       <SheetScroll contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 20 }} showsVerticalScrollIndicator={false}>
         {isPay ? (
           <>
-            <View style={{ alignItems: "center", gap: 6, paddingTop: 4 }}>
-              <T v="row" w="semi" color="ink2">Approve payment?</T>
+            <View style={{ alignItems: "center", gap: 6, paddingTop: 2 }}>
+              <T v="row" w="semi" color="muted" style={{ fontSize: 15, lineHeight: 22 }}>Approve payment</T>
               <T v="balance" accessibilityLabel={`US$${amount ?? "unknown"}`}>US${amount ?? "?"}</T>
-              <T v="sub" color="muted">{pocket ? `From ${cleanText(pocket.name, 30)}` : `From ${shortAddr(a.pocket)}`}{queue > 1 ? ` · ${queue - 1} more waiting` : ""}</T>
-            </View>
-            <View style={{ backgroundColor: c.canvas, borderRadius: 20, padding: 16, gap: 14 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-                <Avatar label={seller} />
-                <View style={{ flex: 1, gap: 2 }}>
-                  <T v="row" w="semi" numberOfLines={1}>{seller}</T>
-                  <T v="sub" color="muted" numberOfLines={2}>{cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment"}</T>
-                </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Avatar label={seller} size={24} />
+                <T v="row" w="medium" numberOfLines={1}>to {seller}</T>
               </View>
-              {a.text ? <View style={{ borderLeftWidth: 2, borderLeftColor: c.line, paddingLeft: 12, gap: 2 }}><T v="cap" color="muted">Your agent says</T><T v="sub" color="ink2">{cleanText(a.text, 400)}</T></View> : null}
+              {queue > 1 ? <T v="cap" color="muted">{queue - 1} more waiting</T> : null}
             </View>
-            <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: c.warningSoft, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12 }}>
-              <Icon name="clock" size={18} color={c.warning} />
-              <View style={{ flex: 1, gap: 6 }}>
-                <T v="sub" color="warning">{needsText}</T>
-                <CodePill code="NEEDS_OWNER_APPROVAL" tone="warning" />
-              </View>
-            </View>
-            <T v="cap" color="muted">Your signature approves this one payment for the next 10 minutes. No money leaves your main wallet.</T>
-            <Details title="Task and signature" rows={[
+            <SummaryCard rows={[
+              ["What", item],
+              ["From", pocket ? cleanText(pocket.name, 30) : shortAddr(a.pocket)],
+              ["Limit", limitText],
+              ["Expires", "Approval valid 10 min"],
+            ]} />
+            <Details title="Details" codes={["NEEDS_OWNER_APPROVAL"]} rows={[
               ...(a.data?.intent ? parseIntent(a.data.intent).map((r): [string, string] => [r.k === "Price" ? "Limits" : r.k === "Buy" ? "Task" : r.k || "Task", r.v]) : []),
               ["Pays to", auth ? shortAddr(auth.to) : "n/a"], ["Authorization", auth ? `${auth.nonce.slice(0, 10)}…` : "n/a"],
-            ]} />
+            ]}>
+              {a.text ? <View style={{ gap: 2 }}><T v="cap" color="muted">Your agent says</T><T v="sub" color="ink2">{cleanText(a.text, 400)}</T></View> : null}
+              <T v="cap" color="muted">Your signature approves this one payment for the next 10 minutes. No money leaves your main wallet.</T>
+            </Details>
           </>
         ) : (
           <>
@@ -146,7 +153,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
         {error ? <ErrorNote text={error} /> : null}
       </SheetScroll>
 
-      <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}>
+      <View style={{ paddingHorizontal: 20, paddingTop: 12, gap: 4 }}>
         {isPay ? (
           owned && wallet ? (
             <>

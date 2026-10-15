@@ -8,10 +8,12 @@ import { Pockets, OnChain, Judges } from "./pages";
 import SellerView from "../seller/SellerView";
 import { PhoneTag, TestnetChip, TxViewerHost, usd } from "./parts";
 import { Stepper } from "./Stepper";
+import { Kbd } from "./kit";
 import { eventPocket } from "../lib/events";
 import { Settings } from "./Settings";
 import { PageTitle, PillSelect } from "../seller/ui";
 import { cn } from "../lib/cn";
+import { splitHash } from "./route";
 
 type Tab = "live" | "pockets" | "sellers" | "chain" | "judges";
 const TABS: [Tab, string][] = [["live", "Live"], ["pockets", "Pockets"], ["sellers", "Sellers"], ["chain", "On-chain"], ["judges", "Judges"]];
@@ -19,7 +21,7 @@ const ADDR = /^0x[0-9a-fA-F]{40}$/;
 type Route = { tab: Tab; pocket?: string; present: boolean };
 /** #live, #judges/0x… (a pinned pocket), #present (presenter mode: Live, no chrome, scene stepper). */
 export const parseRoute = (hash = location.hash): Route => {
-  const [t, p] = hash.slice(1).split("/");
+  const [t, p] = splitHash(hash).path.split("/");
   const pocket = p && ADDR.test(p) ? p : undefined;
   if (t === "present") return { tab: "live", pocket, present: true };
   return { tab: (TABS.some(([id]) => id === t) ? t : "live") as Tab, pocket, present: false };
@@ -79,12 +81,12 @@ function Shell() {
   );
 
   return (
-    <TxViewerHost>
+    <TxViewerHost watch={watchLive}>
     <div className="min-h-dvh">
       {present ? (
         <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3 px-4 pb-1 pt-3 sm:px-8">
           <div className="flex min-w-0 items-center gap-3 text-[15px] font-semibold"><Mark size={28} />ChainBrain</div>
-          <button type="button" onClick={() => go({ present: false })} className="inline-flex h-11 items-center gap-2 rounded-full px-4 text-[14px] font-semibold text-ink2 hover:bg-card"><X className="size-4" strokeWidth={1.75} />Exit presenter</button>
+          <button type="button" onClick={() => go({ present: false })} className="inline-flex h-10 items-center gap-2 rounded-full px-4 text-[14px] font-semibold text-ink2 hover:bg-card"><X className="size-4" strokeWidth={1.75} />Exit presenter<Kbd className="ml-1 hidden sm:inline-flex">Esc</Kbd></button>
         </div>
       ) : (
         <header className="sticky top-0 z-30 bg-canvas">
@@ -103,9 +105,8 @@ function Shell() {
               <PocketPicker value={pocket} onChange={(a) => go({ pocket: a })} />
               {linked && following && <span data-testid="following" className="inline-flex items-center gap-2 text-[14px] font-medium text-ink2"><span className="size-2 rounded-full bg-accent" aria-hidden />Following your phone</span>}
               {!following && <button type="button" onClick={() => go({ pocket: null })} className="inline-flex h-11 items-center rounded-full px-3 text-[14px] font-semibold text-accent hover:bg-accent-soft">{linked ? "Follow your phone" : "Follow the story"}</button>}
-              <p className="hidden text-[14px] text-muted lg:block">The agent's decisions, the pocket it spends from and what each seller sees, as they happen.</p>
             </div>
-            <Live pocket={pocket} present={present} />
+            <Live pocket={pocket} present={present} goJudges={() => go({ tab: "judges" })} />
           </>
         )}
         {!present && tab === "pockets" && <div className="mx-auto max-w-[1040px]"><Pockets open={openPocket} /></div>}
@@ -115,7 +116,7 @@ function Shell() {
         {!present && <div className="mt-12 text-center lg:hidden"><TestnetChip /></div>}
       </main>
       {!present && <div className="md:hidden">{nav}</div>}
-      {present && <Stepper pocket={pocket} />}
+      {present && <Stepper pocket={pocket} onExit={() => go({ present: false })} />}
     </div>
     </TxViewerHost>
   );

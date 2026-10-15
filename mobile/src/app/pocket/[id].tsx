@@ -27,13 +27,12 @@ import { radius } from "../../tokens";
 import { NEVER } from "../../lib/shared";
 import { haptic } from "../../haptics";
 
-/** Editable fact pill: soft accent, pencil, press 0.95 with a selection tick. */
+/** Editable fact pill: soft accent (tap opens the rule sheet; no pencil), press 0.95 with a selection tick. */
 function RulePill({ label, onPress, a11y }: { label: string; onPress: () => void; a11y: string }) {
   return (
     <Press haptics="select" scale={0.95} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y} hitSlop={4}
-      style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, height: 36, borderRadius: radius.pill, backgroundColor: c.accentSoft, alignSelf: "flex-start" }}>
+      style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 12, height: 32, borderRadius: radius.pill, backgroundColor: c.accentSoft, alignSelf: "flex-start" }}>
       <T v="cap" w="semi" color="accent">{label}</T>
-      <Icon name="edit" size={13} color={c.accent} />
     </Press>
   );
 }
@@ -78,8 +77,8 @@ export default function PocketDetail() {
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
       <BackHeader title={cleanText(pocket.name, 30)} sub={pocket.revoked ? "Turned off" : expired ? "Expired" : untilText(pocket.expiresAt)} scrollY={scrollY} revealAt={150} />
       <Screen tabs={false} top={false} scrollY={scrollY} contentContainerStyle={{ paddingTop: insets.top + BACK_HEADER_H }}>
-        <View style={{ alignItems: "center", gap: 14, paddingBottom: 8 }}>
-          <PopIn from={0.92}><Avatar label={pocket.name} size={96} tone={off ? "fill" : "soft"} /></PopIn>
+        <View style={{ alignItems: "center", gap: 10, paddingBottom: 8 }}>
+          <PopIn from={0.92}><Avatar label={pocket.name} size={72} tone={off ? "fill" : "soft"} /></PopIn>
           <Rise index={0} base={60}><T v="row" w="medium" color="ink2" numberOfLines={1} style={{ textAlign: "center", paddingHorizontal: 24 }}>{cleanText(pocket.name, 30)}</T></Rise>
           <Money v="balance" value={usd(pocket.balance)} countIn label={`pocket, ${usd(pocket.balance)} USDC`} />
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center", paddingHorizontal: 20 }}>

@@ -2,13 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { RefreshControl, View } from "react-native";
 import Animated, { FadeIn, FadeInDown, FadeOut, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { router } from "expo-router";
-import { isAddress, type Address } from "viem";
 import { StatusDot } from "../../ui/StatusDot";
 import { useApp } from "../../store";
-import { c, F, motion } from "../../tokens";
+import { c, motion } from "../../tokens";
 import { haptic } from "../../haptics";
 import { Screen } from "../../ui/Screen";
-import { Avatar, Button, Card, Field, ListCard, ListRow, Press, SectionHeader } from "../../ui/kit";
+import { Avatar, Button, Card, Press, SectionHeader } from "../../ui/kit";
 import { RoundButton } from "../../ui/RollAction";
 import { Money } from "../../ui/Money";
 import { Reveal as Rise, PopIn } from "../../ui/Reveal";
@@ -20,78 +19,27 @@ import { PocketRow } from "../../components/PocketCard";
 import { ActivityRow } from "../../components/ActivityRow";
 import { cleanText } from "../../lib/sanitize";
 import { visibleRows } from "../../lib/plain";
-import { usd, money, sameAddr } from "../../lib/util";
+import { usd, money } from "../../lib/util";
 import { Rise as RiseIn } from "../../ui/Rise";
 
-/** Header: owner avatar, "Ask agent" pill, bell. */
+/** Header: owner avatar, the "Testnet" chip, bell. (Ask agent lives in the round actions and the Agent tab, once.) */
 function Header() {
   const { pending, setApprovalOpen, setQuestionOpen } = useApp();
   const needs = pending.length > 0;
   return (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 16 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <Press onPress={() => router.navigate("/settings")} accessibilityRole="button" accessibilityLabel="Settings and wallet" kind="round" haptics="light" hitSlop={4}><Avatar icon="user" tone="solid" size={48} /></Press>
-        <View accessibilityLabel="Test network, no real money" style={{ height: 24, paddingHorizontal: 10, borderRadius: 12, backgroundColor: c.fill, flexDirection: "row", alignItems: "center", gap: 5 }}>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.muted }} />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <Press onPress={() => router.navigate("/settings")} accessibilityRole="button" accessibilityLabel="Settings and wallet" kind="round" haptics="light" hitSlop={4}><Avatar icon="user" tone="solid" size={40} /></Press>
+        <View accessibilityLabel="Test network, no real money" style={{ height: 24, paddingHorizontal: 10, borderRadius: 12, backgroundColor: c.fill, justifyContent: "center" }}>
           <T v="cap" w="medium" color="muted" style={{ fontSize: 12, lineHeight: 16 }}>Testnet</T>
         </View>
       </View>
-      <Press onPress={() => router.navigate("/agent")} accessibilityRole="button" accessibilityLabel="Ask agent" kind="button" haptics="light" style={{ height: 48, paddingHorizontal: 18, borderRadius: 24, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <Icon name="chat" size={18} color={c.accent} />
-        <T v="row" w="semi" color="accent">Ask agent</T>
-      </Press>
       <Press
         onPress={() => { const q = pending.find((a) => a.kind === "question"); if (pending.some((a) => a.kind !== "question")) setApprovalOpen(true); else if (q) setQuestionOpen(true); else router.navigate("/activity"); }}
-        kind="round" accessibilityRole="button" accessibilityLabel={needs ? "Notifications, something needs you" : "Notifications"} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
+        kind="round" accessibilityRole="button" accessibilityLabel={needs ? "Notifications, something needs you" : "Notifications"} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
         <Icon name="bell" size={22} />
-        {needs ? <Animated.View entering={FadeIn.duration(motion.base)} exiting={FadeOut.duration(motion.exit)} style={{ position: "absolute", top: 11, right: 12, width: 10, height: 10, borderRadius: 5, backgroundColor: c.negative, borderWidth: 2, borderColor: c.card }} /> : null}
+        {needs ? <Animated.View entering={FadeIn.duration(motion.base)} exiting={FadeOut.duration(motion.exit)} style={{ position: "absolute", top: 10, right: 11, width: 10, height: 10, borderRadius: 5, backgroundColor: c.negative, borderWidth: 2, borderColor: c.card }} /> : null}
       </Press>
-    </View>
-  );
-}
-
-/** Pending approvals and the agent's question, as one quiet row each. */
-function Needs() {
-  const { pending, setApprovalOpen, setQuestionOpen, sellerName } = useApp();
-  const ask = pending.find((a) => a.kind !== "question");
-  const q = pending.find((a) => a.kind === "question");
-  if (!ask && !q) return null;
-  return (
-    <Animated.View entering={FadeInDown.springify(motion.spring.smooth.duration).dampingRatio(1).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })} exiting={FadeOut.duration(motion.exit)}>
-    <ListCard style={{ marginBottom: 12 }}>
-      {ask ? (
-        <ListRow key="ask" a11y={ask.kind === "payment" ? "Approve a payment" : "Confirm a task"} onPress={() => setApprovalOpen(true)} avatar={<Avatar icon="clock" tone="warning" />}
-          title={ask.kind === "payment" ? "Waiting for your OK" : "Confirm a task"} sub={ask.kind === "payment" ? `${cleanText(sellerName(ask.data?.sellerId), 30)} · US$${cleanText(ask.data?.amount, 10)}` : cleanText(ask.text.split("\n")[0], 60)}>
-          <Icon name="chevronRight" size={18} color={c.muted} />
-        </ListRow>
-      ) : null}
-      {q ? (
-        <ListRow key="q" a11y="Your agent asks" onPress={() => setQuestionOpen(true)} avatar={<Avatar icon="chat" tone="soft" />} title="Your agent has a question" sub={cleanText(q.text, 60)}>
-          <Icon name="chevronRight" size={18} color={c.muted} />
-        </ListRow>
-      ) : null}
-    </ListCard>
-    </Animated.View>
-  );
-}
-
-function AddPocket() {
-  const { addPocket } = useApp();
-  const [open, setOpen] = useState(false);
-  const [v, setV] = useState("");
-  return (
-    <View style={{ marginHorizontal: 20, marginTop: 12 }}>
-      {!open ? (
-        <Press haptics="select" onPress={() => setOpen(true)} style={{ alignSelf: "center", minHeight: 44, justifyContent: "center" }} accessibilityRole="button" accessibilityLabel="Add an existing pocket"><T v="sub" w="semi" color="accent">Add an existing pocket</T></Press>
-      ) : (
-        <Card style={{ gap: 12 }}>
-          <Field value={v} onChangeText={setV} placeholder="Pocket address (0x…)" autoCapitalize="none" autoCorrect={false} accessibilityLabel="Pocket address" />
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <Button label="Cancel" kind="secondary" small style={{ flex: 1 }} onPress={() => { setOpen(false); setV(""); }} />
-            <Button label="Add pocket" small style={{ flex: 1 }} disabled={!isAddress(v.trim())} onPress={async () => { await addPocket(v.trim() as Address); setV(""); setOpen(false); }} />
-          </View>
-        </Card>
-      )}
     </View>
   );
 }
@@ -113,25 +61,29 @@ function EmptyPockets() {
   );
 }
 
-/** While the agent works or waits, a slim strip under the header says so and takes you there (the chat, or the sheet). */
+/** The needs-you banner, pinned above Pockets: when a payment, task or question waits for the owner it is a 56 px warning row that
+ *  opens the sheet (the primary agentic moment); while the agent just works it is a quiet teal row that opens the chat. */
 function LiveStrip() {
-  const { agentState, active, pending, pockets, setApprovalOpen, setQuestionOpen } = useApp();
+  const { agentState, pending, setApprovalOpen, setQuestionOpen, sellerName } = useApp();
   const waiting = pending.length > 0;
   const on = agentState === "working" || waiting;
-  const where = waiting ? pockets.find((p) => sameAddr(p.address, pending[0].pocket)) : active;
-  const text = waiting ? (pending[0].kind === "question" ? "Your agent has a question" : pending[0].kind === "intent" ? "Confirm your agent's task" : "A payment needs your OK") : "Your agent is working";
+  const first = pending[0];
+  const text = !waiting ? "Your agent is working"
+    : first.kind === "question" ? "Your agent has a question"
+    : first.kind === "intent" ? "Confirm your agent's task"
+    : `${cleanText(sellerName(first.data?.sellerId), 24)} needs your OK${first.data?.amount ? ` · US$${cleanText(first.data.amount, 10)}` : ""}`;
   const open = () => {
     if (!waiting) return router.navigate("/agent");
-    if (pending[0].kind === "question") { setQuestionOpen(true); return; }
+    if (first.kind === "question") { setQuestionOpen(true); return; }
     setApprovalOpen(true);
   };
   if (!on) return null;
   return (
-    <RiseIn dy={-6} spring="snappy" exit layout style={{ marginHorizontal: 20, marginBottom: 12 }}>
-      <Press kind="row" haptics="select" onPress={open} accessibilityRole="button" accessibilityLabel={`${text}${where ? `, ${where.name}` : ""}`}
-        style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 24, backgroundColor: waiting ? c.warningSoft : c.accentSoft }}>
+    <RiseIn dy={-6} spring="snappy" exit layout style={{ marginHorizontal: 20, marginTop: 20 }}>
+      <Press kind="row" haptics="select" onPress={open} accessibilityRole="button" accessibilityLabel={text}
+        style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 16, borderRadius: 20, backgroundColor: waiting ? c.warningSoft : c.accentSoft }}>
         <StatusDot state={waiting ? "waiting" : "working"} />
-        <T v="sub" w="semi" color={waiting ? "warning" : "accent"} style={{ flex: 1 }} numberOfLines={1}>{text}{where ? ` · ${cleanText(where.name, 20)}` : ""}</T>
+        <T v="row" w="semi" color={waiting ? "warning" : "accent"} style={{ flex: 1, fontSize: 15, lineHeight: 22 }} numberOfLines={1}>{text}</T>
         <Icon name="chevronRight" size={16} color={waiting ? c.warning : c.accent} />
       </Press>
     </RiseIn>
@@ -167,33 +119,32 @@ export default function Home() {
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={c.accent} colors={[c.accent]} />}>
       <Header />
-      <LiveStrip />
-      <Needs />
       <Rise play={play} index={0}>
         <Animated.View style={pulseStyle}>
-          <Card pad={20} style={{ marginHorizontal: 20, alignItems: "center" }}>
-            <T v="row" w="regular" color="ink2" style={{ marginTop: 4 }}>Agent pockets</T>
-            <View style={{ marginTop: 10 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
-            <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ marginTop: 14, alignSelf: "stretch", backgroundColor: c.canvas, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}>
-              <Icon name="wallet" size={20} color={c.accent} />
+          {/* one surface: label, balance, one quiet line, three actions */}
+          <Card pad={24} style={{ marginHorizontal: 20, alignItems: "center" }}>
+            <T v="sub" color="muted">Agent pockets</T>
+            <View style={{ marginTop: 4 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
+            <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ marginTop: 8, flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
               {balances ? (
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <T v="section" w="regular" color="ink2">{"Main wallet "}</T>
-                  <Money v="section" value={usd(balances.usdc)} style={{ fontFamily: F.bold }} />
-                </View>
-              ) : <T v="section" w="regular" color="ink2">{loading ? "Main wallet, loading…" : "Main wallet"}</T>}
+                <>
+                  <T v="sub" color="muted">{"Main wallet "}</T>
+                  <Money v="sub" value={usd(balances.usdc)} color="ink2" />
+                </>
+              ) : <T v="sub" color="muted">{loading ? "Main wallet, loading…" : "Main wallet"}</T>}
             </View>
             <Rise play={play} index={1} style={{ alignSelf: "stretch" }}>
-              <View style={{ flexDirection: "row", marginTop: 26, alignSelf: "stretch" }}>
+              <View style={{ flexDirection: "row", marginTop: 24, alignSelf: "stretch" }}>
                 <RoundButton icon="plus" label="Add money" onPress={() => setAction({ mode: "fund" })} />
-                <RoundButton icon="layers" label="Pocket" a11y="New pocket" onPress={() => router.push("/create")} />
-                <RoundButton icon="undo" label="Return" a11y="Return funds to your wallet" onPress={() => setAction({ mode: "return" })} />
-                <RoundButton icon="activity" label="Activity" onPress={() => router.navigate("/activity")} />
+                <RoundButton icon="squarePlus" label="New pocket" onPress={() => router.push("/create")} />
+                <RoundButton icon="chat" label="Ask agent" onPress={() => router.navigate("/agent")} />
               </View>
             </Rise>
           </Card>
         </Animated.View>
       </Rise>
+
+      <LiveStrip />
 
       <Rise play={play} index={2}>
         <SectionHeader title="Pockets" right={pockets.length ? money(sumAll) : undefined} />
@@ -206,10 +157,6 @@ export default function Home() {
             {pockets.map((p) => <PocketRow key={p.address} pocket={p} onPress={() => router.push({ pathname: "/pocket/[id]", params: { id: p.address } })} />)}
           </AnimatedList>
         )}
-        {pockets.length > 0 ? <ListCard style={{ marginTop: 12 }}>
-          <ListRow a11y="New pocket" onPress={() => router.push("/create")} avatar={<Avatar icon="plus" tone="fill" />} title="New pocket" />
-        </ListCard> : null}
-        <AddPocket />
       </Rise>
 
       <Rise play={play} index={3}>

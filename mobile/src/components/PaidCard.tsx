@@ -1,16 +1,14 @@
-// A settled payment inside the agent chat: the seller, what was bought, the amount and whether the owner co-signed. The
-// card rises in, the small check pops (bouncy) with a Success haptic once per payment, and a tap opens the receipt.
+// A settled payment inside the agent chat, in the shared event-card grammar: the check draws (Success haptic once per payment),
+// "Paid DataLite", what was bought, whether the owner co-signed, the amount on the right; a tap opens the receipt.
 import React from "react";
-import { View } from "react-native";
 import { useApp } from "../store";
-import { c } from "../tokens";
-import { Avatar, Press } from "../ui/kit";
 import { T } from "../ui/Text";
-import { Rise, firstTime } from "../ui/Rise";
+import { firstTime } from "../ui/Rise";
 import { SuccessMark } from "../ui/SuccessMark";
 import { cleanText } from "../lib/sanitize";
 import { money } from "../lib/util";
 import type { WalletEvent } from "../lib/events";
+import { EventCard } from "./EventCard";
 
 export function PaidCard({ e }: { e: WalletEvent }) {
   const { sellerName, cfg, ledger, setReceipt } = useApp();
@@ -21,22 +19,14 @@ export function PaidCard({ e }: { e: WalletEvent }) {
   let amount = 0n;
   try { amount = BigInt(e.amount ?? 0); } catch { /* malformed amount: show zero */ }
   return (
-    <Rise dy={10} spring="snappy" instant={!fresh} layout>
-      <Press kind="row" haptics="select" onPress={() => row && setReceipt(row)} accessibilityRole="button" accessibilityLabel={`Paid ${seller} ${money(amount)}. Open receipt`}
-        style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 14, borderRadius: 20, backgroundColor: c.canvas }}>
-        <View>
-          <Avatar label={seller} size={44} />
-          <View style={{ position: "absolute", right: -4, bottom: -4, borderRadius: 12, borderWidth: 2, borderColor: c.canvas, backgroundColor: c.canvas }}>
-            <SuccessMark size={20} delay={180} still={!fresh} />
-          </View>
-        </View>
-        <View style={{ flex: 1, gap: 2 }}>
-          <T v="row" w="semi" numberOfLines={1}>Paid {cleanText(seller, 30)}</T>
-          <T v="sub" color="muted" numberOfLines={1}>{cleanText(item, 60)}</T>
-          {e.cosigned ? <T v="cap" w="medium" color="accent" numberOfLines={1}>Co-signed by you</T> : null}
-        </View>
-        <T v="row" w="semi">{money(amount)}</T>
-      </Press>
-    </Rise>
+    <EventCard
+      tone="paid" instant={!fresh} title={`Paid ${cleanText(seller, 30)}`} amount={money(amount)}
+      mark={<SuccessMark size={40} delay={180} still={!fresh} />}
+      body={<>
+        <T v="sub" color="muted" numberOfLines={1}>{cleanText(item, 60)}</T>
+        {e.cosigned ? <T v="cap" w="medium" color="accent" numberOfLines={1}>Co-signed by you</T> : null}
+      </>}
+      onPress={() => row && setReceipt(row)} a11y={`Paid ${seller} ${money(amount)}. Open receipt`}
+    />
   );
 }

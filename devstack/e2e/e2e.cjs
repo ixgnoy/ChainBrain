@@ -301,7 +301,7 @@ async function phoneFlow(browser, scenes, issues) {
     check("scene 1: intent card confirmed", true);
     await until("DataLite paid", async () => (await usdcOf(pocket)) <= 4.7, 40000);
     check("scene 2: DataLite paid automatically (US$0.30)", money(await usdcOf(pocket)) === 4.7);
-    await page.getByText("Approve payment?").waitFor({ timeout: 40000 }); // the sheet opens by itself
+    await page.getByText("Approve payment", { exact: true }).waitFor({ timeout: 40000 }); // the sheet opens by itself
     const t = await page.locator("body").innerText();
     check("scene 3: approval sheet shows DataPro US$1.50", /1\.50/.test(t) && /DataPro/.test(t));
     await shot(page, "phone-05-approval");

@@ -42,6 +42,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ title: string; txs: { label: string; hash: string }[] } | null>(null);
   const formH = useRef(0);
+  const capDone = useRef<{ text: string; hash: string } | null>(null); // a cap already set whose top-up failed: a retry only repeats the top-up
   useEffect(() => { setError(null); }, [text, never]);
 
   if (!pocket) return null;
@@ -55,9 +56,13 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
       const txs: { label: string; hash: string }[] = [];
       if (isCap) {
         const v = parseUsd(text);
-        const a = await wallet.setCap(pocket.address, v);
-        recordTx({ kind: "cap", pocket: pocket.address, hash: a.hash, amount: v.toString(), note: `to ${money(v)}` });
-        txs.push({ label: "New cap", hash: a.hash });
+        let capHash = capDone.current?.text === text ? capDone.current.hash : undefined;
+        if (!capHash) {
+          const a = await wallet.setCap(pocket.address, v);
+          capHash = a.hash; capDone.current = { text, hash: a.hash };
+          recordTx({ kind: "cap", pocket: pocket.address, hash: a.hash, amount: v.toString(), note: `to ${money(v)}` });
+        }
+        txs.push({ label: "New cap", hash: capHash });
         if (topUp > 0n) {
           const b = await wallet.fund(pocket.address, topUp);
           recordTx({ kind: "fund", pocket: pocket.address, hash: b.hash, amount: topUp.toString() });

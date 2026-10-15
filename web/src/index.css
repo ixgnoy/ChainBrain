@@ -61,18 +61,21 @@ button, a, select, [role="tab"] { cursor: pointer; }
 @keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .fade-up { animation: fade-up 180ms ease-out both; }
 @keyframes sheet-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 .sheet-in { animation: sheet-in 200ms ease-out both; }
+@media (max-width: 639px) { .sheet-in { animation-name: sheet-up; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
 
-/* Live columns scroll inside their card: the last row fades out instead of being cut in half. */
-.live-scroll { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent); }
 /* Presenter mode: bigger type on the Live columns, read from the back of a room. */
 [data-present="true"] .t-body { font-size: 18px; line-height: 26px; }
 [data-present="true"] .t-name { font-size: 17px; }
-[data-present="true"] [data-testid="pocket-balance"] { font-size: 56px; line-height: 60px; }
-[data-present="true"] [data-testid="pocket-balance"][data-stopped] { font-size: 44px; line-height: 52px; }
-/* A strip of tabs that scrolls sideways hints at what is past the edge. */
-.edge-fade { -webkit-mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 28px), transparent); }
+[data-present="true"] [data-testid="pocket-balance"] { font-size: 72px; line-height: 76px; }
+[data-present="true"] [data-testid="pocket-balance"][data-stopped] { font-size: 52px; line-height: 60px; }
+/* The live trace keeps its place when rows arrive above it. */
+.trace-list { overflow-anchor: auto; overscroll-behavior: contain; }
+/* Horizontal chip rows hide their scrollbar but still scroll. */
+.chip-row { scrollbar-width: none; }
+.chip-row::-webkit-scrollbar { display: none; }

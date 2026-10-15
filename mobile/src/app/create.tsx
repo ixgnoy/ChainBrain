@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "../store";
 import { c, motion } from "../tokens";
 import { BackHeader } from "../ui/BackHeader";
-import { Avatar, Button, Card, Field, Press } from "../ui/kit";
+import { Button, Card, Field, Press, SummaryCard } from "../ui/kit";
 import { Money } from "../ui/Money";
 import { Reveal } from "../ui/Reveal";
 import { SuccessMark, landingDip } from "../ui/SuccessMark";
@@ -53,15 +53,15 @@ const slideOut = (dir: number, reduce: boolean): EntryExitAnimationFunction => (
   };
 };
 
-/** 7 segments; each fill scales in from the left on `smooth`, with a small wave so forward steps read as progress. */
-function Segment({ on, delay }: { on: boolean; delay: number }) {
+/** One continuous 4 px progress bar; the fill's width springs (`smooth`) to the current step. */
+function ProgressBar({ step, total }: { step: number; total: number }) {
   const reduce = useReduceMotion();
-  const f = useSharedValue(on ? 1 : 0);
-  React.useEffect(() => { f.value = withDelay(reduce ? 0 : delay, reduce ? withTiming(on ? 1 : 0, { duration: 180 }) : withSpring(on ? 1 : 0, motion.spring.smooth)); }, [on]); // eslint-disable-line react-hooks/exhaustive-deps
-  const a = useAnimatedStyle(() => ({ transform: [{ scaleX: Math.max(0, f.value) }], opacity: Math.min(1, f.value * 4) }));
+  const f = useSharedValue((step + 1) / total);
+  React.useEffect(() => { settle(f, (step + 1) / total, reduce, motion.spring.smooth); }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
+  const a = useAnimatedStyle(() => ({ width: `${Math.min(1, Math.max(0, f.value)) * 100}%` }));
   return (
-    <View style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: c.line, overflow: "hidden" }}>
-      <Animated.View style={[{ flex: 1, backgroundColor: c.accent, borderRadius: 2, transformOrigin: "left" } as object, a]} />
+    <View style={{ height: 4, borderRadius: 2, backgroundColor: c.line, overflow: "hidden", marginHorizontal: 20, marginVertical: 12 }} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: total, now: step + 1 }}>
+      <Animated.View style={[{ height: 4, borderRadius: 2, backgroundColor: c.accent }, a]} />
     </View>
   );
 }
@@ -103,7 +103,7 @@ const BigNumber = ({ value, suffix }: { value: string; suffix?: string }) => (
   <View style={{ alignItems: "center", gap: 4, paddingVertical: 8 }}><Money v="balance" value={value} />{suffix ? <T v="sub" color="muted">{suffix}</T> : null}</View>
 );
 const Title = ({ h, sub }: { h: string; sub: string }) => (
-  <View style={{ gap: 6 }}><T v="section" accessibilityRole="header">{h}</T><T v="body" color="ink2">{sub}</T></View>
+  <View style={{ gap: 6 }}><T v="section" accessibilityRole="header" style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>{h}</T><T v="body" color="ink2" numberOfLines={3}>{sub}</T></View>
 );
 
 /** Success: the card rises, the mark draws, the budget rolls in, the two hashes fade up. The first pocket ever gets one soft ring. */
@@ -299,11 +299,12 @@ export default function Create() {
       default: return (
         <View style={{ gap: 16 }}>
           <Title h="Looks right?" sub="Two steps signed on this phone: create the pocket, then add the money. The agent gets exactly these limits." />
-          <Card pad={4} style={{ paddingHorizontal: 16 }}>
-            {[["Name", values.label], ["Money in", `US$${values.budget}`], ["Sellers", sellers.map((s) => cleanText(cfg?.sellers.find((x) => x.id === s)?.name ?? s, 24)).join(", ")], ["Per payment", `up to US$${values.cap}`], ["Asks you", askLabel], ["Ends", new Date(Number(expiryFor(life)) * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })]].map(([k, v], i, all) => (
-              <View key={k} style={{ flexDirection: "row", justifyContent: "space-between", gap: 16, paddingVertical: 14, borderBottomWidth: i < all.length - 1 ? 1 : 0, borderBottomColor: c.line }}><T v="sub" color="muted">{k}</T><T v="sub" w="medium" style={{ flexShrink: 1, textAlign: "right" }}>{v}</T></View>
-            ))}
-          </Card>
+          <View style={{ backgroundColor: c.accentSoft, borderRadius: 20, padding: 16, gap: 4 }} accessibilityLiveRegion="polite">
+            <T v="cap" w="semi" color="accent">Most the agent can lose</T>
+            <Money v="balance" value={values.budget} color="ink" />
+            <T v="sub" color="ink2">{worstCase(parseUsd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
+          </View>
+          <SummaryCard surface="card" rows={[["Name", values.label], ["Money in", `US$${values.budget}`], ["Sellers", sellers.map((s) => cleanText(cfg?.sellers.find((x) => x.id === s)?.name ?? s, 24)).join(", ")], ["Per payment", `up to US$${values.cap}`], ["Asks you", askLabel], ["Ends", new Date(Number(expiryFor(life)) * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })]]} />
           {stage !== "idle" || progress.current.pocket || done.current.createTx ? (
             <Card style={{ gap: 10 }}>
               {([["create", "1. Create the pocket", !!progress.current.pocket || !!done.current.createTx, progress.current.createTx ?? done.current.createTx], ["fund", "2. Add the money", !!progress.current.funded || !!done.current.fundTx, progress.current.fundTx ?? done.current.fundTx]] as const).map(([k, l, ok, hash]) => (
@@ -324,16 +325,14 @@ export default function Create() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
-      <BackHeader title="New pocket" sub={`Step ${step + 1} of ${STEPS.length}`} close onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
+      <BackHeader title={`${step + 1} of ${STEPS.length}`} muted close onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
       <Stack.Screen options={{ gestureEnabled: stage === "idle" }} />
-      <View style={{ flexDirection: "row", gap: 4, paddingHorizontal: 20, marginVertical: 12 }} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: STEPS.length, now: step + 1 }}>
-        {STEPS.map((s, i) => <Segment key={s} on={i <= step} delay={Math.abs(i - step) * 30} />)}
-      </View>
+      <ProgressBar step={step} total={STEPS.length} />
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 12, gap: 22 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Animated.View key={step} entering={slideIn(dir.current, reduce)} exiting={slideOut(dir.current, reduce)}>{page}</Animated.View>
       </ScrollView>
       <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: insets.bottom + 12, gap: 6, backgroundColor: c.canvas }}>
-        {step > 0 ? (
+        {step > 0 && step < STEPS.length - 1 ? (
           // the product's one sentence, live: every choice above changes what a hijacked agent could lose
           <View accessibilityLiveRegion="polite" style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", padding: 12, marginBottom: 6, borderRadius: 16, backgroundColor: c.accentSoft }}>
             <Icon name="shield" size={16} color={c.accent} />

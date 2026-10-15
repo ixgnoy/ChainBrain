@@ -1,33 +1,32 @@
-// Composer send button that morphs with a spring: empty (grey arrow) -> ready (teal arrow) -> working (soft teal disc with a turning
-// ring while the agent runs). The label stays "Send" for assistive tech and tests. The send haptic is fired by the caller.
-import React, { useEffect, useState } from "react";
+// Composer action: nothing until there is text, then a 36 px teal send disc that springs in (no grey "disabled" arrow). While the
+// agent works it becomes Stop (ink disc, white square) if the owner can stop it (revoking the pocket is the stop path), and
+// otherwise stays hidden. Labels stay "Send" / "Stop agent" for assistive tech and tests. The send haptic is fired by the caller.
+import React from "react";
+import { View } from "react-native";
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { c, motion } from "../tokens";
 import { Press } from "./kit";
 import { Icon } from "./Icon";
-import { RunRing } from "./StepMark";
 import { settle, useReduceMotion } from "./motion";
 
-export function SendButton({ ready, busy, onPress }: { ready: boolean; busy: boolean; onPress: () => void }) {
+export function SendButton({ ready, stop, onPress, onStop }: { ready: boolean; /** the agent works and the owner can stop it */ stop?: boolean; onPress: () => void; onStop?: () => void }) {
   const reduce = useReduceMotion();
-  const r = useSharedValue(ready ? 1 : 0);
-  const b = useSharedValue(busy ? 1 : 0);
-  const [ring, setRing] = useState(busy);
-  useEffect(() => {
-    settle(r, ready ? 1 : 0, reduce, motion.spring.snappy);
-    settle(b, busy ? 1 : 0, reduce, motion.spring.snappy);
-    if (busy) { setRing(true); return; }
-    const t = setTimeout(() => setRing(false), 240);
-    return () => clearTimeout(t);
-  }, [ready, busy, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
-  const disc = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(b.value, [0, 1], [interpolateColor(r.value, [0, 1], [c.line, c.accent]), c.accentSoft]) }));
-  const arrow = useAnimatedStyle(() => ({ opacity: 1 - b.value, transform: [{ scale: 1 - 0.5 * b.value }, { translateY: -4 * b.value }] }));
-  const work = useAnimatedStyle(() => ({ opacity: b.value, transform: [{ scale: 0.5 + 0.5 * b.value }] }));
+  const show = useSharedValue(ready || stop ? 1 : 0);
+  const mode = useSharedValue(stop ? 1 : 0);
+  React.useEffect(() => {
+    settle(show, ready || stop ? 1 : 0, reduce, motion.spring.snappy);
+    settle(mode, stop ? 1 : 0, reduce, motion.spring.snappy);
+  }, [ready, stop, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
+  const disc = useAnimatedStyle(() => ({ opacity: Math.min(1, Math.max(0, show.value)), transform: [{ scale: 0.6 + 0.4 * Math.min(1, Math.max(0, show.value)) }], backgroundColor: interpolateColor(mode.value, [0, 1], [c.accent, c.ink]) }));
+  const arrow = useAnimatedStyle(() => ({ opacity: 1 - mode.value }));
+  const square = useAnimatedStyle(() => ({ opacity: mode.value }));
+  const active = ready || !!stop;
   return (
-    <Press onPress={onPress} haptics="none" disabled={!ready || busy} accessibilityRole="button" accessibilityLabel="Send" accessibilityState={{ disabled: !ready || busy, busy }} style={{ width: 44, height: 44 }}>
-      <Animated.View style={[{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" }, disc]}>
-        <Animated.View style={[{ position: "absolute" }, arrow]}><Icon name="arrowUp" size={20} color={ready ? c.onAccent : c.faint} stroke={2.2} /></Animated.View>
-        {ring ? <Animated.View style={[{ position: "absolute" }, work]}><RunRing size={22} track="#C3E0E4" /></Animated.View> : null}
+    <Press onPress={stop ? onStop : onPress} haptics={stop ? "medium" : "none"} disabled={!active} accessibilityRole="button" accessibilityLabel={stop ? "Stop agent" : "Send"} accessibilityState={{ disabled: !active }}
+      style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }} pointerEvents={active ? "auto" : "none"}>
+      <Animated.View style={[{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" }, disc]}>
+        <Animated.View style={[{ position: "absolute" }, arrow]}><Icon name="arrowUp" size={20} color={c.onAccent} stroke={2.2} /></Animated.View>
+        <Animated.View style={[{ position: "absolute" }, square]}><View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: c.onAccent }} /></Animated.View>
       </Animated.View>
     </Press>
   );

@@ -60,13 +60,12 @@ export function RoundAction({ icon, label, onPress, soft, a11y }: { icon: IconNa
 }
 
 export type PillTone = "accent" | "warning" | "negative" | "fill";
-/** A reason code as a small pill next to the plain sentence (judges score the codes): negative or warning tint, 12 px. */
-export function CodePill({ code, tone = "negative" }: { code: string; tone?: "negative" | "warning" | "fill" }) {
-  const bg = tone === "negative" ? c.negativeSoft : tone === "warning" ? c.warningSoft : c.fill;
-  const fg = tone === "negative" ? c.negative : tone === "warning" ? c.warning : c.ink2;
+/** A reason code (judges score them): a quiet neutral text-pill, fill background, ink2, 11/14. It only ever sits inside a
+ *  "Why" / "Details" disclosure, never in the main line of a card or row. `tone` is accepted for old call sites and ignored. */
+export function CodePill({ code }: { code: string; tone?: "negative" | "warning" | "fill" }) {
   return (
-    <View style={{ paddingHorizontal: 8, height: 22, borderRadius: radius.pill, backgroundColor: bg, alignSelf: "flex-start", justifyContent: "center" }}>
-      <T v="cap" w="semi" style={{ color: fg, fontSize: 11, lineHeight: 14, letterSpacing: 0.3 }}>{code}</T>
+    <View style={{ paddingHorizontal: 8, height: 22, borderRadius: radius.pill, backgroundColor: c.fill, alignSelf: "flex-start", justifyContent: "center" }}>
+      <T v="cap" w="medium" color="ink2" style={{ fontSize: 11, lineHeight: 14 }}>{code}</T>
     </View>
   );
 }
@@ -78,10 +77,9 @@ export function Pill({ label, tone = "accent", icon, onPress, a11y }: { label: s
     <>
       {icon ? <Icon name={icon} size={14} color={fg} /> : null}
       <T v="cap" w="semi" style={{ color: fg }}>{label}</T>
-      {onPress ? <Icon name="edit" size={13} color={fg} /> : null}
     </>
   );
-  const box = { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, height: onPress ? 36 : 28, borderRadius: radius.pill, backgroundColor: bg, alignSelf: "flex-start" } as const;
+  const box = { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, height: onPress ? 32 : 28, borderRadius: radius.pill, backgroundColor: bg, alignSelf: "flex-start" } as const;
   return onPress ? <Press haptics="select" onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label} style={box}>{body}</Press> : <View style={box}>{body}</View>;
 }
 
@@ -99,7 +97,7 @@ export function Button({ label, onPress, kind = "primary", icon, disabled, loadi
 }) {
   const off = disabled || loading;
   const bg = kind === "primary" ? c.accent : kind === "danger" ? c.negativeSoft : kind === "secondary" ? c.fill : "transparent";
-  const fg = kind === "primary" ? c.onAccent : kind === "danger" ? c.negative : kind === "secondary" ? c.ink : c.accent;
+  const fg = kind === "primary" ? c.onAccent : kind === "danger" ? c.negative : kind === "secondary" ? c.ink : kind === "text" ? c.ink2 : c.accent; // teal means go; a text button (Decline, Cancel, Back) is quiet
   return (
     <Press onPress={off ? undefined : onPress} haptics={kind === "text" ? "select" : "light"} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!off, busy: !!loading }}
       style={[{ height: small ? 44 : 56, minWidth: 48, paddingHorizontal: 22, borderRadius: radius.pill, backgroundColor: bg, borderWidth: kind === "outline" ? 1.5 : 0, borderColor: c.accent, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, opacity: disabled ? 0.45 : 1 }, style]}>
@@ -119,16 +117,18 @@ export function SectionHeader({ title, right, action, onAction }: { title: strin
 }
 
 /** A Ryt-style list row: 48 px avatar, title 16/500, grey subtitle, amount right with an optional status line beneath. Rows are >= 64 px. */
-export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink", rightSubTone = "muted", onPress, last, a11y, children, codes, foot, subLines = 2 }: {
+export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink", rightSubTone = "muted", onPress, last, a11y, children, codes, foot, subLines = 2, icon, extra }: {
   avatar?: React.ReactNode; title: string; sub?: string; right?: string; rightSub?: string; rightTone?: "ink" | "positive" | "muted" | "negative"; rightSubTone?: "muted" | "negative" | "warning" | "positive";
-  onPress?: () => void; last?: boolean; a11y?: string; children?: React.ReactNode; codes?: string[]; foot?: string; subLines?: number;
+  onPress?: () => void; last?: boolean; a11y?: string; children?: React.ReactNode; codes?: string[]; foot?: string; subLines?: number; /** anything under the subtitle (a thin progress bar) */ extra?: React.ReactNode;
+  /** a bare 22 px icon instead of an avatar disc (flat lists such as Settings): rows are 56 px and the divider starts after the icon */ icon?: IconName;
 }) {
   const body = (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 16, minHeight: 72, paddingHorizontal: 16 }}>
-      {avatar}
-      <View style={{ flex: 1, gap: 2, paddingVertical: 12 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: icon ? 14 : 16, minHeight: icon ? 56 : 72, paddingHorizontal: 16 }}>
+      {icon ? <View style={{ width: 24, alignItems: "center" }}><Icon name={icon} size={22} color={c.ink2} /></View> : avatar}
+      <View style={{ flex: 1, gap: 2, paddingVertical: icon ? 10 : 12 }}>
         <T v="row" numberOfLines={1}>{title}</T>
         {sub ? <T v="sub" color="muted" numberOfLines={subLines}>{sub}</T> : null}
+        {extra}
         {codes?.length ? <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 2 }}>{codes.map((k) => <CodePill key={k} code={k} />)}</View> : null}
         {foot ? <T v="cap" color="faint" numberOfLines={1} style={{ color: c.muted }}>{foot}</T> : null}
       </View>
@@ -144,7 +144,7 @@ export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink"
   return (
     <View>
       {onPress ? <Press onPress={onPress} haptics="select" scale={0.99} accessibilityRole="button" accessibilityLabel={a11y ?? title}>{body}</Press> : body}
-      {last ? null : <View style={{ height: 1, backgroundColor: c.line, marginLeft: 80 }} />}
+      {last ? null : <View style={{ height: 1, backgroundColor: c.line, marginLeft: icon ? 54 : 80 }} />}
     </View>
   );
 }
@@ -175,15 +175,16 @@ export function Field(p: TextInputProps & { label?: string }) {
   );
 }
 
-/** Expandable "Details" row: the only place technical text (hashes, tool names, reason codes) appears. */
-export function Details({ rows, title = "Details", children }: { rows: [string, string][]; title?: string; children?: React.ReactNode }) {
+/** Expandable disclosure ("Details", "Why"): the only place technical text (hashes, tool names, reason codes) appears. `codes` render as
+ *  quiet neutral pills; `compact` is the in-card variant (36 px, 13/600 muted, no side padding). */
+export function Details({ rows = [], title = "Details", children, codes, compact }: { rows?: [string, string][]; title?: string; children?: React.ReactNode; codes?: string[]; compact?: boolean }) {
   const [open, setOpen] = useState(false);
-  if (!rows.length && !children) return null;
+  if (!rows.length && !children && !codes?.length) return null;
   return (
     <View>
-      <Press haptics="select" onPress={() => setOpen(!open)} scale={0.99} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ expanded: open }} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 48 }}>
-        <T v="sub" w="semi" color="ink2">{title}</T>
-        <View style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}><Icon name="chevronDown" size={18} color={c.muted} /></View>
+      <Press haptics="select" onPress={() => setOpen(!open)} scale={0.99} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ expanded: open }} style={{ flexDirection: "row", alignItems: "center", justifyContent: compact ? "flex-start" : "space-between", gap: 4, minHeight: compact ? 36 : 48 }}>
+        <T v={compact ? "cap" : "sub"} w="semi" color={compact ? "muted" : "ink2"}>{title}</T>
+        <View style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}><Icon name="chevronDown" size={compact ? 16 : 18} color={c.muted} /></View>
       </Press>
       {open ? (
         <View style={{ gap: 10, paddingBottom: 6 }}>
@@ -193,9 +194,24 @@ export function Details({ rows, title = "Details", children }: { rows: [string, 
               <T v="cap" color="ink2" style={{ flexShrink: 1, textAlign: "right" }}>{v}</T>
             </View>
           ))}
+          {codes?.length ? <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>{codes.map((k) => <CodePill key={k} code={k} />)}</View> : null}
           {children}
         </View>
       ) : null}
+    </View>
+  );
+}
+
+/** Summary card (the Approval / Receipt / Review grammar): fill surface, radius 20, label muted left, value 15/500 right, no dividers. */
+export function SummaryCard({ rows, surface = "canvas" }: { rows: [string, string][]; surface?: "canvas" | "card" }) {
+  return (
+    <View style={{ backgroundColor: surface === "card" ? c.card : c.canvas, borderRadius: radius.card, padding: 16, gap: 14 }}>
+      {rows.map(([k, v], i) => (
+        <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+          <T v="sub" color="muted">{k}</T>
+          <T v="sub" w="medium" style={{ flexShrink: 1, textAlign: "right", fontSize: 15, lineHeight: 22 }}>{v}</T>
+        </View>
+      ))}
     </View>
   );
 }
