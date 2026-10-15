@@ -11,7 +11,7 @@ import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { Money } from "../ui/Money";
 import { SlidingPills } from "../ui/SlidingPills";
-import { useDrawIn } from "../ui/Hatch";
+import { hatchTile, useDrawIn } from "../ui/Hatch";
 import { dailySpend, weekOverWeek, type AgentId } from "../lib/agents";
 import type { LedgerRow } from "../lib/events";
 import { usd } from "../lib/util";
@@ -78,8 +78,8 @@ export function SpendChart({ ledger, agentOf, play = true }: { ledger: LedgerRow
           <>
             <Svg width={w} height={H}>
               <Defs>
-                <Pattern id="spend-hatch" patternUnits="userSpaceOnUse" width={5} height={5} patternTransform="rotate(45)">
-                  <Line x1={0} y1={0} x2={0} y2={5} stroke={c.ink} strokeWidth={1.6} />
+                <Pattern id="spend-hatch" patternUnits="userSpaceOnUse" width={6} height={6}>
+                  <Path d={hatchTile(6)} stroke={c.ink} strokeWidth={1.4} strokeLinecap="square" />
                 </Pattern>
               </Defs>
               <Line x1={0} x2={w} y1={H - BOTTOM} y2={H - BOTTOM} stroke={c.line} strokeWidth={1} />

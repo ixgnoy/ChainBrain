@@ -124,7 +124,7 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, d
         onAccessibilityAction={() => { if (!disabled && state === "idle") { haptic.rigid(); x.value = withSpring(max, motion.spring.snappy); void fire(); } }}
         style={[{ height: THUMB + PAD * 2, borderRadius: R, backgroundColor: c.ink, justifyContent: "center", overflow: "hidden", opacity: disabled ? 0.4 : 1 }, track]}
       >
-        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: R, backgroundColor: "rgba(240,78,35,0.28)" }, fill]} />
+        <Animated.View style={[{ position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: R, backgroundColor: "rgba(255,255,255,0.10)" }, fill]} />
         <Animated.View style={[{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: c.ink }, doneBg]} />
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: THUMB + PAD * 2, right: 20, alignItems: "center" }, labelStyle]}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>

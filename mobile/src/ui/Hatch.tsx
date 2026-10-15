@@ -3,9 +3,12 @@
 import React, { useId } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from "react-native-reanimated";
-import Svg, { Defs, Line, Pattern, Rect } from "react-native-svg";
+import Svg, { Defs, Path, Pattern, Rect } from "react-native-svg";
 import { c, hatch as H, motion, radius } from "../tokens";
 import { EASE_OUT, useReduceMotion } from "./motion";
+
+/** One tile of 45° stripes (bottom-left to top-right), seamless when repeated. */
+export const hatchTile = (p: number) => `M0,${p} L${p},0 M${-p / 4},${p / 4} L${p / 4},${-p / 4} M${p - p / 4},${p + p / 4} L${p + p / 4},${p - p / 4}`;
 
 /** Fills its parent with stripes. `color` the stroke, `pitch` the gap, `stroke` the width. Put it absolutely inside a clipped box. */
 export function Hatch({ color = c.ink, pitch = H.pitch, stroke = H.stroke, opacity = 1, style }: {
@@ -16,8 +19,10 @@ export function Hatch({ color = c.ink, pitch = H.pitch, stroke = H.stroke, opaci
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity }, style]}>
       <Svg width="100%" height="100%">
         <Defs>
-          <Pattern id={id} patternUnits="userSpaceOnUse" width={pitch} height={pitch} patternTransform="rotate(45)">
-            <Line x1={0} y1={0} x2={0} y2={pitch} stroke={color} strokeWidth={stroke} />
+          {/* the classic 45° hatch tile (no patternTransform: iOS clips a rotated edge line into dots); the two corner
+              stubs join the stripes across tiles */}
+          <Pattern id={id} patternUnits="userSpaceOnUse" width={pitch} height={pitch}>
+            <Path d={hatchTile(pitch)} stroke={color} strokeWidth={stroke} strokeLinecap="square" />
           </Pattern>
         </Defs>
         <Rect x={0} y={0} width="100%" height="100%" fill={`url(#${id})`} />

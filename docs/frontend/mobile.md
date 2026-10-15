@@ -65,6 +65,12 @@ With a server chosen, `GET /dev/health` returning 200 switches the RPC to `<api>
 
 `npm test` (34 tests: the co-sign payload, agents and spending maths, the palette parity with the console, and a full auto-play run on the built-in network that includes Claude via Connect and the inbox and scenes 9-10), `npx tsc --noEmit`, `npx expo-doctor` (16 Oct: only `expo` / `expo-router` one patch behind the newest release), `npx expo export --platform web|ios` (the iOS Hermes bundle builds). Built-in network end to end: `node devstack/e2e/builtin.cjs --url http://localhost:8091` (45 checks on 16 Oct: intro, Home deck and spending, Agents and Claude's page, Claude's co-sign from the inbox, Connect + consent for ChatGPT, scenes 1-8, receipt and explorer, settings; no server needed). Dev stack end to end: `node devstack/e2e/e2e.cjs` (not re-run in the Neo-Kinetic round). Screenshots: `docs/frontend/screenshots/builtin/*.png` (refreshed 16 Oct), `docs/frontend/screenshots/neo/web-*.png`.
 
+## Verified in Expo Go (iOS Simulator, 16 Oct)
+
+Expo Go 57 on an iPhone 17 simulator, built-in network: intro, Home deck (deal, card flight into the pocket page), pocket page, Claude's co-sign from the inbox (slide to approve, Market news US$4.90 to US$3.40), chat scene 1 with the intent sheet and approval, Agents tab with minimize-on-scroll, ChatGPT's page, hold to revoke (two hashes, banner, white-hatch REVOKED card, money returned, hidden Agents tab updated). Two iOS-only fixes came out of it: the hatch is a 45° tile path (a rotated pattern rendered as dots on iOS) and the slide track's trail is a white tint (it showed brown on black).
+
+Dev note: after Fast Refresh of a file with Reanimated styles (`Hatch.tsx`, `SlideToConfirm.tsx`), already-mounted animated values can stay on their old position (a revoked card kept its live face and old balance). A full reload clears it; it does not happen on a clean load.
+
 ## Not verified
 
-Not run on a physical phone or in Expo Go itself (web export and iOS Hermes bundle only): haptics, 120 Hz motion, the deck's deal and swipe under a real finger, whether the card flight (now rotating and scaling) stays in step with the native fade, the SVG hatch patterns on iOS, and iOS edge swipe-back on the pocket page are unverified. Slide and hold gestures were driven in Playwright with a real mouse. No dark mode.
+Not run on a physical phone: haptics, 120 Hz motion, the deck's swipe under a real finger, and iOS edge swipe-back on the pocket page. No dark mode. The app icon and splash still carry the old teal chain logo (`assets/`, `app.json`).
