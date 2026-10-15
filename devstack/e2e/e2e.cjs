@@ -77,7 +77,7 @@ function serveStatic(dir, port) {
   return new Promise((ok) => srv.listen(port, "127.0.0.1", () => ok(srv)));
 }
 async function startWebPreview() {
-  const p = spawn("pnpm", ["--dir", path.join(ROOT, "web"), "exec", "vite", "preview", "--port", String(WEB_PORT), "--strictPort", "--host", "127.0.0.1"], { stdio: "ignore", detached: true });
+  const p = spawn("pnpm", ["--dir", path.join(ROOT, "web"), "exec", "vite", "preview", "--port", String(WEB_PORT), "--strictPort", "--host", "127.0.0.1"], { stdio: "ignore", detached: true, shell: process.platform === "win32" });
   children.push(p);
   await until("vite preview", async () => (await fetch(`http://127.0.0.1:${WEB_PORT}/`)).ok, 30000);
 }
@@ -94,7 +94,7 @@ function watch(page, label, issues) {
 const usdText = (micro) => `US$${(micro / 1e6).toFixed(2)}`;
 const paidMicro = (evs, sellerId) => payments(evs).filter((e) => e.sellerId === sellerId).reduce((n, e) => n + Number(e.amount), 0);
 const runSeed = () => new Promise((ok) => { // async on purpose: spawnSync would freeze this process and its HTTP connections
-  let out = ""; const c = spawn("pnpm", ["--dir", path.join(ROOT, "devstack"), "seed"], { env: { ...process.env, API } });
+  let out = ""; const c = spawn("pnpm", ["--dir", path.join(ROOT, "devstack"), "seed"], { env: { ...process.env, API }, shell: process.platform === "win32" });
   c.stdout.on("data", (d) => (out += d)); c.stderr.on("data", (d) => (out += d)); c.on("close", (status) => ok({ status, out }));
 });
 

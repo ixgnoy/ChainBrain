@@ -10,5 +10,6 @@ const r = spawnSync("npx", ["tsx", "scripts/force-transfer.ts", pocket], {
   cwd: fileURLToPath(new URL("../../server/", import.meta.url)),
   env: { ...process.env, ...DEV_KEYS, BASE_SEPOLIA_RPC: process.env.BASE_SEPOLIA_RPC ?? "http://127.0.0.1:8546" },
   stdio: "inherit",
+  shell: process.platform === "win32", // npx is npx.cmd on Windows
 });
 process.exit(r.status ?? 1);
