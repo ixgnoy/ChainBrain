@@ -22,7 +22,7 @@ test("phone and console share the Neo-Kinetic palette", () => {
 });
 
 test("the DESIGN.md anchors are exact", () => {
-  assert.equal(c.canvas, "#E2E5E8");
+  assert.equal(c.canvas, "#E7E6E2");
   assert.equal(c.ink, "#111215");
   assert.equal(c.vermillion, "#F04E23");
   assert.equal(c.blue, "#9DCAFF");

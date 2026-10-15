@@ -79,22 +79,20 @@ export function Avatar({ label, icon, size = 48, tone = "soft" }: { label?: stri
   );
 }
 
-/** Quick-action tile (DESIGN.md "Quick Action Tiles"): 16-radius, white with a #ECEFEF stroke, powder blue for the one
+/** Quick-action tile (DESIGN.md "Quick Action Tiles"): 16-radius, white with a tileStroke hairline, powder blue for the one
  *  utility action ("Connect"), soft vermillion for a destructive one ("Revoke"). Icon in a 40 px disc above a label-lg line. */
 export function Tile({ icon, label, onPress, tone = "white", a11y, auto, style }: {
   icon: IconName; label: string; onPress: () => void; tone?: "white" | "blue" | "danger" | "ink"; a11y?: string; auto?: TargetName; style?: StyleProp<ViewStyle>;
 }) {
+  // VaultBank's action tile: a big thin-line icon on its own (no disc), the label under it, both on the left
   const bg = { white: c.card, blue: c.blue, danger: c.vermillionSoft, ink: c.ink }[tone];
-  const disc = { white: c.fill, blue: c.white, danger: c.vermillion, ink: c.white }[tone];
-  const ic = { white: c.ink, blue: c.ink, danger: c.white, ink: c.ink }[tone];
+  const ic = { white: c.ink, blue: c.ink, danger: c.vermillionInk, ink: c.white }[tone];
   const fg = { white: c.ink, blue: c.ink, danger: c.vermillionInk, ink: c.white }[tone];
   return (
     <Press kind="round" haptics="medium" auto={auto} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label}
-      style={[{ flex: 1, minHeight: 96, borderRadius: radius.tile, backgroundColor: bg, borderWidth: tone === "white" ? 1 : 0, borderColor: c.tileStroke, alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 14, paddingHorizontal: 6 }, tone === "white" ? level1 : null, style]}>
-      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: disc, alignItems: "center", justifyContent: "center" }}>
-        <Icon name={icon} size={20} color={ic} stroke={2} />
-      </View>
-      <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ color: fg, textAlign: "center", fontSize: 13 }}>{label}</T>
+      style={[{ flex: 1, minHeight: 92, borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: bg, borderWidth: tone === "white" ? 1 : 0, borderColor: c.tileStroke, justifyContent: "space-between", gap: 12, padding: 14 } as ViewStyle, tone === "white" ? level1 : null, style]}>
+      <Icon name={icon} size={28} color={ic} stroke={1.4} />
+      <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: fg, fontSize: 14 }}>{label}</T>
     </Press>
   );
 }
@@ -152,7 +150,7 @@ export function Button({ label, onPress, kind = "primary", icon, iconRight, disa
   const stroke = kind === "secondary" || kind === "outline";
   return (
     <Press onPress={off ? undefined : onPress} auto={auto} tapRef={tapRef} disabled={off} haptics={kind === "text" ? "select" : "light"} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!off, busy: !!loading }}
-      style={[{ height: small ? 44 : 52, minWidth: 48, paddingHorizontal: small ? 18 : 24, borderRadius: radius.pill, backgroundColor: bg, borderWidth: stroke ? 1 : 0, borderColor: kind === "outline" ? c.ink : c.tileStroke, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, opacity: disabled ? 0.4 : 1 }, style]}>
+      style={[{ height: small ? 44 : 52, minWidth: 48, paddingHorizontal: small ? 18 : 24, borderRadius: radius.button, borderCurve: "continuous", backgroundColor: bg, borderWidth: stroke ? 1 : 0, borderColor: kind === "outline" ? c.ink : c.tileStroke, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, opacity: disabled ? 0.4 : 1 }, style]}>
       {icon ? <Icon name={icon} size={18} color={fg} stroke={2} /> : null}
       <T v="label" style={{ color: fg, fontSize: small ? 14 : 15, lineHeight: 20 }}>{loading ? "Please wait…" : label}</T>
       {iconRight ? <Icon name={iconRight} size={18} color={fg} stroke={2} /> : null}

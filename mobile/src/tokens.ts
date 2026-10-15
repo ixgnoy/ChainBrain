@@ -1,11 +1,11 @@
-// ChainBrain design tokens: Neo-Kinetic Fintech (design-system/chainbrain/MASTER.md). Light only: there is no dark palette.
-// Black ink on white cards over a slate canvas, vermillion and powder blue as the only accents, 45° hatch instead of fills.
-// The older role names (accent, negative, warning…) are kept so every screen maps onto the new palette; new code uses the
-// Neo-Kinetic names (vermillion, blue, green, hatch).
+// ChainBrain design tokens: Neo-Kinetic Fintech after VaultBank (design-system/chainbrain/MASTER.md). Light only.
+// Black ink on white cards over a warm paper-grey canvas, vermillion and powder blue as the only accents, hatch instead of
+// fills, Clash Display for what you read first. The older role names (accent, negative, warning…) are kept so every screen
+// maps onto the palette; new code uses the Neo-Kinetic names (vermillion, blue, green, hatch).
 
 export const c = {
   // Level 0 canvas, level 1 cards, level 2 tiles
-  canvas: "#E2E5E8", card: "#FFFFFF", fill: "#F1F3F5", tile: "#F4F5F6", tileStroke: "#ECEFEF", line: "#D3D3D1",
+  canvas: "#E7E6E2", card: "#FFFFFF", fill: "#F2F1EE", tile: "#F5F4F1", tileStroke: "#EBEAE6", line: "#D3D3D1",
   // ink and neutrals. muted (#777781) is for white surfaces only; on the canvas use mutedOnCanvas (contrast ≥ 4.5:1)
   ink: "#111215", ink2: "#3A3B41", muted: "#777781", mutedOnCanvas: "#5E5F68", faint: "#A7A8AF",
   // accents
@@ -13,7 +13,7 @@ export const c = {
   blue: "#9DCAFF", bluePress: "#86BCFA", blueInk: "#124977", blueSoft: "#D1E4FF",
   green: "#22C55E", greenInk: "#15803D", greenSoft: "#DCFCE7",
   // roles (kept names): the primary interactive colour is ink black; refusals and alerts are vermillion
-  accent: "#111215", accentPress: "#2A2B30", accentSoft: "#E9EBED", onAccent: "#FFFFFF",
+  accent: "#111215", accentPress: "#2A2B30", accentSoft: "#EAE9E5", onAccent: "#FFFFFF",
   positive: "#15803D", negative: "#B32A00", negativeSoft: "#FFDBD2", warning: "#124977", warningSoft: "#D1E4FF",
   mint: "#DCFCE7", peach: "#FFDBD2", sky: "#D1E4FF",
   white: "#FFFFFF",
@@ -21,25 +21,30 @@ export const c = {
 } as const;
 export type Tone = keyof typeof c;
 
-/** Loaded font family names (see _layout.tsx useFonts). Plus Jakarta Sans everywhere; ExtraBold for display and balances. */
+/** Loaded font family names (see _layout.tsx useFonts; files from scripts/fonts.sh). Clash Display, a wide grotesk, for
+ *  headings, balances and card numbers (`display*`); General Sans for everything else. */
 export const F = {
-  regular: "PlusJakartaSans_400Regular",
-  medium: "PlusJakartaSans_500Medium",
-  semi: "PlusJakartaSans_600SemiBold",
-  bold: "PlusJakartaSans_700Bold",
-  extra: "PlusJakartaSans_800ExtraBold",
-  /** older name: page titles are now Jakarta ExtraBold (Fraunces is gone) */
-  serif: "PlusJakartaSans_800ExtraBold",
+  regular: "GeneralSans-Regular",
+  medium: "GeneralSans-Medium",
+  semi: "GeneralSans-Semibold",
+  bold: "GeneralSans-Bold",
+  display: "ClashDisplay-Medium",
+  displaySemi: "ClashDisplay-Semibold",
+  displayBold: "ClashDisplay-Bold",
+  /** older names: the heaviest display weight */
+  extra: "ClashDisplay-Semibold",
+  serif: "ClashDisplay-Semibold",
 } as const;
 
-/** Radii (DESIGN.md "Shapes"): cards 24, tiles 16, pocket cards 20, avatars 14 (squircle), pills full. */
-export const radius = { input: 16, tile: 16, card: 24, pocket: 20, avatar: 14, sheet: 28, pill: 9999 } as const;
+/** Radii, VaultBank-tight: cards 20, tiles 16, buttons and inputs 14 (rectangles, not pills), pocket cards 18, sheets 28.
+ *  Pills stay for chips, status labels and the tab bar. */
+export const radius = { input: 14, button: 14, tile: 16, card: 20, pocket: 18, avatar: 14, sheet: 28, pill: 9999 } as const;
 
 /** 8-pt spacing (DESIGN.md "Layout & Spacing"). */
 export const space = { xs: 4, sm: 8, gutter: 12, md: 16, lg: 24, xl: 32, margin: 16 } as const;
 
-/** Level 1: cards on the canvas. Ultra-soft ambient shadow plus a hairline (see `hairline`). */
-export const level1 = { shadowColor: "#111215", shadowOpacity: 0.05, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 1 } as const;
+/** Level 1: cards on the canvas. White on warm grey carries them; only a whisper of shadow (VaultBank is flat). */
+export const level1 = { shadowColor: "#111215", shadowOpacity: 0.03, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 0 } as const;
 /** Level 3: fanned pocket cards, sheets, popovers. */
 export const level3 = { shadowColor: "#111215", shadowOpacity: 0.16, shadowRadius: 18, shadowOffset: { width: 0, height: 12 }, elevation: 8 } as const;
 /** older name for the floating-surface shadow */

@@ -2,7 +2,7 @@
 // only the digits that change move, right-to-left stagger of 20 ms, calm `smooth` spring (no bounce, no colour flash).
 // Separators and the currency never move. Reduced motion: plain text. Idea from rit3zh/expo-morphing-text's digit reel
 // and rn-number-flow (MIT); written fresh for this app.
-import React, { memo, useEffect } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
 import { Text, View, type StyleProp, type TextStyle } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring } from "react-native-reanimated";
 import { motion } from "../tokens";
@@ -10,19 +10,34 @@ import { useReduceMotion } from "./motion";
 
 const DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
+// Display faces (Clash Display) have proportional figures, so a reel measures its ten digits once and springs its width to the
+// digit it shows: "1" stays narrow, and the number never gets gaps.
 const Reel = memo(function Reel({ digit, lineHeight, style, delay, reduce, animateIn }: { digit: number; lineHeight: number; style: StyleProp<TextStyle>; delay: number; reduce: boolean; animateIn: boolean }) {
   const y = useSharedValue(animateIn ? 0 : -digit * lineHeight);
+  const width = useSharedValue(-1);
+  const sizes = useRef<number[]>([]);
+  const [widths, setWidths] = useState<number[] | null>(null);
   useEffect(() => {
     const to = -digit * lineHeight;
     y.value = reduce ? to : withDelay(delay, withSpring(to, motion.spring.smooth));
   }, [digit, lineHeight, delay, reduce, y]);
+  useEffect(() => {
+    if (!widths) return;
+    const to = widths[digit];
+    width.value = reduce || width.value < 0 ? to : withDelay(delay, withSpring(to, motion.spring.smooth));
+  }, [digit, widths, delay, reduce, width]);
   const a = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
+  const box = useAnimatedStyle(() => (width.value < 0 ? {} : { width: width.value }));
+  const measure = (i: number, w: number) => {
+    sizes.current[i] = w;
+    if (sizes.current.filter((x) => x > 0).length === 10) setWidths(sizes.current.slice());
+  };
   return (
-    <View style={{ height: lineHeight, overflow: "hidden" }}>
-      <Animated.View style={a}>
-        {DIGITS.map((d) => <Text key={d} style={[style, { lineHeight, height: lineHeight }]}>{d}</Text>)}
+    <Animated.View style={[{ height: lineHeight, overflow: "hidden" }, box]}>
+      <Animated.View style={[{ alignItems: "flex-start" }, a]}>
+        {DIGITS.map((d, i) => <Text key={d} onLayout={widths ? undefined : (e) => measure(i, e.nativeEvent.layout.width)} style={[style, { lineHeight, height: lineHeight }]}>{d}</Text>)}
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 });
 

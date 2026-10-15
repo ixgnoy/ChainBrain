@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Fontshare fonts: embedding is licensed, redistributing the files is not (scripts/fonts.sh fetches them)
+assets/fonts/*.ttf
+assets/fonts/LICENSE-FFL.txt

@@ -7,7 +7,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { colorScheme } from "nativewind";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useFonts, PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold } from "@expo-google-fonts/plus-jakarta-sans";
+import { useFonts } from "expo-font";
 import { c } from "../tokens";
 import { AppProvider, useApp } from "../store";
 import { ApprovalSheet } from "../components/ApprovalSheet";
@@ -68,7 +68,16 @@ function Shell() {
 }
 
 export default function RootLayout() {
-  const [loaded] = useFonts({ PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold });
+  // Clash Display (headings, amounts, card numbers) and General Sans (everything else), fetched by scripts/fonts.sh
+  const [loaded] = useFonts({
+    "ClashDisplay-Medium": require("../../assets/fonts/ClashDisplay-Medium.ttf"),
+    "ClashDisplay-Semibold": require("../../assets/fonts/ClashDisplay-Semibold.ttf"),
+    "ClashDisplay-Bold": require("../../assets/fonts/ClashDisplay-Bold.ttf"),
+    "GeneralSans-Regular": require("../../assets/fonts/GeneralSans-Regular.ttf"),
+    "GeneralSans-Medium": require("../../assets/fonts/GeneralSans-Medium.ttf"),
+    "GeneralSans-Semibold": require("../../assets/fonts/GeneralSans-Semibold.ttf"),
+    "GeneralSans-Bold": require("../../assets/fonts/GeneralSans-Bold.ttf"),
+  });
   useEffect(() => { if (loaded) SplashScreen.hideAsync().catch(() => {}); }, [loaded]);
   if (!loaded) return null;
   return (

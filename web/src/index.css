@@ -8,11 +8,11 @@
 /* Neo-Kinetic Fintech, light only (design-system/chainbrain/MASTER.md). Black ink on white cards over a slate canvas,
    vermillion and powder blue as the only accents, 45° hatch instead of fills. Older role names map onto the new palette. */
 @theme {
-  --color-canvas: #e2e5e8;
+  --color-canvas: #e7e6e2;
   --color-card: #ffffff;
-  --color-fill: #f1f3f5;
-  --color-tile: #f4f5f6;
-  --color-tile-stroke: #ecefef;
+  --color-fill: #f2f1ee;
+  --color-tile: #f5f4f1;
+  --color-tile-stroke: #ebeae6;
   --color-line: #d3d3d1;
   --color-ink: #111215;
   --color-ink2: #3a3b41;
@@ -33,7 +33,7 @@
   /* roles (kept names) */
   --color-accent: #111215;
   --color-accent-press: #2a2b30;
-  --color-accent-soft: #e9ebed;
+  --color-accent-soft: #eae9e5;
   --color-positive: #15803d;
   --color-on-accent: #ffffff;
   --color-negative: #b32a00;

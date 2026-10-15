@@ -4,7 +4,7 @@ import { router, Stack } from "expo-router";
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming, type EntryExitAnimationFunction } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "../store";
-import { c, motion } from "../tokens";
+import { c, F, motion } from "../tokens";
 import { BackHeader } from "../ui/BackHeader";
 import { Button, Card, Field, Press, SummaryCard, type PressTap } from "../ui/kit";
 import { useAutoplayTarget } from "../lib/autoplayTargets";
@@ -96,7 +96,7 @@ function PickChip({ label, on, onPress }: { label: string; on?: boolean; onPress
   return (
     <Press haptics="select" onPress={onPress} scale={0.96} accessibilityRole="button" accessibilityState={{ selected: !!on }} style={{ borderRadius: 9999 }}>
       <Animated.View style={[{ height: 40, paddingHorizontal: 16, borderRadius: 9999, justifyContent: "center" }, box]}>
-        <Animated.Text style={[{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, lineHeight: 20 }, txt]}>{label}</Animated.Text>
+        <Animated.Text style={[{ fontFamily: F.semi, fontSize: 14, lineHeight: 20 }, txt]}>{label}</Animated.Text>
       </Animated.View>
     </Press>
   );
