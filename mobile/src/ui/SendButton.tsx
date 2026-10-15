@@ -22,14 +22,14 @@ export function SendButton({ ready, stop, onPress, onStop, onAutoStop, tapRef }:
     settle(show, ready || stop ? 1 : 0, reduce, motion.spring.snappy);
     settle(mode, stop ? 1 : 0, reduce, motion.spring.snappy);
   }, [ready, stop, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
-  const disc = useAnimatedStyle(() => ({ opacity: Math.min(1, Math.max(0, show.value)), transform: [{ scale: 0.6 + 0.4 * Math.min(1, Math.max(0, show.value)) }], backgroundColor: interpolateColor(mode.value, [0, 1], [c.accent, c.ink]) }));
+  const disc = useAnimatedStyle(() => ({ opacity: Math.min(1, Math.max(0, show.value)), transform: [{ scale: 0.6 + 0.4 * Math.min(1, Math.max(0, show.value)) }], backgroundColor: interpolateColor(mode.value, [0, 1], [c.ink, c.vermillion]) }));
   const arrow = useAnimatedStyle(() => ({ opacity: 1 - mode.value }));
   const square = useAnimatedStyle(() => ({ opacity: mode.value }));
   const active = ready || !!stop;
   return (
     <Press tapRef={ref} onPress={stop ? onStop : onPress} haptics={stop ? "medium" : "none"} disabled={!active} accessibilityRole="button" accessibilityLabel={stop ? "Stop agent" : "Send"} accessibilityState={{ disabled: !active }}
       style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }} pointerEvents={active ? "auto" : "none"}>
-      <Animated.View style={[{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" }, disc]}>
+      <Animated.View style={[{ width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" }, disc]}>
         <Animated.View style={[{ position: "absolute" }, arrow]}><Icon name="arrowUp" size={20} color={c.onAccent} stroke={2.2} /></Animated.View>
         <Animated.View style={[{ position: "absolute" }, square]}><View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: c.onAccent }} /></Animated.View>
       </Animated.View>

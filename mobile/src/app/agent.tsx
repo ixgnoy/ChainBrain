@@ -2,14 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Keyboard, Platform, ScrollView, TextInput, View } from "react-native";
 import Animated, { FadeIn, FadeOut, useAnimatedKeyboard, useAnimatedReaction, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { router } from "expo-router";
 import { useApp, type Turn } from "../store";
-import { c, F, lift } from "../tokens";
+import { c, F, hairline, level1, lift } from "../tokens";
 import { Avatar, Button, Press, type PressTap } from "../ui/kit";
 import { autoplayAlive, autoplayRun, typeOut, useAutoplayTarget } from "../lib/autoplayTargets";
 import { StatusDot, type DotState } from "../ui/StatusDot";
-import { GLASS_TAB_SPACE as TAB_H } from "../ui/glass/GlassTabBar";
+import { AgentAvatar } from "../ui/AgentAvatar";
 import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { useReduceMotion } from "../ui/motion";
@@ -70,7 +69,7 @@ function MemoryLine({ e }: { e: WalletEvent }) {
   return (
     <Press kind="row" haptics="select" onPress={() => router.navigate("/brain")} accessibilityRole="button" accessibilityLabel={`Memory updated to version ${e.version}, ${what}. Open the Brain tab`}
       style={{ flexDirection: "row", alignItems: "center", gap: 8, minHeight: 32, alignSelf: "flex-start" }}>
-      <Icon name="brain" size={16} color={c.accent} />
+      <Icon name="brain" size={16} color={c.vermillion} />
       <T v="cap" color="muted">Memory updated · v{String(e.version)} · {what}</T>
       <Icon name="chevronRight" size={14} color={c.faint} />
     </Press>
@@ -83,14 +82,27 @@ function Reply({ id, text }: { id: string; text: string }) {
   return <StreamText text={text} play={fresh} />;
 }
 
-/** The owner's message. Optimistic copies rise from the composer (24 pt, snappy); the real turn that replaces it does not re-animate. */
+/** The owner's message: a black bubble (Stitch). Optimistic copies rise from the composer (24 pt, snappy); the real turn that replaces it does not re-animate. */
 function UserBubble({ text, fresh }: { text: string; fresh: boolean }) {
   return (
-    <Rise instant={!fresh} dy={24} spring="snappy" style={{ alignSelf: "flex-end", maxWidth: "82%" }}>
-      <View style={{ backgroundColor: c.fill, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20, borderBottomRightRadius: 6 }}>
-        <T v="body">{cleanText(text, 1000)}</T>
+    <Rise instant={!fresh} dy={24} spring="snappy" style={{ alignSelf: "flex-end", maxWidth: "84%" }}>
+      <View style={{ backgroundColor: c.ink, paddingHorizontal: 18, paddingVertical: 14, borderRadius: 22, borderBottomRightRadius: 6 }}>
+        <T v="body" style={{ color: c.white }}>{cleanText(text, 1000)}</T>
       </View>
     </Rise>
+  );
+}
+
+/** The agent's words for a turn: a white card with the ChainBrain eyebrow (Stitch "CHAINBRAIN ENGINE"), the reply, its steps. */
+function AgentCardBlock({ children }: { children: React.ReactNode }) {
+  return (
+    <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
+      <AgentAvatar kind="chainbrain" size={30} />
+      <View style={{ flex: 1, backgroundColor: c.card, borderRadius: 20, borderTopLeftRadius: 6, borderWidth: 1, borderColor: hairline, padding: 16, gap: 8, ...level1 }}>
+        <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>ChainBrain</T>
+        {children}
+      </View>
+    </View>
   );
 }
 
@@ -151,7 +163,7 @@ export default function AgentChat() {
   }, []);
 
   // the composer rides the keyboard (iOS): padding follows the keyboard's height frame by frame, no jump between "tab bar room" and "keyboard room"
-  const base = TAB_H + insets.bottom + 4;
+  const base = insets.bottom + 10; // a pushed screen: no tab bar under the composer
   const ride = useRideKeyboard(base);
 
   const mine = useMemo(() => (active ? events.filter((e) => sameAddr(e.pocket, active.address)) : []), [events, active]);
@@ -259,28 +271,30 @@ export default function AgentChat() {
   const empty = turns.length === 0 && !sent;
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.card }}>
-      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 10, flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: 1, borderBottomColor: c.line }}>
-        <Press kind="row" haptics="select" auto="picker.open" onPress={() => { if (pockets.length > 1) setPickerOpen(true); }} onLongPress={() => autoplay.toggle()} delayLongPress={HOLD_MS} hitSlop={6}
+    <View style={{ flex: 1, backgroundColor: c.canvas }}>
+      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 10, flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <Press kind="round" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} accessibilityRole="button" accessibilityLabel="Back"
+          style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: c.card, borderWidth: 1, borderColor: hairline, alignItems: "center", justifyContent: "center", ...level1 }}>
+          <Icon name="chevronLeft" size={22} stroke={2.2} />
+        </Press>
+        <Press kind="row" haptics="select" auto="picker.open" onPress={() => { if (pockets.filter((p) => (p.agentId ?? "chainbrain") === "chainbrain").length > 1) setPickerOpen(true); }} onLongPress={() => autoplay.toggle()} delayLongPress={HOLD_MS} hitSlop={6}
           accessibilityRole="button" accessibilityLabel={active ? `${active.name}, ${headStatus}. Change pocket` : "No pocket yet"}
-          style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48 }}>
-          <Avatar label={active?.name ?? "?"} size={32} />
-          <View style={{ flex: 1, gap: 2 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <T v="row" w="semi" numberOfLines={1} accessibilityRole="header" style={{ flexShrink: 1 }}>{active ? cleanText(active.name, 28) : "Your agent"}</T>
-              {pockets.length > 1 ? <Icon name="chevronDown" size={16} color={c.muted} /> : null}
+          style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minHeight: 52, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 18, backgroundColor: c.card, borderWidth: 1, borderColor: hairline }}>
+          <AgentAvatar kind="chainbrain" size={38} badge={dot === "ready" ? c.green : dot === "stopped" ? c.faint : c.vermillion} />
+          <View style={{ flex: 1, gap: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+              <T v="row" w="bold" numberOfLines={1} accessibilityRole="header" style={{ flexShrink: 1 }}>ChainBrain Agent</T>
+              <Icon name="circleCheck" size={14} color={c.vermillion} stroke={2.2} />
             </View>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              {active ? <StatusDot state={dot} /> : null}
-              <T v="cap" color="muted" numberOfLines={1}>{headStatus}</T>
-            </View>
+            <T v="cap" color="muted" numberOfLines={1}>{active ? `Pocket: ${cleanText(active.name, 22)} · ${headStatus}` : "Create a pocket first"}</T>
           </View>
+          <Icon name="chevronDown" size={16} color={c.muted} />
         </Press>
       </View>
 
       <View style={{ flex: 1 }}>
         <ScrollView
-          ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 28, gap: 24, flexGrow: 1 }} keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}
+          ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 28, gap: 20, flexGrow: 1 }} keyboardDismissMode="interactive" showsVerticalScrollIndicator={false}
           scrollEventThrottle={32}
           onScroll={(e) => { const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent; const gap = contentSize.height - (contentOffset.y + layoutMeasurement.height); if (gap < 80) { stick.current = true; setAway(false); } else if (dragging.current) { stick.current = false; setAway(gap > 140); } }}
           onScrollBeginDrag={() => { dragging.current = true; }} onScrollEndDrag={() => { setTimeout(() => { dragging.current = false; }, 400); }}
@@ -290,7 +304,7 @@ export default function AgentChat() {
             <Rise dy={8} duration={260}>
               <View style={{ flex: 1, justifyContent: "center", gap: 20, paddingVertical: 24 }}>
                 <View style={{ gap: 8 }}>
-                  <T v="section">{active ? "What should I buy?" : "Create a pocket first"}</T>
+                  <T v="display">{active ? "What should I buy?" : "Create a pocket first"}</T>
                   <T v="body" color="ink2">{active ? "I only spend from the pocket you funded, within the limits you set. For bigger payments I wait for your OK." : "Your agent works inside a pocket. Create one on Home, then come back."}</T>
                 </View>
                 {active && prompts.length ? (
@@ -298,8 +312,8 @@ export default function AgentChat() {
                     {prompts.map(({ label, text: say }, i) => (
                       <Rise key={label} delay={80 + i * 50} dy={8}>
                         <Press kind="row" haptics="select" onPress={() => send(say)} disabled={chatBusy} accessibilityRole="button" accessibilityLabel={cleanText(say, 160)}
-                          style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 16, borderRadius: 16, backgroundColor: c.canvas }}>
-                          <Icon name={i === 0 ? "chat" : "bolt"} size={20} color={c.accent} />
+                          style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 58, paddingHorizontal: 16, borderRadius: 18, backgroundColor: c.card, borderWidth: 1, borderColor: c.tileStroke }}>
+                          <Icon name={i === 0 ? "chat" : "bolt"} size={20} color={c.vermillion} />
                           <T v="row" style={{ flex: 1, fontSize: 15, lineHeight: 22 }} numberOfLines={2}>{cleanText(label, 80)}</T>
                           <Icon name="chevronRight" size={16} color={c.faint} />
                         </Press>
@@ -341,17 +355,21 @@ export default function AgentChat() {
                 {injectionsOf(evs).filter((x) => !(seenInj.get(t.id) ?? new Set()).has(JSON.stringify(x))).map((x, k) => <InjectionCard key={`${t.id}:i${k}`} id={`${t.id}:${k}`} seller={sellerName(x.sellerId)} lines={x.lines} />)}
                 {evs.filter(isAttackEvent).map((e, k) => <AttackCard key={`${e.type}${e.at}${k}`} e={e} />)}
                 {!t.done ? (
-                  <View style={{ gap: 4 }}>
-                    {pending.length ? <T v="body" color="muted">Waiting for you…</T> : !traceLines(evs).length && !(active?.revoked && isLast) ? <WorkingLine on /> : null}
-                    <TraceBlock events={evs} live={!pending.length && !(active?.revoked && isLast)} />
-                    {evs.filter((e) => e.type === "payment").map((e) => <View key={e.tx} style={{ marginTop: 10 }}><PaidCard e={e} /></View>)}
+                  <View style={{ gap: 10 }}>
+                    <AgentCardBlock>
+                      {pending.length ? <T v="body" color="muted">Waiting for you…</T> : !traceLines(evs).length && !(active?.revoked && isLast) ? <WorkingLine on /> : null}
+                      <TraceBlock events={evs} live={!pending.length && !(active?.revoked && isLast)} />
+                    </AgentCardBlock>
+                    {evs.filter((e) => e.type === "payment").map((e) => <PaidCard key={e.tx} e={e} />)}
                   </View>
                 ) : (
-                  <Rise dy={8} layout style={{ gap: 4 }}>
-                    {evs.filter((e) => e.type === "payment").map((e) => <View key={e.tx} style={{ marginBottom: 10 }}><PaidCard e={e} /></View>)}
-                    {t.error ? <T v="body" color="negative">{t.error}</T> : <View style={{ maxWidth: "94%" }}><Reply id={t.id} text={cleanText(reply, 3000) || "Done."} /></View>}
-                    {t.stopped && t.stopped !== "refusal" ? <T v="cap" color="muted">Stopped early.</T> : null}
-                    <TraceBlock events={evs} />
+                  <Rise dy={8} layout style={{ gap: 10 }}>
+                    {evs.filter((e) => e.type === "payment").map((e) => <PaidCard key={e.tx} e={e} />)}
+                    <AgentCardBlock>
+                      {t.error ? <T v="body" color="negative">{t.error}</T> : <Reply id={t.id} text={cleanText(reply, 3000) || "Done."} />}
+                      {t.stopped && t.stopped !== "refusal" ? <T v="cap" color="muted">Stopped early.</T> : null}
+                      <TraceBlock events={evs} />
+                    </AgentCardBlock>
                   </Rise>
                 )}
                 {t.done ? evs.filter((e) => e.type === "trace" && e.phase === "memory").slice(-1).map((e) => <MemoryLine key={`mem${e.at}`} e={e} />) : null}
@@ -377,7 +395,7 @@ export default function AgentChat() {
             <EventCard tone="waiting" title="Your agent has a question" body="One tap to answer, or type your own below.">
               {answerOptions(question.text).length ? (
                 <View style={{ flexDirection: "row", gap: 8 }}>
-                  {answerOptions(question.text).map((o) => <Button key={o} label={o} kind="secondary" small tapRef={answerTap(o)} onPress={() => send(o)} style={{ flex: 1, paddingHorizontal: 12 }} />)}
+                  {answerOptions(question.text).map((o, i) => <Button key={o} label={o} kind={i === 0 ? "danger" : "blue"} icon={i === 0 ? "target" : "file"} small tapRef={answerTap(o)} onPress={() => send(o)} style={{ flex: 1, paddingHorizontal: 12 }} />)}
                 </View>
               ) : <Button label="Answer" kind="secondary" small onPress={() => setQuestionOpen(true)} />}
             </EventCard>
@@ -394,31 +412,28 @@ export default function AgentChat() {
         ) : null}
       </View>
 
-      <Animated.View style={[{ gap: 10, backgroundColor: c.card }, Platform.OS === "ios" ? ride : { paddingBottom: kb ? 8 : base }]}>
+      <Animated.View style={[{ gap: 10, backgroundColor: c.canvas, paddingTop: 6 }, Platform.OS === "ios" ? ride : { paddingBottom: kb ? 8 : base }]}>
         {/* suggestions: whole phrases only, faded (not cut) at the right edge, gone while the owner types */}
         {!typing && !empty && chipItems.length ? (
           <Animated.View exiting={FadeOut.duration(120)} style={{ height: 40 }}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 20, paddingRight: 36, gap: 8 }} style={{ flexGrow: 0 }} keyboardShouldPersistTaps="handled">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 16, paddingRight: 16, gap: 8 }} style={{ flexGrow: 0 }} keyboardShouldPersistTaps="handled">
               {chipItems.map(({ label, text: say }) => (
                 <Rise key={label} delay={Math.max(chipDelay[label] ?? 0, 0)} instant={(chipDelay[label] ?? 0) < 0} dy={6}>
-                  <Press haptics="select" scale={0.96} onPress={() => send(say)} disabled={chatBusy || !active} accessibilityRole="button" accessibilityLabel={cleanText(say, 160)} style={{ height: 40, maxWidth: 280, paddingHorizontal: 16, borderRadius: 9999, justifyContent: "center", backgroundColor: c.fill, opacity: chatBusy ? 0.5 : 1 }}>
-                    <T v="sub" w="medium" color="ink2" numberOfLines={1}>{cleanText(label, 60)}</T>
+                  <Press haptics="select" scale={0.96} onPress={() => send(say)} disabled={chatBusy || !active} accessibilityRole="button" accessibilityLabel={cleanText(say, 160)} style={{ height: 40, maxWidth: 280, paddingHorizontal: 16, borderRadius: 9999, justifyContent: "center", backgroundColor: c.card, borderWidth: 1, borderColor: c.tileStroke, opacity: chatBusy ? 0.5 : 1 }}>
+                    <T v="sub" w="semi" numberOfLines={1}>{cleanText(label, 60)}</T>
                   </Press>
                 </Rise>
               ))}
             </ScrollView>
-            <View pointerEvents="none" style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 32 }}>
-              <Svg width={32} height={40}><Defs><LinearGradient id="fade" x1="0" y1="0" x2="1" y2="0"><Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} /><Stop offset="1" stopColor="#FFFFFF" stopOpacity={1} /></LinearGradient></Defs><Rect width={32} height={40} fill="url(#fade)" /></Svg>
-            </View>
           </Animated.View>
         ) : null}
         <View style={{ paddingHorizontal: 16 }}>
           {/* grows with the message (up to ~5 lines, then scrolls inside); the send button stays on the last line */}
-          <View style={{ flexDirection: "row", alignItems: "flex-end", paddingLeft: 20, paddingRight: 8, paddingVertical: 2, borderRadius: 26, backgroundColor: c.fill, minHeight: 52 }}>
+          <View style={{ flexDirection: "row", alignItems: "flex-end", paddingLeft: 20, paddingRight: 6, paddingVertical: 3, borderRadius: 28, backgroundColor: c.card, borderWidth: 1, borderColor: hairline, minHeight: 56, ...level1 }}>
             <TextInput
-              value={text} onChangeText={setText} placeholder={text ? "" : question ? "Answer your agent" : "Ask your agent to buy something"} placeholderTextColor={c.faint}
+              value={text} onChangeText={setText} placeholder={text ? "" : question ? "Answer ChainBrain" : "Ask ChainBrain to buy something"} placeholderTextColor={c.faint}
               multiline submitBehavior="submit" onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}
-              style={[{ flex: 1, color: c.ink, fontFamily: F.regular, fontSize: 16, lineHeight: 22, minHeight: 48, maxHeight: 124, paddingTop: 13, paddingBottom: 13, textAlignVertical: "center" }, Platform.OS === "web" ? ({ outlineStyle: "none", resize: "none" } as object) : null]}
+              style={[{ flex: 1, color: c.ink, fontFamily: F.medium, fontSize: 16, lineHeight: 22, minHeight: 48, maxHeight: 124, paddingTop: 13, paddingBottom: 13, textAlignVertical: "center" }, Platform.OS === "web" ? ({ outlineStyle: "none", resize: "none" } as object) : null]}
             />
             <View style={{ marginBottom: 2 }}>
               <SendButton ready={ready} stop={showStop} tapRef={sendTap} onPress={() => send(text)}
