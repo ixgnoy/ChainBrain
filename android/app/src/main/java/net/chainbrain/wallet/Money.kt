@@ -2,18 +2,18 @@ package net.chainbrain.wallet
 
 import java.math.BigInteger
 
-// Same rules as mobile/src/lib/shared.ts: USDC has 6 decimals; "never" = max uint256.
+// Same rules as mobile/src/lib/shared.ts: USDC and Mock e-HKD have 6 decimals; "never" = max uint256.
 object Money {
     val NEVER: BigInteger = BigInteger.TWO.pow(256) - BigInteger.ONE
     private val UNIT = BigInteger.valueOf(1_000_000)
     private val amount = Regex("""^(\d+)(?:\.(\d{1,6}))?$""")
 
-    fun parseUsd(s: String): BigInteger {
-        val m = amount.matchEntire(s.trim()) ?: throw IllegalArgumentException("bad USD amount: $s")
+    fun parse(s: String): BigInteger {
+        val m = amount.matchEntire(s.trim()) ?: throw IllegalArgumentException("bad amount: $s")
         return BigInteger(m.groupValues[1]) * UNIT + BigInteger(m.groupValues[2].padEnd(6, '0'))
     }
 
-    fun formatUsd(n: BigInteger): String {
+    fun format(n: BigInteger): String {
         if (n == NEVER) return "never"
         val frac = n.mod(UNIT).toString().padStart(6, '0').trimEnd('0').padEnd(2, '0')
         return "${n / UNIT}.$frac"
@@ -21,7 +21,10 @@ object Money {
 }
 
 fun shortAddr(a: String?): String = if (a.isNullOrEmpty()) "" else "${a.take(6)}…${a.takeLast(4)}"
-fun txUrl(hash: String) = "https://sepolia.basescan.org/tx/$hash"
+/** HK$2.30 on FISCO (Mock e-HKD), US$0.30 on Base Sepolia (USDC). */
+fun money(n: BigInteger, c: ChainInfo = ChainInfo.get()) = if (n == Money.NEVER) "never" else "${c.currency}${Money.format(n)}"
+/** Base: basescan. FISCO has no explorer: the wallet API's receipt endpoint. */
+fun txUrl(hash: String) = ChainInfo.get().txUrl + hash
 fun addressUrl(a: String) = "https://sepolia.basescan.org/address/$a"
 
 val REASONS = mapOf(
@@ -41,6 +44,6 @@ val REASONS = mapOf(
     "QUOTE_MISMATCH" to "Seller changed the payment request",
     "QUOTE_ALREADY_PAID" to "Already paid",
     "DISCLOSURE_REFUSED" to "Seller asked for your data; refused",
-    "SIGNATURE_TYPE_NOT_ALLOWED" to "Only in-rule USDC payments are signed",
+    "SIGNATURE_TYPE_NOT_ALLOWED" to "Only in-rule token payments are signed",
     "SETTLEMENT_FAILED" to "Settlement failed",
 )

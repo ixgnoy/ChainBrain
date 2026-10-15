@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import net.chainbrain.wallet.Api
 import net.chainbrain.wallet.Authorization
+import net.chainbrain.wallet.ChainInfo
 import net.chainbrain.wallet.Config
 import net.chainbrain.wallet.KeyVault
 import net.chainbrain.wallet.Money
@@ -47,6 +48,7 @@ import net.chainbrain.wallet.R
 import net.chainbrain.wallet.REASONS
 import net.chainbrain.wallet.addressUrl
 import net.chainbrain.wallet.approvalsFrom
+import net.chainbrain.wallet.money
 import net.chainbrain.wallet.pocketStatus
 import net.chainbrain.wallet.reasonOf
 import net.chainbrain.wallet.shortAddr
@@ -75,7 +77,7 @@ fun SetupScreen(vault: KeyVault, err: String, hasKey: Boolean, onKey: (Credentia
         T("Connection", bold = true)
         if (err.isNotEmpty()) T(err, color = p.danger)
         Field(api, { api = it }, "Wallet API", "http://192.168.1.20:8787")
-        Field(rpc, { rpc = it }, "Base Sepolia RPC", "https://sepolia.base.org")
+        Field(rpc, { rpc = it }, "Chain RPC", "http://10.0.2.2:8545 (FISCO) or https://sepolia.base.org")
         Btn("Save and connect", { vault.apiUrl = api; vault.rpcUrl = rpc; onConnection() }, kind = Kind.Ghost)
     }
     if (!hasKey) CbCard {
@@ -104,8 +106,14 @@ fun HomeScreen(cfg: Config, wallet: OwnerWallet, vault: KeyVault, pockets: List<
 
     CbCard {
         T("Main wallet ${shortAddr(wallet.address)}", muted = true)
-        T(bal?.let { "US$${Money.formatUsd(it.first)}" } ?: "…", big = true)
-        T(bal?.let { "%.4f ETH for gas".format(it.second.toBigDecimal().movePointLeft(18).toDouble()) } ?: "", muted = true)
+        T(bal?.let { money(it.first) } ?: "…", big = true)
+        T(bal?.let {
+            when {
+                cfg.chain.key != "fisco" -> "%.4f ETH for gas".format(it.second.toBigDecimal().movePointLeft(18).toDouble())
+                it.second.signum() > 0 -> "Gas is free on FISCO; this key can send"
+                else -> "Not funded for FISCO yet: run scripts/fisco/fund.sh ${wallet.address}"
+            }
+        } ?: "", muted = true)
     }
     CbCard {
         T("Pockets", bold = true)
@@ -119,16 +127,16 @@ fun HomeScreen(cfg: Config, wallet: OwnerWallet, vault: KeyVault, pockets: List<
             ) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     T("Pocket ${shortAddr(a)}")
-                    T(v?.let { "US$${Money.formatUsd(it.balance)}" } ?: "…", mono = true)
+                    T(v?.let { money(it.balance) } ?: "…", mono = true)
                 }
-                T(v?.let { "${pocketStatus(it.revoked, it.expiresAt)}, cap US$${Money.formatUsd(it.cap)}, ask above ${Money.formatUsd(it.askAbove)}" } ?: "", muted = true)
+                T(v?.let { "${pocketStatus(it.revoked, it.expiresAt)}, cap ${money(it.cap)}, ask above ${money(it.askAbove)}" } ?: "", muted = true)
             }
         }
     }
     CbCard {
         T("New pocket", bold = true)
-        Presets.all.forEach { pr ->
-            Btn("${pr.label}, US$${pr.budget}", {
+        Presets.forChain().forEach { pr ->
+            Btn("${pr.label}, ${cfg.chain.currency}${pr.budget}", {
                 scope.launch {
                     msg = ""
                     runCatching {
@@ -149,7 +157,7 @@ fun HomeScreen(cfg: Config, wallet: OwnerWallet, vault: KeyVault, pockets: List<
         if (msg.isNotEmpty()) T(msg, muted = true)
         Field(existing, { existing = it }, "", "Or add an existing pocket address")
         Btn("Add pocket", { onAdd(existing.trim()); existing = "" }, kind = Kind.Ghost, enabled = Regex("^0x[0-9a-fA-F]{40}$").matches(existing.trim()))
-        T("View main wallet on Basescan", Modifier.clickable { uri.openUri(addressUrl(wallet.address)) }, color = p.accent)
+        if (cfg.chain.key != "fisco") T("View main wallet on Basescan", Modifier.clickable { uri.openUri(addressUrl(wallet.address)) }, color = p.accent)
     }
     CbCard {
         T("Connection", bold = true)
@@ -183,9 +191,9 @@ fun PocketScreen(cfg: Config, wallet: OwnerWallet, pocket: String, events: List<
             T("Pocket ${shortAddr(x.address)}", bold = true)
             Badge(status, danger = status != "Active")
         }
-        T("US$${Money.formatUsd(x.balance)}", big = true)
-        T("Cap US$${Money.formatUsd(x.cap)} per payment", muted = true)
-        T("Ask me above ${if (x.askAbove == Money.NEVER) "never" else "US$" + Money.formatUsd(x.askAbove)}", muted = true)
+        T(money(x.balance), big = true)
+        T("Cap ${money(x.cap)} per payment", muted = true)
+        T("Ask me above ${money(x.askAbove)}", muted = true)
         T("Agent ${shortAddr(x.agent)}", muted = true)
         T("Expires ${DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(x.expiresAt.toLong() * 1000))}", muted = true)
     }
@@ -213,7 +221,7 @@ fun PocketScreen(cfg: Config, wallet: OwnerWallet, pocket: String, events: List<
         trail.forEach { e ->
             when (e.optString("type")) {
                 "intent" -> T("Task confirmed: ${e.getJSONObject("approval").optString("text").lineSequence().first()}")
-                "payment" -> T("Paid US$${Money.formatUsd(BigInteger(e.optString("amount", "0")))} to ${e.optString("sellerId")}${if (e.optBoolean("cosigned")) " (co-signed)" else ""}, view tx",
+                "payment" -> T("Paid ${money(BigInteger(e.optString("amount", "0")))} to ${e.optString("sellerId")}${if (e.optBoolean("cosigned")) " (co-signed)" else ""}, view tx",
                     Modifier.clickable { uri.openUri(txUrl(e.optString("tx"))) })
                 "refusal" -> T("Refused ${e.optString("sellerId")}: ${e.optString("reason")}. ${REASONS[e.optString("reason")] ?: ""}", color = p.danger)
                 "disclosure" -> T("${e.optString("sellerId")} asked for your data: refused", color = p.warn)
@@ -304,12 +312,12 @@ fun AgentScreen(pocket: String, wallet: OwnerWallet, api: Api, events: List<JSON
         ModalBottomSheet(onDismissRequest = {}, sheetState = sheet, containerColor = p.card) {
             Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 T("Approve payment", bold = true)
-                T("US$${d.optString("amount")}", big = true)
+                T("${ChainInfo.get().currency}${d.optString("amount")}", big = true)
                 T("to ${d.optString("sellerId")} for “${d.optString("description")}”")
                 T("Agent: ${pay.optString("text")}")
                 T("Task", muted = true)
                 T(d.optString("intent"), mono = true)
-                T("You sign a USDC transfer authorization from this pocket to ${d.optString("sellerId")}, valid for this one payment for 10 minutes.", muted = true)
+                T("You sign a ${ChainInfo.get().domainName} transfer authorization from this pocket to ${d.optString("sellerId")}, valid for this one payment for 10 minutes.", muted = true)
                 if (err.isNotEmpty()) T(err, color = p.danger)
                 Spacer(Modifier.size(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

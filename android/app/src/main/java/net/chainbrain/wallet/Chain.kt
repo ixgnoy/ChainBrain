@@ -44,27 +44,27 @@ class Rpc(private val url: String) {
 
 data class PocketView(val address: String, val owner: String, val agent: String, val cap: BigInteger, val askAbove: BigInteger, val expiresAt: BigInteger, val revoked: Boolean, val balance: BigInteger, val allowed: List<String>)
 data class Seller(val id: String, val name: String, val category: String, val payTo: String)
-data class Config(val agent: String, val factory: String, val usdc: String, val sellers: List<Seller>)
+data class Config(val agent: String, val factory: String, val token: String, val chain: ChainInfo, val sellers: List<Seller>)
 
 private fun fn(name: String, vararg args: Type<*>) = FunctionEncoder.encode(Function(name, args.toList(), emptyList()))
 private fun word(hex: String) = Numeric.toBigInt(hex.ifEmpty { "0x0" })
 private fun addr(hex: String) = org.web3j.crypto.Keys.toChecksumAddress("0x" + Numeric.cleanHexPrefix(hex).takeLast(40))
 private val POCKET_CREATED = Numeric.toHexString(Hash.sha3("PocketCreated(address,address,address)".toByteArray()))
 
-/** The owner's main wallet on this phone: reads pockets and sends owner-signed transactions (EIP-1559, chain 84532). */
+/** The owner's main wallet on this phone: reads pockets and sends owner-signed transactions (EIP-1559 on Base, legacy at gas price 0 on FISCO). */
 class OwnerWallet(private val creds: Credentials, rpcUrl: String, private val cfg: Config) {
     val address: String = creds.address.let { org.web3j.crypto.Keys.toChecksumAddress(it) }
     private val rpc = Rpc(rpcUrl)
 
     suspend fun balances(): Pair<BigInteger, BigInteger> =
-        word(rpc.ethCall(cfg.usdc, fn("balanceOf", Address(address)))) to word(rpc.call("eth_getBalance", address, "latest") as String)
+        word(rpc.ethCall(cfg.token, fn("balanceOf", Address(address)))) to word(rpc.call("eth_getBalance", address, "latest") as String)
 
     suspend fun readPocket(p: String): PocketView {
         suspend fun r(name: String, vararg a: Type<*>) = rpc.ethCall(p, fn(name, *a))
         return PocketView(
             address = p, owner = addr(r("owner")), agent = addr(r("agent")), cap = word(r("perPaymentCap")), askAbove = word(r("askAbove")),
             expiresAt = word(r("expiresAt")), revoked = word(r("revoked")) == BigInteger.ONE,
-            balance = word(rpc.ethCall(cfg.usdc, fn("balanceOf", Address(p)))),
+            balance = word(rpc.ethCall(cfg.token, fn("balanceOf", Address(p)))),
             allowed = cfg.sellers.filter { word(r("sellerAllowed", Address(it.payTo))) == BigInteger.ONE }.map { it.id },
         )
     }
@@ -78,21 +78,25 @@ class OwnerWallet(private val creds: Credentials, rpcUrl: String, private val cf
         }
         throw IllegalStateException("no PocketCreated event in $hash")
     }
-    suspend fun fund(p: String, amount: BigInteger) = send(cfg.usdc, fn("transfer", Address(p), Uint256(amount))).first
+    suspend fun fund(p: String, amount: BigInteger) = send(cfg.token, fn("transfer", Address(p), Uint256(amount))).first
     suspend fun revoke(p: String) = send(p, fn("revoke")).first
     suspend fun returnFunds(p: String) = send(p, fn("returnFunds")).first
     suspend fun setSeller(p: String, seller: String, ok: Boolean) = send(p, fn("setSeller", Address(seller), Bool(ok))).first
 
-    /** Co-sign the exact USDC transfer the wallet tool layer built (payments above the ask-me threshold). */
-    fun signTransfer(a: Authorization) = Eip712.sign(a, creds.ecKeyPair)
+    /** Co-sign the exact token transfer the wallet tool layer built (payments above the ask-me threshold). */
+    fun signTransfer(a: Authorization) = Eip712.sign(a, creds.ecKeyPair, cfg.chain)
 
     private suspend fun send(to: String, data: String): Pair<String, JSONObject> {
         val nonce = word(rpc.call("eth_getTransactionCount", address, "pending") as String)
         val gas = word(rpc.call("eth_estimateGas", JSONObject().put("from", address).put("to", to).put("data", data)) as String) * BigInteger.valueOf(12) / BigInteger.TEN
-        val tip = word(rpc.call("eth_maxPriorityFeePerGas") as String).max(BigInteger.valueOf(1_000_000))
-        val base = word((rpc.call("eth_getBlockByNumber", "latest", false) as JSONObject).optString("baseFeePerGas", "0x0"))
-        val raw = RawTransaction.createTransaction(CHAIN_ID, nonce, gas, to, BigInteger.ZERO, data, tip, base * BigInteger.TWO + tip)
-        val hash = rpc.call("eth_sendRawTransaction", Numeric.toHexString(TransactionEncoder.signMessage(raw, CHAIN_ID, creds))) as String
+        val chainId = cfg.chain.id
+        // FISCO: gas is free (price 0) but the sender needs a non-zero native balance (scripts/fisco/fund.sh); legacy EIP-155 tx.
+        val raw = if (cfg.chain.key == "fisco") RawTransaction.createTransaction(nonce, BigInteger.ZERO, gas, to, BigInteger.ZERO, data) else {
+            val tip = word(rpc.call("eth_maxPriorityFeePerGas") as String).max(BigInteger.valueOf(1_000_000))
+            val base = word((rpc.call("eth_getBlockByNumber", "latest", false) as JSONObject).optString("baseFeePerGas", "0x0"))
+            RawTransaction.createTransaction(chainId, nonce, gas, to, BigInteger.ZERO, data, tip, base * BigInteger.TWO + tip)
+        }
+        val hash = rpc.call("eth_sendRawTransaction", Numeric.toHexString(TransactionEncoder.signMessage(raw, chainId, creds))) as String
         repeat(120) {
             val rec = rpc.call("eth_getTransactionReceipt", hash)
             if (rec is JSONObject) {

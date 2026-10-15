@@ -7,36 +7,42 @@ import org.web3j.crypto.Sign
 import org.web3j.utils.Numeric
 import java.math.BigInteger
 
-const val USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
-const val CHAIN_ID = 84532L
+/** The server's chain, from /api/config (`CHAIN` on the server): FISCO + Mock e-HKD, or Base Sepolia + USDC. */
+data class ChainInfo(val key: String, val id: Long, val name: String, val rpc: String, val domainName: String, val domainVersion: String, val currency: String, val txUrl: String, val token: String) {
+    companion object {
+        /** Set once the config loads; nothing chain-specific renders before that. */
+        @Volatile var current: ChainInfo? = null
+        fun get(): ChainInfo = current ?: throw IllegalStateException("config not loaded")
+    }
+}
 
-/** The USDC TransferWithAuthorization the wallet tool layer built (from = pocket). */
+/** The token's TransferWithAuthorization the wallet tool layer built (from = pocket). */
 data class Authorization(val from: String, val to: String, val value: BigInteger, val validAfter: BigInteger, val validBefore: BigInteger, val nonce: String)
 
-/** EIP-712 digest for USDC v2.2 on Base Sepolia, identical to viem's hashTypedData(transferTypedData(auth)). */
+/** EIP-712 digest for the chain's token (Mock e-HKD v1 on 20200, USDC v2 on 84532), identical to viem's hashTypedData(transferTypedData(auth)). */
 object Eip712 {
     private val DOMAIN_TYPEHASH = keccak("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
     private val TRANSFER_TYPEHASH = keccak("TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)")
-    val domainSeparator: ByteArray = Hash.sha3(
-        DOMAIN_TYPEHASH + keccak("USDC") + keccak("2") + word(BigInteger.valueOf(CHAIN_ID)) + word(USDC)
+    fun domainSeparator(c: ChainInfo): ByteArray = Hash.sha3(
+        DOMAIN_TYPEHASH + keccak(c.domainName) + keccak(c.domainVersion) + word(BigInteger.valueOf(c.id)) + word(c.token)
     )
 
-    fun digest(a: Authorization): ByteArray {
+    fun digest(a: Authorization, c: ChainInfo = ChainInfo.get()): ByteArray {
         val struct = Hash.sha3(
             TRANSFER_TYPEHASH + word(a.from) + word(a.to) + word(a.value) + word(a.validAfter) + word(a.validBefore) + Numeric.hexStringToByteArray(a.nonce)
         )
-        return Hash.sha3(byteArrayOf(0x19, 0x01) + domainSeparator + struct)
+        return Hash.sha3(byteArrayOf(0x19, 0x01) + domainSeparator(c) + struct)
     }
 
     /** 65-byte r || s || v signature (v = 27/28), the format the pocket's ECDSA.tryRecover expects. */
-    fun sign(a: Authorization, key: ECKeyPair): String {
-        val s = Sign.signMessage(digest(a), key, false)
+    fun sign(a: Authorization, key: ECKeyPair, c: ChainInfo = ChainInfo.get()): String {
+        val s = Sign.signMessage(digest(a, c), key, false)
         return Numeric.toHexString(s.r + s.s + s.v)
     }
 
-    fun recover(a: Authorization, signature: String): String {
+    fun recover(a: Authorization, signature: String, c: ChainInfo = ChainInfo.get()): String {
         val b = Numeric.hexStringToByteArray(signature)
-        val pub = Sign.signedMessageHashToKey(digest(a), Sign.SignatureData(b[64], b.copyOfRange(0, 32), b.copyOfRange(32, 64)))
+        val pub = Sign.signedMessageHashToKey(digest(a, c), Sign.SignatureData(b[64], b.copyOfRange(0, 32), b.copyOfRange(32, 64)))
         return Keys.toChecksumAddress(Keys.getAddress(pub))
     }
 
