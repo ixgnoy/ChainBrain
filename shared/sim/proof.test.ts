@@ -156,6 +156,9 @@ test("the whole story (scenes 1, 4-8 plus the forced transfer) ticks the scoreca
   const rows = evidenceRows(f, w.txs());
   assert.deepEqual(rows.filter((r) => r.status === "pass").map((r) => r.scene), ["1", "2", "3", "4", "5", "6", "7", "A"]);
   assert.ok(rows.find((r) => r.scene === "5")!.txs.some((t) => t.reverted), "the reverted forced transfer is evidence");
+  const two = rows.find((r) => r.scene === "2")!, three = rows.find((r) => r.scene === "3")!;
+  assert.notEqual(two.txs[0].hash, three.txs[0].hash, "scene 2 (in rules) and scene 3 (co-signed) prove different payments");
+  assert.match(three.actual, /DataPro US\$1\.50/);
   const md = evidenceMarkdown(rows, { network: networkLabel({ builtin: true }), at: new Date(0) });
   assert.match(md, /Network: Test network\./);
   assert.match(md, /\| Scene \| Expected \| Actual \| Tx \| What it proves \|/);

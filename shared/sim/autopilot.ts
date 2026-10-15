@@ -40,7 +40,8 @@ export type AutopilotOptions = {
   cycles?: number;
 };
 
-export type AutopilotState = { active?: Hex; running: boolean; cycles: number; held: boolean };
+/** `scene`: the scene the story is playing now ("1"…"8", "A" for the privilege escalation), undefined between scenes. */
+export type AutopilotState = { active?: Hex; running: boolean; cycles: number; held: boolean; scene?: string };
 
 type PocketSpec = { cap: string; ask: string | "never"; sellers: string[]; fund: string; expiresAt?: bigint };
 
@@ -54,6 +55,7 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
   let running = false;
   let seeding: Promise<void> | undefined;
   let active: Hex | undefined;
+  let current: string | undefined; // the scene being played
   let cycles = 0;
   let holds = 0;
   let waiting: (() => void)[] = [];
@@ -102,6 +104,10 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
   }
 
   async function play(s: SceneInfo, pocket: Hex) {
+    current = s.id; emit();
+    try { await playScene(s, pocket); } finally { current = undefined; emit(); }
+  }
+  async function playScene(s: SceneInfo, pocket: Hex) {
     if (s.id === "1") {
       await chat(pocket, s.text); // the agent asks one question
       await gap();
@@ -165,7 +171,9 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
         await gap(); if (!alive()) break;
         await play(scene("6"), research);
         await gap(); if (!alive()) break;
+        current = "A"; emit();
         await chat(research, ESCALATION_TEXT); // privilege escalation: refused, and the agent key's setCap reverts NOT_OWNER
+        current = undefined; emit();
         await gap(); if (!alive()) break;
         await play(scene("7"), research);
         await gap(); if (!alive()) break;
@@ -242,7 +250,7 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
     hold, release,
     /** The pocket the story is currently playing on (the Live tab follows it). */
     get active() { return active; },
-    get state(): AutopilotState { return { active, running, cycles, held: holds > 0 }; },
+    get state(): AutopilotState { return { active, running, cycles, held: holds > 0, scene: current }; },
     subscribe(f: () => void) { listeners.add(f); return () => void listeners.delete(f); },
   };
 }
