@@ -13,6 +13,8 @@ export type WalletEvent = { type: string; pocket?: string; at: number; [k: strin
 export type Approval = {
   id: string; pocket: string; kind: "intent" | "payment" | "question"; text: string; data?: any;
   status: "pending" | "approved" | "declined" | "timeout"; signature?: string; answer?: string;
+  /** the agent that holds the pocket and asked (built-in network: chainbrain, claude, chatgpt) */ agent?: string;
+  /** asked at / times out at (ms), when the network says */ createdAt?: number; expiresAt?: number;
 };
 
 export const APPROVAL_MAX_AGE_MS = 10 * 60 * 1000;
@@ -162,7 +164,7 @@ export const sliceTurn = (events: WalletEvent[], fromAt: number, toAt?: number) 
 
 export type LedgerKind = "payment" | "refusal" | "blocked" | "disclosure" | "approval" | "intent" | "owner" | "forced";
 export type LedgerRow = {
-  key: string; at: number; pocket: string; kind: LedgerKind;
+  key: string; at: number; pocket: string; kind: LedgerKind; /** the agent that holds the pocket */ agent?: string;
   outcome: "paid" | "refused" | "pending" | "approved" | "declined" | "info";
   sellerId?: string; sku?: string; description?: string; amount?: bigint; tx?: string; cosigned?: boolean; intentHash?: string; nonce?: string;
   ownerKind?: string; reasons: string[]; detail?: string; text?: string; asked?: string[]; signRequest?: boolean; approvalId?: string; reasonText?: string;
@@ -175,7 +177,7 @@ export function ledgerFrom(events: WalletEvent[], pocket?: string): LedgerRow[] 
   const approvalAt = new Map<string, number>();
   for (const e of mine) if (e.approval?.id) approvalAt.set(e.approval.id, e.at);
   for (const e of mine) {
-    const base = { key: eventKey(e), at: e.at, pocket: e.pocket ?? "" };
+    const base = { key: eventKey(e), at: e.at, pocket: e.pocket ?? "", agent: typeof e.agent === "string" ? e.agent : undefined };
     if (e.type === "payment") {
       rows.push({ ...base, kind: "payment", outcome: "paid", sellerId: e.sellerId, sku: e.sku, amount: atomic(e.amount), tx: e.tx, cosigned: !!e.cosigned, intentHash: e.intentHash, nonce: e.nonce, reasons: [] });
     } else if (e.type === "refusal") {
@@ -196,9 +198,9 @@ export function ledgerFrom(events: WalletEvent[], pocket?: string): LedgerRow[] 
     const at = approvalAt.get(a.id) ?? 0;
     const key = `approval:${a.id}`;
     if (a.kind === "payment") {
-      rows.push({ key, at, pocket: a.pocket, kind: "approval", outcome: a.status === "approved" ? "approved" : a.status === "pending" ? "pending" : "declined", approvalId: a.id, sellerId: a.data?.sellerId, sku: a.data?.sku, description: a.data?.description, amount: decimalToAtomic(a.data?.amount), text: a.text, reasons: a.status === "declined" ? ["OWNER_DECLINED"] : a.status === "timeout" ? ["APPROVAL_EXPIRED"] : [], intentHash: undefined });
+      rows.push({ key, at, pocket: a.pocket, agent: a.agent, kind: "approval", outcome: a.status === "approved" ? "approved" : a.status === "pending" ? "pending" : "declined", approvalId: a.id, sellerId: a.data?.sellerId, sku: a.data?.sku, description: a.data?.description, amount: decimalToAtomic(a.data?.amount), text: a.text, reasons: a.status === "declined" ? ["OWNER_DECLINED"] : a.status === "timeout" ? ["APPROVAL_EXPIRED"] : [], intentHash: undefined });
     } else if (a.kind === "intent" && a.status !== "pending") {
-      rows.push({ key, at, pocket: a.pocket, kind: "intent", outcome: a.status === "approved" ? "approved" : "declined", approvalId: a.id, text: a.text, intentHash: a.data?.intentHash, reasons: a.status === "declined" ? ["OWNER_DECLINED"] : [] });
+      rows.push({ key, at, pocket: a.pocket, agent: a.agent, kind: "intent", outcome: a.status === "approved" ? "approved" : "declined", approvalId: a.id, text: a.text, intentHash: a.data?.intentHash, reasons: a.status === "declined" ? ["OWNER_DECLINED"] : [] });
     }
   }
   return rows.sort((x, y) => x.at - y.at);

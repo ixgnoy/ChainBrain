@@ -7,7 +7,8 @@ import { loadConfig, resetConfig, type Config } from "./lib/shared";
 import { detectDev, isHttpUrl, getApi, getDev, getSource, setApiUrl as setRuntimeApi, setDev, setSource as setRuntimeSource, subscribeRuntime, ENV_API, type DevInfo, type Source } from "./lib/runtime";
 import { ownerWallet, readPocket, isOwner, type OwnerWallet, type PocketView } from "./lib/wallet";
 import { createKey, loadKey, loadPockets, randomKey, saveKey, savePockets } from "./lib/keystore";
-import { builtin, seedFor } from "./lib/builtin";
+import { builtin, seedFor, startOutsideAgents } from "./lib/builtin";
+import { agentIdOf, agentViews, type AgentId, type AgentView } from "./lib/agents";
 import { startRelay, type Say } from "./lib/relay";
 import { createAutoplay, type AutoplayHost, type HostState } from "./lib/autoplay";
 import { onAutoplay, autoplayRunning } from "./lib/autoplayTargets";
@@ -25,7 +26,7 @@ import { getItem, setItem, deleteItem } from "./storage";
 import { addOwnerTx, ownerRows, parseOwnerTxs, type OwnerTx } from "./lib/ownerTxs";
 
 export type Turn = { id: string; pocket: string; text: string; fromAt: number; toAt?: number; reply?: string; stopped?: string; error?: string; done: boolean };
-export type Pocket = PocketView & { name: string; style: PocketMeta["style"]; owned: boolean };
+export type Pocket = PocketView & { name: string; style: PocketMeta["style"]; owned: boolean; /** the agent that holds it (immutable agent key) */ agentId?: AgentId };
 export type Sheet = { mode: "fund" | "return" | "revoke"; pocket?: string } | null;
 export type Rules = { pocket: string; field: "cap" | "ask"; amount?: string; topUp?: bigint } | null;
 /** A just-confirmed owner transaction (or two), shown with its hash on the pocket page and in the agent chat until dismissed. */
@@ -51,6 +52,10 @@ type Ctx = {
   // events and derived
   ownerTxs: OwnerTx[]; recordTx(t: Omit<OwnerTx, "at">): void;
   events: WalletEvent[]; ledger: LedgerRow[]; pending: Approval[]; sellerName(id?: string): string;
+  // agents (built-in network: ChainBrain, Claude, ChatGPT; a real server: the built-in agent only)
+  agents: AgentView[]; agentOf(pocket?: string): AgentId | undefined; connectAgent(id: AgentId): void; disconnectAgent(id: AgentId): void;
+  /** The approval the sheet shows (the inbox picks one; new asks from the built-in agent open it by themselves). */
+  approvalFocus: string | null; openApproval(id: string): void;
   // chat
   turns: Turn[]; sendChat(text: string, pocket?: string): Promise<void>; chatBusy: boolean; agentState: "idle" | "working" | "waiting" | "paused";
   // approvals
@@ -179,13 +184,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // the built-in network starts lived in: two pockets and earlier activity, made by running the same scenes
       seedFor(wallet.address).then(({ pockets: seeded, ownerTxs: txs }) => {
         if (!alive) return;
-        const others = builtin().chain.pocketsOf(wallet.address).filter((p) => !seeded.some((x) => sameAddr(x.address, p.address)));
-        const list = [...others.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)), ...seeded].map((p) => p.address as Address); // Research data first
+        const w = builtin();
+        const others = w.chain.pocketsOf(wallet.address).filter((p) => !seeded.some((x) => sameAddr(x.address, p.address)));
+        const born = (a: string) => w.chain.view(a as Address).createdAt ?? 0;
+        // newest first (the card faces follow creation order); the chat starts on Research data, the scenes' pocket
+        const list = [...others, ...seeded].sort((a, b) => born(b.address) - born(a.address)).map((p) => p.address as Address);
         const m: Record<string, PocketMeta> = {};
         for (const p of seeded) m[p.address.toLowerCase()] = { name: p.name, style: p.style };
         ownerTxRef.current = txs.map((t) => ({ kind: t.kind, pocket: t.pocket.toLowerCase(), hash: t.hash, at: t.at, amount: t.amount }));
         setOwnerTxs(ownerTxRef.current);
-        setAddresses(list); setMeta((old) => ({ ...m, ...old })); setActiveAddr((a) => a ?? list[0]); setPocketsLoaded(true);
+        setAddresses(list); setMeta((old) => ({ ...m, ...old })); setActiveAddr((a) => a ?? seeded[0]?.address ?? list[0]); setPocketsLoaded(true);
+        startOutsideAgents(seeded); // Claude asks for a co-signature a little after launch (lands in the Approvals inbox)
       });
       return () => { alive = false; };
     }
@@ -229,8 +238,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const v = views[a.toLowerCase()];
     if (!v || !wallet) return [];
     const m = meta[a.toLowerCase()] ?? { name: `Pocket ${short(a)}`, style: "custom" as const };
-    return [{ ...v, name: m.name, style: m.style, owned: isOwner(v, wallet.address) }];
-  }), [addresses, views, meta, wallet]);
+    return [{ ...v, name: m.name, style: m.style, owned: isOwner(v, wallet.address), agentId: agentIdOf(v, cfg?.agent) }];
+  }), [addresses, views, meta, wallet, cfg]);
 
   const active = pockets.find((p) => sameAddr(p.address, activeAddr)) ?? pockets[0];
 
@@ -391,11 +400,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // auto-open the approval sheet when something new needs the owner
   const lastOpened = useRef<string>("");
-  const ask = pending.find((a) => a.kind !== "question");
+  // only the in-app agent's asks open the sheet by themselves; an outside agent's wait in the Approvals inbox (the bell)
+  const [approvalFocus, setApprovalFocus] = useState<string | null>(null);
+  const ask = pending.find((a) => a.kind !== "question" && (a.agent ?? "chainbrain") === "chainbrain");
   useEffect(() => {
-    if (ask && ask.id !== lastOpened.current) { lastOpened.current = ask.id; setApprovalOpen(true); }
-    if (!ask) setApprovalOpen(false);
+    if (ask && ask.id !== lastOpened.current) { lastOpened.current = ask.id; setApprovalFocus(ask.id); setApprovalOpen(true); }
   }, [ask?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const focused = pending.some((a) => a.id === approvalFocus);
+  useEffect(() => { if (approvalOpen && !focused && !ask) setApprovalOpen(false); }, [focused, ask?.id, approvalOpen]);
+  const openApproval = useCallback((id: string) => { setApprovalFocus(id); setApprovalOpen(true); }, []);
+
+  // ---- agents
+  const agentTick = useMemo(() => events.filter((e) => e.type === "agent").length, [events]);
+  const agents = useMemo(() => agentViews({
+    pockets, events: myEvents, ledger, pending, serverAgent: cfg?.agent, states: local ? builtin().agents() : undefined,
+  }), [pockets, myEvents, ledger, pending, cfg, local, agentTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  const agentOf = useCallback((p?: string) => pockets.find((x) => sameAddr(x.address, p))?.agentId, [pockets]);
+  const connectAgent = useCallback((id: AgentId) => { if (local) builtin().connect(id); }, [local]);
+  const disconnectAgent = useCallback((id: AgentId) => { if (local) builtin().disconnect(id); haptic.warning(); }, [local]);
 
   // ---- hidden auto-play: reads the store through refs so the driver always sees the latest state
   const hostState = useRef<HostState>({ pending: [], busy: false, pocketCount: 0, lastPaymentAt: 0, ownerTxCount: 0 });
@@ -456,6 +478,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     pockets, pocketsLoaded, active, setActive: setActiveAddr, addPocket, refreshPockets,
     findPocket: (a) => pockets.find((p) => sameAddr(p.address, a)),
     ownerTxs, recordTx, events: myEvents, ledger, pending, sellerName,
+    agents, agentOf, connectAgent, disconnectAgent, approvalFocus, openApproval,
     turns, sendChat, chatBusy, agentState,
     answer, signApprove, answered,
     approvalOpen, setApprovalOpen, pickerOpen, setPickerOpen, questionOpen, setQuestionOpen, rules, setRules, notice, setNotice, receipt, setReceipt, action, setAction, flash, fireFlash: () => setFlash((n) => n + 1),

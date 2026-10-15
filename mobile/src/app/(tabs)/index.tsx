@@ -1,21 +1,22 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+// Home (Stitch chainbrain_home, polish from home_vaultbank_style): the agent-pockets pool and the main wallet, three quick
+// actions, the fanned pocket deck, real agent spending as a hatch curve, and recent activity with the agent that acted.
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RefreshControl, View } from "react-native";
-import Animated, { FadeIn, FadeInDown, FadeOut, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { router } from "expo-router";
 import { StatusDot } from "../../ui/StatusDot";
 import { useApp } from "../../store";
 import { c, motion } from "../../tokens";
 import { haptic } from "../../haptics";
 import { Screen } from "../../ui/Screen";
-import { Avatar, Button, Card, Press, SectionHeader } from "../../ui/kit";
-import { RoundButton } from "../../ui/RollAction";
+import { Avatar, Button, Card, ListCard, Press, SectionHeader, Tile } from "../../ui/kit";
 import { Money } from "../../ui/Money";
 import { Reveal as Rise, PopIn } from "../../ui/Reveal";
-import { AnimatedList } from "../../ui/AnimatedList";
 import { useReduceMotion } from "../../ui/motion";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { PocketStack } from "../../components/PocketStack";
+import { SpendChart } from "../../components/SpendChart";
 import { useIntroDone } from "../../ui/intro";
 import { ActivityRow } from "../../components/ActivityRow";
 import { cleanText } from "../../lib/sanitize";
@@ -25,23 +26,35 @@ import { Rise as RiseIn } from "../../ui/Rise";
 import { GLASS_TAB_SPACE as TAB_SPACE } from "../../ui/glass/GlassTabBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-/** Header: owner avatar, the "Test network" chip, bell. (Ask agent lives in the round actions and the Agent tab, once.) */
-function Header() {
-  const { pending, setApprovalOpen, setQuestionOpen } = useApp();
-  const needs = pending.length > 0;
+/** Network chip: a quiet grey pill with a vermillion dot (DESIGN.md chips). */
+export function NetworkChip({ label = "Test network" }: { label?: string }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 16 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <Press onPress={() => router.navigate("/settings")} accessibilityRole="button" accessibilityLabel="Settings and wallet" kind="round" haptics="light" hitSlop={4}><Avatar icon="user" tone="solid" size={40} /></Press>
-        <View accessibilityLabel="Test network, no real money" style={{ height: 24, paddingHorizontal: 10, borderRadius: 12, backgroundColor: c.fill, justifyContent: "center" }}>
-          <T v="cap" w="medium" color="muted" style={{ fontSize: 12, lineHeight: 16 }}>Test network</T>
-        </View>
-      </View>
+    <View accessibilityLabel="Test network, no real money" style={{ height: 30, paddingHorizontal: 12, borderRadius: 15, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 7 }}>
+      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.vermillion }} />
+      <T v="tab" w="bold" style={{ letterSpacing: 0.9, textTransform: "uppercase" }}>{label}</T>
+    </View>
+  );
+}
+
+/** Header: owner (opens Settings), the network chip, the bell with how many requests wait (opens the Approvals inbox). */
+export function HomeHeader() {
+  const { pending, setQuestionOpen } = useApp();
+  const asks = pending.filter((a) => a.kind !== "question").length;
+  const question = pending.some((a) => a.kind === "question");
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 14 }}>
+      <Press onPress={() => router.navigate("/settings")} accessibilityRole="button" accessibilityLabel="Settings and wallet" kind="round" haptics="light" hitSlop={4}><Avatar icon="user" tone="solid" size={42} /></Press>
+      <NetworkChip />
       <Press
-        onPress={() => { const q = pending.find((a) => a.kind === "question"); if (pending.some((a) => a.kind !== "question")) setApprovalOpen(true); else if (q) setQuestionOpen(true); else router.navigate("/activity"); }}
-        kind="round" accessibilityRole="button" accessibilityLabel={needs ? "Notifications, something needs you" : "Notifications"} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
-        <Icon name="bell" size={22} />
-        {needs ? <Animated.View entering={FadeIn.duration(motion.base)} exiting={FadeOut.duration(motion.exit)} style={{ position: "absolute", top: 10, right: 11, width: 10, height: 10, borderRadius: 5, backgroundColor: c.negative, borderWidth: 2, borderColor: c.card }} /> : null}
+        onPress={() => { if (asks) router.push("/approvals"); else if (question) setQuestionOpen(true); else router.push("/approvals"); }}
+        kind="round" accessibilityRole="button" accessibilityLabel={asks ? `Approvals, ${asks} waiting` : question ? "Notifications, your agent has a question" : "Approvals"}
+        style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
+        <Icon name="bell" size={21} stroke={2} />
+        {asks || question ? (
+          <Animated.View entering={FadeIn.duration(motion.base)} exiting={FadeOut.duration(motion.exit)} style={{ position: "absolute", top: -4, right: -4, minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: c.vermillion, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: c.canvas }}>
+            <T v="tab" w="bold" style={{ color: c.white, fontSize: 10, lineHeight: 12 }}>{String(asks || 1)}</T>
+          </Animated.View>
+        ) : null}
       </Press>
     </View>
   );
@@ -55,58 +68,62 @@ export default function HomeGate() { const done = useIntroDone(); return <Home k
 /** No pockets yet: a calm, intentional empty state. */
 function EmptyPockets() {
   return (
-    <Card pad={24} style={{ marginHorizontal: 20, alignItems: "center", gap: 16 }}>
-      <PopIn from={0.92}><Avatar icon="layers" size={72} tone="soft" /></PopIn>
+    <Card pad={24} style={{ marginHorizontal: 16, alignItems: "center", gap: 16 }}>
+      <PopIn from={0.92}><Avatar icon="card" size={72} tone="blue" /></PopIn>
       <View style={{ gap: 6, alignItems: "center" }}>
-        <T v="section" style={{ textAlign: "center" }}>Give your agent a budget</T>
+        <T v="section" style={{ textAlign: "center" }}>Give your agent a pocket</T>
         <T v="body" color="ink2" style={{ textAlign: "center" }}>A pocket holds a little money, with rules you choose. Your agent can only spend from it.</T>
       </View>
-      <Button label="Create your first pocket" onPress={() => router.push("/create")} style={{ alignSelf: "stretch" }} />
+      <Button label="Create your first pocket" kind="vermillion" onPress={() => router.push("/create")} style={{ alignSelf: "stretch" }} />
     </Card>
   );
 }
 
-/** The needs-you banner, pinned above Pockets: when a payment, task or question waits for the owner it is a 56 px warning row that
- *  opens the sheet (the primary agentic moment); while the agent just works it is a quiet teal row that opens the chat. */
+/** The needs-you banner above the deck: the built-in agent's question or approval (blue), or "working" (white) while it shops. */
 function LiveStrip() {
-  const { agentState, pending, setApprovalOpen, setQuestionOpen, sellerName } = useApp();
-  const waiting = pending.length > 0;
+  const { agentState, pending, setQuestionOpen, sellerName, openApproval, agents } = useApp();
+  const mine = pending.filter((a) => (a.agent ?? "chainbrain") === "chainbrain");
+  const outside = pending.filter((a) => (a.agent ?? "chainbrain") !== "chainbrain" && a.kind !== "question");
+  const waiting = mine.length > 0 || outside.length > 0;
   const on = agentState === "working" || waiting;
-  const first = pending[0];
-  const text = !waiting ? "Your agent is working"
-    : first.kind === "question" ? "Your agent has a question"
-    : first.kind === "intent" ? "Confirm your agent's task"
-    : `${cleanText(sellerName(first.data?.sellerId), 24)} needs your OK${first.data?.amount ? ` · US$${cleanText(first.data.amount, 10)}` : ""}`;
+  const first = mine[0] ?? outside[0];
+  const who = first ? agents.find((x) => x.id === (first.agent ?? "chainbrain"))?.name ?? "Your agent" : "Your agent";
+  const text = !waiting ? "ChainBrain is working"
+    : first.kind === "question" ? `${who} has a question`
+    : first.kind === "intent" ? `Confirm ${who}'s task`
+    : `${who} asks to pay ${cleanText(sellerName(first.data?.sellerId), 24)}${first.data?.amount ? ` · US$${cleanText(first.data.amount, 10)}` : ""}`;
   const open = () => {
     if (!waiting) return router.navigate("/agent");
     if (first.kind === "question") { setQuestionOpen(true); return; }
-    setApprovalOpen(true);
+    openApproval(first.id);
   };
   if (!on) return null;
   return (
-    <RiseIn dy={-6} spring="snappy" exit layout style={{ marginHorizontal: 20, marginTop: 20 }}>
+    <RiseIn dy={-6} spring="snappy" exit layout style={{ marginHorizontal: 16, marginTop: 16 }}>
       <Press kind="row" haptics="select" onPress={open} accessibilityRole="button" accessibilityLabel={text}
-        style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 16, borderRadius: 20, backgroundColor: waiting ? c.warningSoft : c.accentSoft }}>
+        style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 16, borderRadius: 18, backgroundColor: waiting ? c.blue : c.card }}>
         <StatusDot state={waiting ? "waiting" : "working"} />
-        <T v="row" w="semi" color={waiting ? "warning" : "accent"} style={{ flex: 1, fontSize: 15, lineHeight: 22 }} numberOfLines={1}>{text}</T>
-        <Icon name="chevronRight" size={16} color={waiting ? c.warning : c.accent} />
+        <T v="row" w="bold" style={{ flex: 1, fontSize: 15, lineHeight: 22 }} numberOfLines={1}>{text}</T>
+        <Icon name="chevronRight" size={16} color={c.ink} stroke={2.2} />
       </Press>
     </RiseIn>
   );
 }
 
 function Home({ ready }: { ready: boolean }) {
-  const { pockets, pocketsLoaded, conn, balances, ledger, setReceipt, setAction, refreshPockets } = useApp();
+  const { pockets, pocketsLoaded, conn, balances, ledger, setReceipt, setAction, refreshPockets, agentOf, agents, cfg } = useApp();
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
   const play = useRef(ready && !introPlayed).current;
   useEffect(() => { if (ready) introPlayed = true; }, [ready]);
-  const sumAll = pockets.reduce((n, p) => n + (p.revoked ? 0n : p.balance), 0n);
-  const frozen = pockets.reduce((n, p) => n + (p.revoked ? p.balance : 0n), 0n);
-  const recent = useMemo(() => visibleRows([...ledger].reverse()).slice(0, 3), [ledger]);
+  const live = pockets.filter((p) => !p.revoked);
+  const sumAll = live.reduce((n, p) => n + p.balance, 0n);
+  const recent = useMemo(() => visibleRows([...ledger].reverse()).slice(0, 4), [ledger]);
   const loading = !pocketsLoaded && conn !== "offline";
+  const spendAgent = useCallback((p: string) => agentOf(p) ?? (cfg ? "chainbrain" as const : undefined), [agentOf, cfg]);
+  const canConnect = agents.length > 1; // outside agents exist only on the built-in network until the MCP server ships
 
-  // 1 -> 1.015 -> 1 on the balance card whenever the total changes while visible (the digits roll inside it)
+  // 1 -> 1.015 -> 1 on the pool card whenever the total changes while visible (the digits roll inside it)
   const pulse = useSharedValue(1);
   const lastSum = useRef(sumAll);
   useEffect(() => {
@@ -124,40 +141,42 @@ function Home({ ready }: { ready: boolean }) {
   };
 
   return (
-    <Screen contentContainerStyle={{ paddingBottom: TAB_SPACE + insets.bottom + 56 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={c.accent} colors={[c.accent]} />}>
-      <Header />
+    <Screen contentContainerStyle={{ paddingBottom: TAB_SPACE + insets.bottom + 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={c.ink} colors={[c.ink]} />}>
+      <HomeHeader />
       <Rise play={play} index={0}>
         <Animated.View style={pulseStyle}>
-          {/* one surface: label, balance, one quiet line, three actions */}
-          <Card pad={24} style={{ marginHorizontal: 20, alignItems: "center" }}>
-            <T v="sub" color="muted">Agent pockets</T>
-            <View style={{ marginTop: 4 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
-            <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ marginTop: 8, flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-              {balances ? (
-                <>
-                  <T v="sub" color="muted">{"Main wallet "}</T>
-                  <Money v="sub" value={usd(balances.usdc)} color="ink2" />
-                </>
-              ) : <T v="sub" color="muted">{loading ? "Main wallet, loading…" : "Main wallet"}</T>}
-            </View>
-            {frozen > 0n ? <T v="cap" color="muted" style={{ marginTop: 4 }}>{`Not counted: ${money(frozen)} frozen in a stopped pocket`}</T> : null}
-            <Rise play={play} index={1} style={{ alignSelf: "stretch" }}>
-              <View style={{ flexDirection: "row", marginTop: 24, alignSelf: "stretch" }}>
-                <RoundButton icon="plus" label="Add money" onPress={() => setAction({ mode: "fund" })} />
-                <RoundButton icon="squarePlus" label="New pocket" auto="home.newPocket" onPress={() => router.push("/create")} />
-                <RoundButton icon="chat" label="Ask agent" onPress={() => router.navigate("/agent")} />
+          <Card pad={20} style={{ marginHorizontal: 16 }}>
+            <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>Agent pockets</T>
+            <View style={{ marginTop: 6 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
+            <View style={{ height: 1, backgroundColor: c.fill, marginVertical: 16 }} />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c.fill, alignItems: "center", justifyContent: "center" }}><Icon name="vault" size={19} stroke={2} /></View>
+              <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ flex: 1 }}>
+                <T v="cap" color="muted">Main wallet</T>
+                {balances ? <Money v="row" value={usd(balances.usdc)} /> : <T v="row" color="muted">{loading ? "Loading…" : "—"}</T>}
               </View>
-            </Rise>
+              <Button label="Fund" icon="plus" small onPress={() => setAction({ mode: "fund" })} />
+            </View>
           </Card>
         </Animated.View>
+      </Rise>
+
+      <Rise play={play} index={1}>
+        <View style={{ flexDirection: "row", gap: 10, marginHorizontal: 16, marginTop: 12 }}>
+          <Tile icon="arrowIn" label="Add money" onPress={() => setAction({ mode: "fund" })} />
+          <Tile icon="squarePlus" label="New pocket" auto="home.newPocket" onPress={() => router.push("/create")} />
+          {canConnect
+            ? <Tile icon="link" label="Connect" tone="blue" a11y="Connect an agent" onPress={() => router.push("/connect")} />
+            : <Tile icon="chat" label="Ask agent" tone="blue" onPress={() => router.navigate("/agent")} />}
+        </View>
       </Rise>
 
       <LiveStrip />
 
       <Rise play={play} index={2}>
-        <SectionHeader title="Pockets" right={pockets.length ? money(sumAll) : undefined} />
+        <SectionHeader title="Active pockets" count={pockets.length || undefined} action={pockets.length && canConnect ? "Agents" : undefined} onAction={() => router.navigate("/agents")} />
         {loading ? (
-          <Card style={{ marginHorizontal: 20 }}><T v="body" color="muted">Loading your pockets…</T></Card>
+          <Card style={{ marginHorizontal: 16 }}><T v="body" color="muted">Loading your pockets…</T></Card>
         ) : pockets.length === 0 ? (
           <EmptyPockets />
         ) : (
@@ -165,12 +184,16 @@ function Home({ ready }: { ready: boolean }) {
         )}
       </Rise>
 
-      <Rise play={play} index={3}>
+      <Rise play={play} index={3} style={{ marginTop: 20 }}>
+        <SpendChart ledger={ledger} agentOf={spendAgent} play={ready} />
+      </Rise>
+
+      <Rise play={play} index={4}>
         <SectionHeader title="Recent activity" action={ledger.length ? "View all" : undefined} onAction={() => router.navigate("/activity")} />
         {recent.length === 0 ? (
-          <Card style={{ marginHorizontal: 20 }}><T v="sub" color="ink2">Nothing yet. Ask your agent to buy something and it shows up here.</T></Card>
+          <Card style={{ marginHorizontal: 16 }}><T v="sub" color="ink2">Nothing yet. Ask your agent to buy something and it shows up here.</T></Card>
         ) : (
-          <AnimatedList>{recent.map((r) => <ActivityRow key={r.key} row={r} showPocket onPress={() => setReceipt(r)} />)}</AnimatedList>
+          <ListCard>{recent.map((r) => <ActivityRow key={r.key} row={r} showPocket onPress={() => setReceipt(r)} />)}</ListCard>
         )}
       </Rise>
     </Screen>

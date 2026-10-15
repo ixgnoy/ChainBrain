@@ -41,8 +41,8 @@ export function describeApprovalError(code: string): string {
 const safeUsd = (s: unknown) => { try { return typeof s === "string" ? usd(parseUsd(s)) : null; } catch { return null; } };
 
 export function ApprovalSheet() {
-  const { pending, approvalOpen, setApprovalOpen } = useApp();
-  const current = pending.find((a) => a.kind !== "question");
+  const { pending, approvalOpen, setApprovalOpen, approvalFocus } = useApp();
+  const current = pending.find((a) => a.id === approvalFocus) ?? pending.find((a) => a.kind !== "question" && (a.agent ?? "chainbrain") === "chainbrain");
   const last = useRef<Approval | undefined>(current);
   if (current) last.current = current;
   const shown = current ?? last.current;

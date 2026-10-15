@@ -2,7 +2,9 @@ import React from "react";
 import { View } from "react-native";
 import { useApp } from "../store";
 import { c } from "../tokens";
-import { Avatar, Press } from "../ui/kit";
+import { Avatar, Press, StatusPill } from "../ui/kit";
+import { AgentChip } from "../ui/AgentAvatar";
+import { agentInfo } from "../../../shared/sim/agents";
 import { Rise } from "../ui/Rise";
 import { T } from "../ui/Text";
 import { cleanText } from "../lib/sanitize";
@@ -10,10 +12,11 @@ import { describeRow } from "../lib/plain";
 import { stamp } from "../lib/util";
 import type { LedgerRow } from "../lib/events";
 
-/** One activity item as a Ryt row (same layout as kit ListRow, pressed as a row: scale 0.985, light haptic): seller, "Research
- *  data · 14 Oct, 1:32 PM", amount, status under it. */
-export function ActivityRow({ row, onPress, last, showPocket, timeOnly }: { row: LedgerRow; onPress?: () => void; last?: boolean; showPocket?: boolean; timeOnly?: boolean }) {
-  const { sellerName, findPocket } = useApp();
+/** One activity item (DESIGN.md "Transaction Item"): 40 px squircle, seller in bold with the agent that acted (its mark),
+ *  "Research data · 14 Oct, 1:32 PM" muted beneath, amount right with a status pill under it. Pressed as a row (0.985). */
+export function ActivityRow({ row, onPress, last, showPocket, timeOnly, showAgent = true }: { row: LedgerRow; onPress?: () => void; last?: boolean; showPocket?: boolean; timeOnly?: boolean; showAgent?: boolean }) {
+  const { sellerName, findPocket, agents } = useApp();
+  const agent = showAgent && row.kind !== "owner" && agents.length > 1 ? agentInfo(row.agent ?? findPocket(row.pocket)?.agentId ?? "") : undefined;
   const seller = cleanText(sellerName(row.sellerId), 40);
   const pocket = showPocket ? findPocket(row.pocket) : undefined;
   const v = describeRow(row, seller, timeOnly ? new Date(row.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : stamp(row.at), pocket ? cleanText(pocket.name, 24) : undefined);
@@ -28,23 +31,26 @@ export function ActivityRow({ row, onPress, last, showPocket, timeOnly }: { row:
   // one line each: the plain sentence only (reason codes and hashes live in the receipt's Details)
   const body = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 56, paddingHorizontal: 16 }}>
-      <Avatar label={v.avatar.label} icon={guard ? "shield" : v.avatar.icon} tone={owner ? "fill" : guard ? "fill" : v.avatar.tone} size={40} />
-      <View style={{ flex: 1, gap: 1, paddingVertical: 8 }}>
-        <T v="row" numberOfLines={1}>{v.title}</T>
-        {v.sub ? <T v="sub" color="muted" numberOfLines={2}>{v.sub}</T> : null}
+      <Avatar label={v.avatar.label} icon={guard ? "ban" : v.avatar.icon} tone={owner ? "fill" : guard ? "negative" : v.avatar.tone === "soft" ? "blue" : v.avatar.tone} size={40} />
+      <View style={{ flex: 1, gap: 2, paddingVertical: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <T v="row" w="bold" numberOfLines={1} style={{ flexShrink: 1, textDecorationLine: guard && row.kind !== "approval" ? "line-through" : "none" }}>{v.title}</T>
+          {agent ? <AgentChip kind={agent.id} name={agent.name} /> : null}
+        </View>
+        {v.sub ? <T v="sub" color={guard ? "vermillionInk" : "muted"} numberOfLines={2}>{v.sub}</T> : null}
       </View>
       {right || v.rightSub ? (
-        <View style={{ alignItems: "flex-end", gap: 1 }}>
-          {right ? <T v="row" w="semi" color={rightTone}>{right}</T> : null}
-          {v.rightSub ? <T v="cap" w="medium" color={guard && v.rightSubTone === "negative" ? "ink2" : v.rightSubTone}>{v.rightSub}</T> : null}
+        <View style={{ alignItems: "flex-end", gap: 4 }}>
+          {right ? <T v="row" w="bold" color={guard ? "muted" : rightTone} style={{ textDecorationLine: guard && row.kind !== "approval" ? "line-through" : "none" }}>{right}</T> : null}
+          {v.rightSub ? <StatusPill label={v.rightSub} tone={guard ? "vermillion" : v.rightSubTone === "warning" ? "blue" : v.rightSubTone === "positive" ? "green" : v.rightSubTone === "negative" ? "vermillion" : "fill"} /> : null}
         </View>
       ) : null}
     </View>
   );
   return (
     <View>
-      {onPress ? <Press kind="row" onPress={onPress} haptics="light" accessibilityRole="button" accessibilityLabel={`${v.title}, ${v.rightSub ?? ""} ${right ?? ""}`}>{body}</Press> : body}
-      {last ? null : <View style={{ height: 1, backgroundColor: c.line, marginLeft: 70 }} />}
+      {onPress ? <Press kind="row" onPress={onPress} haptics="light" accessibilityRole="button" accessibilityLabel={`${v.title}${agent ? `, ${agent.name}` : ""}, ${v.rightSub ?? ""} ${right ?? ""}`}>{body}</Press> : body}
+      {last ? null : <View style={{ height: 1, backgroundColor: c.fill, marginLeft: 70, marginRight: 16 }} />}
     </View>
   );
 }
