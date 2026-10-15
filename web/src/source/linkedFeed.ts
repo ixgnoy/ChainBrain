@@ -43,6 +43,9 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
   let probe: ReturnType<typeof setTimeout> | undefined;
   let held = false, stopped = true, gen = 0, offLocal = () => {};
   const waiting = new Map<number, (r: any) => void>();
+  // the merged lists keep their identity until the local network or the phone sends something new
+  let mergeKey: unknown[] = [];
+  let merged: { events: WalletEvent[]; txs: ChainTx[]; allTxs: ChainTx[] } | undefined;
   const relay = `${base.replace(/\/+$/, "")}/dev/relay`;
 
   const setLinked = (on: boolean) => {
@@ -148,11 +151,16 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
       const phone = live();
       if (!phone) return s;
       const byAt = <T extends { at?: number }>(a: T, b: T) => (a.at ?? 0) - (b.at ?? 0);
+      const key = [s.events, s.txs, s.allTxs, phone.events, phone.txs];
+      if (!merged || key.some((k, i) => k !== mergeKey[i])) {
+        mergeKey = key;
+        merged = { events: [...s.events, ...phone.events].sort(byAt), txs: [...s.txs, ...phone.txs.filter((t) => t.status !== "reverted")].sort(byAt), allTxs: [...s.allTxs, ...phone.txs].sort(byAt) };
+      }
       return {
-        events: [...s.events, ...phone.events].sort(byAt),
+        events: merged.events,
         pockets: [...phone.pockets, ...s.pockets.filter((p) => !phone.pockets.some((x) => x.address.toLowerCase() === p.address.toLowerCase()))],
-        txs: [...s.txs, ...phone.txs.filter((t) => t.status !== "reverted")].sort(byAt),
-        allTxs: [...s.allTxs, ...phone.txs].sort(byAt),
+        txs: merged.txs,
+        allTxs: merged.allTxs,
         follow: latestPocket(phone.events, phone.txs, phone.pockets) ?? s.follow,
         linked: true,
         scene: undefined,

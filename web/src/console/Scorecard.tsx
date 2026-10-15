@@ -1,6 +1,6 @@
 // Presenter mode's scorecard: what the judges score (Task 40, Security 30, Interaction 30) ticking live from what really
 // ran, read off the same facts the Evidence tab uses (shared/sim/proof.ts). Scoped to the pockets being presented.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { factsFrom, scorecard, type ScoreItem } from "@sim/proof";
 import { useNetwork } from "./useNetwork";
@@ -48,11 +48,16 @@ export function Scorecard({ pocket }: { pocket?: string }) {
   void pocket;
   const { events, allTxs, builtin, linked, phonePockets, pockets } = useNetwork();
   const scope = useMemo(() => proofPockets({ linked, builtin, phonePockets, pockets }), [linked, builtin, phonePockets, pockets]);
-  const [since, setSince] = useState(() => horizon(events, allTxs, scope));
+  // "since opening" is fixed once, at the first moment the pockets being presented are known (a linked phone's may arrive late)
+  const [since, setSince] = useState<number>();
+  const ready = scope === undefined || scope.length > 0;
+  useEffect(() => { if (since === undefined && ready) setSince(horizon(events, allTxs, scope)); }, [since, ready, events, allTxs, scope]);
   const [all, setAll] = useState(false);
   const reset = () => { setAll(false); setSince(horizon(events, allTxs, scope)); };
-  useEffect(() => { const on = () => reset(); addEventListener("cb:reset-score", on); return () => removeEventListener("cb:reset-score", on); }); // eslint-disable-line react-hooks/exhaustive-deps
-  const { facts } = useFacts(all ? 0 : since);
+  const resetRef = useRef(reset);
+  resetRef.current = reset;
+  useEffect(() => { const on = () => resetRef.current(); addEventListener("cb:reset-score", on); return () => removeEventListener("cb:reset-score", on); }, []);
+  const { facts } = useFacts(all ? 0 : since ?? Number.MAX_SAFE_INTEGER);
   const groups = scorecard(facts);
   const done = groups.reduce((n, g) => n + g.items.filter((i) => i.done).length, 0);
   const total = groups.reduce((n, g) => n + g.items.length, 0);

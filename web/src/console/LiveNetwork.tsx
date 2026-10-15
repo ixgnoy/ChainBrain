@@ -6,7 +6,8 @@ import { detectDev } from "../dev";
 import { EventsProvider, useEvents } from "../useEvents";
 import { setSource } from "../source/source";
 import { networkLabel } from "@sim/explorer";
-import { clientFor, loadHistory, loadPockets, scanFrom, type ChainTx, type PocketState } from "./chain";
+import { attemptsFrom } from "@sim/checks";
+import { toBig, clientFor, loadHistory, loadPockets, scanFrom, type ChainTx, type PocketState } from "./chain";
 import { NetworkCtx, lookupTx, pocketLookups, type Actions, type Network, type Scene } from "./network";
 
 const PUBLIC_RPC = import.meta.env.VITE_RPC_URL ?? "https://sepolia.base.org";
@@ -84,6 +85,7 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
 
   // the chain read lists transactions that left logs; a reverted one (forced transfer, escalation) is known from its event
   const allTxs = useMemo(() => withReverted(txs, live.events), [txs, live.events]);
+  const attempts = useMemo(() => attemptsFrom(live.events, { sellerName: (id) => cfg?.sellers.find((s) => s.id === id)?.name ?? id }), [live.events, cfg]);
   const value = useMemo<Network | null>(() => {
     if (!cfg) return null;
     const actions: Actions = {};
@@ -121,11 +123,11 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
     if (actions.forceTransfer) actions.hijack = (pocket) => actions.forceTransfer!(pocket);
     const txDetail: Network["txDetail"] = (hash) => lookupTx(hash, txs, live.events, pockets, (id) => cfg.sellers.find((x) => x.id === id)?.payTo);
     return {
-      dev, builtin: false, chainName: networkLabel({ builtin: false, dev }), cfg, events: live.events, pockets, txs, allTxs, chainError,
+      dev, builtin: false, chainName: networkLabel({ builtin: false, dev }), cfg, events: live.events, pockets, txs, allTxs, attempts, chainError,
       explorer: dev ? undefined : (h: string) => `https://sepolia.basescan.org/tx/${h}`,
       scenes, txDetail, actions, linked: false, ...pocketLookups(pockets, [], live.events), refresh: () => setTick((x) => x + 1),
     };
-  }, [cfg, dev, url, live.events, pockets, txs, allTxs, chainError, scenes]);
+  }, [cfg, dev, url, live.events, pockets, txs, allTxs, attempts, chainError, scenes]);
 
   if (!value) return <Connecting url={url} failed={failed} retry={() => setTries((x) => x + 1)} />;
   return <NetworkCtx.Provider value={value}>{children}</NetworkCtx.Provider>;
@@ -141,7 +143,7 @@ export function withReverted(txs: ChainTx[], events: { type: string; pocket?: st
     extra.push({ block: 0n, logIndex: 0, kind: "out", status: "reverted", ...t } as ChainTx);
   };
   for (const e of events) {
-    if (e.type === "forced" && e.reverted) add({ hash: e.tx, pocket: e.pocket as any, at: e.at, amount: BigInt(e.amount ?? 0), counterparty: e.to, reason: e.reason ?? "SELLER_NOT_ALLOWED", method: "transfer" });
+    if (e.type === "forced" && e.reverted) add({ hash: e.tx, pocket: e.pocket as any, at: e.at, amount: toBig(e.amount), counterparty: e.to, reason: e.reason ?? "SELLER_NOT_ALLOWED", method: "transfer" });
     if (e.type === "attack" && e.attack === "escalation") for (const t of e.txs ?? []) if (t.reverted) add({ hash: t.tx, pocket: e.pocket as any, kind: "rules", at: e.at, reason: e.reason ?? "NOT_OWNER", label: t.call });
   }
   return extra.length ? [...txs, ...extra] : txs;

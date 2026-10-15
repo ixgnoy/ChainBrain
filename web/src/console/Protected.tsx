@@ -1,18 +1,17 @@
 // The one number a judge reads in five seconds: how many attacks were stopped and how much money was lost.
 import { useMemo } from "react";
 import { ShieldCheck } from "lucide-react";
-import { attemptsFrom } from "@sim/checks";
 import { useNetwork } from "./useNetwork";
 import { cn } from "../lib/cn";
 
 export function Protected({ big, className }: { big?: boolean; className?: string }) {
-  const { events, cfg } = useNetwork();
+  const { attempts } = useNetwork();
   const { stopped, lost } = useMemo(() => {
-    const at = attemptsFrom(events, { sellerName: (id) => cfg.sellers.find((s) => s.id === id)?.name ?? id }).filter((a) => a.attack);
+    const at = attempts.filter((a) => a.attack);
     const paid = at.filter((a) => a.verdict === "paid");
     const cents = paid.reduce((n, a) => n + Math.round(Number(a.amount ?? 0) * 100), 0);
     return { stopped: at.length - paid.length, lost: `US$${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, "0")}` };
-  }, [events, cfg]);
+  }, [attempts]);
   return (
     <span data-testid="protected" data-stopped={stopped} data-lost={lost} className={cn("inline-flex items-center gap-2 rounded-full bg-card font-semibold text-ink", big ? "h-11 px-4 text-[15px]" : "h-9 px-3.5 text-[13px]", className)}>
       <ShieldCheck className={cn("shrink-0 text-accent", big ? "size-5" : "size-4")} strokeWidth={2} aria-hidden />

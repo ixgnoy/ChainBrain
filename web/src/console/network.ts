@@ -1,6 +1,7 @@
 // The one shape every screen reads, whichever source feeds it (a real server, or the built-in network).
 import { createContext, useContext } from "react";
 import type { Address, Hex } from "viem";
+import type { Attempt } from "@sim/checks";
 import type { Config } from "../shared";
 import type { WalletEvent } from "../lib/events";
 import { TX_LABEL, type ChainTx, type PocketState } from "./chain";
@@ -43,6 +44,8 @@ export type Network = {
   pockets: PocketState[]; txs: ChainTx[]; chainError?: string;
   /** Every transaction including reverted ones (the in-app explorer's data). */
   allTxs: ChainTx[];
+  /** Every attempt (payment, refusal, attack) in the events, computed once per change of the events. */
+  attempts: Attempt[];
   /** BaseScan link for a transaction; only on a public chain (the in-app explorer is always there for every hash). */
   explorer?: (hash: string) => string;
   scenes: Scene[];

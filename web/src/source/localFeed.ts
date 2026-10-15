@@ -39,6 +39,9 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
   const listeners = new Set<() => void>();
   const emit = () => { for (const f of listeners) f(); };
   let offs: (() => void)[] = [];
+  // events and transactions are only ever appended: keep the same arrays until one arrives, so screens that derive from them recompute only then
+  let evCache: { n: number; last: unknown; out: WalletEvent[] } | undefined;
+  let txCache: { n: number; last: unknown; all: ChainTx[]; ok: ChainTx[] } | undefined;
 
   return {
     world, autopilot,
@@ -75,13 +78,17 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
       },
     },
     snapshot(): FeedSnapshot {
-      const all = world.txs().map(toTx);
+      const src = world.txs();
+      if (!txCache || txCache.n !== src.length || txCache.last !== src.at(-1)) { const all = src.map(toTx); txCache = { n: src.length, last: src.at(-1), all, ok: all.filter((t) => t.status !== "reverted") }; }
+      const { all, ok } = txCache;
+      const evs = world.allEvents();
+      if (!evCache || evCache.n !== evs.length || evCache.last !== evs.at(-1)) evCache = { n: evs.length, last: evs.at(-1), out: evs.map(scrub) };
       const pockets: PocketState[] = world.chain.pockets().map((p) => ({
         address: p.address as Address, owner: p.owner as Address, agent: p.agent as Address, createdTx: p.createdTx as Hex | undefined, createdBlock: p.createdBlock,
         balance: p.balance, cap: p.cap, askAbove: p.askAbove, expiresAt: Number(p.expiresAt), revoked: p.revoked, allowed: p.allowed,
         name: nameOf(p.owner, p.cap, autopilot.presenter),
       })).sort((a, b) => Number((b.createdBlock ?? 0n) - (a.createdBlock ?? 0n)));
-      return { events: world.allEvents().map(scrub), pockets, txs: all.filter((t) => t.status !== "reverted"), allTxs: all, follow: autopilot.active, scene: autopilot.state.scene };
+      return { events: evCache.out, pockets, txs: ok, allTxs: all, follow: autopilot.active, scene: autopilot.state.scene };
     },
     subscribe(f) { listeners.add(f); return () => void listeners.delete(f); },
     start() {

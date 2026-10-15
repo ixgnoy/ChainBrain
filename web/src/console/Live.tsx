@@ -14,7 +14,7 @@ import { traceRows, untrustedOf, type TraceRow } from "../lib/trace";
 import { eventPocket, samePocket, type WalletEvent } from "../lib/events";
 import { salesFor } from "../seller/data";
 import { Button, Card } from "../seller/ui";
-import { attemptsFrom } from "@sim/checks";
+import { toBig } from "./chain";
 import { ChecksPanel } from "./ChecksPath";
 import { Scorecard } from "./Scorecard";
 import { cleanText } from "../lib/sanitize";
@@ -188,7 +188,7 @@ const COLS = [["agent", "Agent"], ["pocket", "Pocket"], ["sellers", "Sellers"]] 
 type Col = (typeof COLS)[number][0];
 
 export function Live({ pocket, present, goJudges }: { pocket?: string; present?: boolean; goJudges?: () => void }) {
-  const { events, pockets, txs, cfg, nameOf, isPhone } = useNetwork();
+  const { events, pockets, txs, cfg, nameOf, isPhone, attempts: allAttempts } = useNetwork();
   const [col, setCol] = useState<Col>("agent");
   const p = pockets.find((x) => samePocket(x.address, pocket));
   const mine = useMemo(() => forPocket(events, pocket), [events, pocket]);
@@ -214,13 +214,13 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
 
   const history = useMemo(() => {
     const chain = txs.filter((t) => samePocket(t.pocket, pocket)).map((t) => ({ key: `${t.hash}-${t.kind}-${t.logIndex}`, label: txLabel(t), amount: t.amount, hash: t.hash, bad: false }));
-    const forced = mine.filter((e) => e.type === "forced").map((e) => ({ key: `f-${e.tx}`, label: e.reverted ? "Blocked transfer" : "Forced transfer settled", amount: BigInt(e.amount ?? 0), hash: e.tx as string, bad: !e.reverted }));
+    const forced = mine.filter((e) => e.type === "forced").map((e) => ({ key: `f-${e.tx}`, label: e.reverted ? "Blocked transfer" : "Forced transfer settled", amount: toBig(e.amount), hash: e.tx as string, bad: !e.reverted }));
     return [...chain, ...forced].reverse();
   }, [txs, mine, pocket]);
   const perSeller = useMemo(() => cfg.sellers.map((s) => ({ s, rows: salesFor(mine, s.id) })).filter((x) => x.rows.length), [cfg, mine]);
   const worst = useMemo(() => (p ? worstCase(p, txs, (id) => names.get(id) ?? id) : undefined), [p, txs, cfg]); // eslint-disable-line react-hooks/exhaustive-deps
   const ev = useMemo(() => evidenceOf(mine), [mine]);
-  const attempts = useMemo(() => attemptsFrom(mine, { sellerName: (id) => names.get(id) ?? id }), [mine, cfg]); // eslint-disable-line react-hooks/exhaustive-deps
+  const attempts = useMemo(() => allAttempts.filter((a) => samePocket(a.pocket, pocket)), [allAttempts, pocket]);
   const decisions = useMemo(() => decisionsOf(mine), [mine]);
   const refused = mine.filter((e) => e.type === "refusal" || e.type === "disclosure" || (e.type === "forced" && e.reverted)).length;
 

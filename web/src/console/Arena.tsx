@@ -3,7 +3,7 @@
 // what the network has stopped. Nothing here decides anything: the wallet and the pocket contract do, this only asks.
 import { useMemo, useRef, useState } from "react";
 import { Check, ChevronRight, Loader, ShieldAlert, ShieldCheck, TriangleAlert } from "lucide-react";
-import { GATES, attackBoard, attemptsFrom, type Attempt } from "@sim/checks";
+import { GATES, attackBoard, type Attempt } from "@sim/checks";
 import { useNetwork } from "./useNetwork";
 import { playScene } from "./play";
 import { GateStrip } from "./ChecksPath";
@@ -40,8 +40,7 @@ function Scoreboard({ attempts }: { attempts: Attempt[] }) {
 }
 
 export function Arena({ aim, setAim, watch }: { aim: string; setAim(a: string): void; watch(pocket: string): void }) {
-  const { events, cfg, actions, linked, scenes, refresh, listed, nameOf, isPhone } = useNetwork();
-  const attempts = useMemo(() => attemptsFrom(events, { sellerName: (id) => cfg.sellers.find((s) => s.id === id)?.name ?? id }), [events, cfg]);
+  const { attempts, actions, linked, scenes, refresh, listed, nameOf, isPhone } = useNetwork();
   const latest = useRef(attempts);
   latest.current = attempts;
   const [fired, setFired] = useState<Partial<Record<ArenaKey, Fired>>>({});

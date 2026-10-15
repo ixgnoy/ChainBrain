@@ -18,6 +18,9 @@ export type ChainTx = {
   method?: string; reason?: string; args?: Record<string, string>; label?: string;
 };
 
+/** A bigint from whatever an event carried; 0 when it is missing or not numeric (one odd event must never break a screen). */
+export const toBig = (v: unknown): bigint => { try { return v == null || v === "" ? 0n : BigInt(v as string); } catch { return 0n; } };
+
 const CREATED = parseAbiItem("event PocketCreated(address indexed pocket, address indexed owner, address indexed agent)");
 const TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 const REVOKED = parseAbiItem("event Revoked()");

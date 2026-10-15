@@ -3,7 +3,6 @@
 // Pages: #explorer (blocks and latest transactions), #explorer/tx/0x…, #explorer/block/n, #explorer/address/0x….
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Search, ShieldCheck } from "lucide-react";
-import { attemptsFrom } from "@sim/checks";
 import { blocksFrom, explainTx, txsOfAddress, usdText, type ExplorerInput, type Field } from "@sim/explorer";
 import { useNetwork } from "./useNetwork";
 import { txLabel } from "./network";
@@ -188,7 +187,7 @@ function Home() {
 function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void }) {
   const { net, who, inputs, chainTx, ctx } = useChain();
   const input = inputs.find((t) => lc(t.hash) === lc(hash));
-  const attempt = useMemo(() => attemptsFrom(net.events, { sellerName: (id) => net.cfg.sellers.find((s) => s.id === id)?.name ?? id }).find((a) => lc(a.tx) === lc(hash) || (a.txs ?? []).some((h) => lc(h) === lc(hash))), [net.events, net.cfg, hash]);
+  const attempt = useMemo(() => net.attempts.find((a) => lc(a.tx) === lc(hash) || (a.txs ?? []).some((h) => lc(h) === lc(hash))), [net.attempts, hash]);
   if (!input) {
     return (
       <div data-testid="explorer-tx" data-found="false"><Crumbs here="Transaction" />
