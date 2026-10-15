@@ -24,6 +24,8 @@ export const PLAIN_REASONS: Record<string, string> = {
   SIGNATURE_TYPE_NOT_ALLOWED: "the seller asked for a signature that is not a payment",
   SETTLEMENT_FAILED: "the payment did not go through",
   NOT_THIS_AGENT: "this pocket belongs to a different agent",
+  COUNTERPARTY_HIGH_RISK: "the seller's money traces to a scam or sanctioned source",
+  COUNTERPARTY_REVIEW: "the seller's money looks risky, so it needs your OK",
   REVERTED: "the pocket refused it on-chain",
 };
 const ASK: Record<string, string> = {

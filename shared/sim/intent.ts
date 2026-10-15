@@ -45,6 +45,8 @@ export const REASONS: Record<string, string> = {
   SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule USDC payments it built itself",
   SETTLEMENT_FAILED: "Settlement failed",
   NOT_THIS_AGENT: "This pocket belongs to a different agent key",
+  COUNTERPARTY_HIGH_RISK: "Radar traced this seller's funds to a high-risk source (e.g. a drainer or sanctioned address); choose another seller",
+  COUNTERPARTY_REVIEW: "Radar found risk in this seller's funds: call ask_owner with this quote first",
   NOT_OWNER: "Only the owner's key can change a pocket's rules",
   NOT_A_PURCHASE: "A message asking for money is not a purchase: the agent only pays allowed sellers, through a quote, for a confirmed task",
 };

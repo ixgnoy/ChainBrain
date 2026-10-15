@@ -11,6 +11,7 @@ import { wrapUntrusted, scanRequests } from "./scan";
 import { approvals } from "./approvals";
 import { state, newTask } from "./state";
 import { bus } from "./events";
+import { radar, screenOrNull, brief } from "../radar/screen";
 
 export type ToolCtx = { pocket: Address };
 type Tool = { description: string; schema: z.ZodType; run(ctx: ToolCtx, args: any): Promise<object> };
@@ -20,6 +21,15 @@ const NEVER = 2n ** 256n - 1n;
 const usd = (n: bigint) => (n === NEVER ? "never" : formatUsd(n));
 const refuse = (reason: Reason, extra: object = {}) => ({ ok: false, reason, why: REASONS[reason], ...extra });
 const APPROVAL_WAIT_MS = Number(process.env.APPROVAL_WAIT_MS ?? 600_000);
+
+/** Radar screens the seller's payTo. It can only add a refusal or an owner co-sign; a failed screen leaves the pocket's rules as they are. */
+async function counterparty(ctx: ToolCtx, rec: { sellerId: string; payTo: Address }) {
+  radar.watch(ctx.pocket, rec.payTo);
+  radar.name(rec.payTo, (await directory().catch(() => [])).find((x) => x.id === rec.sellerId)?.name ?? rec.sellerId);
+  const s = await screenOrNull(rec.payTo);
+  if (s) bus.publish({ type: "radar", kind: "screen", pocket: ctx.pocket, sellerId: rec.sellerId, ...brief(s), narrative: s.narrative });
+  return s;
+}
 
 /** Free (non-402) seller responses: scan for data or signature requests, show the owner, hand the model only wrapped data. */
 function screenFree(ctx: ToolCtx, sellerId: string, body: string) {
@@ -88,11 +98,13 @@ const defs: Record<string, Tool> = {
       const rec = track(ctx.pocket, q.quote);
       const rule = await P(ctx.pocket).canPay(rec.payTo, rec.amount);
       const intentCheck = checkAgainstIntent(state(ctx.pocket).intent, state(ctx.pocket), rec.amount);
+      const risk = await counterparty(ctx, rec);
       return {
         ok: true, quoteId: rec.quoteId, sellerId, sku, description: rec.description, price: formatUsd(rec.amount),
         allowedByPocket: rule === "OK" ? "OK" : { reason: rule, why: isReason(rule) ? REASONS[rule] : rule },
         needsOwnerApproval: await P(ctx.pocket).needsOwner(rec.amount),
         intentCheck: intentCheck ? { reason: intentCheck, why: REASONS[intentCheck] } : "OK",
+        counterpartyRisk: risk ? { score: risk.score, verdict: risk.verdict, reasons: brief(risk).reasons } : "unavailable",
       };
     },
   },
@@ -110,10 +122,15 @@ const defs: Record<string, Tool> = {
       if (!rec) return refuse("QUOTE_UNKNOWN");
       const bad = checkAgainstIntent(s.intent, s, rec.amount);
       if (bad) return refuse(bad);
+      const risk = await counterparty(ctx, rec);
+      if (risk?.verdict === "block") return refuse("COUNTERPARTY_HIGH_RISK", { radar: risk.narrative });
       const auth = prepareApproval(ctx.pocket, rec, s.intent!.intentHash);
       const a = approvals.create({
         pocket: ctx.pocket, kind: "payment", text: reason ?? "Approve this payment?",
-        data: { auth, sellerId: rec.sellerId, sku: rec.sku, description: rec.description, amount: formatUsd(rec.amount), intent: renderIntent(s.intent!) },
+        data: {
+          auth, sellerId: rec.sellerId, sku: rec.sku, description: rec.description, amount: formatUsd(rec.amount), intent: renderIntent(s.intent!),
+          ...(risk && risk.verdict !== "ok" ? { radar: { score: risk.score, verdict: risk.verdict, narrative: risk.narrative } } : {}),
+        },
       });
       const res = await approvals.wait(a.id, APPROVAL_WAIT_MS);
       if (res.status !== "approved") return refuse(res.status === "timeout" ? "APPROVAL_EXPIRED" : "OWNER_DECLINED");
@@ -133,6 +150,12 @@ const defs: Record<string, Tool> = {
       if (bad) {
         bus.publish({ type: "refusal", pocket: ctx.pocket, sellerId: rec.sellerId, sku: rec.sku, amount: rec.amount, reason: bad });
         return refuse(bad);
+      }
+      const risk = await counterparty(ctx, rec);
+      const held = risk?.verdict === "block" ? "COUNTERPARTY_HIGH_RISK" : risk?.verdict === "review" && !rec.ownerSig ? "COUNTERPARTY_REVIEW" : undefined;
+      if (held) {
+        bus.publish({ type: "refusal", pocket: ctx.pocket, sellerId: rec.sellerId, sku: rec.sku, amount: rec.amount, reason: held, detail: risk!.narrative });
+        return refuse(held, { radar: risk!.narrative });
       }
       const r = await settle(ctx.pocket, rec, s.intent!.intentHash);
       if (!r.ok) return refuse(r.reason, r.detail ? { detail: r.detail.slice(0, 200) } : {});
