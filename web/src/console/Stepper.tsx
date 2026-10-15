@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Check, CircleHelp, Play } from "lucide-react";
 import { useNetwork } from "./useNetwork";
 import { usePlay } from "./play";
+import { activeStep } from "./stepRule";
 import { copyFor } from "./sceneCopy";
 import { Kbd } from "./kit";
 import { phoneStatus } from "./story";
@@ -32,8 +33,6 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
     return () => { ro.disconnect(); document.documentElement.style.removeProperty("--stepper-h"); };
   }, [scenes.length]);
 
-  const s = scenes.length ? scenes[Math.min(i, scenes.length - 1)] : undefined;
-  const mine = s && state?.id === s.id ? state : undefined;
   const target = started && state?.id === started.id ? state?.pocket ?? pocket : pocket;
   // a linked phone has its own clock: how far it runs from this laptop, read when its newest event arrived
   const skew = useRef(0);
@@ -45,8 +44,12 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
   }, [events, target, started, linked, tick]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(() => setTick((x) => x + 1), 5000); return () => clearInterval(t); }, []); // a quiet phone ages out of "Working…"
 
+  const running = !!state?.busy || status.kind === "working" || status.kind === "confirm" || status.kind === "approve" || status.kind === "answer";
+  const act = activeStep({ ids: scenes.map((x) => x.id), manual: i, storyScene, linked, sent: started?.id, running });
+  const s = scenes.length ? scenes[act.index] : undefined;
+  const mine = s && state?.id === s.id ? state : undefined;
   // the built-in story plays by itself: the highlight follows it, and a scene it leaves is marked finished
-  const driven = !linked && !!storyScene;
+  const driven = act.driven && !linked;
   const lastStory = useRef<string | undefined>(undefined);
   useEffect(() => {
     const prev = lastStory.current;
@@ -97,7 +100,7 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
       <div className="flex items-center gap-3">
         <ol className="chip-row flex min-w-0 shrink-0 gap-1 overflow-x-auto max-md:flex-1">
           {scenes.map((x, n) => {
-            const fin = done.has(x.id), on = n === i;
+            const fin = done.has(x.id), on = n === act.index;
             return (
               <li key={x.id} className="shrink-0">
                 <button type="button" title={`${x.title}${copyFor(x.id) ? `: ${copyFor(x.id)!.seeing}` : ""}`} onClick={() => setI(n)} aria-label={`Scene ${x.id}: ${x.title}${fin ? " (finished)" : ""}`} aria-current={on ? "step" : undefined}

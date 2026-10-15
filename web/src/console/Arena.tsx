@@ -24,7 +24,7 @@ function Scoreboard({ attempts }: { attempts: Attempt[] }) {
     <Card className="mb-4 p-5 sm:p-6">
       <div data-testid="arena-scoreboard" data-blocked={line.blocked} data-tried={line.tried} data-lost={line.lost} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div>
-          <p className="num text-[24px] font-bold leading-8 tracking-[-0.01em] sm:text-[30px] sm:leading-9" aria-live="polite">{line.blocked} of {line.total} attacks blocked<span className={cn(board.lost > 0n ? "text-negative" : "text-ink2")}> · {line.lost} lost</span></p>
+          <p className="num text-[24px] font-bold leading-8 tracking-[-0.01em] sm:text-[30px] sm:leading-9" aria-live="polite">{line.blocked} of {line.total} attacks blocked<span className={cn("block sm:inline", board.lost > 0n ? "text-negative" : "text-ink2")}><span className="hidden sm:inline"> · </span>{line.lost} lost</span></p>
           <p className="mt-1 text-[14px] text-muted">{line.tried === 0 ? "Nothing tried yet. Pick an attack below." : line.untried.length ? `${line.untried.length} not tried yet.` : "Every attack has been tried."}</p>
         </div>
         <ul className="flex flex-wrap gap-2" aria-label="Attack results">

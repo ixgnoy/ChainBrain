@@ -232,7 +232,7 @@ export function GateStrip({ attempt }: { attempt: Attempt }) {
     <ol data-testid="gate-strip" className="flex flex-wrap items-center gap-x-1 gap-y-2">
       {gates.map((g, i) => (
         <li key={g.id} data-state={g.state} className="flex items-center gap-1">
-          {i > 0 && <span aria-hidden className="h-0.5 w-3 rounded bg-line" />}
+          {i > 0 && <span aria-hidden className="hidden h-0.5 w-3 rounded bg-line sm:block" />}
           <span title={`${g.title}${g.code ? ` · ${g.code}` : ""}`} className="inline-flex items-center gap-1.5"><GateIcon state={g.state} layer={g.layer} size={22} />{g.state === "stop" ? (g.code ? <CodePill code={g.code} layer={g.layer} /> : <span className="text-[12px] font-medium text-ink2">{g.title}</span>) : <span className="hidden text-[12px] font-medium text-ink2 sm:inline">{g.title}</span>}</span>
         </li>
       ))}
