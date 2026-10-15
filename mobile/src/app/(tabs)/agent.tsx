@@ -4,6 +4,7 @@ import Animated, { FadeIn, FadeOut, useAnimatedKeyboard, useAnimatedReaction, us
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { router } from "expo-router";
 import { useApp, type Turn } from "../../store";
 import { c, F, lift } from "../../tokens";
 import { Avatar, Button, Press, type PressTap } from "../../ui/kit";
@@ -58,6 +59,21 @@ function TaskWaiting({ text, onOpen, id }: { text: string; onOpen(): void; id: s
   return (
     <EventCard tone="waiting" title="Confirm the task" body={cleanText(what, 80)} onPress={onOpen} a11y={`Review task: ${what}`}
       onEnter={() => { if (firstTime(`intent:${id}`)) haptic.medium(); }} amount="Review" />
+  );
+}
+
+/** After a task the brain rewrites its memory: one quiet line, a tap opens the Brain tab. */
+function MemoryLine({ e }: { e: WalletEvent }) {
+  const applied: { op: string }[] = Array.isArray(e.applied) ? e.applied : [];
+  const add = applied.filter((a) => a.op === "add").length, drop = applied.filter((a) => a.op === "delete").length;
+  const what = [add ? `${add} new` : "", drop ? `${drop} dropped` : ""].filter(Boolean).join(", ") || "checked";
+  return (
+    <Press kind="row" haptics="select" onPress={() => router.navigate("/brain")} accessibilityRole="button" accessibilityLabel={`Memory updated to version ${e.version}, ${what}. Open the Brain tab`}
+      style={{ flexDirection: "row", alignItems: "center", gap: 8, minHeight: 32, alignSelf: "flex-start" }}>
+      <Icon name="brain" size={16} color={c.accent} />
+      <T v="cap" color="muted">Memory updated · v{String(e.version)} · {what}</T>
+      <Icon name="chevronRight" size={14} color={c.faint} />
+    </Press>
   );
 }
 
@@ -334,6 +350,7 @@ export default function AgentChat() {
                     <TraceBlock events={evs} />
                   </Rise>
                 )}
+                {t.done ? evs.filter((e) => e.type === "trace" && e.phase === "memory").slice(-1).map((e) => <MemoryLine key={`mem${e.at}`} e={e} />) : null}
                 {t.done && active ? <DeadEndCard id={t.id} evs={evs} pocket={active} sellerName={sellerName} onRetry={isLast && !chatBusy ? send : undefined}
                   resolved={t.toAt != null && mine.some((e) => e.type === "payment" && e.at > t.toAt!)} /> : null}
                 {isLast && intent ? <TaskWaiting text={intent.text} onOpen={() => setApprovalOpen(true)} id={intent.id} /> : null}

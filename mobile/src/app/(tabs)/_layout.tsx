@@ -13,6 +13,7 @@ import { renderTabScreen } from "../../ui/glass/TabTransition";
 const ITEMS: (GlassTabItem & { href: string })[] = [
   { name: "index", href: "/", label: "Home", icon: "home" },
   { name: "agent", href: "/agent", label: "Agent", icon: "chat" },
+  { name: "brain", href: "/brain", label: "Brain", icon: "brain" },
   { name: "activity", href: "/activity", label: "Activity", icon: "activity" },
   { name: "settings", href: "/settings", label: "Settings", icon: "settings" },
 ];
