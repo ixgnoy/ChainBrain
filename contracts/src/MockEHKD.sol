@@ -5,6 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {Clock} from "./Clock.sol";
 
 /// MOCK e-HKD for the ChainBrain demo on a local FISCO BCOS chain. Not the HKMA e-HKD, not money.
 /// A plain ERC-20 (6 decimals) plus EIP-3009 transferWithAuthorization, including the bytes-signature overload
@@ -50,8 +51,8 @@ contract MockEHKD is ERC20, EIP712, Ownable {
         address from, address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce,
         bytes memory signature
     ) public {
-        require(block.timestamp > validAfter, "EHKD: authorization is not yet valid");
-        require(block.timestamp < validBefore, "EHKD: authorization is expired");
+        require(Clock.nowSec() > validAfter, "EHKD: authorization is not yet valid");
+        require(Clock.nowSec() < validBefore, "EHKD: authorization is expired");
         require(!_usedAuthorizations[from][nonce], "EHKD: authorization is used or canceled");
         bytes32 digest = _hashTypedDataV4(
             keccak256(abi.encode(TRANSFER_WITH_AUTHORIZATION_TYPEHASH, from, to, value, validAfter, validBefore, nonce))

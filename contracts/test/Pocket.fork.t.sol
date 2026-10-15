@@ -35,6 +35,15 @@ abstract contract PocketCases is Test {
     address facilitator = makeAddr("facilitator");
     address sentinel = makeAddr("sentinel");
     uint256 salt;
+    bool msClock; // FISCO BCOS: contracts see block.timestamp in milliseconds
+
+    function _now() internal view returns (uint256) {
+        return msClock ? block.timestamp / 1000 : block.timestamp;
+    }
+
+    function _warpBy(uint256 secs) internal {
+        vm.warp(block.timestamp + (msClock ? secs * 1000 : secs));
+    }
 
     function setUp() public {
         USDC = _setUpToken();
@@ -46,7 +55,7 @@ abstract contract PocketCases is Test {
         PocketFactory factory = new PocketFactory(address(USDC), sentinel);
         vm.prank(owner);
         // Research preset from the spec: budget 5, cap 2, ask above 1
-        pocket = Pocket(factory.create(agent, 2e6, 1e6, uint64(block.timestamp + 1 days), sellers));
+        pocket = Pocket(factory.create(agent, 2e6, 1e6, uint64(_now() + 1 days), sellers));
         // ponytail: deal() writes USDC v2.2's packed balance slot; if it ever fails, fund from a faucet-funded address
         deal(address(USDC), address(pocket), 5e6);
     }
@@ -57,7 +66,7 @@ abstract contract PocketCases is Test {
     function _auth(address to, uint256 value, uint256 pk) internal returns (Auth memory a) {
         a.to = to;
         a.value = value;
-        a.validBefore = block.timestamp + 600;
+        a.validBefore = _now() + 600;
         a.nonce = keccak256(abi.encode(keccak256("intent"), salt++)); // nonce = hash(intentHash, seq)
         a.digest = keccak256(abi.encodePacked(
             "\x19\x01", USDC.DOMAIN_SEPARATOR(),
@@ -157,7 +166,7 @@ abstract contract PocketCases is Test {
     }
 
     function test_expired_reverts() public {
-        vm.warp(block.timestamp + 2 days);
+        _warpBy(2 days);
         Auth memory a = _auth(dataLite, 3e5, agentPk);
         vm.expectRevert();
         _submit(a, "");
@@ -179,7 +188,7 @@ abstract contract PocketCases is Test {
     function test_garbage_signature_reverts_cleanly() public {
         vm.expectRevert();
         vm.prank(facilitator);
-        USDC.transferWithAuthorization(address(pocket), dataLite, 1, 0, block.timestamp + 60, bytes32(uint256(1)), hex"deadbeef");
+        USDC.transferWithAuthorization(address(pocket), dataLite, 1, 0, _now() + 60, bytes32(uint256(1)), hex"deadbeef");
     }
 
     // ---- rules, reasons, owner-only edits ----
@@ -230,7 +239,7 @@ abstract contract PocketCases is Test {
         one[0] = dataLite;
         PocketFactory f = new PocketFactory(address(USDC), sentinel);
         vm.prank(owner);
-        Pocket p = Pocket(f.create(agent, 2e5, type(uint256).max, uint64(block.timestamp + 1 days), one));
+        Pocket p = Pocket(f.create(agent, 2e5, type(uint256).max, uint64(_now() + 1 days), one));
         deal(address(USDC), address(p), 2e5);
         assertEq(p.canPay(dataLite, 3e5), bytes32("OVER_CAP")); // every seller costs more: dead end
         assertEq(p.canPay(dataPro, 2e5), bytes32("SELLER_NOT_ALLOWED"));

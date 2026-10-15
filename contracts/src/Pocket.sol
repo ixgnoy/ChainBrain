@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Clock} from "./Clock.sol";
 
 interface IDomain {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
@@ -58,7 +59,7 @@ contract Pocket {
     function canPay(address to, uint256 value) public view returns (bytes32) {
         if (revoked) return "POCKET_REVOKED";
         if (frozen) return "POCKET_FROZEN";
-        if (block.timestamp >= expiresAt) return "POCKET_EXPIRED";
+        if (Clock.nowSec() >= expiresAt) return "POCKET_EXPIRED";
         if (!sellerAllowed[to]) return "SELLER_NOT_ALLOWED";
         if (value > perPaymentCap) return "OVER_CAP";
         if (value > IERC20(usdc).balanceOf(address(this))) return "OVER_BUDGET";

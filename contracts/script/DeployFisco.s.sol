@@ -13,7 +13,7 @@ contract DeployFisco is Script {
         address owner = vm.addr(pk);
         vm.startBroadcast(pk);
         MockEHKD token = new MockEHKD(owner);
-        PocketFactory factory = new PocketFactory(address(token));
+        PocketFactory factory = new PocketFactory(address(token), vm.envOr("SENTINEL_ADDRESS", address(0)));
         token.mint(owner, 10_000e6);
         vm.stopBroadcast();
         vm.serializeAddress("d", "Token", address(token));

@@ -10,3 +10,12 @@ contract PocketEhkdTest is PocketCases {
         return IUSDC(address(new MockEHKD(address(this))));
     }
 }
+
+/// Same cases with FISCO BCOS's millisecond block.timestamp: expiry and authorization windows still work in seconds.
+contract PocketEhkdMsClockTest is PocketCases {
+    function _setUpToken() internal override returns (IUSDC) {
+        msClock = true;
+        vm.warp(1_792_000_000_000);
+        return IUSDC(address(new MockEHKD(address(this))));
+    }
+}

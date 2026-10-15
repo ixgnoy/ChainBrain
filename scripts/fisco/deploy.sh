@@ -10,7 +10,7 @@ for k in OWNER_PK FACILITATOR_PK FORCE_PK; do addrs+=("$(cast wallet address "${
 bash "$(dirname "$0")/fund.sh" "${addrs[@]}"
 cd "$ROOT/contracts"
 rm -f deployments/20200.json # forge writes it even when the broadcast fails
-forge script script/DeployFisco.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --legacy --with-gas-price 0 | grep -q "ONCHAIN EXECUTION COMPLETE & SUCCESSFUL"
+forge script script/DeployFisco.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --slow --legacy --with-gas-price 0 | grep "ONCHAIN EXECUTION COMPLETE & SUCCESSFUL" >/dev/null
 for c in Token PocketFactory; do
   [ "$(cast code "$(jq -r .$c deployments/20200.json)" --rpc-url http://127.0.0.1:8545 | wc -c)" -gt 1000 ] || { echo "no code for $c"; exit 1; }
 done

@@ -1,6 +1,8 @@
 import { it, expect, beforeAll } from "vitest";
 import { decodePaymentRequiredHeader } from "@x402/core/http";
 import { useDevKeys } from "./helpers/env";
+import { $, atom } from "./helpers/amounts";
+import { cfg } from "../src/chains";
 
 let app: { request: (p: string, init?: RequestInit) => Response | Promise<Response> };
 beforeAll(async () => {
@@ -9,18 +11,19 @@ beforeAll(async () => {
   app = sellersApp();
 });
 
-it("priced item answers 402 with the price-sheet amount on Base Sepolia", async () => {
+it("priced item answers 402 with the price-sheet amount in the chain's token", async () => {
   const r = await app.request("/datalite/durian-report");
   expect(r.status).toBe(402);
   const req = decodePaymentRequiredHeader(r.headers.get("PAYMENT-REQUIRED")!) as any;
-  expect(req.accepts[0].amount).toBe("300000");
-  expect(req.accepts[0].network).toBe("eip155:84532");
-  expect(req.accepts[0].extra).toMatchObject({ name: "USDC", version: "2" });
+  expect(req.accepts[0].amount).toBe(atom($.durian).toString());
+  expect(req.accepts[0].network).toBe(cfg().network);
+  expect(req.accepts[0].asset.toLowerCase()).toBe(cfg().token.toLowerCase());
+  expect(req.accepts[0].extra).toMatchObject(cfg().domain);
 });
 
-it("DataPro premium is 1.50", async () => {
+it("DataPro premium is the premium price", async () => {
   const req = decodePaymentRequiredHeader((await app.request("/datapro/premium-report")).headers.get("PAYMENT-REQUIRED")!) as any;
-  expect(req.accepts[0].amount).toBe("1500000");
+  expect(req.accepts[0].amount).toBe(atom($.premium).toString());
 });
 
 it("ShadyFeed preview is free and carries the injection and phishing requests", async () => {

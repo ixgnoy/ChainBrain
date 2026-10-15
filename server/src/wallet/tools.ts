@@ -2,7 +2,7 @@ import { z } from "zod";
 import { keccak256, toHex, type Address } from "viem";
 import { randomUUID } from "node:crypto";
 import { pocket as P } from "./chain";
-import { formatUsd } from "./money";
+import { formatAmount, parseAmount } from "./money";
 import { REASONS, isReason, type Reason } from "./reasons";
 import { directory } from "./directory";
 import { fetchQuote, track, settle, prepareApproval } from "./pay";
@@ -15,7 +15,6 @@ import { radar, screenOrNull, brief } from "../radar/screen";
 import { trailOf } from "../../../shared/sim/radar";
 import { sentinel } from "../sentinel";
 import { preflight, sameOutcome } from "./preflight";
-import { parseUsd } from "./money";
 import { checkOffer, MAX_ROUNDS } from "../../../shared/sim/haggle";
 
 export type ToolCtx = { pocket: Address };
@@ -23,7 +22,7 @@ type Tool = { description: string; schema: z.ZodType; run(ctx: ToolCtx, args: an
 export type ToolMap = Record<string, { description: string; input_schema: object; run(ctx: ToolCtx, args: unknown): Promise<object> }>;
 
 const NEVER = 2n ** 256n - 1n;
-const usd = (n: bigint) => (n === NEVER ? "never" : formatUsd(n));
+const usd = (n: bigint) => (n === NEVER ? "never" : formatAmount(n));
 const refuse = (reason: Reason, extra: object = {}) => ({ ok: false, reason, why: REASONS[reason], ...extra });
 const APPROVAL_WAIT_MS = Number(process.env.APPROVAL_WAIT_MS ?? 600_000);
 
@@ -58,7 +57,7 @@ const defs: Record<string, Tool> = {
       return {
         ok: true, balance: usd(i.balance), perPaymentCap: usd(i.cap), askMeAbove: usd(i.askAbove),
         expiresAt: new Date(Number(i.expiresAt) * 1000).toISOString(), revoked: i.revoked, allowedSellers: allowed,
-        spentThisTask: formatUsd(s.spent), itemsThisTask: s.items, intent: s.intent ? renderIntent(s.intent) : null,
+        spentThisTask: formatAmount(s.spent), itemsThisTask: s.items, intent: s.intent ? renderIntent(s.intent) : null,
       };
     },
   },
@@ -105,7 +104,7 @@ const defs: Record<string, Tool> = {
       const intentCheck = checkAgainstIntent(state(ctx.pocket).intent, state(ctx.pocket), rec.amount);
       const risk = await counterparty(ctx, rec);
       return {
-        ok: true, quoteId: rec.quoteId, sellerId, sku, description: rec.description, price: formatUsd(rec.amount),
+        ok: true, quoteId: rec.quoteId, sellerId, sku, description: rec.description, price: formatAmount(rec.amount),
         allowedByPocket: rule === "OK" ? "OK" : { reason: rule, why: isReason(rule) ? REASONS[rule] : rule },
         needsOwnerApproval: (await P(ctx.pocket).needsOwner(rec.amount)) || sentinel.isHeld(ctx.pocket),
         intentCheck: intentCheck ? { reason: intentCheck, why: REASONS[intentCheck] } : "OK",
@@ -125,17 +124,17 @@ const defs: Record<string, Tool> = {
       const item = (await directory().catch(() => [])).find((x) => x.id === rec.sellerId)?.items.find((i) => i.sku === rec.sku);
       if (!item?.negotiable) return refuse("NEGOTIATION_NOT_OFFERED");
       let offer: bigint;
-      try { offer = parseUsd(String(price)); } catch { return refuse("OFFER_NOT_LOWER"); }
-      const bad = checkOffer({ offer, ask: rec.ask, list: rec.list, maxPerItem: s.intent ? parseUsd(s.intent.maxPricePerItem) : undefined, rounds: rec.rounds, approved: !!rec.auth || !!rec.ownerSig, paid: rec.paid, agreed: rec.agreed });
+      try { offer = parseAmount(String(price)); } catch { return refuse("OFFER_NOT_LOWER"); }
+      const bad = checkOffer({ offer, ask: rec.ask, list: rec.list, maxPerItem: s.intent ? parseAmount(s.intent.maxPricePerItem) : undefined, rounds: rec.rounds, approved: !!rec.auth || !!rec.ownerSig, paid: rec.paid, agreed: rec.agreed });
       if (bad) return refuse(bad as Reason);
       const accepting = rec.rounds > 0 && offer === rec.ask;
       const base = rec.url.split("?")[0];
-      const r = await fetch(`${base}/offer`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ offer: formatUsd(offer), deal: rec.dealId }) }).catch(() => null);
+      const r = await fetch(`${base}/offer`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ offer: formatAmount(offer), deal: rec.dealId }) }).catch(() => null);
       if (!r?.ok) return { ok: false, error: `seller answered HTTP ${r?.status ?? "no response"}` };
       // numbers only: the seller's answer is read as a price and a kind; nothing else it sends reaches the model
       const j = (await r.json().catch(() => ({}))) as { deal?: unknown; reply?: unknown; price?: unknown; final?: unknown };
       let answered: bigint;
-      try { answered = parseUsd(String(j.price)); } catch { return { ok: false, error: "the seller's answer had no price" }; }
+      try { answered = parseAmount(String(j.price)); } catch { return { ok: false, error: "the seller's answer had no price" }; }
       const kind = j.reply === "accept" ? "accept" : "counter";
       // a seller can only come down: an acceptance at more than we offered, or a counter above its ask, is ignored
       if ((kind === "accept" && answered > offer) || answered > rec.ask || typeof j.deal !== "string") return { ok: false, error: "the seller's answer did not fit the offer" };
@@ -145,8 +144,8 @@ const defs: Record<string, Tool> = {
       if (kind === "accept") { rec.amount = answered; rec.agreed = true; rec.url = `${base}?deal=${encodeURIComponent(j.deal)}`; }
       bus.publish({ type: "haggle", pocket: ctx.pocket, quoteId, sellerId: rec.sellerId, sku: rec.sku, round: rec.rounds, offer, reply: kind, price: answered, final, list: rec.list, accepting });
       return kind === "accept"
-        ? { ok: true, deal: true, price: formatUsd(answered), list: formatUsd(rec.list), saved: formatUsd(rec.list - answered), needsOwnerApproval: (await P(ctx.pocket).needsOwner(answered)) || sentinel.isHeld(ctx.pocket), note: "Deal agreed: pay (or ask_owner first if needsOwnerApproval) with the same quoteId." }
-        : { ok: true, deal: false, counter: formatUsd(answered), final, roundsLeft: MAX_ROUNDS - rec.rounds, note: final ? "The seller's final price: accept it by offering exactly this price, or walk away." : "Offer again (lower than the counter), accept the counter by offering exactly it, or walk away." };
+        ? { ok: true, deal: true, price: formatAmount(answered), list: formatAmount(rec.list), saved: formatAmount(rec.list - answered), needsOwnerApproval: (await P(ctx.pocket).needsOwner(answered)) || sentinel.isHeld(ctx.pocket), note: "Deal agreed: pay (or ask_owner first if needsOwnerApproval) with the same quoteId." }
+        : { ok: true, deal: false, counter: formatAmount(answered), final, roundsLeft: MAX_ROUNDS - rec.rounds, note: final ? "The seller's final price: accept it by offering exactly this price, or walk away." : "Offer again (lower than the counter), accept the counter by offering exactly it, or walk away." };
     },
   },
 
@@ -169,7 +168,7 @@ const defs: Record<string, Tool> = {
       const a = approvals.create({
         pocket: ctx.pocket, kind: "payment", text: reason ?? "Approve this payment?",
         data: {
-          auth, sellerId: rec.sellerId, sku: rec.sku, description: rec.description, amount: formatUsd(rec.amount), intent: renderIntent(s.intent!),
+          auth, sellerId: rec.sellerId, sku: rec.sku, description: rec.description, amount: formatAmount(rec.amount), intent: renderIntent(s.intent!),
           ...(risk && risk.verdict !== "ok" ? { radar: { score: risk.score, verdict: risk.verdict, narrative: risk.narrative } } : {}),
         },
       });
@@ -212,7 +211,7 @@ const defs: Record<string, Tool> = {
       if (pre) bus.publish({ type: "preflight", kind: "result", ...base, predicted: pre, actual: r.ok ? { outcome: "pays", tx: r.tx } : { outcome: "refused", reason: r.reason }, matched: check!.matched });
       if (!r.ok) return refuse(r.reason, { ...(r.detail ? { detail: r.detail.slice(0, 200) } : {}), ...(check ? { preflight: check } : {}) });
       if (rec.ownerSig) sentinel.release(ctx.pocket);
-      return { ok: true, tx: r.tx, paid: formatUsd(rec.amount), sellerId: rec.sellerId, ...(check ? { preflight: check } : {}), ...screenFree(ctx, rec.sellerId, r.body) };
+      return { ok: true, tx: r.tx, paid: formatAmount(rec.amount), sellerId: rec.sellerId, ...(check ? { preflight: check } : {}), ...screenFree(ctx, rec.sellerId, r.body) };
     },
   },
 };

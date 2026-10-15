@@ -17,7 +17,7 @@ export const REASONS = {
   QUOTE_ALREADY_PAID: "This quote is already paid",
   QUOTE_UNKNOWN: "No such quote",
   DISCLOSURE_REFUSED: "The seller asked for data beyond the purchase; refused and shown to the owner",
-  SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule USDC payments it built itself",
+  SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule token payments it built itself",
   SETTLEMENT_FAILED: "Settlement failed",
   NOT_THIS_AGENT: "This pocket belongs to a different agent key",
   COUNTERPARTY_HIGH_RISK: "Radar traced this seller's funds to a high-risk source (e.g. a drainer or sanctioned address); choose another seller",

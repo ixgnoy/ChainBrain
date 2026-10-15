@@ -86,7 +86,7 @@ export async function startDevStack(o: DevStackOptions = {}) {
 
   const lan = lanIp();
   Object.assign(process.env, DEV_KEYS, {
-    BASE_SEPOLIA_RPC: rpc, FACILITATOR: "local", SELLERS_URL: `http://${lan ?? "localhost"}:${sellersPort}`,
+    CHAIN: "base-sepolia", BASE_SEPOLIA_RPC: rpc, FACILITATOR: "local", SELLERS_URL: `http://${lan ?? "localhost"}:${sellersPort}`,
   });
 
   const { factoryArtifact, factoryAbi } = await import(server("wallet/chain.ts"));

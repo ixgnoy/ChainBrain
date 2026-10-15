@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createWalletClient, http, publicActions, toHex, type Address } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
-import { startStack } from "./helpers/fork";
+import { startStack } from "./helpers/stack";
 import { autoOwner } from "./helpers/owner";
 
 let s: Awaited<ReturnType<typeof startStack>>;

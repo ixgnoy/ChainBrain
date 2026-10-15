@@ -8,7 +8,7 @@ const pocket = process.argv[2];
 if (!pocket) throw new Error("usage: pnpm --dir devstack force-transfer <pocket address>");
 const r = spawnSync("npx", ["tsx", "scripts/force-transfer.ts", pocket], {
   cwd: fileURLToPath(new URL("../../server/", import.meta.url)),
-  env: { ...process.env, ...DEV_KEYS, BASE_SEPOLIA_RPC: process.env.BASE_SEPOLIA_RPC ?? "http://127.0.0.1:8546" },
+  env: { ...process.env, ...DEV_KEYS, CHAIN: "base-sepolia", BASE_SEPOLIA_RPC: process.env.BASE_SEPOLIA_RPC ?? "http://127.0.0.1:8546" },
   stdio: "inherit",
   shell: process.platform === "win32", // npx is npx.cmd on Windows
 });
