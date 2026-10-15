@@ -244,6 +244,8 @@ async function phoneFlow(browser, scenes, issues) {
   watch(page, "phone", issues);
   page.setDefaultTimeout(20000);
   const stp = (n, f) => step(n, f, page);
+  // the intro shows on every launch: Skip it (it is always there)
+  const skipIntro = async () => { const s = page.getByRole("button", { name: "Skip" }); if (await s.waitFor({ timeout: 8000 }).then(() => true, () => false)) { await s.click(); await sleep(700); } };
   const chatSay = async (text) => {
     const input = page.getByLabel("Message");
     await until("message input enabled", () => input.isEnabled(), 40000);
@@ -268,7 +270,7 @@ async function phoneFlow(browser, scenes, issues) {
   };
   let wallet, pocket;
 
-  await page.goto(`http://127.0.0.1:${PHONE_PORT}/`);
+  await page.goto(`http://127.0.0.1:${PHONE_PORT}/`); await skipIntro();
 
   await stp("phone: first launch goes straight to Home (key made silently, no login)", async () => {
     await page.getByText("Agent pockets").first().waitFor({ timeout: 40000 });
@@ -306,9 +308,9 @@ async function phoneFlow(browser, scenes, issues) {
     return (page.url().match(/0x[0-9a-fA-F]{40}/) ?? [])[0];
   };
   const openNewestPocket = async (count, balance) => {
-    await page.goto(`http://127.0.0.1:${PHONE_PORT}/`);
+    await page.goto(`http://127.0.0.1:${PHONE_PORT}/`); await skipIntro(); await skipIntro();
     await until(`${count} pocket rows`, async () => (await page.getByLabel(/pocket, [\d.]+ USDC/).count()) >= count, 40000);
-    await page.getByLabel(new RegExp(`pocket, ${balance} USDC`)).first().click();
+    await page.getByLabel(new RegExp(`pocket, ${balance} USDC`)).first().click({ position: { x: 120, y: 24 } }); // the visible header strip of a stacked card
     await page.getByRole("button", { name: "Revoke", exact: true }).waitFor();
     return (page.url().match(/0x[0-9a-fA-F]{40}/) ?? [])[0];
   };
@@ -376,7 +378,7 @@ async function phoneFlow(browser, scenes, issues) {
     await confirmIntent();
     await until("first payment", async () => money(await usdcOf(p7)) === 4.7, 40000, 100);
     await tab("Home");
-    await page.getByLabel(/pocket, 4\.70 USDC/).first().click();
+    await page.getByLabel(/pocket, 4\.70 USDC/).first().click({ position: { x: 120, y: 24 } }); // the visible header strip of a stacked card
     await page.getByRole("button", { name: "Revoke", exact: true }).click(); // opens the revoke sheet
     const hold = page.getByRole("button", { name: /Hold to revoke/ });
     await hold.waitFor();
