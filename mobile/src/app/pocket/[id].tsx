@@ -1,56 +1,68 @@
+// Pocket page (Stitch chainbrain_pocket_detail + revoked_pocket, bars from transactions_vaultbank_style). The card arrives by
+// the flight from Home's deck; then the rules as chips (cap and ask-me are editable, owner-signed), Add / Return / Revoke tiles,
+// the worst case, spending by day, the agent that holds the pocket, its sellers, and its history. Revoked: a banner, the hatch
+// card, what came back to the main wallet, and the pocket's audit trail (exportable as JSON).
 import React, { useMemo, useState } from "react";
-import { Switch, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { Share, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "../../store";
-import { c } from "../../tokens";
+import { c, radius } from "../../tokens";
 import { Screen } from "../../ui/Screen";
 import { BackHeader, BACK_HEADER_H } from "../../ui/BackHeader";
-import { Avatar, Card, ListCard, ListRow, Pill, Press, SectionHeader } from "../../ui/kit";
+import { Avatar, Button, Card, ListCard, ListRow, Press, SectionHeader, Toggle } from "../../ui/kit";
 import { RoundButton } from "../../ui/RollAction";
 import { WorstCase } from "../../components/WorstCase";
-import { Money } from "../../ui/Money";
-import { Reveal as Rise, PopIn } from "../../ui/Reveal";
+import { SpendBars } from "../../components/SpendBars";
+import { Reveal as Rise } from "../../ui/Reveal";
 import { AnimatedList } from "../../ui/AnimatedList";
-import { Icon } from "../../ui/Icon";
+import { Icon, type IconName } from "../../ui/Icon";
 import { T } from "../../ui/Text";
+import { AgentAvatar } from "../../ui/AgentAvatar";
 import { ActivityRow } from "../../components/ActivityRow";
-import { factPills, isExpired, untilText } from "../../components/PocketCard";
+import { isExpired, untilText } from "../../components/PocketCard";
 import { UnfreezeButton } from "../../components/SentinelCard";
 import { TxNotice } from "../../components/TxNotice";
-import { PocketFace, cardHeight, toneFor } from "../../components/PocketFace";
+import { PocketFace, toneFor } from "../../components/PocketFace";
+import { PAGE_MARGIN, pageCardWidth } from "../../components/CardFlight";
 import { useFlight } from "../../ui/cardFlight";
 import { txError } from "../../components/ActionSheet";
 import { cleanText } from "../../lib/sanitize";
-import { sameAddr } from "../../lib/events";
-import { visibleRows, worstCase } from "../../lib/plain";
-import { money, usd, shortAddr } from "../../lib/util";
-import { radius } from "../../tokens";
+import { sameAddr, type LedgerRow } from "../../lib/events";
+import { visibleRows } from "../../lib/plain";
+import { money, usd } from "../../lib/util";
 import { NEVER } from "../../lib/shared";
 import { haptic } from "../../haptics";
+import { agentInfo } from "../../../../shared/sim/agents";
 
-/** Editable fact pill: soft accent (tap opens the rule sheet; no pencil), press 0.95 with a selection tick. */
-function RulePill({ label, onPress, a11y }: { label: string; onPress: () => void; a11y: string }) {
-  return (
-    <Press haptics="select" scale={0.95} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y} hitSlop={4}
-      style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 12, height: 32, borderRadius: radius.pill, backgroundColor: c.accentSoft, alignSelf: "flex-start" }}>
-      <T v="cap" w="semi" color="accent">{label}</T>
-    </Press>
+/** A rule chip: white pill with a muted label and a bold value; editable ones open the rule sheet. */
+function RuleChip({ icon, label, value, onPress, a11y }: { icon: IconName; label: string; value: string; onPress?: () => void; a11y: string }) {
+  const body = (
+    <>
+      <Icon name={icon} size={15} color={onPress ? c.vermillion : c.ink2} stroke={2} />
+      <T v="cap" color="muted">{label}</T>
+      <T v="cap" w="bold">{value}</T>
+    </>
   );
+  const style = { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: 36, borderRadius: radius.pill, backgroundColor: c.card, borderWidth: 1, borderColor: onPress ? c.ink : c.tileStroke } as const;
+  return onPress
+    ? <Press haptics="select" scale={0.95} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y} hitSlop={4} style={style}>{body}</Press>
+    : <View accessible accessibilityLabel={a11y} style={style}>{body}</View>;
 }
 
 export default function PocketDetail() {
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { pockets, findPocket, pocketsLoaded, cfg, wallet, ledger, setAction, setReceipt, refreshPockets, setRules, recordTx, setNotice } = useApp();
+  const { pockets, findPocket, pocketsLoaded, cfg, wallet, ledger, events, setAction, setReceipt, refreshPockets, setRules, recordTx, setNotice, sellerName } = useApp();
   const pocket = findPocket(id);
   const flight = useFlight();
   const [rootW, setRootW] = useState(0);
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const rows = useMemo(() => visibleRows(ledger.filter((r) => sameAddr(r.pocket, id)).reverse()), [ledger, id]);
+  const mine = useMemo(() => ledger.filter((r) => sameAddr(r.pocket, id)), [ledger, id]);
+  const rows = useMemo(() => visibleRows([...mine].reverse()), [mine]);
 
   if (!pocket) {
     return (
@@ -65,6 +77,10 @@ export default function PocketDetail() {
   const off = pocket.revoked || expired;
   const editable = owned && !off;
   const sellerNames = (cfg?.sellers ?? []).filter((s) => pocket.allowed.includes(s.id)).map((s) => cleanText(s.name, 30));
+  const agent = agentInfo(pocket.agentId ?? "");
+  const ask = pocket.askAbove === NEVER || pocket.askAbove > pocket.cap ? "Never" : pocket.askAbove === 0n ? "Every payment" : money(pocket.askAbove);
+  const returned = mine.filter((r) => r.kind === "owner" && r.ownerKind === "return").reduce((n, r) => n + (r.amount ?? 0n), 0n);
+  const W = rootW ? pageCardWidth(rootW) : 0;
 
   const toggle = async (name: string, on: boolean, payTo: `0x${string}`) => {
     setBusy(`${on ? "Removing" : "Allowing"} ${name}`); setErr(null);
@@ -77,74 +93,185 @@ export default function PocketDetail() {
     catch (e) { haptic.error(); setErr(txError(e)); }
     finally { setBusy(""); }
   };
+  const exportLog = () => {
+    const log = {
+      pocket: pocket.address, name: pocket.name, agent: agent?.name ?? pocket.agent, revoked: pocket.revoked,
+      events: events.filter((e) => sameAddr(e.pocket, pocket.address)),
+    };
+    void Share.share({ title: `${pocket.name} audit log`, message: JSON.stringify(log, null, 2) }).catch(() => {});
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }} onLayout={(e) => setRootW(e.nativeEvent.layout.width)}>
-      <BackHeader title={cleanText(pocket.name, 30)} sub={pocket.revoked ? "Turned off" : expired ? "Expired" : untilText(pocket.expiresAt)} scrollY={scrollY} revealAt={150} />
-      <Screen tabs={false} top={false} scrollY={scrollY} contentContainerStyle={{ paddingTop: insets.top + BACK_HEADER_H }}>
-        <View style={{ alignItems: "center", gap: 14, paddingBottom: 8 }}>
-          {/* the same printed card as Home; it takes over from the flying card the moment that lands */}
-          <View style={{ marginTop: 4, opacity: flight?.pocket === pocket.address.toLowerCase() ? 0 : 1 }} accessibilityLabel={`${cleanText(pocket.name, 30)} card, ${usd(pocket.balance)} USDC`} accessible>
-            {rootW ? <PocketFace pocket={pocket} width={rootW - 40} tone={toneFor(pockets, pocket.address)} buzz /> : <View style={{ height: 200 }} />}
-          </View>
-          <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center", paddingHorizontal: 20 }}>
-            {pocket.revoked ? <Rise index={0} step={40} base={50}><Pill label="Revoked" tone="negative" /></Rise> : pocket.frozen ? <Rise index={0} step={40} base={50}><Pill label="Frozen by the Sentinel" tone="warning" icon="freeze" /></Rise> : expired ? <Rise index={0} step={40} base={50}><Pill label="Expired" tone="fill" /></Rise> : null}
-            {factPills(pocket).map((f, i) => (
-              <Rise key={f} index={i + 1} step={40} base={50}>
-                {editable ? <RulePill label={f} onPress={() => setRules({ pocket: pocket.address, field: f.startsWith("Cap") ? "cap" : "ask" })} a11y={`Edit ${f.startsWith("Cap") ? "cap" : "ask-me limit"}: ${f}`} /> : <Pill label={f} />}
-              </Rise>
-            ))}
-            {!off ? <Rise index={factPills(pocket).length + 1} step={40} base={50}><Pill label={untilText(pocket.expiresAt).replace("until", "Ends")} tone="fill" icon="clock" /></Rise> : null}
-          </View>
-        </View>
-
-        {owned ? (
-          <Rise index={0} base={90}>
-            <View style={{ flexDirection: "row", paddingHorizontal: 20, marginTop: 24 }}>
-              <RoundButton soft icon="plus" label="Add" a11y="Add money" onPress={() => setAction({ mode: "fund", pocket: pocket.address })} />
-              <RoundButton soft icon="undo" label="Return" a11y="Return funds" onPress={() => setAction({ mode: "return", pocket: pocket.address })} />
-              {!pocket.revoked ? <RoundButton danger icon="lock" label="Revoke" a11y="Revoke" onPress={() => setAction({ mode: "revoke", pocket: pocket.address })} /> : null}
+      <BackHeader title={cleanText(pocket.name, 30)} sub={pocket.revoked ? "Revoked" : expired ? "Ended" : untilText(pocket.expiresAt)} scrollY={scrollY} revealAt={150} />
+      <Screen tabs={false} top={false} scrollY={scrollY} contentContainerStyle={{ paddingTop: insets.top + BACK_HEADER_H, paddingBottom: insets.bottom + 40 }}>
+        {pocket.revoked ? (
+          <Rise index={0}>
+            <View style={{ marginHorizontal: PAGE_MARGIN, marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, height: 46, borderRadius: 14, backgroundColor: c.vermillionSoft }}>
+              <Icon name="shield" size={18} color={c.vermillionInk} stroke={2} />
+              <T v="tab" w="bold" style={{ flex: 1, color: c.vermillionInk, letterSpacing: 0.9, textTransform: "uppercase" }}>Pocket revoked · agent locked out</T>
+              <View style={{ paddingHorizontal: 7, height: 22, borderRadius: 5, backgroundColor: c.vermillionInk, justifyContent: "center" }}><T v="tab" w="bold" style={{ color: c.white, letterSpacing: 0.9 }}>LOCKED</T></View>
             </View>
           </Rise>
-        ) : (
-          <Card style={{ marginHorizontal: 20, marginTop: 20 }}><T v="sub" color="ink2">Another key owns this pocket. Add money, return or revoke from the device that created it.</T></Card>
-        )}
+        ) : null}
+        {/* the same card as Home's deck; it takes over from the flying card the moment that lands */}
+        <View style={{ alignItems: "center", opacity: flight?.pocket === pocket.address.toLowerCase() ? 0 : 1 }} accessibilityLabel={`${cleanText(pocket.name, 30)} card, ${usd(pocket.balance)} USDC`} accessible>
+          {W ? <PocketFace pocket={pocket} width={W} tone={toneFor(pockets, pocket.address)} buzz shadow /> : <View style={{ height: 200 }} />}
+        </View>
+
+        {!pocket.revoked ? (
+          <Rise index={1} base={60}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: PAGE_MARGIN, marginTop: 16 }}>
+              <RuleChip icon="gauge" label="Cap" value={`${money(pocket.cap)} / payment`} a11y={`Edit cap: Cap ${money(pocket.cap)}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "cap" }) : undefined} />
+              <RuleChip icon="bell" label="Ask above" value={ask} a11y={`Edit ask-me limit: Ask above ${ask}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "ask" }) : undefined} />
+              <RuleChip icon="clock" label={expired ? "Ended" : "Until"} value={untilText(pocket.expiresAt).replace(/^until /, "")} a11y={untilText(pocket.expiresAt)} />
+              {pocket.frozen ? <RuleChip icon="freeze" label="Frozen" value="by the Sentinel" a11y="Frozen by the Sentinel" /> : null}
+            </View>
+          </Rise>
+        ) : null}
+
+        {owned && !pocket.revoked ? (
+          <Rise index={2} base={90}>
+            <View style={{ flexDirection: "row", gap: 10, paddingHorizontal: PAGE_MARGIN, marginTop: 16 }}>
+              <RoundButton icon="plus" label="Add funds" a11y="Add money" onPress={() => setAction({ mode: "fund", pocket: pocket.address })} />
+              <RoundButton icon="arrowIn" label="Return funds" a11y="Return funds" onPress={() => setAction({ mode: "return", pocket: pocket.address })} />
+              <RoundButton danger icon="ban" label="Revoke pocket" a11y="Revoke" onPress={() => setAction({ mode: "revoke", pocket: pocket.address })} />
+            </View>
+          </Rise>
+        ) : !owned ? (
+          <Card style={{ marginHorizontal: PAGE_MARGIN, marginTop: 16 }}><T v="sub" color="ink2">Another key owns this pocket. Add money, return or revoke from the device that created it.</T></Card>
+        ) : null}
         <TxNotice pocket={pocket.address} />
+        {err ? <T v="sub" color="vermillionInk" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 12 }}>{err}</T> : null}
+
+        {pocket.revoked ? (
+          <Rise index={2} base={90}>
+            <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 16, gap: 12 }}>
+              <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>Where the money is</T>
+              {returned > 0n ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c.greenSoft, alignItems: "center", justifyContent: "center" }}><Icon name="arrowIn" size={19} color={c.greenInk} stroke={2.2} /></View>
+                  <View style={{ flex: 1 }}>
+                    <T v="head">{`${money(returned)} back in your main wallet`}</T>
+                    <T v="cap" color="muted">Returned by your own key when you revoked it</T>
+                  </View>
+                </View>
+              ) : null}
+              {pocket.balance > 0n ? (
+                <Button label={`Return ${money(pocket.balance)} to main wallet`} kind="vermillion" icon="arrowIn" auto="return.open" onPress={() => setAction({ mode: "return", pocket: pocket.address })} />
+              ) : returned === 0n ? <T v="sub" color="ink2">The pocket was empty when you revoked it.</T> : null}
+            </Card>
+            <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 12, flexDirection: "row", gap: 12 }}>
+              {agent ? <AgentAvatar kind={agent.id} size={44} /> : <Avatar icon="bot" size={44} />}
+              <View style={{ flex: 1, gap: 4 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <T v="head">Agent locked out</T>
+                  {agent ? <View style={{ paddingHorizontal: 7, height: 20, borderRadius: 5, backgroundColor: c.fill, justifyContent: "center" }}><T v="tab" w="bold" style={{ letterSpacing: 0.6, textTransform: "uppercase" }}>{agent.name}</T></View> : null}
+                </View>
+                <T v="sub" color="ink2">{`${agent?.name ?? "The agent"} can no longer pay from this pocket. The contract refuses any payment, by anyone, for good.`}</T>
+              </View>
+            </Card>
+          </Rise>
+        ) : null}
+
         {pocket.frozen && !pocket.revoked ? (
-          <Card style={{ marginHorizontal: 20, marginTop: 16, gap: 10 }}>
-            <T v="row" w="semi">Frozen by the Sentinel</T>
-            <T v="sub" color="ink2">It saw your agent try payments outside your rules, so it stopped all payments on-chain. No money moved. Its key can only freeze; only yours can unfreeze.</T>
+          <Card style={{ marginHorizontal: PAGE_MARGIN, marginTop: 16, gap: 10 }}>
+            <T v="row" w="bold">Frozen by the Sentinel</T>
+            <T v="sub" color="ink2">It saw this pocket's agent try payments outside your rules, so it stopped all payments on-chain. No money moved. Its key can only freeze; only yours can unfreeze.</T>
             <UnfreezeButton pocket={pocket.address} />
           </Card>
         ) : null}
-        {pocket.revoked ? <T v="sub" color="muted" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 16 }}>Your agent can't spend from this pocket any more.{pocket.balance > 0n ? " Return the money to your main wallet when you like." : ""}</T> : null}
-        {err ? <T v="sub" color="negative" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 12 }}>{err}</T> : null}
 
-        <Rise index={0} base={130} dy={6}>
-          <Card style={{ marginHorizontal: 20, marginTop: 20 }}>
-            <WorstCase pocket={pocket} sellers={sellerNames} off={off} />
-          </Card>
-        </Rise>
-        {editable ? <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 10 }}>Tap Cap or Ask above to change a rule. It is signed by your key on this phone.</T> : null}
-        <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 4 }}>Agent {shortAddr(pocket.agent)}</T>
+        {!pocket.revoked ? (
+          <Rise index={3} base={130} dy={6}>
+            <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 16 }}>
+              <WorstCase pocket={pocket} sellers={sellerNames} off={off} />
+            </Card>
+            <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 12, gap: 14 }}>
+              <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
+                <T v="head">This week</T>
+                <T v="cap" color="muted">Settled payments by day</T>
+              </View>
+              <SpendBars rows={mine} name={(s) => cleanText(sellerName(s), 16)} />
+            </Card>
+          </Rise>
+        ) : (
+          <Rise index={3} base={130} dy={6}>
+            <AuditTrail rows={mine} name={(s) => cleanText(sellerName(s), 24)} onExport={exportLog} />
+          </Rise>
+        )}
 
-        <SectionHeader title="Allowed sellers" />
+        {agent ? (
+          <Press kind="row" haptics="light" onPress={() => router.push({ pathname: "/agents/[id]", params: { id: agent.id } })} accessibilityRole="button" accessibilityLabel={`Held by ${agent.name}`}
+            style={{ marginHorizontal: PAGE_MARGIN, marginTop: 12, flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: radius.card, backgroundColor: c.card }}>
+            <AgentAvatar kind={agent.id} size={40} />
+            <View style={{ flex: 1 }}>
+              <T v="cap" color="muted">Held by</T>
+              <T v="row" w="bold">{agent.kind === "builtin" ? "ChainBrain agent" : agent.name}</T>
+            </View>
+            <T v="mono" color="muted" style={{ fontSize: 11 }}>{`•••• ${pocket.agent.slice(-4).toUpperCase()}`}</T>
+            <Icon name="chevronRight" size={18} color={c.muted} />
+          </Press>
+        ) : null}
+
+        <SectionHeader title="Allowed sellers" right={`${pocket.allowed.length} of ${(cfg?.sellers ?? []).length}`} />
         <ListCard>
           {(cfg?.sellers ?? []).map((s) => {
             const on = pocket.allowed.includes(s.id);
             return (
-              <ListRow key={s.id} avatar={<Avatar label={s.name} />} title={cleanText(s.name, 40)} sub={cleanText(s.category, 30)}>
-                <Switch value={on} disabled={!owned || !!busy || off} trackColor={{ true: c.accent, false: c.fill }} thumbColor="#FFFFFF" ios_backgroundColor={c.fill} {...({ activeThumbColor: "#FFFFFF" } as object)}
-                  onValueChange={() => { haptic.select(); void toggle(s.name, on, s.payTo); }} accessibilityLabel={`Allow ${s.name}`} />
+              <ListRow key={s.id} avatar={<Avatar label={s.name} tone={on ? "soft" : "fill"} size={44} />} title={cleanText(s.name, 40)} sub={on ? cleanText(s.category, 30) : "Not on this pocket's list"}>
+                <Toggle on={on} disabled={!owned || !!busy || off} onChange={() => void toggle(s.name, on, s.payTo)} a11y={`Allow ${s.name}`} />
               </ListRow>
             );
           })}
         </ListCard>
-        <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 8 }}>{busy ? `${busy}: waiting for the chain…` : "Changing a seller is signed by your key on this phone."}</T>
+        <T v="cap" color="mutedOnCanvas" style={{ paddingHorizontal: 20, paddingTop: 8 }}>{busy ? `${busy}: waiting for the chain…` : editable ? "Changing a seller or a rule is signed by your key on this phone." : " "}</T>
 
         <SectionHeader title="History" />
-        {rows.length === 0 ? <Card style={{ marginHorizontal: 20 }}><T v="sub" color="ink2">Nothing from this pocket yet. Creating, adding money, payments and refusals show up here, each with its transaction.</T></Card> : <AnimatedList initial="stagger">{rows.map((r) => <ActivityRow key={r.key} row={r} onPress={() => setReceipt(r)} />)}</AnimatedList>}
+        {rows.length === 0 ? <Card style={{ marginHorizontal: PAGE_MARGIN }}><T v="sub" color="ink2">Nothing from this pocket yet. Creating, adding money, payments and refusals show up here, each with its transaction.</T></Card>
+          : <ListCard><AnimatedList initial="stagger">{rows.map((r, i) => <ActivityRow key={r.key} row={r} showAgent={false} last={i === rows.length - 1} onPress={() => setReceipt(r)} />)}</AnimatedList></ListCard>}
       </Screen>
     </View>
+  );
+}
+
+/** The revoked pocket's story as a vertical timeline, newest first, with the JSON export. */
+function AuditTrail({ rows, name, onExport }: { rows: LedgerRow[]; name: (id?: string) => string; onExport: () => void }) {
+  const items = [...rows].reverse().slice(0, 12).map((r) => {
+    const t = new Date(r.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    if (r.kind === "owner") {
+      const k = r.ownerKind;
+      const title = k === "revoke" ? "You revoked the pocket" : k === "return" ? `${money(r.amount ?? 0n)} returned to your wallet` : k === "fund" ? `You added ${money(r.amount ?? 0n)}` : k === "create" ? "Pocket created" : "Rule changed";
+      return { key: r.key, t, title, sub: "Owner transaction", tone: k === "revoke" ? c.vermillion : c.ink };
+    }
+    if (r.kind === "payment") return { key: r.key, t, title: `Paid ${name(r.sellerId)} ${money(r.amount ?? 0n)}`, sub: r.cosigned ? "Co-signed by you" : "Inside the pocket's limits", tone: c.green };
+    if (r.outcome === "refused") return { key: r.key, t, title: `${name(r.sellerId)} refused`, sub: r.reasons[0] ? r.reasons[0].replace(/_/g, " ").toLowerCase() : "Not allowed by the pocket", tone: c.vermillionInk };
+    return { key: r.key, t, title: r.kind === "intent" ? "Task confirmed" : "Approval", sub: r.outcome, tone: c.muted };
+  });
+  return (
+    <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 12, gap: 14 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <T v="section">Audit trail</T>
+        <T v="cap" color="muted">Newest first</T>
+      </View>
+      <View>
+        {items.map((x, i) => (
+          <View key={x.key} style={{ flexDirection: "row", gap: 12 }}>
+            <View style={{ alignItems: "center", width: 16 }}>
+              <View style={{ width: 14, height: 14, borderRadius: 7, borderWidth: 3, borderColor: c.card, backgroundColor: x.tone, marginTop: 3 }} />
+              {i < items.length - 1 ? <View style={{ flex: 1, width: 2, backgroundColor: c.fill }} /> : null}
+            </View>
+            <View style={{ flex: 1, paddingBottom: 14 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
+                <T v="row" w="bold" style={{ flexShrink: 1 }}>{x.title}</T>
+                <T v="cap" color="muted">{x.t}</T>
+              </View>
+              <T v="cap" color="muted">{x.sub}</T>
+            </View>
+          </View>
+        ))}
+      </View>
+      <Button label="Export the audit log (JSON)" kind="secondary" icon="download" onPress={onExport} />
+    </Card>
   );
 }

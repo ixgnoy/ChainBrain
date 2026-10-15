@@ -23,7 +23,7 @@ type Mode = "fund" | "return" | "revoke";
 const COPY: Record<Mode, { title: string; hint: string }> = {
   fund: { title: "Add money", hint: "Move money from your main wallet into a pocket. What is in the pocket is your agent's whole budget." },
   return: { title: "Return funds", hint: "Send everything left in the pocket back to your main wallet. The pocket stays active." },
-  revoke: { title: "Revoke a pocket", hint: "Your agent stops spending from it right away. You can still return the money afterwards." },
+  revoke: { title: "Revoke a pocket", hint: "The pocket stops for good: its agent can't pay from it again, and everything left comes back to your main wallet. Two transactions, both signed here." },
 };
 const AMOUNTS = ["0.50", "1.00", "2.00", "5.00"];
 
@@ -49,7 +49,7 @@ export function ActionSheet() {
 
 function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: () => void }) {
   const { pockets, wallet, refreshPockets, balances, recordTx, setNotice, active } = useApp();
-  const [done, setDone] = useState<{ title: string; hash: string } | null>(null);
+  const [done, setDone] = useState<{ title: string; hash: string; txs?: { label?: string; hash: string }[] } | null>(null);
   const [sel, setSel] = useState<string | undefined>(initial);
   const [amount, setAmount] = useState("1.00");
   const [error, setError] = useState<string | null>(null);
@@ -95,14 +95,25 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
       setDone({ title: `Returned ${money(had)} to your main wallet`, hash: r.hash }); await refreshPockets();
     } catch (e) { fail(e); }
   };
+  // Revoke = freeze for good, then sweep the balance back: two owner transactions (Pocket.sol revoke, then returnFunds)
   const doRevoke = async () => {
     setBusy(true); setError(null);
     try {
-      const r = await wallet!.revoke(chosen!.address);
-      recordTx({ kind: "revoke", pocket: chosen!.address, hash: r.hash });
-      const name = cleanText(chosen!.name, 30);
-      setNotice({ title: `${name} revoked`, pocket: chosen!.address, txs: [{ hash: r.hash }] });
-      setDone({ title: `${name} revoked`, hash: r.hash });
+      const p = chosen!;
+      const name = cleanText(p.name, 30);
+      const had = p.balance;
+      const r = await wallet!.revoke(p.address);
+      recordTx({ kind: "revoke", pocket: p.address, hash: r.hash });
+      const txs: { label?: string; hash: string }[] = [{ label: "Revoke", hash: r.hash }];
+      if (had > 0n) {
+        const back = await wallet!.returnFunds(p.address);
+        recordTx({ kind: "return", pocket: p.address, hash: back.hash, amount: had.toString() });
+        txs.push({ label: `Return ${money(had)}`, hash: back.hash });
+      }
+      const title = had > 0n ? `${name} revoked · ${money(had)} returned` : `${name} revoked`;
+      setNotice({ title, pocket: p.address, txs });
+      setDone({ title, hash: r.hash, txs });
+      haptic.warning();
       await refreshPockets();
     }
     catch (e) { haptic.error(); setError(txError(e)); } finally { setBusy(false); }
@@ -117,7 +128,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
           {mode === "fund" && balances ? <T v="sub" color="muted">Main wallet: {money(balances.usdc)}</T> : null}
         </View>
         {pockets.length === 0 ? <T v="sub" color="muted">No pockets yet.</T> : (
-          <View style={{ backgroundColor: c.canvas, borderRadius: 20, overflow: "hidden" }}>
+          <View style={{ backgroundColor: c.fill, borderRadius: 20, overflow: "hidden" }}>
             {pockets.map((p, i) => {
               const ok = eligible(p);
               const on = sel === p.address;
@@ -126,7 +137,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
                   onPress={ok ? () => { setSel(p.address); setError(null); } : undefined}
                   avatar={<Avatar label={p.name} tone={on ? "solid" : "soft"} />}
                   title={cleanText(p.name, 30)} sub={`${money(p.balance)}${p.revoked ? " · revoked" : ""}${!p.owned ? " · other key" : ""}`}>
-                  {on ? <Icon name="check" size={20} color={c.accent} stroke={2.2} /> : null}
+                  {on ? <Icon name="check" size={20} color={c.ink} stroke={2.4} /> : null}
                 </ListRow>
               );
             })}
@@ -145,11 +156,11 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
 
   return (
     <View style={{ flexShrink: 1 }}>
-      {done ? <SheetSuccess key="ok" minHeight={formH.current} title={done.title} txs={[{ hash: done.hash }]} /> : form}
+      {done ? <SheetSuccess key="ok" minHeight={formH.current} title={done.title} txs={done.txs ?? [{ hash: done.hash }]} /> : form}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}>
         {mode === "fund" && <SlideToConfirm key={`f${sel}${amount}${error}`} label={`Slide to add US$${amount}`} doneLabel="Funded" disabled={!chosen || !wallet} onConfirm={doFund} />}
         {mode === "return" && <SlideToConfirm key={`r${sel}${error}`} auto="return.slide" label="Slide to return funds" doneLabel="Returned" disabled={!chosen || !wallet || chosen.balance === 0n} onConfirm={doReturn} />}
-        {mode === "revoke" && (done ? <View style={{ height: 64 }} /> : <HoldToRevoke auto="revoke.hold" disabled={!chosen || !wallet} busy={busy} onComplete={doRevoke} />)}
+        {mode === "revoke" && (done ? <View style={{ height: 64 }} /> : <HoldToRevoke auto="revoke.hold" label={chosen && chosen.balance > 0n ? `Hold to revoke and return ${money(chosen.balance)}` : "Hold to revoke"} disabled={!chosen || !wallet} busy={busy} onComplete={doRevoke} />)}
         <Button label={done ? "Done" : "Cancel"} kind={done ? "secondary" : "text"} auto={done ? "sheet.close" : undefined} onPress={close} />
       </View>
     </View>

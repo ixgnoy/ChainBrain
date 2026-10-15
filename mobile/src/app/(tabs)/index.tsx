@@ -166,7 +166,7 @@ function Home({ ready }: { ready: boolean }) {
           <Tile icon="arrowIn" label="Add money" onPress={() => setAction({ mode: "fund" })} />
           <Tile icon="squarePlus" label="New pocket" auto="home.newPocket" onPress={() => router.push("/create")} />
           {canConnect
-            ? <Tile icon="link" label="Connect" tone="blue" a11y="Connect an agent" onPress={() => router.push("/connect")} />
+            ? <Tile icon="link" label="Connect" tone="blue" a11y="Connect an agent" auto="home.connect" onPress={() => router.push("/connect")} />
             : <Tile icon="chat" label="Ask agent" tone="blue" onPress={() => router.navigate("/agent")} />}
         </View>
       </Rise>

@@ -5,7 +5,7 @@ import { Copy, Check, ShieldCheck, ShieldAlert, Wallet } from "lucide-react";
 import { Arena } from "./Arena";
 import { explorerHref } from "./route";
 import { useNetwork } from "./network";
-import { PhoneTag, TxHash, Verdict, pocketStatus, useViewTx, usd, NEVER } from "./parts";
+import { AgentTag, PhoneTag, TxHash, Verdict, pocketStatus, useViewTx, usd, NEVER } from "./parts";
 import { Disclosure, KpiStrip, chip } from "./kit";
 import { worstCase } from "./worst";
 import { Button, Card, Empty, PageTitle, Pill, PillSelect, Section } from "../seller/ui";
@@ -58,7 +58,7 @@ export function Pockets({ open }: { open(addr: string): void }) {
                     <span className="block truncate text-[12px] leading-4 text-muted">Owner {shortAddr(p.owner)} · cap {usd(p.cap)} · {p.askAbove === NEVER ? "never asks" : `asks above ${usd(p.askAbove)}`} · {p.allowed.map((i) => names.get(i) ?? i).join(", ") || "no sellers"}</span>
                     <a href={explorerHref.address(p.address)} className="pointer-events-auto relative z-10 text-[12px] font-bold leading-4 text-ink underline decoration-line decoration-2 underline-offset-4 hover:decoration-vermillion">Open in explorer</a>
                   </span>
-                  <span className="num hidden text-[13px] text-ink2 lg:block">{shortAddr(p.agent)}</span>
+                  <span className="hidden lg:block"><AgentTag agentKey={p.agent} serverAgent={cfg.agent} /></span>
                   <span className="max-lg:order-3"><Verdict kind={st.kind}>{st.label}</Verdict></span>
                   <span className={cn("num text-right text-[17px] font-extrabold leading-5 tracking-[-0.02em] max-lg:order-2", off && "text-muted")}>{usd(p.balance)}</span>
                   <span className="num text-right text-[13px] text-ink2 max-lg:order-4"><span className="text-muted lg:hidden">Max loss </span>{usd(w.max)}</span>

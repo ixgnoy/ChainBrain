@@ -426,6 +426,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     busy: chatBusy, activeName: active?.name, activeAddress: active?.address, pocketCount: pockets.length,
     lastPaymentAt: myEvents.reduce((m, e) => (e.type === "payment" && e.at > m ? e.at : m), 0),
     ownerTxCount: ownerTxs.length,
+    outside: pending.filter((a) => (a.agent ?? "chainbrain") !== "chainbrain").map((a) => ({ id: a.id, kind: a.kind, agent: a.agent })),
   };
   const hostSubs = useRef(new Set<() => void>());
   useEffect(() => { hostSubs.current.forEach((f) => f()); });

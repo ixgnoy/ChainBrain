@@ -1,13 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createWorld, seedOwner, SIM_AGENT, CATALOG, parseUsd, NEVER, factsFrom, sellerName, type Hex } from "../../../shared/sim";
+import { createWorld, seedOwner, SIM_AGENT, CLAUDE_AGENT, CATALOG, parseUsd, NEVER, factsFrom, sellerName, errand, firstRun, type Hex } from "../../../shared/sim";
 import { createAutoplay, type HostState } from "./autoplay";
 import { registerTarget, resetTargets, autoplayRunning, typeOut, type TargetName } from "./autoplayTargets";
 
 const OWNER = "0x0000000000000000000000000000000000a11ce0" as Hex;
 const payTo = (...ids: string[]) => CATALOG.filter((s) => ids.includes(s.id)).map((s) => s.payTo);
 
-test("auto-play: wizard, then scenes 1-8 through the screens' targets, on the real built-in network", async () => {
+test("auto-play: wizard, scenes 1-8, Claude via Connect and the inbox, then scenes 9 and 10, through the screens' targets", async () => {
   resetTargets();
   const w = createWorld({ speed: 0.005, seed: 3, revokeWindowMs: 9000 });
   const { pockets: seeded } = await seedOwner(w, OWNER);
@@ -31,7 +31,13 @@ test("auto-play: wizard, then scenes 1-8 through the screens' targets, on the re
   let typed = "";
   on("composer", async ({ text }) => { await typeOut(text, (s) => { typed = s; }, { sleep: async () => {} }); void w.chat(active, typed); });
   on("question.answer", (a) => { assert.equal(a, "per report"); void w.chat(active, "US$2 per report."); });
-  const answerPending = (kind: string) => { const p = w.pending(active).find((x) => x.kind === kind); if (p) void w.answer(p.id, { approved: true, signature: kind === "payment" ? "0xsig" : undefined }); };
+  let claudePocket: Hex | undefined;
+  let focus: string | undefined; // the inbox picked this approval (an outside agent's)
+  const answerPending = (kind: string) => {
+    const p = (focus ? w.approvals().find((x) => x.id === focus && x.status === "pending" && x.kind === kind) : undefined) ?? w.pending(active).find((x) => x.kind === kind);
+    focus = undefined;
+    if (p) void w.answer(p.id, { approved: true, signature: kind === "payment" ? "0xsig" : undefined });
+  };
   on("intent.confirm", () => answerPending("intent"));
   on("approval.slide", () => answerPending("payment"));
   on("revoke.open", () => {});
@@ -39,7 +45,21 @@ test("auto-play: wizard, then scenes 1-8 through the screens' targets, on the re
   on("return.open", () => {});
   on("return.slide", () => { w.chain.returnFunds(OWNER, active); });
   on("picker.open", () => {});
-  on("picker.pocket", (name) => { assert.equal(name, "One purchase"); active = seeded.find((p) => p.name === name)!.address; });
+  on("picker.pocket", (name) => { assert.ok(name === "One purchase" || name === "Research data"); active = seeded.find((p) => p.name === name)!.address; });
+  on("home.connect", () => {});
+  on("connect.agent", (a) => assert.equal(a, "claude"));
+  on("connect.copy", () => {});
+  on("consent.allow", () => {
+    const { pocket } = w.chain.createPocket(OWNER, { agent: CLAUDE_AGENT, cap: parseUsd("2"), askAbove: parseUsd("0.50"), expiresAt: BigInt(Math.floor(Date.now() / 1000) + 7 * 86_400), sellers: payTo("datalite", "datapro") });
+    w.chain.transfer(OWNER, pocket, parseUsd("5"));
+    claudePocket = pocket;
+    w.connect("claude");
+    void (async () => { await w.act("claude", pocket, firstRun()); await w.act("claude", pocket, errand({ what: "Durian 2026 forecast", maxPrice: "2.00", maxTotal: "2.00", buys: [["datapro", "premium-report"]] })); })();
+  });
+  on("consent.done", () => {});
+  on("inbox.open", () => {});
+  on("inbox.review", (agent) => { assert.equal(agent, "claude"); focus = w.approvals().find((a) => a.status === "pending" && a.agent === "claude")?.id; });
+  on("radar.open", () => {});
   on("deadend.fix", () => {});
   on("rules.slide", () => { w.chain.setCap(OWNER, active, parseUsd("0.30")); w.chain.transfer(OWNER, active, parseUsd("0.10")); });
   on("sheet.close", () => {});
@@ -52,6 +72,7 @@ test("auto-play: wizard, then scenes 1-8 through the screens' targets, on the re
     pocketCount: w.chain.pocketsOf(OWNER).length,
     lastPaymentAt: Math.max(0, ...w.events(0).filter((e) => e.type === "payment" && w.chain.view(e.pocket!).owner === OWNER).map((e) => e.at)),
     ownerTxCount: w.txs().filter((t) => t.from === OWNER).length,
+    outside: w.approvals().filter((a) => a.status === "pending" && a.agent && a.agent !== "chainbrain").map((a) => ({ id: a.id, kind: a.kind, agent: a.agent })),
   });
   const ap = createAutoplay({
     navigate: () => {}, state, subscribe: (f) => { subs.add(f); return () => void subs.delete(f); },
@@ -67,7 +88,11 @@ test("auto-play: wizard, then scenes 1-8 through the screens' targets, on the re
   for (const id of ["pocketCreated", "onchainPayment", "cosigned", "clarifyingQuestion", "refusedReplanned", "injectionIgnored", "dataRefused", "forcedReverted", "escalationBlocked", "killSwitch", "safeStop", "fixApplied"] as const) assert.ok(f[id], `${id} (pressed: ${pressed.join(", ")})`);
   assert.ok(w.events(0).some((e) => e.type === "refusal" && e.reason === "POCKET_REVOKED"), "scene 7: the second payment was refused after the revoke");
   assert.equal(w.chain.view(seeded[1].address).cap, parseUsd("0.30"));
-  assert.equal(pressed.filter((p) => p === "approval.slide").length, 1, "only DataPro needed a co-signature");
+  assert.equal(pressed.filter((p) => p === "approval.slide").length, 2, "DataPro for ChainBrain, then Claude's premium report");
+  assert.ok(claudePocket, "Claude got its own pocket");
+  assert.ok(w.events(0).some((e) => e.type === "payment" && e.agent === "claude" && e.cosigned && e.pocket === claudePocket), "Claude's co-signed payment from its new pocket");
+  assert.ok(w.events(0).some((e) => e.type === "radar" && e.kind === "alert"), "scene 9: Radar raised an alert");
+  assert.ok(w.chain.view(seeded[0].address).frozen, "scene 10: the Sentinel froze the Research data pocket");
 });
 
 test("auto-play: stop() ends it at the next step and clears the running flag", async () => {

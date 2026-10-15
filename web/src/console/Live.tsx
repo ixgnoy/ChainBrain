@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ShieldAlert, ShieldCheck, Check, Minus, Wallet, Clock, BellRing, Timer, Bot } from "lucide-react";
 import { useNetwork } from "./useNetwork";
-import { Expected, PhoneTag, Reason, TxHash, Verdict, clock, pocketStatus, usd, NEVER } from "./parts";
+import { Expected, PhoneTag, Reason, TxHash, Verdict, clock, pocketStatus, usd, NEVER, AgentTag } from "./parts";
 import { argsOf, evidenceOf, injectionOf, plainSummary, type Injection } from "./story";
 import { txLabel } from "./network";
 import { orList, worstCase, worstSegments } from "./worst";
@@ -190,6 +190,7 @@ function EvidenceStrip({ ev, decisions }: { ev: ReturnType<typeof evidenceOf>; d
 
 /** The pocket as a card: powder-blue hatch (white hatch with muted text when stopped), name, the balance as a figure, a short pocket number, rules as chips. */
 function PocketCard({ p, name, phone, stopped, status, present }: { p: PocketState; name: string; phone: boolean; stopped: boolean; status?: ReturnType<typeof pocketStatus>; present?: boolean }) {
+  const { cfg } = useNetwork();
   const ask = p.askAbove === NEVER ? "Never asks" : p.askAbove === 0n ? "Asks every time" : `Ask above ${usd(p.askAbove)}`;
   const ends = new Date(p.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   const chip = "inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[12px] font-bold text-ink shadow-[inset_0_0_0_1px_var(--color-tile-stroke)]";
@@ -214,7 +215,7 @@ function PocketCard({ p, name, phone, stopped, status, present }: { p: PocketSta
       </div>
       {!present && (
         <dl className="mt-4 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1.5 border-t border-ink/15 pt-3 text-[12px] leading-4">
-          <dt className="flex items-center gap-1.5 font-semibold"><Bot className="size-3.5" {...I} aria-hidden />Agent</dt><dd className="num text-right font-bold">{shortAddr(p.agent)}</dd>
+          <dt className="flex items-center gap-1.5 font-semibold"><Bot className="size-3.5" {...I} aria-hidden />Held by</dt><dd className="text-right"><AgentTag agentKey={p.agent} serverAgent={cfg.agent} className="bg-white/60" /></dd>
           <dt className="font-semibold">Owner</dt><dd className="num text-right font-bold">{shortAddr(p.owner)}</dd>
         </dl>
       )}

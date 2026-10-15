@@ -1,4 +1,5 @@
-// "Which pocket?": the agent chat's pocket switch. Lives at the root with the other sheets, so it sits above the tab bar.
+// "Which pocket?": the ChainBrain chat's pocket switch. Only the built-in agent's pockets are listed: a pocket keeps the agent
+// it was made for, so Claude's or ChatGPT's pockets are never the chat's. Lives at the root with the other sheets.
 import React, { useState } from "react";
 import { View } from "react-native";
 import { useApp } from "../store";
@@ -13,9 +14,11 @@ export function PocketPickerSheet() {
   const { pickerOpen, setPickerOpen, pockets, setActive } = useApp();
   // the auto-play picks the row named `arg`: the row takes the press tint for a beat, then the same choice a tap makes
   const [lit, setLit] = useState<string | null>(null);
+  const choices = pockets.filter((p) => (p.agentId ?? "chainbrain") === "chainbrain");
   useAutoplayTarget("picker.pocket", async (arg) => {
     const want = String(arg ?? "").toLowerCase();
-    const p = pockets.find((x) => x.name.toLowerCase().includes(want)) ?? pockets[0];
+    const named = choices.filter((x) => x.name.toLowerCase().includes(want));
+    const p = named.find((x) => !x.revoked) ?? named[0] ?? choices[0]; // a live pocket of that name first
     if (!p) return false;
     const run = autoplayRun();
     setLit(p.address);
@@ -27,11 +30,11 @@ export function PocketPickerSheet() {
     <Sheet visible={pickerOpen} onClose={() => setPickerOpen(false)}>
       <View style={{ paddingHorizontal: 20, paddingBottom: 12, gap: 4 }}>
         <T v="section">Which pocket?</T>
-        <T v="sub" color="ink2">Your agent only spends from the pocket you pick.</T>
+        <T v="sub" color="ink2">ChainBrain only spends from the pocket you pick. Pockets you gave Claude or ChatGPT stay theirs.</T>
       </View>
-      <View style={{ marginHorizontal: 20, marginBottom: 12, borderRadius: 20, overflow: "hidden", backgroundColor: c.canvas }}>
-        {pockets.map((p, i) => (
-          <PocketRow key={p.address} pocket={p} last={i === pockets.length - 1} lit={lit === p.address} onPress={() => { setActive(p.address); setPickerOpen(false); haptic.select(); }} />
+      <View style={{ marginHorizontal: 20, marginBottom: 12, borderRadius: 20, overflow: "hidden", backgroundColor: c.fill }}>
+        {choices.map((p, i) => (
+          <PocketRow key={p.address} pocket={p} last={i === choices.length - 1} lit={lit === p.address} onPress={() => { setActive(p.address); setPickerOpen(false); haptic.select(); }} />
         ))}
       </View>
     </Sheet>

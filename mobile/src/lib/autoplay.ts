@@ -1,6 +1,8 @@
 // Hidden auto-play for recording the video: plays scenes 1-8 on the phone by itself, the way the presenter would. It
 // creates the Research pocket in the wizard, types each sentence, answers the one question, confirms tasks, slides to
-// co-sign, holds to revoke, switches to One purchase, applies the fix and asks again. Every press goes through a
+// co-sign, holds to revoke (which also returns the money), switches to One purchase, applies the fix and asks again. Then
+// the outside agents: it connects Claude (pairing link, consent, a new pocket), confirms Claude's task and co-signs its
+// payment from the Approvals inbox; then scene 9 (Radar) and scene 10 (Sentinel) on the seeded Research data pocket. Every press goes through a
 // target the screen registered (lib/autoplayTargets.ts), so what the camera sees is the real UI doing real work; the
 // built-in network decides every outcome. Started and stopped by a long-press on the Agent header. No React Native
 // imports: Node tests drive it with a fake host.
@@ -20,6 +22,8 @@ export type HostState = {
   lastPaymentAt: number;
   /** Owner transactions so far (create, fund, revoke, return, rule edits). */
   ownerTxCount: number;
+  /** Requests from outside agents (Claude, ChatGPT) waiting in the Approvals inbox, on any pocket. */
+  outside?: { id: string; kind: "intent" | "payment" | "question"; agent?: string }[];
 };
 export type AutoplayHost = {
   navigate(path: "/" | "/agent"): void;
@@ -176,7 +180,56 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await drive();
     await wait(3000);
 
-    // ---- close on Home: the stack, the frozen Research card and the fixed One purchase card
+    // ---- outside agents: connect Claude, give it its own pocket, then answer it from the Approvals inbox
+    host.navigate("/");
+    await wait(2200);
+    if (await tap("home.connect", undefined, 5000)) {
+      await wait(1600);
+      await tap("connect.agent", "claude", 3000);
+      await wait(1100);
+      await must("connect.copy");
+      await must("consent.allow", undefined, 15_000); // the consent sheet opens once Claude "opens" the link
+      await wait(2400);
+      await tap("consent.done", undefined, 6000);
+      await wait(2600);
+      const claude = (kind: "intent" | "payment") => (s: HostState) => (s.outside ?? []).some((x) => x.agent === "claude" && x.kind === kind);
+      await until("Claude's task", claude("intent"), 40_000).catch(soft);
+      if (claude("intent")(host.state())) {
+        host.navigate("/");
+        await wait(1500);
+        await must("inbox.open");
+        await wait(1500);
+        await must("inbox.review", "claude");
+        await wait(1500);
+        await must("intent.confirm");
+        await until("Claude's payment request", claude("payment"), 40_000).catch(soft);
+        if (claude("payment")(host.state())) {
+          await wait(1200);
+          await must("inbox.review", "claude");
+          await wait(1900);
+          await must("approval.slide");
+          await wait(3200);
+        }
+      }
+    }
+
+    // ---- scene 9: Radar blocks DataPro after a drainer pays it; scene 10: the Sentinel freezes a probing agent
+    host.navigate("/agent");
+    await wait(1600);
+    await must("picker.open");
+    await wait(900);
+    await must("picker.pocket", "Research data");
+    await wait(1400);
+    await say(text("9").text);
+    await wait(2400);
+    await tap("radar.open", undefined, 3000);
+    await wait(3600);
+    host.navigate("/agent");
+    await wait(1500);
+    await say(text("10").text);
+    await wait(3600);
+
+    // ---- close on Home: the deck, the revoked Research card and the fixed One purchase card
     host.navigate("/");
     await wait(4000);
   }

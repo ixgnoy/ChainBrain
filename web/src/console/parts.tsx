@@ -5,6 +5,8 @@ import { REASONS, formatUsd, shortAddr } from "../shared";
 import type { ChipKind } from "../lib/trace";
 import type { PocketState } from "./chain";
 import { cn } from "../lib/cn";
+import { agentByAddress } from "@sim/agents";
+import { CLAUDE_SPARK, OPENAI_BLOSSOM, type Mark } from "../../../shared/brand/marks";
 
 export const usd = (n?: bigint) => (n == null ? "–" : `US$${formatUsd(n)}`);
 export const NEVER = 2n ** 256n - 1n;
@@ -64,3 +66,31 @@ export function pocketStatus(p: PocketState): { label: string; kind: ChipKind } 
 
 export const sellerNames = (ids: string[], names: Map<string, string>) => ids.map((i) => names.get(i) ?? i);
 export const ownerTag = (a: string) => shortAddr(a);
+
+// ---- agents: the pocket's immutable agent key names the agent that holds it (built-in network: ChainBrain, Claude,
+// ChatGPT; a real server: its one key is ChainBrain's own agent). Marks are the official files in shared/brand, unaltered.
+
+export function agentOfKey(key: string | undefined, serverAgent?: string): { id: string; name: string } | undefined {
+  const a = agentByAddress(key);
+  if (a) return { id: a.id, name: a.name };
+  if (key && serverAgent && key.toLowerCase() === serverAgent.toLowerCase()) return { id: "chainbrain", name: "ChainBrain" };
+  return undefined;
+}
+
+function MarkSvg({ mark, size }: { mark: Mark; size: number }) {
+  return <svg width={size} height={size} viewBox={mark.viewBox} aria-hidden>{mark.paths.map((d, i) => <path key={i} d={d} fill={mark.fill} />)}</svg>;
+}
+
+/** A small agent chip: the agent's mark and name; falls back to the short key. */
+export function AgentTag({ agentKey, serverAgent, className }: { agentKey: string; serverAgent?: string; className?: string }) {
+  const a = agentOfKey(agentKey, serverAgent);
+  if (!a) return <span className={cn("num", className)}>{`${agentKey.slice(0, 6)}…${agentKey.slice(-4)}`}</span>;
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full bg-fill py-0.5 pl-0.5 pr-2 text-[12px] font-semibold leading-4 text-ink2", className)} title={agentKey}>
+      <span className={cn("grid size-5 place-items-center rounded-[6px]", a.id === "chainbrain" ? "bg-ink" : "bg-card ring-1 ring-tile-stroke")}>
+        {a.id === "claude" ? <MarkSvg mark={CLAUDE_SPARK} size={13} /> : a.id === "chatgpt" ? <MarkSvg mark={OPENAI_BLOSSOM} size={14} /> : <span className="size-2 rounded-full bg-white" />}
+      </span>
+      {a.name}
+    </span>
+  );
+}
