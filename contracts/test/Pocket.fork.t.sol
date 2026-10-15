@@ -14,9 +14,9 @@ interface IUSDC {
     ) external;
 }
 
-/// Runs against real USDC v2.2 on a Base Sepolia fork: this is the on-chain half of the day-1 spike.
-contract PocketForkTest is Test {
-    IUSDC constant USDC = IUSDC(0x036CbD53842c5426634e7929541eC2318f3dCF7e);
+/// The pocket cases, run against any EIP-3009 token that supports ERC-1271 payers (see the two concrete suites below).
+abstract contract PocketCases is Test {
+    IUSDC USDC; // the payment token: real USDC v2.2 on the Base fork, or MockEHKD on FISCO / locally
     bytes32 constant TRANSFER_TYPEHASH = keccak256(
         "TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
     );
@@ -37,7 +37,7 @@ contract PocketForkTest is Test {
     uint256 salt;
 
     function setUp() public {
-        vm.createSelectFork(vm.envOr("BASE_SEPOLIA_RPC", string("https://sepolia.base.org")));
+        USDC = _setUpToken();
         (owner, ownerPk) = makeAddrAndKey("owner");
         (agent, agentPk) = makeAddrAndKey("agent");
         address[] memory sellers = new address[](2);
@@ -50,6 +50,9 @@ contract PocketForkTest is Test {
         // ponytail: deal() writes USDC v2.2's packed balance slot; if it ever fails, fund from a faucet-funded address
         deal(address(USDC), address(pocket), 5e6);
     }
+
+    /// Select the chain and return the token. deal() must work on it.
+    function _setUpToken() internal virtual returns (IUSDC);
 
     function _auth(address to, uint256 value, uint256 pk) internal returns (Auth memory a) {
         a.to = to;
@@ -286,5 +289,13 @@ contract PocketForkTest is Test {
         vm.prank(address(0));
         vm.expectRevert(bytes("NOT_GUARDIAN"));
         p.freeze("X");
+    }
+}
+
+/// Runs against real USDC v2.2 on a Base Sepolia fork: this is the on-chain half of the day-1 spike.
+contract PocketForkTest is PocketCases {
+    function _setUpToken() internal override returns (IUSDC) {
+        vm.createSelectFork(vm.envOr("BASE_SEPOLIA_RPC", string("https://sepolia.base.org")));
+        return IUSDC(0x036CbD53842c5426634e7929541eC2318f3dCF7e);
     }
 }
