@@ -12,8 +12,11 @@ export function SheetScroll({ children, style, onContentSizeChange, onLayout, ..
   const ctx = useSheetCtx();
   const box = React.useRef({ h: 0, c: 0 });
   const sync = () => { if (ctx) ctx.scrollable.value = box.current.c > box.current.h + 1; };
-  const onScroll = useAnimatedScrollHandler((e) => { if (ctx) ctx.scrollY.value = e.contentOffset.y; });
-  const lock = useAnimatedProps(() => ({ scrollEnabled: ctx ? ctx.y.value <= 0.5 : true }));
+  // worklets capture only the shared values: `ctx` also holds the NativeGesture, which Worklets cannot copy to the UI thread
+  const scrollY = ctx?.scrollY;
+  const y = ctx?.y;
+  const onScroll = useAnimatedScrollHandler((e) => { if (scrollY) scrollY.value = e.contentOffset.y; });
+  const lock = useAnimatedProps(() => ({ scrollEnabled: y ? y.value <= 0.5 : true }));
   if (!ctx) return <ScrollView style={[{ flexGrow: 0 }, style]} {...p}>{children}</ScrollView>;
   return (
     <GestureDetector gesture={ctx.native}>
