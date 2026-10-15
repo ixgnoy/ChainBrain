@@ -322,7 +322,7 @@ fun AgentScreen(pocket: String, wallet: OwnerWallet, api: Api, events: List<JSON
                 Spacer(Modifier.size(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Btn("Decline", { scope.launch { api.decide(pay.getString("id"), false) } }, Modifier.weight(1f), kind = Kind.Ghost, enabled = !signing)
-                    Btn(if (signing) "Signing…" else "Approve and sign", {
+                    Btn(if (signing) "Signing…" else "Approve", {
                         signing = true; err = ""
                         scope.launch {
                             runCatching {
