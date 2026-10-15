@@ -116,7 +116,7 @@ export default function PocketDetail() {
         ) : null}
         {/* the same card as Home's deck; it takes over from the flying card the moment that lands */}
         <View style={{ alignItems: "center", opacity: flight?.pocket === pocket.address.toLowerCase() ? 0 : 1 }} accessibilityLabel={`${cleanText(pocket.name, 30)} card, ${usd(pocket.balance)} USDC`} accessible>
-          {W ? <PocketFace pocket={pocket} width={W} tone={toneFor(pockets, pocket.address)} buzz shadow /> : <View style={{ height: 200 }} />}
+          {W ? <PocketFace pocket={pocket} width={W} tone={toneFor(pockets, pocket.address)} buzz shadow tilt /> : <View style={{ height: 200 }} />}
         </View>
 
         {!pocket.revoked ? (

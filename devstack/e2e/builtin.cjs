@@ -85,7 +85,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Research data").waitFor();
     const t = await body();
     check("four seeded pockets", /Research data/.test(t) && /One purchase/.test(t) && /Market news/.test(t) && /Trade quotes/.test(t));
-    check("pockets are cards (cap, ask-me limit, valid thru)", /CAP/.test(t) && /ASK ABOVE/.test(t) && /VALID THRU/.test(t));
+    check("pockets are cards (cap, ask-me limit, expiry)", /Cap US\$/.test(t) && /asks above|never asks|asks every time/.test(t) && /Exp\. \d\d\/\d\d|Ends \d\d:\d\d/.test(t));
     check("the deck shows every pocket as a button", (await page.getByRole("button", { name: /Research data pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /One purchase pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /Market news pocket/ }).count()) === 1);
     check("the agents that hold them are named", /ChainBrain/.test(t) && /Claude/.test(t) && /ChatGPT/.test(t));
     check("spending this week is computed (vs last week)", /Spent by your agents/.test(t) && /vs last week/.test(t));
@@ -101,7 +101,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Allowed sellers").waitFor();
     await sleep(900);
     const t = await body();
-    check("pocket page shows the same card (VALID THRU) and its rules", /VALID THRU/.test(t) && /Allowed sellers/.test(t));
+    check("pocket page shows the same card (expiry) and its rules", /Exp\. \d\d\/\d\d|Ends \d\d:\d\d/.test(t) && /Allowed sellers/.test(t));
     await shot("01a-pocket-page");
     await page.goBack();
     await visible("Agent pockets").waitFor();

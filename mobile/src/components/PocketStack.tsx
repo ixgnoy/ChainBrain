@@ -28,6 +28,7 @@ const ROT = [-2, 3, -4, 5];
 const TX = [0, 6, -6, 10];
 const TY = [96, 62, 30, 0];
 const SC = [1, 0.97, 0.94, 0.91];
+const TIP = [0, 7, 13, 18];
 const DEPTHS = [0, 1, 2, 3];
 const TOP = 6; // headroom above the furthest card
 
@@ -123,6 +124,14 @@ function DeckCard({ pocket, depth, count, cw, play, focused, reduce, dragX, tone
       ],
     };
   });
+  // 2.5D, on an inner view: iOS turns zIndex into a layer depth, so sibling cards tipped in 3D would cut through each other;
+  // a child's 3D transform is flattened into its card's plane instead. Cards further back tip away from you; a swipe turns
+  // the front card on its vertical axis.
+  const tip = useAnimatedStyle(() => {
+    const d = Math.min(pos.value, 3.6);
+    const front = Math.max(0, 1 - pos.value);
+    return { transform: [{ perspective: 900 }, { rotateX: `${interpolate(d, DEPTHS, TIP, Extrapolation.CLAMP)}deg` }, { rotateY: `${(dragX.value / 9) * front}deg` }] };
+  });
   const open = () => {
     const id = pocket.address;
     const push = () => router.push({ pathname: "/pocket/[id]", params: { id } });
@@ -132,15 +141,17 @@ function DeckCard({ pocket, depth, count, cw, play, focused, reduce, dragX, tone
   const name = cleanText(pocket.name, 30);
   return (
     <Animated.View pointerEvents={depth >= MAX ? "none" : "auto"} style={[{ position: "absolute", top: TOP, zIndex: count - depth }, style]}>
+      <Animated.View style={tip}>
       <Reveal play={play} index={depth} step={80} dy={26} hidden={hidden}>
         <View ref={ref} collapsable={false}>
           <Press kind="row" haptics={depth === 0 ? "light" : "none"} onPress={depth === 0 ? open : onBring}
             accessibilityRole="button" accessibilityLabel={`${name} pocket, ${usd(pocket.balance)} USDC${pocket.revoked ? ", revoked" : ""}`}
             accessibilityHint={depth === 0 ? "Opens the pocket" : "Brings this card to the front"}>
-            <PocketFace pocket={pocket} width={cw} tone={tone} shadow focused={focused} />
+            <PocketFace pocket={pocket} width={cw} tone={tone} shadow focused={focused} tilt={depth === 0} />
           </Press>
         </View>
       </Reveal>
+      </Animated.View>
     </Animated.View>
   );
 }

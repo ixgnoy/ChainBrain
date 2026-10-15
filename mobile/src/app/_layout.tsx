@@ -8,6 +8,7 @@ import { colorScheme } from "nativewind";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
+import { TiltProvider } from "../ui/tilt";
 import { c } from "../tokens";
 import { AppProvider, useApp } from "../store";
 import { ApprovalSheet } from "../components/ApprovalSheet";
@@ -86,7 +87,9 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: c.canvas, alignItems: "center" }}>
         <View style={{ flex: 1, width: "100%", maxWidth: Platform.OS === "web" ? 480 : undefined }}>
           <AppProvider>
+            <TiltProvider>
             <Shell />
+          </TiltProvider>
           </AppProvider>
         </View>
       </GestureHandlerRootView>

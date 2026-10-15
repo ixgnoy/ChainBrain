@@ -4,6 +4,7 @@
   "main": "index.js",
   "dependencies": {
     "@expo/metro-runtime": "~57.0.17",
+    "@shopify/react-native-skia": "2.6.2",
     "babel-preset-expo": "~57.0.0",
     "expo": "~57.0.29",
     "expo-blur": "~57.0.3",
