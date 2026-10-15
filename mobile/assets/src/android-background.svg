@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs><pattern id="h" patternUnits="userSpaceOnUse" width="14" height="14"><path d="M0,14 L14,0 M-3.5,3.5 L3.5,-3.5 M10.5,17.5 L17.5,10.5" stroke="#FFFFFF" stroke-width="2.25" stroke-linecap="square"/></pattern></defs>
-  <rect width="512" height="512" fill="#111215"/>
-  <rect x="297" width="215" height="512" fill="url(#h)" opacity="0.09"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#E7E6E2"/></svg>

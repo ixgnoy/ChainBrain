@@ -1,7 +1,7 @@
 // First-launch intro, shown on every launch: three pages, Skip always visible, swipe with the finger (the pager follows it 1:1 and
 // lets go with its velocity), a page indicator that doubles as the auto-advance timer (the whole run takes about 7 s; the first
 // touch hands control to the owner). Each page has one illustration built from app primitives (Stitch chainbrain_intro + the
-// vaultbank intro): the pocket cards fan out over a hatch panel (the owner's real pockets once they are read), the rules of a
+// vaultbank intro): the owner's real pocket cards are dealt in, tilted and spilling off the edge, while the mark locks in; the rules of a
 // contract draw in under a lock, the worst case fills a hatch bar. No gradients, glow or sparkles.
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -9,12 +9,12 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { Easing, Extrapolation, cancelAnimation, interpolate, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { c, deck, level3, motion, radius } from "../tokens";
+import { c, F, level3, motion, radius } from "../tokens";
 import { useApp } from "../store";
 import { Hatch } from "../ui/Hatch";
-import { AgentAvatar } from "../ui/AgentAvatar";
-import { agentInfo } from "../../../shared/sim/agents";
-import { faceOf, toneFor } from "./PocketFace";
+import { PocketFace, toneFor } from "./PocketFace";
+import { BrandMark } from "../ui/BrandMark";
+import type { Pocket } from "../store";
 import { haptic } from "../haptics";
 import { Button, Press } from "../ui/kit";
 import { T } from "../ui/Text";
@@ -42,44 +42,35 @@ function usePlay(active: boolean, reduce: boolean, ms = 1100, delay = 120) {
 /** A 0-1 window of the page's play value: starts at `a`, done at `b`. */
 const win = (t: number, a: number, b: number) => { "worklet"; return interpolate(t, [a, b], [0, 1], Extrapolation.CLAMP); };
 
-// ---- page 1: the pocket cards fan out over a hatch panel (DESIGN.md "Card Deck Component")
-const FAN = [{ rot: -9, x: -6, y: 18 }, { rot: 4, x: 22, y: -2 }, { rot: -2, x: 8, y: 40 }]; // back to front
-// before the network is read: the seeded pockets by name, on their own faces (back to front)
-const FALLBACK = [{ name: "Trade quotes", agent: "chatgpt", tail: "", tone: 2 }, { name: "Market news", agent: "claude", tail: "", tone: 1 }, { name: "Research data", agent: "chainbrain", tail: "", tone: 0 }];
-function DeckArt({ active, reduce }: { active: boolean; reduce: boolean }) {
+// ---- page 1 (VaultBank's onboarding): the owner's own pocket cards are dealt in, tilted, spilling off the screen's edge, and
+// the mark's four tiles lock into place under them
+const SPILL = [{ rot: -24, x: 0.36, y: -0.12 }, { rot: -19, x: 0.2, y: 0 }, { rot: -14, x: 0.04, y: 0.12 }]; // back to front (the back card leaves over the top)
+function DeckArt({ active, reduce, w }: { active: boolean; reduce: boolean; w: number }) {
   const { pockets } = useApp();
-  const t = usePlay(active, reduce, 1200, 150);
-  // the owner's own pockets, oldest three, once the network has read them (the seed: Research data, Market news, Trade quotes)
-  // the same face each pocket has on Home's deck (creation order), oldest in front
-  const real = pockets.filter((p) => !p.revoked).slice(-3).map((p) => ({ name: p.name, agent: p.agentId ?? "chainbrain", tail: p.address.slice(-4).toUpperCase(), tone: toneFor(pockets, p.address) }));
-  const cards = real.length === 3 ? real : FALLBACK; // back to front
+  const t = usePlay(active, reduce, 1300, 150);
+  // the oldest three live pockets, on the same faces they have on Home's deck, oldest in front
+  const cards = pockets.filter((p) => !p.revoked).slice(-3);
+  const cw = Math.round(Math.min(w, 448) * 0.74);
+  const h = 300;
   return (
-    <View style={{ width: 300, height: 250, alignItems: "center", justifyContent: "center" }}>
-      <View style={{ position: "absolute", left: 0, right: 0, top: 6, bottom: 6, borderRadius: 24, overflow: "hidden" }}><Hatch color={c.line} pitch={10} stroke={1.6} /></View>
-      {cards.map((k, i) => <FanCard key={k.name} i={i} t={t} face={faceOf(k.tone)} name={k.name} agent={k.agent} tail={k.tail} />)}
+    <View style={{ width: "100%", height: h }}>
+      {cards.map((p, i) => <SpillCard key={p.address} p={p} i={i} t={t} cw={cw} h={h} tone={toneFor(pockets, p.address)} />)}
+      <View style={{ position: "absolute", left: 0, bottom: 0 }}><BrandMark size={44} lock={active} delay={reduce ? 0 : 750} /></View>
     </View>
   );
 }
-function FanCard({ i, t, face, name, agent, tail }: { i: number; t: SharedValue<number>; face: (typeof deck)[number]; name: string; agent: string; tail: string }) {
-  const f = FAN[i];
+function SpillCard({ p, i, t, cw, h, tone }: { p: Pocket; i: number; t: SharedValue<number>; cw: number; h: number; tone: number }) {
+  const f = SPILL[i] ?? SPILL[SPILL.length - 1];
   const a = useAnimatedStyle(() => {
-    const k = win(t.value, i * 0.12, 0.55 + i * 0.15);
-    return { transform: [{ translateX: f.x * k }, { translateY: 30 - (30 - f.y) * k }, { rotate: `${f.rot * k}deg` }], opacity: win(t.value, i * 0.08, 0.25 + i * 0.08) };
+    const k = win(t.value, i * 0.14, 0.6 + i * 0.14);
+    return {
+      opacity: win(t.value, i * 0.1, 0.22 + i * 0.1),
+      transform: [{ translateX: cw * f.x + (1 - k) * cw * 0.9 }, { translateY: h * f.y * 0.7 - (1 - k) * 40 }, { rotate: `${f.rot - (1 - k) * 10}deg` }],
+    };
   });
-  const who = agentInfo(agent);
   return (
-    <Animated.View style={[{ position: "absolute", width: 210, height: 132, borderRadius: 18, backgroundColor: face.face, padding: 14, justifyContent: "space-between", ...level3 }, a]}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <View style={{ height: 22, paddingLeft: 3, paddingRight: 8, borderRadius: 11, backgroundColor: face.chip, flexDirection: "row", alignItems: "center", gap: 5 }}>
-          <AgentAvatar kind={agent} size={16} />
-          <T v="cap" w="bold" style={{ color: face.ink, fontSize: 11 }}>{who?.name ?? "Agent"}</T>
-        </View>
-        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.vermillion }} />
-      </View>
-      <View style={{ gap: 2 }}>
-        <T v="mono" style={{ color: face.ink }}>{tail ? `•••• ${tail}` : "••••"}</T>
-        <T v="row" w="bold" numberOfLines={1} style={{ color: face.ink }}>{name}</T>
-      </View>
+    <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 0, top: 0 }, a]}>
+      <PocketFace pocket={p} width={cw} tone={tone} shadow still />
     </Animated.View>
   );
 }
@@ -169,7 +160,7 @@ function Page({ i, w, pos, active, reduce }: { i: number; w: number; pos: Shared
   return (
     <View style={{ width: w, flex: 1, paddingHorizontal: 24 }}>
       <Animated.View style={[{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 12 }, art]}>
-        {i === 0 ? <DeckArt active={active} reduce={reduce} /> : i === 1 ? <ContractArt active={active} reduce={reduce} /> : <WorstArt active={active} reduce={reduce} />}
+        {i === 0 ? <DeckArt active={active} reduce={reduce} w={w} /> : i === 1 ? <ContractArt active={active} reduce={reduce} /> : <WorstArt active={active} reduce={reduce} />}
       </Animated.View>
       <Animated.View style={[{ gap: 12, paddingBottom: 20 }, text]}>
         <T v="display" accessibilityRole="header" style={{ fontSize: 34, lineHeight: 40 }}>{PAGES[i].title}</T>
@@ -228,10 +219,17 @@ export function Intro({ onDone }: { onDone: () => void }) {
   // auto-advance: the active dot fills over PAGE_MS, then the next page; the first touch hands control to the owner
   useEffect(() => {
     if (!auto || w === 0 || leaving.current) return;
-    fill.value = 0;
-    fill.value = withTiming(1, { duration: PAGE_MS, easing: Easing.linear });
-    const t = setTimeout(() => { if (leaving.current) return; if (page >= PAGES.length - 1) finish(); else go(page + 1); }, PAGE_MS);
-    return () => { clearTimeout(t); cancelAnimation(fill); };
+    // start the clock once frames are being drawn (two animation frames): a slow first launch must not page past unseen
+    let t: ReturnType<typeof setTimeout> | undefined;
+    let r2 = 0;
+    const r1 = requestAnimationFrame(() => {
+      r2 = requestAnimationFrame(() => {
+        fill.value = 0;
+        fill.value = withTiming(1, { duration: PAGE_MS, easing: Easing.linear });
+        t = setTimeout(() => { if (leaving.current) return; if (page >= PAGES.length - 1) finish(); else go(page + 1); }, PAGE_MS);
+      });
+    });
+    return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); if (t) clearTimeout(t); cancelAnimation(fill); };
   }, [auto, page, w]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const take = () => setAuto(false);
@@ -258,8 +256,8 @@ export function Intro({ onDone }: { onDone: () => void }) {
       style={[StyleSheet.absoluteFill, { zIndex: 100, backgroundColor: c.canvas }, root]} accessibilityViewIsModal>
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center", minHeight: 56 + insets.top }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <AgentAvatar kind="chainbrain" size={36} />
-          <T v="head" accessibilityRole="header">ChainBrain</T>
+          <BrandMark size={26} />
+          <T v="head" accessibilityRole="header" style={{ fontFamily: F.displayBold, fontSize: 21, lineHeight: 26, letterSpacing: -0.3 }}>ChainBrain</T>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <View style={{ height: 28, paddingHorizontal: 10, borderRadius: 14, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 6 }}>

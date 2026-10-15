@@ -1,9 +1,10 @@
 #!/bin/sh
-# Renders the app icon, Android adaptive layers, splash mark and favicon from the SVG sources here (needs rsvg-convert:
-# `brew install librsvg`). The mark is ChainBrain's in-app brand: the Lucide brain in white on ink, with the pocket
-# cards' 45° hatch on the right (design-system/chainbrain/MASTER.md).
+# Writes the SVG sources (gen.py) and renders the app icon, Android adaptive layers, splash mark and favicon (needs rsvg-convert:
+# `brew install librsvg`). The mark is ChainBrain's four tiles (hatch, vermillion, ink, hatch: pockets walled off from each
+# other), drawn like src/ui/BrandMark.tsx, on the warm canvas (design-system/chainbrain/MASTER.md).
 set -e
 cd "$(dirname "$0")"
+python3 gen.py
 out=..
 rsvg-convert -w 1024 -h 1024 icon.svg -o $out/icon.png
 rsvg-convert -w 1024 -h 1024 splash.svg -o $out/splash-icon.png
