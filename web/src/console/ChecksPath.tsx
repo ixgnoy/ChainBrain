@@ -56,7 +56,10 @@ export function CodePill({ code, layer, className, testId }: { code: string; lay
 
 const SR: Record<GateState, string> = { pass: "passed", stop: "stopped it", skip: "not needed or bypassed", fooled: "fooled", idle: "not reached" };
 
-export function ChecksPath({ attempt, run = 0, big }: { attempt?: Attempt; run?: number; big?: boolean }) {
+// Compact (presenter) wording: the full names stay in the tooltip and for screen readers.
+const SHORT: Partial<Record<string, string>> = { signature: "Signature", active: "Active", seller: "Seller", cap: "Cap", budget: "Balance", cosign: "Ask-me", intent: "Task", owner: "Owner only", privacy: "No leaks", paid: "Paid" };
+
+export function ChecksPath({ attempt, run = 0, big, compact }: { attempt?: Attempt; run?: number; big?: boolean; compact?: boolean }) {
   const reduced = useReducedMotion();
   const gates: Gate[] = attempt?.gates ?? idlePath();
   const total = attempt ? sequenceLength(gates) : 0;
@@ -115,11 +118,11 @@ export function ChecksPath({ attempt, run = 0, big }: { attempt?: Attempt; run?:
                         <GateIcon state={state} layer={gate.layer} draw={!reduced} />
                       </span>
                       <div className="gate-body">
-                        <div className={cn("font-semibold leading-[18px]", big ? "text-[15px]" : "text-[13px]", state === "idle" ? "text-faint" : "text-ink")}>{gate.title}<span className="sr-only"> {SR[state]}</span></div>
+                        <div title={gate.title} className={cn("font-semibold leading-[18px]", big ? "text-[15px]" : "text-[13px]", state === "idle" ? "text-faint" : "text-ink")}>{compact ? <><span aria-hidden>{SHORT[gate.id] ?? gate.title}</span><span className="sr-only">{gate.title}</span></> : gate.title}<span className="sr-only"> {SR[state]}</span></div>
                         {state === "stop" && shown.code && <div className="mt-1.5 flex max-lg:justify-start lg:justify-center"><CodePill code={shown.code} layer={gate.layer} testId={`gate-${gate.id}-code`} /></div>}
                         {state === "stop" && shown.note && <p className="mt-1 text-[12px] leading-4 text-ink2">{shown.note}</p>}
                         {state === "fooled" && <><span className="mt-1.5 inline-flex items-center rounded-full bg-warning-soft px-2.5 py-1 text-[12px] font-bold leading-4 text-warning">Fooled</span>{shown.note && <p className="mt-1 text-[12px] leading-4 text-ink2">{shown.note}</p>}</>}
-                        {state === "skip" && <p className="mt-0.5 text-[12px] leading-4 text-muted"><span className="font-semibold">{w.word}</span>{w.text ? ` · ${w.text}` : ""}</p>}
+                        {state === "skip" && <p className="mt-0.5 text-[12px] leading-4 text-muted"><span className="font-semibold">{w.word}</span>{w.text && !compact ? ` · ${w.text}` : ""}</p>}
                         {state === "pass" && shown.note && <p className="mt-0.5 text-[12px] leading-4 text-muted">{shown.note}</p>}
                       </div>
                     </li>
@@ -212,7 +215,7 @@ export function ChecksPanel({ attempts, present }: { attempts: Attempt[]; presen
         {current && <button type="button" onClick={() => setRun((x) => x + 1)} className="relative inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold text-accent before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-accent-soft"><RotateCcw className="size-3.5" strokeWidth={2} aria-hidden />Replay</button>}
         {pinned && <button type="button" onClick={() => { setPicked(undefined); setRun((x) => x + 1); }} className="relative inline-flex h-8 items-center rounded-full px-2.5 text-[13px] font-semibold text-accent before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] hover:bg-accent-soft">Back to latest</button>}
       </header>
-      <div className="order-3 sm:order-2"><ChecksPath attempt={current} run={run} big={present} /></div>
+      <div className="order-3 sm:order-2"><ChecksPath attempt={current} run={run} big={present} compact={present} /></div>
       {current ? <div className="order-2 mb-3 sm:order-3 sm:mb-0 sm:mt-4"><AttemptHeadline a={current} show={doneKey === key} big={present} /></div> : <p className="order-3 mt-4 rounded-[14px] bg-canvas px-4 py-3.5 text-[14px] text-ink2">Waiting for the first payment or attack on this pocket.</p>}
       <div className="order-4">{!present && <AttemptStrip attempts={attempts} selected={current?.id} onSelect={(id) => { setPicked(id === latest?.id ? undefined : id); setRun((x) => x + 1); }} />}</div>
     </section>

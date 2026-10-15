@@ -30,10 +30,10 @@ export function AddrLink({ address, label, className }: { address: string; label
 
 /** Reason code as judges see it: the code, then the sentence. Plain text, no second pill. */
 export function Reason({ code }: { code: string }) {
-  return <p className="text-[12px] leading-4 [overflow-wrap:anywhere]"><span className="font-semibold text-negative">{code}</span><span className="text-muted"> · {REASONS[code] ?? "Refused"}</span></p>;
+  return <p className="text-[12px] leading-4 [overflow-wrap:anywhere]"><span className="font-semibold text-ink">{code}</span><span className="text-muted"> · {REASONS[code] ?? "Refused"}</span></p>;
 }
 
-const VERDICT: Record<ChipKind, string> = { ok: "bg-accent-soft text-accent", refused: "bg-negative-soft text-negative", stepup: "bg-warning-soft text-warning", revoked: "bg-fill text-ink2", info: "bg-fill text-ink2", neutral: "bg-fill text-ink2" };
+const VERDICT: Record<ChipKind, string> = { ok: "bg-accent-soft text-accent", refused: "bg-ink text-on-accent", stepup: "bg-warning-soft text-warning", revoked: "bg-fill text-ink2", info: "bg-fill text-ink2", neutral: "bg-fill text-ink2" };
 export function Verdict({ kind, children }: { kind: ChipKind; children: string }) {
   if (!children) return null;
   return <span className={cn("inline-flex h-6 shrink-0 items-center rounded-full px-2.5 text-[12px] font-semibold", VERDICT[kind])}>{children}</span>;

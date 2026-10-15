@@ -307,7 +307,7 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
               <li key={r.key} className="t-body text-[13px] leading-5">
                 {r.outcome === "paid"
                   ? <span className="text-ink2">Paid {usd(r.amount)}{r.cosigned ? " · owner co-signed" : ""}</span>
-                  : <span><span className="font-semibold text-negative">Refused</span><span className="text-ink2"> · {r.why}</span>{n > 1 && <span className="num ml-1 font-semibold text-ink2">×{n}</span>}</span>}
+                  : <span><span className="font-semibold text-ink">Refused</span><span className="text-ink2"> · {r.why}</span>{n > 1 && <span className="num ml-1 font-semibold text-ink2">×{n}</span>}</span>}
                 <span className="num ml-2 text-[12px] text-muted">{clock(r.at)}</span>
               </li>
             ))}</ul>
