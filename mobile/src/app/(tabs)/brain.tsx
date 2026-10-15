@@ -15,7 +15,8 @@ import { cleanText } from "../../lib/sanitize";
 import { money } from "../../lib/util";
 import { plainReason } from "../../lib/plain";
 import { brainOf, MEMORY_KIND, sourceWords, type MemoryItem, type MemorySnapshot } from "../../lib/brain";
-import { sameAddr } from "../../lib/events";
+import { aiName, sameAddr } from "../../lib/events";
+import { UnfreezeButton } from "../../components/SentinelCard";
 import * as api from "../../lib/api";
 import { parseIntent } from "../../components/IntentCard";
 import { injectionsOf } from "../../components/InjectionCard";
@@ -165,6 +166,20 @@ export default function BrainTab() {
             {r.verdict !== "ok" && r.trail.length > 1 ? <T v="cap" color="muted">Money from {r.trail.slice(0, -1).map((n) => cleanText(n, 24)).join(" → ")}</T> : null}
           </View>
         ))}
+      </Section>
+
+      <Section icon="eye" title="Sentinel" delay={220} status={active.frozen ? "Froze this pocket on-chain. Only you can unfreeze it." : b.sentinel.length ? `${b.sentinel.filter((v) => v.kind !== "clear").length} ${b.sentinel.length === 1 ? "decision" : "decisions"}; now ${b.sentinel.at(-1)?.kind === "clear" ? "all clear" : b.sentinel.at(-1)?.kind === "hold" ? "waiting for your OK" : "watching"}` : "Watching every refusal, attack and payment. All clear."}>
+        {b.sentinel.filter((v) => v.kind !== "clear").slice(-4).reverse().map((v) => (
+          <Line key={v.key} icon={v.kind === "freeze" ? "freeze" : "eye"} tone={v.kind === "watch" ? "muted" : "warning"}
+            text={`${v.kind === "freeze" ? "Froze" : v.kind === "hold" ? "Held for your OK" : "Watched"}: ${cleanText(v.signals[0]?.text ?? "unusual behaviour", 100)}${v.ai ? ` · AI ${v.ai.by === "jev" ? "Jev" : v.ai.by === "claude-haiku" ? "Claude Haiku" : "scripted"} hijack ${Math.round(v.ai.hijack * 100)}%` : ""}${v.raisedBy === "ai" ? " (AI raised it)" : ""}`} />
+        ))}
+        {active.frozen ? <UnfreezeButton pocket={active.address} /> : null}
+        <Details compact title="How it decides" rows={[
+          ["Rules", "3 payments outside your rules in a minute, money leaving with no payment, a refusal right after a seller page gave orders"],
+          ["AI check", aiName(b.sentinel.filter((v) => v.ai).at(-1)?.ai?.by ?? (b.sentinel.length ? undefined : "jev"))],
+          ["Who wins", "The stricter one. The AI can only make it stricter, never lift a freeze"],
+          ["Its power", "Freeze only, with its own key. It can't move money or change your rules"],
+        ]} />
       </Section>
 
       <Section icon="brain" title="Memory" delay={240} status={memState === "none" ? "This server has no brain memory yet" : mem?.version ? `Version ${mem.version}: rewritten after each task, never stacked` : "Nothing remembered yet"}>

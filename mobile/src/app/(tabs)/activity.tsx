@@ -15,10 +15,11 @@ import { Icon } from "../../ui/Icon";
 import { ActivityItem } from "../../components/ActivityRow";
 import { AttackActivityRow, NoteRow, attackInfo, isAttackEvent } from "../../components/AttackCard";
 import { RadarActivityRow } from "../../components/RadarCard";
+import { SentinelActivityRow, isSentinelAlert } from "../../components/SentinelCard";
 import { cleanText } from "../../lib/sanitize";
 import { describeRow, visibleRows } from "../../lib/plain";
 import { dayLabel, money } from "../../lib/util";
-import { paidTotal, radarAlerts, type LedgerRow, type RadarAlert, type WalletEvent } from "../../lib/events";
+import { paidTotal, radarAlerts, sentinelEvents, type LedgerRow, type RadarAlert, type SentinelView, type WalletEvent } from "../../lib/events";
 
 type Filter = "all" | "paid" | "refused" | "needs";
 const FILTERS: { key: Filter; label: string }[] = [{ key: "all", label: "All" }, { key: "paid", label: "Paid" }, { key: "refused", label: "Refused" }, { key: "needs", label: "Needs you" }];
@@ -29,7 +30,7 @@ export default function Activity() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
 
-  type Item = { key: string; at: number; row?: LedgerRow; atk?: WalletEvent; radar?: RadarAlert; note?: { title: string; sub: string } };
+  type Item = { key: string; at: number; row?: LedgerRow; atk?: WalletEvent; radar?: RadarAlert; sentinel?: SentinelView; note?: { title: string; sub: string } };
   const groups = useMemo(() => {
     const shown = visibleRows([...ledger].reverse()).filter((r) => filter === "all" || describeRow(r, "", "").filter === filter);
     // a run of refusals because the pocket was off is one line: "3 refused after you stopped it"
@@ -48,7 +49,8 @@ export default function Activity() {
     const atks: Item[] = filter === "all" || filter === "refused" ? events.filter((e) => isAttackEvent(e) && e.type === "attack").map((e) => ({ key: `atk:${e.at}:${e.attack}`, at: e.at, atk: e })) : [];
     // Radar alerts: a seller one of your pockets paid became risky
     const rad: Item[] = filter === "all" || filter === "refused" ? pockets.flatMap((p) => radarAlerts(events, p.address)).map((a) => ({ key: a.key, at: a.at, radar: a })) : [];
-    const all = [...rows, ...atks, ...rad].sort((a, b) => b.at - a.at);
+    const sen: Item[] = filter === "all" || filter === "refused" ? sentinelEvents(events.filter((e) => pockets.some((p) => p.address.toLowerCase() === String(e.pocket ?? "").toLowerCase()))).filter(isSentinelAlert).map((v) => ({ key: v.key, at: v.at, sentinel: v })) : [];
+    const all = [...rows, ...atks, ...rad, ...sen].sort((a, b) => b.at - a.at);
     const out: { day: string; rows: Item[] }[] = [];
     for (const r of all) {
       const d = dayLabel(r.at);
@@ -93,7 +95,7 @@ export default function Activity() {
       ) : groups.map((g) => (
         <Animated.View key={g.day} layout={reduce ? undefined : SHIFT}>
           <T v="cap" w="semi" color="muted" accessibilityRole="header" style={{ paddingHorizontal: 20, marginTop: 24, marginBottom: 8 }}>{g.day}</T>
-          <ListCard>{g.rows.map((r) => r.note ? <NoteRow key={r.key} delay={delays[r.key] ?? 0} title={r.note.title} sub={r.note.sub} right="Refused" /> : r.radar ? <RadarActivityRow key={r.key} delay={delays[r.key] ?? 0} a={r.radar} /> : r.atk ? <AttackActivityRow key={r.key} delay={delays[r.key] ?? 0} e={r.atk} onPress={() => { const t = attackInfo(r.atk!)?.tx; if (t) setExplorerTx(t); }} /> : <ActivityItem key={r.key} delay={delays[r.key] ?? 0} row={r.row!} showPocket timeOnly onPress={() => setReceipt(r.row!)} />)}</ListCard>
+          <ListCard>{g.rows.map((r) => r.note ? <NoteRow key={r.key} delay={delays[r.key] ?? 0} title={r.note.title} sub={r.note.sub} right="Refused" /> : r.sentinel ? <SentinelActivityRow key={r.key} delay={delays[r.key] ?? 0} v={r.sentinel} /> : r.radar ? <RadarActivityRow key={r.key} delay={delays[r.key] ?? 0} a={r.radar} /> : r.atk ? <AttackActivityRow key={r.key} delay={delays[r.key] ?? 0} e={r.atk} onPress={() => { const t = attackInfo(r.atk!)?.tx; if (t) setExplorerTx(t); }} /> : <ActivityItem key={r.key} delay={delays[r.key] ?? 0} row={r.row!} showPocket timeOnly onPress={() => setReceipt(r.row!)} />)}</ListCard>
         </Animated.View>
       ))}
     </Screen>

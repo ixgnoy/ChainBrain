@@ -6,7 +6,7 @@ import type { Hex, SimPocketView, SimTx, SimTxKind } from "./types";
 import { lower, type Rng } from "./util";
 
 type PocketRec = {
-  address: Hex; owner: Hex; agent: Hex; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean;
+  address: Hex; owner: Hex; agent: Hex; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean; frozen: boolean;
   allowed: Set<string>; createdTx: Hex; createdBlock: bigint; createdAt: number;
 };
 
@@ -53,6 +53,7 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
   function canPay(pocket: string, to: string, value: bigint): string {
     const p = get(pocket);
     if (p.revoked) return "POCKET_REVOKED";
+    if (p.frozen) return "POCKET_FROZEN";
     if (BigInt(Math.floor(o.now() / 1000)) >= p.expiresAt) return "POCKET_EXPIRED";
     if (!p.allowed.has(lower(to))) return "SELLER_NOT_ALLOWED";
     if (value > p.cap) return "OVER_CAP";
@@ -63,7 +64,7 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
   function view(pocket: string): SimPocketView {
     const p = get(pocket);
     return {
-      address: p.address, owner: p.owner, agent: p.agent, cap: p.cap, askAbove: p.askAbove, expiresAt: p.expiresAt, revoked: p.revoked,
+      address: p.address, owner: p.owner, agent: p.agent, cap: p.cap, askAbove: p.askAbove, expiresAt: p.expiresAt, revoked: p.revoked, frozen: p.frozen,
       balance: bal(p.address), allowed: CATALOG.filter((s) => p.allowed.has(lower(s.payTo))).map((s) => s.id),
       createdTx: p.createdTx, createdBlock: p.createdBlock, createdAt: p.createdAt,
     };
@@ -92,7 +93,7 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
       const tx = record({ pocket: address, kind: "create", from, counterparty: from, status: "success", at: t, method: "createPocket",
         args: { agent: a.agent, cap: a.cap.toString(), askAbove: a.askAbove.toString(), expiresAt: a.expiresAt.toString(), sellers: a.sellers.join(",") } });
       pockets.set(lower(address), {
-        address, owner: from, agent: a.agent, cap: a.cap, askAbove: a.askAbove, expiresAt: a.expiresAt, revoked: false,
+        address, owner: from, agent: a.agent, cap: a.cap, askAbove: a.askAbove, expiresAt: a.expiresAt, revoked: false, frozen: false,
         allowed: new Set(a.sellers.map(lower)), createdTx: tx.hash, createdBlock: tx.block, createdAt: t,
       });
       return { pocket: address, tx: tx.hash };
@@ -111,6 +112,22 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
       const p = get(pocket); onlyOwner(p, from, "revoke");
       p.revoked = true;
       return record({ pocket: p.address, kind: "revoke", from, status: "success", at, method: "revoke" }).hash;
+    },
+    /** Pocket.freeze: the guardian (the Sentinel) or the owner stops all payments. Anyone else reverts NOT_GUARDIAN. */
+    freeze(from: Hex, pocket: Hex, reason: string, guardian: Hex) {
+      const p = get(pocket);
+      const args = { reason };
+      if (lower(from) !== lower(p.owner) && lower(from) !== lower(guardian)) {
+        const tx = record({ pocket: p.address, kind: "rules", from, status: "reverted", label: "Reverted by the pocket", method: "freeze", reason: "NOT_GUARDIAN", args });
+        throw new ChainError(`transaction reverted: NOT_GUARDIAN (${tx.hash})`);
+      }
+      p.frozen = true;
+      return record({ pocket: p.address, kind: "rules", from, status: "success", label: lower(from) === lower(p.owner) ? "Frozen by the owner" : "Frozen by the Sentinel", method: "freeze", args }).hash;
+    },
+    unfreeze(from: Hex, pocket: Hex) {
+      const p = get(pocket); onlyOwner(p, from, "unfreeze");
+      p.frozen = false;
+      return record({ pocket: p.address, kind: "rules", from, status: "success", label: "Unfrozen by the owner", method: "unfreeze" }).hash;
     },
     returnFunds(from: Hex, pocket: Hex, at?: number) {
       const p = get(pocket); onlyOwner(p, from, "returnFunds");

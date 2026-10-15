@@ -10,7 +10,7 @@ import { loadConfig, transferTypedData, type Authorization, type Seller } from "
 
 export const pub = () => createPublicClient({ chain: baseSepolia, transport: http(rpcUrl()) });
 
-export type PocketView = { address: Address; owner: Address; agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean; balance: bigint; allowed: string[] };
+export type PocketView = { address: Address; owner: Address; agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean; balance: bigint; allowed: string[]; /** stopped by the Sentinel (or the owner); only the owner unfreezes */ frozen?: boolean };
 
 export function ownerWallet(pk: Hex) {
   const account = privateKeyToAccount(pk);
@@ -49,6 +49,8 @@ export function ownerWallet(pk: Hex) {
     },
     fund: async (p: Address, amount: bigint) => isBuiltin() ? simTx((w) => w.chain.transfer(me, p, amount)) : write((await loadConfig()).usdc, (await loadConfig()).abis.erc20, "transfer", [p, amount]),
     revoke: (p: Address) => isBuiltin() ? simTx((w) => w.chain.revoke(me, p)) : pocketWrite(p, "revoke"),
+    /** Pocket.unfreeze: only the owner's key can lift a Sentinel freeze. */
+    unfreeze: (p: Address) => isBuiltin() ? simTx((w) => w.chain.unfreeze(me, p)) : pocketWrite(p, "unfreeze"),
     returnFunds: (p: Address) => isBuiltin() ? simTx((w) => w.chain.returnFunds(me, p)) : pocketWrite(p, "returnFunds"),
     setSeller: (p: Address, s: Address, ok: boolean) => isBuiltin() ? simTx((w) => w.chain.setSeller(me, p, s, ok)) : pocketWrite(p, "setSeller", [s, ok]),
     /** Owner-signed rule edits: per-payment cap and ask-me threshold (NEVER = never ask, 0 = ask every time). */
@@ -63,17 +65,18 @@ export type OwnerWallet = ReturnType<typeof ownerWallet>;
 export async function readPocket(address: Address): Promise<PocketView> {
   if (isBuiltin()) {
     const v = builtin().chain.view(address);
-    return { address: v.address, owner: v.owner, agent: v.agent, cap: v.cap, askAbove: v.askAbove, expiresAt: v.expiresAt, revoked: v.revoked, balance: v.balance, allowed: v.allowed };
+    return { address: v.address, owner: v.owner, agent: v.agent, cap: v.cap, askAbove: v.askAbove, expiresAt: v.expiresAt, revoked: v.revoked, balance: v.balance, allowed: v.allowed, frozen: !!v.frozen };
   }
   const c = await loadConfig();
   const sellers: Seller[] = c.sellers;
   const r = (functionName: string, args: unknown[] = []) => pub().readContract({ address, abi: c.abis.pocket, functionName, args }) as Promise<any>;
-  const [owner, agent, cap, askAbove, expiresAt, revoked, balance, flags] = await Promise.all([
+  const [owner, agent, cap, askAbove, expiresAt, revoked, balance, flags, frozen] = await Promise.all([
     r("owner"), r("agent"), r("perPaymentCap"), r("askAbove"), r("expiresAt"), r("revoked"),
     pub().readContract({ address: c.usdc, abi: c.abis.erc20, functionName: "balanceOf", args: [address] }) as Promise<bigint>,
     Promise.all(sellers.map((s) => r("sellerAllowed", [s.payTo]))),
+    r("frozen").catch(() => false), // pockets from an older factory have no freeze
   ]);
-  return { address, owner, agent, cap, askAbove, expiresAt, revoked, balance, allowed: sellers.filter((_, i) => flags[i]).map((s) => s.id) };
+  return { address, owner, agent, cap, askAbove, expiresAt, revoked, balance, allowed: sellers.filter((_, i) => flags[i]).map((s) => s.id), frozen: !!frozen };
 }
 
 export const isOwner = (p: Pick<PocketView, "owner">, me: string) => p.owner.toLowerCase() === me.toLowerCase();

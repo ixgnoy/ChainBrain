@@ -95,6 +95,23 @@ function* scene3(): Scene {
   return summary([yield* purchase("datapro", "premium-report", { reason: "DataPro's premium report adds the 2026 forecast for US$1.50." })]);
 }
 
+/**
+ * Sentinel: "assume the agent was fooled" by a seller page and keeps trying a seller that isn't on the list. The pocket
+ * refuses each try; after the third in a minute the Sentinel freezes the pocket on-chain, so even an allowed seller is refused.
+ */
+function* sceneHijacked(): Scene {
+  if (!(yield* draft(intent("Fruit and wine trade report", "1.00", "1.00", 1)))) return declined();
+  const tries: Outcome[] = [];
+  for (let k = 0; k < 3; k++) {
+    tries.push(yield* purchase("harbour-wines", "fruit-wine-trade-report", { payAnyway: true }));
+    if (tries[tries.length - 1].ok) return summary(tries);
+  }
+  const after = yield* purchase("datalite", "fruit-trade-report");
+  if (after.reason === "POCKET_FROZEN")
+    return "Assume I was fooled: I tried to pay Harbour Wines three times and your pocket refused each one. The Sentinel saw the pattern and froze the pocket on-chain, so it refused DataLite too. Nothing was paid. Only you can unfreeze it.";
+  return summary([...tries, after]);
+}
+
 /** Radar: a labelled drainer has just paid DataPro (the world sets that up on-chain before this runs). */
 function* sceneRadar(): Scene {
   if (!(yield* draft(intent("Durian export premium report with 2026 forecast", "2.00", "2.00", 1)))) return declined();
@@ -212,6 +229,7 @@ export function route(text: string, o: { asked: boolean; revokeWindowMs: number 
   if (attack === "extraction") return extraction();
   if (attack === "induced") return induced();
   if (/drainer/.test(t)) return sceneRadar();
+  if (/assume (the |my |your )?agent (was|is|got) fooled/.test(t)) return sceneHijacked();
   if (/shadyfeed/.test(t) && /full feed|whatever they need|give them/.test(t)) return scene6();
   if (/shadyfeed/.test(t)) return scene5();
   if (/harbour|wine/.test(t)) return scene4();

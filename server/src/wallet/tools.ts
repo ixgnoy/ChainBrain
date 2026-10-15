@@ -13,6 +13,7 @@ import { state, newTask } from "./state";
 import { bus } from "./events";
 import { radar, screenOrNull, brief } from "../radar/screen";
 import { trailOf } from "../../../shared/sim/radar";
+import { sentinel } from "../sentinel";
 
 export type ToolCtx = { pocket: Address };
 type Tool = { description: string; schema: z.ZodType; run(ctx: ToolCtx, args: any): Promise<object> };
@@ -103,7 +104,7 @@ const defs: Record<string, Tool> = {
       return {
         ok: true, quoteId: rec.quoteId, sellerId, sku, description: rec.description, price: formatUsd(rec.amount),
         allowedByPocket: rule === "OK" ? "OK" : { reason: rule, why: isReason(rule) ? REASONS[rule] : rule },
-        needsOwnerApproval: await P(ctx.pocket).needsOwner(rec.amount),
+        needsOwnerApproval: (await P(ctx.pocket).needsOwner(rec.amount)) || sentinel.isHeld(ctx.pocket),
         intentCheck: intentCheck ? { reason: intentCheck, why: REASONS[intentCheck] } : "OK",
         counterpartyRisk: risk ? { score: risk.score, verdict: risk.verdict, reasons: brief(risk).reasons } : "unavailable",
       };
@@ -158,8 +159,14 @@ const defs: Record<string, Tool> = {
         bus.publish({ type: "refusal", pocket: ctx.pocket, sellerId: rec.sellerId, sku: rec.sku, amount: rec.amount, reason: held, detail: risk!.narrative });
         return refuse(held, { radar: risk!.narrative });
       }
+      // Sentinel hold: the owner co-signs the next payment. Checked after the pocket's own rules, so a probe is still counted.
+      if (sentinel.isHeld(ctx.pocket) && !rec.ownerSig && (await P(ctx.pocket).canPay(rec.payTo, rec.amount)) === "OK") {
+        bus.publish({ type: "refusal", pocket: ctx.pocket, sellerId: rec.sellerId, sku: rec.sku, amount: rec.amount, reason: "SENTINEL_HOLD" });
+        return refuse("SENTINEL_HOLD");
+      }
       const r = await settle(ctx.pocket, rec, s.intent!.intentHash);
       if (!r.ok) return refuse(r.reason, r.detail ? { detail: r.detail.slice(0, 200) } : {});
+      if (rec.ownerSig) sentinel.release(ctx.pocket);
       return { ok: true, tx: r.tx, paid: formatUsd(rec.amount), sellerId: rec.sellerId, ...screenFree(ctx, rec.sellerId, r.body) };
     },
   },

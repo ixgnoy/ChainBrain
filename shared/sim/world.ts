@@ -4,6 +4,7 @@
 // the real server, so every screen behaves the same in both.
 import { CATALOG, sellerById, sellerByPayTo, sellerName, sellers, ATTACKER, DRAINER } from "./catalog";
 import { createMemory, consolidate } from "./memory";
+import { rules as sentinelRules, ruleSeverity, gate, scriptedAi, stateText, PROBE_REASONS, RANK, type Severity, type Signal, type AiAnswer } from "./sentinel";
 import { ownerEvidence, scriptedReflection } from "./reflect";
 import { createLabels, exposure, memorySource, narrate, score as radarScore, shortAddr, trailOf, type Factor, type Verdict } from "./radar";
 import { createChain, ChainError, type Chain } from "./chain";
@@ -28,6 +29,8 @@ type Task = { intent?: Intent; spent: bigint; items: number; quotes: Map<string,
 
 export const SIM_AGENT: Hex = "0xa9e7c41d5b02f3e68c7d91b4e0f2a35c6d7b8e19";
 export const SIM_FACTORY: Hex = "0xfac70e2b9d4c1a3f5e6b7c8d9e0f1a2b3c4d5e6f";
+/** The Sentinel's guardian key: it can only freeze pockets (Pocket.sol guardian). */
+export const SIM_SENTINEL: Hex = "0x5e471e10000000000000000000000000000c0de5";
 /** The account that submits the forced transfer (server/scripts/force-transfer.ts FORCE_PK). */
 export const FORCE_SENDER: Hex = "0x4f0e1c8d2b7a6953e1f0c2d4b6a8e9f1c3d5e7a9";
 
@@ -56,6 +59,7 @@ export function createWorld(opts: WorldOptions = {}) {
     recent.push(ev);
     if (recent.length > 2000) recent.shift();
     for (const f of subs) f(ev);
+    if (ev.pocket && SENTINEL_TRIGGERS.has(ev.type)) sentinelCheck(ev.pocket); // synchronous: a freeze lands before the agent's next step
     return ev;
   }
   const trace = (pocket: string, phase: string, extra: object = {}, at?: number) => publish({ type: "trace", pocket, phase, ...extra, at });
@@ -164,6 +168,50 @@ export function createWorld(opts: WorldOptions = {}) {
     return x;
   }
 
+  // ---- Sentinel (server/src/sentinel): fixed rules + a scripted stand-in for the AI layer; the stricter decision wins.
+  // It acts by freezing the pocket on-chain with its freeze-only guardian key, or by holding payments for the owner's OK.
+  const SENTINEL_TRIGGERS = new Set(["refusal", "disclosure", "attack", "forced", "payment"]);
+  type Watch = { status: Severity; hold: boolean; clearedAt: number; decisions: { at: number; action: Severity; signals: Signal[]; ai: AiAnswer; tx?: string }[] };
+  const watches = new Map<string, Watch>();
+  const watch = (p: string) => watches.get(lower(p)) ?? watches.set(lower(p), { status: "ok", hold: false, clearedAt: 0, decisions: [] }).get(lower(p))!;
+  let sentinelBusy = false;
+  function sentinelCheck(pocket: string) {
+    if (sentinelBusy || !chain.isPocket(pocket)) return;
+    sentinelBusy = true;
+    try {
+      const w = watch(pocket);
+      const evs = recent.filter((e) => same(e.pocket, pocket) && e.at > w.clearedAt && e.type !== "sentinel");
+      const paidTx = new Set(recent.filter((e) => e.type === "payment" && same(e.pocket, pocket)).map((e) => String(e.tx)));
+      const owner = chain.view(pocket).owner;
+      // USDC that left the pocket with no payment event (and not back to the owner): someone moved money outside the wallet
+      const ghosts = chain.transfers().filter((t) => same(t.from, pocket) && !same(t.to, owner) && !paidTx.has(t.tx));
+      const signals = sentinelRules({ events: evs, now: now(), ghosts: ghosts.map((t) => ({ tx: t.tx, to: t.to, amount: t.value })) });
+      if (!signals.length) return;
+      const probes = evs.filter((e) => e.at > now() - 60_000 && ((e.type === "refusal" && PROBE_REASONS.has(String(e.reason))) || (e.type === "forced" && e.reverted))).length;
+      const ai = scriptedAi(signals, probes);
+      const g = gate(ruleSeverity(signals), ai);
+      if (RANK[g.action] <= RANK[w.status]) return; // only escalations act
+      let tx: string | undefined;
+      if (g.action === "freeze" && !chain.view(pocket).frozen) tx = chain.freeze(SIM_SENTINEL, pocket as Hex, signals[0].id, SIM_SENTINEL);
+      if (g.action === "hold") w.hold = true;
+      w.status = g.action;
+      const intentText = [...approvals.values()].filter((a) => a.kind === "intent" && same(a.pocket, pocket) && a.status === "approved").at(-1)?.text;
+      w.decisions.push({ at: now(), action: g.action, signals, ai, tx });
+      publish({
+        type: "sentinel", kind: g.action, pocket, signals, ai, raisedBy: g.raisedBy, ...(tx ? { tx } : {}),
+        state: stateText(signals, { task: intentText, refusals: evs.filter((e) => e.type === "refusal").map((e) => String(e.reason)).slice(-6), payments: paidTx.size, attacks: evs.filter((e) => e.type === "attack").length }),
+      });
+    } finally { sentinelBusy = false; }
+  }
+  /** The owner cleared it: an on-chain unfreeze, or a co-signed payment while held. Older signals no longer count. */
+  function sentinelClear(pocket: string, by: "unfreeze" | "cosign", tx?: string) {
+    const w = watch(pocket);
+    if (w.status === "ok" && !w.hold) return;
+    Object.assign(w, { status: "ok", hold: false, clearedAt: now() });
+    publish({ type: "sentinel", kind: "clear", pocket, by, ...(tx ? { tx } : {}) });
+  }
+  chain.onTx((t) => { if (t.method === "unfreeze" && t.status === "success") queueMicrotask(() => sentinelClear(t.pocket, "unfreeze", t.hash)); });
+
   // ---- brain memory (server/src/brain): after each turn one reflection replaces the pocket's snapshot
   const memory = createMemory(now);
   function reflectTurn(pocket: string, text: string, fromAt: number) {
@@ -224,7 +272,7 @@ export function createWorld(opts: WorldOptions = {}) {
       return {
         ok: true, quoteId: q.quoteId, sellerId, sku, description: q.description, price: formatUsd(q.amount),
         allowedByPocket: rule === "OK" ? "OK" : { reason: rule, why: REASONS[rule] ?? rule },
-        needsOwnerApproval: chain.needsOwner(pocket, q.amount),
+        needsOwnerApproval: chain.needsOwner(pocket, q.amount) || watch(pocket).hold,
         intentCheck: ic ? { reason: ic, why: REASONS[ic] } : "OK",
         counterpartyRisk: { score: risk.score, verdict: risk.verdict, reasons: brief(risk).reasons },
       };
@@ -278,6 +326,7 @@ export function createWorld(opts: WorldOptions = {}) {
       await jitter(350, 600); // x402: 402 → sign → retry with X-PAYMENT
       const rule = chain.canPay(pocket, q.payTo, q.amount);
       if (rule !== "OK") return fail(rule, rule);
+      if (watch(pocket).hold && !q.ownerSig) return fail("SENTINEL_HOLD"); // after the pocket's rules, so probes still count
       if (chain.needsOwner(pocket, q.amount) && !q.ownerSig) return fail("NEEDS_OWNER_APPROVAL");
       if (q.auth && BigInt(q.auth.validBefore) <= BigInt(Math.floor(now() / 1000) + 10)) return fail("APPROVAL_EXPIRED");
       const auth = (q.auth ??= buildAuthorization(pocket, q.payTo, q.amount));
@@ -287,6 +336,7 @@ export function createWorld(opts: WorldOptions = {}) {
       const s = chain.settle(pocket, q.payTo, q.amount, { submitter: SIM_AGENT, ownerSigned: !!q.ownerSig });
       if (!s.ok) return fail(s.reason ?? "SETTLEMENT_FAILED");
       t.spent += q.amount; t.items += 1;
+      if (q.ownerSig && watch(pocket).hold) sentinelClear(pocket, "cosign");
       publish({ type: "payment", pocket, sellerId: q.sellerId, sku: q.sku, amount: q.amount, tx: s.tx, nonce: auth.nonce, intentHash: t.intent!.intentHash, cosigned: !!q.ownerSig });
       const it = sellerById(q.sellerId)!.items.find((i) => i.sku === q.sku)!;
       return { ok: true, tx: s.tx, paid: formatUsd(q.amount), sellerId: q.sellerId, ...screenFree(pocket, q.sellerId, delivered(q.sellerId, it.content, false)) };
@@ -472,6 +522,8 @@ export function createWorld(opts: WorldOptions = {}) {
     /** GET /api/memory and POST /api/memory/forget */
     memory: (pocket: string) => wire({ snapshot: memory.get(pocket), log: memory.log(pocket) }),
     forgetMemory: (pocket: string, id: string) => memory.forget(pocket, id),
+    /** GET /api/sentinel?pocket= */
+    sentinel: (pocket: string) => { const w = watch(pocket); return wire({ status: chain.isPocket(pocket) && chain.view(pocket).frozen ? "freeze" : w.status, hold: w.hold, decisions: w.decisions.slice(-10) }); },
     radar: {
       screen: async (who: string) => { const a = sellerById(who)?.payTo ?? who; const x = await screen(a); return { ...brief(x), factors: x.factors, narrative: x.narrative }; },
       alerts: () => wire(radarAlerts.slice().reverse()),

@@ -26,6 +26,8 @@ export const PLAIN_REASONS: Record<string, string> = {
   NOT_THIS_AGENT: "this pocket belongs to a different agent",
   COUNTERPARTY_HIGH_RISK: "Radar traced the seller's money to a high-risk source",
   COUNTERPARTY_REVIEW: "the seller's money looks risky, so it needs your OK",
+  POCKET_FROZEN: "the pocket is frozen until you unfreeze it",
+  SENTINEL_HOLD: "the Sentinel saw something unusual, so it needs your OK",
   REVERTED: "the pocket refused it on-chain",
 };
 const ASK: Record<string, string> = {

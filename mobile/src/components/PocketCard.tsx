@@ -21,15 +21,16 @@ export function untilText(expiresAt: bigint | number, now = Date.now()) {
 }
 
 /** "2 sellers · until 23:59" (the agent's address lives in the pocket's Details, not on every row). */
-export function pocketLine(p: Pick<Pocket, "allowed" | "revoked" | "expiresAt" | "agent">) {
+export function pocketLine(p: Pick<Pocket, "allowed" | "revoked" | "expiresAt" | "agent" | "frozen">) {
   if (p.revoked) return "Turned off";
+  if (p.frozen) return "Frozen by the Sentinel";
   if (isExpired(p)) return "Ended";
   return `${p.allowed.length}\u00a0seller${p.allowed.length === 1 ? "" : "s"} · ${untilText(p.expiresAt)}`;
 }
 
-export type PocketState = "Active" | "Revoked" | "Expired" | "Waiting for you";
-export const pocketState = (p: Pick<Pocket, "revoked" | "expiresAt">, waiting = false): PocketState => (p.revoked ? "Revoked" : isExpired(p) ? "Expired" : waiting ? "Waiting for you" : "Active");
-export const STATE_TONE = { Active: "positive", Revoked: "negative", Expired: "muted", "Waiting for you": "warning" } as const;
+export type PocketState = "Active" | "Revoked" | "Expired" | "Waiting for you" | "Frozen";
+export const pocketState = (p: Pick<Pocket, "revoked" | "expiresAt" | "frozen">, waiting = false): PocketState => (p.revoked ? "Revoked" : p.frozen ? "Frozen" : isExpired(p) ? "Expired" : waiting ? "Waiting for you" : "Active");
+export const STATE_TONE = { Active: "positive", Revoked: "negative", Expired: "muted", "Waiting for you": "warning", Frozen: "warning" } as const;
 
 /** Fact pills shown on a pocket page. */
 export function factPills(p: Pick<Pocket, "cap" | "askAbove">): string[] {

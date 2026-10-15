@@ -2,7 +2,7 @@
 // event stream does not, so the phone keeps a small local list per owner: kind, pocket, hash, time. No React Native imports.
 import type { LedgerRow } from "./events";
 
-export type OwnerTxKind = "create" | "fund" | "return" | "revoke" | "seller" | "cap" | "ask";
+export type OwnerTxKind = "create" | "fund" | "return" | "revoke" | "seller" | "cap" | "ask" | "unfreeze";
 export type OwnerTx = { kind: OwnerTxKind; pocket: string; hash: string; at: number; amount?: string; note?: string };
 
 export const MAX_OWNER_TXS = 60;
@@ -22,7 +22,7 @@ export function parseOwnerTxs(raw: string | null): OwnerTx[] {
 
 export const OWNER_TITLE: Record<OwnerTxKind, string> = {
   create: "Pocket created", fund: "Money added", return: "Funds returned", revoke: "Pocket revoked",
-  seller: "Seller list changed", cap: "Payment cap changed", ask: "Ask-me limit changed",
+  seller: "Seller list changed", cap: "Payment cap changed", ask: "Ask-me limit changed", unfreeze: "Pocket unfrozen",
 };
 
 /** Owner transactions as ledger rows, so Activity and the pocket history show task, payment and owner transactions together. */

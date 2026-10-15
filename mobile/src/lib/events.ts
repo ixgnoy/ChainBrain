@@ -259,3 +259,23 @@ export function radarAlerts(events: WalletEvent[], pocket?: string): RadarAlert[
 
 /** The narrative without its "Risk 9/10 for DataPro: blocked." head (the card shows that as a title and a score bar). */
 export const radarBody = (n: string) => n.replace(/^Risk \d+\/10 for [^:]+: [^.]+\.\s*/, "");
+
+// ---------------------------------------------------------------- Sentinel (server/src/sentinel, shared/sim/sentinel.ts)
+
+export type SentinelKind = "watch" | "hold" | "freeze" | "clear";
+export type SentinelView = {
+  key: string; at: number; pocket?: string; kind: SentinelKind; signals: { id: string; severity: string; text: string }[];
+  ai?: { hijack: number; action: string; confidence: number; by: string }; raisedBy?: string; tx?: string; note?: string; by?: string;
+};
+/** The Sentinel's decisions in these events, oldest first. */
+export function sentinelEvents(events: WalletEvent[]): SentinelView[] {
+  return events.filter((e) => e.type === "sentinel" && ["watch", "hold", "freeze", "clear"].includes(e.kind)).map((e) => ({
+    key: `sentinel:${e.kind}:${e.at}`, at: e.at, pocket: e.pocket, kind: e.kind as SentinelKind,
+    signals: Array.isArray(e.signals) ? e.signals.map((x: any) => ({ id: String(x?.id ?? ""), severity: String(x?.severity ?? ""), text: String(x?.text ?? "") })) : [],
+    ai: e.ai && typeof e.ai === "object" ? { hijack: Number(e.ai.hijack) || 0, action: String(e.ai.action ?? ""), confidence: Number(e.ai.confidence) || 0, by: String(e.ai.by ?? "") } : undefined,
+    raisedBy: typeof e.raisedBy === "string" ? e.raisedBy : undefined, tx: typeof e.tx === "string" ? e.tx : undefined,
+    note: typeof e.note === "string" ? e.note : undefined, by: typeof e.by === "string" ? e.by : undefined,
+  }));
+}
+/** "Jev", "Claude Haiku (stand-in for Jev)" or "the built-in network's scripted check": who answered the AI questions. */
+export const aiName = (by?: string) => (by === "jev" ? "Jev (TypeSafe)" : by === "claude-haiku" ? "Claude Haiku, standing in for Jev" : by === "scripted" ? "scripted check (built-in network)" : "rules only");

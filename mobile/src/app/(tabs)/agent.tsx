@@ -26,11 +26,12 @@ import { PaidCard } from "../../components/PaidCard";
 import { AttackCard, isAttackEvent } from "../../components/AttackCard";
 import { InjectionCard, injectionsOf } from "../../components/InjectionCard";
 import { RadarAlertCard, RadarBlock } from "../../components/RadarCard";
+import { SentinelCard } from "../../components/SentinelCard";
 import { SendButton } from "../../ui/SendButton";
 import { WorkingLine } from "../../ui/WorkingLine";
 import { cleanText } from "../../lib/sanitize";
 import { devScenes, type Scene } from "../../lib/api";
-import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, radarScreens, radarAlerts, type WalletEvent } from "../../lib/events";
+import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, radarScreens, radarAlerts, sentinelEvents, type WalletEvent } from "../../lib/events";
 import { deadEndOf } from "../../lib/deadend";
 import { money, usd } from "../../lib/util";
 import { plainAsks } from "../../lib/plain";
@@ -159,7 +160,10 @@ export default function AgentChat() {
   // attacks that arrived before the first message (the console sets them off through the relay): shown at the top of the chat
   const loose = useMemo(() => mine.filter((e) => isAttackEvent(e) && (turns.length === 0 || e.at <= turns[0].fromAt)), [mine, turns]);
   // Radar alerts that arrived between turns (the monitor re-screened a seller this pocket paid): shown after the conversation
-  const idleAlerts = useMemo(() => (active ? radarAlerts(mine, active.address).filter((a) => !turns.some((t) => a.at > t.fromAt && (t.toAt == null || a.at <= t.toAt))) : []), [mine, turns, active]);
+  const inTurn = (at: number) => turns.some((t) => at > t.fromAt && (t.toAt == null || at <= t.toAt));
+  const idleAlerts = useMemo(() => (active ? radarAlerts(mine, active.address).filter((a) => !inTurn(a.at)) : []), [mine, turns, active]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Sentinel decisions outside a chat turn (the console's attack arena, a forced transfer): after the conversation
+  const idleSentinel = useMemo(() => sentinelEvents(mine).filter((v) => !inTurn(v.at)), [mine, turns]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // follow the conversation: smooth scroll to the end while the owner is at (or near) the bottom; content growing (steps, cards) retriggers it
   const toEnd = () => {
@@ -244,8 +248,8 @@ export default function AgentChat() {
   const stopTx = active ? ownerTxs.filter((t) => t.kind === "revoke" && sameAddr(t.pocket, active.address)).at(-1) : undefined;
   const waitingHere = !!(intent || pay || question);
   const busyHere = chatBusy || waitingHere;
-  const dot: DotState = active?.revoked ? "stopped" : waitingHere ? "waiting" : chatBusy ? "working" : "ready";
-  const headStatus = !active ? "Create a pocket first" : active.revoked ? "Stopped · this pocket is off"
+  const dot: DotState = active?.revoked || active?.frozen ? "stopped" : waitingHere ? "waiting" : chatBusy ? "working" : "ready";
+  const headStatus = !active ? "Create a pocket first" : active.revoked ? "Stopped · this pocket is off" : active.frozen ? "Frozen by the Sentinel · only you can unfreeze"
     : waitingHere ? "Waiting for you" : chatBusy ? "Working…" : `Ready · ${money(active.balance)} left`;
   const ready = !!text.trim() && !chatBusy;
   // the stop path is revoking the pocket (confirmed by the hold-to-revoke sheet); without one, send simply hides while the agent works
@@ -334,6 +338,7 @@ export default function AgentChat() {
                 {refusals.map((r) => <SellerRefusal key={r.sellerId} id={`${t.id}:r${r.sellerId}`} seller={sellerName(r.sellerId)} reasons={r.reasons} />)}
                 {active ? radarAlerts(evs, active.address).filter((a) => !radarScreens(evs).some((v) => v.verdict !== "ok" && v.counterparty === a.name)).map((a) => <RadarAlertCard key={a.key} a={a} />) : null}
                 <RadarBlock list={radarScreens(evs)} turnId={t.id} />
+                {sentinelEvents(evs).map((v) => <SentinelCard key={v.key} v={v} />)}
                 {injectionsOf(evs).filter((x) => !(seenInj.get(t.id) ?? new Set()).has(JSON.stringify(x))).map((x, k) => <InjectionCard key={`${t.id}:i${k}`} id={`${t.id}:${k}`} seller={sellerName(x.sellerId)} lines={x.lines} />)}
                 {evs.filter(isAttackEvent).map((e, k) => <AttackCard key={`${e.type}${e.at}${k}`} e={e} />)}
                 {!t.done ? (
@@ -358,6 +363,7 @@ export default function AgentChat() {
             );
           })}
           {idleAlerts.map((a) => <RadarAlertCard key={a.key} a={a} />)}
+          {idleSentinel.map((v) => <SentinelCard key={v.key} v={v} />)}
           {sent ? <View style={{ gap: 14 }}><UserBubble text={sent.text} fresh /></View> : null}
           {!last && intent ? <TaskWaiting text={intent.text} onOpen={() => setApprovalOpen(true)} id={intent.id} /> : null}
           {active?.revoked && turns.length > 0 ? (
