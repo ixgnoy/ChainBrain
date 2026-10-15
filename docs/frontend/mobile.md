@@ -1,13 +1,13 @@
 # ChainBrain phone app (Expo Go)
 
-The owner's app: the team's verified wallet logic in the Neo-Kinetic Fintech design (design-system/chainbrain/MASTER.md v4: slate canvas, white cards, black ink, vermillion and powder-blue accents, 45° hatch, Plus Jakarta Sans; light only). Code in `mobile/`. Screen-by-screen plan and decisions: [neo-kinetic-plan.md](neo-kinetic-plan.md).
+The owner's app: the team's verified wallet logic in the Neo-Kinetic Fintech design after VaultBank (design-system/chainbrain/MASTER.md v5: warm paper-grey canvas, white cards, black ink, vermillion and powder-blue accents, hatch, Clash Display + General Sans, 2.5D pocket cards; light only). Code in `mobile/`. Screen-by-screen plan: [neo-kinetic-plan.md](neo-kinetic-plan.md); the VaultBank round: [vaultbank-round.md](vaultbank-round.md).
 
 **No login or setup.** The first launch creates the on-device key silently and opens Home. "Import a key" is in Settings only. The app opens on the **built-in network** on every launch (see below); a real server is opt-in in Settings.
 
 ## Run
 
 ```bash
-cd mobile && npm ci
+cd mobile && npm ci                                                  # postinstall fetches Clash Display + General Sans from Fontshare (scripts/fonts.sh)
 npx expo start                                                       # built-in network, nothing else needed
 EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787 npx expo start       # address offered under Custom server; also the relay address when linked to the console
 # dev stack (local anvil fork, scripted agent): add EXPO_PUBLIC_RPC_URL=http://<LAN IP>:8787/dev/rpc, or just set the API URL; dev mode is detected from GET /dev/health
@@ -25,16 +25,17 @@ It is meant for demos and offline use. Its hashes are not on a public chain, so 
 
 **Link to the web console:** on the built-in network the phone quietly pushes its pockets and events to a relay (`src/lib/relay.ts`, backs off when none answers). On the laptop run `pnpm --dir devstack relay` (or the full `pnpm --dir devstack start`), start the phone with `EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787`, and keep it on the built-in network. The console then mirrors the phone, and the Judges tab's plant and forced transfer run on the phone's pockets.
 
-## What a judge sees (Neo-Kinetic round, 16 Oct)
+## What a judge sees (VaultBank round, 16 Oct)
 
-- **Intro on every launch:** three pages, Skip always there, the finger drives the pager, about 7 s auto-advance. Page 1 fans out the owner's own pockets (names, short numbers, holding agents) over a hatch panel (`src/components/Intro.tsx`).
-- **Home:** the agent-pockets pool and the main wallet with Fund; Add money, New pocket and a powder-blue Connect tile; a **fanned pocket deck** (`PocketStack.tsx`, `PocketFace.tsx`): tap a card behind to deal it to the front, swipe to cycle, tap the front card to fly it into its page (a measured overlay that carries the card's rotation and width, `CardFlight.tsx`); agent spending as a hatch curve that draws in, with "vs last week" only when the history covers last week (`SpendChart.tsx`, `lib/agents.ts`); recent activity with the agent that acted.
+- **Intro on every launch:** the four-tile mark and a Clash wordmark; three pages, Skip always there, the finger drives the pager, about 7 s auto-advance (the clock starts once frames draw). Page 1 is VaultBank's onboarding: the owner's own pocket cards are dealt in, tilted and spilling off the edge, and the mark's tiles lock into place (`src/components/Intro.tsx`, `ui/BrandMark.tsx`).
+- **Home:** the agent-pockets pool and the main wallet with Fund; Add money, New pocket and a powder-blue Connect tile (VaultBank tiles: big thin icons, no discs); a **fanned deck of 2.5D cards** (`PocketStack.tsx`, `PocketFace.tsx`: VaultBank card anatomy, the card's side under the face, a Skia material with a sheen that follows the phone's tilt, the cards behind tipped away in perspective): tap a card behind to deal it to the front, swipe to cycle (the front card turns in 3D), tap the front card to fly it into its page (a measured overlay that carries the card's rotation and width, `CardFlight.tsx`); weekly agent spending as VaultBank's chart: a curve over vertical lines that draws in, "+53% vs last week" as a vermillion pill on a stem down to today's ringed marker, only when the history covers last week (`SpendChart.tsx`, `lib/agents.ts`); recent activity with the agent that acted.
 - **Agents tab:** ChainBrain's agent, Claude and ChatGPT with the pockets they hold, spent share, what they are doing; Agent detail with its own ledger, Give another pocket and hold-to-disconnect; **Connect** (pairing link and QR, then the consent sheet: a new pocket for the agent, can / can't, slide to allow).
-- **Approvals inbox** (the bell): every agent's waiting requests with their 10-minute countdown; the **approval sheet** separates what the wallet checked (item, pocket, rule, Radar's score, expiry) from the agent's own note, marked "not checked"; black slide track with a vermillion grip.
-- **Pocket page:** rule chips, Add / Return / Revoke tiles, worst case with main-wallet exposure US$0.00, spending by day as hatch bars split by seller, the holding agent, black seller toggles, history. Revoked: banner, white-hatch card, what came back, audit trail with a JSON export.
+- **Ask dock and cheque:** when Claude or ChatGPT asks, a black dock rises above the tab bar on every tab (the agent's mark, "Claude asks US$1.50", to DataPro, a 10-minute countdown ring, "+2" for more); tapping it opens the **cheque**: who asks and why you are asked, the pocket's card turning over to show pay / to / for / what is left after, Radar's seller check and the paying pocket, then the agent's note marked "not checked". Slide to approve, then Face ID or Touch ID (skipped without biometrics, on web and in auto-play). An opt-in local notification brings you to the cheque when the app is in the background (`AskDock.tsx`, `Cheque.tsx`, `ApprovalSheet.tsx`, `lib/biometric.ts`, `lib/notify.ts`). ChainBrain's own asks in chat open the cheque directly.
+- **Approvals inbox** (the bell): every agent's waiting requests with their 10-minute countdown and the history.
+- **Pocket page:** the 2.5D card leaning with the phone, the rules as VaultBank category tiles (dot, figure, meaning, pencil to edit), Add / Return / Revoke tiles, worst case with main-wallet exposure US$0.00, spending by day as hatch bars split by seller, the holding agent, black seller toggles, history. Revoked: banner, white-hatch card, what came back, audit trail with a JSON export.
 - **Chat** (pushed from Agents or Home): black owner bubbles, the agent's words in white cards, green / vermillion / blue event cards, Radar cards that open the **Radar alert** page (diagnosis, money trail, affected pockets, Keep blocked or remove the seller).
 - **ChainBrain explorer sheet:** every hash opens it ("Test network"; "View on BaseScan" only against a real public-chain server).
-- **Hidden auto-play (for the video):** long-press the chat header for about 1.5 s. Scenes 1-8 as before (wizard, question, co-sign, refusal, injection plus the forced transfer, data grab, escalation, revoke, dead end and fix), then: Connect Claude (pairing, consent, its own pocket), confirm Claude's task and co-sign its payment from the inbox, scene 9 (Radar, opening the money trail) and scene 10 (Sentinel). Every step presses the real control through a named target (`src/lib/autoplay.ts`, `src/lib/autoplayTargets.ts`).
+- **Hidden auto-play (for the video):** long-press the chat header for about 1.5 s. Scenes 1-8 as before (wizard, question, co-sign, refusal, injection plus the forced transfer, data grab, escalation, revoke, dead end and fix), then: Connect Claude (pairing, consent, its own pocket), confirm Claude's task and co-sign its payment from the ask dock (the cheque), scene 9 (Radar, opening the money trail) and scene 10 (Sentinel). Every step presses the real control through a named target (`src/lib/autoplay.ts`, `src/lib/autoplayTargets.ts`).
 
 ## Screens
 
@@ -63,7 +64,7 @@ With a server chosen, `GET /dev/health` returning 200 switches the RPC to `<api>
 
 ## Checks
 
-`npm test` (34 tests: the co-sign payload, agents and spending maths, the palette parity with the console, and a full auto-play run on the built-in network that includes Claude via Connect and the inbox and scenes 9-10), `npx tsc --noEmit`, `npx expo-doctor` (16 Oct: only `expo` / `expo-router` one patch behind the newest release), `npx expo export --platform web|ios` (the iOS Hermes bundle builds). Built-in network end to end: `node devstack/e2e/builtin.cjs --url http://localhost:8091` (45 checks on 16 Oct: intro, Home deck and spending, Agents and Claude's page, Claude's co-sign from the inbox, Connect + consent for ChatGPT, scenes 1-8, receipt and explorer, settings; no server needed). Dev stack end to end: `node devstack/e2e/e2e.cjs` (not re-run in the Neo-Kinetic round). Screenshots: `docs/frontend/screenshots/builtin/*.png` (refreshed 16 Oct), `docs/frontend/screenshots/neo/web-*.png`.
+`npm test` (34 tests: the co-sign payload, agents and spending maths, the palette parity with the console, and a full auto-play run on the built-in network that includes Claude via Connect and the ask dock and scenes 9-10), `npx tsc --noEmit`, `npx expo-doctor` (16 Oct: only `expo` / `expo-router` one patch behind the newest release), `npx expo export --platform web|ios` (the iOS Hermes bundle builds). Built-in network end to end: `node devstack/e2e/builtin.cjs --url http://localhost:8091` (46 checks on 16 Oct: intro, Home deck and spending, Agents and Claude's page, the ask dock, the inbox and Claude's cheque, Connect + consent for ChatGPT, scenes 1-8, receipt and explorer, settings; no server needed). Dev stack end to end: `node devstack/e2e/e2e.cjs` (not re-run in the Neo-Kinetic round). Screenshots: `docs/frontend/screenshots/builtin/*.png` (written by the e2e run), `docs/frontend/screenshots/neo/web-*.png`.
 
 ## Verified in Expo Go (iOS Simulator, 16 Oct)
 
@@ -71,10 +72,14 @@ Expo Go 57 on an iPhone 17 simulator, built-in network: intro, Home deck (deal, 
 
 Dev note: after Fast Refresh of a file with Reanimated styles (`Hatch.tsx`, `SlideToConfirm.tsx`), already-mounted animated values can stay on their old position (a revoked card kept its live face and old balance). A full reload clears it; it does not happen on a clean load.
 
+## Verified in Expo Go, VaultBank round (16 Oct)
+
+Clash Display and General Sans load; the warm canvas; the deck of 2.5D cards (material, edge, perspective) and the card flight; the pocket page and an agent's page with the same card; the ask dock for Claude's request, the cheque turning over, slide to approve (no Face ID enrolled in the simulator, so the slide signs alone); the spending chart; the intro's spilling cards and the mark; the four-tile icon on Expo Go's loading card. Phone tilt is not testable in the simulator (no motion), so the lean and the moving sheen are unverified.
+
 ## Not verified
 
-Not run on a physical phone: haptics, 120 Hz motion, the deck's swipe under a real finger, and iOS edge swipe-back on the pocket page. No dark mode. The native splash (slate canvas with the mark, `expo-splash-screen` in `app.json`) only shows in a development or store build; Expo Go shows the app icon on its own loading card instead.
+Not run on a physical phone: haptics, 120 Hz motion, the cards leaning with the phone and their sheen, Face ID on the cheque, the background notification, the deck's 3D swipe under a real finger, and iOS edge swipe-back on the pocket page. No dark mode. The native splash (the canvas with the four-tile mark, `expo-splash-screen` in `app.json`) only shows in a development or store build; Expo Go shows the app icon on its own loading card instead.
 
 ## App icon and splash
 
-ChainBrain's in-app mark: the Lucide brain in white on ink, with the pocket cards' 45° hatch on the right. SVG sources and the render script are in `assets/src/` (`assets/src/build.sh`, needs `rsvg-convert`); it writes the iOS icon, the Android adaptive layers, the splash mark and the favicon. Expo Go caches the icon by URL: after changing it, delete Expo Go's `Library/Caches` in the simulator (`xcrun simctl get_app_container booted host.exp.Exponent data`) to see the new one. The web console's favicon (`web/public/logo.svg`) still uses the two-link mark.
+ChainBrain's four-tile mark (hatch, vermillion, ink, hatch) on the warm canvas, drawn like `src/ui/BrandMark.tsx`. `assets/src/build.sh` (needs `rsvg-convert`) runs `gen.py` for the SVG sources and renders the iOS icon, the Android adaptive layers, the splash mark and the favicon. Expo Go caches the icon by URL: after changing it, delete Expo Go's `Library/Caches` in the simulator (`xcrun simctl get_app_container booted host.exp.Exponent data`) to see the new one. The web console's header and favicon use the same mark.

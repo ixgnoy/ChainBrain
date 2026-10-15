@@ -1,6 +1,6 @@
 # VaultBank round: the phone, then the console
 
-Restyle ChainBrain after the VaultBank shots (`reference/frontend/stitch_chainbrain_ai_pocket_banking/image.png_1` to `_5`): Neo-Kinetic, very clean, less "AI-made", more wow, and the agent approval as the centre of the UX. Decisions were asked and answered on 16 Oct; this file is the spec to approve before building.
+Restyle ChainBrain after the VaultBank shots (`reference/frontend/stitch_chainbrain_ai_pocket_banking/image.png_1` to `_5`): Neo-Kinetic, very clean, less "AI-made", more wow, and the agent approval as the centre of the UX. Decisions were asked and answered on 16 Oct; the spec was approved and built the same night (status at the end).
 
 ## What VaultBank does that we don't
 
@@ -71,3 +71,7 @@ Each slice: `npm test`, `npx tsc --noEmit`, the built-in e2e (`devstack/e2e/buil
 - [AP2 mandates explained (RisingWave)](https://risingwave.com/blog/payment-mandate-agentic-commerce-explained/)
 - [Fintech design trends 2026 (Wandr)](https://www.wandr.studio/blog/fintech-design-trends-2026)
 - [Fintech UX trends 2026 (Outcrowd)](https://outcrowd.medium.com/fintech-design-trends-2026-733bd55314d3)
+
+## Status (16 Oct, built)
+
+All six slices are committed on local main (not pushed): `10ecca9` fonts, canvas, tiles · `72e77d2` 2.5D cards · `90123ce` ask dock, cheque, Face ID · `3610e8c` chart, rule tiles, cards everywhere · `1abd1ec` four-tile mark, icon, splash, intro · `32422b3` console. Checks: phone `npm test` 34/34, `tsc` clean, built-in e2e 46/46, console `vitest` 76/76, iOS export builds, expo-doctor unchanged (two patch notes). Seen in Expo Go on the iOS Simulator; tilt, Face ID and the background notification need a physical phone (see mobile.md "Not verified"). The dev-stack e2e (`devstack/e2e/e2e.cjs`) was not updated in this round either (it still waits for "Approve payment").
