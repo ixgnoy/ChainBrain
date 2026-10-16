@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { recoverTypedDataAddress, verifyTypedData } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { parseUsd, formatUsd, NEVER, transferTypedData, type Authorization } from "./shared";
-import { PRESETS, toPocketArgs } from "./presets";
+import { PRESETS, toPocketArgs, isTightCap } from "./presets";
 import { ownerWallet, pocketStatus } from "./wallet";
 import { approvalsFrom } from "./events";
 
@@ -43,4 +43,14 @@ test("money and status helpers", () => {
 test("approvalsFrom keeps the latest status per approval", () => {
   const ev = (status: string) => ({ type: "approval", at: 1, approval: { id: "a1", kind: "payment", status } });
   assert.deepEqual(approvalsFrom([ev("pending"), ev("approved")]).map((a) => a.status), ["approved"]);
+});
+
+test("the dead-end pocket is told apart on both networks (console Play, chat suggestions)", async () => {
+  const { CATALOG } = await import("../../../shared/sim");
+  const builtinIds = CATALOG.map((s) => s.id);
+  const devIds = ["datalite", "datapro", "harbour-wines", "shadyfeed"];
+  assert.equal(isTightCap(5_000n, builtinIds), true); // built-in One purchase, US$0.005
+  assert.equal(isTightCap(50_000n, builtinIds), false); // built-in Research data, US$0.05: research scenes play here
+  assert.equal(isTightCap(200_000n, devIds), true); // dev stack scene 8 pocket, US$0.20
+  assert.equal(isTightCap(2_000_000n, devIds), false); // dev stack Research data, US$2
 });

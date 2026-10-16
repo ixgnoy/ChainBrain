@@ -20,6 +20,7 @@ import { notify } from "./lib/toast";
 import { haptic } from "./haptics";
 import { sameView, usd } from "./lib/util";
 import { loadMeta, saveMeta, type PocketMeta } from "./lib/pocketNames";
+import { isTightCap } from "./lib/presets";
 import * as api from "./lib/api";
 import {
   approvalsFrom, authExpired, authMismatch, authOf, ledgerFrom, livePending, mergeEvents, nextCursor, replyOf, sameAddr, sliceTurn,
@@ -397,8 +398,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // the console's Play button (via the relay): pick the pocket the scene needs, open the chat, type the sentence
   sayRef.current = async (text, preset) => {
-    const live = pockets.filter((p) => p.owned && !p.revoked && p.balance > 0n);
-    const tight = (p: Pocket) => p.cap <= 200_000n;
+    // ChainBrain's own pockets only: Claude's and ChatGPT's pockets name another agent key, so the chat's agent cannot pay from them
+    const live = pockets.filter((p) => p.owned && !p.revoked && p.balance > 0n && (p.agentId ?? "chainbrain") === "chainbrain");
+    const ids = (cfg?.sellers ?? []).map((s) => s.id);
+    const tight = (p: Pocket) => isTightCap(p.cap, ids);
     const target = preset === "one-purchase" ? live.find(tight) : live.find((p) => sameAddr(p.address, activeAddr) && !tight(p)) ?? live.find((p) => !tight(p));
     if (!target) return { ok: false, text: "No pocket on the phone fits this scene" };
     if (turnsBy[target.address.toLowerCase()]?.some((t) => !t.done)) return { ok: false, text: "The agent is still busy on the phone" };

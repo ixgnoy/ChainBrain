@@ -32,6 +32,7 @@ import { devScenes, type Scene } from "../lib/api";
 import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, radarScreens, radarAlerts, sentinelEvents, type WalletEvent } from "../lib/events";
 import { deadEndOf } from "../lib/deadend";
 import { money, usd } from "../lib/util";
+import { isTightCap } from "../lib/presets";
 import { plainAsks } from "../lib/plain";
 import { haptic } from "../haptics";
 import { useGrowCap } from "../ui/fontScale";
@@ -142,7 +143,7 @@ function useRideKeyboard(base: number) {
 export default function AgentChat() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
-  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, openApproval, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setPickerOpen, autoplay } = useApp();
+  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, openApproval, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setPickerOpen, autoplay, cfg } = useApp();
   const [text, setText] = useState("");
   const grow = useGrowCap("body");
   const [scenes, setScenes] = useState<Scene[]>([]);
@@ -241,7 +242,7 @@ export default function AgentChat() {
 
   const follow: ChipItem[] = question ? scenes.filter((s) => s.followUp).map((s) => ({ label: s.followChip ?? s.followUp!, text: s.followUp! })) : [];
   // a tight pocket (cap US$0.20 or less) leads with the dead-end task; otherwise the scenes in story order
-  const tight = !!active && active.cap <= 200_000n;
+  const tight = !!active && isTightCap(active.cap, (cfg?.sellers ?? []).map((s) => s.id));
   const ordered = tight ? [...scenes.filter((s) => s.preset === "one-purchase"), ...scenes.filter((s) => s.preset !== "one-purchase")] : scenes;
   // used suggestions go away; while the agent works only the answer to its question is offered
   const used = new Set(turns.map((t) => t.text.trim()));
