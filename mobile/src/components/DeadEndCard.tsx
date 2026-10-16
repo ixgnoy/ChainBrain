@@ -9,12 +9,12 @@ import { T } from "../ui/Text";
 import { firstTime } from "../ui/Rise";
 import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
-import { deadEndOf, whyText } from "../lib/deadend";
+import { deadEndOf, retryText, whyText } from "../lib/deadend";
 import { usd } from "../lib/util";
 import type { WalletEvent } from "../lib/events";
 import { EventCard } from "./EventCard";
 
-export function DeadEndCard({ id, evs, pocket, sellerName, onRetry, resolved }: { id: string; evs: WalletEvent[]; pocket: { address: string; cap: bigint; balance: bigint; owned: boolean; revoked: boolean }; sellerName: (id?: string) => string; /** after the fix: ask the agent again with a price limit that now fits */ onRetry?: (text: string) => void;
+export function DeadEndCard({ id, evs, pocket, sellerName, onRetry, resolved, task }: { id: string; evs: WalletEvent[]; /** the owner's sentence that ran into the dead end */ task: string; pocket: { address: string; cap: bigint; balance: bigint; owned: boolean; revoked: boolean }; sellerName: (id?: string) => string; /** after the fix: ask the agent again with a price limit that now fits */ onRetry?: (text: string) => void;
   /** a later turn bought it: the card stays as history, without a fix to apply */ resolved?: boolean }) {
   const { setRules } = useApp();
   const d = deadEndOf(evs, pocket);
@@ -39,7 +39,7 @@ export function DeadEndCard({ id, evs, pocket, sellerName, onRetry, resolved }: 
         fixed ? (
           <View style={{ gap: 10 }}>
             <T v="sub" color="positive">Your rules now allow this.</T>
-            {onRetry && d.minPrice != null ? <Button label={`Ask again, max US$${usd(d.minPrice)}`} small auto="deadend.askAgain" onPress={() => onRetry(`Search Exa for durian export news. Max US$${usd(d.minPrice!)}, by tonight.`)} /> : <T v="sub" color="ink2">{again}</T>}
+            {onRetry && d.minPrice != null ? <Button label={`Ask again, max US$${usd(d.minPrice)}`} small auto="deadend.askAgain" onPress={() => onRetry(retryText(task, usd(d.minPrice!)))} /> : <T v="sub" color="ink2">{again}</T>}
           </View>
         )
         : !d.fix && !d.needsSeller ? <T v="sub" color="ink2">{again}</T>
