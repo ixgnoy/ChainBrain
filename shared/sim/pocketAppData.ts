@@ -171,6 +171,7 @@ export function routineFromEvents(events: Ev[], pocket: string): Routine | null 
     else if (e.kind === "skipped") r.nextAt = e.nextAt;
     else if (e.kind === "paused") r.status = "paused";
     else if (e.kind === "resumed") r.status = "active";
+    else if (e.kind === "edited") { r.cadence = e.cadence; r.allowance = e.allowance; r.nextAt = e.nextAt; }
   }
   return r;
 }

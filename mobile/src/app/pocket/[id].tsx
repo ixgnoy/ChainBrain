@@ -26,6 +26,7 @@ import { UnfreezeButton, movedMoney, sentinelReason } from "../../components/Sen
 import { TxNotice } from "../../components/TxNotice";
 import { PocketFace, cardHeight, toneFor } from "../../components/PocketFace";
 import { useReduceMotion } from "../../ui/motion";
+import { EditRoutineSheet } from "../../components/EditRoutineSheet";
 import { PAGE_MARGIN, pageCardWidth } from "../../components/CardFlight";
 import { useFlight } from "../../ui/cardFlight";
 import { txError } from "../../components/ActionSheet";
@@ -100,6 +101,7 @@ export default function PocketDetail() {
   // the pocket's routine (typed fields on the built-in network), read again whenever new events arrive
   const routine = useMemo(() => (id ? api.routineOf(id) : null), [id, events.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const [runErr, setRunErr] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
 
   if (!pocket) {
     return (
@@ -135,6 +137,7 @@ export default function PocketDetail() {
       // no success tap here: the payment it makes gets one when it settles (PocketApp's payoff)
     } : undefined,
     onPause: owned && !off ? (paused) => { haptic.select(); api.pauseRoutine(pocket.address, paused); } : undefined,
+    onEdit: owned && !off && routine ? () => setEditing(true) : undefined,
     onReceipt: (tx) => { const row = mine.find((r) => r.kind === "payment" && r.tx === tx); if (row) setReceipt(row); },
     onAsk: () => { setActive(pocket.address); router.push("/agent"); },
   };
@@ -277,6 +280,7 @@ export default function PocketDetail() {
         {!allRows && rows.length > HISTORY ? <Button label={`Show all ${rows.length}`} kind="text" small onPress={() => setAllRows(true)} style={{ marginTop: 8, alignSelf: "center" }} /> : null}
         </> : null}
       </Screen>
+      {routine ? <EditRoutineSheet routine={routine} agentId={pocket.agentId} visible={editing} onClose={() => setEditing(false)} onSaved={() => void refreshPockets()} /> : null}
     </View>
   );
 }

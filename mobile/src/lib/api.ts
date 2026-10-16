@@ -121,4 +121,9 @@ export async function runRoutineNow(pocket: Address) {
 }
 /** Publishes the pocket's app on the built-in network, so the console's pocket view shows it too. */
 export const setApp = (pocket: Address, spec: import("../../../shared/sim/pocketApp").PocketAppSpec) => { if (isBuiltin()) builtin().setApp(pocket, spec); };
+/** The owner's edit of when a routine runs and its allowance (the same routine: its spend this period still counts). */
+export const editRoutine = (pocket: string, change: { cadence?: import("../../../shared/sim/pocketApp").Cadence; allowance?: { amount: string; period: import("../../../shared/sim/pocketApp").Period } }) => {
+  if (!isBuiltin()) throw new Error("NOT_ON_THIS_NETWORK");
+  return builtin().editRoutine(pocket, change);
+};
 export const pauseRoutine = (pocket: string, paused: boolean) => (isBuiltin() ? builtin().pauseRoutine(pocket, paused) : false);

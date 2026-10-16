@@ -3,7 +3,7 @@
 // (devstack/src/model.ts), on top of the in-memory chain. The apps talk to it through the same calls they use for
 // the real server, so every screen behaves the same in both.
 import { CATALOG, quotedPrice, sellerById, sellerByPayTo, sellerName, sellers, ATTACKER, DRAINER } from "./catalog";
-import { available, nextRun, pickApp, validateRoutine, validateSpec, type PocketAppSpec, type Routine, type RoutineSpec } from "./pocketApp";
+import { available, nextRun, pickApp, validateRoutine, validateSpec, type Cadence, type Period, type PocketAppSpec, type Routine, type RoutineSpec } from "./pocketApp";
 import { createMemory, consolidate } from "./memory";
 import { parseSentence, proof } from "./speak";
 import { rules as sentinelRules, ruleSeverity, gate, scriptedAi, stateText, PROBE_REASONS, RANK, type Severity, type Signal, type AiAnswer } from "./sentinel";
@@ -75,7 +75,7 @@ export function createWorld(opts: WorldOptions = {}) {
     if (ev.pocket && SENTINEL_TRIGGERS.has(ev.type)) sentinelCheck(ev.pocket); // synchronous: a freeze lands before the agent's next step
     return ev;
   }
-  const KEEP = (e: SimEvent) => e.type === "app" || (e.type === "routine" && e.kind === "set");
+  const KEEP = (e: SimEvent) => e.type === "app" || (e.type === "routine" && (e.kind === "set" || e.kind === "edited"));
   const trace = (pocket: string, phase: string, extra: object = {}, at?: number) => publish({ type: "trace", pocket, phase, ...extra, at });
 
   // ---- approvals (server/src/wallet/approvals.ts)
@@ -719,6 +719,18 @@ export function createWorld(opts: WorldOptions = {}) {
       routines.set(lower(pocket), rt);
       publish({ type: "routine", kind: "set", pocket, routine: rt, at });
       return { ...rt };
+    },
+    /** The owner changes when a routine runs and its allowance. The same routine (its id, runs and this period's payments),
+     *  so an edit never resets what was spent; the items and the price limit stay as they were signed. */
+    editRoutine(pocket: string, change: { cadence?: Cadence; allowance?: { amount: string; period: Period } }): Routine {
+      const rt = routines.get(lower(pocket));
+      if (!rt) throw new Error("no routine");
+      const v = validateRoutine({ kind: rt.kind, cadence: change.cadence ?? rt.cadence, items: rt.items, allowance: change.allowance ?? rt.allowance, limitPrice: rt.limitPrice ?? null }, sellers());
+      if (!v.ok) throw new Error(`invalid routine: ${v.errors.join("; ")}`);
+      rt.cadence = v.value.cadence; rt.allowance = v.value.allowance;
+      rt.nextAt = nextRun(rt.cadence, now());
+      publish({ type: "routine", kind: "edited", pocket, routineId: rt.id, cadence: rt.cadence, allowance: rt.allowance, nextAt: rt.nextAt });
+      return wire({ ...rt });
     },
     routine: (pocket: string): Routine | null => { const x = routines.get(lower(pocket)); return x ? wire({ ...x }) : null; },
     routines: (): Routine[] => [...routines.values()].map((x) => wire({ ...x })),

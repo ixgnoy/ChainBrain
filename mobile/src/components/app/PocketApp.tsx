@@ -48,6 +48,8 @@ export type AppCtx = {
   running?: { run: number } | null;
   onRunNow?(): void;
   onPause?(paused: boolean): void;
+  /** opens the owner's edit of the routine (when it runs, its allowance) */
+  onEdit?(): void;
   onReceipt?(tx?: string): void;
   onAsk?(): void;
 };
@@ -406,12 +408,23 @@ function NextRun({ ctx }: { ctx: AppCtx }) {
       {!ctx.preview && rt && ctx.onRunNow ? (
         <View style={{ gap: 4 }}>
           <Button label={`Have ${who} ${rs.kind === "price-watch" ? "check" : rs.kind === "renewals" ? "renew" : "run it"} now`} icon="bolt" auto="routine.runNow" disabled={!!ctx.running || paused} onPress={ctx.onRunNow} />
-          {ctx.onPause ? (
-            <Press haptics="select" onPress={() => ctx.onPause!(!paused)} accessibilityRole="button" accessibilityLabel={paused ? "Resume the routine" : "Pause the routine"}
-              style={{ alignSelf: "center", minHeight: 44, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12 }}>
-              <Icon name={paused ? "play" : "pause"} size={16} color={c.ink2} />
-              <T v="sub" w="semi" color="ink2">{paused ? "Resume the routine" : "Pause the routine"}</T>
-            </Press>
+          {ctx.onPause || ctx.onEdit ? (
+            <View style={{ flexDirection: "row", justifyContent: "center", flexWrap: "wrap" }}>
+              {ctx.onEdit ? (
+                <Press haptics="select" onPress={ctx.onEdit} accessibilityRole="button" accessibilityLabel="Edit when it runs and its allowance"
+                  style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12 }}>
+                  <Icon name="edit" size={16} color={c.ink2} />
+                  <T v="sub" w="semi" color="ink2">Edit</T>
+                </Press>
+              ) : null}
+              {ctx.onPause ? (
+                <Press haptics="select" onPress={() => ctx.onPause!(!paused)} accessibilityRole="button" accessibilityLabel={paused ? "Resume the routine" : "Pause the routine"}
+                  style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12 }}>
+                  <Icon name={paused ? "play" : "pause"} size={16} color={c.ink2} />
+                  <T v="sub" w="semi" color="ink2">{paused ? "Resume" : "Pause"}</T>
+                </Press>
+              ) : null}
+            </View>
           ) : null}
         </View>
       ) : null}

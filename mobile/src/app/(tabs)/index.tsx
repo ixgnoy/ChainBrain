@@ -156,6 +156,10 @@ function Home({ ready }: { ready: boolean }) {
   const digest = useMemo(() => weekDigest(events, Date.now()), [moneyN]); // eslint-disable-line react-hooks/exhaustive-deps
   const itemName = useCallback((sid: string, sku: string) => { const it = cfg?.sellers.find((s) => s.id === sid)?.items.find((i) => i.sku === sku); return it?.short ?? it?.description ?? sku; }, [cfg]);
   const sellerLabel = useCallback((id: string) => cleanText(cfg?.sellers.find((s) => s.id === id)?.name ?? id, 24), [cfg]);
+  // every live pocket's routine, for Pause all / Resume all (pausing only lowers risk: no signature)
+  const liveRoutines = useMemo(() => pockets.filter((p) => !p.revoked).map((p) => routines.get(p.address.toLowerCase())).filter((r): r is NonNullable<typeof r> => !!r), [pockets, routines]);
+  const anyActive = liveRoutines.some((r) => r.status === "active");
+  const pauseAll = (pause: boolean) => { haptic.medium(); for (const r of liveRoutines) if ((r.status === "active") === pause) api.pauseRoutine(r.pocket, pause); };
   const upcoming = useMemo(() => nextRuns(pockets, (a) => routines.get(a.toLowerCase()) ?? null, events, cfg?.sellers ?? [], now), [pockets, routines, events, cfg, now]);
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
@@ -232,10 +236,15 @@ function Home({ ready }: { ready: boolean }) {
         </View>
       </Rise>
 
-      {upcoming.length ? (
+      {liveRoutines.length ? (
         <Rise play={play} index={2}>
-          <SectionHeader title="Next up" count={upcoming.length} action={canConnect ? "Agents" : undefined} onAction={() => router.navigate("/agents")} />
-          <NextUp runs={upcoming} now={now} />
+          <SectionHeader title="Next up" count={upcoming.length || undefined} action={anyActive ? "Pause all" : "Resume all"} onAction={() => pauseAll(anyActive)} />
+          {upcoming.length ? <NextUp runs={upcoming} now={now} /> : (
+            <Card style={{ marginHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c.fill, alignItems: "center", justifyContent: "center" }}><Icon name="pause" size={18} color={c.ink2} stroke={2} /></View>
+              <T v="sub" color="ink2" style={{ flex: 1 }}>{`${liveRoutines.length === 1 ? "Your routine is" : `All ${liveRoutines.length} routines are`} paused. Nothing runs or pays until you resume.`}</T>
+            </Card>
+          )}
         </Rise>
       ) : null}
 

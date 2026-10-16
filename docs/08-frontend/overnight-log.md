@@ -5,7 +5,6 @@ Phone first, then the web console. Each slice goes research → implement → va
 ## Backlog
 
 - [ ] Home: a press-lift on stack cards; tune the drop-in and the pull-to-fan on video
-- [ ] Edit-routine sheet: cadence chips, allowance stepper, Face ID to sign; plus a "Pause all routines" control
 - [ ] Agents screen at Home's level
 - [ ] Activity screen at Home's level
 - [ ] Approvals inbox and Receipt sheet at Home's level
@@ -33,6 +32,16 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [x] **Digest on Home ("Your agents got you")**: last 7 days of buys as covers (seller mark, item, ×count, spent), plus bought / co-signed / stopped counts.
   - Decision: it uses the weekly chart's window (7 calendar days including today), not Monday to now. The first version showed US$0.31 beside the chart's US$0.317, and two different "weekly" numbers next to each other would confuse a judge.
   - Evidence: `w-23-digest.png`; sim tests 56 pass (a new digest test); e2e 57/57.
+
+- [x] **Edit the routine, and Pause all**.
+  - Pocket page: next to Pause there is now Edit. It opens a sheet with:
+    - cadence chips (every day, weekdays, Mondays, the 1st) and time chips;
+    - an allowance stepper (a cent under US$0.10, five cents to US$1, 25 cents above) with day/week/month;
+    - a preview of the next run and where the agent stops and asks.
+  - Home: Next up has "Pause all" / "Resume all". With everything paused, a quiet card says nothing runs or pays.
+  - Bug avoided: `setRoutine` mints a new routine id, and the allowance meter counts payments by id, so "editing" through it would have reset this week's spend. The new `world.editRoutine` keeps the id, runs and spend. It is published as a `routine:edited` event, kept from trimming, and applied by `routineFromEvents`. A test proves it: after an edit to a smaller allowance, US$0.034 already spent leaves US$0.006, and the next run asks.
+  - Decision: only a looser allowance (more money, or a longer period) is signed with Face ID. A stricter one, a new time, or a pause can only lower risk, so they save at once.
+  - Evidence: `w-24-edit-routine.png`, `w-25-pause-all.png`; sim tests 57 pass; e2e 57/57. A headless run checked that a stricter edit saved (US$0.15 a week) and that Pause all and Resume all both worked.
 
 Earlier the same day, before this log existed:
 - Home wallet stack, live card signs and Next up (e68c433)

@@ -252,3 +252,31 @@ test("week digest: this week's buys by item, co-signs and what was stopped, from
   assert.ok(d.window.start <= w.now() && w.now() < d.window.end);
   for (let i = 1; i < d.items.length; i++) assert.ok(d.items[i - 1].count >= d.items[i].count, "most bought first");
 });
+
+test("routine edit: same routine, spend so far still counts; the change is in the stream", async () => {
+  const { w, pocket, rt } = await routinePocket();
+  await w.runRoutineNow(pocket);
+  await w.runRoutineNow(pocket); // US$0.034 of US$0.05 this week
+  const ed = w.editRoutine(pocket, { cadence: { every: "week", weekday: 1, dayOfMonth: null, hour: 9, minute: 0 }, allowance: { amount: "0.04", period: "week" } });
+  assert.equal(ed.id, rt.id, "an edit keeps the routine, so it can't reset what was spent");
+  assert.equal(ed.runs, 2);
+  const b = budgetOf(w.events(0), pocket, { routine: w.routine(pocket), balance: w.chain.view(pocket).balance, now: w.now() });
+  assert.equal(b.spent, 34_000n);
+  assert.equal(b.left, 6_000n, "only US$0.006 left under the new US$0.04");
+  assert.equal(cadenceText(ed.cadence), "Every Monday at 09:00");
+  const fromEv = routineFromEvents(w.events(0), pocket)!;
+  assert.deepEqual([fromEv.allowance, fromEv.cadence.every, fromEv.nextAt], [ed.allowance, "week", ed.nextAt]);
+  // the next run passes the smaller allowance: it asks
+  const third = w.runRoutineNow(pocket);
+  await new Promise((res) => setTimeout(res, 20));
+  assert.equal(w.pending(pocket)[0]?.data.allowance.allowance, "0.04");
+  let done = false;
+  void third.then(() => { done = true; });
+  for (let i = 0; i < 20 && !done; i++) { // decline each ask the run raises (each item past the allowance asks)
+    const a = w.pending(pocket)[0];
+    if (a) await w.answer(a.id, { approved: false });
+    await new Promise((res) => setTimeout(res, 20));
+  }
+  assert.ok(done, "the run ended once its asks were answered");
+  assert.throws(() => w.editRoutine(pocket, { allowance: { amount: "-1", period: "week" } }));
+});
