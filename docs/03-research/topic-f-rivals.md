@@ -1,7 +1,20 @@
 # Topic F rivals: who else is entering, and how ChainBrain beats them
-Last updated: 2026-10-15
+Last updated: 2026-10-16
 
 > **Update (15 Oct):** a fresh GitHub search found **four more Topic F entries**: `xizo13/webank` (Agent Wallet MVP: MCP connector, FISCO BCOS), `ttwrpz/agentvax` (AgentVax: on-chain mandate, quarantined reader model, shared threat bulletin, a written paper), `atulharshvardhan2006/KiteShield-Backend` (policy engine and separate signer) and `Safius-Sifat/Fintechathon` (Mandate Wallet, spec only). A fifth, `shads-01/KendraFi`, is a Topic E entry with a Topic F-style escrow. sucsage moved to its own private chain with a live app. Our new Radar (counterparty screening) and Brain memory (PRs #1-#3 on origin/main) are also reflected below. Rows and lines added on 15 Oct are marked **(15 Oct)**.
+
+> **Update (16 Oct):** re-checked every Topic F repo and searched for repos created since 15 Oct.
+> - **No new Topic F entry.** Leash, edxzh, xizo13, AgentVax, KiteShield and Mandate Wallet have not pushed since mid-day 15 Oct. Mandate Wallet is still spec only, with an 18 Oct target.
+> - **sucsage keeps shipping:**
+>   - KYC with a mock Thai ID (ThaID) and a mock national identity login (OIDC + PKCE);
+>   - Stripe test-mode top-ups;
+>   - TECHNICAL.md;
+>   - "the AI never shows wallet addresses";
+>   - hire-or-buy deals.
+>
+>   It is building the most bank-like consumer product in the field, still on its own private chain with a mock token.
+> - **Outside the competition:** `MELcodes99/sentry` (MoonPay hackathon) is a pre-sign check an agent pays US$0.01 over x402 for. It answers ALLOW / WARN / BLOCK with "dollars at risk", and has a "try to fool it" page. This is the industry direction our Radar and Pre-flight sit in. It is not a rival entry.
+> - **Our side:** Sentinel, Pre-flight and "Speak your rules" (PRs #4 and #5) are added below. Rows marked **(16 Oct)**.
 
 > **Status (14 Oct, v2):** The rival findings below still apply. Our own claims are superseded by the [v2 spec](../02-product/product-design.md): ChainBrain is now a consumer wallet. Our novelty is delegated spending with hard limits the user owns in a contract (pockets). The seller trust layer (verdict, seller guards, reputation, ERC-8004) is a finals roadmap item, not in the prelim demo. Lines marked "(old design, deferred to finals)" describe the earlier seller-side plan. Our build is now done locally and tested; live Base Sepolia hashes are still pending ([evidence](../evidence.md)).
 
@@ -116,6 +129,9 @@ Totals: counting the 14 in the 12 Oct note and the six new repos above (OneGate,
 | **(15 Oct)** "The pocket on FISCO BCOS" (finals roadmap) | xizo13 settles on a local four-node FISCO BCOS v3.17.1 chain; Signet (Topic B) anchors on FISCO; KendraFi plans it | No longer "the only unique bonus idea". Still worth a bonus if done, but no novelty claim |
 | **(15 Oct)** Radar: "Elliptic-style counterparty screening in the payment path" (origin/main, PRs #1-#2) | Nobody screens the payee's fund flows (source and destination exposure). The nearest are AgentVax's shared on-chain `ThreatBulletin` of attack "capsules" (shared threat intelligence, not fund tracing), Leash's provenance and look-alike checks, xizo13's optional "Guardian" verdict and honeypot-merchant denial, and edxzh's ERC-8004 reputation | A real, narrow edge: "an approved seller that later receives money from a flagged wallet is blocked for every pocket". Label the demo data as simulated (scene 9 runs on the built-in network) |
 | **(15 Oct)** Brain memory: "memory that can only narrow" (origin/main, PR #3) | AgentVax already states the principle: "learning changes risk estimates, only the owner changes authority", enforced by a time-lock on loosening. Its attack suite includes a "memory" family | Say "like AgentVax's rule, our memory can never widen authority". Don't claim it reduces hallucination unless we measure it |
+| **(16 Oct)** Sentinel: "a second AI watches the agent and can freeze the pocket on chain" (PR #4) | AgentVax runs "a guardian process per wallet"; Sathi lets its agent freeze a card but never undo it; Leash and sucsage have an owner pause; xizo13 denies a "frozen agent" | Not new as a pattern. Our narrow part: the guardian key can only **freeze**, only the owner unfreezes (enforced in `Pocket.sol`); fixed behaviour rules (refusal bursts, ghost transfers, injection follow-through) decide, and a decision model (Jev, or a Claude stand-in) can only make the response stricter. Say "like AgentVax and Sathi, protection is one-way" |
+| **(16 Oct)** Pre-flight: "the agent predicts each payment's outcome before paying, then checks it" (PR #5) | Leash's policy engine has pre-flight simulation; edxzh has a free dry-run page (`eth_simulateV1`) | Table stakes. Our only extra: predicted vs actual is shown per payment and counted ("predicted 5 of 5"). Don't headline it |
+| **(16 Oct)** Speak your rules: "one sentence becomes pocket rules plus a proof card" (PR #5) | AgentVax turns the owner's mission into an owner-signed mandate; sucsage asks before drafting | Partly new: two independent model readings are merged so a disagreement takes the **stricter** value, and the worst case plus rule checks are **computed by code**, not written by the AI. The owner still reviews and signs. Say exactly that, not "AI writes your rules" |
 | **(15 Oct)** "Every AI layer can only add refusals; the contract has the final say" | Every Topic F entry says a version of this: Leash, sucsage ("a hallucinating agent still cannot move funds outside policy"), AgentVax (P1), KiteShield ("model output is untrusted"), xizo13, Hela | Table stakes. Keep it as the foundation, never as the headline novelty |
 
 ## 4. Head-to-head against ChainBrain (written 13 Oct against the old plan; the build now exists locally, live hashes pending; "seller" rows are old design, deferred to finals)
@@ -174,6 +190,8 @@ Scale: ahead / even / behind for what a judge could see on 20 Oct. "ChainBrain" 
 | Any agent can connect (MCP) | **Yes** | No | No | No | Finals roadmap | **Behind** xizo13 |
 | Untrusted-text isolation | Signed requests and a Guardian | **Reader/planner split** (strongest) | Model output treated as untrusted | Untrusted-document handling | `<untrusted_content>` wrapping, a fixed intent template, no seller text in memory | Even; AgentVax is architecturally stronger |
 | Counterparty screening | Honeypot merchant denial, optional Guardian | ThreatBulletin (shared attack capsules) | No | No | **Radar: fund-flow exposure scoring plus re-screening** | Ahead (narrow) |
+| **(16 Oct)** Watcher that can freeze | "Frozen agent" denial | Guardian process per wallet | No | Owner pause | **Sentinel: freeze-only key in the contract, owner-only unfreeze, typed reason on the phone** | Even with AgentVax; ahead of the rest |
+| **(16 Oct)** Owner states rules in plain words | No | Mission → signed mandate | No | Asks before drafting | **One sentence → two readings merged stricter → computed proof card** | Even with AgentVax on idea; ahead on the visible proof |
 | Owner app judges can see | Expo (visual acceptance pending) | Hosted UI via `make ui` | React web | **Live Vercel app with sign-up** | Expo phone app, web console, offline built-in network | Even; behind sucsage on "click a link and try it" |
 | Judge can try it from a link | No (local loopback only) | Not stated | Not stated | **Yes** | Not yet | **Behind** sucsage and edxzh |
 
@@ -193,7 +211,7 @@ Scale: ahead / even / behind for what a judge could see on 20 Oct. "ChainBrain" 
 | Refusals as public events with exactly one reason code, listed in the docs | edxzh | We already plan reason codes; publish them as a schema (item 25) and emit them on-chain where possible | S | Innovation, Security |
 | Pinned registry addresses and "halt if the implementation changed" | edxzh | If we use the public ERC-8004 registries, pin and check addresses before paying | S | Security |
 | Owner must re-type the exact amount to approve | OneGate | Add to the owner step-up screen; also defeats UI deception | S | Security |
-| Agent may protect (freeze, pause) but never un-protect | Sathi, Leash | State this rule in the permission table; show the agent pausing a pocket and failing to resume | S | Security |
+| Agent may protect (freeze, pause) but never un-protect | Sathi, Leash | **(16 Oct) Done:** the Sentinel's key can freeze, only the owner unfreezes (`NOT_GUARDIAN` / `onlyOwner`, scene 10). Still to do: put the rule in the permission table | S | Security |
 | Known-risk list with IDs | Leash | Write ours with named residuals and test IDs | S | Security |
 | Offline reproducible demo file | TuitionGuard, FundBun | Static replay page of the recorded run with real hashes, for reviewers who cannot reach our server | S | Task |
 
@@ -213,6 +231,8 @@ Written to be true against what we read. Each needs the matching proof in the de
 6. **"We checked the field."** One honest slide: Leash and sucsage (buyer-side limits), edxzh (ERC-1271 x402 wallet with reputation), Visa TAP, Skyfire, Kagi. Our claim is only the narrow, true one. Judges who know the repos will trust us more. **(15 Oct) Add:** xizo13 (MCP connector, FISCO BCOS), AgentVax (on-chain mandate, reader/planner split), KiteShield (policy engine and signer).
 7. **(15 Oct) "Real dollars, real shops, a public chain."** Of the Topic F entries we can see, only ChainBrain and edxzh pay real Circle test USDC to real x402 web endpoints on a public testnet. The others use a mock token, a private chain or a mock RPC, and edxzh has no AI conversation. True only once our live hashes exist.
 8. **(15 Oct) "Your approved seller turned bad? Every pocket stops paying it."** Radar's fund-flow screening and alerts. The nearest rivals share attack signatures (AgentVax) or block a honeypot merchant (xizo13); nobody traces where a seller's money came from.
+9. **(16 Oct) "The AI can stop your money, never move it."** The Sentinel freezes the pocket on chain when the agent behaves like it was fooled; only the owner can unfreeze. Show scene 10 and the freeze hash. Say AgentVax and Sathi share the one-way principle.
+10. **(16 Oct) "Say it in one sentence. The proof is computed, not written."** Two AI readings, the stricter one wins, and the card shows the worst case in dollars. Pair it with line 5.
 
 Avoid: "first", "nobody", "novel pocket", "ERC-1271 x402 is new", "only team with on-chain tiers". **(15 Oct) Also avoid:** "the only team with MCP", "the only FISCO BCOS entry", "AI can't move money outside policy" as a headline (everyone says it), "Elliptic clone", "multi-agent system", and "memory reduces hallucination".
 
@@ -232,6 +252,7 @@ Avoid: "first", "nobody", "novel pocket", "ERC-1271 x402 is new", "only team wit
 - **(15 Oct) [must] Get the live Base Sepolia hashes before anything else.** "Real Circle test USDC to real x402 sellers on a public chain" is now our clearest edge over xizo13 (local FISCO), sucsage (private Besu), AgentVax (mock token) and KiteShield (mock RPC). It is only an edge once [evidence](../evidence.md) has real rows. Task 40
 - **(15 Oct) [must] Publish attack numbers in the same shape as the rivals:** families × rewordings, hard violations, false refusals. Compare against AgentVax (30 × 2, 5 families) and Leash (30). Include a "memory" family, since AgentVax tests it and we now have memory. Security 30
 - **(15 Oct) [should] Give judges a link they can click:** the web console on the built-in network, hosted, because sucsage and edxzh both have a live link. Task 40
+- **(16 Oct) [must] Record one real-model run of the AI layers.** Jev / Claude for the Sentinel and Speak-your-rules has only run against fake responses so far. AgentVax is already criticised (above) for mock-model-only results; we must not be open to the same line. Innovation 30
 - **(15 Oct) [should] Ask the organisers (O1) whether private-chain or local-chain hashes count.** If they don't, sucsage and xizo13 lose most of the 40%. If they do, our public-chain edge shrinks. Either way the answer changes the pitch. Task 40
 
 ## Open questions
