@@ -57,6 +57,8 @@ export function resultSummary(tool: string | undefined, r: any): string {
     }
     case "ask_owner": return r.status === "asked" ? "asked the owner a question" : r.approved ? "owner approved" : "owner did not approve";
     case "pay": return r.ok ? `paid US$${cleanText(r.paid, 12)} to ${cleanText(r.sellerId, 24)}` : "payment refused";
+    // the haggler: prices only, both ways (shared/sim/haggle.ts)
+    case "counter_offer": return !r.ok ? "offer refused" : r.deal ? `deal at US$${cleanText(r.price, 12)}, US$${cleanText(r.saved, 12)} under US$${cleanText(r.list, 12)}` : `seller countered US$${cleanText(r.counter, 12)}${r.final ? " (final)" : ""}`;
     default: return cleanText(Object.keys(r).slice(0, 4).join(", "), 60);
   }
 }

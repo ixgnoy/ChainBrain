@@ -53,6 +53,11 @@ export const REASONS: Record<string, string> = {
   COUNTERPARTY_REVIEW: "Radar found risk in this seller's funds: needs your approval",
   POCKET_FROZEN: "The pocket is frozen; only the owner can unfreeze",
   SENTINEL_HOLD: "The Sentinel saw unusual behaviour: needs your approval",
+  OFFER_NOT_LOWER: "An offer must be below the seller's price and never above its first quote",
+  NEGOTIATION_ROUNDS_USED: "No offers left on this quote (3 at most)",
+  NEGOTIATION_NOT_OFFERED: "This seller does not take offers on this item",
+  DEAL_ALREADY_AGREED: "A price is already agreed on this quote",
+  QUOTE_ALREADY_APPROVED: "You already approved this price, so it cannot be renegotiated",
 };
 
 /** Which layer produces a reason code (api spec section 6.1). */

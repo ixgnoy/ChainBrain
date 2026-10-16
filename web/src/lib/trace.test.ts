@@ -54,3 +54,11 @@ it("flags instruction-like seller content as untrusted (plain text only)", () =>
   const clean = t("tool_result", { tool: "get_quote", result: { ok: true, free: true, content: "<untrusted_content source=\"a\">Durian prices rose 4%.</untrusted_content>" } }, 1);
   expect(untrustedOf(clean)?.injection).toBe(false);
 });
+
+it("the haggler's counter_offer steps read as prices, never seller text", async () => {
+  const { resultSummary } = await import("./trace");
+  expect(resultSummary("counter_offer", { ok: true, deal: false, counter: "1.20", final: false })).toBe("seller countered US$1.20");
+  expect(resultSummary("counter_offer", { ok: true, deal: false, counter: "1.10", final: true })).toBe("seller countered US$1.10 (final)");
+  expect(resultSummary("counter_offer", { ok: true, deal: true, price: "1.10", list: "1.50", saved: "0.40" })).toBe("deal at US$1.10, US$0.40 under US$1.50");
+  expect(resultSummary("counter_offer", { ok: false, reason: "OFFER_NOT_LOWER" })).toBe("offer refused");
+});
