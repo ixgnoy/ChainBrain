@@ -38,6 +38,14 @@ const watchers = new Set<() => void>();
 const setShown = (on: boolean) => { if (on !== shown) { shown = on; watchers.forEach((f) => f()); } };
 export const useDockShown = () => useSyncExternalStore((f) => { watchers.add(f); return () => { watchers.delete(f); }; }, () => shown, () => false);
 
+// a sheet that lives inside a screen (the consent sheet on Connect) is drawn under the dock, which would sit on its buttons:
+// such a sheet covers the dock while it is up (sheets at the root, like the cheque, are drawn above it)
+let covers = 0;
+const coverSubs = new Set<() => void>();
+const bump = (d: number) => { covers += d; coverSubs.forEach((f) => f()); };
+export function useCoverDock(on: boolean) { useEffect(() => { if (!on) return; bump(1); return () => bump(-1); }, [on]); }
+const useCovered = () => useSyncExternalStore((f) => { coverSubs.add(f); return () => { coverSubs.delete(f); }; }, () => covers > 0, () => false);
+
 /** Outside agents' requests that need the owner, oldest first. */
 export const outsideAsks = (pending: Approval[]) =>
   pending.filter((a) => (a.agent ?? "chainbrain") !== "chainbrain" && a.kind !== "question").sort((x, y) => (x.createdAt ?? 0) - (y.createdAt ?? 0));
@@ -49,7 +57,8 @@ export function AskDock() {
   const where = segments[0] === "(tabs)" ? "tabs" : segments[0] === "create" || segments[0] === "approvals" ? "hidden" : segments[0] === "agent" ? "chat" : "pushed";
   const asks = outsideAsks(pending);
   const first = asks[0];
-  const visible = !!first && !approvalOpen && where !== "hidden";
+  const covered = useCovered();
+  const visible = !!first && !approvalOpen && !covered && where !== "hidden";
   useEffect(() => { setShown(visible); }, [visible]);
   // auto-play opens a precise request (the newest of this agent and kind), so an older ask can't be answered in its place
   useAutoplayTarget("dock.open", (arg?: { agent?: string; kind?: string }) => {
