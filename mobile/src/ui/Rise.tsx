@@ -6,6 +6,7 @@ import { StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from "react-native-reanimated";
 import { motion, type SpringName } from "../tokens";
 import { EASE_OUT, useReduceMotion } from "./motion";
+import { SETTLE_MS, useSettled } from "./Reveal";
 
 /** Layout spring for neighbours that move when something is inserted or resized (the "smooth" token). */
 export const SHIFT = LinearTransition.springify().duration(motion.spring.smooth.duration).dampingRatio(motion.spring.smooth.dampingRatio);
@@ -36,6 +37,8 @@ export function Rise({ children, style, delay = 0, dy = 6, from = 1, spring = "s
   const o = useSharedValue(instant ? 1 : 0);
   const enter = useRef(onEnter);
   enter.current = onEnter;
+  // after the entrance, a plain style from React (see Reveal: a settled animated style can lose to the first render's opacity 0)
+  const settled = useSettled(delay + Math.max(SETTLE_MS, (duration ?? 0) + 200), instant);
   useEffect(() => {
     if (instant) return;
     if (reduce) {
@@ -54,7 +57,7 @@ export function Rise({ children, style, delay = 0, dy = 6, from = 1, spring = "s
   const { outer, inner } = splitStyle(style);
   return (
     <Animated.View layout={layout && !reduce ? SHIFT : undefined} exiting={exit ? FadeOut.duration(motion.exit) : undefined} style={outer}>
-      <Animated.View style={[inner, a]}>{children}</Animated.View>
+      <Animated.View style={[inner, settled ? { opacity: 1, transform: [{ translateY: 0 }, { scale: 1 }] } : a]}>{children}</Animated.View>
     </Animated.View>
   );
 }
