@@ -10,7 +10,7 @@ FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia 
 - AI brain (ten features): [`docs/ai-brain.md`](docs/ai-brain.md)
 - Security self-assessment: [`docs/security-self-assessment.md`](docs/security-self-assessment.md)
 - On-chain evidence: [`docs/evidence.md`](docs/evidence.md)
-- Frontend and dev stack: [`docs/frontend/README.md`](docs/frontend/README.md)
+- Frontend and dev stack: [`docs/08-frontend/README.md`](docs/08-frontend/README.md)
 - Product spec: [`docs/02-product/product-design.md`](docs/02-product/product-design.md)
 
 ## Repository
@@ -19,8 +19,8 @@ FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia 
 | --- | --- |
 | `contracts/` | Pocket (ERC-1271) and PocketFactory, Foundry, fork tests |
 | `server/` | Wallet tool layer, Claude agent loop, wallet API (:8787), four x402 test sellers (:4021), scripts |
-| `web/` | Network console for the laptop demo and judges: live agent trace beside the active pocket and the sellers' side, all pockets, every tx hash, red-team box. No login ([docs](docs/frontend/web.md)) |
-| `mobile/` | Owner app for phones in Expo Go (also `npx expo prebuild` for Android Studio / Xcode) ([docs](docs/frontend/mobile.md)) |
+| `web/` | Network console for the laptop demo and judges: live agent trace beside the active pocket and the sellers' side, all pockets, every tx hash, red-team box. No login ([docs](docs/08-frontend/web.md)) |
+| `mobile/` | Owner app for phones in Expo Go (also `npx expo prebuild` for Android Studio / Xcode) ([docs](docs/08-frontend/mobile.md)) |
 | `shared/sim/` | The built-in network: wallet API, tool layer, scripted agent and the Pocket.sol rules running in-app on a virtual chain, seeded with a lived-in owner. Both apps open on it, so scenes 1-8 work with no server |
 | `devstack/` | Real server and contracts on a local Base Sepolia fork with a scripted agent: demo and test both apps with no API key or funds ([README](devstack/README.md)) |
 | `android/` | Native Android owner app in Kotlin (Jetpack Compose), opens in Android Studio |

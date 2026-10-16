@@ -1,4 +1,4 @@
-// One place for every haptic (design-system/chainbrain/pages/motion.md, "rich" level). Semantic names, iOS/Android only,
+// One place for every haptic (docs/08-frontend/motion.md, "rich" level). Semantic names, iOS/Android only,
 // throttled so two never fire within 50 ms, errors swallowed (Low Power Mode, camera on and the Settings switch disable the
 // Taptic Engine). Haptics are never the only feedback. From worklets: scheduleOnRN(haptic.tick).
 import { Platform } from "react-native";

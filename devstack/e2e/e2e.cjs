@@ -13,7 +13,7 @@ const path = require("node:path");
 
 const ROOT = path.resolve(__dirname, "../..");
 const API = process.env.E2E_API ?? "http://localhost:8787";
-const SHOTS = path.join(ROOT, "docs/frontend/screenshots");
+const SHOTS = path.join(ROOT, "docs/08-frontend/screenshots");
 const args = process.argv.slice(2);
 const argv = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
 const WEB_ONLY = args.includes("--web-only"), PHONE_ONLY = args.includes("--phone-only"), HEADED = args.includes("--headed");

@@ -1,5 +1,5 @@
 # ChainBrain docs: master index
-Last updated: 2026-10-14
+Last updated: 2026-10-16
 
 > **Status (14 Oct, v2):** the team's [Prelim Product Spec v2](02-product/product-design.md) (consumer wallet) is the source of truth. The research docs (03 to 06) were written on 13 Oct against the old seller-trust spec. Each carries a status banner saying what still applies. Where a master doc and a team doc disagree, the team doc wins.
 
@@ -33,6 +33,7 @@ Last updated: 2026-10-14
 | **Everyone** | 0. [README](../README.md) and [spec v2](02-product/product-design.md) (10 min). 1. [one-page summary](00-start-here/one-page-summary.md) (5 min). 2. [status and plan](00-start-here/status-and-plan.md) (10 min). 3. [roles and workplan](00-start-here/roles-and-workplan.md) (5 min; fill in owners). 4. [open questions](00-start-here/open-questions.md) (10 min). 5. [how to win](06-pitch/how-to-win.md) (10 min) |
 | **Builders** (contracts, tool layer, agent, apps) | [technical document](technical-document.md), then the [plan](superpowers/plans/2026-10-14-chainbrain-prelim-wallet.md), then [x402 + pocket feasibility](04-build/x402-pocket-feasibility.md), then [stack and repos](04-build/stack-and-repos.md), then [identity, reputation, FISCO](04-build/identity-reputation-fisco.md), then [Topic F tasks and mainnet plan](04-build/topic-f-tasks-and-mainnet-plan.md), [agent model choice](04-build/agent-model-choice.md), [licences and reuse](04-build/licences-and-reuse.md), then [recommended changes](02-product/recommended-changes.md) (with v2 dispositions) |
 | **Pitch and docs** (deck, video, evidence) | [evidence](evidence.md), [how to win](06-pitch/how-to-win.md), [how judges score](06-pitch/how-judges-score.md), [judge simulation](06-pitch/judge-simulation.md), [demo script](06-pitch/demo-script.md), [submission checklist](06-pitch/submission-checklist.md), [Topic F rivals](03-research/topic-f-rivals.md), [competitors](03-research/competitors-industry.md), [market and regulation](03-research/market-regulation-webank.md), [rules](01-competition/hackathon-rules.md) |
+| **Frontend** (phone, console) | [frontend README](08-frontend/README.md), then the [design system](08-frontend/design-system.md) and [motion](08-frontend/motion.md), then [mobile](08-frontend/mobile.md) or [web](08-frontend/web.md) |
 | **Security** | [security self-assessment](security-self-assessment.md), then [threat model and red team](05-security/threat-model-and-red-team.md), then [evidence and red-team harness](05-security/evidence-and-redteam-harness.md), then [papers and standards](03-research/papers-and-standards.md), then the pocket section of [feasibility](04-build/x402-pocket-feasibility.md) |
 
 ## Map of every folder and doc
@@ -41,7 +42,7 @@ Last updated: 2026-10-14
 | --- | --- |
 | `README.md` | This index |
 | `technical-document.md`, `security-self-assessment.md`, `evidence.md` | Team's submission docs (listed above) |
-| `superpowers/plans/` | The team's implementation plan (listed above) |
+| `superpowers/plans/`, `superpowers/specs/` | Implementation plans and design specs (the prelim wallet plan is listed above) |
 | **00-start-here/** | Short docs for a new teammate |
 | [one-page-summary.md](00-start-here/one-page-summary.md) | ChainBrain (v2) on one page: problem, pocket, 8 scenes, real vs simulated |
 | [status-and-plan.md](00-start-here/status-and-plan.md) | Countdown, built vs pending, day plan 14-20 Oct, top risks |
@@ -82,6 +83,14 @@ Last updated: 2026-10-14
 | [verification-2026-10-13.md](07-log/verification-2026-10-13.md) | Round 2 fact check (13 Oct): 30 claims, corrections, link check |
 | [decisions.md](07-log/decisions.md) | Decisions and why (13 Oct inherited rows, 14 Oct v2 rows) |
 | [changelog.md](07-log/changelog.md) | What was added, moved or updated |
+| **08-frontend/** | The phone app and the web console |
+| [README.md](08-frontend/README.md) | What is where: `web/`, `mobile/`, `devstack/`, `shared/sim/`, the built-in network, how to run each |
+| [design-system.md](08-frontend/design-system.md) | The design system both apps follow (Neo-Kinetic Fintech after VaultBank): colour, type, cards, components, screen list |
+| [motion.md](08-frontend/motion.md) | Motion and haptics on the phone (overrides the design system for movement) |
+| [mobile.md](08-frontend/mobile.md), [web.md](08-frontend/web.md) | The phone app and the network console: screens, flows, tests |
+| [neo-kinetic-plan.md](08-frontend/neo-kinetic-plan.md), [vaultbank-round.md](08-frontend/vaultbank-round.md) | The two design rounds: plans, screen maps, decisions |
+| [ux-analysis.md](08-frontend/ux-analysis.md), [research/design-brief.md](08-frontend/research/design-brief.md) | UX review and the design research behind it |
+| `screenshots/` | End-to-end screenshots (written by `devstack/e2e/*.cjs`) |
 
 ## Doc conventions
 

@@ -15,7 +15,7 @@ Design system and components were ported from the earlier standalone console (`l
 
 Not copied: react-bits `SlideCommit` (approval uses a plain accessible button instead), `CountUp` as a file (see `Money`), `StatusMark`, `GradualBlur`, magicui components. The trace keeps its own CSS row animation (`row-in`) because it can hold hundreds of rows.
 
-Visual system: Ink & jade, see `design-system/chainbrain/MASTER.md`.
+Visual system: Ink & jade, see `docs/08-frontend/design-system.md`.
 
 npm dependencies (not copied code): react, react-dom, motion, lucide-react, viem 2.57.4, @radix-ui/react-dialog, @radix-ui/react-tooltip, sonner, clsx, tailwind-merge, @fontsource/{ibm-plex-sans,ibm-plex-mono}, viem, tailwindcss, @tailwindcss/vite, vite, vitest, @playwright/test.
 

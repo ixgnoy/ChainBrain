@@ -12,7 +12,7 @@ Combined on 14 Oct 2026 on branch `feat/integrate` (local, not pushed). It is th
 
 | `shared/sim/` | The built-in network both apps open on: wallet API, tool layer, scripted agent and Pocket.sol rules in-app, seeded owner, scenes 1-8 offline | (code, `shared/sim/world.test.ts`) |
 
-Design system: [design-system/chainbrain/MASTER.md](../../design-system/chainbrain/MASTER.md) (v4 Neo-Kinetic Fintech, after the Stitch export in `reference/frontend/stitch_chainbrain_ai_pocket_banking/`, gitignored; light only). Plan, screen map and decisions: [neo-kinetic-plan.md](neo-kinetic-plan.md).
+Design system: [design-system.md](design-system.md), with motion and haptics in [motion.md](motion.md) (Neo-Kinetic Fintech after VaultBank, after the Stitch export in `reference/frontend/stitch_chainbrain_ai_pocket_banking/`, gitignored; light only). Plan, screen map and decisions: [neo-kinetic-plan.md](neo-kinetic-plan.md).
 
 ## How the two builds were combined
 

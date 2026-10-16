@@ -1,5 +1,5 @@
 // Custom Reanimated bottom sheet rendered at the root (no native modal, so it works in Expo Go and on web).
-// Physics (design-system motion.md, gorhom bottom-sheet gesture logic, MIT): follows the finger 1:1, rubber-bands past the open
+// Physics (docs/08-frontend/motion.md, gorhom bottom-sheet gesture logic, MIT): follows the finger 1:1, rubber-bands past the open
 // position, dismisses on velocity > 600 pt/s or a 40 % drag, releases with a spring that inherits the finger velocity, opens
 // on the critically damped `sheet` spring and closes faster (300 ms iOS curve). Backdrop opacity is a function of position.
 // Rises with the keyboard. A scrollable child (SheetScroll) hands the gesture over at the top. Interruptible at any frame.

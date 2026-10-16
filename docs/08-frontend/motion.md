@@ -1,4 +1,4 @@
-# Motion and haptics (phone app), Neo-Kinetic v4 — overrides MASTER.md for movement
+# Motion and haptics (phone app), Neo-Kinetic v4 — overrides [design-system.md](design-system.md) for movement
 
 Goal: feel like a first-class iPhone app: calm and precise by default, a few rewarding moments where money moves. Rich haptics. Everything interruptible, UI-thread (Reanimated 4 worklets), Expo Go SDK 57 only.
 

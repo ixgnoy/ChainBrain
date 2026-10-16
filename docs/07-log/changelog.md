@@ -1,6 +1,12 @@
 # Changelog
 Last updated: 2026-10-16
 
+## 2026-10-16 (docs layout)
+
+- **Moved:** the design system into the docs: `design-system/chainbrain/MASTER.md` is now `docs/08-frontend/design-system.md`, and `design-system/chainbrain/pages/motion.md` is now `docs/08-frontend/motion.md`.
+- **Renamed:** `docs/frontend/` to `docs/08-frontend/`, numbered like the other doc folders. Screenshots now land in `docs/08-frontend/screenshots/`.
+- **Updated:** every link and code comment that named the old paths; the master index lists `08-frontend/`.
+
 ## 2026-10-16 (AI brain docs, haggler)
 
 - **New:** [ai-brain.md](../ai-brain.md): the ten AI brain features (understands, plans and buys, adapts, resists, Radar, Sentinel, memory, Speak your rules, Pre-flight, haggler), the AI-only-tightens rule, the haggler's guards, the models and their fallbacks.
@@ -18,7 +24,7 @@ Docs updated for the last five code commits. Documentation only.
 - **Removed:** the read-only offline fallback and its "Demo data" label on the phone.
 - **Link:** `pnpm --dir devstack relay` (or `devstack start`, relay at `/dev/relay`) mirrors the phone's built-in network to the web console; Judges plant and force-transfer run on the phone's pockets.
 - **Tests:** `devstack/e2e/builtin.cjs` (26 checks, no server); `devstack/e2e/e2e.cjs` now 45 checks, switching to the server via `cb.source=server` and `?server=`.
-- **Files:** README.md, docs/frontend/README.md, mobile.md, web.md, devstack/README.md.
+- **Files:** README.md, docs/frontend/README.md (now docs/08-frontend/), mobile.md, web.md, devstack/README.md.
 
 ## 2026-10-14 (docs audit against v2)
 

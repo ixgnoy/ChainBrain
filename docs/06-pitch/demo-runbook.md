@@ -67,4 +67,4 @@ With a phone linked, every attack runs on the phone's pocket and appears in its 
 - **Phone shows an old state:** shake, Reload. A fresh launch is always the same lived-in start.
 - **Want real chain evidence live:** phone Settings, Advanced, Custom server (laptop's dev stack `pnpm --dir devstack start`, or a deployed server); console gear, Custom server. Explorer links appear only against a public-chain server.
 
-Screenshots of every step on the phone: `docs/frontend/screenshots/builtin/` (from `node devstack/e2e/builtin.cjs --shots docs/frontend/screenshots/builtin`).
+Screenshots of every step on the phone: `docs/08-frontend/screenshots/builtin/` (from `node devstack/e2e/builtin.cjs --shots docs/08-frontend/screenshots/builtin`).

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Neo-Kinetic Fintech after VaultBank, light only (design-system/chainbrain/MASTER.md). Black ink on white cards over a warm
+/* Neo-Kinetic Fintech after VaultBank, light only (docs/08-frontend/design-system.md). Black ink on white cards over a warm
    paper-grey canvas, vermillion and powder blue as the only accents, hatch instead of fills, Clash Display for what you read
    first and General Sans for the rest (index.html loads both from Fontshare). Older role names map onto the new palette. */
 @theme {

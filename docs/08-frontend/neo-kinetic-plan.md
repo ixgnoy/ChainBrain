@@ -1,6 +1,6 @@
 # Neo-Kinetic redesign: plan for mobile/ and web/
 
-15 Oct 2026, built 15-16 Oct. Status: **built on local `main` (not pushed)**; decisions in sections 6 and 7, what shipped in section 8. Sources: the Stitch export in `reference/frontend/stitch_chainbrain_ai_pocket_banking/` (gitignored): `neo_kinetic_fintech/DESIGN.md`, 11 `chainbrain_*` screens, 4 `*_vaultbank_style` screens and 5 VaultBank shots. Read alongside `docs/frontend/mobile.md`, `docs/frontend/web.md` and `docs/02-product/product-design.md`.
+15 Oct 2026, built 15-16 Oct. Status: **built on local `main` (not pushed)**; decisions in sections 6 and 7, what shipped in section 8. Sources: the Stitch export in `reference/frontend/stitch_chainbrain_ai_pocket_banking/` (gitignored): `neo_kinetic_fintech/DESIGN.md`, 11 `chainbrain_*` screens, 4 `*_vaultbank_style` screens and 5 VaultBank shots. Read alongside `docs/08-frontend/mobile.md`, `docs/08-frontend/web.md` and `docs/02-product/product-design.md`.
 
 ## 0. Where the repo stands
 
@@ -54,7 +54,7 @@ As DESIGN.md says, with the accessibility fixes below. Light only.
 - **Where the tokens live:**
   - `mobile/src/tokens.ts` (rewritten; `tailwind.config.js` stays in step).
   - `web/src/index.css` `@theme` (rewritten).
-  - Both copy one table in `design-system/chainbrain/MASTER.md`. A small test asserts the two files carry the same hex values.
+  - Both copy one table in `docs/08-frontend/design-system.md`. A small test asserts the two files carry the same hex values.
 - **Contrast exception:** white 15/800 on `#F04E23` is 3.6:1. It meets the 3:1 rule for UI components but not 4.5:1 for body text. DESIGN.md asks for exactly this pairing, so I keep it for pill CTAs only and use black CTAs where the label is long.
 
 ## 2. Screen map: Stitch to code

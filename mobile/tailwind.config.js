@@ -1,6 +1,6 @@
 const { hairlineWidth } = require("nativewind/theme");
 
-// Neo-Kinetic tokens, kept in step with src/tokens.ts (design-system/chainbrain/MASTER.md). Light only.
+// Neo-Kinetic tokens, kept in step with src/tokens.ts (docs/08-frontend/design-system.md). Light only.
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",

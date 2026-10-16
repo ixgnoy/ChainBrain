@@ -1,6 +1,6 @@
 # ChainBrain phone app (Expo Go)
 
-The owner's app: the team's verified wallet logic in the Neo-Kinetic Fintech design after VaultBank (design-system/chainbrain/MASTER.md v5: warm paper-grey canvas, white cards, black ink, vermillion and powder-blue accents, hatch, Clash Display + General Sans, 2.5D pocket cards; light only). Code in `mobile/`. Screen-by-screen plan: [neo-kinetic-plan.md](neo-kinetic-plan.md); the VaultBank round: [vaultbank-round.md](vaultbank-round.md).
+The owner's app: the team's verified wallet logic in the Neo-Kinetic Fintech design after VaultBank (docs/08-frontend/design-system.md v5: warm paper-grey canvas, white cards, black ink, vermillion and powder-blue accents, hatch, Clash Display + General Sans, 2.5D pocket cards; light only). Code in `mobile/`. Screen-by-screen plan: [neo-kinetic-plan.md](neo-kinetic-plan.md); the VaultBank round: [vaultbank-round.md](vaultbank-round.md).
 
 **No login or setup.** The first launch creates the on-device key silently and opens Home. "Import a key" is in Settings only. The app opens on the **built-in network** on every launch (see below); a real server is opt-in in Settings.
 
@@ -45,7 +45,7 @@ Tabs: Home, Agents, Brain, Activity, Settings (a floating white pill bar; the ac
 
 ## Motion and haptics
 
-Spec: [design-system/chainbrain/pages/motion.md](../../design-system/chainbrain/pages/motion.md). Floating pill tab bar (solid white, no glass or blur) with a sliding black pill, finger scrubbing and minimize-on-scroll; the deck deals, swipes and flies; tabs slide in from the direction of travel and keep their state; sheets with drag physics, rubber-banding and keyboard lift; slide-to-approve and hold-to-revoke with ticks and a drawn success / error mark; rolling-digit balances; staggered first-load reveals; live agent steps with a status mark that draws its check; a calm three-dot working indicator. Rich haptics through `src/haptics.ts` (semantic, throttled). Charts draw in, hatch bars grow. Everything honours Reduce Motion.
+Spec: [docs/08-frontend/motion.md](motion.md). Floating pill tab bar (solid white, no glass or blur) with a sliding black pill, finger scrubbing and minimize-on-scroll; the deck deals, swipes and flies; tabs slide in from the direction of travel and keep their state; sheets with drag physics, rubber-banding and keyboard lift; slide-to-approve and hold-to-revoke with ticks and a drawn success / error mark; rolling-digit balances; staggered first-load reveals; live agent steps with a status mark that draws its check; a calm three-dot working indicator. Rich haptics through `src/haptics.ts` (semantic, throttled). Charts draw in, hatch bars grow. Everything honours Reduce Motion.
 
 ## Where the logic is
 
@@ -66,7 +66,7 @@ With a server chosen, `GET /dev/health` returning 200 switches the RPC to `<api>
 
 ## Checks
 
-`npm test` (34 tests: the co-sign payload, agents and spending maths, the palette parity with the console, and a full auto-play run on the built-in network that includes Claude via Connect and the ask dock and scenes 9-11), `npx tsc --noEmit`, `npx expo-doctor` (16 Oct: only `expo` / `expo-router` one patch behind the newest release), `npx expo export --platform web|ios` (the iOS Hermes bundle builds). Built-in network end to end: `node devstack/e2e/builtin.cjs --url http://localhost:8091` (46 checks on 16 Oct: intro, Home deck and spending, Agents and Claude's page, the ask dock, the inbox and Claude's cheque, Connect + consent for ChatGPT, scenes 1-8, receipt and explorer, settings; no server needed). Dev stack end to end: `node devstack/e2e/e2e.cjs` (not re-run in the Neo-Kinetic round). Screenshots: `docs/frontend/screenshots/builtin/*.png` (written by the e2e run), `docs/frontend/screenshots/neo/web-*.png`.
+`npm test` (34 tests: the co-sign payload, agents and spending maths, the palette parity with the console, and a full auto-play run on the built-in network that includes Claude via Connect and the ask dock and scenes 9-11), `npx tsc --noEmit`, `npx expo-doctor` (16 Oct: only `expo` / `expo-router` one patch behind the newest release), `npx expo export --platform web|ios` (the iOS Hermes bundle builds). Built-in network end to end: `node devstack/e2e/builtin.cjs --url http://localhost:8091` (46 checks on 16 Oct: intro, Home deck and spending, Agents and Claude's page, the ask dock, the inbox and Claude's cheque, Connect + consent for ChatGPT, scenes 1-8, receipt and explorer, settings; no server needed). Dev stack end to end: `node devstack/e2e/e2e.cjs` (not re-run in the Neo-Kinetic round). Screenshots: `docs/08-frontend/screenshots/builtin/*.png` (written by the e2e run), `docs/08-frontend/screenshots/neo/web-*.png`.
 
 ## Verified in Expo Go (iOS Simulator, 16 Oct)
 

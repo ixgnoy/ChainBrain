@@ -1,4 +1,4 @@
-// ChainBrain design tokens: Neo-Kinetic Fintech after VaultBank (design-system/chainbrain/MASTER.md). Light only.
+// ChainBrain design tokens: Neo-Kinetic Fintech after VaultBank (docs/08-frontend/design-system.md). Light only.
 // Black ink on white cards over a warm paper-grey canvas, vermillion and powder blue as the only accents, hatch instead of
 // fills, Clash Display for what you read first. The older role names (accent, negative, warning…) are kept so every screen
 // maps onto the palette; new code uses the Neo-Kinetic names (vermillion, blue, green, hatch).
@@ -65,7 +65,7 @@ export const deck = [
 ] as const;
 export type DeckFace = (typeof deck)[number];
 
-/** Motion tokens (design-system/chainbrain/pages/motion.md). Springs use Reanimated's perceptual {duration, dampingRatio} form
+/** Motion tokens (docs/08-frontend/motion.md). Springs use Reanimated's perceptual {duration, dampingRatio} form
  *  (dampingRatio ≈ 1 - Apple's "bounce"). Calm by default; bounce only at the end of a gesture or on a success mark. */
 export const motion = {
   // durations (ms)

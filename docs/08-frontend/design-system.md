@@ -1,8 +1,8 @@
 # ChainBrain design system v5: Neo-Kinetic Fintech after VaultBank
 
-Source of truth for `mobile/` (owner app) and `web/` (network console). v4 (15-16 Oct 2026) replaces v3 "clean bank" (deep teal + navy, Fraunces titles). It follows the Stitch "Neo-Kinetic Fintech" spec exactly: `reference/frontend/stitch_chainbrain_ai_pocket_banking/neo_kinetic_fintech/DESIGN.md` (gitignored). Screens come from the `chainbrain_*` Stitch exports; the craft (hatch charts, black hero card, pill tab bar, fanned deck, type scale) from the `*_vaultbank_style` exports. Plan and screen map: `docs/frontend/neo-kinetic-plan.md`. Page files in `pages/` override this file.
+Source of truth for `mobile/` (owner app) and `web/` (network console). v4 (15-16 Oct 2026) replaces v3 "clean bank" (deep teal + navy, Fraunces titles). It follows the Stitch "Neo-Kinetic Fintech" spec exactly: `reference/frontend/stitch_chainbrain_ai_pocket_banking/neo_kinetic_fintech/DESIGN.md` (gitignored). Screens come from the `chainbrain_*` Stitch exports; the craft (hatch charts, black hero card, pill tab bar, fanned deck, type scale) from the `*_vaultbank_style` exports. Plan and screen map: `docs/08-frontend/neo-kinetic-plan.md`. Movement and haptics: [motion.md](motion.md), which overrides this file for motion.
 
-v5 (16 Oct 2026, spec `docs/frontend/vaultbank-round.md`) takes the VaultBank shots (`reference/.../image.png_1` to `_5`) further: Clash Display + General Sans, a warm paper-grey canvas, tighter radii and rectangular buttons, 2.5D pocket cards with VaultBank's anatomy, the ask dock and cheque for agent approvals, and a four-tile brand mark.
+v5 (16 Oct 2026, spec `docs/08-frontend/vaultbank-round.md`) takes the VaultBank shots (`reference/.../image.png_1` to `_5`) further: Clash Display + General Sans, a warm paper-grey canvas, tighter radii and rectangular buttons, 2.5D pocket cards with VaultBank's anatomy, the ask dock and cheque for agent approvals, and a four-tile brand mark.
 
 ## Principles
 
@@ -94,7 +94,7 @@ Plain words: "Paid DataLite US$0.30", "Refused: seller not on your list", "Waiti
 
 ## Screens
 
-Phone: Intro, Home (pool, tiles, deck, spending, activity), Agents, Agent detail, Connect + consent, Approvals inbox + approval sheet, Pocket page (live and revoked), Chat (pushed from Agents), Brain, Activity, Settings, Radar alert. Web: Live (checks path, trace, pocket card, sellers), Presenter, Judges (arena), Pockets, Sellers, Explorer, Evidence. Mapping and the made-real / dropped list per screen: `docs/frontend/neo-kinetic-plan.md`.
+Phone: Intro, Home (pool, tiles, deck, spending, activity), Agents, Agent detail, Connect + consent, Approvals inbox + approval sheet, Pocket page (live and revoked), Chat (pushed from Agents), Brain, Activity, Settings, Radar alert. Web: Live (checks path, trace, pocket card, sellers), Presenter, Judges (arena), Pockets, Sellers, Explorer, Evidence. Mapping and the made-real / dropped list per screen: `docs/08-frontend/neo-kinetic-plan.md`.
 
 ## Pre-delivery checklist
 

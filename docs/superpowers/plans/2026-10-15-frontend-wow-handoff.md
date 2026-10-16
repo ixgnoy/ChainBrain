@@ -9,10 +9,10 @@ You are continuing work on ChainBrain (repo: this folder, branch `main`). Focus 
 This is an autonomous session. You are authorised to research, implement, test, commit and push verified work straight to `main`. Before starting, ask me any questions you have; after that, keep going without stopping.
 
 ## Read first (do not skip)
-- `docs/06-pitch/demo-runbook.md` (how the demo runs), `docs/frontend/README.md`, `docs/frontend/mobile.md`, `docs/frontend/web.md`
+- `docs/06-pitch/demo-runbook.md` (how the demo runs), `docs/08-frontend/README.md`, `docs/08-frontend/mobile.md`, `docs/08-frontend/web.md`
 - `docs/02-product/product-design.md` (spec v2, scenes 1-8), `docs/00-start-here/one-page-summary.md`, `docs/06-pitch/how-judges-score.md` (Task 40 / Security 30 / Interaction 30; the four named attacks: induced transfer, data extraction, privilege escalation, prompt injection)
-- `design-system/chainbrain/MASTER.md` and `design-system/chainbrain/pages/motion.md` (the rules)
-- Latest screenshots: `docs/frontend/screenshots/builtin/*.png`
+- `docs/08-frontend/design-system.md` and `docs/08-frontend/motion.md` (the rules)
+- Latest screenshots: `docs/08-frontend/screenshots/builtin/*.png`
 - Research already done: `reference/repos/ux-phone/` (assistant-ui, sonner-native, bluesky; MIT) and `reference/repos/ux-web/` (shadcn ui, tremor, langfuse outside `ee/`, originui ONLY under `apps/origin/` or `apps/ui/`; never copy blockscout: restrictive licence). Credit copied code in `mobile/THIRD_PARTY.md` / `web/THIRD_PARTY.md`.
 
 ## How things work now (keep all of it working)
@@ -31,7 +31,7 @@ This is an autonomous session. You are authorised to research, implement, test, 
 8. Then keep improving anything else that makes it wow: research first, then build.
 
 ## Constraints (must)
-- Design: `design-system/chainbrain/MASTER.md` and `pages/motion.md`. Light only, teal #00727F + navy #0F2236, no gradients/glow/shimmer, serif only for page titles, plain English, reason codes quiet on the phone (under "Why"), prominent on the console (judges score them).
+- Design: `docs/08-frontend/design-system.md` and `docs/08-frontend/motion.md`. Light only, teal #00727F + navy #0F2236, no gradients/glow/shimmer, serif only for page titles, plain English, reason codes quiet on the phone (under "Why"), prominent on the console (judges score them).
 - Expo Go on iOS: animated styles only on `Animated.*` components (a plain native view with an animated style crashes with "set the key `current` … frozen"), no regex lookbehind (Hermes), no web-only props on native, respect reduced motion, haptics per `motion.md`.
 - Never add "demo / mock / simulated" wording to any UI. Never put fake BaseScan links in.
 - Do not break: `devstack/e2e/builtin.cjs` (phone, 26 checks) and `devstack/e2e/e2e.cjs` (both apps vs the dev stack, 45 checks). Update selectors only when your UI renames them, and add checks for every new feature.
@@ -41,7 +41,7 @@ This is an autonomous session. You are authorised to research, implement, test, 
 2. **Implement** in small, coherent commits. Use parallel subagents with clear file ownership (one owns `web/`, one owns phone UI `mobile/src/app|components|ui`, you own `shared/sim`, `mobile/src/store.tsx`, `mobile/src/lib/**`) so they never edit the same files. Never let two agents share a browser tab; prefer headless Playwright (`web/node_modules/@playwright/test`).
 3. **Test:** `cd mobile && npx tsc --noEmit && npm test && node --import tsx --test ../shared/sim/*.test.ts`; `pnpm --dir web test && pnpm --dir web build && pnpm --dir web lint`; `cd mobile && npx expo export --platform ios --output-dir <scratch>` must succeed; run both e2e suites (Expo web on :8091 for `builtin.cjs`; `pnpm --dir devstack start` + `pnpm --dir web build` + `EXPO_PUBLIC_API_URL=http://localhost:8787 npx expo export --platform web --output-dir dist` for `e2e.cjs`). Screenshot every new state at phone 390x844 and console 1440 and 390 (wait ~1.5 s for animations to settle) and look at them critically.
 4. **Audit:** after each round, spawn a fresh read-only subagent to audit UX (P0/P1/P2 with concrete fixes) and a separate one to review code correctness; fix what they confirm.
-5. **Push** to `main` after everything passes (commit messages end with the repo's Co-Authored-By line). Refresh `docs/frontend/screenshots/builtin/` and update `docs/frontend/*.md`, `docs/06-pitch/demo-runbook.md` for anything new.
+5. **Push** to `main` after everything passes (commit messages end with the repo's Co-Authored-By line). Refresh `docs/08-frontend/screenshots/builtin/` and update `docs/08-frontend/*.md`, `docs/06-pitch/demo-runbook.md` for anything new.
 6. Go back to step 1.
 
 ## When you finish

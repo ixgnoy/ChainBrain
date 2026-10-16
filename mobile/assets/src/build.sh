@@ -1,7 +1,7 @@
 #!/bin/sh
 # Writes the SVG sources (gen.py) and renders the app icon, Android adaptive layers, splash mark and favicon (needs rsvg-convert:
 # `brew install librsvg`). The mark is ChainBrain's four tiles (hatch, vermillion, ink, hatch: pockets walled off from each
-# other), drawn like src/ui/BrandMark.tsx, on the warm canvas (design-system/chainbrain/MASTER.md).
+# other), drawn like src/ui/BrandMark.tsx, on the warm canvas (docs/08-frontend/design-system.md).
 set -e
 cd "$(dirname "$0")"
 python3 gen.py
