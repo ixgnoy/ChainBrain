@@ -50,3 +50,17 @@ it("a planted injection is read in the next scene 5 run and ignored; the forced 
   expect(snap.txs.some((t) => t.hash === r.tx)).toBe(false);
   expect(feed.scenes.map((s) => s.id)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
 });
+
+it("every scene 1-10 plays from the Judges tab (runScene) and returns its pocket", async () => {
+  const feed = createLocalFeed({ speed: 0, seed: 6, revokeWindowMs: 0, background: false });
+  feed.start(); // running, like the console: the story's gate is live
+  await feed.autopilot.ready();
+  for (const s of feed.scenes) {
+    const r = await Promise.race([feed.actions.runScene!(s.id), new Promise((res) => setTimeout(() => res("stuck"), 3000))]);
+    expect(r, `scene ${s.id}`).toHaveProperty("pocket");
+  }
+  // scene 1 asks its question, then the follow-up answers it: one question, and the task is confirmed
+  const p1 = feed.snapshot().events.find((e) => e.type === "question")?.approval?.pocket;
+  expect(feed.snapshot().events.filter((e) => e.type === "payment" && e.pocket === p1).length).toBeGreaterThan(0);
+  feed.stop();
+});

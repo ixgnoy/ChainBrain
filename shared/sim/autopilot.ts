@@ -103,14 +103,15 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
     try { await world.ownerTx(() => chain.returnFunds(presenter, pocket)); } catch { /* nothing to return */ }
   }
 
-  async function play(s: SceneInfo, pocket: Hex) {
+  /** `own`: a judge's scene (runScene), which itself holds the story, so its pause must not wait at the story's gate. */
+  async function play(s: SceneInfo, pocket: Hex, own = false) {
     current = s.id; emit();
-    try { await playScene(s, pocket); } finally { current = undefined; emit(); }
+    try { await playScene(s, pocket, own); } finally { current = undefined; emit(); }
   }
-  async function playScene(s: SceneInfo, pocket: Hex) {
+  async function playScene(s: SceneInfo, pocket: Hex, own: boolean) {
     if (s.id === "1") {
       await chat(pocket, s.text); // the agent asks one question
-      await gap();
+      if (own) await world.sleep(r.between(2000, 5000)); else await gap();
       await chat(pocket, s.followUp ?? "Per report.");
     } else if (s.id === "7") await revokeMidTask(pocket, s.text);
     else await chat(pocket, s.text);
@@ -245,7 +246,7 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
       try {
         const pocket = s.preset === "one-purchase" ? await tightPocket() : await researchPocket();
         setActive(pocket);
-        await play(s, pocket);
+        await play(s, pocket, true);
         return { pocket };
       } finally { release(); }
     },
