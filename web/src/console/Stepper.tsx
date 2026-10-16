@@ -92,7 +92,8 @@ export function Stepper({ pocket, onExit }: { pocket?: string; onExit?: () => vo
   const failed = mine && !mine.busy && !mine.ok;
   keys.current = { n: scenes.length, go: () => { if (canPlay && !state?.busy && !driven) void begin(() => play(s)); }, exit: () => onExit?.(), help, setHelp };
   const storyLine = storyScene === "A" ? "Playing · privilege escalation" : storyScene ? `Playing · scene ${storyScene}` : "";
-  const line = failed ? mine.text : driven ? storyLine : mine?.busy ? (linked ? "Sent to the phone…" : "Playing…") : status.text;
+  // a real server plays nothing by itself: the owner types the scene in the phone app and it shows here live
+  const line = failed ? mine.text : driven ? storyLine : mine?.busy ? (linked ? "Sent to the phone…" : "Playing…") : status.text || (!canPlay ? "Type this scene in the phone app; it shows here live." : "");
   const kind = failed ? "error" : driven ? "working" : status.kind;
   // the bar is black: statuses read as white, a finished scene in green, a failure in the soft vermillion
   const tone = cn("font-medium", failed ? "text-vermillion-soft" : kind === "done" ? "text-green" : kind === "working" || kind === "idle" ? "text-white/70" : "text-white");
