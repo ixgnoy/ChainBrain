@@ -22,7 +22,8 @@ import { NextUp, nextRuns } from "../../components/NextUp";
 import { pageCardWidth, PAGE_MARGIN } from "../../components/CardFlight";
 import { cardHeight } from "../../components/PocketFace";
 import * as api from "../../lib/api";
-import { glyphKey, glyphOf, type Glyph } from "../../../../shared/sim/pocketAppData";
+import { glyphKey, glyphOf, weekDigest, type Glyph } from "../../../../shared/sim/pocketAppData";
+import { WeekDigest } from "../../components/WeekDigest";
 import { SpendChart } from "../../components/SpendChart";
 import { useIntroDone } from "../../ui/intro";
 import { ActivityRow } from "../../components/ActivityRow";
@@ -150,6 +151,11 @@ function Home({ ready }: { ready: boolean }) {
     if (lastGlyphs.current?.key !== key) lastGlyphs.current = { key, g };
     return lastGlyphs.current.g;
   }, [pockets, events, routines, now]);
+  // this week's digest, recomputed only when a payment, refusal or routine event arrives (not on every poll)
+  const moneyN = useMemo(() => events.filter((e) => e.type === "payment" || e.type === "refusal" || e.type === "routine" || e.type === "sentinel" || e.type === "forced").length, [events]);
+  const digest = useMemo(() => weekDigest(events, Date.now()), [moneyN]); // eslint-disable-line react-hooks/exhaustive-deps
+  const itemName = useCallback((sid: string, sku: string) => { const it = cfg?.sellers.find((s) => s.id === sid)?.items.find((i) => i.sku === sku); return it?.short ?? it?.description ?? sku; }, [cfg]);
+  const sellerLabel = useCallback((id: string) => cleanText(cfg?.sellers.find((s) => s.id === id)?.name ?? id, 24), [cfg]);
   const upcoming = useMemo(() => nextRuns(pockets, (a) => routines.get(a.toLowerCase()) ?? null, events, cfg?.sellers ?? [], now), [pockets, routines, events, cfg, now]);
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
@@ -234,6 +240,10 @@ function Home({ ready }: { ready: boolean }) {
       ) : null}
 
       <Rise play={play} index={3} style={{ marginTop: 20 }}>
+        <WeekDigest d={digest} itemName={itemName} sellerName={sellerLabel} />
+      </Rise>
+
+      <Rise play={play} index={3} style={{ marginTop: 12 }}>
         <SpendChart ledger={ledger} agentOf={spendAgent} play={ready} />
       </Rise>
 

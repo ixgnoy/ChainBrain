@@ -209,3 +209,35 @@ export function glyphOf(events: Ev[], pocket: string, o: { layout?: string; rout
 /** A key that changes only when what the glyph shows changes (memoised cards compare it). */
 export const glyphKey = (g: Glyph | null) =>
   !g ? "" : g.kind === "price" ? `p${g.price}:${g.limit ?? ""}:${g.series.length}` : g.kind === "next" ? `n${g.at}:${g.runs}` : g.kind === "running" ? `r${g.run}` : g.kind === "saved" ? `s${g.saved}` : "x";
+
+export type Digest = {
+  window: { start: number; end: number };
+  /** what was bought, grouped by seller and item, most first */
+  items: { sellerId: string; sku: string; count: number; amount: bigint }[];
+  spent: bigint; bought: number; cosigned: number;
+  /** payments the contract or the wallet refused, seller text a routine ignored, Sentinel freezes */
+  stopped: number;
+  /** routine runs that happened this week */
+  runs: number;
+};
+/** The last 7 days across the owner's pockets (the same window as Home's weekly chart, so the totals agree): what the agents
+ *  bought, what the owner co-signed, what was stopped. From the events only. */
+export function weekDigest(events: Ev[], now: number, days = 7): Digest {
+  // 7 calendar days, today included, from local midnight: lib/agents.ts weekOverWeek's window
+  const w = { start: new Date(now).setHours(0, 0, 0, 0) + 86_400_000 - days * 86_400_000, end: now + 1 };
+  const wk = events.filter((e) => e.at >= w.start && e.at < w.end);
+  const pays = wk.filter((e) => e.type === "payment");
+  const by = new Map<string, { sellerId: string; sku: string; count: number; amount: bigint }>();
+  for (const p of pays) {
+    const k = `${p.sellerId}/${p.sku}`;
+    const x = by.get(k) ?? { sellerId: String(p.sellerId), sku: String(p.sku), count: 0, amount: 0n };
+    x.count++; x.amount += big(p.amount);
+    by.set(k, x);
+  }
+  const items = [...by.values()].sort((a, b) => b.count - a.count || (b.amount > a.amount ? 1 : -1));
+  const stopped = wk.filter((e) => e.type === "refusal" || (e.type === "routine" && e.kind === "ignored") || (e.type === "sentinel" && e.kind === "freeze") || (e.type === "forced" && e.reverted)).length;
+  return {
+    window: w, items, spent: pays.reduce((n, p) => n + big(p.amount), 0n), bought: pays.length, cosigned: pays.filter((p) => p.cosigned).length,
+    stopped, runs: wk.filter((e) => e.type === "routine" && e.kind === "run").length,
+  };
+}

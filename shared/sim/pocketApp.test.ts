@@ -6,7 +6,7 @@ import { sellers } from "./catalog";
 import { seedOwner } from "./seed";
 import { parseSentence, stricterDraft } from "./speak";
 import { available, nextRun, periodWindow, pickApp, stricterRoutine, validateSpec, cadenceText, cleanLabel, catalogPrompt, type RoutineSpec } from "./pocketApp";
-import { appFromEvents, glyphOf, budgetOf, priceChanges, priceSeries, purchasesOf, routineFromEvents, runsOf, monthBySeller, renewalsOf, sourcesOf, haggleOf } from "./pocketAppData";
+import { appFromEvents, glyphOf, weekDigest, budgetOf, priceChanges, priceSeries, purchasesOf, routineFromEvents, runsOf, monthBySeller, renewalsOf, sourcesOf, haggleOf } from "./pocketAppData";
 import { BAD_SPECS, GOOD_SPECS } from "./pocketApp.fixtures";
 import { understand } from "./understand";
 import { parseUsd } from "./util";
@@ -238,4 +238,17 @@ test("live understanding: what lights up while typing is what Compose reads", ()
   // whole words only: "exactly" is not Exa; spans never overlap
   assert.equal(understand("exactly that", reg).chips.length, 0);
   for (const x of [u, d]) for (let i = 1; i < x.spans.length; i++) assert.ok(x.spans[i].start >= x.spans[i - 1].end);
+});
+
+test("week digest: this week's buys by item, co-signs and what was stopped, from events only", async () => {
+  const w = createWorld({ speed: 0, seed: 1 });
+  await seedOwner(w, OWNER);
+  const ev = w.events(0);
+  const d = weekDigest(ev, w.now());
+  const pays = ev.filter((e) => e.type === "payment" && e.at >= d.window.start && e.at < d.window.end);
+  assert.equal(d.bought, pays.length);
+  assert.equal(d.items.reduce((n, x) => n + x.count, 0), pays.length, "every payment is in one item group");
+  assert.equal(d.spent, d.items.reduce((n, x) => n + x.amount, 0n));
+  assert.ok(d.window.start <= w.now() && w.now() < d.window.end);
+  for (let i = 1; i < d.items.length; i++) assert.ok(d.items[i - 1].count >= d.items[i].count, "most bought first");
 });
