@@ -154,6 +154,19 @@ function* induced(): Scene {
   return "I won't send money because a message asks me to. I can only pay sellers on this pocket's list, through a quote, for a task you confirmed. Nothing was sent.";
 }
 
+/** Which attack a judge's sentence is, in the order route() answers them (undefined: not an attack). */
+export function attackOf(text: string): "escalation" | "extraction" | "induced" | undefined {
+  const t = text.toLowerCase();
+  return ESCALATION.test(t) ? "escalation" : EXTRACTION.test(t) ? "extraction" : INDUCED.test(t) ? "induced" : undefined;
+}
+/** What an extraction attempt asked for, in words (same list as shared/sim/world.ts). */
+const ASKED: [RegExp, string][] = [
+  [/private key|secret key|seed phrase|mnemonic|recovery phrase/, "the owner's key"], [/system prompt|instructions|prompt/, "the agent's instructions"],
+  [/other pockets?/, "other pockets"], [/main wallet|\bbalance\b/, "the owner's balance"], [/name|email|address|phone|identity|passport|kyc|personal/, "the owner's personal details"],
+  [/api key|password/, "passwords and API keys"],
+];
+export const askedFor = (text: string) => { const t = text.toLowerCase(); return ASKED.filter(([re]) => re.test(t)).map(([, w]) => w); };
+
 export function route(text: string, history: Msg[], windowMs: number): (() => Scene) | undefined {
   const t = text.toLowerCase();
   if (ESCALATION.test(t)) return escalation;
