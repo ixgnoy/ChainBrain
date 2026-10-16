@@ -36,10 +36,11 @@ const ON = c.white;
 const OFF = c.muted;
 
 export type GlassTabItem = { name: string; label: string; icon: IconName; badge?: boolean };
-type Bar = { slide: SharedValue<number>; dragging: SharedValue<boolean> };
+type Bar = { slide: SharedValue<number>; dragging: SharedValue<boolean>; /** the focused tab */ current: SharedValue<number> };
 const BarCtx = createContext<Bar | null>(null);
 
-export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProps & { onIndexSelected?: (i: number) => void }) {
+/** `onIndexSelected` returns false when it refused to switch (the pill goes back to the focused tab). */
+export function GlassTabBar({ children, onIndexSelected, enabled = true, ...props }: TabListProps & { onIndexSelected?: (i: number) => boolean | void; enabled?: boolean }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const barWidthFull = Math.min(width, 480) - BAR_MARGIN * 2; // web shows the app as a 480 pt column
@@ -47,6 +48,7 @@ export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProp
   const progress = minimized.progress;
   const slide = useSharedValue(0);
   const dragging = useSharedValue(false);
+  const current = useSharedValue(0);
   const lastTick = useSharedValue(-1);
   const count = Math.max(Children.count(children), 1);
   const reduce = useReduceMotion();
@@ -55,7 +57,7 @@ export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProp
   // GestureDetector re-attaching mid-drag cancels the drag (the finger slid, the tab never switched)
   const onSelect = useRef(onIndexSelected);
   onSelect.current = onIndexSelected;
-  const select = useCallback((i: number) => onSelect.current?.(i), []);
+  const select = useCallback((i: number) => { if (onSelect.current?.(i) === false) slide.value = withSpring(current.value, SLIDE); }, [slide, current]);
 
   const gesture = useMemo(() => {
     const indexAtX = (x: number, m: number) => {
@@ -113,10 +115,10 @@ export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProp
     return { height: h, width: w, borderRadius: h / 2, top: (barH - h) / 2, transform: [{ translateX: ROW_PAD_H + item * slide.value + (item - w) / 2 }] };
   });
   const bottom = Math.max(insets.bottom - 12, 12);
-  const ctx = useMemo(() => ({ slide, dragging }), [slide, dragging]);
+  const ctx = useMemo(() => ({ slide, dragging, current }), [slide, dragging, current]);
 
   return (
-    <View {...props} pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, alignItems: "center" }}>
+    <View {...props} pointerEvents={enabled ? "box-none" : "none"} style={{ position: "absolute", left: 0, right: 0, bottom: 0, alignItems: "center" }}>
       <View pointerEvents="box-none" style={{ width: barWidthFull, marginBottom: bottom, alignItems: "center" }}>
         <GestureDetector gesture={gesture}>
           <Animated.View style={[{ backgroundColor: c.card, borderWidth: StyleSheet.hairlineWidth, borderColor: hairline, borderCurve: "continuous" } as object, level3, { shadowOpacity: 0.12 }, barStyle]}>
@@ -142,6 +144,7 @@ export function GlassTabButton({ item, index, isFocused, onPress, ...props }: Ta
 
   useEffect(() => {
     // Programmatic navigation (deep links, router.push) moves the pill too; never fight the finger while scrubbing.
+    if (isFocused && bar) bar.current.value = index;
     if (isFocused && bar && !bar.dragging.value) bar.slide.value = reduce ? index : withSpring(index, SLIDE);
     if (isFocused && !reduce) { pop.value = 0.86; pop.value = withSpring(1, motion.spring.bouncy); } // icon "lands"
   }, [isFocused, index, bar, reduce, pop]);

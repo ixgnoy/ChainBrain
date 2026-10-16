@@ -2,7 +2,7 @@
 // of travel, and the glass bar's highlight travels between tabs (scrub with a finger to switch).
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
-import { useRouter } from "expo-router";
+import { useIsFocused, useNavigation, useRouter } from "expo-router";
 import { Tabs, TabList, TabSlot, TabTrigger } from "expo-router/ui";
 import { useAppSelect } from "../../store";
 import { c } from "../../tokens";
@@ -41,13 +41,22 @@ export default function TabsLayout() {
   const router = useRouter();
   const pending = useAppSelect((s) => s.pending);
   const warm = useWarmTabs();
+  // a screen pushed or presented over the tabs (the wizard's modal sheet slides up for a moment with the bar still under
+  // the finger): the bar takes no touches until the tabs are on top again. A tab tapped mid-presentation popped the modal
+  // before iOS finished presenting it, which left the tabs stuck in the scaled-back "behind a sheet" frame.
+  const focused = useIsFocused();
+  const navigation = useNavigation();
   return (
     <TabBarMinimizeProvider>
       <View style={{ flex: 1, backgroundColor: c.canvas }}>
         <Tabs>
           <TabSlot style={{ height: "100%" }} renderFn={(d, o) => renderTabScreen(d, o, warm)} />
           <TabList asChild>
-            <GlassTabBar onIndexSelected={(i) => router.navigate(ITEMS[i].href as never)}>
+            <GlassTabBar enabled={focused} onIndexSelected={(i) => {
+              // read at the moment of the tap: a push that just started has not re-rendered `focused` yet
+              if (!navigation.isFocused()) return false;
+              router.navigate(ITEMS[i].href as never);
+            }}>
               {ITEMS.map(({ href, ...item }, index) => (
                 <TabTrigger key={item.name} name={item.name} href={href as never} asChild>
                   <GlassTabButton item={{ ...item, badge: item.name === "agents" && pending.length > 0 }} index={index} />
