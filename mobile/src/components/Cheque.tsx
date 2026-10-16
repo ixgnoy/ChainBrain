@@ -13,7 +13,7 @@ import { CardMaterial } from "../ui/CardMaterial";
 import { useReduceMotion } from "../ui/motion";
 import { TextScaleCap } from "../ui/fontScale";
 import { haptic } from "../haptics";
-import { usd } from "../lib/util";
+import { contractTail, usd } from "../lib/util";
 import { cleanText } from "../lib/sanitize";
 import type { Pocket } from "../store";
 import { PocketFace, cardHeight, expiryText } from "./PocketFace";
@@ -52,7 +52,7 @@ function Back({ pocket, width, height, amount, seller, item, after, until }: {
 }) {
   const k = Math.min(1, width / 340);
   const pad = 16 * k + 2;
-  const tail = pocket.address.slice(-4).toUpperCase();
+  const tail = contractTail(pocket.address);
   const time = until ? new Date(until * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : null;
   return (
     <TextScaleCap max={1}>
@@ -63,7 +63,7 @@ function Back({ pocket, width, height, amount, seller, item, after, until }: {
         {/* the stripe: what this is and which pocket pays */}
         <View style={{ height: 30 * k + 4, backgroundColor: c.ink, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: pad }}>
           <T v="tab" style={{ color: c.white, textTransform: "uppercase", letterSpacing: 1.1 }} numberOfLines={1}>{`Co-sign · ${cleanText(pocket.name, 22)}`}</T>
-          <T v="mono" style={{ color: c.white, textTransform: "none", fontSize: 13 }}>{`*${tail}`}</T>
+          <T v="mono" style={{ color: c.white, textTransform: "none", fontSize: 13 }}>{tail}</T>
         </View>
         <View style={{ flex: 1, paddingHorizontal: pad, paddingTop: 10 * k, gap: 2 }}>
           <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>

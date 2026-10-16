@@ -10,6 +10,8 @@ export const isNever = (n: bigint) => n === NEVER;
 export const askText = (askAbove: bigint, cap: bigint) => (askAbove === NEVER || askAbove > cap ? "Never" : askAbove === 0n ? "Every payment" : `Above ${usd(askAbove)}`);
 
 export { sameAddr } from "./events";
+/** A pocket is its own contract: "0x…a57a" (never card-style digits). */
+export const contractTail = (a: string) => `0x…${a.slice(-4).toLowerCase()}`;
 export const shortAddr = (a?: string) => (a && a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a ?? "");
 export const shortHex = (h: string, a = 8, b = 6) => (h.length > a + b + 2 ? `${h.slice(0, a)}…${h.slice(-b)}` : h);
 

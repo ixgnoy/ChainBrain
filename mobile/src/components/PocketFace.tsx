@@ -20,7 +20,7 @@ import { TextScaleCap } from "../ui/fontScale";
 import { EASE_OUT, useReduceMotion } from "../ui/motion";
 import { NEVER } from "../lib/shared";
 import { cleanText } from "../lib/sanitize";
-import { money, usd } from "../lib/util";
+import { contractTail, money, usd } from "../lib/util";
 import { agentInfo } from "../../../shared/sim/agents";
 import type { Pocket } from "../store";
 import { isExpired } from "./PocketCard";
@@ -117,7 +117,7 @@ export const expiryText = (expiresAt: bigint | number) => {
  *  the balance, the pocket's rules in one line, and the short pocket number big at the bottom with the expiry. */
 function Print({ pocket, name, agent, agentId, face, k, w, h, state, still }: { pocket: Pocket; name: string; agent?: string; agentId?: string; face: DeckFace; k: number; w: number; h: number; state?: string; still?: boolean }) {
   const ask = pocket.askAbove === NEVER || pocket.askAbove > pocket.cap ? "never asks" : pocket.askAbove === 0n ? "asks every time" : `asks above ${money(pocket.askAbove)}`;
-  const tail = pocket.address.slice(-4).toUpperCase();
+  const tail = contractTail(pocket.address);
   const ink = state ? c.muted : face.ink;
   const sub = state ? c.muted : face.sub;
   const hatched = "hatch" in face && face.hatch;
@@ -156,7 +156,12 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still }: { 
       <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: pad, paddingBottom: pad - 2 }}>
         <View>
           <T v="cap" style={{ color: sub, marginBottom: 2 }} numberOfLines={1}>{`Cap ${money(pocket.cap)} · ${ask}`}</T>
-          <T v="mono" style={{ color: ink, fontSize: 22 * k, lineHeight: 26 * k, letterSpacing: 0.4, textTransform: "none" }}>{`*${tail}`}</T>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <T v="mono" accessibilityLabel={`Pocket contract ending ${pocket.address.slice(-4)}`} style={{ color: ink, fontSize: 20 * k, lineHeight: 26 * k, letterSpacing: 0.2, textTransform: "none" }}>{tail}</T>
+            <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, backgroundColor: face.chip }}>
+              <T v="tab" style={{ color: sub, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 9.5, lineHeight: 12 }}>Contract</T>
+            </View>
+          </View>
         </View>
         <T v="cap" w="semi" style={{ color: sub, marginBottom: 3 }}>{expiryText(pocket.expiresAt)}</T>
       </View>

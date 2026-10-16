@@ -30,7 +30,7 @@ import { biometricKind, confirmOwner } from "../lib/biometric";
 import { askNotifyPermission, notifyPermission, type NotifyPermission } from "../lib/notify";
 import { NEVER } from "../lib/shared";
 import { parseUsd } from "../lib/shared";
-import { usd, shortAddr } from "../lib/util";
+import { contractTail, usd, shortAddr } from "../lib/util";
 import { IntentCard, parseIntent } from "./IntentCard";
 import { SheetSuccess } from "./SheetSuccess";
 import { notify as toast } from "../lib/toast";
@@ -200,7 +200,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
             {/* the wallet's other checks */}
             <View style={{ borderRadius: 18, backgroundColor: c.card, borderWidth: 1, borderColor: c.tileStroke, paddingHorizontal: 16 }}>
               <CheckLine label="Seller check" tone={risky ? "vermillion" : "green"} value={radar?.score != null ? `${radar.verdict === "ok" ? "Low risk" : radar.verdict === "block" ? "Blocked" : "Review"} · ${radar.score}/10` : "Checked"} />
-              <CheckLine label="Pays from" value={pocket ? `${cleanText(pocket.name, 22)} *${a.pocket.slice(-4).toUpperCase()}` : shortAddr(a.pocket)} last />
+              <CheckLine label="Pays from" value={pocket ? `${cleanText(pocket.name, 22)} · ${contractTail(a.pocket)}` : shortAddr(a.pocket)} last />
             </View>
             {/* the agent's own words: not checked by the wallet, so they look different */}
             {a.text ? (

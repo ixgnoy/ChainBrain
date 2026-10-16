@@ -20,7 +20,7 @@ import { haptic } from "../haptics";
 import { autoplayRunning } from "../lib/autoplayTargets";
 import { cleanText } from "../lib/sanitize";
 import { parseUsd } from "../lib/shared";
-import { usd, money } from "../lib/util";
+import { contractTail, usd, money } from "../lib/util";
 import { c } from "../tokens";
 import { SheetSuccess } from "./SheetSuccess";
 import { ErrorNote } from "./ErrorNote";
@@ -188,7 +188,7 @@ function OnePocket({ p, tone }: { p: Pocket; tone: number }) {
       </View>
       <View style={{ flex: 1 }}>
         <T v="row" numberOfLines={1}>{cleanText(p.name, 30)}</T>
-        <T v="cap" color="muted">{`${money(p.balance)} · ${agent?.name ?? "ChainBrain"} · *${p.address.slice(-4).toUpperCase()}`}</T>
+        <T v="cap" color="muted">{`${money(p.balance)} · ${agent?.name ?? "ChainBrain"} · ${contractTail(p.address)}`}</T>
       </View>
       {agent ? <AgentAvatar kind={agent.id} size={28} /> : null}
     </View>

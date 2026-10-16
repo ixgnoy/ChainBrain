@@ -216,7 +216,7 @@ function PocketCard({ p, name, phone, stopped, status, present }: { p: PocketSta
         <div className="flex items-end justify-between gap-3 px-5 pb-4 pt-4">
           <div className="min-w-0">
             {!present && <div className="text-[13px] font-medium leading-5 text-ink2"><ShieldCheck className="mr-1 inline size-3.5 align-[-2px]" {...I} aria-hidden />Cap {usd(p.cap)} · {ask}</div>}
-            <div className="font-extrabold num text-[26px] leading-8">*{p.address.slice(-4).toUpperCase()}</div>
+            <div className="flex items-center gap-2"><span className="font-extrabold num text-[24px] leading-8" aria-label={`Pocket contract ending ${p.address.slice(-4)}`}>0x…{p.address.slice(-4).toLowerCase()}</span><span className="rounded-[5px] bg-ink/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink2">Contract</span></div>
           </div>
           <span className="num inline-flex shrink-0 items-center gap-1.5 pb-1 text-[13px] font-semibold"><Timer className="size-3.5" {...I} aria-hidden />Until {ends}</span>
         </div>

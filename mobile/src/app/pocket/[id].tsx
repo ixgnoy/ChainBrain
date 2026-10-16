@@ -31,7 +31,7 @@ import { txError } from "../../components/ActionSheet";
 import { cleanText } from "../../lib/sanitize";
 import { sameAddr, type LedgerRow } from "../../lib/events";
 import { visibleRows } from "../../lib/plain";
-import { money, usd } from "../../lib/util";
+import { contractTail, money, usd } from "../../lib/util";
 import { NEVER } from "../../lib/shared";
 import { haptic } from "../../haptics";
 import { agentInfo } from "../../../../shared/sim/agents";
@@ -212,7 +212,7 @@ export default function PocketDetail() {
               <T v="cap" color="muted">Held by</T>
               <T v="row" w="bold">{agent.kind === "builtin" ? "ChainBrain agent" : agent.name}</T>
             </View>
-            <T v="mono" color="muted" style={{ fontSize: 11 }}>{`•••• ${pocket.agent.slice(-4).toUpperCase()}`}</T>
+            <T v="mono" color="muted" style={{ fontSize: 11 }}>{contractTail(pocket.agent)}</T>
             <Icon name="chevronRight" size={18} color={c.muted} />
           </Press>
         ) : null}
