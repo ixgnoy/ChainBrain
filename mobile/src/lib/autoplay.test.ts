@@ -7,11 +7,12 @@ import { registerTarget, resetTargets, autoplayRunning, typeOut, type TargetName
 const OWNER = "0x0000000000000000000000000000000000a11ce0" as Hex;
 const payTo = (...ids: string[]) => CATALOG.filter((s) => ids.includes(s.id)).map((s) => s.payTo);
 
-test("auto-play: wizard, then scenes 1-8 through the screens' targets, on the real built-in network", async () => {
+test("auto-play: wizard, then scenes 1-10 through the screens' targets, on the real built-in network", async () => {
   resetTargets();
   const w = createWorld({ speed: 0.005, seed: 3, revokeWindowMs: 9000 });
   const { pockets: seeded } = await seedOwner(w, OWNER);
   let active: Hex = seeded[0].address;
+  let created: Hex | undefined; // the pocket the wizard makes in scene 1
   const subs = new Set<() => void>();
   const changed = () => subs.forEach((f) => f());
   w.subscribe(changed); w.chain.onTx(changed);
@@ -25,7 +26,7 @@ test("auto-play: wizard, then scenes 1-8 through the screens' targets, on the re
   on("wizard.continue", () => { if (++continues === 6) on("wizard.create", async () => {
     const { pocket } = w.chain.createPocket(OWNER, { agent: SIM_AGENT, cap: parseUsd("2"), askAbove: parseUsd("1"), expiresAt: BigInt(Math.floor(Date.now() / 1000) + 6 * 3600), sellers: payTo("datalite", "datapro") });
     w.chain.transfer(OWNER, pocket, parseUsd("5"));
-    active = pocket;
+    active = created = pocket;
   }); });
   on("wizard.open", () => {});
   let typed = "";
@@ -39,7 +40,15 @@ test("auto-play: wizard, then scenes 1-8 through the screens' targets, on the re
   on("return.open", () => {});
   on("return.slide", () => { w.chain.returnFunds(OWNER, active); });
   on("picker.open", () => {});
-  on("picker.pocket", (name) => { assert.equal(name, "One purchase"); active = seeded.find((p) => p.name === name)!.address; });
+  // the picker's rule (components/PocketPickerSheet.tsx): exact name, then a name that contains it; live pockets first
+  on("picker.pocket", (name) => {
+    const all = [...seeded.map((p) => ({ name: p.name, address: p.address })), ...(created ? [{ name: "Research data · 16 Oct", address: created }] : [])];
+    const want = String(name).toLowerCase();
+    const named = (xs: typeof all) => xs.find((x) => x.name.toLowerCase() === want) ?? xs.find((x) => x.name.toLowerCase().includes(want));
+    const p = named(all.filter((x) => !w.chain.view(x.address).revoked)) ?? named(all);
+    assert.ok(p, String(name));
+    active = p.address;
+  });
   on("deadend.fix", () => {});
   on("rules.slide", () => { w.chain.setCap(OWNER, active, parseUsd("0.30")); w.chain.transfer(OWNER, active, parseUsd("0.10")); });
   on("sheet.close", () => {});
@@ -66,6 +75,17 @@ test("auto-play: wizard, then scenes 1-8 through the screens' targets, on the re
   const f = factsFrom(w.events(0), w.txs(), { sellerName, pockets: mine, since: Date.now() - 60_000 });
   for (const id of ["pocketCreated", "onchainPayment", "cosigned", "clarifyingQuestion", "refusedReplanned", "injectionIgnored", "dataRefused", "forcedReverted", "escalationBlocked", "killSwitch", "safeStop", "fixApplied"] as const) assert.ok(f[id], `${id} (pressed: ${pressed.join(", ")})`);
   assert.ok(w.events(0).some((e) => e.type === "refusal" && e.reason === "POCKET_REVOKED"), "scene 7: the second payment was refused after the revoke");
+  // one pocket carries the story for the Brain tab: 1, 4, 5, 6, escalation, Radar (9) and the Sentinel's freeze (10)
+  const story = w.events(0, created);
+  assert.ok(story.some((e) => e.type === "attack") && story.some((e) => e.type === "forced" && e.reverted) && story.some((e) => e.type === "disclosure"), "attacks on the scene-1 pocket");
+  assert.ok(story.some((e) => e.type === "radar" && e.kind === "screen" && e.verdict === "block"), "scene 9: Radar blocked DataPro on the scene-1 pocket");
+  const freeze = story.find((e) => e.type === "sentinel" && e.kind === "freeze");
+  assert.ok(freeze, "scene 10: the Sentinel froze the scene-1 pocket");
+  const lastBuy = story.filter((e) => e.type === "payment").at(-1)!;
+  assert.ok(freeze.at > lastBuy.at, "the freeze comes after scene 9's purchase, not earlier");
+  assert.equal(w.chain.view(created!).frozen, true);
+  assert.equal(w.chain.view(created!).revoked, false);
+  assert.equal(w.chain.view(seeded[0].address).revoked, true, "scene 7 revoked the lived-in Research data pocket");
   assert.equal(w.chain.view(seeded[1].address).cap, parseUsd("0.30"));
   assert.equal(pressed.filter((p) => p === "approval.slide").length, 1, "only DataPro needed a co-signature");
 });

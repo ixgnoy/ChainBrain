@@ -71,7 +71,7 @@ export const useApp = (): Ctx => { const v = useContext(AppCtx); if (!v) throw n
 const id = () => Math.random().toString(36).slice(2, 10);
 const sameIds = (a: Set<string> | null, b: Set<string> | null) => a === b || (!!a && !!b && a.size === b.size && [...a].every((x) => b.has(x)));
 const sameView = (a: PocketView | undefined, b: PocketView) => !!a && a.balance === b.balance && a.cap === b.cap && a.askAbove === b.askAbove && a.expiresAt === b.expiresAt
-  && a.revoked === b.revoked && a.owner === b.owner && a.agent === b.agent && a.allowed.length === b.allowed.length && a.allowed.every((x, i) => x === b.allowed[i]);
+  && a.revoked === b.revoked && a.frozen === b.frozen && a.owner === b.owner && a.agent === b.agent && a.allowed.length === b.allowed.length && a.allowed.every((x, i) => x === b.allowed[i]);
 /** Turns that were still running when the page went away: the agent did not survive the reload, so say so. */
 const interrupted = (by: Record<string, Turn[]>) => Object.fromEntries(Object.entries(by).map(([k, ts]) => [k, ts.map((t) => (t.done ? t : {
   ...t, done: true, stopped: "reload", reply: t.reply ?? "The page reloaded while I was working, so I stopped here. Nothing else will be paid for this message.",
@@ -289,8 +289,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => { clearInterval(t); sub.remove(); off(); if (soon) clearTimeout(soon); };
   }, [cfg, apiUrl, local]);
 
-  // refresh balances when money moved
-  const moneyEvents = useMemo(() => events.filter((e) => e.type === "payment" || e.type === "approval").length, [events]);
+  // refresh balances when money moved, and the pocket's state when the Sentinel froze or cleared it
+  const moneyEvents = useMemo(() => events.filter((e) => e.type === "payment" || e.type === "approval" || e.type === "sentinel").length, [events]);
   useEffect(() => { if (moneyEvents) void refreshPockets(); }, [moneyEvents, refreshPockets]);
 
   // ---- derived views, restricted to this owner's pockets

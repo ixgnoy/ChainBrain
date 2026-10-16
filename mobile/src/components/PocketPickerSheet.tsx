@@ -17,7 +17,8 @@ export function PocketPickerSheet() {
     const want = String(arg ?? "").toLowerCase();
     // an exact name first, then a pocket that can still pay ("Research data", not the revoked "Research data · 16 Oct")
     const live = pockets.filter((x) => !x.revoked);
-    const p = pockets.find((x) => x.name.toLowerCase() === want) ?? live.find((x) => x.name.toLowerCase().includes(want)) ?? pockets.find((x) => x.name.toLowerCase().includes(want)) ?? pockets[0];
+    const named = (xs: typeof pockets) => xs.find((x) => x.name.toLowerCase() === want) ?? xs.find((x) => x.name.toLowerCase().includes(want));
+    const p = named(live) ?? named(pockets) ?? pockets[0];
     if (!p) return false;
     const run = autoplayRun();
     setLit(p.address);

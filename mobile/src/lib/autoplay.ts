@@ -141,7 +141,19 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await say(ESCALATION_TEXT);
     await wait(3000);
 
-    // ---- scene 7: revoke mid-task, then take the money back
+    // ---- scene 9 (Radar): a drainer pays DataPro on-chain; Radar blocks DataPro and the agent buys DataLite instead
+    await say(text("9").text);
+    await wait(3500);
+    // ---- scene 10 (Sentinel): the fooled agent keeps trying Harbour Wines; the Sentinel freezes this pocket on-chain.
+    // The new pocket now holds the whole story (1, 4, 5, 6, escalation, 9, 10): the Brain tab shows it at the end.
+    await say(text("10").text);
+    await wait(3500);
+
+    // ---- scene 7 runs on the lived-in Research data pocket (this one is frozen): revoke mid-task, take the money back
+    await must("picker.open");
+    await wait(900);
+    await must("picker.pocket", "Research data");
+    await wait(1400);
     const paidBefore = host.state().lastPaymentAt;
     await must("composer", { text: text("7").text });
     const revoking = (async () => {
@@ -176,19 +188,12 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await drive();
     await wait(3000);
 
-    // ---- scenes 9 and 10 run on the lived-in Research data pocket (the new one was revoked in scene 7)
+    // ---- close on the Brain tab for the pocket made in scene 1 ("Research data · <date>"): what the AI understood,
+    // blocked, screened, froze and remembers, all in one place
     await must("picker.open");
     await wait(900);
-    await must("picker.pocket", "Research data");
+    await must("picker.pocket", "Research data ·");
     await wait(1400);
-    // scene 9 (Radar): a drainer pays DataPro on-chain; Radar blocks DataPro and the agent buys DataLite instead
-    await say(text("9").text);
-    await wait(3500);
-    // scene 10 (Sentinel): the fooled agent keeps trying Harbour Wines; the Sentinel freezes the pocket on-chain
-    await say(text("10").text);
-    await wait(3500);
-
-    // ---- close on the Brain tab: what the AI understood, blocked, screened, froze and remembers, for this pocket
     host.navigate("/brain");
     await wait(5000);
   }
