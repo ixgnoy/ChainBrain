@@ -175,7 +175,7 @@ export function Judges({ pocket, open }: { pocket?: string; open(addr: string): 
         )}
       </Test>
 
-      <Section title="3. The eight scenes" right={linked ? <span className="text-[13px] text-muted">Played on your phone</span> : undefined}>
+      <Section title={scenes.length ? `3. The ${scenes.length} scenes` : "3. The scenes"} right={linked ? <span className="text-[13px] text-muted">Played on your phone</span> : undefined}>
         <Card className="divide-y divide-line overflow-hidden">
           {scenes.length ? scenes.map((s) => {
             const c = copyFor(s.id);

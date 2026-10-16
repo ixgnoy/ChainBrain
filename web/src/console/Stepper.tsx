@@ -1,4 +1,4 @@
-// Presenter mode's scene stepper: eight numbered steps pinned to the bottom, the selected one with its one-line
+// Presenter mode's scene stepper: one numbered step per scene, pinned to the bottom, the selected one with its one-line
 // expected outcome and the same Play logic as the Judges tab (typed on the linked phone, or played by the built-in network).
 // Its status line comes from the phone's own events (story.ts): what to do next on the phone, "Working…", "Done".
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";

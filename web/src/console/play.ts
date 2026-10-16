@@ -31,7 +31,7 @@ export function usePlay(actions: Actions, linked: boolean, refresh?: () => void)
       const r = await sayOnPhone(actions.say, text, step === "scene" ? scene.preset : null);
       set({ busy: false, step, ok: r.ok, text: r.text, pocket: r.pocket });
     } else if (actions.runScene) {
-      try { const r = await actions.runScene(scene.id); set({ busy: false, step, ok: true, text: "Played. Watch it in Live.", pocket: r?.pocket }); }
+      try { const r = await actions.runScene(scene.id); set({ busy: false, step, ok: true, text: "Played.", pocket: r?.pocket }); }
       catch (e) { set({ busy: false, step, ok: false, text: (e as Error).message || "That scene could not run." }); }
     } else set({ busy: false, step, ok: false, text: "Scenes can be played when the built-in network or a linked phone is on." });
     refresh?.();

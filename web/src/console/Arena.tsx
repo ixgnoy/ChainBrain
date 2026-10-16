@@ -120,7 +120,7 @@ export function Arena({ aim, setAim, watch }: { aim: string; setAim(a: string): 
               <div data-testid={`arena-card-${c.key}`} data-state={state} className="flex flex-1 flex-col">
                 <div aria-hidden={false} className={cn("hatch flex h-14 items-center justify-between gap-3 px-5 sm:px-6", BAND[state])}>
                   <span className="eyebrow rounded-full bg-white px-3 py-1.5 text-ink">Attack {cards.indexOf(c) + 1}</span>
-                  <span className={cn("inline-flex h-7 shrink-0 items-center rounded-full px-3 text-[12px] font-extrabold", state === "blocked" ? "bg-green-ink text-on-accent" : state === "lost" ? "bg-vermillion text-on-accent" : state === "running" ? "bg-blue-ink text-on-accent" : state === "error" ? "bg-vermillion-ink text-on-accent" : "bg-white text-muted")}>{state === "blocked" ? "Blocked" : state === "lost" ? "Not stopped" : state === "running" ? "Running" : state === "error" ? "Could not run" : "Not tried"}</span>
+                  <span className={cn("inline-flex h-7 shrink-0 items-center rounded-full px-3 text-[12px] font-extrabold", state === "blocked" ? "bg-green-ink text-on-accent" : state === "lost" ? "bg-vermillion text-on-accent" : state === "running" ? "bg-blue-ink text-on-accent" : state === "error" ? "bg-vermillion-ink text-on-accent" : "bg-white text-muted")}>{state === "blocked" ? "Blocked" : state === "lost" ? "Not stopped" : state === "running" ? "Running" : state === "error" ? "Could not run" : "Ready"}</span>
                 </div>
                 <div className="flex flex-1 flex-col p-5 sm:p-6">
                 <h3 className="text-[22px] font-bold leading-7 tracking-[-0.02em]">{c.title}</h3>

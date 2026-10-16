@@ -45,7 +45,7 @@ export function Settings({ presenter }: { presenter?: () => void }) {
             <>
               <h3 className="eyebrow mb-2 mt-5 text-muted">Presenting</h3>
               <div className="flex items-center gap-4 tile px-4 py-3.5">
-                <div className="min-w-0 flex-1"><div className="text-[15px] font-medium">Presenter mode</div><div className="text-[13px] leading-5 text-muted">Larger Live view, no menus, and the eight scenes at the bottom.</div></div>
+                <div className="min-w-0 flex-1"><div className="text-[15px] font-medium">Presenter mode</div><div className="text-[13px] leading-5 text-muted">Larger Live view, no menus, and the scenes at the bottom.</div></div>
                 <button type="button" onClick={() => { setOpen(false); presenter(); }} className="pressable h-11 rounded-full bg-vermillion px-5 text-[14px] font-bold text-on-accent hover:bg-vermillion-press">Start</button>
               </div>
             </>
