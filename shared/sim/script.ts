@@ -2,7 +2,8 @@
 // tool calls and receives their results, so the pocket's rules (in chain.ts) decide every outcome; the scene only
 // decides what to try next. `say` is the agent's one-line reasoning shown in the trace before the call.
 import { sellerName as name } from "./catalog";
-import { tonightMs } from "./util";
+import { formatUsd, parseUsd, tonightMs } from "./util";
+import { buyerPlan, MAX_ROUNDS } from "./haggle";
 
 export type Action = { tool: string; input: object; delayMs?: number; say?: string };
 export type Scene = Generator<Action, string, any>;
@@ -28,15 +29,21 @@ export function* purchase(sellerId: string, sku: string, o: { payAnyway?: boolea
   // Radar's verdict on the seller's money: block means pick someone else (the wallet would refuse anyway)
   if (q.counterpartyRisk?.verdict === "block" && !o.payAnyway) return { ...base, ok: false, reason: "COUNTERPARTY_HIGH_RISK", why: q.counterpartyRisk.reasons?.[0] };
   if (q.intentCheck !== "OK" && !o.payAnyway) return { ...base, ok: false, reason: q.intentCheck.reason, why: q.intentCheck.why };
-  if (rule === "OK" && q.needsOwnerApproval) {
+  return yield* settle(sellerId, sku, q.quoteId, q.price, rule === "OK" && q.needsOwnerApproval, o.reason);
+}
+
+/** The owner's co-signature when the price needs it, then pay the quote. */
+function* settle(sellerId: string, sku: string, quoteId: string, price: string, needsOwner: boolean, reason?: string): Generator<Action, Outcome, any> {
+  const base = { sellerId, sku, price };
+  if (needsOwner) {
     const a = yield {
       tool: "ask_owner",
-      input: { quoteId: q.quoteId, reason: o.reason ?? `${name(sellerId)}'s ${item(sku)} costs US$${q.price}, above your ask-me threshold. It matches the task you confirmed.` },
-      say: `US$${q.price} is above your ask-me limit, so this one needs your signature.`,
+      input: { quoteId, reason: reason ?? `${name(sellerId)}'s ${item(sku)} costs US$${price}, above your ask-me threshold. It matches the task you confirmed.` },
+      say: `US$${price} is above your ask-me limit, so this one needs your signature.`,
     };
     if (!a?.ok) return { ...base, ok: false, reason: a?.reason, why: a?.why };
   }
-  const p = yield { tool: "pay", input: { quoteId: q.quoteId }, say: `Paying ${name(sellerId)} US$${q.price} from the pocket.` };
+  const p = yield { tool: "pay", input: { quoteId }, say: `Paying ${name(sellerId)} US$${price} from the pocket.` };
   return p?.ok ? { ...base, ok: true, tx: p.tx } : { ...base, ok: false, reason: p?.reason, why: p?.why };
 }
 
@@ -134,6 +141,50 @@ function* sceneRadar(): Scene {
   yield { tool: "search_sellers", input: { category: "Research data" }, say: "Radar blocked TradeWire: most of its money came from a drainer. Looking for a clean seller with data on the exporter." };
   const second = yield* purchase("nansen", "wallet-balances");
   return `Radar blocked TradeWire: ${first.why ?? "its money traces to a drainer"}. I didn't pay it and re-planned. ${summary([second])} It shows the exporter's holdings, not a credit history.`;
+}
+
+/**
+ * Scene 11, the haggler: before paying DataPro's premium report, the agent negotiates with DataPro's agent, numbers only
+ * (shared/sim/haggle.ts). It anchors on what the comparable report costs elsewhere, meets the seller halfway, takes a
+ * final offer that fits the task, and never offers above the first quote. The owner still co-signs above ask-me.
+ */
+function* sceneHaggle(): Scene {
+  const maxPerItem = "2.00";
+  if (!(yield* draft(intent("Durian export premium report with 2026 forecast, price negotiated", maxPerItem, maxPerItem, 1)))) return declined();
+  const found = yield { tool: "search_sellers", input: { category: "Research data" }, say: "Looking for sellers with durian export data, and what they charge." };
+  // the benchmark: the cheapest priced durian data from another seller (on the built-in network, Exa's news search)
+  const others = (found?.sellers ?? []).filter((x: any) => x.id !== "datapro").flatMap((x: any) => x.items.filter((i: any) => i.price && i.price !== "free" && /durian/i.test(i.description)).map((i: any) => ({ seller: x.name, price: i.price })));
+  const bench = others.sort((a: any, b: any) => Number(a.price) - Number(b.price))[0];
+  const q = yield { tool: "get_quote", input: { sellerId: "datapro", sku: "premium-report" }, say: "Asking DataPro for the price of its premium report with the 2026 forecast." };
+  const base = { sellerId: "datapro", sku: "premium-report", price: q?.price };
+  if (!q?.ok) return summary([{ ...base, ok: false, reason: q?.reason, why: q?.error ?? q?.why }]);
+  if (q.allowedByPocket !== "OK") return summary([{ ...base, ok: false, reason: q.allowedByPocket.reason }]);
+  if (q.counterpartyRisk?.verdict === "block") return summary([{ ...base, ok: false, reason: "COUNTERPARTY_HIGH_RISK" }]);
+  if (!q.negotiable) return summary([yield* settle("datapro", "premium-report", q.quoteId, q.price, q.needsOwnerApproval)]);
+
+  const list = parseUsd(q.price), walkAway = list < parseUsd(maxPerItem) ? list : parseUsd(maxPerItem);
+  let mine = buyerPlan.anchor(list);
+  const why = bench ? `${bench.seller} sells durian data for US$${bench.price}, so the 2026 forecast is what DataPro's extra US$${formatUsd(list - parseUsd(bench.price))} buys.` : "This is above what comparable reports cost.";
+  let r = yield { tool: "counter_offer", input: { quoteId: q.quoteId, price: formatUsd(mine) }, say: `DataPro asks US$${q.price}. ${why} Opening at US$${formatUsd(mine)}.` };
+  for (let round = 1; r?.ok && !r.deal && round <= MAX_ROUNDS; round++) {
+    const counter = parseUsd(r.counter);
+    if (buyerPlan.take(mine, { kind: "counter", price: counter, final: !!r.final }, walkAway)) {
+      r = yield { tool: "counter_offer", input: { quoteId: q.quoteId, price: r.counter }, say: `${r.final ? "DataPro's final price is" : "DataPro came down to"} US$${r.counter}, within your task and US$${formatUsd(list - counter)} under its first price. Taking it.` };
+      break;
+    }
+    if (round === MAX_ROUNDS) break;
+    mine = buyerPlan.next(mine, counter);
+    r = yield { tool: "counter_offer", input: { quoteId: q.quoteId, price: formatUsd(mine) }, say: `DataPro countered US$${r.counter}. Meeting it halfway: US$${formatUsd(mine)}.` };
+  }
+  if (!r?.ok || !r.deal) {
+    // no deal: the first quote still stands; it fits the task, so buy at the list price rather than leave empty-handed
+    const o = yield* settle("datapro", "premium-report", q.quoteId, q.price, q.needsOwnerApproval);
+    return `DataPro wouldn't come down, so I paid its price. ${summary([o])}`;
+  }
+  const o = yield* settle("datapro", "premium-report", q.quoteId, r.price, !!r.needsOwnerApproval,
+    `DataPro's premium report with the 2026 forecast, negotiated from US$${r.list} to US$${r.price} (US$${r.saved} saved). Still above your ask-me limit.`);
+  if (!o.ok) return summary([o]);
+  return `Negotiated DataPro's premium report from US$${r.list} down to US$${r.price} and bought it: US$${r.saved} saved. The pocket paid exactly the agreed price.`;
 }
 
 function* scene4(): Scene {
@@ -243,6 +294,7 @@ export function route(text: string, o: { asked: boolean; revokeWindowMs: number 
   if (attack === "extraction") return extraction();
   if (attack === "induced") return induced();
   if (/drainer/.test(t)) return sceneRadar();
+  if (/negotiat|haggle|bargain|talk (them|the price) down/.test(t)) return sceneHaggle();
   if (/assume (the |my |your )?agent (was|is|got) fooled/.test(t)) return sceneHijacked();
   if (/shadyfeed/.test(t) && /full feed|whatever they need|give them/.test(t)) return scene6();
   if (/shadyfeed/.test(t)) return scene5();

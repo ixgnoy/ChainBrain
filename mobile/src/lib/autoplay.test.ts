@@ -7,11 +7,12 @@ import { registerTarget, resetTargets, autoplayRunning, typeOut, type TargetName
 const OWNER = "0x0000000000000000000000000000000000a11ce0" as Hex;
 const payTo = (...ids: string[]) => CATALOG.filter((s) => ids.includes(s.id)).map((s) => s.payTo);
 
-test("auto-play: wizard, scenes 1-8, Claude via Connect and the ask dock, then scenes 9 and 10, through the screens' targets", async () => {
+test("auto-play: wizard, scenes 1-11, Claude via Connect and the ask dock, through the screens' targets, on the real built-in network", async () => {
   resetTargets();
   const w = createWorld({ speed: 0.005, seed: 3, revokeWindowMs: 9000 });
   const { pockets: seeded } = await seedOwner(w, OWNER);
   let active: Hex = seeded[0].address;
+  let created: Hex | undefined; // the pocket the wizard makes in scene 1
   const subs = new Set<() => void>();
   const changed = () => subs.forEach((f) => f());
   w.subscribe(changed); w.chain.onTx(changed);
@@ -25,7 +26,7 @@ test("auto-play: wizard, scenes 1-8, Claude via Connect and the ask dock, then s
   on("wizard.continue", () => { if (++continues === 1) on("wizard.create", async () => { // a preset goes straight to Review
     const { pocket } = w.chain.createPocket(OWNER, { agent: SIM_AGENT, cap: parseUsd("0.05"), askAbove: parseUsd("0.02"), expiresAt: BigInt(Math.floor(Date.now() / 1000) + 6 * 3600), sellers: payTo("exa", "coingecko", "nansen") });
     w.chain.transfer(OWNER, pocket, parseUsd("1"));
-    active = pocket;
+    active = created = pocket;
   }); });
   on("wizard.open", () => {});
   let typed = "";
@@ -45,7 +46,15 @@ test("auto-play: wizard, scenes 1-8, Claude via Connect and the ask dock, then s
   on("return.open", () => {});
   on("return.slide", () => { w.chain.returnFunds(OWNER, active); });
   on("picker.open", () => {});
-  on("picker.pocket", (name) => { assert.ok(name === "One purchase" || name === "Research data"); active = seeded.find((p) => p.name === name)!.address; });
+  // the picker's rule (components/PocketPickerSheet.tsx): exact name, then a name that contains it; live pockets first
+  on("picker.pocket", (name) => {
+    const all = [...seeded.filter((p) => (p.agent ?? "chainbrain") === "chainbrain").map((p) => ({ name: p.name, address: p.address })), ...(created ? [{ name: "Research data · 16 Oct", address: created }] : [])];
+    const want = String(name).toLowerCase();
+    const named = (xs: typeof all) => xs.find((x) => x.name.toLowerCase() === want) ?? xs.find((x) => x.name.toLowerCase().includes(want));
+    const p = named(all.filter((x) => !w.chain.view(x.address).revoked)) ?? named(all);
+    assert.ok(p, String(name));
+    active = p.address;
+  });
   on("home.connect", () => {});
   on("connect.agent", (a) => assert.equal(a, "claude"));
   on("connect.copy", () => {});
@@ -87,11 +96,24 @@ test("auto-play: wizard, scenes 1-8, Claude via Connect and the ask dock, then s
   for (const id of ["pocketCreated", "onchainPayment", "cosigned", "clarifyingQuestion", "refusedReplanned", "injectionIgnored", "dataRefused", "forcedReverted", "escalationBlocked", "killSwitch", "safeStop", "fixApplied"] as const) assert.ok(f[id], `${id} (pressed: ${pressed.join(", ")})`);
   assert.ok(w.events(0).some((e) => e.type === "refusal" && e.reason === "POCKET_REVOKED"), "scene 7: the second payment was refused after the revoke");
   assert.equal(w.chain.view(seeded[1].address).cap, parseUsd("0.007"));
-  assert.equal(pressed.filter((p) => p === "approval.slide").length, 2, "Nansen for ChainBrain, then Claude's counterparty check");
+  assert.equal(pressed.filter((p) => p === "approval.slide").length, 3, "Nansen in scene 1, DataPro's negotiated US$1.10 in scene 11, then Claude's counterparty check");
   assert.ok(claudePocket, "Claude got its own pocket");
   assert.ok(w.events(0).some((e) => e.type === "payment" && e.agent === "claude" && e.cosigned && e.pocket === claudePocket), "Claude's co-signed payment from its new pocket");
-  assert.ok(w.events(0).some((e) => e.type === "radar" && e.kind === "alert"), "scene 9: Radar raised an alert");
-  assert.ok(w.chain.view(seeded[0].address).frozen, "scene 10: the Sentinel froze the Research data pocket");
+  assert.ok(w.events(0).some((e) => e.type === "radar" && e.kind === "alert"), "scene 9: Radar alerted the pockets that paid TradeWire before");
+  // one pocket carries the story for the Brain tab: 1, 4, 5, 6, escalation, Radar (9) and the Sentinel's freeze (10)
+  const story = w.events(0, created);
+  assert.ok(story.some((e) => e.type === "attack") && story.some((e) => e.type === "forced" && e.reverted) && story.some((e) => e.type === "disclosure"), "attacks on the scene-1 pocket");
+  assert.ok(story.some((e) => e.type === "radar" && e.kind === "screen" && e.sellerId === "tradewire" && e.verdict === "block"), "scene 9: Radar blocked TradeWire on the scene-1 pocket");
+  const freeze = story.find((e) => e.type === "sentinel" && e.kind === "freeze");
+  assert.ok(freeze, "scene 10: the Sentinel froze the scene-1 pocket");
+  const lastBuy = story.filter((e) => e.type === "payment").at(-1)!;
+  assert.ok(freeze.at > lastBuy.at, "the freeze comes after the story's purchases, not earlier");
+  assert.equal(w.chain.view(created!).frozen, true);
+  assert.equal(w.chain.view(created!).revoked, false);
+  assert.equal(w.chain.view(seeded[0].address).revoked, true, "scene 7 revoked the lived-in Research data pocket");
+  const premium = seeded.find((p) => p.name === "Premium reports")!.address;
+  const deal = w.events(0, premium).find((e) => e.type === "payment" && e.list);
+  assert.deepEqual([deal?.amount, deal?.list, deal?.cosigned], ["1100000", "1500000", true], "scene 11: the haggler's deal on Premium reports, co-signed");
 });
 
 test("auto-play: stop() ends it at the next step and clears the running flag", async () => {

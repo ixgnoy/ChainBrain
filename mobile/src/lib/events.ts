@@ -295,3 +295,24 @@ export function preflightResults(events: WalletEvent[]): PreflightView[] {
 }
 /** "on-chain simulation" (server, eth_call) or "the built-in chain" (dry run of the same rules). */
 export const preflightBy = (by?: string) => (by === "eth_call" ? "a simulation of the exact transfer (eth_call)" : by === "sim" ? "a dry run on the built-in chain" : "the pocket's rules");
+
+export type HaggleStep = { who: "seller" | "you"; price: bigint; final?: boolean };
+export type HaggleView = { key: string; at: number; pocket?: string; quoteId: string; sellerId?: string; list: bigint; steps: HaggleStep[]; deal?: bigint; saved?: bigint };
+/**
+ * The haggler's negotiations, one per quote: the seller's first price, then each offer and counter in order, and the
+ * deal if one was agreed. Numbers only (the events carry prices, never seller text).
+ */
+export function haggles(events: WalletEvent[]): HaggleView[] {
+  const by = new Map<string, HaggleView>();
+  for (const e of events) {
+    if (e.type !== "haggle" || !e.quoteId) continue;
+    const list = atomic(e.list), offer = atomic(e.offer), price = atomic(e.price);
+    if (list === undefined || price === undefined) continue;
+    const k = `${String(e.pocket ?? "").toLowerCase()}:${e.quoteId}`;
+    const v: HaggleView = by.get(k) ?? { key: `hag:${k}`, at: e.at, pocket: e.pocket, quoteId: String(e.quoteId), sellerId: e.sellerId, list, steps: [{ who: "seller", price: list }] };
+    if (!e.accepting && offer !== undefined) v.steps.push({ who: "you", price: offer });
+    if (e.reply === "accept") { v.deal = price; v.saved = list - price; } else v.steps.push({ who: "seller", price, final: !!e.final });
+    by.set(k, v);
+  }
+  return [...by.values()];
+}

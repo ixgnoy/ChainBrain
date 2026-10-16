@@ -2,12 +2,14 @@
 // x402; their items and prices are the ones each publishes (Exa's x402 guide: /search US$0.007; CoinGecko's x402 docs:
 // US$0.01 per request; Nansen's x402 docs: basic endpoints US$0.01, premium US$0.05). What a purchase delivers here is
 // illustrative content of the right shape, generated on this test network, not a live response. The other sellers are
-// fictional on purpose: Harbour Wines (not on any pocket's list), ShadyFeed (a phishing feed) and TradeWire (paid by a
-// labelled drainer in the Radar scene), so no real company is ever shown as malicious. The real server (server/src/
+// fictional on purpose: Harbour Wines (not on any pocket's list), ShadyFeed (a phishing feed), TradeWire (paid by a
+// labelled drainer in the Radar scene) and DataPro (the haggler's seller in scene 11: real providers keep their published
+// per-request prices, and haggle.ts moves in 5-cent steps), so no real company is shown as malicious or as haggling. The real server (server/src/
 // sellers.json) keeps its own sellers: on the public test chain it pays the team's addresses, so it must not use real names.
 import type { Hex, SimSeller } from "./types";
 
-export type CatalogItem = { sku: string; description: string; price: string | null; content: string };
+/** `floor`: the lowest price the seller accepts when the agent haggles (private to the seller; never sent to the agent). */
+export type CatalogItem = { sku: string; description: string; price: string | null; content: string; floor?: string };
 export type CatalogSeller = Omit<SimSeller, "items"> & { items: CatalogItem[] };
 
 const NEWS = `# Web search: durian exports to China (Exa, 10 results)
@@ -38,6 +40,12 @@ const BALANCES = `# Exporter wallet balances (Nansen, Current Balances)
 
 const CREDIT = `# Durian exporter credit report (TradeWire)
 - Payment history and trade references for the exporter`;
+
+const PREMIUM = `# Durian exports premium report with 2026 forecast (DataPro)
+- 2024 baseline: 1.30 million tonnes; 2025: 1.42 million tonnes
+- 2026 forecast: 1.55 to 1.61 million tonnes (base case 1.58)
+- Price outlook: CNY 34 to 40 per kg; downside risk from Vietnamese supply
+- Watch list: phytosanitary rule changes, rail freight via Laos`;
 
 const HARBOUR = `# Fruit and wine trade report (Harbour Wines)
 - Hong Kong fruit wine imports: HK$410 million
@@ -80,6 +88,10 @@ export const CATALOG: CatalogSeller[] = [
     items: [{ sku: "credit-report", description: "Durian exporter credit report", price: "0.05", content: CREDIT }],
   },
   {
+    id: "datapro", name: "DataPro", category: "Research data", payTo: "0x3d7e92a1c5f04b68e2a9d1c7b3f50e8a6c2d4b19",
+    items: [{ sku: "premium-report", description: "Durian exports premium report with 2026 forecast", price: "1.50", floor: "1.10", content: PREMIUM }],
+  },
+  {
     id: "harbour-wines", name: "Harbour Wines", category: "Food and drink", payTo: "0x9e1f7c3a5b28d4e06a7b9c1d2e3f4a5b6c7d8e90",
     items: [{ sku: "fruit-wine-trade-report", description: "Fruit and wine trade report", price: "0.02", content: HARBOUR }],
   },
@@ -89,7 +101,7 @@ export const CATALOG: CatalogSeller[] = [
   },
 ];
 
-export const sellers = (): SimSeller[] => CATALOG.map(({ items, ...s }) => ({ ...s, items: items.map(({ content: _c, ...i }) => i) }));
+export const sellers = (): SimSeller[] => CATALOG.map(({ items, ...s }) => ({ ...s, items: items.map(({ content: _c, floor, ...i }) => (floor ? { ...i, negotiable: true } : i)) }));
 export const sellerById = (id: string) => CATALOG.find((s) => s.id === id);
 export const sellerByPayTo = (a: string) => CATALOG.find((s) => s.payTo.toLowerCase() === a.toLowerCase());
 export const sellerName = (id: string) => sellerById(id)?.name ?? id;

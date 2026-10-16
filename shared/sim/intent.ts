@@ -51,6 +51,11 @@ export const REASONS: Record<string, string> = {
   SENTINEL_HOLD: "The Sentinel saw unusual behaviour: call ask_owner with this quote; the owner must co-sign the next payment",
   NOT_OWNER: "Only the owner's key can change a pocket's rules",
   NOT_A_PURCHASE: "A message asking for money is not a purchase: the agent only pays allowed sellers, through a quote, for a confirmed task",
+  OFFER_NOT_LOWER: "An offer must be lower than the seller's current price and never above its first quote (offering exactly its counter accepts it)",
+  NEGOTIATION_ROUNDS_USED: "No offers left on this quote (3 at most): accept the seller's last counter or pay the quote",
+  NEGOTIATION_NOT_OFFERED: "This seller does not take offers on this item: pay its price or pick another",
+  DEAL_ALREADY_AGREED: "A price is already agreed on this quote: pay it (or ask_owner first if it needs approval)",
+  QUOTE_ALREADY_APPROVED: "The owner already approved this quote's price, so it cannot be renegotiated",
 };
 
 /** server/src/wallet/scan.ts */

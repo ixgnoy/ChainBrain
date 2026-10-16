@@ -1,8 +1,9 @@
-// Hidden auto-play for recording the video: plays scenes 1-8 on the phone by itself, the way the presenter would. It
+// Hidden auto-play for recording the video: plays scenes 1-11 on the phone by itself, the way the presenter would. It
 // creates the Research pocket in the wizard, types each sentence, answers the one question, confirms tasks, slides to
 // co-sign, holds to revoke (which also returns the money), switches to One purchase, applies the fix and asks again. Then
 // the outside agents: it connects Claude (pairing link, consent, a new pocket), confirms Claude's task and co-signs its
-// payment from the ask dock (the cheque); then scene 9 (Radar) and scene 10 (Sentinel) on the seeded Research data pocket. Every press goes through a
+// payment from the ask dock (the cheque). Scene 11 (haggler) runs on Premium reports; 9 (Radar) and 10 (Sentinel) on the
+// scene-1 pocket, and the run closes on that pocket's Brain tab. Every press goes through a
 // target the screen registered (lib/autoplayTargets.ts), so what the camera sees is the real UI doing real work; the
 // built-in network decides every outcome. Started and stopped by a long-press on the Agent header. No React Native
 // imports: Node tests drive it with a fake host.
@@ -26,7 +27,7 @@ export type HostState = {
   outside?: { id: string; kind: "intent" | "payment" | "question"; agent?: string }[];
 };
 export type AutoplayHost = {
-  navigate(path: "/" | "/agent"): void;
+  navigate(path: "/" | "/agent" | "/brain"): void;
   state(): HostState;
   subscribe(f: () => void): () => void;
   /** Scene 5's on-chain backstop on this phone's network: the agent key signs the injected transfer; the pocket reverts it. */
@@ -145,7 +146,37 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await say(ESCALATION_TEXT);
     await wait(3000);
 
-    // ---- scene 7: revoke mid-task, then take the money back
+    // ---- scene 11 (haggler) on Premium reports: DataPro (fictional) prices in dollars, so it has its own pocket. The agent
+    // negotiates its premium report down, numbers only (1.50 -> 1.10); still above that pocket's US$1 ask-me, so the owner co-signs
+    await must("picker.open");
+    await wait(900);
+    await must("picker.pocket", "Premium reports");
+    await wait(1400);
+    await say(text("11").text);
+    await wait(3500);
+
+    // ---- back on the pocket made in scene 1 ("Research data · <date>"), which holds the rest of the story
+    await must("picker.open");
+    await wait(900);
+    await must("picker.pocket", "Research data ·");
+    await wait(1400);
+    // ---- scene 9 (Radar): a drainer pays TradeWire on-chain; Radar scores it 9/10 and blocks it; the Radar screen shows why
+    await say(text("9").text);
+    await wait(2400);
+    await tap("radar.open", undefined, 3000);
+    await wait(3600);
+    host.navigate("/agent");
+    await wait(1500);
+    // ---- scene 10 (Sentinel): the fooled agent keeps trying Harbour Wines; the Sentinel freezes this pocket on-chain.
+    // This pocket now holds 1, 4, 5, 6, the escalation, 9 and 10: the Brain tab shows it at the end.
+    await say(text("10").text);
+    await wait(3500);
+
+    // ---- scene 7 runs on the lived-in Research data pocket (this one is frozen): revoke mid-task, take the money back
+    await must("picker.open");
+    await wait(900);
+    await must("picker.pocket", "Research data");
+    await wait(1400);
     const paidBefore = host.state().lastPaymentAt;
     await must("composer", { text: text("7").text });
     const revoking = (async () => {
@@ -209,32 +240,21 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
           await wait(2600);
           const paidBefore = host.state().lastPaymentAt;
           await must("approval.slide");
-          // let Claude's payment settle before scene 9: there Radar flags TradeWire, and an unsettled payment would be refused
+          // let Claude's payment settle before the run closes on the Brain tab
           await until("Claude's payment settles", (s) => s.lastPaymentAt > paidBefore, 30_000).catch(soft);
           await wait(3200);
         }
       }
     }
 
-    // ---- scene 9: Radar blocks TradeWire after a drainer pays it; scene 10: the Sentinel freezes a probing agent
-    host.navigate("/agent");
-    await wait(1600);
+    // ---- close on the Brain tab for the pocket made in scene 1 ("Research data · <date>"): what the AI understood,
+    // blocked, screened, froze and remembers, all in one place
     await must("picker.open");
     await wait(900);
-    await must("picker.pocket", "Research data");
+    await must("picker.pocket", "Research data ·");
     await wait(1400);
-    await say(text("9").text);
-    await wait(2400);
-    await tap("radar.open", undefined, 3000);
-    await wait(3600);
-    host.navigate("/agent");
-    await wait(1500);
-    await say(text("10").text);
-    await wait(3600);
-
-    // ---- close on Home: the deck, the revoked Research card and the fixed One purchase card
-    host.navigate("/");
-    await wait(4000);
+    host.navigate("/brain");
+    await wait(5000);
   }
 
   return self;

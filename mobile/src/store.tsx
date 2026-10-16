@@ -7,7 +7,7 @@ import { loadConfig, resetConfig, type Config } from "./lib/shared";
 import { detectDev, isHttpUrl, getApi, getDev, getSource, setApiUrl as setRuntimeApi, setDev, setSource as setRuntimeSource, subscribeRuntime, ENV_API, type DevInfo, type Source } from "./lib/runtime";
 import { ownerWallet, readPocket, isOwner, type OwnerWallet, type PocketView } from "./lib/wallet";
 import { createKey, loadKey, loadPockets, randomKey, saveKey, savePockets } from "./lib/keystore";
-import { builtin, seedFor, startOutsideAgents } from "./lib/builtin";
+import { builtin, seedFor, startOutsideAgents, uiGet, uiSet, wasRestored } from "./lib/builtin";
 import { agentIdOf, agentViews, type AgentId, type AgentView } from "./lib/agents";
 import { startRelay, type Say } from "./lib/relay";
 import { createAutoplay, type AutoplayHost, type HostState } from "./lib/autoplay";
@@ -108,6 +108,10 @@ export function useAppSelect<T>(pick: (s: Ctx) => T): T {
 
 const id = () => Math.random().toString(36).slice(2, 10);
 const sameIds = (a: Set<string> | null, b: Set<string> | null) => a === b || (!!a && !!b && a.size === b.size && [...a].every((x) => b.has(x)));
+/** Turns that were still running when the page went away: the agent did not survive the reload, so say so. */
+const interrupted = (by: Record<string, Turn[]>) => Object.fromEntries(Object.entries(by).map(([k, ts]) => [k, ts.map((t) => (t.done ? t : {
+  ...t, done: true, stopped: "reload", reply: t.reply ?? "The page reloaded while I was working, so I stopped here. Nothing else will be paid for this message.",
+}))]));
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -225,9 +229,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const list = [...others, ...seeded].sort((a, b) => born(b.address) - born(a.address)).map((p) => p.address as Address);
         const m: Record<string, PocketMeta> = {};
         for (const p of seeded) m[p.address.toLowerCase()] = { name: p.name, style: p.style };
-        ownerTxRef.current = txs.map((t) => ({ kind: t.kind, pocket: t.pocket.toLowerCase(), hash: t.hash, at: t.at, amount: t.amount }));
+        // a reload of this tab: the network came back, so do its names, chat and owner transactions (lib/builtin.ts)
+        const back = wasRestored();
+        ownerTxRef.current = (back && uiGet<OwnerTx[]>("ownerTxs")) || txs.map((t) => ({ kind: t.kind, pocket: t.pocket.toLowerCase(), hash: t.hash, at: t.at, amount: t.amount }));
         setOwnerTxs(ownerTxRef.current);
-        setAddresses(list); setMeta({ ...m, ...builtinMeta.current }); setActiveAddr((a) => a ?? seeded[0]?.address ?? list[0]); setPocketsLoaded(true);
+        if (back) setTurnsBy((old) => (Object.keys(old).length ? old : interrupted(uiGet<Record<string, Turn[]>>("turns") ?? {})));
+        const saved = back ? uiGet<string>("active") : undefined;
+        // names: the seeded ones, then this tab's saved ones (a reload), then any given since; never a server's (builtinMeta)
+        setAddresses(list); setMeta({ ...m, ...(back ? uiGet<Record<string, PocketMeta>>("meta") ?? {} : {}), ...builtinMeta.current });
+        setActiveAddr((a) => a ?? (saved && list.some((x) => sameAddr(x, saved)) ? saved : seeded[0]?.address ?? list[0])); setPocketsLoaded(true);
         startOutsideAgents(seeded); // Claude asks for a co-signature a little after launch (lands in the Approvals inbox)
       });
       return () => { alive = false; };
@@ -329,8 +339,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => { clearInterval(t); sub.remove(); off(); if (soon) clearTimeout(soon); };
   }, [cfg, apiUrl, local]);
 
-  // refresh balances when money moved
-  const moneyEvents = useMemo(() => events.filter((e) => e.type === "payment" || e.type === "approval").length, [events]);
+  // refresh balances when money moved, and the pocket's state when the Sentinel froze or cleared it
+  const moneyEvents = useMemo(() => events.filter((e) => e.type === "payment" || e.type === "approval" || e.type === "sentinel").length, [events]);
   useEffect(() => { if (moneyEvents) void refreshPockets(); }, [moneyEvents, refreshPockets]);
 
   // ---- derived views, restricted to this owner's pockets
@@ -366,6 +376,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [myEvents, events.length, meta]);
   const pending = useMemo(() => livePending(myEvents, { pendingIds }).filter((a) => !answered.has(a.id)), [myEvents, pendingIds, answered]);
   const sellerName = useCallback((sid?: string) => cfg?.sellers.find((s) => s.id === sid)?.name ?? sid ?? "Unknown seller", [cfg]);
+
+  // the built-in network in a browser tab keeps the app's side too, so a reload comes back to the same chat
+  useEffect(() => { if (local && pocketsLoaded) uiSet("turns", turnsBy); }, [local, pocketsLoaded, turnsBy]);
+  useEffect(() => { if (local && pocketsLoaded) uiSet("meta", meta); }, [local, pocketsLoaded, meta]);
+  useEffect(() => { if (local && pocketsLoaded) uiSet("ownerTxs", ownerTxs); }, [local, pocketsLoaded, ownerTxs]);
+  useEffect(() => { if (local && pocketsLoaded && activeAddr) uiSet("active", activeAddr); }, [local, pocketsLoaded, activeAddr]);
 
   // ---- chat
   const turns = useMemo(() => (active ? turnsBy[active.address.toLowerCase()] ?? [] : []), [turnsBy, active]);

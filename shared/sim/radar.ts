@@ -25,6 +25,8 @@ export function createLabels(now: () => number = () => Date.now()) {
       return x;
     },
     clear: () => book.clear(),
+    dump: () => book,
+    load(d: Map<string, Label>) { book.clear(); for (const [k, v] of d) book.set(k, v); },
   };
 }
 export type Labels = ReturnType<typeof createLabels>;

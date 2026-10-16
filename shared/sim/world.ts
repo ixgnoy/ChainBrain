@@ -12,6 +12,7 @@ import { createChain, ChainError, type Chain } from "./chain";
 import { checkAgainstIntent, renderIntent, REASONS, scanRequests, wrapUntrusted, type Intent, type IntentInput } from "./intent";
 import { attackOf, route, FALLBACK, type Action, type AttackKind, type Scene } from "./script";
 import { AGENTS, agentByAddress, SIM_AGENT, type AgentId, type AgentState } from "./agents";
+import { checkOffer, sellerReply, MAX_ROUNDS } from "./haggle";
 import type { AnswerResult, Authorization, ChatResult, Hex, SimApproval, SimConfig, SimEvent, SimTx } from "./types";
 import { formatUsd, lower, NEVER, parseUsd, rng as makeRng, same, usd, USDC, wire, type Rng } from "./util";
 
@@ -26,7 +27,8 @@ export type WorldOptions = {
   approvalWaitMs?: number;
 };
 
-type Quote = { quoteId: string; sellerId: string; sku: string; description: string; payTo: Hex; amount: bigint; paid: boolean; auth?: Authorization; ownerSig?: string };
+/** `list` is the seller's first price; `ask` its current one while the agent haggles (counter_offer); `amount` is what pay settles. */
+type Quote = { quoteId: string; sellerId: string; sku: string; description: string; payTo: Hex; amount: bigint; list: bigint; ask: bigint; rounds: number; agreed?: boolean; paid: boolean; auth?: Authorization; ownerSig?: string };
 type Task = { intent?: Intent; spent: bigint; items: number; quotes: Map<string, Quote>; nextQuote: number; asked?: boolean };
 
 export { SIM_AGENT };
@@ -35,6 +37,9 @@ export const SIM_FACTORY: Hex = "0xfac70e2b9d4c1a3f5e6b7c8d9e0f1a2b3c4d5e6f";
 export const SIM_SENTINEL: Hex = "0x5e471e10000000000000000000000000000c0de5";
 /** The account that submits the forced transfer (server/scripts/force-transfer.ts FORCE_PK). */
 export const FORCE_SENDER: Hex = "0x4f0e1c8d2b7a6953e1f0c2d4b6a8e9f1c3d5e7a9";
+
+/** Bump when the dump's shape changes: an older saved network is then dropped, not misread. */
+const DUMP_VERSION = 2; // 2: outside agents' connection state (agentState)
 
 export function createWorld(opts: WorldOptions = {}) {
   const r: Rng = makeRng(opts.seed ?? 0x5eed);
@@ -249,7 +254,7 @@ export function createWorld(opts: WorldOptions = {}) {
         ok: true,
         sellers: list.map((s) => ({
           id: s.id, name: s.name, category: s.category, allowedByPocket: chain.sellerAllowed(pocket, s.payTo),
-          items: s.items.map((i) => ({ sku: i.sku, description: i.description, price: i.price ?? "free" })),
+          items: s.items.map((i) => ({ sku: i.sku, description: i.description, price: i.price ?? "free", ...(i.floor ? { negotiable: true } : {}) })),
         })),
       };
     },
@@ -269,7 +274,8 @@ export function createWorld(opts: WorldOptions = {}) {
       if (!s || !it) return { ok: false, error: "seller answered HTTP 404" };
       if (!it.price) return { ok: true, free: true, ...screenFree(pocket, sellerId, delivered(sellerId, it.content, true)) };
       const t = task(pocket);
-      const q: Quote = { quoteId: `q${t.nextQuote++}`, sellerId, sku, description: it.description, payTo: s.payTo, amount: parseUsd(it.price), paid: false };
+      const amount = parseUsd(it.price);
+      const q: Quote = { quoteId: `q${t.nextQuote++}`, sellerId, sku, description: it.description, payTo: s.payTo, amount, list: amount, ask: amount, rounds: 0, paid: false };
       t.quotes.set(q.quoteId, q);
       const rule = chain.canPay(pocket, q.payTo, q.amount);
       const ic = checkAgainstIntent(t.intent, t, q.amount, now() / 1000);
@@ -280,7 +286,34 @@ export function createWorld(opts: WorldOptions = {}) {
         needsOwnerApproval: chain.needsOwner(pocket, q.amount) || watch(pocket).hold,
         intentCheck: ic ? { reason: ic, why: REASONS[ic] } : "OK",
         counterpartyRisk: { score: risk.score, verdict: risk.verdict, reasons: brief(risk).reasons },
+        ...(it.floor ? { negotiable: true } : {}),
       };
+    },
+    /**
+     * The haggler (shared/sim/haggle.ts): offer a lower price on a quote; the seller's agent accepts or counters. Numbers
+     * only, both ways. Offering exactly the seller's counter accepts it. A deal changes what pay settles, never upwards.
+     */
+    async counter_offer(pocket, { quoteId, price }: { quoteId: string; price: string }) {
+      await jitter(500, 900); // the seller's agent answers
+      const t = task(pocket);
+      const q = t.quotes.get(quoteId);
+      if (!q) return refuse("QUOTE_UNKNOWN");
+      const floor = sellerById(q.sellerId)?.items.find((i) => i.sku === q.sku)?.floor;
+      if (!floor) return refuse("NEGOTIATION_NOT_OFFERED");
+      let offer: bigint;
+      try { offer = parseUsd(String(price)); } catch { return refuse("OFFER_NOT_LOWER"); }
+      const bad = checkOffer({ offer, ask: q.ask, list: q.list, maxPerItem: t.intent ? parseUsd(t.intent.maxPricePerItem) : undefined, rounds: q.rounds, approved: !!q.auth || !!q.ownerSig, paid: q.paid, agreed: q.agreed });
+      if (bad) return refuse(bad);
+      const accepting = q.rounds > 0 && offer === q.ask;
+      if (!accepting) q.rounds++;
+      const reply = sellerReply(q.ask, offer, parseUsd(floor));
+      q.ask = reply.price;
+      const final = reply.kind === "counter" && reply.final;
+      if (reply.kind === "accept") { q.amount = reply.price; q.agreed = true; }
+      publish({ type: "haggle", pocket, quoteId, sellerId: q.sellerId, sku: q.sku, round: q.rounds, offer, reply: reply.kind, price: reply.price, final, list: q.list, accepting });
+      return reply.kind === "accept"
+        ? { ok: true, deal: true, price: formatUsd(reply.price), list: formatUsd(q.list), saved: formatUsd(q.list - reply.price), needsOwnerApproval: chain.needsOwner(pocket, reply.price) || watch(pocket).hold, note: "Deal agreed: pay (or ask_owner first if needsOwnerApproval) with the same quoteId." }
+        : { ok: true, deal: false, counter: formatUsd(reply.price), final, roundsLeft: MAX_ROUNDS - q.rounds, note: final ? "The seller's final price: accept it by offering exactly this price, or walk away." : "Offer again (lower than the counter), accept the counter by offering exactly it, or walk away." };
     },
     async ask_owner(pocket, { question, quoteId, reason }: { question?: string; quoteId?: string; reason?: string }) {
       await jitter(200, 400);
@@ -362,7 +395,7 @@ export function createWorld(opts: WorldOptions = {}) {
     if (!s.ok) return fail(s.reason ?? "SETTLEMENT_FAILED");
     t.spent += q.amount; t.items += 1;
     if (q.ownerSig && watch(pocket).hold) sentinelClear(pocket, "cosign");
-    publish({ type: "payment", pocket, sellerId: q.sellerId, sku: q.sku, amount: q.amount, tx: s.tx, nonce: auth.nonce, intentHash: t.intent!.intentHash, cosigned: !!q.ownerSig });
+    publish({ type: "payment", pocket, sellerId: q.sellerId, sku: q.sku, amount: q.amount, tx: s.tx, nonce: auth.nonce, intentHash: t.intent!.intentHash, cosigned: !!q.ownerSig, ...(q.amount < q.list ? { list: q.list } : {}) });
     const it = sellerById(q.sellerId)!.items.find((i) => i.sku === q.sku)!;
     return { ok: true, tx: s.tx, paid: formatUsd(q.amount), sellerId: q.sellerId, ...screenFree(pocket, q.sellerId, delivered(q.sellerId, it.content, false)) };
   }
@@ -461,6 +494,12 @@ export function createWorld(opts: WorldOptions = {}) {
   // ---- public surface: the same calls as the wallet API and the chain
   const config: SimConfig = { agent: SIM_AGENT, factory: SIM_FACTORY, usdc: USDC, sellersUrl: "", sellers: sellers(), abis: { pocket: [], factory: [], erc20: [] } };
 
+  /** The whole network, for keeping it across a page reload (mobile/src/lib/builtin.ts); encode with util.encode. */
+  const dump = () => ({
+    v: DUMP_VERSION, rng: r.state, chain: chain.dump(), recent, lastAt, seq, approvals, tasks, injected, labels: labels.dump(),
+    radarLast, radarWatch, radarAlerts, watches, memory: memory.dump(), autoOwners, agentState,
+  });
+
   const world = {
     chain, publish, now,
     setSpeed(s: number) { speed = s; },
@@ -508,6 +547,8 @@ export function createWorld(opts: WorldOptions = {}) {
       } finally { busy.delete(lower(pocket)); }
     },
     isBusy: (pocket: string) => busy.has(lower(pocket)),
+    /** One wallet tool call, as the agent loop makes it (tests). */
+    tool: (pocket: Hex, name: string, args: object) => runTool(pocket, name, args),
 
     // owner transactions (the phone signs these straight to the chain); each waits for a block like the real thing
     async ownerTx<T>(f: () => T): Promise<T> {
@@ -624,6 +665,32 @@ export function createWorld(opts: WorldOptions = {}) {
     task,
     approvals: () => [...approvals.values()],
     NEVER,
+
+    dump,
+    /**
+     * Restore a dump. Work that was in flight is not: no agent is mid-turn after a reload, so an approval still pending
+     * is closed as timed out (and published, so every screen sees it end).
+     */
+    load(d: ReturnType<typeof dump>): boolean {
+      if (!d || d.v !== DUMP_VERSION) return false;
+      r.state = d.rng;
+      chain.load(d.chain);
+      recent.splice(0, recent.length, ...d.recent);
+      lastAt = d.lastAt; seq = d.seq;
+      const fill = <K, V>(m: Map<K, V>, src: Map<K, V>) => { m.clear(); for (const [k, v] of src) m.set(k, v); };
+      fill(approvals, d.approvals); fill(tasks, d.tasks); fill(injected, d.injected); fill(radarLast, d.radarLast);
+      fill(radarWatch, d.radarWatch); fill(watches, d.watches); fill(agentState, d.agentState);
+      radarAlerts.splice(0, radarAlerts.length, ...d.radarAlerts);
+      labels.load(d.labels); memory.load(d.memory);
+      autoOwners.clear(); for (const o of d.autoOwners) autoOwners.add(o);
+      busy.clear(); waiters.clear();
+      for (const a of approvals.values()) {
+        if (a.status !== "pending") continue;
+        a.status = "timeout";
+        publish({ type: evType(a.kind), pocket: a.pocket, approval: a });
+      }
+      return true;
+    },
   };
   return world;
 }

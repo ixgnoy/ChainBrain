@@ -17,8 +17,10 @@ export function PocketPickerSheet() {
   const choices = pockets.filter((p) => (p.agentId ?? "chainbrain") === "chainbrain");
   useAutoplayTarget("picker.pocket", async (arg) => {
     const want = String(arg ?? "").toLowerCase();
-    const named = choices.filter((x) => x.name.toLowerCase().includes(want));
-    const p = named.find((x) => !x.revoked) ?? named[0] ?? choices[0]; // a live pocket of that name first
+    // an exact name first, then a pocket that can still pay ("Research data", not the revoked "Research data · 16 Oct")
+    const live = choices.filter((x) => !x.revoked);
+    const named = (xs: typeof choices) => xs.find((x) => x.name.toLowerCase() === want) ?? xs.find((x) => x.name.toLowerCase().includes(want));
+    const p = named(live) ?? named(choices) ?? choices[0];
     if (!p) return false;
     const run = autoplayRun();
     setLit(p.address);

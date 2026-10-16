@@ -248,6 +248,12 @@ export default function BrainTab() {
         <FunnelBar label="Prices asked" n={quotes} max={funnelMax} color={c.blue} />
         <FunnelBar label="Paid" n={b.paid} max={funnelMax} color={c.ink} />
         <FunnelBar label="Refused by your rules" n={refusals} max={funnelMax} color={c.vermillion} />
+        {b.negotiated ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 10, borderRadius: 14, backgroundColor: c.fill }} accessible accessibilityLabel={`Negotiated ${b.negotiated === 1 ? "a price" : `${b.negotiated} prices`} down, ${money(b.saved)} saved`}>
+            <Icon name="arrowDown" size={14} color={c.greenInk} stroke={2.4} />
+            <T v="cap" color="ink2" style={{ flex: 1 }}>{`Negotiated ${b.negotiated === 1 ? "a price" : `${b.negotiated} prices`} down: ${money(b.saved)} saved, numbers only`}</T>
+          </View>
+        ) : null}
         {b.adapted.slice(-3).map((a, i) => (
           <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 10, borderRadius: 14, backgroundColor: c.fill }} accessible accessibilityLabel={`${a.from} refused, ${plainReason(a.reason)}${a.to ? `, bought from ${a.to} instead` : ", stopped"}`}>
             <View style={{ opacity: 0.55 }}><Face id={idOf(a.from)} name={a.from} size={30} /></View>

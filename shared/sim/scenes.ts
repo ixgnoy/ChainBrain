@@ -87,4 +87,11 @@ export const SCENES: SceneInfo[] = [
     preset: "research",
     note: "The agent tries Harbour Wines (not on the list) three times; the pocket refuses each. After the third refusal in a minute the Sentinel freezes the pocket on-chain with its freeze-only key, so Exa is refused too (POCKET_FROZEN). Unfreeze from the pocket page (owner key).",
   },
+  {
+    id: "11", title: "Haggler: negotiates the price",
+    chip: "Premium report, price negotiated",
+    text: "Get DataPro's premium report with the 2026 forecast, but negotiate the price down first. Max US$2, by tonight.",
+    preset: "research",
+    note: "Built-in network: use a pocket that allows DataPro (a fictional seller) with a cap of at least US$1.50. The agent haggles with DataPro's agent using numbers only: it offers US$0.90, DataPro counters US$1.20, it offers US$1.05, DataPro's final is US$1.10, and it takes it (US$0.40 saved). Still above ask-me, so the owner co-signs; the pocket pays exactly US$1.10. Offers are capped in code: always below the seller's price, never above the first quote, 3 rounds at most.",
+  },
 ];

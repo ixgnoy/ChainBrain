@@ -6,6 +6,7 @@
 //   Market news     held by Claude (connected 12 days ago), cap US$0.05, ask above US$0.02
 //   Trade quotes    held by ChatGPT (connected 9 days ago), cap US$0.01, never asks
 //   One purchase    held by ChainBrain, created 18 minutes ago for the dead-end scene (8): US$0.005
+//   Premium reports held by ChainBrain, created 5 minutes ago for the haggler (11): DataPro only, cap US$2 (phone only)
 //
 // Sellers are real x402 data providers at their published prices (Exa US$0.007, CoinGecko US$0.01, Nansen US$0.01 or
 // US$0.05; catalog.ts), plus the demo's fictional TradeWire, Harbour Wines and ShadyFeed.
@@ -32,7 +33,27 @@ const inDays = (now: number, d: number) => BigInt(Math.floor((now + d * DAY) / 1
 /** The whole seed: two weeks back, then today. Main wallet ends at US$54.80. */
 export async function seedOwner(w: World, owner: Hex, o: { startUsdc?: string } = {}): Promise<Seeded> {
   const s = await seedOwnerHistory(w, owner, o);
-  return seedOwnerToday(w, owner, s);
+  const today = await seedOwnerToday(w, owner, s);
+  return withPremium(w, owner, today);
+}
+
+/**
+ * The phone's pocket for the haggler (scene 11): DataPro, a fictional seller priced in dollars (the real providers keep
+ * their published per-request prices), so it gets its own pocket: cap US$2, asks above US$1, US$3 in it, until tonight.
+ * Made a few minutes ago, the newest of the seed. Phone only: the console's story makes its own pocket per scene.
+ */
+async function withPremium(w: World, owner: Hex, prior: Seeded): Promise<Seeded> {
+  const ownerTxs = prior.ownerTxs.slice();
+  w.chain.mint(owner, parseUsd("3"), 0n); // on top of the seed's start, so the main wallet ends where it always did
+  const premium = await w.past(5 * MIN, async () => {
+    const t = w.now();
+    const { pocket, tx } = w.chain.createPocket(owner, { agent: SIM_AGENT, cap: parseUsd("2"), askAbove: parseUsd("1"), expiresAt: tonight(t), sellers: payTo("datapro") }, t);
+    ownerTxs.push({ pocket, kind: "create", hash: tx, at: t });
+    const f = w.chain.transfer(owner, pocket, parseUsd("3"), t + 30_000);
+    ownerTxs.push({ pocket, kind: "fund", hash: f, amount: "3000000", at: t + 30_000 });
+    return pocket;
+  });
+  return { pockets: [...prior.pockets, { address: premium, name: "Premium reports", style: "custom", agent: "chainbrain" }], ownerTxs };
 }
 
 /** Runs `f` with the owner's approvals answered by the world (seeding only), then hands them back to the owner. */

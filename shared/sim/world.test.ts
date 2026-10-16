@@ -4,7 +4,7 @@ import { createWorld, SIM_AGENT } from "./world";
 import { seedOwner, claudeAsksForPremium } from "./seed";
 import { buy } from "./agents";
 import { CATALOG } from "./catalog";
-import { NEVER, parseUsd, same } from "./util";
+import { NEVER, decode, encode, parseUsd, same } from "./util";
 import type { Hex } from "./types";
 
 const OWNER = "0x00000000000000000000000000000000000d0d0d" as Hex;
@@ -135,12 +135,13 @@ test("events have strictly increasing `at` and bigints arrive as strings", async
 test("seed: two weeks of real history across three agents", async () => {
   const w = createWorld({ speed: 0, seed: 1 });
   const s = await seedOwner(w, OWNER);
-  assert.deepEqual(s.pockets.map((p) => [p.name, w.agentOf(p.address)]), [["Research data", "chainbrain"], ["One purchase", "chainbrain"], ["Market news", "claude"], ["Trade quotes", "chatgpt"]]);
+  assert.deepEqual(s.pockets.map((p) => [p.name, w.agentOf(p.address)]), [["Research data", "chainbrain"], ["One purchase", "chainbrain"], ["Market news", "claude"], ["Trade quotes", "chatgpt"], ["Premium reports", "chainbrain"]]);
   const bal = (name: string) => w.chain.view(s.pockets.find((p) => p.name === name)!.address).balance;
   assert.equal(bal("Research data"), parseUsd("1.285"));
   assert.equal(bal("One purchase"), parseUsd("0.005"));
   assert.equal(bal("Market news"), parseUsd("0.412"));
   assert.equal(bal("Trade quotes"), parseUsd("0.166"));
+  assert.equal(bal("Premium reports"), parseUsd("3")); // the haggler's pocket (scene 11), DataPro only
   assert.equal(w.chain.balanceOf(OWNER), parseUsd("54.80"));
   const ev = w.events(0);
   for (let i = 1; i < ev.length; i++) assert.ok(ev[i].at > ev[i - 1].at, "oldest first");
@@ -155,7 +156,7 @@ test("seed: two weeks of real history across three agents", async () => {
   assert.ok(ev.filter((e) => e.pocket).every((e) => e.agent), "every pocket event names its agent");
   assert.equal(w.approvals().filter((a) => a.status === "pending").length, 0);
   assert.deepEqual(w.agents().map((a) => [a.id, a.status]), [["chainbrain", "connected"], ["claude", "connected"], ["chatgpt", "connected"]]);
-  assert.equal(s.ownerTxs.length, 9);
+  assert.equal(s.ownerTxs.length, 11); // 9, plus Premium reports created and funded
   // payments are signed by the pocket's own agent key
   const claudePay = w.txs().filter((t) => t.kind === "payment" && t.status === "success" && same(t.pocket, s.pockets[2].address));
   assert.ok(claudePay.length >= 4);
@@ -323,4 +324,106 @@ test("pre-flight: every payment is predicted, then checked; predictions match ou
     ["exa", "pays", "", true], ["coingecko", "pays", "", true], ["nansen", "pays", "", true], ["harbour-wines", "refused", "SELLER_NOT_ALLOWED", true], ["exa", "pays", "", true],
   ]);
   assert.equal(w.events(0, pocket).filter((e) => e.type === "preflight" && e.kind === "predict").length, 5);
+});
+
+test("save and reload: a dump round-trips through JSON; the reloaded network carries on, and a pending approval is closed", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  const research = "Research a durian import deal for me: export news, the USDC price and a check on the exporter's wallet. Under US$0.10, by tonight.";
+  await w.chat(pocket, research);
+  await w.chat(pocket, "In total. Check the exporter's wallet with Nansen too.");
+  await w.chat(pocket, "Assume the agent was fooled by a seller page: it keeps trying to buy Harbour Wines' wine report. Max US$0.05, by tonight.");
+  // a question left open: the reload must not leave it hanging
+  const q = await w.chat(pocket, research);
+  assert.equal(w.pending(pocket).length, 1, q.reply);
+
+  const saved = encode(w.dump());
+  const v = createWorld({ speed: 0, seed: 99, revokeWindowMs: 0 });
+  assert.equal(v.load(decode(saved)), true);
+
+  assert.deepEqual(v.chain.view(pocket), w.chain.view(pocket));
+  assert.equal(v.chain.view(pocket).frozen, true);
+  assert.equal(v.chain.balanceOf(OWNER), w.chain.balanceOf(OWNER));
+  assert.deepEqual(v.txs().map((t) => t.hash), w.txs().map((t) => t.hash));
+  assert.deepEqual(v.memory(pocket), w.memory(pocket));
+  assert.equal(v.sentinel(pocket).status, "freeze");
+  assert.deepEqual(v.radar.labels(), w.radar.labels());
+  // every event came back, then one more: the open question, closed as timed out
+  const before = w.events(0).length, after = v.events(0);
+  assert.equal(after.length, before + 1);
+  assert.equal(after.at(-1)!.approval.status, "timeout");
+  assert.equal(v.pending(pocket).length, 0);
+  // and it carries on: the owner unfreezes, the agent buys again with fresh ids that never collide
+  v.chain.unfreeze(OWNER, pocket);
+  owner(v);
+  const ok = await v.chat(pocket, "Search Exa for durian export news. Max US$0.01, by tonight.");
+  assert.match(ok.reply, /Bought Exa's web search for durian export news/);
+  const ids = v.events(0).map((e) => e.id);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.ok(v.events(0).every((e, i, a) => i === 0 || e.at > a[i - 1].at));
+});
+
+test("an unknown dump version is refused, not misread", () => {
+  const v = createWorld({ speed: 0 });
+  assert.equal(v.load({ ...v.dump(), v: 0 }), false);
+});
+
+// DataPro (fictional) is the haggler's seller: priced in dollars, so its pocket allows it and caps at US$2
+const haggleSetup = () => setup({ cap: "2", budget: "5", sellers: ["exa", "coingecko", "nansen", "datapro"] });
+
+test("scene 11 (haggler): numbers-only negotiation 1.50 → 0.90 → 1.20 → 1.05 → final 1.10, co-signed, the pocket pays exactly 1.10", async () => {
+  const { w, pocket } = await haggleSetup();
+  owner(w);
+  const r = await w.chat(pocket, "Get DataPro's premium report with the 2026 forecast, but negotiate the price down first. Max US$2, by tonight.");
+  assert.match(r.reply, /from US\$1\.50 down to US\$1\.10.*US\$0\.40 saved/);
+  const h = w.events(0, pocket).filter((e) => e.type === "haggle");
+  assert.deepEqual(h.map((e) => [e.offer, e.reply, e.price]), [["900000", "counter", "1200000"], ["1050000", "counter", "1100000"], ["1100000", "accept", "1100000"]]);
+  assert.equal(h[1].final, true);
+  assert.equal(h[2].accepting, true);
+  const pay = w.events(0, pocket).find((e) => e.type === "payment")!;
+  assert.deepEqual([pay.amount, pay.list, pay.cosigned], ["1100000", "1500000", true]);
+  assert.equal(w.chain.view(pocket).balance, parseUsd("3.90"));
+  // the agent's reasoning names the benchmark it anchored on
+  assert.ok(w.events(0, pocket).some((e) => e.type === "trace" && e.phase === "thinking" && /Exa sells durian data for US\$0\.007/.test(e.text)));
+});
+
+test("haggler guards: never above the first quote or the task, at most 3 offers, only negotiable items, not after approval", async () => {
+  const { w, pocket } = await haggleSetup();
+  owner(w);
+  w.task(pocket).intent = { request: "x", description: "x", maxPricePerItem: "1.20", maxTotal: "5.00", maxItems: 4, deadline: new Date(Date.now() + 3_600_000).toISOString(), intentHash: "0x1", status: "confirmed" } as any;
+  const quote = (sellerId: string, sku: string) => w.tool(pocket, "get_quote", { sellerId, sku });
+  const offer = (quoteId: string, price: string) => w.tool(pocket, "counter_offer", { quoteId, price });
+
+  const q = await quote("datapro", "premium-report");
+  assert.equal(q.negotiable, true);
+  assert.ok(!JSON.stringify(q).includes("1.10"), "the seller's floor is never shown to the agent");
+  assert.equal((await offer(q.quoteId, "1.60")).reason, "OFFER_NOT_LOWER"); // above the first quote
+  assert.equal((await offer(q.quoteId, "1.50")).reason, "OFFER_NOT_LOWER"); // not below the seller's price
+  assert.equal((await offer(q.quoteId, "1.30")).reason, "PRICE_ABOVE_INTENT"); // above the task's max per item
+  assert.deepEqual([(await offer(q.quoteId, "0.10")).counter, (await offer(q.quoteId, "0.10")).counter], ["1.10", "1.10"]); // never below the floor
+  const third = await offer(q.quoteId, "0.10");
+  assert.deepEqual([third.counter, third.final, third.roundsLeft], ["1.10", true, 0]);
+  assert.equal((await offer(q.quoteId, "0.20")).reason, "NEGOTIATION_ROUNDS_USED");
+  const deal = await offer(q.quoteId, "1.10"); // accepting the counter is allowed after the last round
+  assert.deepEqual([deal.deal, deal.price, deal.saved, deal.needsOwnerApproval], [true, "1.10", "0.40", true]);
+  assert.equal((await offer(q.quoteId, "1.00")).reason, "DEAL_ALREADY_AGREED");
+
+  const lite = await quote("exa", "durian-news");
+  assert.equal(lite.negotiable, undefined);
+  assert.equal((await offer(lite.quoteId, "0.005")).reason, "NEGOTIATION_NOT_OFFERED");
+
+  w.task(pocket).intent!.maxPricePerItem = "2.00"; // so the owner can be asked for US$1.50
+  const again = await quote("datapro", "premium-report");
+  await w.tool(pocket, "ask_owner", { quoteId: again.quoteId, reason: "test" }); // the owner co-signs US$1.50
+  assert.equal((await offer(again.quoteId, "1.00")).reason, "QUOTE_ALREADY_APPROVED");
+  assert.equal((await w.tool(pocket, "counter_offer", { quoteId: "q999", price: "1.00" })).reason, "QUOTE_UNKNOWN");
+});
+
+test("save and reload keeps which outside agents are connected", () => {
+  const w = createWorld({ speed: 0 });
+  w.connect("claude");
+  const v = createWorld({ speed: 0 });
+  assert.equal(v.load(decode(encode(w.dump()))), true);
+  assert.equal(v.agents().find((a) => a.id === "claude")!.status, "connected");
+  assert.equal(v.agents().find((a) => a.id === "chatgpt")!.status, "available");
 });

@@ -16,7 +16,7 @@ async function seeded() {
 
 test("agentIdOf: the pocket's agent key names its agent; a server's own key is the built-in agent", async () => {
   const { pockets } = await seeded();
-  assert.deepEqual(pockets.map((p) => agentIdOf(p)), ["chainbrain", "chainbrain", "claude", "chatgpt"]);
+  assert.deepEqual(pockets.map((p) => agentIdOf(p)), ["chainbrain", "chainbrain", "claude", "chatgpt", "chainbrain"]); // the last is Premium reports (scene 11)
   assert.equal(agentIdOf({ agent: "0x1111111111111111111111111111111111111111" }, "0x1111111111111111111111111111111111111111"), "chainbrain");
   assert.equal(agentIdOf({ agent: "0x2222222222222222222222222222222222222222" }), undefined);
 });

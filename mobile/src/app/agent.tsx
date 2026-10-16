@@ -29,7 +29,8 @@ import { SendButton } from "../ui/SendButton";
 import { WorkingLine } from "../ui/WorkingLine";
 import { cleanText } from "../lib/sanitize";
 import { devScenes, type Scene } from "../lib/api";
-import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, radarScreens, radarAlerts, sentinelEvents, type WalletEvent } from "../lib/events";
+import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, radarScreens, radarAlerts, sentinelEvents, haggles, type WalletEvent } from "../lib/events";
+import { HaggleCard } from "../components/HaggleCard";
 import { deadEndOf } from "../lib/deadend";
 import { money, usd } from "../lib/util";
 import { isTightCap } from "../lib/presets";
@@ -363,6 +364,7 @@ export default function AgentChat() {
                 {refusals.map((r) => <SellerRefusal key={r.sellerId} id={`${t.id}:r${r.sellerId}`} seller={sellerName(r.sellerId)} reasons={r.reasons} />)}
                 {active ? radarAlerts(evs, active.address).filter((a) => !radarScreens(evs).some((v) => v.verdict !== "ok" && v.counterparty === a.name)).map((a) => <RadarAlertCard key={a.key} a={a} />) : null}
                 <RadarBlock list={radarScreens(evs)} turnId={t.id} />
+                {haggles(evs).map((h) => <HaggleCard key={h.key} h={h} />)}
                 {sentinelEvents(evs).map((v) => <SentinelCard key={v.key} v={v} />)}
                 {injectionsOf(evs).filter((x) => !(seenInj.get(t.id) ?? new Set()).has(JSON.stringify(x))).map((x, k) => <InjectionCard key={`${t.id}:i${k}`} id={`${t.id}:${k}`} seller={sellerName(x.sellerId)} lines={x.lines} />)}
                 {evs.filter(isAttackEvent).map((e, k) => <AttackCard key={`${e.type}${e.at}${k}`} e={e} />)}

@@ -43,7 +43,7 @@ test("two readings: disagreements take the stricter value", () => {
 test("proof card: worst case is the budget; tests run the pocket's rule order", () => {
   const p = proof({ sellers: ["exa"], cap: "0.01", budget: "0.01", askAbove: "never", lifetime: "one-task" }, S);
   assert.equal(p.worstCase, "0.01");
-  assert.deepEqual(p.neverPayable, ["CoinGecko", "Nansen", "TradeWire", "Harbour Wines", "ShadyFeed"]);
+  assert.deepEqual(p.neverPayable, ["CoinGecko", "Nansen", "TradeWire", "DataPro", "Harbour Wines", "ShadyFeed"]);
   assert.ok(p.tests.every((t) => t.ok), JSON.stringify(p.tests));
   assert.deepEqual(p.tests.map((t) => t.got), ["OK", "OVER_CAP", "SELLER_NOT_ALLOWED", "SELLER_NOT_ALLOWED", "POCKET_EXPIRED"]);
 });
