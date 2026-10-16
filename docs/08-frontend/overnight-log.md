@@ -124,6 +124,10 @@ Earlier the same day, before this log existed:
 
 E2E: 57/57.
 
+## Checkpoint (after the Brain slice, 318880e)
+
+expo-doctor 21/21 · mobile typecheck clean · phone tests 44 · sim tests 57 · server pocket-app tests 4 · web tests 81 + build clean · e2e 57/57.
+
 ## Decisions (made on the owner's behalf)
 
 - **Home layout:** a vertical wallet stack, not a carousel or grid. It is the only layout that shows all 7 pockets at a glance, and judges know it from Apple Wallet. See research loop 4.
