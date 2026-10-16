@@ -77,10 +77,12 @@ export function RadarClean({ list }: { list: RadarView[] }) {
   if (!list.length) return null;
   const names = list.map((v) => cleanText(v.counterparty, 30));
   const who = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+  // Radar only reads the history it has indexed: when that was cut short it says so, instead of a flat "no known risk"
+  const said = `Radar checked ${who} on-chain: no known risk${list.some((v) => v.partial) ? " in the history it could read" : ""}`;
   return (
     <Rise dy={6} layout style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
       <Icon name="radar" size={16} color={c.greenInk} />
-      <T v="cap" color="muted" style={{ flex: 1 }} accessibilityLabel={`Radar checked ${who} on-chain: no known risk`}>Radar checked {who} on-chain: no known risk</T>
+      <T v="cap" color="muted" style={{ flex: 1 }} accessibilityLabel={said}>{said}</T>
     </Rise>
   );
 }
@@ -102,7 +104,7 @@ export function RadarAlertCard({ a }: { a: RadarAlert }) {
   const name = cleanText(a.name, 40);
   const was = a.from ? ` from ${a.from.score}/10` : "";
   return (
-    <EventCard tone="blocked" alert={a.key} title={`Radar alert: ${name}`} body={`You paid ${name} before. Its risk rose${was} to ${a.to.score}/10, so your agent won't pay it.`}
+    <EventCard tone={a.to.verdict === "block" ? "blocked" : "waiting"} alert={a.key} title={`Radar alert: ${name}`} body={`You paid ${name} before. Its risk rose${was} to ${a.to.score}/10, so ${a.to.verdict === "block" ? "your agent won't pay it" : "your agent needs your OK before paying it again"}.`}
       why={{ codes: [a.to.verdict === "block" ? "COUNTERPARTY_HIGH_RISK" : "COUNTERPARTY_REVIEW"], children: <T v="cap" color="muted">{cleanText(a.narrative, 500)}</T> }}>
       <ScoreBar score={a.to.score} verdict={a.to.verdict} />
       <Button label="See the money trail" kind="secondary" small iconRight="arrowUpRight" auto="radar.open" onPress={() => router.push({ pathname: "/radar", params: { name: a.name } })} style={{ alignSelf: "flex-start" }} />

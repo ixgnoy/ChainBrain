@@ -15,7 +15,17 @@ import { cleanText } from "../lib/sanitize";
 import * as api from "../lib/api";
 import { answer, proof, type Compiled, type Draft } from "../../../shared/sim/speak";
 
-export const EXAMPLE = "US$1 for durian research from Exa, CoinGecko or Nansen, at most US$0.05 each, ask me above US$0.02, until tonight";
+const HOSTILE = ["shadyfeed", "tradewire"];
+
+/** The sample sentence, naming sellers this network really has: Exa, CoinGecko and Nansen on the built-in network, the
+ *  first research sellers the server lists elsewhere (DataLite, DataPro on the dev stack). */
+export function exampleFor(sellers: { id: string; name: string; category?: string }[]): string {
+  // never suggest the demo's hostile shops (scenes 5-6 and the drainer story) as a place to send money
+  const research = sellers.filter((s) => s.category === "Research data" && !HOSTILE.includes(s.id)).map((s) => s.name);
+  const names = research.length ? research.slice(0, 3) : sellers.slice(0, 2).map((s) => s.name);
+  const from = names.length ? ` from ${names.length > 1 ? `${names.slice(0, -1).join(", ")} or ${names.at(-1)}` : names[0]}` : "";
+  return `US$1 for durian research${from}, at most US$0.05 each, ask me above US$0.02, until tonight`;
+}
 
 export function SpeakRules({ onUse }: { onUse(d: Draft): void }) {
   const { cfg } = useApp();
@@ -24,6 +34,7 @@ export function SpeakRules({ onUse }: { onUse(d: Draft): void }) {
   const [err, setErr] = useState<string | null>(null);
   const [res, setRes] = useState<(Compiled & { asked: Set<string> }) | null>(null);
   const sellers = (cfg?.sellers ?? []).map((s) => ({ id: s.id, name: s.name }));
+  const EXAMPLE = exampleFor(cfg?.sellers ?? []);
 
   const build = async () => {
     const s = text.trim() || EXAMPLE;

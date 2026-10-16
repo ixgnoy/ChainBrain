@@ -7,6 +7,7 @@ import { T } from "../ui/Text";
 import { Rise, firstTime } from "../ui/Rise";
 import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
+import { intentRows } from "../lib/intent";
 
 const LABEL: Record<string, string> = { Buy: "Buy", Price: "Limits", Deadline: "Deadline" };
 /** "2026-10-15 23:59 HKT" (the server's fixed template) as the owner says it: "Tonight, 23:59", "Tomorrow, 09:00", "17 Oct, 23:59". */
@@ -22,9 +23,7 @@ export function deadlineWords(v: string, now = new Date()): string {
   if (diff === 1) return `Tomorrow, ${hm}`;
   return `${d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}, ${hm}`;
 }
-export const parseIntent = (text: string) =>
-  cleanText(text, 600).split("\n").map((l) => { const i = l.indexOf(":"); return i > 0 && i < 12 ? { k: l.slice(0, i), v: l.slice(i + 1).trim() } : { k: "", v: l.trim() }; })
-    .filter((x) => x.v).map((x) => (x.k === "Deadline" ? { ...x, v: deadlineWords(x.v) } : x));
+export const parseIntent = (text: string) => intentRows(cleanText(text, 600)).map((x) => (x.k === "Deadline" ? { ...x, v: deadlineWords(x.v) } : x));
 
 export function IntentCard({ text, onConfirm, onDecline, busy, error, flat, enter, title = "Your agent wants to start this task" }: { title?: string; text: string; onConfirm?(): void; onDecline?(): void; busy?: boolean; error?: string | null; flat?: boolean; /** chat: enter once (scale 0.96 to 1, 12 pt rise, snappy) with a medium haptic: the owner is needed */ enter?: boolean | string }) {
   const rows = parseIntent(text);

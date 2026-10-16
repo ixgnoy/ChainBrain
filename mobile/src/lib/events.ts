@@ -222,7 +222,7 @@ export function chainFor(events: WalletEvent[], row: LedgerRow) {
 export type RadarVerdict = "ok" | "review" | "block";
 export type RadarView = {
   key: string; at: number; sellerId?: string; counterparty: string; score: number; verdict: RadarVerdict; reasons: string[];
-  narrative: string; trail: string[]; share?: number; direction?: string;
+  narrative: string; trail: string[]; share?: number; direction?: string; /** Radar read only part of the history (a lower bound) */ partial?: boolean;
 };
 const verdictOf = (v: unknown): RadarVerdict => (v === "block" || v === "review" ? v : "ok");
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : Number(v) || 0);
@@ -237,6 +237,7 @@ export function radarScreens(events: WalletEvent[]): RadarView[] {
       key: `radar:${k}:${e.at}`, at: e.at, sellerId: typeof e.sellerId === "string" ? e.sellerId : undefined, counterparty: String(e.counterparty ?? e.sellerId ?? "a seller"),
       score: num(e.score), verdict: verdictOf(e.verdict), reasons: Array.isArray(e.reasons) ? e.reasons.map(String) : [], narrative: String(e.narrative ?? ""),
       trail: Array.isArray(e.trail) ? e.trail.map(String) : [], share: typeof e.share === "number" ? e.share : undefined, direction: typeof e.direction === "string" ? e.direction : undefined,
+      partial: e.partial === true || undefined,
     });
   }
   return [...by.values()];

@@ -23,14 +23,14 @@ import { AgentAvatar } from "../../ui/AgentAvatar";
 import { SellerMark, hasSellerMark } from "../../ui/SellerMark";
 import { ActivityRow } from "../../components/ActivityRow";
 import { isExpired, untilText } from "../../components/PocketCard";
-import { UnfreezeButton } from "../../components/SentinelCard";
+import { UnfreezeButton, movedMoney, sentinelReason } from "../../components/SentinelCard";
 import { TxNotice } from "../../components/TxNotice";
 import { PocketFace, toneFor } from "../../components/PocketFace";
 import { PAGE_MARGIN, pageCardWidth } from "../../components/CardFlight";
 import { useFlight } from "../../ui/cardFlight";
 import { txError } from "../../components/ActionSheet";
 import { cleanText } from "../../lib/sanitize";
-import { sameAddr, type LedgerRow } from "../../lib/events";
+import { sameAddr, sentinelEvents, type LedgerRow } from "../../lib/events";
 import { visibleRows } from "../../lib/plain";
 import { contractTail, money, usd } from "../../lib/util";
 import { NEVER } from "../../lib/shared";
@@ -79,6 +79,7 @@ export default function PocketDetail() {
   const [err, setErr] = useState<string | null>(null);
   const mine = useMemo(() => ledger.filter((r) => sameAddr(r.pocket, id)), [ledger, id]);
   const rows = useMemo(() => visibleRows([...mine].reverse()), [mine]);
+  const lastFreeze = useMemo(() => sentinelEvents(events.filter((e) => sameAddr(e.pocket, id))).filter((v) => v.kind === "freeze").at(-1), [events, id]);
 
   if (!pocket) {
     return (
@@ -192,7 +193,7 @@ export default function PocketDetail() {
         {pocket.frozen && !pocket.revoked ? (
           <Card style={{ marginHorizontal: PAGE_MARGIN, marginTop: 16, gap: 10 }}>
             <T v="row" w="bold">Frozen by the Sentinel</T>
-            <T v="sub" color="ink2">It saw this pocket's agent try payments outside your rules, so it stopped all payments on-chain. No money moved. Its key can only freeze; only yours can unfreeze.</T>
+            <T v="sub" color="ink2">{`${lastFreeze ? `${sentinelReason(lastFreeze)}, so it` : "It"} stopped all payments from this pocket on-chain.${lastFreeze && !movedMoney(lastFreeze) ? " No money moved." : ""} Its key can only freeze; only yours can unfreeze.`}</T>
             <UnfreezeButton pocket={pocket.address} />
           </Card>
         ) : null}

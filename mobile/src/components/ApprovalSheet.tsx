@@ -19,7 +19,7 @@ import { agentInfo } from "../../../shared/sim/agents";
 import { T } from "../ui/Text";
 import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
-import { authOf, authExpired, sameAddr, radarBody, type Approval } from "../lib/events";
+import { authOf, authExpired, sameAddr, radarBody, sentinelEvents, type Approval } from "../lib/events";
 import { c } from "../tokens";
 import { Icon } from "../ui/Icon";
 import { ScoreBar } from "./RadarCard";
@@ -74,7 +74,7 @@ export function ApprovalSheet() {
 }
 
 function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolean) => void }) {
-  const { findPocket, sellerName, answer, signApprove, wallet, setApprovalOpen, cfg, ledger, setReceipt, pockets } = useApp();
+  const { findPocket, sellerName, answer, signApprove, wallet, setApprovalOpen, cfg, ledger, setReceipt, pockets, events } = useApp();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<"form" | "success">("form");
@@ -108,6 +108,17 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   useEffect(() => { void notifyPermission().then(setNotify); }, []);
   const outside = (a.agent ?? "chainbrain") !== "chainbrain";
   const amountUnits = (() => { try { return typeof a.data?.amount === "string" ? parseUsd(a.data.amount) : null; } catch { return null; } })();
+  // why the wallet asks (server/src/wallet/tools.ts): over the ask-me limit, a Sentinel hold (until the owner co-signs), or
+  // Radar wanting a review of the seller; the last two can ask about a payment under the limit
+  const overLimit = !pocket || amountUnits == null || pocket.askAbove === 0n || (pocket.askAbove !== NEVER && amountUnits > pocket.askAbove);
+  const held = useMemo(() => {
+    if (!pocket) return false;
+    const mine = events.filter((e) => sameAddr(e.pocket, pocket.address));
+    const last = sentinelEvents(mine).filter((v) => v.kind === "hold" || v.kind === "clear" || v.kind === "freeze").at(-1);
+    return last?.kind === "hold" && !mine.some((e) => e.type === "payment" && e.cosigned && e.at > last.at);
+  }, [events, pocket]);
+  const why = overLimit ? limitText : held ? "The Sentinel wants your OK on this payment" : risky ? "Radar wants your OK on this seller" : limitText;
+  const whyCode = !overLimit && held ? "SENTINEL_HOLD" : risky ? "COUNTERPARTY_REVIEW" : "NEEDS_OWNER_APPROVAL";
 
   // "Claude pays Nansen US$0.05 from Market news. US$0.362 stays in the pocket."
   const left = pocket && amountUnits != null && pocket.balance >= amountUnits ? pocket.balance - amountUnits : null;
@@ -168,7 +179,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
               <AgentAvatar kind={agent?.id ?? "chainbrain"} size={44} badge={c.vermillion} />
               <View style={{ flex: 1, gap: 2 }}>
                 <T v="section" accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{`${who} asks you to co-sign`}</T>
-                <T v="sub" style={{ color: c.vermillionInk }}>{limitText}</T>
+                <T v="sub" style={{ color: c.vermillionInk }}>{why}</T>
               </View>
               {auth && !expired ? <Countdown a={a} size={46} onLight /> : null}
             </View>
@@ -215,7 +226,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
                 <T v="body" color="ink2" style={{ fontStyle: "italic", paddingLeft: 6 }}>{`“${cleanText(a.text, 400)}”`}</T>
               </View>
             ) : null}
-            <Details title="Details" codes={risky ? ["COUNTERPARTY_REVIEW"] : ["NEEDS_OWNER_APPROVAL"]} rows={[
+            <Details title="Details" codes={[whyCode]} rows={[
               ...(a.data?.intent ? parseIntent(a.data.intent).map((r): [string, string] => [r.k === "Price" ? "Limits" : r.k === "Buy" ? "Task" : r.k || "Task", r.v]) : []),
               ["Pays to", auth ? shortAddr(auth.to) : "n/a"], ["Authorization", auth ? `${auth.nonce.slice(0, 10)}…` : "n/a"],
             ]}>
@@ -250,14 +261,17 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
           owned && wallet ? (
             <>
               {quick ? (
-                // Face ID is the signature: one press, then the face signs exactly this payment
+                // one press, Face ID confirms it is you, then the phone signs exactly this payment (Face ID gates the app's use of
+                // the key; the key itself is not locked behind it)
                 <Button label={`Approve US$${amount ?? ""} with ${bio}`} icon={bio === "Face ID" ? "faceId" : bio === "your passcode" ? "lock" : "fingerprint"} auto="approval.slide" loading={signing} disabled={busy || expired}
                   onPress={async () => { setSigning(true); try { await approve(); setPhase("success"); } catch { /* the error note says why */ } finally { setSigning(false); } }} />
               ) : (
                 <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label={`Slide to approve US$${amount ?? ""}`} doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
               )}
               <Button label="Decline" kind="text" onPress={decline} loading={busy} />
-              {bio ? <T v="cap" color="muted" style={{ textAlign: "center" }}>{quick ? `${Bio} signs exactly this payment with your key. Nothing else.` : `Then ${bio} signs exactly this payment with your key.`}</T> : null}
+              <T v="cap" color="muted" style={{ textAlign: "center" }}>{bio
+                ? quick ? `${Bio} confirms it's you, then your phone signs exactly this payment with your key. Nothing else.` : `Then ${bio} confirms it's you and your phone signs exactly this payment with your key.`
+                : "No Face ID on this device, so the slide alone approves. Your phone then signs exactly this payment with your key."}</T>
             </>
           ) : (
             <>

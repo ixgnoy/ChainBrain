@@ -19,6 +19,7 @@ import { haptic } from "../../haptics";
 import { cleanText } from "../../lib/sanitize";
 import { money, usd } from "../../lib/util";
 import { plainReason } from "../../lib/plain";
+import { isExpired } from "../../components/PocketCard";
 import { brainOf, MEMORY_KIND, sourceWords, type MemoryItem, type MemorySnapshot } from "../../lib/brain";
 import { aiName, preflightBy, sameAddr } from "../../lib/events";
 import { UnfreezeButton } from "../../components/SentinelCard";
@@ -152,6 +153,7 @@ export default function BrainTab() {
   const sellerList = cfg?.sellers ?? [];
   const idOf = (name: string) => sellerList.find((s) => s.name === name)?.id;
   const allowed = active.allowed.map((id) => ({ id, name: sellerList.find((x) => x.id === id)?.name ?? id }));
+  const off = active.revoked || !!active.frozen || isExpired(active);
   // spending by seller, from this pocket's payments
   const bySeller = new Map<string, bigint>();
   for (const e of mine) if (e.type === "payment" && e.sellerId) { try { bySeller.set(e.sellerId, (bySeller.get(e.sellerId) ?? 0n) + BigInt(e.amount ?? 0)); } catch { /* malformed amount */ } }
@@ -176,9 +178,10 @@ export default function BrainTab() {
       <Rise dy={8} style={{ marginTop: 14, marginHorizontal: 16 }}>
         <Card pad={18}>
           <Eyebrow>Worst case right now</Eyebrow>
-          {/* the exact balance: proof() rounds to cents, and a pocket can hold fractions of a cent */}
-          <Money v="balance" value={usd(active.balance)} label={`Worst case right now ${money(active.balance)}`} />
-          <T v="sub" color="muted">Even if your agent is fooled. Enforced by your pocket contract.</T>
+          {/* the exact balance: proof() rounds to cents, and a pocket can hold fractions of a cent. A revoked, frozen or ended
+              pocket refuses every payment (Pocket.canPay), so its worst case is nothing, as WorstCase says on the pocket page */}
+          <Money v="balance" value={usd(off ? 0n : active.balance)} label={`Worst case right now ${money(off ? 0n : active.balance)}`} />
+          <T v="sub" color="muted">{off ? `Nothing can be paid: the pocket is ${active.revoked ? "revoked" : active.frozen ? "frozen" : "ended"}. Enforced by your pocket contract.` : "Even if your agent is fooled. Enforced by your pocket contract."}</T>
           <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 14 }} accessible accessibilityLabel={`Can pay ${allowed.map((x) => x.name).join(", ")}. Anyone else is refused`}>
             {allowed.map((x) => (
               <View key={x.id} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 4, paddingRight: 10, minHeight: 34, borderRadius: 17, backgroundColor: c.fill }}>
@@ -274,7 +277,7 @@ export default function BrainTab() {
             <View style={{ flex: 1, gap: 5 }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                 <T v="sub" w="semi" numberOfLines={1}>{cleanText(r.counterparty, 24)}</T>
-                <T v="cap" w="semi" style={{ color: r.verdict === "ok" ? c.greenInk : r.verdict === "review" ? c.blueInk : c.vermillionInk }}>{r.verdict === "ok" ? "Clean" : r.verdict === "review" ? "Ask you" : "Blocked"}</T>
+                <T v="cap" w="semi" style={{ color: r.verdict === "ok" ? c.greenInk : r.verdict === "review" ? c.blueInk : c.vermillionInk }}>{r.verdict === "ok" ? (r.partial ? "Clean so far" : "Clean") : r.verdict === "review" ? "Ask you" : "Blocked"}</T>
               </View>
               <ScoreBar score={r.score} verdict={r.verdict} />
             </View>
@@ -285,12 +288,12 @@ export default function BrainTab() {
       {/* pre-flight and Sentinel, side by side as two status tiles */}
       <Rise dy={10} delay={130} style={{ flexDirection: "row", gap: 12, marginTop: 12, marginHorizontal: 16 }}>
         <Card pad={16} style={{ flex: 1, gap: 8 }}>
-          <View accessible accessibilityLabel={b.preflight.length ? `Pre-flight predicted ${pfOk} of ${b.preflight.length} payments` : "Pre-flight: no payments yet"} style={{ gap: 8 }}>
+          <View accessible accessibilityLabel={b.preflight.length ? `Pre-flight predicted ${pfOk} of ${b.preflight.length} attempts, paid or refused` : "Pre-flight: no payments yet"} style={{ gap: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <Ring share={b.preflight.length ? pfOk / b.preflight.length : 0} size={44} />
               <T v="head">{b.preflight.length ? `${pfOk}/${b.preflight.length}` : "–"}</T>
             </View>
-            <T v="cap" color="muted">payments predicted before sending</T>
+            <T v="cap" color="muted">attempts predicted before sending, paid or refused</T>
           </View>
         </Card>
         <Card pad={16} style={{ flex: 1, gap: 8 }}>
@@ -308,7 +311,7 @@ export default function BrainTab() {
         <Details compact title="How Pre-flight and the Sentinel decide" rows={[
           ["Pre-flight", b.preflight.length ? `Checked with ${preflightBy(b.preflight.at(-1)?.predicted.by)} before any money moved` : "Predicts each payment before sending it"],
           ["Sentinel rules", "3 payments outside your rules in a minute, money leaving with no payment, a refusal right after a seller page gave orders"],
-          ["Sentinel AI", aiName(b.sentinel.filter((v) => v.ai).at(-1)?.ai?.by ?? (b.sentinel.length ? undefined : "jev"))],
+          ["Sentinel AI", (() => { const by = b.sentinel.filter((v) => v.ai).at(-1)?.ai?.by; return by ? aiName(by) : "Not asked yet: it is asked only when a rule fires"; })()],
           ["Its power", "Freeze only, with its own key. It can't move money or change your rules"],
         ]} />
       </View>
@@ -332,7 +335,7 @@ export default function BrainTab() {
                 {b.memory!.answers[i] ? <T v="cap" color="muted">{cleanText(b.memory!.answers[i], 300)}</T> : null}
               </View>
             ))}
-            <T v="cap" color="faint">Answered only from your words and your wallet's record, never from seller pages. A memory can only make your agent more careful.</T>
+            <T v="cap" color="faint">Answered only from your words and your wallet's record, never from seller pages. Memory never changes your pocket's rules: only you can, by signing.</T>
           </Details>
         ) : null}
       </Panel>

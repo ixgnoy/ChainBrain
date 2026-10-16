@@ -1,4 +1,5 @@
 import { formatUsd, NEVER } from "./shared";
+import type { PocketView } from "./wallet";
 
 /** USDC from atomic units, at least 2 decimals. */
 export const usd = (n: bigint | undefined | null) => (n == null ? "0.00" : formatUsd(n));
@@ -34,3 +35,9 @@ export const stamp = (at: number) => {
   const d = new Date(at);
   return `${d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}, ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
 };
+
+/** Did a pocket read change anything the owner sees? Every field the contract exposes counts, frozen included: a Sentinel
+ *  freeze (or the owner's unfreeze) moves no money, so nothing else would change. */
+export const sameView = (a: PocketView | undefined, b: PocketView) => !!a && a.balance === b.balance && a.cap === b.cap && a.askAbove === b.askAbove && a.expiresAt === b.expiresAt
+  && a.revoked === b.revoked && !!a.frozen === !!b.frozen && a.owner === b.owner && a.agent === b.agent
+  && a.allowed.length === b.allowed.length && a.allowed.every((x, i) => x === b.allowed[i]);

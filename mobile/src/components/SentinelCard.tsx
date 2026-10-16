@@ -19,7 +19,10 @@ import { BrandSquare, TxRow } from "./ActivityRow";
 import { TxLink } from "./TxLink";
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
-const reason = (v: SentinelView) => cleanText(v.signals[0]?.text ?? "Unusual behaviour", 140);
+export const sentinelReason = (v: SentinelView) => cleanText(v.signals[0]?.text ?? "Unusual behaviour", 140);
+const reason = sentinelReason;
+/** A ghost transfer froze it: money did leave with no matching payment, so a freeze must never say "no money moved" then. */
+export const movedMoney = (v: SentinelView) => v.signals.some((s) => s.id === "GHOST_TRANSFER");
 
 /** Unfreeze: an owner transaction (Pocket.unfreeze). Only shown to the owner while the pocket is frozen. */
 export function UnfreezeButton({ pocket }: { pocket: string }) {
@@ -57,7 +60,7 @@ export function SentinelCard({ v }: { v: SentinelView }) {
     <EventCard
       tone={freeze ? "blocked" : "waiting"} alert={v.key}
       title={freeze ? "Sentinel froze this pocket" : "Sentinel wants your OK"}
-      body={freeze ? `${reason(v)}. No money moved. Only you can unfreeze it.` : `${reason(v)}. Your next payment needs your signature.`}
+      body={freeze ? `${reason(v)}. ${movedMoney(v) ? "Nothing more can leave the pocket" : "No money moved"}. Only you can unfreeze it.` : `${reason(v)}. Your next payment needs your signature.`}
       why={{
         title: "Why", rows, codes: v.signals.map((s) => s.id),
         children: <View style={{ gap: 6 }}>

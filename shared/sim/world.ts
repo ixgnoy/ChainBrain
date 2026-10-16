@@ -328,10 +328,12 @@ export function createWorld(opts: WorldOptions = {}) {
         return refuse(held, { radar: risk.narrative });
       }
       if (q.paid) return refuse("QUOTE_ALREADY_PAID");
-      // pre-flight (server: wallet/preflight.ts eth_call): predict this exact transfer on the current chain, then check it
+      // Sentinel hold, as the server does it (wallet/tools.ts): refused before pre-flight when the pocket's rules would allow the
+      // payment, so it is neither predicted nor counted in pre-flight's accuracy; a probe outside the rules still counts
       const rule0 = chain.canPay(pocket, q.payTo, q.amount);
+      if (watch(pocket).hold && !q.ownerSig && rule0 === "OK") return fail("SENTINEL_HOLD");
+      // pre-flight (server: wallet/preflight.ts eth_call): predict this exact transfer on the current chain, then check it
       const predicted = rule0 !== "OK" ? { outcome: "refused", reason: rule0, by: "sim" }
-        : watch(pocket).hold && !q.ownerSig ? { outcome: "refused", reason: "SENTINEL_HOLD", by: "sim" }
         : chain.needsOwner(pocket, q.amount) && !q.ownerSig ? { outcome: "refused", reason: "NEEDS_OWNER_APPROVAL", by: "sim" }
         : { outcome: "pays", by: "sim", balanceAfter: (chain.balanceOf(pocket) - q.amount).toString() };
       const base = { pocket, quoteId, sellerId: q.sellerId, sku: q.sku, amount: q.amount };

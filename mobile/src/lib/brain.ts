@@ -96,6 +96,8 @@ export function brainOf(events: WalletEvent[], pocket: string, sellerName: (id?:
 
 export type MemoryItem = { id: string; kind: "preference" | "open_task" | "seller_note" | "fact"; text: string; source: string; uses: number; updatedAt: number };
 export type MemorySnapshot = { pocket: string; version: number; summary: string; items: MemoryItem[]; updatedAt: number };
-export const MEMORY_KIND: Record<MemoryItem["kind"], string> = { preference: "Your preferences", open_task: "Still open", seller_note: "Sellers to avoid", fact: "Already bought" };
+// the server's model writes these kinds freely (server/src/brain/reflect.ts): a seller note need not be a warning, a fact
+// need not be a purchase, so the headings name the kind, not what the built-in network happens to write there
+export const MEMORY_KIND: Record<MemoryItem["kind"], string> = { preference: "Your preferences", open_task: "Still open", seller_note: "Notes on sellers", fact: "Facts it keeps" };
 /** "You said this" for the owner's own words, "From your wallet" for typed events. */
 export const sourceWords = (s: string) => (s.startsWith("m:") ? "You said this" : s.startsWith("e:") ? "From your wallet's record" : "From the brain");

@@ -18,7 +18,7 @@ import { agentInfo } from "../../shared/sim/agents";
 import { router } from "expo-router";
 import { notify } from "./lib/toast";
 import { haptic } from "./haptics";
-import { usd } from "./lib/util";
+import { sameView, usd } from "./lib/util";
 import { loadMeta, saveMeta, type PocketMeta } from "./lib/pocketNames";
 import * as api from "./lib/api";
 import {
@@ -106,8 +106,6 @@ export function useAppSelect<T>(pick: (s: Ctx) => T): T {
 
 const id = () => Math.random().toString(36).slice(2, 10);
 const sameIds = (a: Set<string> | null, b: Set<string> | null) => a === b || (!!a && !!b && a.size === b.size && [...a].every((x) => b.has(x)));
-const sameView = (a: PocketView | undefined, b: PocketView) => !!a && a.balance === b.balance && a.cap === b.cap && a.askAbove === b.askAbove && a.expiresAt === b.expiresAt
-  && a.revoked === b.revoked && a.owner === b.owner && a.agent === b.agent && a.allowed.length === b.allowed.length && a.allowed.every((x, i) => x === b.allowed[i]);
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 export function AppProvider({ children }: { children: React.ReactNode }) {

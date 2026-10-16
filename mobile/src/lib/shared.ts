@@ -18,7 +18,7 @@ export function formatUsd(n: bigint): string {
 
 export { transferTypedData, type Authorization } from "./typed";
 
-/** The complete reason-code map (20 codes, server/src/wallet/reasons.ts). The mobile app used to miss QUOTE_UNKNOWN and NOT_THIS_AGENT. */
+/** The complete reason-code map (24 codes, server/src/wallet/reasons.ts). The mobile app used to miss QUOTE_UNKNOWN and NOT_THIS_AGENT. */
 export const REASONS: Record<string, string> = {
   SELLER_NOT_ALLOWED: "This seller is not in the pocket's allowlist",
   OVER_CAP: "Above the pocket's per-payment cap",
