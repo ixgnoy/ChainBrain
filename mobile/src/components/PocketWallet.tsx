@@ -7,7 +7,7 @@
 // Positions are transforms only, from the scroll offset on the UI thread; rotations sit on an inner view (iOS turns zIndex
 // into a layer depth, so siblings tipped in 3D would cut through each other).
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View } from "react-native";
+import { Platform, View, useWindowDimensions } from "react-native";
 import Animated, { Extrapolation, interpolate, useAnimatedReaction, useAnimatedStyle, useSharedValue, withDelay, withSpring, type SharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { router, useIsFocused } from "expo-router";
@@ -54,7 +54,10 @@ export const PocketWallet = React.memo(function PocketWallet({ pockets, play, sc
   /** each pocket's live sign, by lower-case address */ glyphs: Record<string, Glyph | null>;
 }) {
   const activeAddress = useAppSelect((s) => s.active?.address);
-  const [w, setW] = useState(0);
+  // full width on a phone: size the stack in the first frame, or Home draws without it and jumps when it measures (web
+  // shows the app as a narrow column, so it still measures there)
+  const { width: winW } = useWindowDimensions();
+  const [w, setW] = useState(Platform.OS === "web" ? 0 : winW - PAGE_MARGIN * 2);
   const flight = useFlight();
   const focused = useIsFocused();
   const reduce = useReduceMotion();

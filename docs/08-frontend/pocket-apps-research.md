@@ -200,3 +200,31 @@ Instead, chips pop in under the box (`Understood.tsx`, `shared/sim/understand.ts
 ### Pocket page tabs: considered, not done
 
 Splitting the pocket page into "App" and "Rules & history" tabs would shorten it, but it would hide the signed rules and the worst case behind a tap. Those are the trust story. They stay on the page, in order, below the app.
+
+## Loop 5: validation of the first-glance round (17 Oct 2026)
+
+What the checks turned up, and what changed because of them.
+
+| Found | Where | Fix |
+|---|---|---|
+| A white sliver under each card in the stack: the next card cut the agent's pill | iOS Simulator | Strip height is the name row plus 5 pt of stripe, which stops above the pill |
+| Cards without a routine had an empty corner, so the strips read as unfinished | iOS Simulator | Their balance goes there instead (Wallet's strips carry a figure) |
+| The intro's Next button matched the Next up tiles too (strict-mode click failed) | e2e | `exact: true` on the intro's Next |
+| The front card's name row was under the ask dock, so a click there timed out | e2e | The test centres the card first. A real thumb scrolls. |
+| The deal-watcher chip never appeared | iOS Simulator | The limit chip had taken "drops below". The kind of app is now a chip, not a span |
+| Chips caught mid-zoom (scale from 0) looked broken in a screenshot | iOS Simulator | They rise in (opacity and 8 pt) instead |
+| A drag on the price chart swiped the page back | iOS Simulator | The pocket page swipes back from the edge only |
+| "Couldn't load entering/exiting animation" | Metro web log | Reanimated on web runs only timed enter/layout animations, so they are timed now |
+| Two success taps for one run (on Run now and on the payment) | Reading the code | Only the settled payment taps |
+| Each poll gave Home a new glyphs object, which redrew the stack's seven cards | Reading the code | The object stays the same until a sign changes |
+
+Measured on the production web bundle (headless Chromium, 402 × 874):
+- no long tasks over 50 ms during 10 s idle on Home;
+- tab switches of 105–165 ms, including Playwright's own overhead.
+
+On the dev bundle, idle Home showed about four 65–85 ms tasks in 10 s, from the event poll. The glyphs and Next up cost 0.25 ms per recompute, timed with 745 seeded events.
+
+Not verified:
+- 60 fps on a physical iPhone. The simulator lags whenever Chromium runs beside it, so frame timing there means nothing.
+- VoiceOver on the chart's adjustable action. It is wired, not heard.
+- The largest accessibility text sizes on the Next up tiles and the chips. The card print is capped at 1× (`TextScaleCap`), so the stack's strips keep their height. The tiles and chips grow, and nobody has looked at them at AX5.

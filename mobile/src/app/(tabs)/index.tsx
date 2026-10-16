@@ -213,6 +213,9 @@ function Home({ ready }: { ready: boolean }) {
         )}
       </View>
 
+      {/* below the stack waits for the pockets: drawn under the loading placeholder, it would jump when the real stack
+          (taller than the placeholder) arrives */}
+      {loading ? null : <>
       <Rise play={play} index={1}>
         <View style={{ flexDirection: "row", gap: 10, marginHorizontal: 16, marginTop: 4 }}>
           <Tile icon="arrowIn" label="Move money" a11y="Move money from your main wallet to a pocket" onPress={() => setAction({ mode: "fund" })} />
@@ -242,6 +245,7 @@ function Home({ ready }: { ready: boolean }) {
           <ListCard>{recent.map((r) => <ActivityRow key={r.key} row={r} showPocket onPress={() => setReceipt(r)} />)}</ListCard>
         )}
       </Rise>
+      </>}
     </Screen>
   );
 }
