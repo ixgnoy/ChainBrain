@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Platform, View } from "react-native";
+import { Platform, View, useWindowDimensions } from "react-native";
 import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
 import * as Clipboard from "expo-clipboard";
 import { useApp } from "../../store";
@@ -8,15 +8,18 @@ import { ENV_API, detectDev, getApi, isHttpUrl, normalizeUrl } from "../../lib/r
 import { onRelay, relayLinked } from "../../lib/relay";
 import { forgetSaved } from "../../lib/builtin";
 import { isPrivateKey } from "../../lib/keystore";
-import { c, motion } from "../../tokens";
+import { c, level3, motion } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
-import { Button, Card, Field, ListCard, ListRow, Toggle } from "../../ui/kit";
+import { Button, Card, Field, ListCard, ListRow, Press, Toggle } from "../../ui/kit";
+import { Hatch } from "../../ui/Hatch";
+import { BrandMark } from "../../ui/BrandMark";
+import { Money } from "../../ui/Money";
 import { replayIntro } from "../../ui/intro";
 import { isAddress, type Address } from "viem";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { haptic } from "../../haptics";
-import { money, shortAddr } from "../../lib/util";
+import { money, shortAddr, usd } from "../../lib/util";
 
 /** Flat section header: 13/600 muted, 24 above, 8 below. */
 const Group = ({ title }: { title: string }) => <T v="cap" w="semi" color="muted" accessibilityRole="header" style={{ paddingHorizontal: 24, marginTop: 24, marginBottom: 8 }}>{title}</T>;
@@ -83,11 +86,10 @@ export default function Settings() {
     <Screen innerRef={scroller}>
       <PageTitle title="Settings" sub={pending.length ? `${pending.length} request${pending.length > 1 ? "s" : ""} waiting for you` : undefined} />
 
+      <WalletFace address={wallet?.address} usdc={balances?.usdc} copied={copied}
+        onCopy={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }} />
       <Group title="Wallet" />
       <ListCard>
-        <ListRow a11y="Copy wallet address" icon="wallet" title="Your wallet" sub={wallet ? shortAddr(wallet.address) : "Not ready"}
-          onPress={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }}
-          right={copied ? "Copied" : balances ? money(balances.usdc) : undefined} rightTone={copied ? "positive" : "ink"} />
         {dev || !custom ? <ListRow a11y="Get test funds" onPress={getFunds} icon="plus" title="Get test funds" sub={funds.text ?? "Adds test money to your wallet"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
         <ListRow a11y="Add an existing pocket" onPress={() => setAdding(!adding)} icon="layers" title="Add an existing pocket" sub="Track a pocket by its address"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} icon="key" title="Import a key" sub="Use a test key you already have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
@@ -100,7 +102,7 @@ export default function Settings() {
       </ListCard>
       <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 8 }}>Test network only. This wallet holds test money: do not put real money on it.</T>
       {adding ? (
-        <Animated.View entering={FadeInDown.springify(motion.spring.smooth.duration).dampingRatio(1).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })} exiting={FadeOut.duration(motion.exit)}>
+        <Animated.View entering={FadeInDown.duration(motion.base)} exiting={FadeOut.duration(motion.exit)}>
           <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
             <Field value={addr} onChangeText={setAddr} placeholder="Pocket address (0x…)" autoCapitalize="none" autoCorrect={false} accessibilityLabel="Pocket address" />
             <View style={{ flexDirection: "row", gap: 8 }}>
@@ -111,7 +113,7 @@ export default function Settings() {
         </Animated.View>
       ) : null}
       {importing ? (
-        <Animated.View entering={FadeInDown.springify(motion.spring.smooth.duration).dampingRatio(1).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })} exiting={FadeOut.duration(motion.exit)}>
+        <Animated.View entering={FadeInDown.duration(motion.base)} exiting={FadeOut.duration(motion.exit)}>
         <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
           <T v="sub" color="ink2">Pockets owned by your current key can no longer be managed from this phone after you switch. Test keys only.</T>
           <Field value={pk} onChangeText={setPk} placeholder="Private key (0x…)" autoCapitalize="none" autoCorrect={false} secureTextEntry accessibilityLabel="Private key" />
@@ -141,7 +143,7 @@ export default function Settings() {
         {!custom && linked ? <ListRow icon="activity" title="Laptop console" sub="Linked" /> : null}
       </ListCard>
       {serverOpen ? (
-        <Animated.View entering={FadeInDown.springify(motion.spring.smooth.duration).dampingRatio(1).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] })} exiting={FadeOut.duration(motion.exit)}>
+        <Animated.View entering={FadeInDown.duration(motion.base)} exiting={FadeOut.duration(motion.exit)}>
           <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
             <Field label="Server address" value={draft} onChangeText={setDraft} onSubmitEditing={() => void (custom ? setApiUrl(draft) : connect())} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={ENV_API} accessibilityLabel="API URL" />
             <T v="cap" color="muted">Your laptop's address on the same Wi-Fi, for example http://192.168.1.10:8787. Empty uses {ENV_API}.</T>
@@ -155,5 +157,38 @@ export default function Settings() {
         </Animated.View>
       ) : null}
     </Screen>
+  );
+}
+
+/** The main wallet as a card of its own: the same proportions as the pockets, but its own face (white, a heavy ink hatch
+ *  along its edge, ChainBrain's mark), because it is the one no agent ever holds. Tap to copy the address. */
+function WalletFace({ address, usdc, copied, onCopy }: { address?: string; usdc?: bigint; copied: boolean; onCopy(): void }) {
+  const { width } = useWindowDimensions();
+  const w = Math.min(width, 480) - 32;
+  const h = Math.round(w / 1.586);
+  return (
+    <Press kind="row" haptics="none" onPress={onCopy} accessibilityRole="button"
+      accessibilityLabel={`Main wallet${usdc != null ? `, ${money(usdc)}` : ""}. Only your key can move this money; no agent holds it. ${copied ? "Address copied" : "Copies the address"}`}
+      style={{ marginHorizontal: 16, marginTop: 12, marginBottom: 4 }}>
+      <View style={{ width: w, height: h, borderRadius: 18, backgroundColor: c.card, overflow: "hidden", borderCurve: "continuous", ...level3, shadowOpacity: 0.1 } as object}>
+        <View style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: w * 0.32, overflow: "hidden" }}><Hatch color={c.ink} pitch={7} stroke={2} opacity={0.9} /></View>
+        <View style={{ flex: 1, padding: 20, justifyContent: "space-between", width: w * 0.68 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <BrandMark size={28} />
+            <T v="head">Main wallet</T>
+          </View>
+          <View>
+            <T v="cap" w="semi" color="muted">Only your key moves it</T>
+            {usdc != null ? <Money v="amount" value={usd(usdc)} /> : <T v="row" color="muted">Loading…</T>}
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <T v="mono" style={{ fontSize: 17, lineHeight: 22, textTransform: "none" }}>{address ? `0x…${address.slice(-4).toLowerCase()}` : "—"}</T>
+            <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, backgroundColor: copied ? c.greenSoft : c.fill }}>
+              <T v="tab" style={{ color: copied ? c.greenInk : c.ink2, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 9.5, lineHeight: 12 }}>{copied ? "Copied" : "Copy"}</T>
+            </View>
+          </View>
+        </View>
+      </View>
+    </Press>
   );
 }

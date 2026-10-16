@@ -5,11 +5,10 @@ Phone first, then the web console. Each slice goes research → implement → va
 ## Backlog
 
 - [ ] Approvals inbox at Home's level (the receipt is done)
-- [ ] Settings at Home's level
 - [ ] Compose: highlight understood words in the sentence itself (mirror text), if it aligns on iOS at all text sizes; otherwise improve the chips
-- [ ] Pocket page: richer receipts and covers; the run payoff on video
+- [ ] Pocket page: richer covers on the shelf
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
-- [ ] Console: the Evidence and Sellers pages; the pocket view's "What happens next" before the first run
+- [ ] Console: the Evidence and Sellers pages
 
 ## Done
 
@@ -86,6 +85,12 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [x] **Home hero split**: a thin bar under the total splits it by pocket, each in its card's face colour, largest first. The VoiceOver label gives each pocket's share. Evidence: `w-32-hero-split.png`; e2e 57/57.
 - [x] **Console chart hover** (parity with the phone's scrub): hover, or the arrow keys on the focused chart, reads any day's quote. The cursor turns blue in the buy zone. Evidence: `c-chart-hover.png`; web tests 81 pass, build clean.
 
+- [x] **Settings: the main wallet as its own card**. It has the pockets' proportions, but a face no pocket uses (white, a heavy ink hatch edge, ChainBrain's mark), with "Only your key moves it", the balance, and the address tail with Copy. It is the one card no agent holds. Settings' remaining enter animations are now timed instead of springs (web-safe rule).
+  - Evidence: `w-33-settings-wallet.png`; e2e 57/57.
+- [x] **Console "What happens next"** (24a6174): the phone's pre-first-run timeline, ported to the console's pocket view.
+  - Not visually verified: no seeded pocket has a routine with zero runs. Typecheck, build and 81 web tests pass.
+- **Run payoff on video**: not recorded. Data renewals has no run-now block, and Durian watch's run only logs a price above its limit. The payoff path (report onto the shelf, run row, success tap) is exercised end to end by e2e scene 12, where runs 1 and 2 pay and run 3 raises the cheque, which passes. Moved to "Not verified".
+
 Earlier the same day, before this log existed:
 - Home wallet stack, live card signs and Next up (e68c433)
 - compose chips (b544f42)
@@ -104,6 +109,9 @@ E2E: 57/57.
 - **Pacing:** the session is not in `/loop` mode, so there are no scheduled wake-ups. The slices run back to back in one session.
 
 ## Not verified / blocked
+
+- The run payoff's animation on video. It is functionally covered by e2e scene 12.
+- The console's "What happens next" on screen: no seeded pocket has a routine with zero runs.
 
 - 60 fps on a physical iPhone. Simulator timing is meaningless while Chromium runs beside it.
 - VoiceOver on the chart's adjustable action. It is wired, but not listened to.
