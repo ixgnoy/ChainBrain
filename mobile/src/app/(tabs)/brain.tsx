@@ -28,6 +28,8 @@ import * as api from "../../lib/api";
 import { parseIntent } from "../../components/IntentCard";
 import { injectionsOf } from "../../components/InjectionCard";
 import { ScoreBar } from "../../components/RadarCard";
+import { PocketFace, toneFor } from "../../components/PocketFace";
+import { stripFor } from "../../components/PocketWallet";
 import { cadenceText } from "../../../../shared/sim/pocketApp";
 import { budgetOf, runsOf } from "../../../../shared/sim/pocketAppData";
 
@@ -125,6 +127,7 @@ export default function BrainTab() {
   const injections = useMemo(() => injectionsOf(mine).length, [mine]);
   const b = useMemo(() => (active ? brainOf(events, active.address, sellerName, injections) : null), [events, active, sellerName, injections]);
   const [mem, setMem] = useState<MemorySnapshot | null>(null);
+  const [stripW, setStripW] = useState(0);
   const [memState, setMemState] = useState<"loading" | "ok" | "none">("loading");
 
   const memAt = b?.memory?.at ?? 0;
@@ -175,10 +178,13 @@ export default function BrainTab() {
   return (
     <Screen>
       <PageTitle title="Brain" sub="What your agent understood, checked and remembers" />
+      {/* the pocket this brain is about, as its own card strip (the same as Home's stack): tap to choose another */}
       <Press kind="row" haptics="select" disabled={pockets.length < 2} onPress={() => setPickerOpen(true)} accessibilityRole="button" accessibilityLabel={`Pocket: ${active.name}. Change pocket`}
-        style={{ marginTop: 8, marginHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", minHeight: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: c.card }}>
-        <T v="cap" w="semi" color="ink2">{cleanText(active.name, 28)}</T>
-        {pockets.length > 1 ? <Icon name="chevronDown" size={14} color={c.muted} /> : null}
+        style={{ marginTop: 8, marginHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View style={{ flex: 1, height: stripFor(stripW), borderRadius: 18, overflow: "hidden" }} onLayout={(e) => setStripW(e.nativeEvent.layout.width)}>
+          {stripW ? <PocketFace pocket={active} width={stripW} tone={toneFor(pockets, active.address)} still peek /> : null}
+        </View>
+        {pockets.length > 1 ? <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}><Icon name="chevronDown" size={18} color={c.ink} stroke={2.2} /></View> : null}
       </Press>
 
       {/* the rules: the worst case big, who it can pay as logos, the limits as tiles */}

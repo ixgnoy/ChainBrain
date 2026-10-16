@@ -5,7 +5,7 @@ Phone first, then the web console. Each slice goes research → implement → va
 ## Backlog
 
 - [ ] Approvals inbox at Home's level (the receipt is done)
-- [ ] Brain: a visual lead for the active pocket (what it understood, as the same chips as New pocket app; the funnel as one picture) in place of the dense "Worst case right now" card
+- [ ] Brain: the funnel (quotes → paid → refused) as one picture
 - [ ] Approvals: decisions as a mini timeline with agent marks; "Nothing waiting" with the next scheduled run that could ask
 - [ ] Compose: highlight understood words in the sentence itself (mirror text), if it aligns on iOS at all text sizes; otherwise improve the chips
 - [ ] Pocket page: richer covers on the shelf
@@ -111,6 +111,9 @@ Each screen is scored 1–5 on first-glance wow / hierarchy / visuals over text 
 
 - [x] **New pocket app: the examples as mini app cards**. The four examples are a 2×2 of small cards, each in its job's face (black research desk, blue deal watcher, white-hatch subscriptions, vermillion haggler) with the agent that would hold it. Before typing, the owner sees the four kinds of app.
   - Evidence: `w-34-compose-examples.png`; e2e 57/57.
+
+- [x] **Brain anchored on its pocket**: the small name chip became the active pocket's own card strip (the same as Home's stack), with a round chevron. One button, so the e2e "Change pocket" click stays unambiguous.
+  - Evidence: `w-35-brain-strip.png`; e2e 57/57.
 
 Earlier the same day, before this log existed:
 - Home wallet stack, live card signs and Next up (e68c433)
