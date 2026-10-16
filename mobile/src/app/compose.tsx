@@ -121,6 +121,7 @@ export default function Compose() {
       await addPocket(m.pocket, { name: title, style: "custom", app: { ...spec, title } }, { activate: !outside });
       const f = await wallet.fund(m.pocket, budget);
       recordTx({ kind: "fund", pocket: m.pocket, hash: f.hash, amount: budget.toString() });
+      api.setApp(m.pocket, { ...spec, title });
       if (spec.routine) api.setRoutine(m.pocket, spec.routine);
       await refreshPockets();
       if (!outside) setActive(m.pocket);

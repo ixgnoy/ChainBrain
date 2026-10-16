@@ -119,4 +119,6 @@ export async function runRoutineNow(pocket: Address) {
   if (!isBuiltin()) return { ok: false as const, reason: "NOT_ON_THIS_NETWORK" };
   return builtin().runRoutineNow(pocket);
 }
+/** Publishes the pocket's app on the built-in network, so the console's pocket view shows it too. */
+export const setApp = (pocket: Address, spec: import("../../../shared/sim/pocketApp").PocketAppSpec) => { if (isBuiltin()) builtin().setApp(pocket, spec); };
 export const pauseRoutine = (pocket: string, paused: boolean) => (isBuiltin() ? builtin().pauseRoutine(pocket, paused) : false);

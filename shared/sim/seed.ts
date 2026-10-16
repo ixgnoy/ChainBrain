@@ -57,6 +57,8 @@ export function seedApp(name: string): PocketAppSpec | undefined {
   return pickApp(s, { ...c.draft, name }, registry()).spec;
 }
 const withApps = (s: Seeded): Seeded => ({ ...s, pockets: s.pockets.map((p) => ({ ...p, app: p.app ?? seedApp(p.name) })) });
+/** Publishes a seeded pocket's app at the moment it was made (seeding clock), so screens find it in the stream. */
+const publishApp = (w: World, pocket: Hex, name: string) => { const a = seedApp(name); if (a) w.setApp(pocket, a); };
 
 /** Replays routine runs whose time came before `beforeAgo` (oldest first), on the seeding clock. */
 async function runDue(w: World, now: number, beforeAgo: number) {
@@ -89,6 +91,7 @@ async function withPremium(w: World, owner: Hex, prior: Seeded): Promise<Seeded>
     ownerTxs.push({ pocket, kind: "create", hash: tx, at: t });
     const f = w.chain.transfer(owner, pocket, parseUsd("3"), t + 30_000);
     ownerTxs.push({ pocket, kind: "fund", hash: f, amount: "3000000", at: t + 30_000 });
+    publishApp(w, pocket, "Premium reports");
     return pocket;
   });
   return { pockets: [...prior.pockets, { address: premium, name: "Premium reports", style: "custom", agent: "chainbrain" }], ownerTxs };
@@ -120,7 +123,7 @@ export async function seedOwnerHistory(w: World, owner: Hex, o: { startUsdc?: st
 
   return asOwner(w, owner, async () => {
     // Research data: ChainBrain's pocket. Cap US$0.05, ask above US$0.02, Exa, CoinGecko and Nansen, until 23:59 tonight.
-    const research = await at(14 * DAY - 2 * HOUR, async () => create("Research data", SIM_AGENT, "0.05", "0.02", ["exa", "coingecko", "nansen"], tonight(now), "1"));
+    const research = await at(14 * DAY - 2 * HOUR, async () => { const p = create("Research data", SIM_AGENT, "0.05", "0.02", ["exa", "coingecko", "nansen"], tonight(now), "1"); publishApp(w, p, "Research data"); return p; });
     await chat(14 * DAY - 2 * HOUR - 4 * MIN, research, "Research a durian import deal for me: export news, the USDC price and a check on the exporter's wallet. Under US$0.10, by tonight.");
     await chat(14 * DAY - 2 * HOUR - 6 * MIN, research, "In total. Check the exporter's wallet with Nansen too.");
 
@@ -128,19 +131,21 @@ export async function seedOwnerHistory(w: World, owner: Hex, o: { startUsdc?: st
     // ago, so two Mondays have passed whatever day it is)
     const renewals = await at(13 * DAY + 20 * HOUR, async () => {
       const p = create("Data renewals", SIM_AGENT, "0.30", null, ["exa", "coingecko", "nansen"], inDays(now, 365), "0.60");
+      publishApp(w, p, "Data renewals");
       w.setRoutine(p, seedApp("Data renewals")!.routine!);
       return p;
     });
 
     // Claude connects and gets its own pocket: Market news
     await at(12 * DAY + 5 * HOUR, async () => w.connect("claude"));
-    const news = await at(12 * DAY + 5 * HOUR - 3 * MIN, async () => create("Market news", CLAUDE_AGENT, "0.05", "0.02", ["exa", "coingecko", "nansen", "tradewire"], inDays(now, 21), "0.5"));
+    const news = await at(12 * DAY + 5 * HOUR - 3 * MIN, async () => { const p = create("Market news", CLAUDE_AGENT, "0.05", "0.02", ["exa", "coingecko", "nansen", "tradewire"], inDays(now, 21), "0.5"); publishApp(w, p, "Market news"); return p; });
     await act(12 * DAY + 4 * HOUR, "claude", news, errand({ what: "Durian export headlines for today's market brief", maxPrice: "0.01", maxTotal: "0.01", buys: [["exa", "durian-news"]], search: true }));
 
     // Durian watch: Claude's deal watcher. Nansen only, cap US$0.04 (its price limit, so the contract refuses anything above
     // it), never asks, US$0.40 in it, ongoing; it checks the price every morning at 08:00 and buys at US$0.04 or less
     const watch = await at(12 * DAY + 2 * HOUR, async () => {
       const p = create("Durian watch", CLAUDE_AGENT, "0.04", null, ["nansen"], inDays(now, 365), "0.40");
+      publishApp(w, p, "Durian watch");
       w.setRoutine(p, seedApp("Durian watch")!.routine!);
       return p;
     });
@@ -150,7 +155,7 @@ export async function seedOwnerHistory(w: World, owner: Hex, o: { startUsdc?: st
 
     // ChatGPT connects: Trade quotes (small, never asks)
     await at(9 * DAY + 7 * HOUR, async () => w.connect("chatgpt"));
-    const quotes = await at(9 * DAY + 7 * HOUR - 4 * MIN, async () => create("Trade quotes", CHATGPT_AGENT, "0.01", null, ["coingecko", "exa"], inDays(now, 14), "0.2"));
+    const quotes = await at(9 * DAY + 7 * HOUR - 4 * MIN, async () => { const p = create("Trade quotes", CHATGPT_AGENT, "0.01", null, ["coingecko", "exa"], inDays(now, 14), "0.2"); publishApp(w, p, "Trade quotes"); return p; });
     await act(9 * DAY + 6 * HOUR, "chatgpt", quotes, errand({ what: "USDC to HKD rate for a shipping quote", maxPrice: "0.01", maxTotal: "0.01", buys: [["coingecko", "usdc-price"]], search: true }));
 
     await chat(8 * DAY + 2 * HOUR, research, "Get the USDC price from CoinGecko. Max US$0.01, by tonight.");
@@ -207,6 +212,7 @@ export async function seedOwnerToday(w: World, owner: Hex, prior: Seeded): Promi
       ownerTxs.push({ pocket, kind: "create", hash: tx, at: t });
       const f = w.chain.transfer(owner, pocket, parseUsd("0.005"), t + 35_000);
       ownerTxs.push({ pocket, kind: "fund", hash: f, amount: "5000", at: t + 35_000 });
+      publishApp(w, pocket, "One purchase");
       return pocket;
     });
     return { pockets: [prior.pockets[0], { address: tight, name: "One purchase", style: "tight", agent: "chainbrain" }, ...prior.pockets.slice(1)], ownerTxs };

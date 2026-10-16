@@ -6,7 +6,7 @@ import { sellers } from "./catalog";
 import { seedOwner } from "./seed";
 import { parseSentence, stricterDraft } from "./speak";
 import { available, nextRun, periodWindow, pickApp, stricterRoutine, validateSpec, cadenceText, cleanLabel, catalogPrompt, type RoutineSpec } from "./pocketApp";
-import { budgetOf, priceChanges, priceSeries, purchasesOf, runsOf, monthBySeller, renewalsOf, sourcesOf, haggleOf } from "./pocketAppData";
+import { appFromEvents, budgetOf, priceChanges, priceSeries, purchasesOf, routineFromEvents, runsOf, monthBySeller, renewalsOf, sourcesOf, haggleOf } from "./pocketAppData";
 import { BAD_SPECS, GOOD_SPECS } from "./pocketApp.fixtures";
 import { parseUsd } from "./util";
 import type { Hex } from "./types";
@@ -185,4 +185,9 @@ test("seeded pocket apps: the deal watcher's chart, the renewals, every number f
   assert.ok(priceChanges(ev, ren).length >= 1, "Nansen's price moved between the two Mondays");
   assert.equal(sourcesOf(ev, by("Research data").address).length, 3);
   assert.equal(haggleOf(ev, by("Premium reports").address), null, "nothing haggled yet: scene 11 does that");
+  // every app and routine is in the stream, so any screen (the console, a linked console) rebuilds them from events alone
+  for (const p of s.pockets) assert.deepEqual(appFromEvents(ev, p.address), p.app, p.name);
+  const fromEv = routineFromEvents(ev, ren)!;
+  assert.deepEqual([fromEv.runs, fromEv.nextAt, fromEv.status], [rt.runs, rt.nextAt, rt.status]);
+  assert.equal(routineFromEvents(ev, by("Research data").address), null);
 });

@@ -3,7 +3,7 @@
 // (devstack/src/model.ts), on top of the in-memory chain. The apps talk to it through the same calls they use for
 // the real server, so every screen behaves the same in both.
 import { CATALOG, quotedPrice, sellerById, sellerByPayTo, sellerName, sellers, ATTACKER, DRAINER } from "./catalog";
-import { available, nextRun, pickApp, validateRoutine, type Routine, type RoutineSpec } from "./pocketApp";
+import { available, nextRun, pickApp, validateRoutine, validateSpec, type PocketAppSpec, type Routine, type RoutineSpec } from "./pocketApp";
 import { createMemory, consolidate } from "./memory";
 import { parseSentence, proof } from "./speak";
 import { rules as sentinelRules, ruleSeverity, gate, scriptedAi, stateText, PROBE_REASONS, RANK, type Severity, type Signal, type AiAnswer } from "./sentinel";
@@ -68,11 +68,14 @@ export function createWorld(opts: WorldOptions = {}) {
     const agent = e.agent ?? agentIdOf(e.pocket); // every pocket event names the agent that holds the pocket
     const ev: SimEvent = wire({ ...e, ...(agent ? { agent } : {}), at, id: `s${++seq}` });
     recent.push(ev);
-    if (recent.length > 2000) recent.shift();
+    // the oldest events go first, except what a pocket app is made of (its spec and its routine): a screen reading the
+    // stream must always find them, however long ago the pocket was made
+    if (recent.length > 2000) recent.splice(Math.max(0, recent.findIndex((x) => !KEEP(x))), 1);
     for (const f of subs) f(ev);
     if (ev.pocket && SENTINEL_TRIGGERS.has(ev.type)) sentinelCheck(ev.pocket); // synchronous: a freeze lands before the agent's next step
     return ev;
   }
+  const KEEP = (e: SimEvent) => e.type === "app" || (e.type === "routine" && e.kind === "set");
   const trace = (pocket: string, phase: string, extra: object = {}, at?: number) => publish({ type: "trace", pocket, phase, ...extra, at });
 
   // ---- approvals (server/src/wallet/approvals.ts)
@@ -695,6 +698,15 @@ export function createWorld(opts: WorldOptions = {}) {
       const c = parseSentence(sentence, sellers());
       const { spec, agent } = pickApp(sentence, c.draft, sellers());
       return wire({ ...c, proof: proof(c.draft, sellers()), spec, agent, specBy: "picker" as const });
+    },
+    /** A pocket's app spec, published once as an event so every screen (the phone, the console, a linked console) reads it
+     *  from the stream. Validated again here; an invalid one is refused, never stored. */
+    setApp(pocket: Hex, spec: PocketAppSpec, at?: number) {
+      if (!chain.isPocket(pocket)) throw new Error("not a pocket");
+      const v = validateSpec(spec, sellers());
+      if (!v.ok) throw new Error(`invalid pocket app: ${v.errors.join("; ")}`);
+      publish({ type: "app", pocket, spec: v.value, at });
+      return v.value;
     },
     // ---- routines
     /** Store a pocket's routine (validated again here: typed fields only). Starts the schedule from `at`. */

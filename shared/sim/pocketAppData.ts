@@ -2,7 +2,7 @@
 // read). A spec never carries a number: every figure on a pocket app comes from here, so the phone and the console agree and
 // nothing is typed in. Amounts arrive as decimal strings (wire format) and leave as bigints in USDC units (6 decimals).
 // No imports beyond the shared sim files: Metro, Vite and Node tests load it.
-import { available, nextRuns, periodWindow, type Period, type Routine, type RoutineItem } from "./pocketApp";
+import { available, nextRuns, periodWindow, type PocketAppSpec, type Period, type Routine, type RoutineItem } from "./pocketApp";
 
 type Ev = { type: string; pocket?: string; at: number; [k: string]: any };
 const same = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
@@ -154,4 +154,23 @@ export function savingsOf(events: Ev[], pocket: string) {
   const saved = ps.reduce((n, p) => n + (p.list! - p.amount), 0n);
   const list = ps.reduce((n, p) => n + p.list!, 0n);
   return { saved, list, paid: list - saved, count: ps.length };
+}
+
+/** The pocket's app spec, as the network published it (world.setApp). */
+export function appFromEvents(events: Ev[], pocket: string): PocketAppSpec | null {
+  return (mine(events, pocket).filter((e) => e.type === "app").at(-1)?.spec as PocketAppSpec | undefined) ?? null;
+}
+/** The pocket's routine as its events tell it: set, then each run, pause, resume or skip moves it on. */
+export function routineFromEvents(events: Ev[], pocket: string): Routine | null {
+  const evs = mine(events, pocket).filter((e) => e.type === "routine");
+  const i = evs.map((e) => e.kind).lastIndexOf("set");
+  if (i < 0) return null;
+  const r: Routine = { ...(evs[i].routine as Routine) };
+  for (const e of evs.slice(i + 1)) {
+    if (e.kind === "run") { r.runs = e.run; r.lastRunAt = e.at; r.nextAt = e.nextAt; }
+    else if (e.kind === "skipped") r.nextAt = e.nextAt;
+    else if (e.kind === "paused") r.status = "paused";
+    else if (e.kind === "resumed") r.status = "active";
+  }
+  return r;
 }

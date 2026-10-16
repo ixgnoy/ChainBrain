@@ -91,6 +91,7 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
   async function routinePocket(text: string) {
     const c = world.composeApp(text) as { draft: { cap: string; askAbove: string; sellers: string[]; budget: string }; spec: { routine: RoutineSpec | null } };
     const pocket = await newPocket(presenter, { cap: c.draft.cap, ask: c.draft.askAbove === "never" ? "never" : c.draft.askAbove, sellers: c.draft.sellers, fund: c.draft.budget, expiresAt: BigInt(Math.floor(world.now() / 1000) + 365 * 86_400) });
+    world.setApp(pocket, c.spec as never);
     if (c.spec.routine) world.setRoutine(pocket, c.spec.routine);
     return pocket;
   }
