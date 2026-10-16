@@ -7,7 +7,6 @@ import { Tabs, TabList, TabSlot, TabTrigger } from "expo-router/ui";
 import { useAppSelect } from "../../store";
 import { c } from "../../tokens";
 import { GlassTabBar, GlassTabButton, type GlassTabItem } from "../../ui/glass/GlassTabBar";
-import { TabBarMinimizeProvider } from "../../ui/glass/minimize";
 import { renderTabScreen } from "../../ui/glass/TabTransition";
 
 const ITEMS: (GlassTabItem & { href: string })[] = [
@@ -47,7 +46,7 @@ export default function TabsLayout() {
   const focused = useIsFocused();
   const navigation = useNavigation();
   return (
-    <TabBarMinimizeProvider>
+    // the minimize state (TabBarMinimizeProvider) lives in the root layout: the ask dock, drawn above the stack, reads it too
       <View style={{ flex: 1, backgroundColor: c.canvas }}>
         <Tabs>
           <TabSlot style={{ height: "100%" }} renderFn={(d, o) => renderTabScreen(d, o, warm, !focused)} />
@@ -66,6 +65,5 @@ export default function TabsLayout() {
           </TabList>
         </Tabs>
       </View>
-    </TabBarMinimizeProvider>
   );
 }

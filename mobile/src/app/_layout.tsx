@@ -11,6 +11,7 @@ import { useFonts } from "expo-font";
 import { TiltProvider } from "../ui/tilt";
 import { INTRO_SEEN_KEY, finishIntro, onReplayIntro } from "../ui/intro";
 import { getItem, setItem } from "../storage";
+import { TabBarMinimizeProvider } from "../ui/glass/minimize";
 import { AskDock } from "../components/AskDock";
 import { c } from "../tokens";
 import { AppProvider, PauseApp, useApp } from "../store";
@@ -56,7 +57,7 @@ function Shell() {
           <T v="body" color="ink2" style={{ textAlign: "center" }}>This device could not create a secure key. Please restart the app.</T>
         </View>
       ) : (
-        <>
+        <TabBarMinimizeProvider>
           {/* iOS: native push (UINavigationController slide, parallax, full-width swipe back) and the native card-stack modal for the wizard.
               Android: slide from right. Web: slide for the pocket page, fade for the wizard. */}
           <Stack screenLayout={({ children }) => <PauseCovered>{children}</PauseCovered>} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.canvas }, animation: Platform.OS === "ios" ? "default" : "slide_from_right" }}>
@@ -85,7 +86,7 @@ function Shell() {
           <ExplorerSheet />
           <ToastHost />
           {intro ? <Intro onDone={() => { setIntro(false); void setItem(INTRO_SEEN_KEY, "1").catch(() => {}); }} /> : null}
-        </>
+        </TabBarMinimizeProvider>
       )}
     </View>
   );

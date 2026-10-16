@@ -25,7 +25,7 @@ import { PocketFace, cardHeight, toneFor, type Tone } from "./PocketFace";
 import { PAGE_MARGIN, pageCardWidth } from "./CardFlight";
 
 /** How much of each card shows above the next: its name row and a sliver of its stripe. */
-export const stripFor = (cw: number) => { const k = Math.min(1, cw / 340); return Math.round(16 * k + 4 + 26 * k + 8 * k + 5); }; // 5 pt of stripe: above the agent's pill
+export const stripFor = (cw: number) => { const k = Math.min(1, cw / 340); return Math.round(16 * k + 4 + 26 * k + 8 * k + 3); }; // 3 pt of stripe: a dark rule between cards, above the agent's pill
 /** Pull distance at which the strips are fully fanned (and the tick plays). */
 const FAN = 90;
 /** Room under the front card for its shadow. */

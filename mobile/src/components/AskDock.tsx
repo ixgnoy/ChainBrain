@@ -6,7 +6,9 @@
 // the request opens as the cheque in the approval sheet. ChainBrain's own asks open the sheet directly.
 import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { View } from "react-native";
-import Animated, { FadeOutDown, LinearTransition, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, FadeOutDown, LinearTransition, useAnimatedReaction, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
+import { useMinimizeState } from "../ui/glass/minimize";
 import { useSegments } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
@@ -68,6 +70,11 @@ export function AskDock() {
     openApproval(pick.id);
   });
   useEffect(() => () => setShown(false), []);
+  // on a tab, scrolling down (the glass tab bar folds its labels) folds the pill further to the agent's mark and its ring,
+  // so it covers less of what you scroll to; scrolling up brings the words back
+  const minimize = useMinimizeState();
+  const [mini, setMini] = useState(false);
+  useAnimatedReaction(() => minimize.target.value, (now, was) => { if (now !== was) scheduleOnRN(setMini, now === 1); });
   // the full bar for a new request, then the compact pill
   const [, rerender] = useState(0);
   useEffect(() => {
@@ -88,23 +95,26 @@ export function AskDock() {
   return (
     <Animated.View key={first.id} exiting={FadeOutDown.duration(motion.exit)} pointerEvents="box-none" style={{ position: "absolute", left: 16, right: 16, bottom, alignItems: compact ? "flex-end" : "center" }}>
       {compact
-        ? <DockPill a={first} who={who} amount={amount} more={asks.length - 1} agentId={agent?.id ?? "chainbrain"} title={title} sub={sub} onOpen={open} />
+        ? <DockPill a={first} who={who} amount={amount} more={asks.length - 1} agentId={agent?.id ?? "chainbrain"} title={title} sub={sub} onOpen={open} mini={mini && where === "tabs"} />
         : <DockBar id={first.id} a={first} title={title} sub={sub} more={asks.length - 1} agentId={agent?.id ?? "chainbrain"} onOpen={open} />}
     </Animated.View>
   );
 }
 
 /** The folded dock: the agent's mark, the amount (or "Task") and the ring, right-aligned; same tap. */
-function DockPill({ a, who, amount, more, agentId, title, sub, onOpen }: { a: Approval; who: string; amount: string | null; more: number; agentId: string; title: string; sub: string; onOpen: () => void }) {
+function DockPill({ a, who, amount, more, agentId, title, sub, onOpen, mini }: { a: Approval; who: string; amount: string | null; more: number; agentId: string; title: string; sub: string; onOpen: () => void; /** scrolled: the mark and the ring only */ mini?: boolean }) {
+  const reduce = useReduceMotion();
   return (
-    <Animated.View layout={LinearTransition.springify().duration(motion.spring.smooth.duration)}>
+    <Animated.View layout={reduce ? undefined : LinearTransition.duration(motion.base)}>
       <Press kind="round" haptics="none" onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${title}. ${sub}. Opens the request`}
         style={{ height: 52, borderRadius: 26, backgroundColor: c.ink, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 6, paddingRight: 8, shadowColor: c.ink, shadowOpacity: 0.28, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 10 }}>
         <AgentAvatar kind={agentId} size={40} badge={c.vermillion} />
-        <View>
-          <T v="head" numberOfLines={1} style={{ color: c.white, fontSize: 15, lineHeight: 19 }}>{amount ?? "Task"}</T>
-          <T v="cap" numberOfLines={1} style={{ color: "rgba(255,255,255,0.64)", fontSize: 11, lineHeight: 14 }}>{more > 0 ? `${who} · +${more} more` : who}</T>
-        </View>
+        {mini ? null : (
+          <Animated.View entering={reduce ? undefined : FadeIn.duration(motion.base)} exiting={reduce ? undefined : FadeOut.duration(motion.exit)}>
+            <T v="head" numberOfLines={1} style={{ color: c.white, fontSize: 15, lineHeight: 19 }}>{amount ?? "Task"}</T>
+            <T v="cap" numberOfLines={1} style={{ color: "rgba(255,255,255,0.64)", fontSize: 11, lineHeight: 14 }}>{more > 0 ? `${who} · +${more} more` : who}</T>
+          </Animated.View>
+        )}
         {a.kind === "payment" ? <Countdown a={a} size={34} /> : <Icon name="chevronUp" size={18} color={c.white} stroke={2} />}
       </Press>
     </Animated.View>

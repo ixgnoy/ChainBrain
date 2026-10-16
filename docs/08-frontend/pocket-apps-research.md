@@ -228,3 +228,11 @@ Not verified:
 - 60 fps on a physical iPhone. The simulator lags whenever Chromium runs beside it, so frame timing there means nothing.
 - VoiceOver on the chart's adjustable action. It is wired, not heard.
 - The largest accessibility text sizes on the Next up tiles and the chips. The card print is capped at 1× (`TextScaleCap`), so the stack's strips keep their height. The tiles and chips grow, and nobody has looked at them at AX5.
+
+## Loop 6: the ask dock on scroll (17 Oct 2026)
+
+- iOS 26 tab bars minimise on scroll down. `react-native-screens` exposes it as `TabBarMinimizeBehavior` (`onScrollDown`), but only in a native build, not in Expo Go. https://app.unpkg.com/react-native-screens@4.26.2/files/src/components/tabs/host/TabsHost.ios.types.ts
+- So we reuse our own glass tab bar's minimise state (scroll direction, from expo-glass-tabs, MIT). The dock reads the same state: when the bar folds its labels, the dock pill folds to the agent's mark and its countdown ring, and scrolling up brings the words back. One signal for both, so they never disagree.
+- WCAG 2.2 "Focus not obscured" (2.4.11) is the rule behind it: a floating bar must not hide what you scroll to. The folded pill is about half as wide. https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html
+- The motion is timed (the base duration) and reduce motion turns it off. The pill keeps its 52 pt height, so the target stays above 44 pt.
+- The minimise state moved from the tabs layout to the root, because the dock is drawn above the stack, outside the tabs.
