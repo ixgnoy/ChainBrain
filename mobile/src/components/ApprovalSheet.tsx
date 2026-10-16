@@ -51,6 +51,8 @@ export function describeApprovalError(code: string): string {
     default: return "Could not send your answer. Check the connection and try again.";
   }
 }
+/** Below this, a co-sign is one press plus Face ID; at or above it, slide first. */
+const QUICK_MAX = 5_000_000n; // US$5.00 in USDC units
 const safeUsd = (s: unknown) => { try { return typeof s === "string" ? usd(parseUsd(s)) : null; } catch { return null; } };
 
 export function ApprovalSheet() {
@@ -110,6 +112,11 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const left = pocket && amountUnits != null && pocket.balance >= amountUnits ? pocket.balance - amountUnits : null;
   const moneyLine = `${who} pays ${seller} US$${amount ?? "?"}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}.${left != null ? ` US$${usd(left)} stays in the pocket.` : ""}`;
   const until = auth ? new Date(Number(auth.validBefore) * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : null;
+
+  // small payments: Face ID alone signs (it is the deliberate act); large ones keep the slide first, then Face ID. Without
+  // biometrics the slide is the only deliberate step, so it always stays.
+  const quick = !!bio && amountUnits != null && amountUnits < QUICK_MAX;
+  const [signing, setSigning] = useState(false);
 
   const approve = async () => {
     setError(null);
@@ -241,9 +248,15 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
         {isPay ? (
           owned && wallet ? (
             <>
-              <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label={`Slide to approve US$${amount ?? ""}`} doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
+              {quick ? (
+                // Face ID is the signature: one press, then the face signs exactly this payment
+                <Button label={`Approve US$${amount ?? ""} with ${bio}`} icon={bio === "Face ID" ? "faceId" : "fingerprint"} auto="approval.slide" loading={signing} disabled={busy || expired}
+                  onPress={async () => { setSigning(true); try { await approve(); setPhase("success"); } catch { /* the error note says why */ } finally { setSigning(false); } }} />
+              ) : (
+                <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label={`Slide to approve US$${amount ?? ""}`} doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
+              )}
               <Button label="Decline" kind="text" onPress={decline} loading={busy} />
-              {bio ? <T v="cap" color="muted" style={{ textAlign: "center" }}>{`Then ${bio} signs it with your key.`}</T> : null}
+              {bio ? <T v="cap" color="muted" style={{ textAlign: "center" }}>{quick ? `${bio} signs exactly this payment with your key. Nothing else.` : `Then ${bio} signs exactly this payment with your key.`}</T> : null}
             </>
           ) : (
             <>

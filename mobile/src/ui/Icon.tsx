@@ -4,7 +4,7 @@ import {
   Activity, ArrowDownLeft, ArrowUp, Bell, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Clock, Copy, Globe, House, KeyRound, Layers, Lock, MessageCircle,
   MoreHorizontal, Plus, RefreshCw, Send, ShieldAlert, SlidersHorizontal, Undo2, User, Wallet, X, Zap, TriangleAlert, CircleHelp, Ban, Pencil, ArrowDown, SquarePlus, Square, Info,
   Radar, Brain, Snowflake, Eye, Sparkles, Target, Gauge, ListChecks,
-  Bot, Link, QrCode, Unlink, Landmark, Hourglass, FileText, Search, Receipt, Download, ArrowUpRight, Inbox, ShieldCheck, CircleCheck, Mic, CreditCard, Power, ChartColumn, Asterisk,
+  Bot, Link, QrCode, Unlink, Landmark, Hourglass, FileText, Search, Receipt, Download, ArrowUpRight, Inbox, ShieldCheck, CircleCheck, Mic, CreditCard, Power, ChartColumn, Asterisk, ScanFace, Fingerprint,
   type LucideIcon,
 } from "lucide-react-native";
 
@@ -15,7 +15,7 @@ const I = {
   more: MoreHorizontal, bolt: Zap, shield: ShieldAlert, help: CircleHelp, ban: Ban, edit: Pencil, arrowDown: ArrowDown, squarePlus: SquarePlus, stop: Square, info: Info,
   radar: Radar, brain: Brain, freeze: Snowflake, eye: Eye, sparkles: Sparkles, target: Target, gauge: Gauge, checks: ListChecks,
   bot: Bot, link: Link, qr: QrCode, unlink: Unlink, vault: Landmark, hourglass: Hourglass, file: FileText, search: Search, receipt: Receipt, download: Download,
-  arrowUpRight: ArrowUpRight, inbox: Inbox, shieldCheck: ShieldCheck, circleCheck: CircleCheck, mic: Mic, card: CreditCard, power: Power, chart: ChartColumn, asterisk: Asterisk,
+  arrowUpRight: ArrowUpRight, inbox: Inbox, shieldCheck: ShieldCheck, circleCheck: CircleCheck, mic: Mic, card: CreditCard, power: Power, chart: ChartColumn, asterisk: Asterisk, faceId: ScanFace, fingerprint: Fingerprint,
 } satisfies Record<string, LucideIcon>;
 export type IconName = keyof typeof I;
 
