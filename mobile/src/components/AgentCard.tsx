@@ -1,5 +1,6 @@
 // One connected agent (Stitch chainbrain_agents): its mark and name, who makes it and since when it is connected, every pocket
-// it holds with its balance, how much of its money it has spent (hatch bar), what it is doing now, and the way in: Chat for the
+// it holds as a hand of the same 2.5D cards Home shows (each overlapping the next on its right, so every name stays in view;
+// tap one to open it), how much of its money it has spent (hatch bar), what it is doing now, and the way in: Chat for the
 // built-in agent, Manage for an outside one. A disconnected agent goes quiet under hatch with "Reconnect".
 import React from "react";
 import { View } from "react-native";
@@ -14,7 +15,10 @@ import { AgentAvatar } from "../ui/AgentAvatar";
 import { activityLine, ago, type AgentView } from "../lib/agents";
 import { usd } from "../lib/util";
 import { cleanText } from "../lib/sanitize";
-import { useApp } from "../store";
+import { useApp, type Pocket } from "../store";
+import { PocketFace, toneFor } from "./PocketFace";
+import { stackOrder, stripFor } from "./PocketWallet";
+import { startFlight } from "../ui/cardFlight";
 
 const DOT = { live: c.green, idle: c.faint, off: c.faint, wait: c.blue } as const;
 
@@ -44,23 +48,7 @@ export function AgentCard({ a, busy }: { a: AgentView; busy?: boolean }) {
           </View>
         </View>
 
-        {held.length ? (
-          <View style={{ borderRadius: radius.tile, backgroundColor: c.fill, padding: 12, gap: 10 }}>
-            {held.map((p, i) => (
-              <View key={p.address} style={{ flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: i ? 1 : 0, borderTopColor: c.tileStroke, paddingTop: i ? 10 : 0 }}>
-                <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}><Icon name={p.revoked ? "lock" : "card"} size={16} stroke={2} color={p.revoked ? c.muted : c.ink} /></View>
-                <View style={{ flex: 1 }}>
-                  <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 0.8 }}>{p.revoked ? "Revoked pocket" : "Holds pocket"}</T>
-                  <T v="row" w="bold" numberOfLines={1} color={p.revoked ? "muted" : "ink"}>{cleanText(p.name, 28)}</T>
-                </View>
-                <View style={{ alignItems: "flex-end" }}>
-                  <T v="cap" color="muted">Balance</T>
-                  <Money v="row" value={usd(p.balance)} color={p.revoked ? "muted" : "ink"} decorative />
-                </View>
-              </View>
-            ))}
-          </View>
-        ) : (
+        {held.length ? null : (
           <View style={{ borderRadius: radius.tile, borderWidth: 1, borderStyle: "dashed", borderColor: c.line, padding: 14 }}>
             <T v="sub" color="muted">{off ? "No pocket. Reconnect and give it one to start again." : "Holds no pocket yet. Give it one to let it pay."}</T>
           </View>
@@ -76,7 +64,8 @@ export function AgentCard({ a, busy }: { a: AgentView; busy?: boolean }) {
           </View>
         ) : null}
       </Press>
-      {/* the footer sits outside the card's press (no button inside a button) */}
+      {/* the pockets and the footer sit outside the card's press (no button inside a button) */}
+      {held.length ? <View style={{ paddingHorizontal: 16, marginTop: -2, marginBottom: 14 }}><Hand pockets={held} /></View> : null}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, paddingHorizontal: 16, paddingBottom: 16 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: DOT[line.tone] }} />
@@ -87,5 +76,36 @@ export function AgentCard({ a, busy }: { a: AgentView; busy?: boolean }) {
             : <Button label="Manage" small kind="secondary" iconRight="settings" onPress={open} />}
         </View>
     </Card>
+  );
+}
+
+/** The agent's pockets as a small wallet: each card's top strip (its name and balance, the same faces as Home's stack),
+ *  one under the other. Tap a strip to open its pocket. */
+function Hand({ pockets }: { pockets: Pocket[] }) {
+  const { pockets: all } = useApp();
+  const [w, setW] = React.useState(0);
+  const strip = stripFor(w);
+  // the stack's order: neighbours differ in face, revoked ones first
+  const byAddr = new Map(pockets.map((p) => [p.address.toLowerCase(), p]));
+  const order = stackOrder(pockets).map((a) => byAddr.get(a)!).filter(Boolean);
+  return (
+    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: w ? pockets.length * strip : 0, borderRadius: 18, overflow: "hidden" }}>
+      {w ? order.map((p, i) => <HandCard key={p.address} p={p} i={i} w={w} top={i * strip} tone={toneFor(all, p.address)} />) : null}
+    </View>
+  );
+}
+function HandCard({ p, i, w, top, tone }: { p: Pocket; i: number; w: number; top: number; tone: number }) {
+  const ref = React.useRef<View>(null);
+  const open = () => {
+    const push = () => router.push({ pathname: "/pocket/[id]", params: { id: p.address } });
+    if (!ref.current) return push();
+    ref.current.measureInWindow((x, y, ww, hh) => { startFlight(p.address, { x, y, w: ww, h: hh }, tone, 0); push(); });
+  };
+  return (
+    <View ref={ref} collapsable={false} style={{ position: "absolute", left: 0, top, zIndex: i + 1 }}>
+      <Press kind="row" haptics="light" onPress={open} accessibilityRole="button" accessibilityLabel={`${cleanText(p.name, 30)} pocket, ${usd(p.balance)} USDC${p.revoked ? ", revoked" : ""}. Opens the pocket`}>
+        <PocketFace pocket={p} width={w} tone={tone} still peek />
+      </Press>
+    </View>
   );
 }

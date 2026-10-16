@@ -5,7 +5,6 @@ Phone first, then the web console. Each slice goes research → implement → va
 ## Backlog
 
 - [ ] Home: a press-lift on stack cards; tune the drop-in and the pull-to-fan on video
-- [ ] Agents screen at Home's level
 - [ ] Activity screen at Home's level
 - [ ] Approvals inbox and Receipt sheet at Home's level
 - [ ] Settings at Home's level
@@ -42,6 +41,11 @@ Phone first, then the web console. Each slice goes research → implement → va
   - Bug avoided: `setRoutine` mints a new routine id, and the allowance meter counts payments by id, so "editing" through it would have reset this week's spend. The new `world.editRoutine` keeps the id, runs and spend. It is published as a `routine:edited` event, kept from trimming, and applied by `routineFromEvents`. A test proves it: after an edit to a smaller allowance, US$0.034 already spent leaves US$0.006, and the next run asks.
   - Decision: only a looser allowance (more money, or a longer period) is signed with Face ID. A stricter one, a new time, or a pause can only lower risk, so they save at once.
   - Evidence: `w-24-edit-routine.png`, `w-25-pause-all.png`; sim tests 57 pass; e2e 57/57. A headless run checked that a stricter edit saved (US$0.15 a week) and that Pause all and Resume all both worked.
+
+- [x] **Agents screen** (critique score 3 before). Each agent's pockets are now a small wallet of the same strips Home uses (name and balance, faces interleaved), and each strip opens its pocket with the card flight. The tracked eyebrows on the screen are sentence case.
+  - The info card's title was untrue (ChainBrain holds four pockets). It now reads "An agent sees only the pockets you give it".
+  - First attempt: a hand of 168 pt cards. Dropped, because the print is unreadable at that size and the cards sat inside the agent card's button (RN-web flagged the nested buttons).
+  - Evidence: `w-26-agents.png`; e2e 57/57.
 
 Earlier the same day, before this log existed:
 - Home wallet stack, live card signs and Next up (e68c433)

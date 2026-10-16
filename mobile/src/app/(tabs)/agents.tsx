@@ -9,7 +9,7 @@ import { useApp } from "../../store";
 import { c, radius } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
 import { Button, Card, Press, Tile } from "../../ui/kit";
-import { T, Eyebrow } from "../../ui/Text";
+import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { Money } from "../../ui/Money";
 import { Hatch } from "../../ui/Hatch";
@@ -30,7 +30,7 @@ export default function Agents() {
   return (
     <Screen contentContainerStyle={{ paddingBottom: TAB_SPACE + insets.bottom + 32 }}>
       <HomeHeader />
-      <PageTitle eyebrow="Agents and their pockets" title="Connected agents"
+      <PageTitle title="Connected agents"
         right={<View style={{ minHeight: 28, paddingHorizontal: 11, borderRadius: 14, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 6 }}>
           <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.vermillion }} />
           <T v="cap" w="bold">{`${live.length} active`}</T>
@@ -41,8 +41,8 @@ export default function Agents() {
           <Hatch color={c.line} pitch={8} stroke={1.2} style={{ left: "70%" }} />
           <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c.fill, alignItems: "center", justifyContent: "center" }}><Icon name="lock" size={19} stroke={2} /></View>
           <View style={{ flex: 1, gap: 2 }}>
-            <T v="row" w="bold">Each agent sees one pocket</T>
-            <T v="sub" color="muted">An agent only ever gets the pocket you give it. Never your main wallet, never another pocket.</T>
+            <T v="row" w="bold">An agent sees only the pockets you give it</T>
+            <T v="sub" color="muted">Never your main wallet, never another agent's pocket. Each pocket is granted on its own.</T>
           </View>
         </Card>
       </Reveal>
@@ -54,7 +54,7 @@ export default function Agents() {
       ) : null}
 
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 24, marginBottom: 10 }}>
-        <Eyebrow color="mutedOnCanvas">{`${agents.length} ${agents.length === 1 ? "agent" : "agents"}`}</Eyebrow>
+        <T v="head">{`${agents.length} ${agents.length === 1 ? "agent" : "agents"}`}</T>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <T v="cap" color="mutedOnCanvas">In agent pockets</T>
           <Money v="row" value={usd(inPockets)} decorative />
@@ -71,7 +71,7 @@ export default function Agents() {
         </Card>
       ) : null}
 
-      <Eyebrow color="mutedOnCanvas" style={{ paddingHorizontal: 16, marginTop: 28, marginBottom: 10 }}>Today</Eyebrow>
+      <T v="head" style={{ paddingHorizontal: 16, marginTop: 28, marginBottom: 10 }}>Today</T>
       <View style={{ flexDirection: "row", gap: 10, marginHorizontal: 16 }}>
         <Tile icon="receipt" label={`${today} requests`} a11y={`${today} agent requests today, open Activity`} onPress={() => router.navigate("/activity")} />
         <Tile icon="inbox" label={asks ? `${asks} waiting` : "Approvals"} tone={asks ? "blue" : "white"} a11y={asks ? `${asks} approvals waiting` : "Approvals"} onPress={() => router.push("/approvals")} />
