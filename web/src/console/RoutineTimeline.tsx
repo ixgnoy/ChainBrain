@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { appFromEvents, routineFromEvents, runningNow, runsOf } from "@sim/pocketAppData";
 import { cadenceText, nextRuns } from "@sim/pocketApp";
 import { useNetwork } from "./network";
-import { AgentTag, usd } from "./parts";
+import { AgentTag, SellerLogo, usd } from "./parts";
 import { Card } from "../seller/ui";
 import { cn } from "../lib/cn";
 
@@ -15,13 +15,28 @@ const BACK = 4, AHEAD = 3; // days shown before and after now
 const LAYOUT_DOT = { research: "bg-ink", deal: "bg-blue", subscriptions: "hatch", haggle: "bg-vermillion" } as const;
 const when = (ms: number) => new Date(ms).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
+/** A dot's detail card: shown on hover and on keyboard focus, above the dot, kept inside the row's width. */
+function Hover({ title, lines, sellers, edge, seller, below }: { title: string; lines: string[]; sellers?: string[]; edge: "left" | "right" | "mid"; seller(id: string): string; /** the first row opens downwards (the card clips above it) */ below?: boolean }) {
+  return (
+    <span role="tooltip" className={cn("pointer-events-none absolute z-30 hidden w-56 rounded-xl bg-ink p-3 text-left text-on-accent shadow-level3 group-hover/dot:block group-focus-visible/dot:block", below ? "top-[calc(100%+6px)]" : "bottom-[calc(100%+6px)]",
+      edge === "left" ? "left-0" : edge === "right" ? "right-0" : "left-1/2 -translate-x-1/2")}>
+      <span className="block text-[13px] font-bold leading-4">{title}</span>
+      {lines.map((l) => <span key={l} className="mt-1 block text-[12px] leading-4 text-white/70">{l}</span>)}
+      {sellers?.length ? <span className="mt-2 flex gap-1">{sellers.map((id) => <SellerLogo key={id} id={id} name={seller(id)} className="size-5 rounded-[6px] text-[10px]" />)}</span> : null}
+    </span>
+  );
+}
+
 export function RoutineTimeline({ open }: { open(addr: string): void }) {
-  const { listed, events, nameOf } = useNetwork();
+  const { listed, events, nameOf, cfg } = useNetwork();
+  const seller = (id: string) => cfg.sellers.find((x) => x.id === id)?.name ?? id;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(t); }, []);
   const from = new Date(now - BACK * DAY).setHours(0, 0, 0, 0);
   const to = new Date(now + AHEAD * DAY).setHours(24, 0, 0, 0);
   const x = (t: number) => `${(((t - from) / (to - from)) * 100).toFixed(3)}%`;
+  const edge = (t: number) => ((t - from) / (to - from) < 0.2 ? "left" : (t - from) / (to - from) > 0.8 ? "right" : "mid") as "left" | "right" | "mid";
+  const today = new Date(now).setHours(0, 0, 0, 0);
   const rows = useMemo(() => listed([], { all: true }).flatMap((p) => {
     const rt = routineFromEvents(events as never, p.address);
     if (!rt) return [];
@@ -34,12 +49,12 @@ export function RoutineTimeline({ open }: { open(addr: string): void }) {
   const days = Array.from({ length: BACK + AHEAD + 1 }, (_, i) => from + i * DAY);
   const total = rows.reduce((n, r) => n + r.runs.length, 0);
   return (
-    <Card className="overflow-hidden">
+    <Card>
       <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-4">
         <h3 className="text-[18px] font-bold leading-6 tracking-[-0.02em]">Routines this week</h3>
         <p className="text-[13px] text-muted"><span className="num font-semibold text-ink2">{total}</span> runs in view · each checked against its allowance before it pays</p>
       </div>
-      <div className="mt-3 overflow-x-auto">
+      <div className="mt-3 max-lg:overflow-x-auto">
         <div className="min-w-[720px] px-5 pb-4">
           {/* the day axis */}
           <div className="relative ml-[200px] h-6 border-b border-line">
@@ -50,8 +65,8 @@ export function RoutineTimeline({ open }: { open(addr: string): void }) {
             ))}
           </div>
           <ol aria-label="Routines">
-            {rows.map(({ p, rt, app, runs, next, running }) => (
-              <li key={p.address} className="group relative flex h-14 items-center border-b border-line last:border-0">
+            {rows.map(({ p, rt, app, runs, next, running }, row) => (
+              <li key={p.address} className="relative flex h-14 items-center border-b border-line last:border-0 hover:z-20 focus-within:z-20">
                 <button type="button" onClick={() => open(p.address)} className="absolute inset-0 z-0 rounded-lg transition-colors hover:bg-tile" aria-label={`${nameOf(p.address)}: ${cadenceText(rt.cadence)}, ${runs.length} runs this week. Open the pocket`} />
                 <div className="pointer-events-none relative z-10 flex w-[200px] shrink-0 items-center gap-2 pr-3">
                   {app && <span aria-hidden className={cn("size-2.5 shrink-0 rounded-[3px]", LAYOUT_DOT[app.layout])} />}
@@ -61,6 +76,8 @@ export function RoutineTimeline({ open }: { open(addr: string): void }) {
                   </span>
                 </div>
                 <div className="pointer-events-none relative z-10 h-full flex-1">
+                  {/* today, as a band across every row */}
+                  <span aria-hidden className="absolute inset-y-0 bg-blue-soft/50" style={{ left: x(today), width: `${(DAY / (to - from)) * 100}%` }} />
                   {/* day lines */}
                   {days.slice(1).map((d) => <span key={d} aria-hidden className="absolute inset-y-2 w-px bg-line/70" style={{ left: x(d) }} />)}
                   <span aria-hidden className="absolute inset-y-0 w-0.5 bg-vermillion" style={{ left: x(now) }} />
@@ -70,14 +87,21 @@ export function RoutineTimeline({ open }: { open(addr: string): void }) {
                       const paid = r.paid > 0n;
                       const label = `Run ${r.run}, ${when(r.at)}: ${asked ? "asked the owner" : paid ? `paid US$${usd(r.paid)}` : "nothing paid"}${r.ignored.length ? `; ${r.ignored.length} seller text ignored` : ""}${r.early ? "; ran early" : ""}`;
                       return (
-                        <li key={r.run} title={label} aria-label={label} className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ left: x(r.at) }}>
-                          <span className={cn("block size-3.5 rounded-full ring-2 ring-card", asked ? "bg-vermillion" : paid ? "bg-ink" : "bg-card shadow-[inset_0_0_0_2px_var(--color-ink)]", r.ignored.length && "outline outline-2 outline-offset-2 outline-green")} />
+                        <li key={r.run} tabIndex={0} aria-label={label} className="group/dot pointer-events-auto absolute top-1/2 grid size-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ink" style={{ left: x(r.at) }}>
+                          <span className={cn("block size-3.5 rounded-full ring-2 ring-card transition-transform group-hover/dot:scale-125", asked ? "bg-vermillion" : paid ? "bg-ink" : "bg-card shadow-[inset_0_0_0_2px_var(--color-ink)]", r.ignored.length && "outline outline-2 outline-offset-2 outline-green")} />
+                          <Hover below={row === 0} edge={edge(r.at)} seller={seller} title={`Run ${r.run} · ${when(r.at)}`}
+                            sellers={[...new Set(r.outs.filter((o) => o.outcome === "paid" || o.outcome === "cosigned").map((o) => String(o.sellerId)))]}
+                            lines={[asked ? `Asked its owner: ${r.outs.some((o) => o.outcome === "cosigned") ? "co-signed" : "declined"}` : paid ? `Paid US$${usd(r.paid)} on its own` : r.outs.some((o) => o.outcome === "watching") ? "Checked the price: above the limit, so no buy" : "Nothing to pay",
+                              ...(r.ignored.length ? [`${r.ignored.length} seller text ignored: the routine didn't change`] : []), ...(r.early ? ["Ran early, by its owner"] : [])]} />
                         </li>
                       );
                     })}
                     {next.map((t, i) => (
-                      <li key={t} title={`Next run${i ? ` ${i + 1}` : ""}: ${when(t)}`} aria-label={`Scheduled ${when(t)}`} className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ left: x(t) }}>
-                        <span className="block size-3.5 rounded-full border-2 border-dashed border-muted bg-card" />
+                      <li key={t} tabIndex={0} aria-label={`Scheduled ${when(t)}`} className="group/dot pointer-events-auto absolute top-1/2 grid size-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ink" style={{ left: x(t) }}>
+                        <span className="block size-3.5 rounded-full border-2 border-dashed border-muted bg-card transition-transform group-hover/dot:scale-125" />
+                        <Hover below={row === 0} edge={edge(t)} seller={seller} title={i === 0 ? `Next run · ${when(t)}` : `Scheduled · ${when(t)}`}
+                          sellers={[...new Set(rt.items.map((it) => it.sellerId))]}
+                          lines={[rt.kind === "price-watch" ? `Buys only at US$${rt.limitPrice} or less` : `${rt.items.length} ${rt.items.length === 1 ? "item" : "items"} from the sellers named`, `Inside US$${rt.allowance.amount} a ${rt.allowance.period}, or it asks its owner`]} />
                       </li>
                     ))}
                     {running && (
