@@ -245,6 +245,14 @@ test("scene 9 (Radar): a drainer pays TradeWire on-chain; TradeWire is blocked, 
   assert.ok(w.radar.alerts().length >= 1);
 });
 
+test("scene 9 on a pocket that doesn't list TradeWire (auto-play's scene-1 pocket): Radar's block is the reason, the agent still re-plans to Nansen", async () => {
+  const { w, pocket } = await setup({ sellers: ["exa", "coingecko", "nansen"] });
+  owner(w);
+  const r = await w.chat(pocket, "A drainer just paid TradeWire. Get TradeWire's exporter credit report anyway, max US$0.05, by tonight.");
+  assert.match(r.reply, /^Radar blocked TradeWire: .*I didn't pay it and re-planned\. Bought Nansen's exporter wallet balances/);
+  assert.deepEqual(w.events(0, pocket).filter((e) => e.type === "payment").map((p) => p.sellerId), ["nansen"]);
+});
+
 test("Radar screen: a seller the drainer paid scores block; clean sellers stay ok", async () => {
   const { w } = await setup();
   assert.equal((await w.radar.screen("exa")).verdict, "ok");

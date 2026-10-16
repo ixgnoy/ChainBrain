@@ -51,6 +51,13 @@ test("dead end: lists sellers tried and the one-tap fix (scene 8)", () => {
   assert.equal(deadEndOf([...evs, { type: "payment", pocket: P, at: 3 }], { address: P, cap: 1n, balance: 1n }), null);
 });
 
+test("dead end: never offers to allow a seller Radar blocked", () => {
+  const P = "0xabc";
+  const q = (sellerId: string, reason: string, block: boolean) => ({ type: "trace", pocket: P, at: 1, phase: "tool_result", tool: "get_quote", result: { ok: true, sellerId, sku: "x", price: "0.05", allowedByPocket: { reason }, intentCheck: "OK", counterpartyRisk: block ? { verdict: "block", score: 9 } : { verdict: "ok", score: 0 } } });
+  assert.equal(deadEndOf([q("tradewire", "SELLER_NOT_ALLOWED", true)], { address: P, cap: 50_000n, balance: 50_000n })!.needsSeller, false);
+  assert.equal(deadEndOf([q("harbour-wines", "SELLER_NOT_ALLOWED", false)], { address: P, cap: 50_000n, balance: 50_000n })!.needsSeller, true);
+});
+
 test("dead end: Ask again re-sends the owner's sentence with the maximum that now fits", () => {
   assert.equal(retryText("Search the web for durian export news, max US$0.005, by tonight.", "0.007"), "Search the web for durian export news, max US$0.007, by tonight.");
   assert.equal(retryText("Buy a durian export report, max US$0.20, by tonight.", "0.30"), "Buy a durian export report, max US$0.30, by tonight.");
