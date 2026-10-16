@@ -11,7 +11,7 @@ import SellerView from "../seller/SellerView";
 import { PhoneTag, TestnetChip, usd } from "./parts";
 import { Stepper } from "./Stepper";
 import { Kbd } from "./kit";
-import { eventPocket } from "../lib/events";
+import { eventPocket, samePocket } from "../lib/events";
 import { Settings } from "./Settings";
 import { Protected } from "./Protected";
 import { PageTitle, PillSelect } from "../seller/ui";
@@ -70,6 +70,12 @@ function Shell() {
   const [route, setRoute] = useState(parseRoute);
   const { tab, pocket: pinned, present } = route;
   useEffect(() => { const on = () => { setRoute(parseRoute()); scrollTo({ top: 0 }); }; addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
+  // a pin this network does not have (a link from the other network, or one kept across a switch in Settings) is dropped
+  // once the pockets are known, so Live follows the story instead of waiting on a contract that is not there
+  useEffect(() => {
+    if (!pinned || !pockets.length || pockets.some((p) => samePocket(p.address, pinned))) return;
+    setRoute((r) => { const next = { ...r, pocket: undefined }; history.replaceState(null, "", `#${toHash(next)}`); return next; });
+  }, [pinned, pockets]);
   // ONE pocket per render: the one a person picked, else the one the story (or the linked phone) is on, else the last one touched.
   // Trace, balance, rules and sellers all read this same value.
   const latest = useMemo(() => [...events].reverse().map(eventPocket).find(Boolean) ?? pockets[0]?.address, [events, pockets]);
