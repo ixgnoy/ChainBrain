@@ -304,7 +304,9 @@ function AddressPage({ address, watch }: { address: string; watch?(pocket: strin
   const { net, who, inputs, chainTx } = useChain();
   const k = who.kindOf(address);
   const pocket = net.pockets.find((p) => lc(p.address) === lc(address));
-  const list = txsOfAddress(address, inputs);
+  // every transfer in or out of a pocket is a call to the USDC contract, and every pocket comes from the factory: their pages list those
+  const via = k.kind === "usdc" ? ["fund", "payment", "return", "out"] : k.kind === "factory" ? ["create"] : undefined;
+  const list = via ? inputs.filter((t) => via.includes(t.kind)).sort((x, y) => (y.at ?? 0) - (x.at ?? 0)) : txsOfAddress(address, inputs);
   const names = new Map(net.cfg.sellers.map((s) => [s.id, s.name]));
   const received = k.kind === "seller" ? net.allTxs.filter((t) => t.kind === "payment" && lc(t.counterparty) === lc(address) && t.status !== "reverted").reduce((n, t) => n + (t.amount ?? 0n), 0n) : undefined;
   const KIND: Record<string, string> = { pocket: "Pocket contract", seller: "Seller", owner: "Owner", agent: "Agent key", usdc: "USDC token contract", factory: "Pocket factory", other: "Address" };
