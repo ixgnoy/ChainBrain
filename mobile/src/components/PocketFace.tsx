@@ -4,7 +4,7 @@
 // (grain, top light, a specular band) sits under the print, and the card in focus leans with the phone (ui/tilt.tsx).
 // Everything on it is read from the pocket contract. A revoked, frozen or ended pocket settles to the white hatch face with
 // a lock; when it happens in view the face cross-fades, the card dips and the phone gives a Warning tick.
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { c, deck, level3, motion, type DeckFace } from "../tokens";
@@ -38,7 +38,7 @@ export function toneFor(pockets: { address: string }[], address: string): Tone {
 export const faceOf = (tone: Tone): DeckFace => deck[((tone % deck.length) + deck.length) % deck.length];
 const FROZEN: DeckFace = deck[3];
 
-export function PocketFace({ pocket, width, tone, buzz, shadow, focused = true, tilt, still }: { pocket: Pocket; width: number; tone: Tone; /** Warning haptic when it freezes in view */ buzz?: boolean;
+function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, tilt, still }: { pocket: Pocket; width: number; tone: Tone; /** Warning haptic when it freezes in view */ buzz?: boolean;
   /** lean with the phone (the one card in focus: the pocket page, the front of the deck) */ tilt?: boolean;
   /** the level-3 card shadow (DESIGN.md: fanned cards) */ shadow?: boolean;
   /** the screen showing this card is in front: a freeze that happened while it was away plays when it comes back */ focused?: boolean;
@@ -50,6 +50,13 @@ export function PocketFace({ pocket, width, tone, buzz, shadow, focused = true, 
   const frost = useSharedValue(off ? 1 : 0);
   const dip = useSharedValue(1);
   const was = useRef(off);
+  // the frozen print is a second full card: draw it only while the card is off, and for its fade-out after an unfreeze
+  const [deadOn, setDeadOn] = useState(off);
+  useEffect(() => {
+    if (off) { setDeadOn(true); return; }
+    const t = setTimeout(() => setDeadOn(false), 600);
+    return () => clearTimeout(t);
+  }, [off]);
   const owed = useRef(false); // a freeze happened out of sight: play it when the card is seen
   const play = () => {
     frost.value = reduce ? 1 : withTiming(1, { duration: 700, easing: EASE_OUT });
@@ -94,13 +101,20 @@ export function PocketFace({ pocket, width, tone, buzz, shadow, focused = true, 
         <Animated.View style={[{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }, live]}>
           <Print pocket={pocket} name={name} agent={agent?.name} agentId={pocket.agentId} face={face} k={k} w={width} h={h} still={still} />
         </Animated.View>
-        <Animated.View pointerEvents={off ? "auto" : "none"} style={[{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }, dead]}>
-          <Print pocket={pocket} name={name} agent={agent?.name} agentId={pocket.agentId} face={FROZEN} k={k} w={width} h={h} state={state ?? "Revoked"} still />
-        </Animated.View>
+        {deadOn ? (
+          <Animated.View pointerEvents={off ? "auto" : "none"} style={[{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }, dead]}>
+            <Print pocket={pocket} name={name} agent={agent?.name} agentId={pocket.agentId} face={FROZEN} k={k} w={width} h={h} state={state ?? "Revoked"} still />
+          </Animated.View>
+        ) : null}
       </View>
     </Animated.View>
   );
 }
+/** Memoised: its props are stable store values, so a new event or ask elsewhere leaves it alone. `focused` only matters to
+ *  a card that is off (a freeze seen late plays on return), so a live card ignores it: leaving Home must not redraw the deck. */
+export const PocketFace = React.memo(PocketFaceView, (a, b) =>
+  a.pocket === b.pocket && a.width === b.width && a.tone === b.tone && a.buzz === b.buzz && a.shadow === b.shadow && a.tilt === b.tilt && a.still === b.still &&
+  (a.focused === b.focused || !(b.pocket.revoked || !!b.pocket.frozen || isExpired(b.pocket))));
 
 const R = 18;
 /** How much of the card's side shows under the face (pt). */

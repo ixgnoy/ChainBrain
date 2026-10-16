@@ -1,6 +1,6 @@
 import React from "react";
 import { View, type ViewStyle } from "react-native";
-import { useApp } from "../store";
+import { useAppSelect } from "../store";
 import { c, F } from "../tokens";
 import { Press } from "../ui/kit";
 import { AgentAvatar } from "../ui/AgentAvatar";
@@ -13,7 +13,7 @@ import { Icon, type IconName } from "../ui/Icon";
 import { cleanText } from "../lib/sanitize";
 import { describeRow } from "../lib/plain";
 import { dayLabel, timeLabel } from "../lib/util";
-import type { LedgerRow } from "../lib/events";
+import { sameAddr, type LedgerRow } from "../lib/events";
 
 export type SquareTone = "fill" | "ink" | "blue" | "vermillion" | "green";
 const SQ: Record<SquareTone, { bg: string; fg: string }> = {
@@ -107,9 +107,14 @@ const STATUS_TONE = { warning: "blueInk", positive: "greenInk", negative: "vermi
 /** One activity item: the seller's brand square, its name over its category (or what happened, for refusals and your own
  *  changes), the amount right with a small second line: the time for a plain payment, else the status ("Co-signed", "Refused").
  *  With more than one agent, the one that acted leads the small line: its mark (from shared/brand) beside its name. Pressed as a row (0.985). */
-export function ActivityRow({ row, onPress, last, showPocket, timeOnly, showAgent = true }: { row: LedgerRow; onPress?: () => void; last?: boolean; showPocket?: boolean; timeOnly?: boolean; showAgent?: boolean }) {
-  const { sellerName, findPocket, agents, cfg } = useApp();
-  const agent = showAgent && row.kind !== "owner" && agents.length > 1 ? agentInfo(row.agent ?? findPocket(row.pocket)?.agentId ?? "") : undefined;
+function ActivityRowView({ row, onPress, last, showPocket, timeOnly, showAgent = true }: { row: LedgerRow; onPress?: () => void; last?: boolean; showPocket?: boolean; timeOnly?: boolean; showAgent?: boolean }) {
+  // narrow reads: a row redraws when its own data changes, not on every new event or ask in the app
+  const sellerName = useAppSelect((s) => s.sellerName);
+  const pockets = useAppSelect((s) => s.pockets);
+  const multi = useAppSelect((s) => s.agents.length > 1);
+  const cfg = useAppSelect((s) => s.cfg);
+  const findPocket = (a?: string) => pockets.find((p) => sameAddr(p.address, a));
+  const agent = showAgent && row.kind !== "owner" && multi ? agentInfo(row.agent ?? findPocket(row.pocket)?.agentId ?? "") : undefined;
   const seller = cleanText(sellerName(row.sellerId), 40);
   const pocket = showPocket ? findPocket(row.pocket) : undefined;
   const where = pocket ? cleanText(pocket.name, 24) : undefined;
@@ -144,6 +149,16 @@ export function ActivityRow({ row, onPress, last, showPocket, timeOnly, showAgen
       a11y={`${v.title}${agent ? `, ${agent.name}` : ""}, ${v.rightSub ?? ""} ${right ?? ""}${plainPaid ? `, ${timeLabel(row.at)}` : ""}`} />
   );
 }
+/** Same row content? The ledger is rebuilt (new objects) on every event, so compare fields, not the object. */
+function sameRow(a: LedgerRow, b: LedgerRow) {
+  if (a === b) return true;
+  const ka = Object.keys(a) as (keyof LedgerRow)[];
+  const same = (x: unknown, y: unknown) => x === y || (Array.isArray(x) && Array.isArray(y) && x.length === y.length && x.every((v, i) => v === y[i]));
+  return ka.length === Object.keys(b).length && ka.every((k) => same(a[k], b[k]));
+}
+/** Memoised. `onPress` is left out of the comparison: every caller passes a fresh arrow that opens this same row. */
+export const ActivityRow = React.memo(ActivityRowView, (a, b) =>
+  sameRow(a.row, b.row) && a.last === b.last && a.showPocket === b.showPocket && a.timeOnly === b.timeOnly && a.showAgent === b.showAgent && !a.onPress === !b.onPress);
 
 /** An ActivityRow that enters (fade + rise) when it is new and lets its neighbours slide to their new place. `delay` -1: no entrance. */
 export function ActivityItem({ delay = 0, ...p }: React.ComponentProps<typeof ActivityRow> & { delay?: number }) {

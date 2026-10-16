@@ -1,6 +1,6 @@
 // App state: connection (runtime API URL, dev mode), config, owner key and wallet, pockets read from chain, the event stream
 // (polled, deduped), pending approvals, chat turns. Business rules live in lib/*; this file wires them to React.
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import type { Address, Hex } from "viem";
 import { loadConfig, resetConfig, type Config } from "./lib/shared";
@@ -73,8 +73,36 @@ type Ctx = {
   explorerTx: string | null; setExplorerTx(h: string | null): void;
 };
 
-const AppCtx = createContext<Ctx | null>(null);
-export const useApp = (): Ctx => { const v = useContext(AppCtx); if (!v) throw new Error("AppProvider missing"); return v; };
+let latest: Ctx | null = null;
+const listeners = new Set<() => void>();
+const subscribe = (f: () => void) => { listeners.add(f); return () => { listeners.delete(f); }; };
+// The store as an external store: `useApp()` re-renders its component on every change, like a context would, except inside
+// a paused region (a tab that is out of view, see PauseApp): there it keeps the value it last read, so the hidden tab skips
+// the re-render, and reads the latest the moment the pause lifts. Freezing hidden tabs instead (react-native-screens'
+// freezeOnBlur, React Suspense underneath) hid Activity's rows mid-animation and jammed the JS thread for seconds.
+const Paused = createContext(false);
+export function PauseApp({ paused, children }: { paused: boolean; children: React.ReactNode }) {
+  return <Paused.Provider value={paused}>{children}</Paused.Provider>;
+}
+export function useApp(): Ctx {
+  const paused = useContext(Paused);
+  const held = useRef<Ctx | null>(null);
+  return useSyncExternalStore(subscribe, () => {
+    if (!latest) throw new Error("AppProvider missing");
+    if (!paused || !held.current) held.current = latest;
+    return held.current;
+  });
+}
+
+// A narrow subscription for components that are expensive to re-render (cards, rows): `useApp()` re-renders on every store
+// change (a new event, a new pending ask), `useAppSelect(s => s.active)` only when what it picks changes. The selector must
+// return something the store already holds (a field, a memoised list, a primitive), never a new object, or it would never
+// settle.
+export function useAppSelect<T>(pick: (s: Ctx) => T): T {
+  // deliberately not paused: what it picks changes rarely, and reading the pause would redraw every row of a tab each time
+  // that tab is shown or hidden
+  return useSyncExternalStore(subscribe, () => { if (!latest) throw new Error("AppProvider missing"); return pick(latest); });
+}
 
 const id = () => Math.random().toString(36).slice(2, 10);
 const sameIds = (a: Set<string> | null, b: Set<string> | null) => a === b || (!!a && !!b && a.size === b.size && [...a].every((x) => b.has(x)));
@@ -505,7 +533,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     approvalOpen, setApprovalOpen, pickerOpen, setPickerOpen, questionOpen, setQuestionOpen, rules, setRules, notice, setNotice, receipt, setReceipt, action, setAction, flash, fireFlash: () => setFlash((n) => n + 1),
     autoplay, explorerTx, setExplorerTx,
   };
-  return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
+  latest = value; // children rendering in this same pass read the new value; subscribers re-check after the commit
+  useLayoutEffect(() => { listeners.forEach((f) => f()); });
+  return <>{children}</>;
 }
 
 export { approvalsFrom };

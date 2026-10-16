@@ -3,7 +3,7 @@
 // with selection ticks, minimize-on-scroll (labels fold away, every icon stays). No glass, blur or gradient: depth is the
 // level-3 shadow only. Gesture engine ported from expo-glass-tabs (MIT, © 2026 David Mokos,
 // reference/frontend/glass/expo-glass-tabs/src/glass-tab-bar.tsx); the file keeps its old name for existing imports.
-import { Children, createContext, use, useCallback, useEffect, useMemo } from "react";
+import { Children, createContext, use, useCallback, useEffect, useMemo, useRef } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { Extrapolation, interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
@@ -51,7 +51,11 @@ export function GlassTabBar({ children, onIndexSelected, ...props }: TabListProp
   const count = Math.max(Children.count(children), 1);
   const reduce = useReduceMotion();
 
-  const select = useCallback((i: number) => onIndexSelected?.(i), [onIndexSelected]);
+  // the latest handler through a ref: a new `onIndexSelected` each parent render must not rebuild the gesture, because
+  // GestureDetector re-attaching mid-drag cancels the drag (the finger slid, the tab never switched)
+  const onSelect = useRef(onIndexSelected);
+  onSelect.current = onIndexSelected;
+  const select = useCallback((i: number) => onSelect.current?.(i), []);
 
   const gesture = useMemo(() => {
     const indexAtX = (x: number, m: number) => {

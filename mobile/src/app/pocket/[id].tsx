@@ -2,8 +2,8 @@
 // the flight from Home's deck; then the rules as chips (cap and ask-me are editable, owner-signed), Add / Return / Revoke tiles,
 // the worst case, spending by day, the agent that holds the pocket, its sellers, and its history. Revoked: a banner, the hatch
 // card, what came back to the main wallet, and the pocket's audit trail (exportable as JSON).
-import React, { useMemo, useState } from "react";
-import { Share, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { Platform, Share, View, useWindowDimensions } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -56,6 +56,9 @@ function RuleTile({ dot, label, value, onPress, a11y }: { dot: string; label: st
     : <View accessible accessibilityLabel={a11y} style={style}>{body}</View>;
 }
 
+/** History rows shown before "Show all": the newest first. */
+const HISTORY = 6;
+
 export default function PocketDetail() {
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
@@ -63,7 +66,15 @@ export default function PocketDetail() {
   const { pockets, findPocket, pocketsLoaded, cfg, wallet, ledger, events, setAction, setReceipt, refreshPockets, setRules, recordTx, setNotice, sellerName } = useApp();
   const pocket = findPocket(id);
   const flight = useFlight();
-  const [rootW, setRootW] = useState(0);
+  // the page is full width on a phone: the card can draw in the first frame instead of after a layout pass (web shows the app
+  // as a narrow column, so it still measures there)
+  const { width: winW } = useWindowDimensions();
+  const [rootW, setRootW] = useState(Platform.OS === "web" ? 0 : winW);
+  // first frame: the card, its rules and the money buttons; the charts, sellers and history follow one frame later, so the
+  // page is there the moment it opens instead of after everything below the fold is built
+  const [later, setLater] = useState(false);
+  useEffect(() => { const f = requestAnimationFrame(() => setLater(true)); return () => cancelAnimationFrame(f); }, []);
+  const [allRows, setAllRows] = useState(false);
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const mine = useMemo(() => ledger.filter((r) => sameAddr(r.pocket, id)), [ledger, id]);
@@ -186,6 +197,7 @@ export default function PocketDetail() {
           </Card>
         ) : null}
 
+        {later ? <>
         {!pocket.revoked ? (
           <Rise index={3} base={130} dy={6}>
             <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 16 }}>
@@ -233,7 +245,9 @@ export default function PocketDetail() {
 
         <SectionHeader title="History" />
         {rows.length === 0 ? <Card style={{ marginHorizontal: PAGE_MARGIN }}><T v="sub" color="ink2">Nothing from this pocket yet. Creating, adding money, payments and refusals show up here, each with its transaction.</T></Card>
-          : <ListCard><AnimatedList initial="stagger">{rows.map((r, i) => <ActivityRow key={r.key} row={r} showAgent={false} last={i === rows.length - 1} onPress={() => setReceipt(r)} />)}</AnimatedList></ListCard>}
+          : <ListCard><AnimatedList initial="stagger">{(allRows ? rows : rows.slice(0, HISTORY)).map((r, i, shown) => <ActivityRow key={r.key} row={r} showAgent={false} last={i === shown.length - 1} onPress={() => setReceipt(r)} />)}</AnimatedList></ListCard>}
+        {!allRows && rows.length > HISTORY ? <Button label={`Show all ${rows.length}`} kind="text" small onPress={() => setAllRows(true)} style={{ marginTop: 8, alignSelf: "center" }} /> : null}
+        </> : null}
       </Screen>
     </View>
   );

@@ -16,7 +16,7 @@ import { Icon } from "../ui/Icon";
 import { T } from "../ui/Text";
 import { useReduceMotion } from "../ui/motion";
 import { startFlight, useFlight } from "../ui/cardFlight";
-import { useApp } from "../store";
+import { useAppSelect } from "../store";
 import { usd } from "../lib/util";
 import { cleanText } from "../lib/sanitize";
 import type { Pocket } from "../store";
@@ -32,8 +32,9 @@ const TIP = [0, 7, 13, 18];
 const DEPTHS = [0, 1, 2, 3];
 const TOP = 6; // headroom above the furthest card
 
-export function PocketStack({ pockets, play }: { pockets: Pocket[]; play: boolean }) {
-  const { active } = useApp();
+// memo + narrow store reads: a new event or ask must not redraw the deck (four Skia cards) unless the pockets changed
+export const PocketStack = React.memo(function PocketStack({ pockets, play }: { pockets: Pocket[]; play: boolean }) {
+  const active = useAppSelect((s) => s.active);
   const [w, setW] = useState(0);
   const flight = useFlight();
   const focused = useIsFocused();
@@ -88,7 +89,7 @@ export function PocketStack({ pockets, play }: { pockets: Pocket[]; play: boolea
       ) : null}
     </View>
   );
-}
+});
 
 function frontFirst(ids: string[], front?: string) {
   const f = front?.toLowerCase();
@@ -99,7 +100,7 @@ function DeckCard({ pocket, depth, count, cw, play, focused, reduce, dragX, tone
   pocket: Pocket; depth: number; count: number; cw: number; play: boolean; focused: boolean; reduce: boolean; dragX: SharedValue<number>; tone: number; hidden: boolean; onBring: () => void;
 }) {
   const ref = useRef<View>(null);
-  const { findPocket } = useApp();
+  const pockets = useAppSelect((s) => s.pockets);
   const pos = useSharedValue(depth);
   const lift = useSharedValue(0);
   const prev = useRef(depth);
@@ -135,7 +136,7 @@ function DeckCard({ pocket, depth, count, cw, play, focused, reduce, dragX, tone
   const open = () => {
     const id = pocket.address;
     const push = () => router.push({ pathname: "/pocket/[id]", params: { id } });
-    if (!ref.current || !findPocket(id)) return push();
+    if (!ref.current || !pockets.some((p) => p.address === id)) return push();
     ref.current.measureInWindow((x, y, w, h) => { startFlight(id, { x, y, w, h }, tone, ROT[0]); push(); });
   };
   const name = cleanText(pocket.name, 30);

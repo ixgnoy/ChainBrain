@@ -23,6 +23,7 @@ import { dayLabel, money } from "../../lib/util";
 import { paidTotal, radarAlerts, sentinelEvents, type LedgerRow, type RadarAlert, type SentinelView, type WalletEvent } from "../../lib/events";
 
 type Filter = "all" | "paid" | "refused" | "needs";
+const PAGE = 25;
 const FILTERS: { key: Filter; label: string }[] = [{ key: "all", label: "All" }, { key: "paid", label: "Paid" }, { key: "refused", label: "Refused" }, { key: "needs", label: "Needs you" }];
 
 export default function Activity() {
@@ -30,9 +31,12 @@ export default function Activity() {
   const reduce = useReduceMotion();
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
+  // the newest items first; older ones on request. Two weeks of history is ~60 rows, each with its own entrance and layout
+  // spring, and building them all at once held the screen for most of a second
+  const [limit, setLimit] = useState(PAGE);
 
   type Item = { key: string; at: number; row?: LedgerRow; atk?: WalletEvent; radar?: RadarAlert; sentinel?: SentinelView; note?: { title: string; sub: string } };
-  const groups = useMemo(() => {
+  const shownGroups = useMemo(() => {
     const shown = visibleRows([...ledger].reverse()).filter((r) => filter === "all" || describeRow(r, "", "").filter === filter);
     // a run of refusals because the pocket was off is one line: "3 refused after you stopped it"
     const off = (r: LedgerRow) => (r.kind === "refusal" || r.kind === "blocked") && r.reasons[0] === "POCKET_REVOKED";
@@ -53,12 +57,13 @@ export default function Activity() {
     const sen: Item[] = filter === "all" || filter === "refused" ? sentinelEvents(events.filter((e) => pockets.some((p) => p.address.toLowerCase() === String(e.pocket ?? "").toLowerCase()))).filter(isSentinelAlert).map((v) => ({ key: v.key, at: v.at, sentinel: v })) : [];
     const all = [...rows, ...atks, ...rad, ...sen].sort((a, b) => b.at - a.at);
     const out: { day: string; rows: Item[] }[] = [];
-    for (const r of all) {
+    for (const r of all.slice(0, limit)) {
       const d = dayLabel(r.at);
       if (out.at(-1)?.day === d) out.at(-1)!.rows.push(r); else out.push({ day: d, rows: [r] });
     }
-    return out;
-  }, [ledger, events, filter, pockets]);
+    return { days: out, more: Math.max(all.length - limit, 0) };
+  }, [ledger, events, filter, pockets, limit]);
+  const groups = shownGroups.days;
 
   const delays = useStagger(groups.flatMap((g) => g.rows.map((r) => r.key)), 50, 6);
   const onRefresh = async () => {
@@ -98,6 +103,9 @@ export default function Activity() {
           <ListCard head={<DayHead at={g.rows[0].at} />} style={{ marginTop: 16 }}>{g.rows.map((r) => r.note ? <NoteRow key={r.key} delay={delays[r.key] ?? 0} title={r.note.title} sub={r.note.sub} right="Refused" /> : r.sentinel ? <SentinelActivityRow key={r.key} delay={delays[r.key] ?? 0} v={r.sentinel} /> : r.radar ? <RadarActivityRow key={r.key} delay={delays[r.key] ?? 0} a={r.radar} onPress={() => router.push({ pathname: "/radar", params: { name: r.radar!.name } })} /> : r.atk ? <AttackActivityRow key={r.key} delay={delays[r.key] ?? 0} e={r.atk} onPress={() => { const t = attackInfo(r.atk!)?.tx; if (t) setExplorerTx(t); }} /> : <ActivityItem key={r.key} delay={delays[r.key] ?? 0} row={r.row!} showPocket timeOnly onPress={() => setReceipt(r.row!)} />)}</ListCard>
         </Animated.View>
       ))}
+      {shownGroups.more > 0 ? (
+        <Button label={`Show earlier (${shownGroups.more})`} kind="text" small onPress={() => setLimit((n) => n + PAGE)} style={{ marginTop: 12, alignSelf: "center" }} />
+      ) : null}
     </Screen>
   );
 }

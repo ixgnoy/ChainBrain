@@ -32,7 +32,7 @@ function smooth(pts: [number, number][], floor: number) {
   return d;
 }
 
-export function SpendChart({ ledger, agentOf, play = true }: { ledger: LedgerRow[]; agentOf: (pocket: string) => AgentId | undefined; play?: boolean }) {
+function SpendChartView({ ledger, agentOf, play = true }: { ledger: LedgerRow[]; agentOf: (pocket: string) => AgentId | undefined; play?: boolean }) {
   const [range, setRange] = useState<"7" | "14">("7");
   const days = Number(range);
   const [w, setW] = useState(0);
@@ -121,3 +121,5 @@ export function SpendChart({ ledger, agentOf, play = true }: { ledger: LedgerRow
     </Card>
   );
 }
+/** Memoised: its props are stable store values, so a new event or ask elsewhere leaves it alone. */
+export const SpendChart = React.memo(SpendChartView);

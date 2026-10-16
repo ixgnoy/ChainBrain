@@ -7,6 +7,7 @@ import { Screen } from "react-native-screens";
 import type { TabsDescriptor, TabsSlotRenderOptions } from "expo-router/ui";
 import { motion } from "../../tokens";
 import { EASE_OUT, isReducedMotion } from "../motion";
+import { PauseApp } from "../../store";
 
 const ORDER = ["index", "agents", "brain", "activity", "settings"];
 let lastIndex = 0;
@@ -32,16 +33,19 @@ function Enter({ focused, index, children }: PropsWithChildren<{ focused: boolea
   return <Animated.View style={[{ flex: 1 }, style]}>{children}</Animated.View>;
 }
 
-/** Drop-in TabSlot renderFn (same mounting rules as expo-router's default: lazy, frozen when blurred). */
-export function renderTabScreen(descriptor: TabsDescriptor, { isFocused, loaded, detachInactiveScreens }: TabsSlotRenderOptions) {
+/** Drop-in TabSlot renderFn. Like expo-router's default the tabs mount lazily, but a tab named in `warm` mounts in the
+ *  background (see TabsLayout), and a tab out of view is paused (PauseApp): it keeps its state and skips store re-renders
+ *  until it is shown again. Without the pause every open tab redrew on each new event or ask, 200-600 ms each in
+ *  development mode. Not frozen: see the note on useApp in store.tsx. */
+export function renderTabScreen(descriptor: TabsDescriptor, { isFocused, loaded, detachInactiveScreens }: TabsSlotRenderOptions, warm?: ReadonlySet<string>) {
   const { lazy = true, unmountOnBlur, freezeOnBlur } = descriptor.options as { lazy?: boolean; unmountOnBlur?: boolean; freezeOnBlur?: boolean };
   if (unmountOnBlur && !isFocused) return null;
-  if (lazy && !loaded && !isFocused) return null;
+  if (lazy && !loaded && !isFocused && !warm?.has(descriptor.route.name)) return null;
   const index = Math.max(ORDER.indexOf(descriptor.route.name), 0);
   return (
     <Screen key={descriptor.route.key} enabled={detachInactiveScreens} activityState={isFocused ? 2 : 0} freezeOnBlur={freezeOnBlur}
       style={[styles.screen, isFocused ? styles.focused : styles.unfocused]}>
-      <Enter focused={isFocused} index={index}>{descriptor.render()}</Enter>
+      <Enter focused={isFocused} index={index}><PauseApp paused={!isFocused}>{descriptor.render()}</PauseApp></Enter>
     </Screen>
   );
 }

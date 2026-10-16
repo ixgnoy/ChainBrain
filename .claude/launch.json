@@ -18,6 +18,15 @@
         "pnpm --dir web dev --port 5173 --strictPort"
       ],
       "port": 5173
+    },
+    {
+      "name": "mobile-prod",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd mobile && npx expo start --no-dev --minify --port 8092"
+      ],
+      "port": 8092
     }
   ]
 }
