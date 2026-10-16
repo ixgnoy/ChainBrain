@@ -53,7 +53,7 @@ export function SpeakRules({ onUse }: { onUse(d: Draft): void }) {
         <T v="row" w="semi">Say it in one sentence</T>
       </View>
       <Field value={text} onChangeText={(t) => setText(t.slice(0, 300))} placeholder={EXAMPLE} multiline accessibilityLabel="Describe the pocket in one sentence" style={{ minHeight: 84, paddingVertical: 12, textAlignVertical: "top" }} />
-      <Button label={res ? "Read it again" : "Build my pocket"} kind={res ? "secondary" : "primary"} small loading={busy} onPress={build} />
+      <Button label={res ? "Read it again" : "Build my pocket"} kind={res || !text.trim() ? "secondary" : "primary"} small loading={busy} onPress={build} />
       {err ? <T v="sub" color="negative">{err}</T> : null}
       {res && p ? (
         <Rise dy={8} style={{ gap: 12 }}>

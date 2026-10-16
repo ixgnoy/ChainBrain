@@ -174,8 +174,10 @@ async function until(what, fn, ms = 30000, step = 200) {
     await page.getByRole("button", { name: "New pocket" }).first().click();
     await visible("What is it for?").waitFor();
     await page.getByText(/US\$5 budget · up to US\$2 each/).first().click();
-    for (let i = 0; i < 6; i++) { await page.getByRole("button", { name: "Continue" }).click(); await sleep(350); }
+    // a preset sets every limit, so one press goes straight to Review
+    await page.getByRole("button", { name: "Review", exact: true }).click();
     await visible("Looks right?").waitFor();
+    check("a preset goes straight to Review, every row editable", (await page.getByRole("button", { name: /^Sellers: .*Change$/ }).count()) === 1);
     await shot("01b-wizard-review");
     await slide("Slide to create and fund");
     await page.waitForURL(/pocket\/0x[0-9a-fA-F]{40}/, { timeout: 30000 });

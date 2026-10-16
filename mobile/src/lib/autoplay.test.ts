@@ -22,7 +22,7 @@ test("auto-play: wizard, scenes 1-8, Claude via Connect and the ask dock, then s
   let continues = 0;
   on("home.newPocket", () => {});
   on("wizard.preset", (p) => assert.equal(p, "research"));
-  on("wizard.continue", () => { if (++continues === 6) on("wizard.create", async () => {
+  on("wizard.continue", () => { if (++continues === 1) on("wizard.create", async () => { // a preset goes straight to Review
     const { pocket } = w.chain.createPocket(OWNER, { agent: SIM_AGENT, cap: parseUsd("2"), askAbove: parseUsd("1"), expiresAt: BigInt(Math.floor(Date.now() / 1000) + 6 * 3600), sellers: payTo("datalite", "datapro") });
     w.chain.transfer(OWNER, pocket, parseUsd("5"));
     active = pocket;

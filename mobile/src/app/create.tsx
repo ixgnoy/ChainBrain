@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "../store";
 import { c, F, motion, radius } from "../tokens";
 import { BackHeader } from "../ui/BackHeader";
-import { Button, Card, Field, Press, SummaryCard, type PressTap } from "../ui/kit";
+import { Button, Card, Field, Press, type PressTap } from "../ui/kit";
 import { useAutoplayTarget } from "../lib/autoplayTargets";
 import { Money } from "../ui/Money";
 import { Reveal } from "../ui/Reveal";
@@ -211,6 +211,19 @@ export default function Create() {
 
   const canNext = step === 0 ? name.trim().length > 0 : step === 2 ? sellers.length > 0 : true;
   const go = (n: number) => { const t = Math.max(0, Math.min(STEPS.length - 1, n)); dir.current = t >= step ? 1 : -1; haptic.select(); setStep(t); };
+  const REVIEW = STEPS.length - 1;
+  // a preset already sets every limit, so Continue on the first page goes straight to Review (every row there is editable);
+  // Custom walks each page. Editing a row from Review comes back to Review.
+  const editing = useRef(false);
+  const reviewFrom = useRef(0);
+  const next = () => {
+    if (editing.current) { editing.current = false; go(REVIEW); return; }
+    if (step === 0 && preset !== "custom") { reviewFrom.current = 0; go(REVIEW); return; }
+    if (step + 1 === REVIEW) reviewFrom.current = step;
+    go(step + 1);
+  };
+  const back = () => { if (step === REVIEW) { go(reviewFrom.current); return; } editing.current = false; go(step - 1); };
+  const edit = (n: number) => { editing.current = true; go(n); };
   const open = (id?: string) => { if (left.current || !id) return; left.current = true; router.replace({ pathname: "/pocket/[id]", params: { id } }); };
   const tonightPassed = life === "until-tonight" && Number(expiryFor(life)) * 1000 < Date.now();
 
@@ -255,6 +268,7 @@ export default function Create() {
     if (d.name) setName(d.name.slice(0, 24));
     setFunds(Number(d.budget)); setCap(Number(d.cap)); setSellers(d.sellers); setLife(d.lifetime);
     if (d.askAbove === "never") setAskMode("never"); else if (d.askAbove === "0") setAskMode("always"); else { setAskMode("above"); setAsk(Number(d.askAbove)); }
+    reviewFrom.current = 0;
     go(STEPS.length - 1);
   };
   const toggle = (id: string) => { haptic.select(); setSellers((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); };
@@ -264,7 +278,7 @@ export default function Create() {
     switch (step) {
       case 0: return (
         <View style={{ gap: 20 }}>
-          <Title h="What is it for?" sub="Say it in one sentence, or pick a starting point. You can change every setting on the next pages." />
+          <Title h="What is it for?" sub="Say it in one sentence, or pick a starting point. You can change every setting before you sign." />
           <SpeakRules onUse={applyDraft} />
           <View style={{ gap: 10 }}>
             {(Object.keys(PRESETS) as (keyof typeof PRESETS)[]).map((k) => {
@@ -326,7 +340,7 @@ export default function Create() {
             <Money v="balance" value={values.budget} color="ink" />
             <T v="sub" color="ink2">{worstCase(parseUsd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
           </View>
-          <SummaryCard surface="card" rows={[["Name", values.label], ["Money in", `US$${values.budget}`], ["Sellers", sellers.map((s) => cleanText(cfg?.sellers.find((x) => x.id === s)?.name ?? s, 24)).join(", ")], ["Per payment", `up to US$${values.cap}`], ["Asks you", askLabel], ["Ends", new Date(Number(expiryFor(life)) * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })]]} />
+          <EditableSummary onEdit={stage === "idle" && !progress.current.pocket ? edit : undefined} rows={[[0, "Name", values.label], [1, "Money in", `US$${values.budget}`], [2, "Sellers", sellers.map((s) => cleanText(cfg?.sellers.find((x) => x.id === s)?.name ?? s, 24)).join(", ")], [3, "Per payment", `up to US$${values.cap}`], [4, "Asks you", askLabel], [5, "Ends", new Date(Number(expiryFor(life)) * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })]]} />
           {stage !== "idle" || progress.current.pocket || done.current.createTx ? (
             <Card style={{ gap: 10 }}>
               {([["create", "1. Create the pocket", !!progress.current.pocket || !!done.current.createTx, progress.current.createTx ?? done.current.createTx], ["fund", "2. Add the money", !!progress.current.funded || !!done.current.fundTx, progress.current.fundTx ?? done.current.fundTx]] as const).map(([k, l, ok, hash]) => (
@@ -347,7 +361,7 @@ export default function Create() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
-      <BackHeader title={`${step + 1} of ${STEPS.length}`} muted close onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
+      <BackHeader title={step === STEPS.length - 1 ? "Review" : `${step + 1} of ${STEPS.length}`} muted close onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
       <Stack.Screen options={{ gestureEnabled: stage === "idle" }} />
       <ProgressBar step={step} total={STEPS.length} />
       <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 12, gap: 22 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -364,11 +378,27 @@ export default function Create() {
         {step === STEPS.length - 1 ? (
           <SlideToConfirm key={String(error)} label={progress.current.pocket ? "Slide to retry" : "Slide to create and fund"} doneLabel="Pocket created" onConfirm={create} auto="wizard.create" disabled={!wallet || !cfg || tonightPassed} />
         ) : (
-          <Button label="Continue" auto="wizard.continue" onPress={() => go(step + 1)} disabled={!canNext} />
+          <Button label={editing.current ? "Back to review" : step === 0 && preset !== "custom" ? "Review" : "Continue"} auto="wizard.continue" onPress={next} disabled={!canNext} />
         )}
-        {step > 0 && <Button label="Back" kind="text" onPress={() => go(step - 1)} small />}
+        {step > 0 && <Button label="Back" kind="text" onPress={back} small />}
       </View>
       {stage === "done" ? <Done name={values.label} budget={values.budget} createTx={fin.createTx} fundTx={fin.fundTx} first={first.current} onOpen={() => open(fin.id)} /> : null}
+    </View>
+  );
+}
+
+/** Review's rows; each opens its page to change it, then comes back here. */
+function EditableSummary({ rows, onEdit }: { rows: [number, string, string][]; onEdit?: (step: number) => void }) {
+  return (
+    <View style={{ backgroundColor: c.card, borderRadius: radius.tile, borderCurve: "continuous", paddingHorizontal: 16, paddingVertical: 4 } as object}>
+      {rows.map(([n, k, v], i) => (
+        <Press key={k} kind="row" haptics="select" onPress={onEdit ? () => onEdit(n) : undefined} accessibilityRole={onEdit ? "button" : undefined} accessibilityLabel={onEdit ? `${k}: ${v}. Change` : `${k}: ${v}`}
+          style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, paddingVertical: 10, borderBottomWidth: i === rows.length - 1 ? 0 : 1, borderBottomColor: c.tileStroke }}>
+          <T v="sub" color="muted" style={{ width: 96 }}>{k}</T>
+          <T v="sub" w="semi" style={{ flex: 1, textAlign: "right", fontSize: 15, lineHeight: 22 }}>{v}</T>
+          {onEdit ? <Icon name="edit" size={14} color={c.muted} stroke={1.8} /> : null}
+        </Press>
+      ))}
     </View>
   );
 }
