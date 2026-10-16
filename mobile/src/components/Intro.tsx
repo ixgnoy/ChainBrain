@@ -1,12 +1,12 @@
-// First-launch intro, shown on every launch: three pages, Skip always visible, swipe with the finger (the pager follows it 1:1 and
-// lets go with its velocity), a page indicator that doubles as the auto-advance timer (the whole run takes about 7 s; the first
-// touch hands control to the owner). Each page has one illustration built from app primitives (Stitch chainbrain_intro + the
+// First-launch intro (and on demand from Settings): three pages, Skip always visible, swipe with the finger (the pager follows
+// it 1:1 and lets go with its velocity) or press Next. User-paced: nothing moves on its own (NN/g on auto-forwarding, WCAG
+// 2.2.2), so each page is read at the owner's speed. Each page has one illustration built from app primitives (Stitch chainbrain_intro + the
 // vaultbank intro): the owner's real pocket cards are dealt in, tilted and spilling off the edge, while the mark locks in; the rules of a
 // contract draw in under a lock, the worst case fills a hatch bar. No gradients, glow or sparkles.
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, { Easing, Extrapolation, cancelAnimation, interpolate, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
+import Animated, { Extrapolation, cancelAnimation, interpolate, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { c, F, level3, motion, radius } from "../tokens";
@@ -22,7 +22,6 @@ import { Icon } from "../ui/Icon";
 import { EASE_OUT, rubberband, useReduceMotion } from "../ui/motion";
 import { finishIntro } from "../ui/intro";
 
-const PAGE_MS = 2200; // each page is read for about two seconds; three pages end in about 7 s
 const PAGES = [
   { title: "Give your AI a pocket, not your wallet", sub: "A pocket holds a small budget for one agent: ChainBrain's own, Claude or ChatGPT. It can only spend what you put in." },
   { title: "The limits live in a contract you own", sub: "Which sellers, how much per payment, when to ask you. Only your key can change them." },
@@ -170,19 +169,18 @@ function Page({ i, w, pos, active, reduce }: { i: number; w: number; pos: Shared
   );
 }
 
-function Dot({ i, w, pos, fill, auto }: { i: number; w: number; pos: SharedValue<number>; fill: SharedValue<number>; auto: boolean }) {
+function Dot({ i, w, pos }: { i: number; w: number; pos: SharedValue<number> }) {
   const box = useAnimatedStyle(() => {
     const p = w > 0 ? pos.value / w : 0;
     return { width: interpolate(p, [i - 1, i, i + 1], [8, 30, 8], Extrapolation.CLAMP) };
   });
   const on = useAnimatedStyle(() => {
     const p = w > 0 ? pos.value / w : 0;
-    const near = interpolate(p, [i - 0.5, i, i + 0.5], [0, 1, 0], Extrapolation.CLAMP);
-    return { opacity: near, width: `${(auto ? fill.value : 1) * 100}%` };
+    return { opacity: interpolate(p, [i - 0.5, i, i + 0.5], [0, 1, 0], Extrapolation.CLAMP) };
   });
   return (
     <Animated.View style={[{ height: 8, borderRadius: 4, backgroundColor: c.line, overflow: "hidden" }, box]}>
-      <Animated.View style={[{ height: 8, borderRadius: 4, backgroundColor: c.ink }, on]} />
+      <Animated.View style={[{ height: 8, borderRadius: 4, backgroundColor: c.ink, width: "100%" }, on]} />
     </Animated.View>
   );
 }
@@ -192,10 +190,8 @@ export function Intro({ onDone }: { onDone: () => void }) {
   const reduce = useReduceMotion();
   const [w, setW] = useState(0);
   const [page, setPage] = useState(0);
-  const [auto, setAuto] = useState(true);
   const pos = useSharedValue(0);
   const start = useSharedValue(0);
-  const fill = useSharedValue(0);
   const fade = useSharedValue(1);
   const leaving = useRef(false);
   const first = useRef(true);
@@ -203,7 +199,6 @@ export function Intro({ onDone }: { onDone: () => void }) {
   const finish = useCallback(() => {
     if (leaving.current) return;
     leaving.current = true;
-    setAuto(false); // the auto-advance stops with the fade
     finishIntro(); // Home plays its entrance while the intro lets go
     fade.value = withTiming(0, { duration: reduce ? 160 : 260, easing: EASE_OUT }, (ok) => { if (ok) scheduleOnRN(onDone); });
   }, [onDone, reduce, fade]);
@@ -216,26 +211,9 @@ export function Intro({ onDone }: { onDone: () => void }) {
 
   useEffect(() => { if (first.current) { first.current = false; return; } haptic.select(); }, [page]);
 
-  // auto-advance: the active dot fills over PAGE_MS, then the next page; the first touch hands control to the owner
-  useEffect(() => {
-    if (!auto || w === 0 || leaving.current) return;
-    // start the clock once frames are being drawn (two animation frames): a slow first launch must not page past unseen
-    let t: ReturnType<typeof setTimeout> | undefined;
-    let r2 = 0;
-    const r1 = requestAnimationFrame(() => {
-      r2 = requestAnimationFrame(() => {
-        fill.value = 0;
-        fill.value = withTiming(1, { duration: PAGE_MS, easing: Easing.linear });
-        t = setTimeout(() => { if (leaving.current) return; if (page >= PAGES.length - 1) finish(); else go(page + 1); }, PAGE_MS);
-      });
-    });
-    return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); if (t) clearTimeout(t); cancelAnimation(fill); };
-  }, [auto, page, w]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const take = () => setAuto(false);
   const pan = Gesture.Pan()
     .activeOffsetX([-10, 10]).failOffsetY([-28, 28])
-    .onBegin(() => { start.value = pos.value; cancelAnimation(pos); scheduleOnRN(take); })
+    .onBegin(() => { start.value = pos.value; cancelAnimation(pos); })
     .onUpdate((e) => {
       const raw = start.value - e.translationX;
       const max = (PAGES.length - 1) * w;
@@ -280,7 +258,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
       </GestureDetector>
       <View style={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 16, gap: 18 }}>
         <View accessible accessibilityLabel={`Page ${page + 1} of ${PAGES.length}`} style={{ flexDirection: "row", gap: 6, justifyContent: "center", alignItems: "center", height: 12 }}>
-          {PAGES.map((_, i) => <Dot key={i} i={i} w={w} pos={pos} fill={fill} auto={auto && page === i} />)}
+          {PAGES.map((_, i) => <Dot key={i} i={i} w={w} pos={pos} />)}
         </View>
         <Button label={last ? "Get started" : "Next"} kind="vermillion" iconRight="arrowUpRight" onPress={() => (last ? finish() : go(page + 1))} />
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: -6 }}>

@@ -9,6 +9,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { TiltProvider } from "../ui/tilt";
+import { INTRO_SEEN_KEY, finishIntro, onReplayIntro } from "../ui/intro";
+import { getItem, setItem } from "../storage";
 import { AskDock } from "../components/AskDock";
 import { c } from "../tokens";
 import { AppProvider, useApp } from "../store";
@@ -30,7 +32,14 @@ colorScheme.set("light");
 
 function Shell() {
   const { keyState } = useApp();
-  const [intro, setIntro] = useState(true); // the intro plays on every launch
+  // the intro plays on the first launch only (and again from Settings, "How ChainBrain works")
+  const [intro, setIntro] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void getItem(INTRO_SEEN_KEY).then((v) => { if (!live) return; if (v) finishIntro(); else setIntro(true); }).catch(() => { if (live) setIntro(true); });
+    const off = onReplayIntro(() => setIntro(true));
+    return () => { live = false; off(); };
+  }, []);
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
       <StatusBar style="dark" />
@@ -64,7 +73,7 @@ function Shell() {
           <PocketPickerSheet />
           <ExplorerSheet />
           <ToastHost />
-          {intro ? <Intro onDone={() => setIntro(false)} /> : null}
+          {intro ? <Intro onDone={() => { setIntro(false); void setItem(INTRO_SEEN_KEY, "1").catch(() => {}); }} /> : null}
         </>
       )}
     </View>

@@ -10,6 +10,7 @@ import { isPrivateKey } from "../../lib/keystore";
 import { c, motion } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
 import { Button, Card, Field, ListCard, ListRow, Toggle } from "../../ui/kit";
+import { replayIntro } from "../../ui/intro";
 import { isAddress, type Address } from "viem";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
@@ -115,6 +116,9 @@ export default function Settings() {
 
       <Group title="About" />
       <ListCard>
+        <ListRow a11y="How ChainBrain works, shows the intro again" icon="info" title="How ChainBrain works" sub="The three ideas behind pockets, in under a minute" onPress={replayIntro}>
+          <Icon name="chevronRight" size={18} color={c.muted} />
+        </ListRow>
         <ListRow a11y="About and compliance" icon="globe" title="About and compliance" sub="ChainBrain · your agent spends only from the pockets you fund" onPress={() => setAbout(!about)}>
           <View style={{ transform: [{ rotate: about ? "90deg" : "0deg" }] }}><Icon name="chevronRight" size={18} color={c.muted} /></View>
         </ListRow>

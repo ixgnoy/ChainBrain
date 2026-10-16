@@ -64,7 +64,7 @@ async function until(what, fn, ms = 30000, step = 200) {
 
   await page.goto(`${URL0}/`);
 
-  await run("intro: three pages on every launch, Skip always there", async () => {
+  await run("intro: three user-paced pages on the first launch, Skip always there", async () => {
     const skip = page.getByRole("button", { name: "Skip" });
     await skip.waitFor({ timeout: 60000 });
     await visible("Give your AI a pocket, not your wallet").waitFor();
@@ -318,6 +318,13 @@ async function until(what, fn, ms = 30000, step = 200) {
     check("custom server is off", /Custom server\s*Off/.test(t));
     check("no demo wording in Settings", !/\bdemo\b|mock|simulat/i.test(t));
     await shot("11-settings");
+    // the intro showed once at the start; Settings replays it
+    await page.getByRole("button", { name: /How ChainBrain works/ }).click();
+    const skip = page.getByRole("button", { name: "Skip" });
+    await skip.waitFor({ timeout: 10000 });
+    check("How ChainBrain works replays the intro", await visible("Give your AI a pocket, not your wallet").isVisible());
+    await skip.click();
+    await skip.waitFor({ state: "detached", timeout: 5000 });
   });
 
   check("no page errors", issues.length === 0, issues.slice(0, 5).join(" | "));
