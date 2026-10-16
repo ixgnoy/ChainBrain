@@ -52,7 +52,7 @@ export function gateOf(code?: string): GateId {
   switch (code) {
     case "INTENT_NOT_CONFIRMED": case "INTENT_EXPIRED": case "PRICE_ABOVE_INTENT": case "INTENT_TOTAL_REACHED": case "INTENT_ITEMS_REACHED": case "QUOTE_MISMATCH": case "QUOTE_UNKNOWN": case "QUOTE_ALREADY_PAID":
       return "intent";
-    case "POCKET_REVOKED": case "POCKET_EXPIRED": return "active";
+    case "POCKET_REVOKED": case "POCKET_FROZEN": case "POCKET_EXPIRED": return "active";
     case "SELLER_NOT_ALLOWED": return "seller";
     case "OVER_CAP": return "cap";
     case "OVER_BUDGET": return "budget";

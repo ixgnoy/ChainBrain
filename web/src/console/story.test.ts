@@ -99,3 +99,15 @@ it("a revoked pocket is stopped and its funded total comes from the fund transac
   expect(w).toMatchObject({ stopped: true, max: 0n, funded: 5_000_000n, fundedKnown: true });
   expect(worstCase(p, [], (x) => x).fundedKnown).toBe(false);
 });
+
+it("a pocket the Sentinel froze reads Frozen, and the agent can lose nothing from it while it stays frozen", async () => {
+  const { pocketStatus } = await import("./parts");
+  const { txLabel } = await import("./network");
+  const p = pocket("b", { frozen: true, balance: 1_000_000n, expiresAt: Math.floor(Date.now() / 1000) + 3600 });
+  expect(pocketStatus(p)).toEqual({ label: "Frozen", kind: "refused" });
+  expect(worstCase(p, [], (x) => x)).toMatchObject({ stopped: true, max: 0n });
+  expect(pocketStatus({ ...p, frozen: false }).label).toBe("Active");
+  expect(txLabel({ kind: "rules", status: "success", label: "Frozen by the Sentinel" })).toBe("Frozen by the Sentinel");
+  expect(txLabel({ kind: "rules", status: "success" })).toBe("Rules changed");
+  expect(txLabel({ kind: "rules", status: "reverted", reason: "NOT_OWNER", label: "Reverted by the pocket" })).toBe("Rule change refused (NOT_OWNER)");
+});

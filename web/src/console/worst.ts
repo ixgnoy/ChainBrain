@@ -2,7 +2,7 @@
 import type { ChainTx, PocketState } from "./chain";
 
 export type Worst = {
-  /** Most the agent could lose now (0 when the pocket is revoked or expired). */
+  /** Most the agent could lose now (0 when the pocket is revoked, frozen or expired). */
   max: bigint;
   /** What the pocket was funded with in total (never less than what it holds). */
   funded: bigint;
@@ -15,7 +15,7 @@ export type Worst = {
 };
 
 export function worstCase(p: PocketState, txs: ChainTx[], sellerName: (id: string) => string, now = Date.now()): Worst {
-  const stopped = p.revoked || p.expiresAt * 1000 < now;
+  const stopped = p.revoked || !!p.frozen || p.expiresAt * 1000 < now;
   const put = txs.filter((t) => t.kind === "fund" && t.pocket.toLowerCase() === p.address.toLowerCase() && t.status !== "reverted").reduce((n, t) => n + (t.amount ?? 0n), 0n);
   // funded comes from the fund transactions; a pocket with none on record is at least what it holds
   const funded = put > p.balance ? put : p.balance;

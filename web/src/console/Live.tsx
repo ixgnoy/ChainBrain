@@ -206,12 +206,12 @@ function PocketCard({ p, name, phone, stopped, status, present }: { p: PocketSta
           <span className="inline-flex min-w-0 items-center gap-2 rounded-full bg-white py-1 pl-1 pr-3 text-[12px] font-semibold text-ink">
             <AgentTag agentKey={p.agent} serverAgent={cfg.agent} className="bg-transparent px-0" />
             <span aria-hidden className={cn("size-2 shrink-0 rounded-full", stopped ? "bg-vermillion" : "bg-green")} />
-            <span className="truncate">{stopped ? "Stopped" : "Agent pocket"}</span>
+            <span className="truncate">{stopped ? (p.frozen && !p.revoked ? "Frozen" : "Stopped") : "Agent pocket"}</span>
           </span>
         </div>
         <div className="px-5 pt-3">
-          <div className={cn("eyebrow", stopped ? "text-muted" : "text-blue-ink")}>{stopped ? "Held in a stopped pocket" : "Available"}</div>
-          <div className={cn("figure mt-0.5 text-[48px] leading-[52px]", stopped && "text-ink2")} data-testid="pocket-balance" data-stopped={stopped ? "true" : undefined}><Fig text={usd(p.balance)} />{stopped && p.balance > 0n && <span className="ml-2 font-sans text-[16px] font-bold tracking-normal"> to return</span>}</div>
+          <div className={cn("eyebrow", stopped ? "text-muted" : "text-blue-ink")}>{stopped ? (p.frozen && !p.revoked ? "Held in a frozen pocket" : "Held in a stopped pocket") : "Available"}</div>
+          <div className={cn("figure mt-0.5 text-[48px] leading-[52px]", stopped && "text-ink2")} data-testid="pocket-balance" data-stopped={stopped ? "true" : undefined}><Fig text={usd(p.balance)} />{stopped && !(p.frozen && !p.revoked) && p.balance > 0n && <span className="ml-2 font-sans text-[16px] font-bold tracking-normal"> to return</span>}</div>
         </div>
         <div className="flex items-end justify-between gap-3 px-5 pb-4 pt-4">
           <div className="min-w-0">

@@ -16,7 +16,7 @@ const big = (v: unknown) => { try { return v == null ? undefined : BigInt(v as s
 const toPocket = (p: Wire): PocketState => ({
   address: p.address as Address, owner: p.owner as Address, agent: p.agent as Address, createdTx: p.createdTx as Hex | undefined,
   createdBlock: big(p.createdBlock), balance: big(p.balance) ?? 0n, cap: big(p.cap) ?? 0n, askAbove: big(p.askAbove) ?? 0n,
-  expiresAt: Number(p.expiresAt), revoked: !!p.revoked, allowed: Array.isArray(p.allowed) ? p.allowed : [],
+  expiresAt: Number(p.expiresAt), revoked: !!p.revoked, frozen: !!p.frozen, allowed: Array.isArray(p.allowed) ? p.allowed : [],
 });
 const toTx = (t: Wire): ChainTx => ({
   hash: t.hash as Hex, block: big(t.block) ?? 0n, logIndex: Number(t.logIndex ?? 0), pocket: t.pocket as Address, kind: t.kind, amount: big(t.amount),

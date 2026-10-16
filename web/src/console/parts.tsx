@@ -61,6 +61,7 @@ export function TestnetChip() {
 
 export function pocketStatus(p: PocketState): { label: string; kind: ChipKind } {
   if (p.revoked) return { label: "Revoked", kind: "refused" };
+  if (p.frozen) return { label: "Frozen", kind: "refused" };
   if (p.expiresAt * 1000 < Date.now()) return { label: "Expired", kind: "revoked" };
   return { label: "Active", kind: "ok" };
 }

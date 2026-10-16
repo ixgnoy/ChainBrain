@@ -74,8 +74,9 @@ export function useNetwork(): Network {
   return v;
 }
 
-export const txLabel = (t: Pick<ChainTx, "kind"> & { status?: string; reason?: string }) =>
-  t.status === "reverted" ? (t.kind === "rules" ? `Rule change refused${t.reason ? ` (${t.reason})` : ""}` : "Blocked transfer") : TX_LABEL[t.kind];
+export const txLabel = (t: Pick<ChainTx, "kind"> & { status?: string; reason?: string; label?: string }) =>
+  t.status === "reverted" ? (t.kind === "rules" ? `Rule change refused${t.reason ? ` (${t.reason})` : ""}` : "Blocked transfer")
+  : t.kind === "rules" && t.label ? t.label : TX_LABEL[t.kind]; // "Frozen by the Sentinel", "Cap changed"… when the source names it
 
 /** Who sent and who received, by money flow (a payment leaves the pocket; funding arrives from the owner). */
 export function describeTx(t: ChainTx, owner?: string): TxDetail {
