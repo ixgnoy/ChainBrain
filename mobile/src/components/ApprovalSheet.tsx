@@ -5,7 +5,7 @@
 // TransferWithAuthorization the wallet built (POST /api/approvals/:id {approved, signature}). Intent: confirm the
 // fixed-template task card.
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View } from "react-native";
+import { Keyboard, View } from "react-native";
 import { router } from "expo-router";
 import Animated from "react-native-reanimated";
 import { useApp } from "../store";
@@ -66,8 +66,12 @@ export function ApprovalSheet() {
   // another approval replacing the one being signed must not leave the sheet held open
   const seen = useRef<string | undefined>(current?.id);
   useEffect(() => { if (current && current.id !== seen.current) setHold(false); if (current) seen.current = current.id; }, [current?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the agent's ask arrives while the owner may still be typing in the chat: the cheque has no field, so the keyboard goes
+  // (it would otherwise squeeze the sheet and take the taps meant for its buttons)
+  const open = (approvalOpen && !!current) || hold;
+  useEffect(() => { if (open) Keyboard.dismiss(); }, [open]);
   return (
-    <Sheet visible={(approvalOpen && !!current) || hold} onClose={() => { setHold(false); setApprovalOpen(false); }}>
+    <Sheet visible={open} onClose={() => { setHold(false); setApprovalOpen(false); }}>
       {shown ? <Body key={shown.id} a={shown} queue={pending.filter((x) => x.kind !== "question").length} hold={setHold} /> : null}
     </Sheet>
   );
