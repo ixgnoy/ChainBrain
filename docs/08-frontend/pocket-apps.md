@@ -194,3 +194,5 @@ The console plays the same scene on its own presenter pocket (Judges tab, "Routi
 | `web` tests | 81 pass, and the build is clean. Scene 12 plays from the Judges tab |
 | `server` | 4 pocket-app tests pass. The six fork test files need `anvil` (Foundry), which isn't installed on this machine; they failed to start, unrelated to this work |
 | `node devstack/e2e/builtin.cjs` | 57/57, including the research desk app, Claude's deal watcher chart, and scene 12 end to end |
+| Expo Go, iOS Simulator (iPhone 17) | Run by hand: the deck, a research desk, New pocket app (deal watcher and research desk), slide and Face ID, the card's landing, three runs, the cheque co-signed with Face ID (`screenshots/pocket-apps/ios-*.png`). Not verified: a physical iPhone, 60 fps on a device, accessibility text sizes on iOS |
+| Console (headless Chromium at 1440) | The Pockets list with layout chips; a deal watcher, subscriptions and a research desk as apps (`c-*.png`) |

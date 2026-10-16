@@ -96,3 +96,49 @@ The first browser run at 390 pt and the first full e2e pass turned up four thing
 | How should a routine that pays on its own notify? | Apple HIG interruption levels: Passive for "information people can view at their leisure", Time Sensitive for now ([Managing notifications](https://developer.apple.com/design/human-interface-guidelines/managing-notifications)). Revolut alerts only before a payment or when funds are short ([Finextra, 2020](https://www.finextra.com/pressarticle/84380/revolut-launches-smart-subscriptions-feature)) | A run's receipt is silent and in the app (recent runs, the shelf, the meter). Only the cheque past the allowance asks, through the existing ask path (`lib/notify.ts notifyAsk`). No per-run push |
 
 Not verified, so no decision rests on it: whether Yoga on iOS takes a baseline from the first child. The bottom-alignment fix avoids the question on every platform. The note that Expo Go runs JavaScript slower than a release build means 60 fps has to be judged on a device.
+
+## Loop 3: critique against "AI-made" tells, the console, and iOS (17 Oct 2026)
+
+**What reads as AI-made in 2026.** Sources:
+- [Noqta, Jun 2026](https://noqta.tn/en/blog/ai-design-slop-overused-ui-patterns-fix-2026), an opinion piece;
+- [a community anti-slop skill file](https://www.skills.sh/d-oit/do-web-doc-resolver/anti-ai-slop).
+
+They list the same tells: uniform corner radii, decorative purple-to-blue gradients, over-tracked uppercase eyebrows everywhere, fake "Live" badges, one-sided coloured card borders, and identical card grids. None of this is a controlled study. We used it as a checklist against our own screenshots:
+
+| Tell | Ours | Done |
+| --- | --- | --- |
+| Uniform radii | Cards 20, tiles 16, buttons 14, from the design system | Kept |
+| Gradients, glass, purple | None | Kept |
+| Tracked uppercase eyebrow on every card | Every block had one | **Changed:** block titles are sentence-case Clash headings (phone and console). The status pill is sentence case too |
+| Fake live badges | "Active" shows only for a real routine, and does not pulse | Kept |
+| One-sided borders | None | Kept |
+
+**Console.**
+- **Found:** the console seeds other owners' morning between the presenter's history and today, so a routine run due in between got published after them. Its time was pushed forward: an 08:00 quote showed at 20:11.
+- **Changed:** `catchUpRoutines` runs those first, and a test checks every seeded quote lands at 08:00.
+- Pocket names come from the app's title (the owner's words).
+
+**iOS (Expo Go on the iOS 26 Simulator, iPhone 17).**
+
+| Found | Changed |
+| --- | --- |
+| New pocket app padded its top twice: the header is in the flow when the page has no scroll value | Removed the extra padding |
+| A slide to create that starts near the left edge was taken by the stack's swipe-back | Swipe-back is off on that page, which has its own back button |
+| The ask dock floats over the bottom of the page | The page has room for it |
+
+Verified on the Simulator:
+- the deck with job faces;
+- the research desk's covers;
+- New pocket app composing a deal watcher and a research desk;
+- the slide to create, then Face ID (simulated match);
+- the card landing in its app;
+- three runs, the third raising the cheque ("Run 3 would pass this week's US$0.05", the week's bar), co-signed with Face ID;
+- the meter at US$0.051 with US$0.001 over.
+
+Screenshots: `screenshots/pocket-apps/ios-*.png`.
+
+**Not verified:**
+- a physical iPhone;
+- 60 fps in Expo Go on a device, since the Simulator is not a frame-rate reference;
+- Dynamic Type at accessibility sizes on iOS (the layouts use `minHeight` and wrap, but this wasn't looked at on a device);
+- the real Face ID sheet's wording in Expo Go on a device. The copy there says "your passcode", because Expo Go has no Face ID usage text.

@@ -129,6 +129,17 @@ Dev note: after Fast Refresh of a file with Reanimated styles (`Hatch.tsx`, `Sli
 
 Clash Display and General Sans load; the warm canvas; the deck of 2.5D cards (material, edge, perspective) and the card flight; the pocket page and an agent's page with the same card; the ask dock for Claude's request, the cheque turning over, slide to approve (no Face ID enrolled in the simulator, so the slide signs alone); the spending chart; the intro's spilling cards and the mark; the four-tile icon on Expo Go's loading card. Phone tilt is not testable in the simulator (no motion), so the lean and the moving sheen are unverified.
 
+## Verified in Expo Go, pocket apps (17 Oct)
+
+On the iOS Simulator (iPhone 17, Expo Go, built-in network):
+- **Home deck:** the cards wear their job faces.
+- **Research desk:** the report covers render.
+- **New pocket app:** composes a Claude deal watcher and a ChainBrain research desk; the proof is folded and the card says "Draft".
+- **Slide to create:** works now that swipe-back no longer steals it. The Face ID sheet appears and a simulated match signs; the pocket is created and funded and opens in its app.
+- **Routine:** "Have ChainBrain run it now" ×3. Runs 1 and 2 pay US$0.017 each, with "Run 2 is running…" and a live meter. Run 3's cheque reads "Run 3 would pass this week's US$0.05" with the week's bar; co-signed with Face ID, the meter shows US$0.051 with US$0.001 over.
+
+Screenshots: `docs/08-frontend/screenshots/pocket-apps/ios-*.png`.
+
 ## Not verified
 
 Not run on a physical phone: haptics, 120 Hz motion, the cards leaning with the phone and their sheen, Face ID on the cheque, the background notification, the deck's 3D swipe under a real finger, and iOS edge swipe-back on the pocket page. No dark mode. The native splash (the canvas with the four-tile mark, `expo-splash-screen` in `app.json`) only shows in a development or store build; Expo Go shows the app icon on its own loading card instead.
