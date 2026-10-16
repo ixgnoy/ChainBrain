@@ -41,6 +41,12 @@ export function brainOf(events: WalletEvent[], pocket: string, sellerName: (id?:
   const lastIntent = intents.at(-1);
   const intentAt = lastIntent ? Math.max(...mine.filter((e) => e.approval?.id === lastIntent.id).map((e) => e.at)) : 0;
   const questions = approvalsFrom(mine).filter((a) => a.kind === "question");
+  // the question that led to the task shown: asked after the task before it and no later than the task itself
+  const firstAt = new Map<string, number>();
+  for (const e of mine) if (e.approval?.id && !firstAt.has(e.approval.id)) firstAt.set(e.approval.id, e.at);
+  const prevIntentAt = intents.length > 1 ? firstAt.get(intents[intents.length - 2].id) ?? 0 : -Infinity;
+  const lastIntentAt = lastIntent ? firstAt.get(lastIntent.id) ?? Infinity : Infinity;
+  const taskQuestion = questions.filter((q) => { const at = firstAt.get(q.id) ?? 0; return at > prevIntentAt && at <= lastIntentAt; }).at(-1);
   const toolCalls = mine.filter((e) => e.type === "trace" && e.phase === "tool_call");
   const quoted = new Set(mine.filter((e) => e.type === "trace" && e.phase === "tool_result" && e.tool === "get_quote").map((e) => toolResultOf(e)?.sellerId).filter(Boolean));
   const pays = mine.filter((e) => e.type === "payment");
@@ -75,7 +81,7 @@ export function brainOf(events: WalletEvent[], pocket: string, sellerName: (id?:
   return {
     task: lastIntent ? { text: lastIntent.text, at: intentAt, status: lastIntent.status } : undefined,
     questionsAsked: questions.length,
-    lastQuestion: questions.at(-1)?.text,
+    lastQuestion: taskQuestion?.text,
     turns: mine.filter((e) => e.type === "trace" && e.phase === "reply").length,
     steps: toolCalls.length,
     sellersCompared: quoted.size,
