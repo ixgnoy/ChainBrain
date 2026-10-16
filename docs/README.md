@@ -19,6 +19,7 @@ Last updated: 2026-10-14
 | --- | --- |
 | [README.md](../README.md) (top of the repo) | Product summary, repository map, setup, test commands, deployment guide, demo scenes, third-party licences |
 | [product-design.md](02-product/product-design.md) | Prelim Product Spec v2, 14 Oct |
+| [ai-brain.md](ai-brain.md) | The AI brain: ten features (understands, plans, adapts, resists, Radar, Sentinel, memory, Speak your rules, Pre-flight, haggler), the AI-only-tightens rule, guards, models, where each shows on the phone |
 | [technical-document.md](technical-document.md) | Architecture, pocket check, tool layer signing rule, x402 notes, owner keys, test summary |
 | [security-self-assessment.md](security-self-assessment.md) | Permission tiers, what a pocket stops and does not stop, the four named attacks with test names, residual risks |
 | [evidence.md](evidence.md) | One on-chain transaction per scene; all rows "pending live run" |

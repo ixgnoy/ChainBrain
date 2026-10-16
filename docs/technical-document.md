@@ -15,12 +15,12 @@ flowchart TB
     Sellers["Sellers<br/>stock x402 endpoints"]
     Fac["x402 facilitator<br/>submits, pays gas"]
     subgraph Chain["Base Sepolia"]
-        Pocket["Pocket (ERC-1271)<br/>agent key, seller, cap,<br/>owner co-sign, expiry, revoked"]
+        Pocket["Pocket (ERC-1271)<br/>agent key, seller, cap,<br/>owner co-sign, expiry, revoked, frozen"]
         USDC["USDC v2.2"]
     end
     Web -- "task, approvals" --> Agent
     Phone -- "task, approvals" --> Agent
-    Agent -- "6 tools" --> Tool
+    Agent -- "7 tools" --> Tool
     Tool -- "x402" --> Sellers
     Sellers -- "signed payment" --> Fac
     Fac -- "transferWithAuthorization" --> USDC
@@ -47,13 +47,13 @@ USDC v2.2 calls `isValidSignature(hash, signature)` on a contract payer before a
 1. **The signature is an envelope**: `abi.encode(to, value, validAfter, validBefore, nonce, agentSig, ownerSig)`. The pocket rebuilds the USDC EIP-712 digest for a transfer *from itself* with those fields and rejects the call unless it equals `hash`. A permit, a Permit2 message or any other digest fails this first check.
 2. **Budget = balance.** Funding the pocket sets the budget; USDC cannot move more than the balance, so no spend counter is needed.
 
-Then, in order: the agent key signed the digest; `canPay(to, value)` is `OK` (not revoked, not expired, seller allowlisted, value ≤ cap, value ≤ balance); above `askAbove`, the owner also signed the same digest. `askAbove = 0` asks every time; `askAbove = 2^256 - 1` never asks. Owner-only functions: `revoke`, `returnFunds`, `setSeller`, `setCap`, `setAskAbove`, `setExpiresAt`.
+Then, in order: the agent key signed the digest; `canPay(to, value)` is `OK` (not revoked, not frozen, not expired, seller allowlisted, value ≤ cap, value ≤ balance); above `askAbove`, the owner also signed the same digest. `askAbove = 0` asks every time; `askAbove = 2^256 - 1` never asks. Owner-only functions: `revoke`, `returnFunds`, `setSeller`, `setCap`, `setAskAbove`, `setExpiresAt`, `unfreeze`. `freeze(reason)` may also be called by the pocket's immutable **guardian** key (the Sentinel's), which can do nothing else: it cannot move money, unfreeze or change a rule.
 
-Tests: `contracts/test/Pocket.fork.t.sol`, 20 tests on a Base Sepolia fork against the real USDC v2.2 bytecode.
+Tests: `contracts/test/Pocket.fork.t.sol`, 24 tests on a Base Sepolia fork (including the guardian freeze) against the real USDC v2.2 bytecode.
 
 ## 3. The tool layer's signing rule
 
-The LLM never holds a key and has six tools: `search_sellers`, `get_quote`, `draft_intent`, `pay`, `ask_owner`, `get_pocket`. No tool takes a recipient address, edits or opens a pocket, or reads the main wallet or other pockets.
+The LLM never holds a key and has seven tools: `search_sellers`, `get_quote`, `counter_offer`, `draft_intent`, `pay`, `ask_owner`, `get_pocket`. No tool takes a recipient address, edits or opens a pocket, or reads the main wallet or other pockets.
 
 `pay` signs only a USDC `TransferWithAuthorization` that the tool layer built itself: from = pocket, to = the quoted `payTo`, value = the quoted amount. Anything else returns `SIGNATURE_TYPE_NOT_ALLOWED`. Before signing it checks the quote against the confirmed intent (price per item, total, item count, deadline) and against `canPay` on-chain, and returns a reason code on refusal (`server/src/wallet/reasons.ts`) so the model can re-plan. Seller content reaches the model only inside `<untrusted_content source="…">`.
 
@@ -87,13 +87,29 @@ The Kotlin signer is tested to be byte-identical to viem (`android/app/src/test/
 
 | Suite | Command | Result (local) |
 | --- | --- | --- |
-| Contracts (Base Sepolia fork) | `cd contracts && forge test` | 20 passed |
-| Server (sellers, intent, pay, tools, agent, API) | `cd server && pnpm test` | 37 passed |
+| Contracts (Base Sepolia fork) | `cd contracts && forge test` | 24 passed (16 Oct) |
+| Server (sellers, intent, pay, tools, agent, API, Radar, Sentinel, memory, rules, Pre-flight, haggler) | `cd server && pnpm test` | 76 passed, 6 skipped (16 Oct; needs `forge build` and anvil) |
 | Scenes 1–8 through the agent loop | `cd server && SCENE_REPLAY=1 pnpm test:scenes` | 6 passed (replay); real model needs `ANTHROPIC_API_KEY` |
-| Web | `cd web && pnpm test && pnpm build` | 9 passed, build clean |
-| Expo | `cd mobile && npm test && npm run typecheck && npx expo-doctor` | 4 passed, 21/22 checks |
+| Web | `cd web && pnpm test && pnpm build` | 81 passed (16 Oct) |
+| Built-in network (`shared/sim`, scenes 1-11) | `cd mobile && node --import tsx --test ../shared/sim/*.test.ts` | 40 passed (16 Oct) |
+| Expo | `cd mobile && npm test && npm run typecheck && npx expo-doctor` | 44 passed (16 Oct), including a full auto-play run of scenes 1-11 |
 | Native Android | `cd android && ./gradlew testDebugUnitTest assembleDebug` | 6 passed, APK built |
 
-## 9. Finals roadmap
+## 9. The AI brain
+
+Ten features sit on top of the agent loop, all following one rule: **AI only tightens**. Full description, guards and models: [ai-brain.md](ai-brain.md).
+
+| Feature | Server | Shared with the built-in network |
+| --- | --- | --- |
+| Understands, plans and buys, adapts | `server/src/agent/`, `server/src/wallet/tools.ts`, reason codes in `reasons.ts` | `shared/sim/script.ts`, `intent.ts` |
+| Resists manipulation | `<untrusted_content>` wrapping, `scan.ts`, signing rule above | `shared/sim/checks.ts` |
+| Radar (counterparty screening and monitoring) | `server/src/radar/`, `/api/radar/*`; `COUNTERPARTY_HIGH_RISK`, `COUNTERPARTY_REVIEW` | `shared/sim/radar.ts` |
+| Sentinel (freeze-only second layer) | `server/src/sentinel/` (guardian key `SENTINEL_PK`; typed AI via TypeSafe Jev or Claude Haiku); `/api/sentinel` | `shared/sim/sentinel.ts` |
+| Brain memory | `server/src/brain/`, `/api/memory`, `/api/memory/forget` | `shared/sim/reflect.ts` |
+| Speak your rules | `server/src/rules/compile.ts`, `/api/rules/compile` | `shared/sim/speak.ts`, `proof.ts` |
+| Pre-flight | `server/src/wallet/preflight.ts` (`eth_call` of the exact `transferWithAuthorization`) | dry run in `shared/sim/world.ts` |
+| Haggler | `counter_offer` tool; sellers `POST /<seller>/<sku>/offer` and the 402 for `?deal=<id>` | `shared/sim/haggle.ts` |
+
+## 10. Finals roadmap
 
 **Roadmap, not in prelim demo.** Seller trust layer (agent identity, owner backing, serve / ask / refuse verdicts); attested seller categories enforced by pockets; reputation; bring-your-own-agent via a public MCP server; the pocket on FISCO BCOS settling a tokenized deposit; Hong Kong licensed stablecoins or bank deposit tokens; zero-knowledge privacy for pocket checks.

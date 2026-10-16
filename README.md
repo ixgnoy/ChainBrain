@@ -2,9 +2,12 @@
 
 **Give your AI a pocket, not your wallet.** A consumer wallet where you open *pockets* for your AI agent. Each pocket holds its own USDC and rules. The agent spends from it on-chain by itself over x402, and a pocket smart contract enforces the rules. Even a hijacked agent can lose at most the pocket's balance, and only to sellers you approved.
 
+Inside the pocket, an **AI brain** does the work: it understands the task, shops and pays, re-plans after a refusal, resists injection and phishing, screens every seller's money (Radar), watches itself and can freeze the pocket on-chain (Sentinel), remembers, turns spoken rules into pocket rules, predicts every payment before sending it (Pre-flight) and negotiates the price with numbers only (the haggler). AI only tightens: nothing it says can loosen a pocket. See [`docs/ai-brain.md`](docs/ai-brain.md).
+
 FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia testnet.
 
 - Technical document: [`docs/technical-document.md`](docs/technical-document.md)
+- AI brain (ten features): [`docs/ai-brain.md`](docs/ai-brain.md)
 - Security self-assessment: [`docs/security-self-assessment.md`](docs/security-self-assessment.md)
 - On-chain evidence: [`docs/evidence.md`](docs/evidence.md)
 - Frontend and dev stack: [`docs/frontend/README.md`](docs/frontend/README.md)
@@ -24,7 +27,7 @@ FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia 
 
 ## Try it with nothing running
 
-Both apps open on a **built-in network** on every launch: no server, no keys, no funds, no internet. `shared/sim` runs the wallet API, the tool layer, a scripted agent and the Pocket.sol rules inside the app, seeded with two weeks of activity by three agents (Research data and One purchase held by ChainBrain's agent, Market news by Claude, Trade quotes by ChatGPT; main wallet US$54.80). Claude and ChatGPT are connected agents in the built-in network, using the same wallet tools and pocket rules. Scenes 1-8 below play end to end offline.
+Both apps open on a **built-in network** on every launch: no server, no keys, no funds, no internet. `shared/sim` runs the wallet API, the tool layer, a scripted agent and the Pocket.sol rules inside the app, seeded with two weeks of activity by three agents (Research data and One purchase held by ChainBrain's agent, Market news by Claude, Trade quotes by ChatGPT; main wallet US$54.80). Claude and ChatGPT are connected agents in the built-in network, using the same wallet tools and pocket rules. Scenes 1-11 below play end to end offline.
 
 It is meant for demos and offline use. Its transaction hashes come from a virtual chain, not a public one, so the apps show them in in-app receipts and sheets and never link them to BaseScan. Explorer links appear only when you connect to a real server on the public chain.
 
@@ -57,11 +60,12 @@ Then import `OWNER_PK` into MetaMask as the demo main wallet.
 ## Test
 
 ```bash
-cd contracts && forge test                              # 20 tests on a Base Sepolia fork
-cd server && pnpm test && pnpm typecheck                # 37 tests (needs anvil on PATH)
+cd contracts && forge test                              # 24 tests on a Base Sepolia fork
+cd server && pnpm test && pnpm typecheck                # 76 tests + 6 skipped without keys (needs anvil on PATH and forge build)
 cd server && SCENE_REPLAY=1 pnpm test:scenes            # scenes 1–8 through the agent loop (drop SCENE_REPLAY to use the real model)
-cd web && pnpm test && pnpm build
-node devstack/e2e/builtin.cjs --url http://localhost:8091   # phone on the built-in network, scenes 1-8, 26 checks, no server needed
+cd web && pnpm test && pnpm build                       # 81 tests
+cd mobile && node --import tsx --test ../shared/sim/*.test.ts   # built-in network, scenes 1-11, 40 tests
+node devstack/e2e/builtin.cjs --url http://localhost:8091   # phone on the built-in network, no server needed
 cd mobile && npm install && npm test && npm run typecheck && npx expo-doctor
 cd android && ./gradlew testDebugUnitTest assembleDebug
 ```
@@ -87,18 +91,21 @@ cd android && ./gradlew testDebugUnitTest assembleDebug
 
 Presenter runbook (phone + console, what to press and what judges see): [docs/06-pitch/demo-runbook.md](docs/06-pitch/demo-runbook.md).
 
-All eight play on the built-in network (offline), on the dev stack, and on the real server.
+Scenes 1-8 play on the built-in network (offline), on the dev stack, and on the real server. Scenes 9-11 (the AI brain's Radar, Sentinel and haggler) play on the built-in network; on the server they are covered by tests (Radar, Sentinel freeze on the anvil fork, `haggle-fork.test.ts`), and the dev stack's scripted model does not script them yet. The table uses the built-in network's sellers: Exa, CoinGecko and Nansen are real x402 providers at their published prices; TradeWire, DataPro, Harbour Wines and ShadyFeed are fictional on purpose. The server's four test sellers (`server/src/sellers.json`) play the same roles with DataLite in place of Exa and CoinGecko, and DataPro (US$1.50) as the co-sign in scene 3.
 
 | # | Scene | Evidence |
 | --- | --- | --- |
-| 1 | Create and fund the Research pocket, one sentence to an intent card | create + fund tx |
-| 2 | Agent buys DataLite's report (US$0.30) | payment tx |
-| 3 | DataPro US$1.50 is above ask-me: the owner co-signs on web or phone | co-signed payment tx |
-| 4 | Harbour Wines refused (`SELLER_NOT_ALLOWED`), agent re-plans | payment tx |
-| 5 | Injection ignored; forced transfer reverts on-chain (`pnpm tsx scripts/force-transfer.ts <pocket>`) | reverted tx |
+| 1 | Create and fund the Research pocket; one sentence, one question, an intent card from the fixed template | create + fund tx |
+| 2 | Exa (US$0.007) and CoinGecko (US$0.01) paid by the agent alone | payment tx |
+| 3 | Nansen's US$0.05 check is above ask-me: the owner co-signs on the phone or web | co-signed payment tx |
+| 4 | Harbour Wines refused (`SELLER_NOT_ALLOWED`), agent re-plans to Exa | payment tx |
+| 5 | Injection in ShadyFeed ignored; forced transfer reverts on-chain (`pnpm tsx scripts/force-transfer.ts <pocket>`) | reverted tx |
 | 6 | ShadyFeed asks for data and a signature: refused | none |
 | 7 | Revoke mid-task, return funds | revoke + withdrawal tx |
-| 8 | Dead-end pocket (`new-pocket.ts tight`): agent stops safely | none |
+| 8 | Dead-end pocket (`new-pocket.ts tight`): agent stops safely, one-tap fix | none |
+| 9 | Radar: a drainer pays TradeWire; Radar scores it 9/10, the agent buys from Nansen instead and past payers get an alert | drainer tx |
+| 10 | Sentinel: a fooled agent keeps trying Harbour Wines; after 3 refusals in a minute the pocket is frozen on-chain | freeze tx |
+| 11 | Haggler: DataPro US$1.50 negotiated to US$1.10 with numbers only (3 offers at most); the owner co-signs the agreed price | co-signed payment tx |
 
 ## Third-party licences
 
