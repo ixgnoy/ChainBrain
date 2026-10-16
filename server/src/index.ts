@@ -20,12 +20,13 @@ import type { AskModel } from "./radar/ask";
 import { memory, render } from "./brain/memory";
 import { reflect, type ReflectModel } from "./brain/reflect";
 import { trimHistory } from "./brain/window";
+import { composeApp } from "./pocketApp/compose";
 import { compileRules, type RulesModel } from "./rules/compile";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
 
 /** Wallet tool layer + agent API for the app. The LLM only ever reaches the tools; keys stay in this process. */
-export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryModel?: ReflectModel; rulesModel?: RulesModel } = {}) {
+export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryModel?: ReflectModel; rulesModel?: RulesModel; /** pocket apps: compose_pocket_app (defaults to rulesModel) */ pocketAppModel?: RulesModel } = {}) {
   const app = new Hono();
   const chats = new Map<string, Msg[]>();
   const reflecting = new Map<string, Promise<unknown>>();
@@ -77,6 +78,12 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
     const { sentence } = (await c.req.json()) as { sentence?: string };
     if (!sentence?.trim()) return c.json({ error: "EMPTY_SENTENCE" }, 400);
     return c.json(await compileRules(sentence, { main: deps.rulesModel }));
+  });
+  // Pocket apps: one sentence -> rules + proof card + the pocket's app spec (fixed blocks). Never creates a pocket.
+  app.post("/api/pocket-app/compose", async (c) => {
+    const { sentence } = (await c.req.json()) as { sentence?: string };
+    if (!sentence?.trim()) return c.json({ error: "EMPTY_SENTENCE" }, 400);
+    return c.json(await composeApp(sentence, { model: deps.pocketAppModel ?? deps.rulesModel }));
   });
   app.get("/api/sentinel", async (c) => c.body(toJson(await sentinel.status((c.req.query("pocket") ?? "") as Address)), 200, { "content-type": "application/json" }));
   app.get("/api/memory", async (c) => {
