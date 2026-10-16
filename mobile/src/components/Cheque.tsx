@@ -10,6 +10,7 @@ import { T } from "../ui/Text";
 import { Money } from "../ui/Money";
 import { Hatch } from "../ui/Hatch";
 import { CardMaterial } from "../ui/CardMaterial";
+import { SellerMark, hasSellerMark } from "../ui/SellerMark";
 import { useReduceMotion } from "../ui/motion";
 import { TextScaleCap } from "../ui/fontScale";
 import { haptic } from "../haptics";
@@ -20,8 +21,8 @@ import { PocketFace, cardHeight, expiryText } from "./PocketFace";
 
 const R = 18;
 
-export function ChequeCard({ pocket, tone, width, amount, seller, item, until }: {
-  pocket: Pocket; tone: number; width: number; amount: bigint | null; seller: string; item: string; until?: number;
+export function ChequeCard({ pocket, tone, width, amount, seller, sellerId, item, until }: {
+  pocket: Pocket; tone: number; width: number; amount: bigint | null; seller: string; sellerId?: string; item: string; until?: number;
 }) {
   const reduce = useReduceMotion();
   const h = cardHeight(width);
@@ -41,14 +42,14 @@ export function ChequeCard({ pocket, tone, width, amount, seller, item, until }:
         <PocketFace pocket={pocket} width={width} tone={tone} still />
       </Animated.View>
       <Animated.View style={[{ position: "absolute", left: 0, top: 0, backfaceVisibility: "hidden" }, back]}>
-        <Back pocket={pocket} width={width} height={h} amount={amount} seller={seller} item={item} after={after} until={until} />
+        <Back pocket={pocket} width={width} height={h} amount={amount} seller={seller} sellerId={sellerId} item={item} after={after} until={until} />
       </Animated.View>
     </View>
   );
 }
 
-function Back({ pocket, width, height, amount, seller, item, after, until }: {
-  pocket: Pocket; width: number; height: number; amount: bigint | null; seller: string; item: string; after: bigint | null; until?: number;
+function Back({ pocket, width, height, amount, seller, sellerId, item, after, until }: {
+  pocket: Pocket; width: number; height: number; amount: bigint | null; seller: string; sellerId?: string; item: string; after: bigint | null; until?: number;
 }) {
   const k = Math.min(1, width / 340);
   const pad = 16 * k + 2;
@@ -73,7 +74,10 @@ function Back({ pocket, width, height, amount, seller, item, after, until }: {
             </View>
             <T v="cap" w="semi" color="muted" style={{ marginBottom: 6 }}>{time ? `Valid until ${time}` : expiryText(pocket.expiresAt)}</T>
           </View>
-          <T v="head" numberOfLines={1} style={{ fontSize: 18 * Math.max(k, 0.9) }}>{`to ${seller}`}</T>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <T v="head" numberOfLines={1} style={{ fontSize: 18 * Math.max(k, 0.9), flexShrink: 1 }}>{`to ${seller}`}</T>
+            {sellerId && hasSellerMark(sellerId) ? <SellerMark id={sellerId} size={22} radius={6} /> : null}
+          </View>
           <T v="sub" color="ink2" numberOfLines={2}>{`for ${item}`}</T>
         </View>
         {/* the signature line */}

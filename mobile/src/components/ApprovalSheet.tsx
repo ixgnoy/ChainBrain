@@ -179,7 +179,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
             {queue > 1 ? <T v="cap" color="muted" style={{ marginTop: -12 }}>{`${queue - 1} more waiting after this one`}</T> : null}
             <View onLayout={(e) => setCardW(Math.round(e.nativeEvent.layout.width))}>
               {pocket && cardW ? (
-                <ChequeCard pocket={pocket} tone={toneFor(pockets, pocket.address)} width={cardW} amount={amountUnits} seller={seller} item={item} until={auth ? Number(auth.validBefore) : undefined} />
+                <ChequeCard pocket={pocket} tone={toneFor(pockets, pocket.address)} width={cardW} amount={amountUnits} seller={seller} sellerId={a.data?.sellerId} item={item} until={auth ? Number(auth.validBefore) : undefined} />
               ) : !pocket ? (
                 <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
                   <T v="balance" accessibilityLabel={`US$${amount ?? "unknown"}`}>US${amount ?? "?"}</T>

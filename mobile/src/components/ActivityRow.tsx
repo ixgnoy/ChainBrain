@@ -4,6 +4,7 @@ import { useApp } from "../store";
 import { c, F } from "../tokens";
 import { Press } from "../ui/kit";
 import { AgentAvatar } from "../ui/AgentAvatar";
+import { SellerMark, hasSellerMark } from "../ui/SellerMark";
 import { agentInfo } from "../../../shared/sim/agents";
 import { Rise } from "../ui/Rise";
 import { Figure, T } from "../ui/Text";
@@ -30,12 +31,23 @@ export function initials(name: string): string {
   return (caps.length >= 2 ? caps.slice(0, 2).join("") : (words[0] ?? "?").slice(0, 2)).toUpperCase();
 }
 
-/** VaultBank's brand square: 44 px, radius 12, a seller's initials in Clash or a thin-line icon. */
-export function BrandSquare({ label, icon, tone = "fill" }: { label?: string; icon?: IconName; tone?: SquareTone }) {
+/** VaultBank's brand square: 44 px, radius 12. A seller with an official mark (CoinGecko, Exa, Nansen) shows its logo; others
+ *  their initials in Clash; non-seller rows a thin-line icon. `badge` puts a small status disc on the corner (waiting, refused). */
+export function BrandSquare({ label, icon, tone = "fill", sellerId, badge }: { label?: string; icon?: IconName; tone?: SquareTone; sellerId?: string; badge?: { icon: IconName; tone: SquareTone } }) {
   const t = SQ[tone];
-  return (
+  const face = sellerId && hasSellerMark(sellerId) ? <SellerMark id={sellerId} size={44} radius={12} /> : (
     <View style={{ width: 44, height: 44, borderRadius: 12, borderCurve: "continuous", backgroundColor: t.bg, alignItems: "center", justifyContent: "center" } as ViewStyle}>
       {icon ? <Icon name={icon} size={20} color={t.fg} stroke={1.75} /> : <T v="head" style={{ color: t.fg, fontSize: 15, lineHeight: 18, letterSpacing: 0.2 }}>{initials(label ?? "?")}</T>}
+    </View>
+  );
+  if (!badge) return face;
+  const b = SQ[badge.tone];
+  return (
+    <View>
+      {face}
+      <View style={{ position: "absolute", right: -5, bottom: -5, width: 20, height: 20, borderRadius: 10, backgroundColor: b.bg, borderWidth: 2, borderColor: c.card, alignItems: "center", justifyContent: "center" }}>
+        <Icon name={badge.icon} size={11} color={b.fg} stroke={2.4} />
+      </View>
     </View>
   );
 }
@@ -119,7 +131,9 @@ export function ActivityRow({ row, onPress, last, showPocket, timeOnly, showAgen
   const sub = lead ? [agent.name, category ?? base.replace(where ? ` · ${where}` : "", "")].filter(Boolean).join(" · ") : base;
   const rightSub = plainPaid ? when : v.rightSub;
   const strike = guard && row.kind !== "approval";
-  const square = seller_ && !guard && row.outcome !== "pending" ? <BrandSquare label={seller} tone="fill" />
+  // a seller row shows the seller (its logo when it has one); waiting and refused rows say so with a small badge on it
+  const square = seller_ ? <BrandSquare label={seller} sellerId={seller_.id} tone="fill"
+      badge={guard ? { icon: "ban", tone: "vermillion" } : row.outcome === "pending" ? { icon: "clock", tone: "blue" } : undefined} />
     : <BrandSquare icon={guard ? "ban" : (v.avatar.icon as IconName | undefined) ?? "check"} tone={owner ? "fill" : guard ? "vermillion" : v.avatar.tone === "warning" ? "blue" : v.avatar.tone === "negative" ? "vermillion" : "fill"} />;
   return (
     <TxRow square={square} title={v.title} subLead={lead ? <AgentAvatar kind={agent.id} size={15} /> : undefined} sub={sub} subTone={guard ? "vermillionInk" : "muted"} strike={strike}

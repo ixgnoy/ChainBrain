@@ -4,7 +4,10 @@ import React from "react";
 import { useApp } from "../store";
 import { T } from "../ui/Text";
 import { firstTime } from "../ui/Rise";
+import { View } from "react-native";
 import { SuccessMark } from "../ui/SuccessMark";
+import { SellerMark, hasSellerMark } from "../ui/SellerMark";
+import { c } from "../tokens";
 import { cleanText } from "../lib/sanitize";
 import { money } from "../lib/util";
 import { preflightResults, type WalletEvent } from "../lib/events";
@@ -22,7 +25,13 @@ export function PaidCard({ e }: { e: WalletEvent }) {
   return (
     <EventCard
       tone="paid" instant={!fresh} title={`Paid ${cleanText(seller, 30)}`} amount={money(amount)}
-      mark={<SuccessMark size={40} delay={180} still={!fresh} />}
+      // the seller's own mark when it has one, with the drawn check as a badge; otherwise the check alone
+      mark={hasSellerMark(e.sellerId) ? (
+        <View>
+          <SellerMark id={e.sellerId} size={40} radius={11} />
+          <View style={{ position: "absolute", right: -6, bottom: -6, borderRadius: 12, backgroundColor: c.card, padding: 1 }}><SuccessMark size={20} delay={180} still={!fresh} haptics={false} /></View>
+        </View>
+      ) : <SuccessMark size={40} delay={180} still={!fresh} />}
       body={<>
         <T v="sub" color="muted" numberOfLines={2}>{cleanText(item, 90)}</T>
         {e.cosigned ? <T v="cap" w="medium" color="accent" numberOfLines={1}>Co-signed by you</T> : null}

@@ -20,6 +20,7 @@ import { AnimatedList } from "../../ui/AnimatedList";
 import { Icon } from "../../ui/Icon";
 import { T } from "../../ui/Text";
 import { AgentAvatar } from "../../ui/AgentAvatar";
+import { SellerMark, hasSellerMark } from "../../ui/SellerMark";
 import { ActivityRow } from "../../components/ActivityRow";
 import { isExpired, untilText } from "../../components/PocketCard";
 import { UnfreezeButton } from "../../components/SentinelCard";
@@ -222,7 +223,7 @@ export default function PocketDetail() {
           {(cfg?.sellers ?? []).map((s) => {
             const on = pocket.allowed.includes(s.id);
             return (
-              <ListRow key={s.id} avatar={<Avatar label={s.name} tone={on ? "soft" : "fill"} size={44} />} title={cleanText(s.name, 40)} sub={on ? cleanText(s.category, 30) : "Not on this pocket's list"}>
+              <ListRow key={s.id} avatar={hasSellerMark(s.id) ? <View style={{ opacity: on ? 1 : 0.45 }}><SellerMark id={s.id} size={44} radius={12} /></View> : <Avatar label={s.name} tone={on ? "soft" : "fill"} size={44} />} title={cleanText(s.name, 40)} sub={on ? cleanText(s.category, 30) : "Not on this pocket's list"}>
                 <Toggle on={on} disabled={!owned || !!busy || off} onChange={() => void toggle(s.name, on, s.payTo)} a11y={`Allow ${s.name}`} />
               </ListRow>
             );
