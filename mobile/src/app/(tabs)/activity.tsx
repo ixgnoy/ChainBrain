@@ -24,6 +24,12 @@ import { paidTotal, radarAlerts, sentinelEvents, type LedgerRow, type RadarAlert
 
 type Filter = "all" | "paid" | "refused" | "needs";
 const PAGE = 25;
+const EMPTY: Record<Filter, { title: string; sub: string }> = {
+  all: { title: "No activity yet", sub: "Your agent's purchases and your changes show up here." },
+  paid: { title: "Nothing paid yet", sub: "Payments your agents make show up here." },
+  refused: { title: "Nothing refused", sub: "Payments your pocket rules turn down show up here." },
+  needs: { title: "Nothing needs you", sub: "When an agent asks for your OK, it waits here." },
+};
 const FILTERS: { key: Filter; label: string }[] = [{ key: "all", label: "All" }, { key: "paid", label: "Paid" }, { key: "refused", label: "Refused" }, { key: "needs", label: "Needs you" }];
 
 export default function Activity() {
@@ -89,16 +95,17 @@ export default function Activity() {
         </ListCard></Rise>
       ) : null}
       <Animated.View layout={reduce ? undefined : SHIFT} style={{ marginTop: 16 }}><SlidingPills items={FILTERS.map((f) => (f.key === "needs" && pending.length ? { ...f, label: `${f.label} · ${pending.length}` } : f))} value={filter} onChange={setFilter} /></Animated.View>
-      {groups.length === 0 ? (
+      {groups.length === 0 ? (filter === "needs" && pending.length ? null : (
         <Rise dy={8} duration={240}>
           <View style={{ alignItems: "center", paddingTop: 56, gap: 8, paddingHorizontal: 40 }}>
             <View style={{ width: 64, height: 64, borderRadius: 16, borderCurve: "continuous", backgroundColor: c.card, alignItems: "center", justifyContent: "center", marginBottom: 8 }}><Icon name="activity" size={28} color={c.ink2} /></View>
-            <T v="section">No activity yet</T>
-            <T v="sub" color="muted" style={{ textAlign: "center" }}>Your agent's purchases and your changes show up here.</T>
-            <Button label="Ask agent" kind="outline" small onPress={() => router.navigate("/agent")} style={{ marginTop: 12 }} />
+            {/* a filter with nothing in it is not "no activity": say what this filter would show */}
+            <T v="section">{EMPTY[filter === "all" || ledger.length === 0 ? "all" : filter].title}</T>
+            <T v="sub" color="muted" style={{ textAlign: "center" }}>{EMPTY[filter === "all" || ledger.length === 0 ? "all" : filter].sub}</T>
+            {filter === "all" || ledger.length === 0 ? <Button label="Ask agent" kind="outline" small onPress={() => router.navigate("/agent")} style={{ marginTop: 12 }} /> : null}
           </View>
         </Rise>
-      ) : groups.map((g) => (
+      )) : groups.map((g) => (
         <Animated.View key={g.day} layout={reduce ? undefined : SHIFT}>
           <ListCard head={<DayHead at={g.rows[0].at} />} style={{ marginTop: 16 }}>{g.rows.map((r) => r.note ? <NoteRow key={r.key} delay={delays[r.key] ?? 0} title={r.note.title} sub={r.note.sub} right="Refused" /> : r.sentinel ? <SentinelActivityRow key={r.key} delay={delays[r.key] ?? 0} v={r.sentinel} /> : r.radar ? <RadarActivityRow key={r.key} delay={delays[r.key] ?? 0} a={r.radar} onPress={() => router.push({ pathname: "/radar", params: { name: r.radar!.name } })} /> : r.atk ? <AttackActivityRow key={r.key} delay={delays[r.key] ?? 0} e={r.atk} onPress={() => { const t = attackInfo(r.atk!)?.tx; if (t) setExplorerTx(t); }} /> : <ActivityItem key={r.key} delay={delays[r.key] ?? 0} row={r.row!} showPocket timeOnly onPress={() => setReceipt(r.row!)} />)}</ListCard>
         </Animated.View>
