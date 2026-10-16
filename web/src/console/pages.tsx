@@ -12,6 +12,7 @@ import { Button, Card, Empty, PageTitle, Pill, PillSelect, Section } from "../se
 import { shortAddr } from "../shared";
 import { cn } from "../lib/cn";
 import { appFromEvents } from "@sim/pocketAppData";
+import { RoutineTimeline } from "./RoutineTimeline";
 
 const I = { strokeWidth: 1.75 } as const;
 // each pocket's app, by its job (the card face's colour): research desk ink, deal watcher blue, subscriptions hatch, haggler vermillion
@@ -39,6 +40,7 @@ export function Pockets({ open }: { open(addr: string): void }) {
         { label: "Most any agent can lose", value: usd(pockets.reduce((n, p) => n + worstCase(p, txs, (id) => names.get(id) ?? id).max, 0n)), note: "Only to each pocket's allowed sellers", accent: true, icon: <ShieldCheck className="size-4" {...I} aria-hidden /> },
       ]} />
       {chainError && <p role="alert" className="mt-4 text-[14px] font-semibold text-vermillion-ink">Could not read the chain: {chainError}</p>}
+      <div className="mt-6"><RoutineTimeline open={open} /></div>
       <Section title="All pockets">
         <div role="tablist" aria-label="Filter pockets" className="chip-row -mx-4 mb-3 flex snap-x gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           {FILTERS.map(([k, label, n]) => <button key={k} type="button" role="tab" aria-selected={f === k} onClick={() => setF(k)} className={chip(f === k)}>{label}<COUNT n={n} /></button>)}
