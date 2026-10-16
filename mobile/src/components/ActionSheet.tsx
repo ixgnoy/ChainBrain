@@ -1,4 +1,6 @@
-// Fund / Return funds / Revoke: pick one of your pockets, then confirm with the matching ceremony. Real owner transactions, signed on this phone.
+// Move money to a pocket / Return funds / Revoke, signed on this phone. Opened from a pocket, the sheet is about that pocket
+// only (its card, its agent, what will happen), so an irreversible revoke can never land on the wrong one; opened from Home
+// (moving money), the owner picks a pocket from a list that shows each pocket's card colour and the agent that holds it.
 import React, { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import Animated from "react-native-reanimated";
@@ -7,7 +9,11 @@ import { Sheet } from "../ui/Sheet";
 import { SheetScroll } from "../ui/SheetScroll";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
 import { HoldToRevoke } from "../ui/HoldToRevoke";
-import { Avatar, Button, Chip, ListRow } from "../ui/kit";
+import { Button, Chip, ListRow } from "../ui/kit";
+import { AgentAvatar } from "../ui/AgentAvatar";
+import { type IconName } from "../ui/Icon";
+import { faceOf, toneFor } from "./PocketFace";
+import { agentInfo } from "../../../shared/sim/agents";
 import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { haptic } from "../haptics";
@@ -21,9 +27,9 @@ import { ErrorNote } from "./ErrorNote";
 
 type Mode = "fund" | "return" | "revoke";
 const COPY: Record<Mode, { title: string; hint: string }> = {
-  fund: { title: "Add money", hint: "Move money from your main wallet into a pocket. What is in the pocket is your agent's whole budget." },
+  fund: { title: "Move to a pocket", hint: "From your main wallet into a pocket. What is in the pocket is its agent's whole budget." },
   return: { title: "Return funds", hint: "Send everything left in the pocket back to your main wallet. The pocket stays active." },
-  revoke: { title: "Revoke a pocket", hint: "The pocket stops for good: its agent can't pay from it again, and everything left comes back to your main wallet. Two transactions, both signed here." },
+  revoke: { title: "Revoke this pocket", hint: "Two transactions, both signed here." },
 };
 const AMOUNTS = ["0.50", "1.00", "2.00", "5.00"];
 
@@ -49,6 +55,7 @@ export function ActionSheet() {
 
 function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: () => void }) {
   const { pockets, wallet, refreshPockets, balances, recordTx, setNotice, active } = useApp();
+  const scoped = !!initial; // opened from a pocket: about that pocket only
   const [done, setDone] = useState<{ title: string; hash: string; txs?: { label?: string; hash: string }[] } | null>(null);
   const [sel, setSel] = useState<string | undefined>(initial);
   const [amount, setAmount] = useState("1.00");
@@ -85,7 +92,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
     try {
       const v = parseUsd(amount); const r = await wallet!.fund(chosen!.address, v);
       recordTx({ kind: "fund", pocket: chosen!.address, hash: r.hash, amount: v.toString() });
-      setDone({ title: `Added US$${amount} to ${cleanText(chosen!.name, 30)}`, hash: r.hash }); await refreshPockets();
+      setDone({ title: `Moved US$${amount} to ${cleanText(chosen!.name, 30)}`, hash: r.hash }); await refreshPockets();
     } catch (e) { fail(e); }
   };
   const doReturn = async () => {
@@ -127,7 +134,9 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
           <T v="body" color="ink2">{COPY[mode].hint}</T>
           {mode === "fund" && balances ? <T v="sub" color="muted">Main wallet: {money(balances.usdc)}</T> : null}
         </View>
-        {pockets.length === 0 ? <T v="sub" color="muted">No pockets yet.</T> : (
+        {scoped && chosen ? <OnePocket p={chosen} tone={toneFor(pockets, chosen.address)} /> : null}
+        {mode === "revoke" && chosen ? <RevokeOutcome p={chosen} /> : null}
+        {scoped ? null : pockets.length === 0 ? <T v="sub" color="muted">No pockets yet.</T> : (
           <View style={{ backgroundColor: c.fill, borderRadius: 20, overflow: "hidden" }}>
             {pockets.map((p, i) => {
               const ok = eligible(p);
@@ -135,8 +144,8 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
               return (
                 <ListRow key={p.address} last={i === pockets.length - 1} a11y={`Choose ${cleanText(p.name, 30)}`}
                   onPress={ok ? () => { setSel(p.address); setError(null); } : undefined}
-                  avatar={<Avatar label={p.name} tone={on ? "solid" : "soft"} />}
-                  title={cleanText(p.name, 30)} sub={`${money(p.balance)}${p.revoked ? " · revoked" : ""}${!p.owned ? " · other key" : ""}`}>
+                  avatar={<FaceChip tone={toneFor(pockets, p.address)} on={on} />}
+                  title={cleanText(p.name, 30)} sub={`${money(p.balance)} · ${agentInfo(p.agentId ?? "")?.name ?? "ChainBrain"}${p.revoked ? " · revoked" : ""}${!p.owned ? " · other key" : ""}`}>
                   {on ? <Icon name="check" size={20} color={c.ink} stroke={2.4} /> : null}
                 </ListRow>
               );
@@ -158,11 +167,61 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
     <View style={{ flexShrink: 1 }}>
       {done ? <SheetSuccess key="ok" minHeight={formH.current} title={done.title} txs={done.txs ?? [{ hash: done.hash }]} /> : form}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}>
-        {mode === "fund" && <SlideToConfirm key={`f${sel}${amount}${error}`} label={`Slide to add US$${amount}`} doneLabel="Funded" disabled={!chosen || !wallet} onConfirm={doFund} />}
+        {mode === "fund" && <SlideToConfirm key={`f${sel}${amount}${error}`} label={`Slide to move US$${amount}`} doneLabel="Moved" disabled={!chosen || !wallet} onConfirm={doFund} />}
         {mode === "return" && <SlideToConfirm key={`r${sel}${error}`} auto="return.slide" label="Slide to return funds" doneLabel="Returned" disabled={!chosen || !wallet || chosen.balance === 0n} onConfirm={doReturn} />}
         {mode === "revoke" && (done ? <View style={{ height: 64 }} /> : <HoldToRevoke auto="revoke.hold" label={chosen && chosen.balance > 0n ? `Hold to revoke and return ${money(chosen.balance)}` : "Hold to revoke"} disabled={!chosen || !wallet} busy={busy} onComplete={doRevoke} />)}
         <Button label={done ? "Done" : "Cancel"} kind={done ? "secondary" : "text"} auto={done ? "sheet.close" : undefined} onPress={close} />
       </View>
+    </View>
+  );
+}
+
+/** The one pocket this sheet is about: a small card face with its name, balance and agent. */
+function OnePocket({ p, tone }: { p: Pocket; tone: number }) {
+  const face = faceOf(tone);
+  const agent = agentInfo(p.agentId ?? "");
+  return (
+    <View accessible accessibilityLabel={`${cleanText(p.name, 30)}, ${money(p.balance)}, held by ${agent?.name ?? "ChainBrain"}`}
+      style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: 16, backgroundColor: c.fill }}>
+      <View style={{ width: 56, height: 36, borderRadius: 7, backgroundColor: face.face, borderWidth: "hatch" in face ? 1 : 0, borderColor: c.line, justifyContent: "flex-end", padding: 5 }}>
+        <View style={{ height: 5, borderRadius: 2, backgroundColor: face.band, opacity: 0.9 }} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <T v="row" numberOfLines={1}>{cleanText(p.name, 30)}</T>
+        <T v="cap" color="muted">{`${money(p.balance)} · ${agent?.name ?? "ChainBrain"} · *${p.address.slice(-4).toUpperCase()}`}</T>
+      </View>
+      {agent ? <AgentAvatar kind={agent.id} size={28} /> : null}
+    </View>
+  );
+}
+
+/** What revoking does, in money and in who can act, before the owner holds. */
+function RevokeOutcome({ p }: { p: Pocket }) {
+  const who = agentInfo(p.agentId ?? "")?.name ?? "Its agent";
+  const lines: [string, string][] = [
+    ["ban", `${who} can never pay from it again`],
+    ["arrowIn", p.balance > 0n ? `${money(p.balance)} comes back to your main wallet` : "It is empty, nothing to return"],
+    ["check", "Payments already made stay made"],
+  ];
+  return (
+    <View style={{ gap: 10 }}>
+      {lines.map(([icon, text]) => (
+        <View key={text} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Icon name={icon as IconName} size={18} color={icon === "ban" ? c.vermillionInk : c.ink} stroke={2} />
+          <T v="body" color="ink2" style={{ flex: 1 }}>{text}</T>
+        </View>
+      ))}
+      <T v="cap" color="muted">This can't be undone. To give the agent money again, make a new pocket.</T>
+    </View>
+  );
+}
+
+/** A pocket's card colour as a small chip in the picker (instead of a letter). */
+function FaceChip({ tone, on }: { tone: number; on: boolean }) {
+  const face = faceOf(tone);
+  return (
+    <View style={{ width: 44, height: 30, borderRadius: 6, backgroundColor: face.face, borderWidth: on ? 2 : "hatch" in face ? 1 : 0, borderColor: on ? c.ink : c.line, justifyContent: "flex-end", padding: 4 }}>
+      <View style={{ height: 4, borderRadius: 2, backgroundColor: face.band }} />
     </View>
   );
 }
