@@ -27,7 +27,7 @@ export function PaidCard({ e }: { e: WalletEvent }) {
       mark={<SuccessMark size={40} delay={180} still={!fresh} />}
       body={<>
         <T v="sub" color="muted" numberOfLines={2}>{cleanText(item, 90)}</T>
-        {list > amount ? <T v="cap" w="medium" color="accent" numberOfLines={1}>{`Negotiated from ${money(list)}, ${money(list - amount)} saved`}</T> : null}
+        {list > amount ? <T v="cap" w="medium" color="accent" numberOfLines={2}>{`Negotiated from ${money(list)}, ${money(list - amount)} saved`}</T> : null}
         {e.cosigned ? <T v="cap" w="medium" color="accent" numberOfLines={1}>Co-signed by you</T> : null}
         {pre ? <T v="cap" color="muted" numberOfLines={1}>{pre.matched ? "Predicted before paying ✓" : "Predicted first; the result differed"}</T> : null}
       </>}
