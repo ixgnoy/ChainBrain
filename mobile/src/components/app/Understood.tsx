@@ -4,7 +4,7 @@
 // One selection tick per new chip. Nothing here decides anything: Compose still reads the whole sentence and the owner signs.
 import React, { useDeferredValue, useEffect, useMemo, useRef } from "react";
 import { View } from "react-native";
-import Animated, { FadeIn, FadeOut, LinearTransition, ZoomIn } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInUp, FadeOut, LinearTransition } from "react-native-reanimated";
 import { c, deck } from "../../tokens";
 import { haptic } from "../../haptics";
 import { T } from "../../ui/Text";
@@ -36,7 +36,7 @@ export function Understood({ text, sellers }: { text: string; sellers: { id: str
       <T v="cap" color="muted">Understood so far</T>
       <Animated.View layout={reduce ? undefined : LinearTransition.springify().damping(20)} style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         {u.chips.map((x) => (
-          <Animated.View key={key(x)} entering={reduce ? FadeIn.duration(1) : ZoomIn.springify().damping(18).stiffness(280)} exiting={reduce ? undefined : FadeOut.duration(120)}
+          <Animated.View key={key(x)} entering={reduce ? FadeIn.duration(1) : FadeInUp.springify().damping(20).stiffness(260)} exiting={reduce ? undefined : FadeOut.duration(120)}
             layout={reduce ? undefined : LinearTransition.springify().damping(20)}
             style={{ minHeight: 32, flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 5, paddingRight: 11, borderRadius: 16, backgroundColor: x.kind === "app" ? c.ink : c.card, borderWidth: 1, borderColor: c.tileStroke }}>
             <Lead x={x} />

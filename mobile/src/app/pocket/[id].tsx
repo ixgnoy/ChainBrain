@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Platform, Share, View, useWindowDimensions } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useSharedValue } from "react-native-reanimated";
+import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "../../store";
 import { c, radius } from "../../tokens";
@@ -24,7 +24,8 @@ import { ActivityRow } from "../../components/ActivityRow";
 import { isExpired, untilText } from "../../components/PocketCard";
 import { UnfreezeButton, movedMoney, sentinelReason } from "../../components/SentinelCard";
 import { TxNotice } from "../../components/TxNotice";
-import { PocketFace, toneFor } from "../../components/PocketFace";
+import { PocketFace, cardHeight, toneFor } from "../../components/PocketFace";
+import { useReduceMotion } from "../../ui/motion";
 import { PAGE_MARGIN, pageCardWidth } from "../../components/CardFlight";
 import { useFlight } from "../../ui/cardFlight";
 import { txError } from "../../components/ActionSheet";
@@ -73,6 +74,18 @@ export default function PocketDetail() {
   // as a narrow column, so it still measures there)
   const { width: winW } = useWindowDimensions();
   const [rootW, setRootW] = useState(Platform.OS === "web" ? 0 : winW);
+  // the card settles back as the page scrolls (Wallet's pass detail): a little smaller and quieter, never moved, so the
+  // content under it never slides over it; a pull down lifts it a touch. Reduce Motion: it stays as it is.
+  const reduceMotion = useReduceMotion();
+  const cardH0 = rootW ? cardHeight(pageCardWidth(rootW)) : 200;
+  const settle = useAnimatedStyle(() => {
+    if (reduceMotion) return { opacity: 1, transform: [{ scale: 1 }] };
+    const y = scrollY.value;
+    return {
+      opacity: interpolate(y, [0, cardH0], [1, 0.35], Extrapolation.CLAMP),
+      transform: [{ scale: y < 0 ? 1 + Math.min(-y, 120) / 900 : interpolate(y, [0, cardH0], [1, 0.92], Extrapolation.CLAMP) }],
+    };
+  });
   // first frame: the card, its rules and the money buttons; the charts, sellers and history follow one frame later, so the
   // page is there the moment it opens instead of after everything below the fold is built
   const [later, setLater] = useState(false);
@@ -119,7 +132,7 @@ export default function PocketDetail() {
       haptic.medium(); setRunErr(null);
       const r = await api.runRoutineNow(pocket.address).catch(() => ({ ok: false as const, reason: "ERROR" }));
       if (!r.ok) { haptic.error(); setRunErr(r.reason === "BUSY" ? "The agent is busy with another task in this pocket. Try again in a moment." : r.reason === "AGENT_DISCONNECTED" ? "This agent is disconnected, so its routine doesn't run." : "That run didn't start."); }
-      else haptic.success();
+      // no success tap here: the payment it makes gets one when it settles (PocketApp's payoff)
     } : undefined,
     onPause: owned && !off ? (paused) => { haptic.select(); api.pauseRoutine(pocket.address, paused); } : undefined,
     onReceipt: (tx) => { const row = mine.find((r) => r.kind === "payment" && r.tx === tx); if (row) setReceipt(row); },
@@ -159,9 +172,9 @@ export default function PocketDetail() {
           </Rise>
         ) : null}
         {/* the same card as Home's deck; it takes over from the flying card the moment that lands */}
-        <View style={{ alignItems: "center", opacity: flight?.pocket === pocket.address.toLowerCase() ? 0 : 1 }} accessibilityLabel={`${cleanText(pocket.name, 30)} card, ${usd(pocket.balance)} USDC`} accessible>
+        <Animated.View style={[{ alignItems: "center", opacity: flight?.pocket === pocket.address.toLowerCase() ? 0 : 1 }, flight?.pocket === pocket.address.toLowerCase() ? null : settle]} accessibilityLabel={`${cleanText(pocket.name, 30)} card, ${usd(pocket.balance)} USDC`} accessible>
           {W ? <PocketFace pocket={pocket} width={W} tone={toneFor(pockets, pocket.address)} buzz shadow tilt /> : <View style={{ height: 200 }} />}
-        </View>
+        </Animated.View>
 
         {!pocket.revoked ? (
           <Rise index={1} base={60}>

@@ -4,7 +4,7 @@
 // blocks fly up into place one after another; "page" is a calm rise when the pocket opens; Reduce Motion fades only.
 import React, { useEffect, useMemo } from "react";
 import { ScrollView, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { FadeInDown, LinearTransition, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from "react-native-reanimated";
 import { c, motion, radius } from "../../tokens";
 import { Button, Card, Press } from "../../ui/kit";
 import { T } from "../../ui/Text";
@@ -17,6 +17,7 @@ import { WorkingLine } from "../../ui/WorkingLine";
 import { useSettled } from "../../ui/Reveal";
 import { EASE_OUT, useReduceMotion } from "../../ui/motion";
 import { useLargeText } from "../../ui/fontScale";
+import { haptic } from "../../haptics";
 import { cleanText } from "../../lib/sanitize";
 import { usd } from "../../lib/util";
 import { PriceChart } from "./PriceChart";
@@ -163,7 +164,7 @@ function Shelf({ ctx }: { ctx: AppCtx }) {
       </View>
       {list.length ? (
         <ScrollView horizontal directionalLockEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 18, gap: 10 }}>
-          {list.slice(0, 8).map((x, i) => <Cover key={`${x.at}-${i}`} i={i} x={x} ctx={ctx} />)}
+          {list.slice(0, 8).map((x, i) => <Cover key={`${x.at}-${x.tx ?? x.sku}`} i={i} x={x} ctx={ctx} />)}
         </ScrollView>
       ) : <View style={{ paddingHorizontal: 18 }}><Empty icon="file" text={ctx.routine || ctx.spec.routine ? "Nothing bought yet. The first run fills the shelf." : "Nothing bought yet."} /></View>}
     </BlockCard>
@@ -177,7 +178,8 @@ function Cover({ x, i, ctx }: { x: ReturnType<typeof purchasesOf>[number]; i: nu
   const a = useAnimatedStyle(() => ({ opacity: p.value, transform: [{ translateX: (1 - p.value) * 28 }] }));
   const name = ctx.itemName(x.sellerId, x.sku);
   return (
-    <Animated.View style={a}>
+    // keyed by the purchase: a new report slides in at the front and the rest glide along the shelf
+    <Animated.View style={a} layout={reduce ? undefined : LinearTransition.springify().damping(20)}>
       <Press kind="row" haptics="light" onPress={() => ctx.onReceipt?.(x.tx)} accessibilityRole="button" accessibilityLabel={`${name} from ${ctx.sellerName(x.sellerId)}, US$${usd(x.amount)}, ${day(x.at)}, receipt`}
         style={{ width: 136, minHeight: 176, borderRadius: radius.tile, backgroundColor: i === 0 ? c.ink : c.tile, overflow: "hidden" }}>
         <View style={{ height: 72, alignItems: "flex-start", justifyContent: "flex-end", padding: 12, overflow: "hidden" }}>
@@ -418,15 +420,19 @@ function NextRun({ ctx }: { ctx: AppCtx }) {
 }
 
 function Runs({ ctx, block }: { ctx: AppCtx; block: Block }) {
+  const reduce = useReduceMotion();
   const runs = ctx.address ? runsOf(ctx.events, ctx.address).slice(0, param(block, "limit")) : [];
+  // the runs there when the page opened stay put; a run that finishes while you watch drops in at the top
+  const seen = React.useRef<Set<number> | null>(null);
+  if (seen.current === null) seen.current = new Set(runs.map((r) => r.run));
   return (
-    <BlockCard label="Recent runs" right={runs.length ? `${runs.length} shown` : undefined}>
+    <BlockCard label={runs.length || !ctx.spec.routine ? "Recent runs" : "What happens next"} right={runs.length ? `${runs.length} shown` : undefined}>
       {runs.length ? runs.map((r) => {
         const paid = r.outs.filter((o) => o.outcome === "paid" || o.outcome === "cosigned");
         const watching = r.outs.find((o) => o.outcome === "watching");
         const title = paid.length ? `Paid US$${usd(r.paid)}` : watching ? `Watched · US$${watching.amount}` : r.outs.some((o) => o.outcome === "declined") ? "You declined" : "Nothing paid";
         return (
-          <View key={r.run} style={{ gap: 8 }}>
+          <Animated.View key={r.run} style={{ gap: 8 }} entering={reduce || seen.current!.has(r.run) ? undefined : FadeInDown.springify().damping(18)} layout={reduce ? undefined : LinearTransition.springify().damping(20)}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }} accessible accessibilityLabel={`Run ${r.run}, ${title}, ${day(r.at)}${r.asked ? ", asked you" : ""}`}>
               <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: r.asked ? c.vermillionSoft : c.fill, alignItems: "center", justifyContent: "center" }}>
                 <T v="head" style={{ color: r.asked ? c.vermillionInk : c.ink }}>{String(r.run)}</T>
@@ -446,10 +452,58 @@ function Runs({ ctx, block }: { ctx: AppCtx; block: Block }) {
                 </View>
               </View>
             ))}
-          </View>
+          </Animated.View>
         );
-      }) : <Empty icon="clock" text="No runs yet." />}
+      }) : ctx.spec.routine ? <WhatNext ctx={ctx} rs={ctx.routine ?? ctx.spec.routine} /> : <Empty icon="clock" text="No runs yet." />}
     </BlockCard>
+  );
+}
+
+// ---------------------------------------------------------------- before the first run: what happens next
+
+/** Instead of "No runs yet": the routine's first run as a timeline (when, who buys what, what it may pay, where it lands,
+ *  when it asks you). Read from the spec and the routine only; the prices are the sellers' listed prices. The first node is
+ *  dashed: it hasn't happened. Nodes rise one after another; Reduce Motion shows them at once. */
+function WhatNext({ ctx, rs }: { ctx: AppCtx; rs: NonNullable<PocketAppSpec["routine"]> }) {
+  const reduce = useReduceMotion();
+  const who = agentName(ctx.agentId);
+  const at = ctx.routine?.nextAt ?? nextRuns(rs.cadence, ctx.now, 1)[0];
+  const price = (sid: string, sku: string) => ctx.registry?.find((s) => s.id === sid)?.items.find((i) => i.sku === sku)?.price ?? null;
+  const total = rs.items.reduce((n, it) => n + Number(price(it.sellerId, it.sku) ?? 0), 0);
+  const watch = rs.kind === "price-watch";
+  const sellers = [...new Set(rs.items.map((i) => i.sellerId))];
+  const lands = ctx.spec.layout === "deal" ? "The buy is marked on the price chart" : ctx.spec.layout === "subscriptions" ? "The renewal shows under Renewals" : "The reports land on the shelf above";
+  const steps: { key: string; title: string; sub: string; lead?: React.ReactNode; dashed?: boolean }[] = [
+    { key: "when", title: `First ${watch ? "check" : "run"} ${inWords(at, ctx.now)}`, sub: `${day(at)} · ${hm(at)}, then ${cadenceText(rs.cadence).replace(/^Every/, "every").replace(/^On the/, "on the")}`, dashed: true },
+    { key: "buys", title: `${who} ${watch ? "checks" : "buys"} ${rs.items.length === 1 ? short(ctx.itemName(rs.items[0].sellerId, rs.items[0].sku)) : `${rs.items.length} items`}`, sub: sellers.map((s) => ctx.sellerName(s)).join(" · "),
+      lead: <View style={{ flexDirection: "row" }}>{sellers.slice(0, 3).map((s, k) => <View key={s} style={{ marginLeft: k ? -8 : 0, borderRadius: 9, borderWidth: 2, borderColor: c.card }}><Mark id={s} size={24} /></View>)}</View> },
+    watch
+      ? { key: "pays", title: `Buys only at US$${rs.limitPrice} or less`, sub: "Above that, it only logs the price" }
+      : { key: "pays", title: `Pays US$${total.toFixed(3).replace(/0$/, "")}`, sub: "The sellers' listed prices" },
+    { key: "lands", title: lands, sub: "Each with its receipt and transaction" },
+    { key: "asks", title: `Past US$${rs.allowance.amount} a ${rs.allowance.period}, ${who} asks you`, sub: "Your Face ID co-signs, or it doesn't pay" },
+  ];
+  return (
+    <View accessibilityRole="list" accessibilityLabel="What happens next">
+      {steps.map((s, i) => (
+        <Animated.View key={s.key} entering={reduce ? undefined : FadeInDown.delay(120 + i * 90).springify().damping(20)} style={{ flexDirection: "row", gap: 12 }}
+          accessible accessibilityLabel={`Step ${i + 1} of ${steps.length}: ${s.title}. ${s.sub}`}>
+          <View style={{ alignItems: "center", width: 18 }}>
+            <View style={{ width: 16, height: 16, borderRadius: 8, marginTop: 3, borderWidth: 2, borderColor: i === 0 ? c.ink : c.line, borderStyle: s.dashed ? "dashed" : "solid", backgroundColor: i === 0 ? c.card : c.fill, alignItems: "center", justifyContent: "center" }}>
+              {i === 0 ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.vermillion }} /> : null}
+            </View>
+            {i < steps.length - 1 ? <View style={{ flex: 1, width: 2, marginVertical: 2, backgroundColor: c.fill }} /> : null}
+          </View>
+          <View style={{ flex: 1, paddingBottom: i < steps.length - 1 ? 14 : 0, flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+            <View style={{ flex: 1, gap: 1 }}>
+              <T v="row" w={i === 0 ? "bold" : undefined}>{s.title}</T>
+              <T v="cap" color="muted">{s.sub}</T>
+            </View>
+            {s.lead}
+          </View>
+        </Animated.View>
+      ))}
+    </View>
   );
 }
 
@@ -612,6 +666,11 @@ function BlockView({ block, ctx }: { block: Block; ctx: AppCtx }) {
 
 export function PocketApp({ ctx, assemble = "page" }: { ctx: AppCtx; assemble?: "build" | "page" | "none" }) {
   const blocks = useMemo(() => ctx.spec.blocks, [ctx.spec]);
+  // the payoff: a payment that settles while the app is open gets one success tap (the shelf, the meter and the run row
+  // show it; the tap says it happened even when the change is below the fold)
+  const paid = ctx.address && !ctx.preview ? purchasesOf(ctx.events, ctx.address).length : 0;
+  const before = React.useRef(paid);
+  useEffect(() => { if (paid > before.current) haptic.success(); before.current = paid; }, [paid]);
   return (
     <View style={{ gap: 12 }}>
       {blocks.map((b, i) => <Assemble key={b.type} i={i} mode={assemble}><BlockView block={b} ctx={ctx} /></Assemble>)}

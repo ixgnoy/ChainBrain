@@ -62,7 +62,8 @@ function Shell() {
           <Stack screenLayout={({ children }) => <PauseCovered>{children}</PauseCovered>} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.canvas }, animation: Platform.OS === "ios" ? "default" : "slide_from_right" }}>
             <Stack.Screen name="(tabs)" />
             {/* fade: the pocket page's card arrives by the card flight (components/CardFlight.tsx), not by sliding in */}
-            <Stack.Screen name="pocket/[id]" options={{ animation: "fade", gestureEnabled: true, fullScreenGestureEnabled: Platform.OS === "ios" }} />
+            {/* edge swipe only: a full-screen swipe took horizontal drags from the price chart's scrub and the shelf of reports */}
+            <Stack.Screen name="pocket/[id]" options={{ animation: "fade", gestureEnabled: true, fullScreenGestureEnabled: false }} />
             <Stack.Screen name="agent" />
             <Stack.Screen name="agents/[id]" />
             <Stack.Screen name="connect" />
