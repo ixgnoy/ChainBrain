@@ -25,9 +25,10 @@ export function* purchase(sellerId: string, sku: string, o: { payAnyway?: boolea
   const base = { sellerId, sku, price: q?.price };
   if (!q?.ok) return { ...base, ok: false, reason: q?.reason ?? "QUOTE_UNKNOWN", why: q?.error ?? q?.why };
   const rule = q.allowedByPocket;
-  if (rule !== "OK" && !o.payAnyway) return { ...base, ok: false, reason: rule.reason, why: rule.why };
-  // Radar's verdict on the seller's money: block means pick someone else (the wallet would refuse anyway)
+  // Radar's verdict on the seller's money comes first: a seller paid by a drainer is never worth asking the owner to
+  // allow, so block means pick someone else (the wallet would refuse anyway)
   if (q.counterpartyRisk?.verdict === "block" && !o.payAnyway) return { ...base, ok: false, reason: "COUNTERPARTY_HIGH_RISK", why: q.counterpartyRisk.reasons?.[0] };
+  if (rule !== "OK" && !o.payAnyway) return { ...base, ok: false, reason: rule.reason, why: rule.why };
   if (q.intentCheck !== "OK" && !o.payAnyway) return { ...base, ok: false, reason: q.intentCheck.reason, why: q.intentCheck.why };
   return yield* settle(sellerId, sku, q.quoteId, q.price, rule === "OK" && q.needsOwnerApproval, o.reason);
 }

@@ -33,7 +33,9 @@ export function deadEndOf(events: WalletEvent[], pocket: { address: string; cap:
   const cheapest = over.length ? over.reduce((a, b) => (b.price! < a.price! ? b : a)) : undefined;
   const fix = cheapest ? { cap: cheapest.price! > pocket.cap ? cheapest.price! : pocket.cap, topUp: cheapest.price! > pocket.balance ? cheapest.price! - pocket.balance : 0n } : undefined;
   const prices = tried.map((t) => t.price).filter((x): x is bigint => x != null);
-  return { tried, fix, needsSeller: !fix && tried.some((t) => t.reasons.includes("SELLER_NOT_ALLOWED")), minPrice: prices.length ? prices.reduce((a, b) => (b < a ? b : a)) : undefined };
+  // never suggest allowing a seller Radar blocked (its money traces to a drainer): that fix would undo Radar
+  const allowable = tried.filter((t) => t.reasons.includes("SELLER_NOT_ALLOWED") && !t.reasons.includes("COUNTERPARTY_HIGH_RISK"));
+  return { tried, fix, needsSeller: !fix && allowable.length > 0, minPrice: prices.length ? prices.reduce((a, b) => (b < a ? b : a)) : undefined };
 }
 
 export const whyText = (t: Tried) => (t.reasons.length ? t.reasons.map(plainReason).join(", ") : "not allowed");
