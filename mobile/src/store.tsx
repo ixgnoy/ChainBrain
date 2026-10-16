@@ -28,7 +28,7 @@ import {
 import { getItem, setItem, deleteItem } from "./storage";
 import { addOwnerTx, ownerRows, parseOwnerTxs, type OwnerTx } from "./lib/ownerTxs";
 
-export type Turn = { id: string; pocket: string; text: string; fromAt: number; toAt?: number; reply?: string; stopped?: string; error?: string; done: boolean };
+export type Turn = { id: string; pocket: string; text: string; fromAt: number; toAt?: number; /** the last event when the turn finished: anything later happened after it */ endAt?: number; reply?: string; stopped?: string; error?: string; done: boolean };
 export type Pocket = PocketView & { name: string; style: PocketMeta["style"]; owned: boolean; /** the agent that holds it (immutable agent key) */ agentId?: AgentId };
 export type Sheet = { mode: "fund" | "return" | "revoke"; pocket?: string } | null;
 export type Rules = { pocket: string; field: "cap" | "ask"; amount?: string; topUp?: bigint } | null;
@@ -380,11 +380,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const r = await api.chat(a.address, t);
       await pollRef.current();
-      patchTurn(key, turn.id, { reply: r.reply, stopped: r.stopped, done: true });
+      patchTurn(key, turn.id, { reply: r.reply, stopped: r.stopped, done: true, endAt: eventsRef.current.at(-1)?.at });
     } catch (e) {
       await pollRef.current();
       const late = replyOf(sliceTurn(eventsRef.current, fromAt));
-      patchTurn(key, turn.id, late ? { reply: late, done: true } : { error: "Lost the connection while the agent was working. It may still finish: check Activity.", done: true });
+      patchTurn(key, turn.id, late ? { reply: late, done: true, endAt: eventsRef.current.at(-1)?.at } : { error: "Lost the connection while the agent was working. It may still finish: check Activity.", done: true });
     }
     void refreshPockets();
   }, [active, pockets, turnsBy, refreshPockets]);

@@ -171,13 +171,18 @@ export default function AgentChat() {
 
   const mine = useMemo(() => (active ? events.filter((e) => sameAddr(e.pocket, active.address)) : []), [events, active]);
   const mineLen = mine.length;
-  // attacks that arrived before the first message (the console sets them off through the relay): shown at the top of the chat
-  const loose = useMemo(() => mine.filter((e) => isAttackEvent(e) && (turns.length === 0 || e.at <= turns[0].fromAt)), [mine, turns]);
-  // Radar alerts that arrived between turns (the monitor re-screened a seller this pocket paid): shown after the conversation
-  const inTurn = (at: number) => turns.some((t) => at > t.fromAt && (t.toAt == null || at <= t.toAt));
-  const idleAlerts = useMemo(() => (active ? radarAlerts(mine, active.address).filter((a) => !inTurn(a.at)) : []), [mine, turns, active]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Sentinel decisions outside a chat turn (the console's attack arena, a forced transfer): after the conversation
-  const idleSentinel = useMemo(() => sentinelEvents(mine).filter((v) => !inTurn(v.at)), [mine, turns]); // eslint-disable-line react-hooks/exhaustive-deps
+  // a turn ends with its reply: what happens after it (a forced transfer, the Sentinel freezing the pocket, Radar re-screening
+  // a seller) is shown between the messages where it happened, or after the conversation, where the owner is looking; it is
+  // never folded into the last answer above its reply
+  const endOf = (t: Turn) => t.endAt ?? t.toAt;
+  const inTurn = (at: number) => turns.some((t) => { const end = endOf(t); return at > t.fromAt && (end == null || at <= end); });
+  const idle = useMemo(() => {
+    const alerts = active ? radarAlerts(mine, active.address).filter((a) => !inTurn(a.at)).map((a) => ({ key: a.key, at: a.at, node: <RadarAlertCard key={a.key} a={a} /> })) : [];
+    const sentinel = sentinelEvents(mine).filter((v) => !inTurn(v.at)).map((v) => ({ key: v.key, at: v.at, node: <SentinelCard key={v.key} v={v} /> }));
+    // attacks outside a chat turn (the console sets them off through the relay, a forced transfer from the laptop)
+    const attacks = mine.filter((e) => isAttackEvent(e) && !inTurn(e.at)).map((e, k) => ({ key: `idle${e.type}${e.at}${k}`, at: e.at, node: <AttackCard key={`idle${e.type}${e.at}${k}`} e={e} /> }));
+    return [...alerts, ...sentinel, ...attacks].sort((a, b) => a.at - b.at);
+  }, [mine, turns, active]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // follow the conversation: smooth scroll to the end while the owner is at (or near) the bottom; content growing (steps, cards) retriggers it
   const toEnd = () => {
@@ -252,7 +257,7 @@ export default function AgentChat() {
     const shown = new Set<string>();
     for (const t of turns) {
       const dup = new Set<string>();
-      for (const x of injectionsOf(sliceTurn(mine, t.fromAt, t.toAt))) { const k = JSON.stringify(x); if (shown.has(k)) dup.add(k); shown.add(k); }
+      for (const x of injectionsOf(sliceTurn(mine, t.fromAt, endOf(t)))) { const k = JSON.stringify(x); if (shown.has(k)) dup.add(k); shown.add(k); }
       out.set(t.id, dup);
     }
     return out;
@@ -260,7 +265,7 @@ export default function AgentChat() {
   const hidden = showAll ? 0 : Math.max(0, turns.length - 3);
   const canStop = !!active && active.owned && !!wallet && !active.revoked && Number(active.expiresAt) * 1000 > Date.now();
   // the last step of THIS task only (an earlier task's payment must not read as this one's)
-  const stopped = active?.revoked ? lastStepText(last ? sliceTurn(mine, last.fromAt, last.toAt) : [], sellerName) : null;
+  const stopped = active?.revoked ? lastStepText(last ? sliceTurn(mine, last.fromAt, endOf(last)) : [], sellerName) : null;
   const stopTx = active ? ownerTxs.filter((t) => t.kind === "revoke" && sameAddr(t.pocket, active.address)).at(-1) : undefined;
   const waitingHere = !!(intent || pay || question);
   const busyHere = chatBusy || waitingHere;
@@ -327,7 +332,6 @@ export default function AgentChat() {
               </View>
             </Rise>
           )}
-          {loose.map((e, k) => <AttackCard key={`loose${e.at}${k}`} e={e} />)}
           {hidden > 0 ? (
             <Press kind="row" haptics="select" onPress={() => setShowAll(true)} accessibilityRole="button" accessibilityLabel={`Show ${hidden} earlier messages`}
               style={{ alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 6, minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: c.fill }}>
@@ -337,14 +341,17 @@ export default function AgentChat() {
           ) : null}
           {turns.slice(hidden).map((t: Turn, k) => {
             const i = hidden + k;
-            const evs = sliceTurn(mine, t.fromAt, t.toAt);
+            const evs = sliceTurn(mine, t.fromAt, endOf(t));
             const disclosures = evs.filter((e) => e.type === "disclosure");
             const reply = t.reply ?? replyOf(evs);
             const isLast = i === turns.length - 1;
             const dead = t.done && active ? deadEndOf(evs, active) : null;
             const refusals = dead ? [] : refusalsOf(evs);
+            // what happened between the previous message and this one (a freeze, a forced transfer), in its place in time
+            const since = turns[i - 1]?.fromAt ?? -Infinity;
             return (
               <View key={t.id} style={{ gap: 10 }}>
+                {idle.filter((x) => x.at > since && x.at <= t.fromAt).map((x) => x.node)}
                 <UserBubble text={t.text} fresh={false} />
                 {disclosures.map((d, k) => (
                   <EventCard key={k} tone="refused" alert={`${t.id}:d${k}`} title={`${cleanText(sellerName(d.sellerId), 40)} asked for more data`}
@@ -382,8 +389,7 @@ export default function AgentChat() {
               </View>
             );
           })}
-          {idleAlerts.map((a) => <RadarAlertCard key={a.key} a={a} />)}
-          {idleSentinel.map((v) => <SentinelCard key={v.key} v={v} />)}
+          {idle.filter((x) => !last || x.at > last.fromAt).map((x) => x.node)}
           {sent ? <View style={{ gap: 14 }}><UserBubble text={sent.text} fresh /></View> : null}
           {!last && intent ? <TaskWaiting text={intent.text} onOpen={() => openApproval(intent.id)} id={intent.id} /> : null}
           {active?.revoked && turns.length > 0 ? (
