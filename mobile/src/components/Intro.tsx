@@ -24,7 +24,7 @@ import { EASE_OUT, rubberband, useReduceMotion } from "../ui/motion";
 import { finishIntro } from "../ui/intro";
 
 const PAGES = [
-  { title: "Give your AI a pocket, not your wallet", sub: "A pocket holds a small budget for one agent: ChainBrain's own, Claude or ChatGPT. It can only spend what you put in." },
+  { title: "Give your AI a pocket, not your wallet", sub: "A pocket holds a small budget for one agent: ChainBrain's own, Claude or ChatGPT. Say what it's for in one sentence and it gets its own app." },
   { title: "The limits live in a contract you own", sub: "Which sellers, how much per payment, when to ask you. Only your key can change them." },
   { title: "The worst case is the pocket balance", sub: "Even a tricked agent can only pay sellers you allowed, and never more than the pocket holds." },
 ] as const;

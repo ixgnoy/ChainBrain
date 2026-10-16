@@ -37,6 +37,11 @@ Related documents:
 | Phone: the pocket page (its app, then the owner zone) | `mobile/src/app/pocket/[id].tsx` |
 | Console: the pocket app view (`#pockets/0x…`) | `web/src/console/PocketApp.tsx` |
 | Server: `POST /api/pocket-app/compose`, the zod schema | `server/src/pocketApp/` |
+| Each card's live sign (`glyphOf`) | `shared/sim/pocketAppData.ts` |
+| What the sentence says so far (`understand`), for the chips while typing | `shared/sim/understand.ts` |
+| Phone: Home's wallet stack, Next up | `mobile/src/components/PocketWallet.tsx`, `NextUp.tsx` |
+| Phone: the chips under the sentence | `mobile/src/components/app/Understood.tsx` |
+| Console: every routine on one week's timeline | `web/src/console/RoutineTimeline.tsx` |
 
 ## Layouts and theming
 
@@ -182,6 +187,19 @@ type RoutineSpec = {
 5. **Run 3.** It would take the week to US$0.051, so CoinGecko's US$0.01 comes as the cheque, showing the week's bar with the overage in vermillion. Co-signed, the meter shows US$0.001 over.
 
 The console plays the same scene on its own presenter pocket (Judges tab, "Routine").
+
+## First glance (loop 4)
+
+Built for a judge who looks for a few seconds. Every figure still comes from the store or the network.
+
+| Where | What it does |
+| --- | --- |
+| Home | Every pocket as a wallet stack. Each card shows its name row and a live sign: a price watch's sparkline and latest quote, the next run, a run going on, paused, or a haggler's savings, else the balance. The front card is whole. Neighbours differ in face. Cards drop in on launch, a pull fans them, and a tap flies the card into its page. |
+| Home, Next up | Each routine's next run, soonest first, with the agent's mark, the sellers' marks and the cost. "Asks you" appears when the run would pass what is left of the allowance, the same test the runner uses. |
+| New pocket app | While you type, chips show what was understood: the kind of app as a tiny card in its face, sellers and agents with their marks, the schedule, the money, the limit, and when it asks. One tick per new chip. |
+| Pocket page | Before the first run, Recent runs is "What happens next": the first run, who buys what, what it pays, where it lands, and when it asks you. The deal chart scrubs (hold, drag), with a tick per quote and a stronger tick at the limit. A run that settles in view slides its report onto the shelf, drops its run row in, and gives one success tap. The card settles smaller as you scroll. Swipe back works from the edge only, so the chart keeps its drag. |
+| Brain | A Routine panel: the schedule, the share of the allowance used, how many seller texts tried to change the routine (nothing changed), and the next run. |
+| Console, Pockets | "Routines this week": a row per routine, with runs as dots (paid, asked, nothing paid, seller text ignored), the next runs dashed, and a "now" line. |
 
 ## Checks (17 Oct)
 

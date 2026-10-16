@@ -28,6 +28,8 @@ import * as api from "../../lib/api";
 import { parseIntent } from "../../components/IntentCard";
 import { injectionsOf } from "../../components/InjectionCard";
 import { ScoreBar } from "../../components/RadarCard";
+import { cadenceText } from "../../../../shared/sim/pocketApp";
+import { budgetOf, runsOf } from "../../../../shared/sim/pocketAppData";
 
 const cap1 = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
@@ -163,6 +165,11 @@ export default function BrainTab() {
   const refusals = mine.filter((e) => e.type === "refusal").length;
   const funnelMax = Math.max(quotes, b.paid, refusals, 1);
   const pfOk = b.preflight.filter((x) => x.matched).length;
+  // the pocket's routine (built-in network): runs without being asked, inside fixed fields a seller's text can't change
+  const routine = api.routineOf(active.address);
+  const runs = routine ? runsOf(mine, active.address) : [];
+  const ignored = runs.reduce((n, r) => n + r.ignored.length, 0);
+  const rb = routine ? budgetOf(mine, active.address, { routine, balance: active.balance, now: Date.now() }) : null;
   const sentinelNow = active.frozen ? "Froze the pocket" : b.sentinel.at(-1)?.kind === "hold" ? "Waiting for you" : b.sentinel.some((v) => v.kind !== "clear") ? "Watching" : "All clear";
 
   return (
@@ -223,6 +230,16 @@ export default function BrainTab() {
       </Panel>
 
       {/* what it understood: the confirmed task as chips, its one question as a bubble */}
+      {routine && rb ? (
+        <Panel title="Routine" pill={routine.status === "paused" ? "Paused" : `${runs.length} ${runs.length === 1 ? "run" : "runs"} on its own`} pillTone={routine.status === "paused" ? "fill" : "green"} delay={40}>
+          <T v="sub" color="ink2">{`${cadenceText(routine.cadence)}, it buys the same ${routine.items.length === 1 ? "item" : `${routine.items.length} items`} from the sellers you named. It never decides to buy something new: the schedule, the items and the allowance are fixed fields you signed.`}</T>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Counter icon="gauge" n={Math.round((Number(rb.spent) / Math.max(Number(rb.limit), 1)) * 100)} label={`% of US$${usd(rb.limit)} a ${routine.allowance.period} used`} a11y={`percent of this ${routine.allowance.period}'s allowance used: ${money(rb.spent)} of ${money(rb.limit)}`} />
+            <Counter icon="shieldCheck" n={ignored} label={ignored === 1 ? "seller text ignored" : "seller texts ignored"} a11y="times a seller's text tried to change the routine; nothing changed" />
+          </View>
+          {routine.status === "active" ? <T v="cap" color="muted">{`Next ${new Date(routine.nextAt).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" })}. Past the allowance it stops and asks you to co-sign.`}</T> : null}
+        </Panel>
+      ) : null}
       <Panel title="Understood" pill={b.task ? (b.task.status === "approved" ? "Confirmed" : b.task.status === "pending" ? "Waiting for you" : "Declined") : "No task yet"} pillTone={b.task?.status === "approved" ? "green" : b.task?.status === "pending" ? "blue" : "fill"} delay={50}>
         {task.length ? <>
           {task.filter((r) => r.k === "Buy" || !r.k).slice(0, 1).map((r, i) => <T key={i} v="row">{cap1(r.v)}</T>)}

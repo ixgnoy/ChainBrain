@@ -34,10 +34,10 @@ export function Understood({ text, sellers }: { text: string; sellers: { id: str
   return (
     <View accessible accessibilityLabel={`Understood so far: ${said}`} accessibilityLiveRegion="polite" style={{ gap: 8 }}>
       <T v="cap" color="muted">Understood so far</T>
-      <Animated.View layout={reduce ? undefined : LinearTransition.springify().damping(20)} style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+      <Animated.View layout={reduce ? undefined : LinearTransition.duration(240)} style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         {u.chips.map((x) => (
-          <Animated.View key={key(x)} entering={reduce ? FadeIn.duration(1) : FadeInUp.springify().damping(20).stiffness(260)} exiting={reduce ? undefined : FadeOut.duration(120)}
-            layout={reduce ? undefined : LinearTransition.springify().damping(20)}
+          <Animated.View key={key(x)} entering={reduce ? FadeIn.duration(1) : FadeInUp.duration(220)} exiting={reduce ? undefined : FadeOut.duration(120)}
+            layout={reduce ? undefined : LinearTransition.duration(240)}
             style={{ minHeight: 32, flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 5, paddingRight: 11, borderRadius: 16, backgroundColor: x.kind === "app" ? c.ink : c.card, borderWidth: 1, borderColor: c.tileStroke }}>
             <Lead x={x} />
             <T v="cap" w="semi" style={{ color: x.kind === "app" ? c.white : c.ink }} numberOfLines={1}>{x.label}</T>

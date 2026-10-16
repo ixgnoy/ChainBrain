@@ -179,7 +179,7 @@ function Cover({ x, i, ctx }: { x: ReturnType<typeof purchasesOf>[number]; i: nu
   const name = ctx.itemName(x.sellerId, x.sku);
   return (
     // keyed by the purchase: a new report slides in at the front and the rest glide along the shelf
-    <Animated.View style={a} layout={reduce ? undefined : LinearTransition.springify().damping(20)}>
+    <Animated.View style={a} layout={reduce ? undefined : LinearTransition.duration(240)}>
       <Press kind="row" haptics="light" onPress={() => ctx.onReceipt?.(x.tx)} accessibilityRole="button" accessibilityLabel={`${name} from ${ctx.sellerName(x.sellerId)}, US$${usd(x.amount)}, ${day(x.at)}, receipt`}
         style={{ width: 136, minHeight: 176, borderRadius: radius.tile, backgroundColor: i === 0 ? c.ink : c.tile, overflow: "hidden" }}>
         <View style={{ height: 72, alignItems: "flex-start", justifyContent: "flex-end", padding: 12, overflow: "hidden" }}>
@@ -432,7 +432,7 @@ function Runs({ ctx, block }: { ctx: AppCtx; block: Block }) {
         const watching = r.outs.find((o) => o.outcome === "watching");
         const title = paid.length ? `Paid US$${usd(r.paid)}` : watching ? `Watched · US$${watching.amount}` : r.outs.some((o) => o.outcome === "declined") ? "You declined" : "Nothing paid";
         return (
-          <Animated.View key={r.run} style={{ gap: 8 }} entering={reduce || seen.current!.has(r.run) ? undefined : FadeInDown.springify().damping(18)} layout={reduce ? undefined : LinearTransition.springify().damping(20)}>
+          <Animated.View key={r.run} style={{ gap: 8 }} entering={reduce || seen.current!.has(r.run) ? undefined : FadeInDown.duration(260)} layout={reduce ? undefined : LinearTransition.duration(240)}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }} accessible accessibilityLabel={`Run ${r.run}, ${title}, ${day(r.at)}${r.asked ? ", asked you" : ""}`}>
               <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: r.asked ? c.vermillionSoft : c.fill, alignItems: "center", justifyContent: "center" }}>
                 <T v="head" style={{ color: r.asked ? c.vermillionInk : c.ink }}>{String(r.run)}</T>
@@ -486,7 +486,7 @@ function WhatNext({ ctx, rs }: { ctx: AppCtx; rs: NonNullable<PocketAppSpec["rou
   return (
     <View accessibilityRole="list" accessibilityLabel="What happens next">
       {steps.map((s, i) => (
-        <Animated.View key={s.key} entering={reduce ? undefined : FadeInDown.delay(120 + i * 90).springify().damping(20)} style={{ flexDirection: "row", gap: 12 }}
+        <Animated.View key={s.key} entering={reduce ? undefined : FadeInDown.delay(120 + i * 90).duration(260)} style={{ flexDirection: "row", gap: 12 }}
           accessible accessibilityLabel={`Step ${i + 1} of ${steps.length}: ${s.title}. ${s.sub}`}>
           <View style={{ alignItems: "center", width: 18 }}>
             <View style={{ width: 16, height: 16, borderRadius: 8, marginTop: 3, borderWidth: 2, borderColor: i === 0 ? c.ink : c.line, borderStyle: s.dashed ? "dashed" : "solid", backgroundColor: i === 0 ? c.card : c.fill, alignItems: "center", justifyContent: "center" }}>

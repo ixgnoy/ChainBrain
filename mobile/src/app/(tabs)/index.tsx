@@ -22,7 +22,7 @@ import { NextUp, nextRuns } from "../../components/NextUp";
 import { pageCardWidth, PAGE_MARGIN } from "../../components/CardFlight";
 import { cardHeight } from "../../components/PocketFace";
 import * as api from "../../lib/api";
-import { glyphOf, type Glyph } from "../../../../shared/sim/pocketAppData";
+import { glyphKey, glyphOf, type Glyph } from "../../../../shared/sim/pocketAppData";
 import { SpendChart } from "../../components/SpendChart";
 import { useIntroDone } from "../../ui/intro";
 import { ActivityRow } from "../../components/ActivityRow";
@@ -140,10 +140,15 @@ function Home({ ready }: { ready: boolean }) {
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(t); }, []);
   // each pocket's routine (built-in network) and live sign, read again when events arrive
   const routines = useMemo(() => new Map(pockets.map((p) => [p.address.toLowerCase(), api.routineOf(p.address)])), [pockets, events.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the same object until a sign actually changes: each poll brings a new events array, and a new object would redraw
+  // all seven cards of the stack for nothing
+  const lastGlyphs = useRef<{ key: string; g: Record<string, Glyph | null> } | null>(null);
   const glyphs = useMemo(() => {
     const g: Record<string, Glyph | null> = {};
     for (const p of pockets) { const a = p.address.toLowerCase(); g[a] = p.revoked ? null : glyphOf(events, p.address, { layout: p.app?.layout, routine: routines.get(a), now }); }
-    return g;
+    const key = Object.entries(g).map(([a, x]) => `${a}=${glyphKey(x)}`).join();
+    if (lastGlyphs.current?.key !== key) lastGlyphs.current = { key, g };
+    return lastGlyphs.current.g;
   }, [pockets, events, routines, now]);
   const upcoming = useMemo(() => nextRuns(pockets, (a) => routines.get(a.toLowerCase()) ?? null, events, cfg?.sellers ?? [], now), [pockets, routines, events, cfg, now]);
   const reduce = useReduceMotion();
