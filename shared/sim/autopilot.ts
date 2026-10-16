@@ -5,7 +5,7 @@
 import { CATALOG } from "./catalog";
 import { ROUTINE_INJECTION, SCENES, type SceneInfo } from "./scenes";
 import type { RoutineSpec } from "./pocketApp";
-import { seedOwnerHistory, seedOwnerToday } from "./seed";
+import { catchUpRoutines, seedOwnerHistory, seedOwnerToday } from "./seed";
 import type { Hex } from "./types";
 import { NEVER, lower, parseUsd } from "./util";
 import { SIM_AGENT, type World } from "./world";
@@ -165,6 +165,7 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
   async function seed() {
     // oldest first: the presenter's two weeks, then the other owners' morning, then the presenter's today
     const prior = await seedOwnerHistory(world, presenter, { startUsdc: "60.00" });
+    await catchUpRoutines(world, presenter, 7 * HOUR); // the presenter's routine runs before the others' morning (oldest first)
     await seedOthers();
     await seedOwnerToday(world, presenter, prior);
     world.autoOwner(presenter, true);

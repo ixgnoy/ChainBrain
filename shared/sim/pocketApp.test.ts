@@ -191,3 +191,13 @@ test("seeded pocket apps: the deal watcher's chart, the renewals, every number f
   assert.deepEqual([fromEv.runs, fromEv.nextAt, fromEv.status], [rt.runs, rt.nextAt, rt.status]);
   assert.equal(routineFromEvents(ev, by("Research data").address), null);
 });
+
+test("console seeding: the presenter's routine runs keep their scheduled times (other owners' morning comes after)", async () => {
+  const { createAutopilot } = await import("./autopilot");
+  const w = createWorld({ speed: 0, seed: 5 });
+  const ap = createAutopilot(w, { background: false });
+  await ap.ready();
+  const quotes = w.events(0).filter((e) => e.type === "quote");
+  assert.ok(quotes.length >= 10);
+  for (const q of quotes) assert.equal(new Date(q.at + 8 * 3_600_000).getUTCHours(), 8, `quote at ${new Date(q.at).toISOString()}`);
+});

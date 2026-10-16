@@ -60,7 +60,11 @@ const withApps = (s: Seeded): Seeded => ({ ...s, pockets: s.pockets.map((p) => (
 /** Publishes a seeded pocket's app at the moment it was made (seeding clock), so screens find it in the stream. */
 const publishApp = (w: World, pocket: Hex, name: string) => { const a = seedApp(name); if (a) w.setApp(pocket, a); };
 
-/** Replays routine runs whose time came before `beforeAgo` (oldest first), on the seeding clock. */
+/** Replays routine runs whose time came before `beforeAgo` (oldest first), on the seeding clock. Exported for the console's
+ *  seeding, which puts other owners' morning between the presenter's history and today: their runs must come first. */
+export async function catchUpRoutines(w: World, owner: Hex, beforeAgo: number) {
+  await asOwner(w, owner, () => runDue(w, w.now(), beforeAgo));
+}
 async function runDue(w: World, now: number, beforeAgo: number) {
   for (let i = 0; i < 400; i++) {
     const due = w.routines().filter((r) => r.status === "active").map((r) => r.nextAt).sort((a, b) => a - b)[0];
