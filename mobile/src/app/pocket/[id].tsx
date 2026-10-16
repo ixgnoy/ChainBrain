@@ -96,7 +96,9 @@ export default function PocketDetail() {
   const sellerNames = (cfg?.sellers ?? []).filter((s) => pocket.allowed.includes(s.id)).map((s) => cleanText(s.name, 30));
   const agent = agentInfo(pocket.agentId ?? "");
   const ask = pocket.askAbove === NEVER || pocket.askAbove > pocket.cap ? "Never" : pocket.askAbove === 0n ? "Every payment" : money(pocket.askAbove);
-  const returned = mine.filter((r) => r.kind === "owner" && r.ownerKind === "return").reduce((n, r) => n + (r.amount ?? 0n), 0n);
+  // what came back with the revoke (its sweep follows the revoke tx), not earlier Return funds
+  const revokedAt = mine.find((r) => r.kind === "owner" && r.ownerKind === "revoke")?.at;
+  const returned = revokedAt == null ? 0n : mine.filter((r) => r.kind === "owner" && r.ownerKind === "return" && r.at >= revokedAt).reduce((n, r) => n + (r.amount ?? 0n), 0n);
   const W = rootW ? pageCardWidth(rootW) : 0;
 
   const toggle = async (name: string, on: boolean, payTo: `0x${string}`) => {
