@@ -1,7 +1,7 @@
 // Home (Stitch chainbrain_home, polish from home_vaultbank_style): the agent-pockets pool and the main wallet, three quick
 // actions, the fanned pocket deck, real agent spending as a hatch curve, and recent activity with the agent that acted.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RefreshControl, View } from "react-native";
+import { RefreshControl, useWindowDimensions, View } from "react-native";
 import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { router } from "expo-router";
 import { StatusDot } from "../../ui/StatusDot";
@@ -64,6 +64,20 @@ export function HomeHeader() {
 let introPlayed = false;
 /** The intro covers Home on every launch: Home mounts again as it lets go, so its entrance is seen. */
 export default function HomeGate() { const done = useIntroDone(); return <Home key={done ? "live" : "wait"} ready={done} />; }
+
+/** While the pockets are read: the deck's shape in quiet grey, so Home doesn't jump (and never says "no pockets" by mistake). */
+function LoadingDeck() {
+  const { width } = useWindowDimensions();
+  const cw = Math.min(width, 448) - 48;
+  const h = Math.round(cw / 1.586);
+  return (
+    <View accessible accessibilityLabel="Loading your pockets" style={{ height: h + 60, alignItems: "center" }}>
+      {[2, 1, 0].map((d) => (
+        <View key={d} style={{ position: "absolute", top: 6 + (2 - d) * 28, width: cw * (1 - d * 0.03), height: h, borderRadius: 18, backgroundColor: d === 0 ? c.tile : c.fill, borderWidth: 1, borderColor: c.tileStroke, transform: [{ rotate: `${[-2, 3, -4][d]}deg` }] }} />
+      ))}
+    </View>
+  );
+}
 
 /** No pockets yet: a calm, intentional empty state. */
 function EmptyPockets() {
@@ -175,7 +189,7 @@ function Home({ ready }: { ready: boolean }) {
       <Rise play={play} index={2}>
         <SectionHeader title="Active pockets" count={pockets.length || undefined} action={pockets.length && canConnect ? "Agents" : undefined} onAction={() => router.navigate("/agents")} />
         {loading ? (
-          <Card style={{ marginHorizontal: 16 }}><T v="body" color="muted">Loading your pockets…</T></Card>
+          <LoadingDeck />
         ) : pockets.length === 0 ? (
           <EmptyPockets />
         ) : (

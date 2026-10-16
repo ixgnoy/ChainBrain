@@ -245,6 +245,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }), [addresses, views, meta, wallet, cfg]);
 
   const active = pockets.find((p) => sameAddr(p.address, activeAddr)) ?? pockets[0];
+  // the address list arrives before each pocket's contract read: until a read lands, the owner has pockets we can't show
+  // yet, which is "loading", not "no pockets"
+  const pocketsReady = pocketsLoaded && (addresses.length === 0 || pockets.length > 0);
 
   const addPocket = useCallback(async (a: Address, m?: PocketMeta, o: { activate?: boolean } = {}) => {
     if (!wallet) return;
@@ -493,7 +496,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const value: Ctx = {
     apiUrl, setApiUrl, conn, connError, dev, retryConnect: () => setRetry((n) => n + 1), cfg, source, setSource,
     keyState, wallet, importKey, newKey, balances,
-    pockets, pocketsLoaded, active, setActive: setActiveAddr, addPocket, refreshPockets,
+    pockets, pocketsLoaded: pocketsReady, active, setActive: setActiveAddr, addPocket, refreshPockets,
     findPocket: (a) => pockets.find((p) => sameAddr(p.address, a)),
     ownerTxs, recordTx, events: myEvents, ledger, pending, sellerName,
     agents, agentOf, connectAgent, disconnectAgent, approvalFocus, openApproval,
