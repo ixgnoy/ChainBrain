@@ -4,7 +4,6 @@ Phone first, then the web console. Each slice goes research → implement → va
 
 ## Backlog
 
-- [ ] Home: a press-lift on stack cards; tune the drop-in and the pull-to-fan on video
 - [ ] Approvals inbox and Receipt sheet at Home's level
 - [ ] Settings at Home's level
 - [ ] Compose: highlight understood words in the sentence itself (mirror text), if it aligns on iOS at all text sizes; otherwise improve the chips
@@ -56,6 +55,12 @@ Phone first, then the web console. Each slice goes research → implement → va
   - Live opens on the pocket an agent last touched, not the newest pocket seeding created (which had three empty states).
   - The Judges scoreboard says "4 attacks to try" before anything is tried, not "0 of 4 attacks blocked".
   - Web tests 81 pass; build clean.
+
+- [x] **Stack: press-lift, plus the fan and drop-in checked on video**.
+  - A card rises 10 pt under the thumb (a peek that shows its stripe and agent pill) and springs back on release; Reduce Motion turns it off.
+  - The pull-to-fan, recorded on the iOS production bundle: the strips spread and reveal every agent's pill, then settle.
+  - The drop-in is in the launch recording from the first slice.
+  - Evidence: `ios-29-pull-fan.png` (a frame mid-pull), `w-29-press-lift.png`.
 
 Earlier the same day, before this log existed:
 - Home wallet stack, live card signs and Next up (e68c433)

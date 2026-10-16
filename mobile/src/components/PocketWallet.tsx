@@ -8,7 +8,7 @@
 // into a layer depth, so siblings tipped in 3D would cut through each other).
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, View, useWindowDimensions } from "react-native";
-import Animated, { Extrapolation, interpolate, useAnimatedReaction, useAnimatedStyle, useSharedValue, withDelay, withSpring, type SharedValue } from "react-native-reanimated";
+import Animated, { Extrapolation, interpolate, useAnimatedReaction, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { router, useIsFocused } from "expo-router";
 import { motion } from "../tokens";
@@ -102,13 +102,15 @@ function WalletCard({ pocket, pockets, index, count, cw, strip, play, reduce, sc
   useEffect(() => { if (play) land.value = withDelay(120 + index * 70, withSpring(1, motion.spring.deck)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // the index moves when a pocket is added or revoked: glide to the new place
   const at = useSharedValue(index);
+  // under the thumb, the card rises out of the stack a little (Wallet's peek) before it flies; back on release
+  const lift = useSharedValue(0);
   useEffect(() => { at.value = reduce ? index : withSpring(index, motion.spring.deck); }, [index, reduce, at]);
   const pos = useAnimatedStyle(() => {
     const pull = reduce ? 0 : interpolate(-scrollY.value, [0, FAN, FAN * 3], [0, 1, 1.4], Extrapolation.CLAMP);
     const drop = (1 - land.value) * (140 + index * 18);
     return {
       opacity: interpolate(land.value, [0, 0.25], [0, 1], Extrapolation.CLAMP),
-      transform: [{ translateY: at.value * strip + at.value * pull * 26 + drop }],
+      transform: [{ translateY: at.value * strip + at.value * pull * 26 + drop - lift.value * 10 }],
     };
   });
   // landing tips the card flat: it arrives leaning back, like a card dropped onto a pile
@@ -125,6 +127,8 @@ function WalletCard({ pocket, pockets, index, count, cw, strip, play, reduce, sc
       <Animated.View style={tip}>
         <View ref={ref} collapsable={false} style={{ opacity: hidden ? 0 : 1 }}>
           <Press kind="row" haptics="light" onPress={open}
+            onPressIn={() => { if (!reduce) lift.value = withTiming(1, { duration: 120 }); }}
+            onPressOut={() => { lift.value = reduce ? 0 : withSpring(0, motion.spring.deck); }}
             accessibilityRole="button" accessibilityLabel={`${name} pocket, ${usd(pocket.balance)} USDC${pocket.revoked ? ", revoked" : ""}`} accessibilityHint="Opens the pocket">
             <PocketFace pocket={pocket} width={cw} tone={tone} shadow focused={focused} tilt={front} glyph={glyph} peek={!front} />
           </Press>
