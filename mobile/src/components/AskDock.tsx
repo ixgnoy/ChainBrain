@@ -139,7 +139,8 @@ function DockBar({ id, a, title, sub, more, agentId, onOpen }: { id: string; a: 
   );
 }
 
-/** The 10-minute co-sign window as a vermillion ring that empties, minutes in the middle. */
+/** The 10-minute co-sign window as a ring that empties, minutes in the middle: calm (ink, or white on the dock) until the
+ *  last minute, then vermillion. A real contract deadline, never styled as pressure. */
 export function Countdown({ a, size = 36, onLight }: { a: Approval; size?: number; onLight?: boolean }) {
   const auth = authOf(a);
   const end = auth ? Number(auth.validBefore) : 0;
@@ -156,7 +157,7 @@ export function Countdown({ a, size = 36, onLight }: { a: Approval; size?: numbe
     <View accessible accessibilityLabel={`${Math.floor(left / 60)} minutes ${left % 60} seconds left to answer`} style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
       <Svg width={size} height={size} style={{ position: "absolute" }}>
         <Circle cx={size / 2} cy={size / 2} r={r} stroke={onLight ? c.line : "rgba(255,255,255,0.18)"} strokeWidth={3} fill="none" />
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke={c.vermillion} strokeWidth={3} fill="none" strokeLinecap="round"
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={left > 60 ? (onLight ? c.ink : c.white) : c.vermillion} strokeWidth={3} fill="none" strokeLinecap="round"
           strokeDasharray={`${len} ${len}`} strokeDashoffset={len * (1 - share)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
       </Svg>
       <T v="tab" w="bold" style={{ color: onLight ? c.ink : c.white, fontSize: size > 40 ? 12 : 10 }}>{label}</T>

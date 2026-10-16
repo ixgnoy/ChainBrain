@@ -33,6 +33,7 @@ import { parseUsd } from "../lib/shared";
 import { usd, shortAddr } from "../lib/util";
 import { IntentCard, parseIntent } from "./IntentCard";
 import { SheetSuccess } from "./SheetSuccess";
+import { notify as toast } from "../lib/toast";
 import { ErrorNote } from "./ErrorNote";
 
 export function describeApprovalError(code: string): string {
@@ -105,6 +106,11 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const outside = (a.agent ?? "chainbrain") !== "chainbrain";
   const amountUnits = (() => { try { return typeof a.data?.amount === "string" ? parseUsd(a.data.amount) : null; } catch { return null; } })();
 
+  // "Claude pays DataPro US$1.50 from Market news. US$3.40 stays in the pocket."
+  const left = pocket && amountUnits != null && pocket.balance >= amountUnits ? pocket.balance - amountUnits : null;
+  const moneyLine = `${who} pays ${seller} US$${amount ?? "?"}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}.${left != null ? ` US$${usd(left)} stays in the pocket.` : ""}`;
+  const until = auth ? new Date(Number(auth.validBefore) * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : null;
+
   const approve = async () => {
     setError(null);
     // the slide says "I mean it"; Face ID says "it's me"
@@ -124,7 +130,9 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
     setBusy(true); setError(null);
     const r = await answer(a, false);
     setBusy(false);
-    if (!r.ok && r.error !== "NOT_PENDING") setError(describeApprovalError(r.error)); else haptic.light();
+    if (!r.ok && r.error !== "NOT_PENDING") { setError(describeApprovalError(r.error)); return; }
+    haptic.light();
+    toast(isPay ? `Declined. ${who} won't pay ${seller}.` : `Declined. ${who} won't start that task.`);
   };
   const confirmIntent = async () => {
     setBusy(true); setError(null);
@@ -155,6 +163,11 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
                 <T v="sub" style={{ color: c.vermillionInk }}>{limitText}</T>
               </View>
               {auth && !expired ? <Countdown a={a} size={46} onLight /> : null}
+            </View>
+            {/* the money in one sentence, then what happens if the owner does nothing (a real deadline, said calmly) */}
+            <View accessible style={{ gap: 4, marginTop: -6 }}>
+              <T v="body">{moneyLine}</T>
+              <T v="sub" color="muted">{expired ? "Expired. Nothing was paid; the agent can ask again." : until ? `If you don't answer by ${until}, nothing is paid and ${who} can ask again.` : `If you don't answer, nothing is paid.`}</T>
             </View>
             {queue > 1 ? <T v="cap" color="muted" style={{ marginTop: -12 }}>{`${queue - 1} more waiting after this one`}</T> : null}
             <View onLayout={(e) => setCardW(Math.round(e.nativeEvent.layout.width))}>
