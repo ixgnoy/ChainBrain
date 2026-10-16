@@ -37,8 +37,9 @@ import { haptic } from "../haptics";
 import { useGrowCap } from "../ui/fontScale";
 
 type ChipItem = { label: string; text: string };
+// a server without /dev/scenes: tasks that name no seller (real provider names belong to the built-in network only)
 const DEFAULTS: ChipItem[] = [
-  { label: "Search Exa for durian news", text: "Search Exa for durian export news. Max US$0.01, by tonight." },
+  { label: "A durian market report", text: "Get me a market report on durian exports, under US$2, by tonight." },
   { label: "Research a durian deal", text: "Research a durian import deal for me: export news, the USDC price and a check on the exporter's wallet. Under US$0.10, by tonight." },
 ];
 
@@ -375,7 +376,7 @@ export default function AgentChat() {
                   </Rise>
                 )}
                 {t.done ? evs.filter((e) => e.type === "trace" && e.phase === "memory").slice(-1).map((e) => <MemoryLine key={`mem${e.at}`} e={e} />) : null}
-                {t.done && active ? <DeadEndCard id={t.id} evs={evs} pocket={active} sellerName={sellerName} onRetry={isLast && !chatBusy ? send : undefined}
+                {t.done && active ? <DeadEndCard id={t.id} task={t.text} evs={evs} pocket={active} sellerName={sellerName} onRetry={isLast && !chatBusy ? send : undefined}
                   resolved={t.toAt != null && mine.some((e) => e.type === "payment" && e.at > t.toAt!)} /> : null}
                 {isLast && intent ? <TaskWaiting text={intent.text} onOpen={() => openApproval(intent.id)} id={intent.id} /> : null}
               </View>
