@@ -21,7 +21,8 @@ import { Icon } from "../../ui/Icon";
 import { PocketWallet, stripFor } from "../../components/PocketWallet";
 import { NextUp, nextRuns } from "../../components/NextUp";
 import { pageCardWidth, PAGE_MARGIN } from "../../components/CardFlight";
-import { cardHeight } from "../../components/PocketFace";
+import { cardHeight, faceOf, toneFor } from "../../components/PocketFace";
+import type { Pocket } from "../../store";
 import * as api from "../../lib/api";
 import { glyphKey, glyphOf, weekDigest, type Glyph } from "../../../../shared/sim/pocketAppData";
 import { WeekDigest } from "../../components/WeekDigest";
@@ -88,6 +89,22 @@ function LoadingDeck() {
     </View>
   );
 }
+
+/** The total split into its pockets, each in its card's face, largest first: the stack below, as one line. */
+const Allocation = React.memo(function Allocation({ pockets, all, total }: { pockets: Pocket[]; all: Pocket[]; total: bigint }) {
+  if (total <= 0n || pockets.length < 2) return null;
+  const parts = [...pockets].filter((p) => p.balance > 0n).sort((a, b) => (b.balance > a.balance ? 1 : -1));
+  const label = parts.map((p) => `${cleanText(p.name, 24)} ${Math.round((Number(p.balance) / Number(total)) * 100)}%`).join(", ");
+  return (
+    <View accessible accessibilityLabel={`Split by pocket: ${label}`} style={{ flexDirection: "row", height: 8, gap: 2, marginTop: 10, borderRadius: 4, overflow: "hidden" }}>
+      {parts.map((p) => {
+        const f = faceOf(toneFor(all, p.address));
+        const white = f.face === "#FFFFFF";
+        return <View key={p.address} style={{ flexGrow: Number(p.balance), flexBasis: 0, minWidth: 3, backgroundColor: white ? f.edge : f.face }} />;
+      })}
+    </View>
+  );
+});
 
 /** No pockets yet: a calm, intentional empty state. */
 function EmptyPockets() {
@@ -201,6 +218,7 @@ function Home({ ready }: { ready: boolean }) {
             <View style={{ flex: 1 }}>
               <T v="cap" w="semi" color="muted">In agent pockets</T>
               <View style={{ marginTop: 4 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
+              <Allocation pockets={live} all={pockets} total={sumAll} />
             </View>
             <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ alignItems: big ? "flex-start" : "flex-end", paddingBottom: 4 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
