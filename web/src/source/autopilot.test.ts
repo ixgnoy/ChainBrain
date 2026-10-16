@@ -48,7 +48,7 @@ it("a planted injection is read in the next scene 5 run and ignored; the forced 
   const snap = feed.snapshot();
   expect(snap.allTxs.find((t) => t.hash === r.tx)?.status).toBe("reverted");
   expect(snap.txs.some((t) => t.hash === r.tx)).toBe(false);
-  expect(feed.scenes.map((s) => s.id)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"]);
+  expect(feed.scenes.map((s) => s.id)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"]);
 });
 
 it("every scene 1-10 plays from the Judges tab (runScene) and returns its pocket", async () => {
