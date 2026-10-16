@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Address } from "viem";
 import { useApp, type Pocket } from "../store";
 import { c, motion, radius } from "../tokens";
-import { BackHeader, BACK_HEADER_H } from "../ui/BackHeader";
+import { BackHeader } from "../ui/BackHeader";
 import { Button, Card, Field, Press } from "../ui/kit";
 import { T } from "../ui/Text";
 import { Icon, type IconName } from "../ui/Icon";
@@ -162,7 +162,7 @@ export default function Compose() {
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
       <BackHeader title="New pocket app" />
-      <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: insets.top + BACK_HEADER_H + 8, paddingBottom: insets.bottom + 48, gap: 16 }}>
+      <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" contentInsetAdjustmentBehavior="never" automaticallyAdjustKeyboardInsets contentContainerStyle={{ paddingTop: 8, /* the header above is in the flow (no scrollY), so it already holds the top inset */ paddingBottom: insets.bottom + 120, gap: 16 }}>{/* room for the ask dock that floats over the bottom */}
         <View style={{ paddingHorizontal: 20, gap: 6 }}>
           <T v="display" accessibilityRole="header" style={{ fontSize: 30, lineHeight: 36 }}>{"Say what it's for."}</T>
           <T v="body" color="ink2">One sentence. ChainBrain sets the rules, the routine and the screen. You check them and sign.</T>
