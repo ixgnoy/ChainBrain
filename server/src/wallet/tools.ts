@@ -15,6 +15,8 @@ import { radar, screenOrNull, brief } from "../radar/screen";
 import { trailOf } from "../../../shared/sim/radar";
 import { sentinel } from "../sentinel";
 import { preflight, sameOutcome } from "./preflight";
+import { parseUsd } from "./money";
+import { checkOffer, MAX_ROUNDS } from "../../../shared/sim/haggle";
 
 export type ToolCtx = { pocket: Address };
 type Tool = { description: string; schema: z.ZodType; run(ctx: ToolCtx, args: any): Promise<object> };
@@ -70,7 +72,7 @@ const defs: Record<string, Tool> = {
         ok: true,
         sellers: await Promise.all(list.map(async (s) => ({
           id: s.id, name: s.name, category: s.category, allowedByPocket: await P(ctx.pocket).sellerAllowed(s.payTo),
-          items: s.items.map((i) => ({ sku: i.sku, description: i.description, price: i.price ?? "free" })),
+          items: s.items.map((i) => ({ sku: i.sku, description: i.description, price: i.price ?? "free", ...(i.negotiable ? { negotiable: true } : {}) })),
         }))),
       };
     },
@@ -108,7 +110,43 @@ const defs: Record<string, Tool> = {
         needsOwnerApproval: (await P(ctx.pocket).needsOwner(rec.amount)) || sentinel.isHeld(ctx.pocket),
         intentCheck: intentCheck ? { reason: intentCheck, why: REASONS[intentCheck] } : "OK",
         counterpartyRisk: risk ? { score: risk.score, verdict: risk.verdict, reasons: brief(risk).reasons } : "unavailable",
+        ...((await directory().catch(() => [])).find((x) => x.id === sellerId)?.items.find((i) => i.sku === sku)?.negotiable ? { negotiable: true } : {}),
       };
+    },
+  },
+
+  counter_offer: {
+    description: "Haggle: offer a lower price on a quote whose item is marked negotiable, before asking the owner or paying. Send only {quoteId, price} (US$, e.g. \"0.90\"); the seller's agent answers with a price: accept or counter (final = its last word). Offer exactly its counter to accept it. Enforced by the wallet: each offer below the seller's current price, never above its first quote or the intent's max per item, at most 3 offers. Anchor on what comparable items cost elsewhere, meet the seller partway, take a final counter that fits the task, and never haggle a quote the owner already approved.",
+    schema: z.object({ quoteId: z.string(), price: z.string() }),
+    async run(ctx, { quoteId, price }) {
+      const s = state(ctx.pocket);
+      const rec = s.quotes.get(quoteId);
+      if (!rec) return refuse("QUOTE_UNKNOWN");
+      const item = (await directory().catch(() => [])).find((x) => x.id === rec.sellerId)?.items.find((i) => i.sku === rec.sku);
+      if (!item?.negotiable) return refuse("NEGOTIATION_NOT_OFFERED");
+      let offer: bigint;
+      try { offer = parseUsd(String(price)); } catch { return refuse("OFFER_NOT_LOWER"); }
+      const bad = checkOffer({ offer, ask: rec.ask, list: rec.list, maxPerItem: s.intent ? parseUsd(s.intent.maxPricePerItem) : undefined, rounds: rec.rounds, approved: !!rec.auth || !!rec.ownerSig, paid: rec.paid, agreed: rec.agreed });
+      if (bad) return refuse(bad as Reason);
+      const accepting = rec.rounds > 0 && offer === rec.ask;
+      const base = rec.url.split("?")[0];
+      const r = await fetch(`${base}/offer`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ offer: formatUsd(offer), deal: rec.dealId }) }).catch(() => null);
+      if (!r?.ok) return { ok: false, error: `seller answered HTTP ${r?.status ?? "no response"}` };
+      // numbers only: the seller's answer is read as a price and a kind; nothing else it sends reaches the model
+      const j = (await r.json().catch(() => ({}))) as { deal?: unknown; reply?: unknown; price?: unknown; final?: unknown };
+      let answered: bigint;
+      try { answered = parseUsd(String(j.price)); } catch { return { ok: false, error: "the seller's answer had no price" }; }
+      const kind = j.reply === "accept" ? "accept" : "counter";
+      // a seller can only come down: an acceptance at more than we offered, or a counter above its ask, is ignored
+      if ((kind === "accept" && answered > offer) || answered > rec.ask || typeof j.deal !== "string") return { ok: false, error: "the seller's answer did not fit the offer" };
+      if (!accepting) rec.rounds++;
+      rec.dealId = j.deal; rec.ask = answered;
+      const final = kind === "counter" && j.final === true;
+      if (kind === "accept") { rec.amount = answered; rec.agreed = true; rec.url = `${base}?deal=${encodeURIComponent(j.deal)}`; }
+      bus.publish({ type: "haggle", pocket: ctx.pocket, quoteId, sellerId: rec.sellerId, sku: rec.sku, round: rec.rounds, offer, reply: kind, price: answered, final, list: rec.list, accepting });
+      return kind === "accept"
+        ? { ok: true, deal: true, price: formatUsd(answered), list: formatUsd(rec.list), saved: formatUsd(rec.list - answered), needsOwnerApproval: (await P(ctx.pocket).needsOwner(answered)) || sentinel.isHeld(ctx.pocket), note: "Deal agreed: pay (or ask_owner first if needsOwnerApproval) with the same quoteId." }
+        : { ok: true, deal: false, counter: formatUsd(answered), final, roundsLeft: MAX_ROUNDS - rec.rounds, note: final ? "The seller's final price: accept it by offering exactly this price, or walk away." : "Offer again (lower than the counter), accept the counter by offering exactly it, or walk away." };
     },
   },
 

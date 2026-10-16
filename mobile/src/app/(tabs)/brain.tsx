@@ -154,6 +154,7 @@ export default function BrainTab() {
         {b.steps ? <>
           <Line icon="layers" text={`Compared ${b.sellersCompared} ${b.sellersCompared === 1 ? "seller" : "sellers"} by asking each for a price first`} />
           <Line icon="check" tone="accent" text={b.paid ? `Paid ${b.paid} ${b.paid === 1 ? "time" : "times"}, ${money(b.spent)} in total${b.cosigned ? `, ${b.cosigned} co-signed by you` : ""}` : "No payment yet"} />
+          {b.negotiated ? <Line icon="arrowDown" tone="accent" text={`Negotiated ${b.negotiated === 1 ? "a price" : `${b.negotiated} prices`} down: ${money(b.saved)} saved, numbers only`} /> : null}
         </> : null}
       </Section>
 

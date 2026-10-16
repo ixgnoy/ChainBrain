@@ -7,7 +7,7 @@ import { registerTarget, resetTargets, autoplayRunning, typeOut, type TargetName
 const OWNER = "0x0000000000000000000000000000000000a11ce0" as Hex;
 const payTo = (...ids: string[]) => CATALOG.filter((s) => ids.includes(s.id)).map((s) => s.payTo);
 
-test("auto-play: wizard, then scenes 1-10 through the screens' targets, on the real built-in network", async () => {
+test("auto-play: wizard, then scenes 1-11 through the screens' targets, on the real built-in network", async () => {
   resetTargets();
   const w = createWorld({ speed: 0.005, seed: 3, revokeWindowMs: 9000 });
   const { pockets: seeded } = await seedOwner(w, OWNER);
@@ -87,7 +87,9 @@ test("auto-play: wizard, then scenes 1-10 through the screens' targets, on the r
   assert.equal(w.chain.view(created!).revoked, false);
   assert.equal(w.chain.view(seeded[0].address).revoked, true, "scene 7 revoked the lived-in Research data pocket");
   assert.equal(w.chain.view(seeded[1].address).cap, parseUsd("0.30"));
-  assert.equal(pressed.filter((p) => p === "approval.slide").length, 1, "only DataPro needed a co-signature");
+  assert.equal(pressed.filter((p) => p === "approval.slide").length, 2, "only DataPro needed a co-signature: scene 1 at US$1.50, scene 11 at the negotiated US$1.10");
+  const deal = story.find((e) => e.type === "payment" && e.list);
+  assert.deepEqual([deal?.amount, deal?.list], ["1100000", "1500000"], "scene 11: the haggler's deal on the scene-1 pocket");
 });
 
 test("auto-play: stop() ends it at the next step and clears the running flag", async () => {

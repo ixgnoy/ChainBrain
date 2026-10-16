@@ -3,6 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createWorld, SIM_AGENT, CATALOG, parseUsd, type Hex } from "../../../shared/sim";
 import { brainOf, sourceWords } from "./brain";
+import { haggles } from "./events";
 
 const OWNER = "0x00000000000000000000000000000000000d0d0d" as Hex;
 
@@ -25,4 +26,18 @@ test("brain summary from a real built-in run: task, steps, re-plan after Radar, 
   assert.equal(b.memory?.version, 2);
   assert.equal(b.memory?.questions[0], "What did the owner ask for that is still open?");
   assert.equal(sourceWords("m:1234abcd"), "You said this");
+});
+
+test("haggler: the chat's price ladder and the Brain tab's savings come from the negotiation events", async () => {
+  const w = createWorld({ speed: 0, seed: 3, revokeWindowMs: 0 });
+  w.chain.mint(OWNER, parseUsd("50"));
+  const { pocket } = w.chain.createPocket(OWNER, { agent: SIM_AGENT, cap: parseUsd("2"), askAbove: parseUsd("1"), expiresAt: BigInt(Math.floor(Date.now() / 1000) + 3600), sellers: CATALOG.filter((s) => s.id === "datalite" || s.id === "datapro").map((s) => s.payTo) });
+  w.chain.transfer(OWNER, pocket, parseUsd("5"));
+  w.subscribe((e) => { const a = e.approval; if (a?.status === "pending" && a.kind !== "question") setTimeout(() => void w.answer(a.id, { approved: true, signature: "0xs" }), 1); });
+  await w.chat(pocket, "Get DataPro's premium report with the 2026 forecast, but negotiate the price down first. Max US$2, by tonight.");
+  const [h] = haggles(w.events(0) as any);
+  assert.deepEqual(h.steps.map((s) => [s.who, s.price, !!s.final]), [["seller", parseUsd("1.50"), false], ["you", parseUsd("0.90"), false], ["seller", parseUsd("1.20"), false], ["you", parseUsd("1.05"), false], ["seller", parseUsd("1.10"), true]]);
+  assert.deepEqual([h.deal, h.saved], [parseUsd("1.10"), parseUsd("0.40")]);
+  const b = brainOf(w.events(0) as any, pocket, (id) => String(id));
+  assert.deepEqual([b.paid, b.spent, b.negotiated, b.saved, b.cosigned], [1, parseUsd("1.10"), 1, parseUsd("0.40"), 1]);
 });

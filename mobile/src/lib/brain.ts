@@ -14,6 +14,9 @@ export type Brain = {
   paid: number;
   spent: bigint;
   cosigned: number;
+  /** payments the haggler negotiated down, and what that saved against the sellers' first prices */
+  negotiated: number;
+  saved: bigint;
   adapted: Adapt[];
   resisted: { attacks: number; injections: number; dataRequests: number; forcedBlocked: number; total: number };
   radar: RadarView[];
@@ -82,6 +85,8 @@ export function brainOf(events: WalletEvent[], pocket: string, sellerName: (id?:
     paid: pays.length,
     spent: pays.reduce((n, e) => n + big(e.amount), 0n),
     cosigned: pays.filter((e) => e.cosigned).length,
+    negotiated: pays.filter((e) => big(e.list) > big(e.amount)).length,
+    saved: pays.reduce((n, e) => n + (big(e.list) > big(e.amount) ? big(e.list) - big(e.amount) : 0n), 0n),
     adapted: adapted.slice(-5).reverse(),
     resisted: { attacks, injections, dataRequests, forcedBlocked, total: attacks + injections + dataRequests + forcedBlocked },
     radar: radarScreens(mine).sort((a, b) => b.score - a.score || b.at - a.at),

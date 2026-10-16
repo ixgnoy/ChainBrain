@@ -302,3 +302,51 @@ test("an unknown dump version is refused, not misread", () => {
   const v = createWorld({ speed: 0 });
   assert.equal(v.load({ ...v.dump(), v: 0 }), false);
 });
+
+test("scene 11 (haggler): numbers-only negotiation 1.50 → 0.90 → 1.20 → 1.05 → final 1.10, co-signed, the pocket pays exactly 1.10", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  const r = await w.chat(pocket, "Get DataPro's premium report with the 2026 forecast, but negotiate the price down first. Max US$2, by tonight.");
+  assert.match(r.reply, /from US\$1\.50 down to US\$1\.10.*US\$0\.40 saved/);
+  const h = w.events(0, pocket).filter((e) => e.type === "haggle");
+  assert.deepEqual(h.map((e) => [e.offer, e.reply, e.price]), [["900000", "counter", "1200000"], ["1050000", "counter", "1100000"], ["1100000", "accept", "1100000"]]);
+  assert.equal(h[1].final, true);
+  assert.equal(h[2].accepting, true);
+  const pay = w.events(0, pocket).find((e) => e.type === "payment")!;
+  assert.deepEqual([pay.amount, pay.list, pay.cosigned], ["1100000", "1500000", true]);
+  assert.equal(w.chain.view(pocket).balance, parseUsd("3.90"));
+  // the agent's reasoning names the benchmark it anchored on
+  assert.ok(w.events(0, pocket).some((e) => e.type === "trace" && e.phase === "thinking" && /DataLite sells the 2025 data for US\$0\.30/.test(e.text)));
+});
+
+test("haggler guards: never above the first quote or the task, at most 3 offers, only negotiable items, not after approval", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  w.task(pocket).intent = { request: "x", description: "x", maxPricePerItem: "1.20", maxTotal: "5.00", maxItems: 4, deadline: new Date(Date.now() + 3_600_000).toISOString(), intentHash: "0x1", status: "confirmed" } as any;
+  const quote = (sellerId: string, sku: string) => w.tool(pocket, "get_quote", { sellerId, sku });
+  const offer = (quoteId: string, price: string) => w.tool(pocket, "counter_offer", { quoteId, price });
+
+  const q = await quote("datapro", "premium-report");
+  assert.equal(q.negotiable, true);
+  assert.ok(!JSON.stringify(q).includes("1.10"), "the seller's floor is never shown to the agent");
+  assert.equal((await offer(q.quoteId, "1.60")).reason, "OFFER_NOT_LOWER"); // above the first quote
+  assert.equal((await offer(q.quoteId, "1.50")).reason, "OFFER_NOT_LOWER"); // not below the seller's price
+  assert.equal((await offer(q.quoteId, "1.30")).reason, "PRICE_ABOVE_INTENT"); // above the task's max per item
+  assert.deepEqual([(await offer(q.quoteId, "0.10")).counter, (await offer(q.quoteId, "0.10")).counter], ["1.10", "1.10"]); // never below the floor
+  const third = await offer(q.quoteId, "0.10");
+  assert.deepEqual([third.counter, third.final, third.roundsLeft], ["1.10", true, 0]);
+  assert.equal((await offer(q.quoteId, "0.20")).reason, "NEGOTIATION_ROUNDS_USED");
+  const deal = await offer(q.quoteId, "1.10"); // accepting the counter is allowed after the last round
+  assert.deepEqual([deal.deal, deal.price, deal.saved, deal.needsOwnerApproval], [true, "1.10", "0.40", true]);
+  assert.equal((await offer(q.quoteId, "1.00")).reason, "DEAL_ALREADY_AGREED");
+
+  const lite = await quote("datalite", "durian-report");
+  assert.equal(lite.negotiable, undefined);
+  assert.equal((await offer(lite.quoteId, "0.20")).reason, "NEGOTIATION_NOT_OFFERED");
+
+  w.task(pocket).intent!.maxPricePerItem = "2.00"; // so the owner can be asked for US$1.50
+  const again = await quote("datapro", "premium-report");
+  await w.tool(pocket, "ask_owner", { quoteId: again.quoteId, reason: "test" }); // the owner co-signs US$1.50
+  assert.equal((await offer(again.quoteId, "1.00")).reason, "QUOTE_ALREADY_APPROVED");
+  assert.equal((await w.tool(pocket, "counter_offer", { quoteId: "q999", price: "1.00" })).reason, "QUOTE_UNKNOWN");
+});

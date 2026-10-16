@@ -2,7 +2,8 @@
 // purchase delivers), so a story told on the built-in network matches the real one word for word.
 import type { Hex, SimSeller } from "./types";
 
-export type CatalogItem = { sku: string; description: string; price: string | null; content: string };
+/** `floor`: the lowest price the seller accepts when the agent haggles (private to the seller; never sent to the agent). */
+export type CatalogItem = { sku: string; description: string; price: string | null; content: string; floor?: string };
 export type CatalogSeller = Omit<SimSeller, "items"> & { items: CatalogItem[] };
 
 const DURIAN = `# Durian exports to China, 2025 (DataLite)
@@ -51,7 +52,7 @@ export const CATALOG: CatalogSeller[] = [
   },
   {
     id: "datapro", name: "DataPro", category: "Research data", payTo: "0x2c9b41e6f3a07d58b9c2e1f4a6d83b07e5c9a1f3",
-    items: [{ sku: "premium-report", description: "Durian exports premium report with 2026 forecast", price: "1.50", content: PREMIUM }],
+    items: [{ sku: "premium-report", description: "Durian exports premium report with 2026 forecast", price: "1.50", floor: "1.10", content: PREMIUM }],
   },
   {
     id: "harbour-wines", name: "Harbour Wines", category: "Food and drink", payTo: "0x9e1f7c3a5b28d4e06a7b9c1d2e3f4a5b6c7d8e90",
@@ -63,7 +64,7 @@ export const CATALOG: CatalogSeller[] = [
   },
 ];
 
-export const sellers = (): SimSeller[] => CATALOG.map(({ items, ...s }) => ({ ...s, items: items.map(({ content: _c, ...i }) => i) }));
+export const sellers = (): SimSeller[] => CATALOG.map(({ items, ...s }) => ({ ...s, items: items.map(({ content: _c, floor, ...i }) => (floor ? { ...i, negotiable: true } : i)) }));
 export const sellerById = (id: string) => CATALOG.find((s) => s.id === id);
 export const sellerByPayTo = (a: string) => CATALOG.find((s) => s.payTo.toLowerCase() === a.toLowerCase());
 export const sellerName = (id: string) => sellerById(id)?.name ?? id;
