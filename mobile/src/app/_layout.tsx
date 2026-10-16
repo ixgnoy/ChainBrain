@@ -1,7 +1,7 @@
 import "../../global.css";
 import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, useIsFocused } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { colorScheme } from "nativewind";
@@ -13,7 +13,7 @@ import { INTRO_SEEN_KEY, finishIntro, onReplayIntro } from "../ui/intro";
 import { getItem, setItem } from "../storage";
 import { AskDock } from "../components/AskDock";
 import { c } from "../tokens";
-import { AppProvider, useApp } from "../store";
+import { AppProvider, PauseApp, useApp } from "../store";
 import { ApprovalSheet } from "../components/ApprovalSheet";
 import { QuestionSheet } from "../components/QuestionSheet";
 import { PocketPickerSheet } from "../components/PocketPickerSheet";
@@ -29,6 +29,14 @@ import { T } from "../ui/Text";
 SplashScreen.preventAutoHideAsync().catch(() => {});
 // Light only: ignore the system colour scheme.
 colorScheme.set("light");
+
+/** A screen covered by another (the pocket page under the chat, Connect under an agent's page) skips store re-renders until
+ *  it is on top again, like a tab out of view (store.tsx PauseApp). Screens auto-play or a person left open below otherwise
+ *  all redrew on every event, and the session got slower the longer it ran (10-15 s per agent step by scene 10). */
+function PauseCovered({ children }: { children: React.ReactNode }) {
+  const focused = useIsFocused();
+  return <PauseApp paused={!focused}>{children}</PauseApp>;
+}
 
 function Shell() {
   const { keyState } = useApp();
@@ -51,7 +59,7 @@ function Shell() {
         <>
           {/* iOS: native push (UINavigationController slide, parallax, full-width swipe back) and the native card-stack modal for the wizard.
               Android: slide from right. Web: slide for the pocket page, fade for the wizard. */}
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.canvas }, animation: Platform.OS === "ios" ? "default" : "slide_from_right" }}>
+          <Stack screenLayout={({ children }) => <PauseCovered>{children}</PauseCovered>} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.canvas }, animation: Platform.OS === "ios" ? "default" : "slide_from_right" }}>
             <Stack.Screen name="(tabs)" />
             {/* fade: the pocket page's card arrives by the card flight (components/CardFlight.tsx), not by sliding in */}
             <Stack.Screen name="pocket/[id]" options={{ animation: "fade", gestureEnabled: true, fullScreenGestureEnabled: Platform.OS === "ios" }} />
