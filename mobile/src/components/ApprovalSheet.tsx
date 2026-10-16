@@ -26,7 +26,7 @@ import { ScoreBar } from "./RadarCard";
 import { ChequeCard, CheckLine } from "./Cheque";
 import { Countdown } from "./AskDock";
 import { toneFor } from "./PocketFace";
-import { biometricKind, confirmOwner } from "../lib/biometric";
+import { biometricKind, confirmOwner, type OwnerCheck } from "../lib/biometric";
 import { askNotifyPermission, notifyPermission, type NotifyPermission } from "../lib/notify";
 import { NEVER } from "../lib/shared";
 import { parseUsd } from "../lib/shared";
@@ -101,7 +101,8 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const item = cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment";
 
   const [cardW, setCardW] = useState(0);
-  const [bio, setBio] = useState<string | null>(null);
+  const [bio, setBio] = useState<OwnerCheck | null>(null);
+  const Bio = bio ? bio[0].toUpperCase() + bio.slice(1) : null; // at the start of a sentence
   useEffect(() => { void biometricKind().then(setBio); }, []);
   const [notify, setNotify] = useState<NotifyPermission>("unsupported");
   useEffect(() => { void notifyPermission().then(setNotify); }, []);
@@ -250,13 +251,13 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
             <>
               {quick ? (
                 // Face ID is the signature: one press, then the face signs exactly this payment
-                <Button label={`Approve US$${amount ?? ""} with ${bio}`} icon={bio === "Face ID" ? "faceId" : "fingerprint"} auto="approval.slide" loading={signing} disabled={busy || expired}
+                <Button label={`Approve US$${amount ?? ""} with ${bio}`} icon={bio === "Face ID" ? "faceId" : bio === "your passcode" ? "lock" : "fingerprint"} auto="approval.slide" loading={signing} disabled={busy || expired}
                   onPress={async () => { setSigning(true); try { await approve(); setPhase("success"); } catch { /* the error note says why */ } finally { setSigning(false); } }} />
               ) : (
                 <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label={`Slide to approve US$${amount ?? ""}`} doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
               )}
               <Button label="Decline" kind="text" onPress={decline} loading={busy} />
-              {bio ? <T v="cap" color="muted" style={{ textAlign: "center" }}>{quick ? `${bio} signs exactly this payment with your key. Nothing else.` : `Then ${bio} signs exactly this payment with your key.`}</T> : null}
+              {bio ? <T v="cap" color="muted" style={{ textAlign: "center" }}>{quick ? `${Bio} signs exactly this payment with your key. Nothing else.` : `Then ${bio} signs exactly this payment with your key.`}</T> : null}
             </>
           ) : (
             <>
