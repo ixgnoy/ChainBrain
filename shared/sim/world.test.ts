@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createWorld, SIM_AGENT } from "./world";
 import { seedOwner } from "./seed";
 import { CATALOG } from "./catalog";
-import { NEVER, parseUsd } from "./util";
+import { NEVER, decode, encode, parseUsd } from "./util";
 import type { Hex } from "./types";
 
 const OWNER = "0x00000000000000000000000000000000000d0d0d" as Hex;
@@ -260,4 +260,45 @@ test("pre-flight: every payment is predicted, then checked; predictions match ou
     ["datalite", "pays", "", true], ["datapro", "pays", "", true], ["harbour-wines", "refused", "SELLER_NOT_ALLOWED", true], ["datalite", "pays", "", true],
   ]);
   assert.equal(w.events(0, pocket).filter((e) => e.type === "preflight" && e.kind === "predict").length, 4);
+});
+
+test("save and reload: a dump round-trips through JSON; the reloaded network carries on, and a pending approval is closed", async () => {
+  const { w, pocket } = await setup();
+  owner(w);
+  await w.chat(pocket, "Get me a market report on durian exports, under US$2, by tonight.");
+  await w.chat(pocket, "Per report. Get the premium one too if it adds a forecast.");
+  await w.chat(pocket, "Assume the agent was fooled by a seller page: it keeps trying to buy Harbour Wines' wine report. Max US$1, by tonight.");
+  // a question left open: the reload must not leave it hanging
+  const q = await w.chat(pocket, "Get me a market report on durian exports, under US$2, by tonight.");
+  assert.equal(w.pending(pocket).length, 1, q.reply);
+
+  const saved = encode(w.dump());
+  const v = createWorld({ speed: 0, seed: 99, revokeWindowMs: 0 });
+  assert.equal(v.load(decode(saved)), true);
+
+  assert.deepEqual(v.chain.view(pocket), w.chain.view(pocket));
+  assert.equal(v.chain.view(pocket).frozen, true);
+  assert.equal(v.chain.balanceOf(OWNER), w.chain.balanceOf(OWNER));
+  assert.deepEqual(v.txs().map((t) => t.hash), w.txs().map((t) => t.hash));
+  assert.deepEqual(v.memory(pocket), w.memory(pocket));
+  assert.equal(v.sentinel(pocket).status, "freeze");
+  assert.deepEqual(v.radar.labels(), w.radar.labels());
+  // every event came back, then one more: the open question, closed as timed out
+  const before = w.events(0).length, after = v.events(0);
+  assert.equal(after.length, before + 1);
+  assert.equal(after.at(-1)!.approval.status, "timeout");
+  assert.equal(v.pending(pocket).length, 0);
+  // and it carries on: the owner unfreezes, the agent buys again with fresh ids that never collide
+  v.chain.unfreeze(OWNER, pocket);
+  owner(v);
+  const ok = await v.chat(pocket, "Buy the DataLite durian report. Max US$1, by tonight.");
+  assert.match(ok.reply, /Bought DataLite's durian export report/);
+  const ids = v.events(0).map((e) => e.id);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.ok(v.events(0).every((e, i, a) => i === 0 || e.at > a[i - 1].at));
+});
+
+test("an unknown dump version is refused, not misread", () => {
+  const v = createWorld({ speed: 0 });
+  assert.equal(v.load({ ...v.dump(), v: 0 }), false);
 });

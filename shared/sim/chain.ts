@@ -85,6 +85,14 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
     txs: () => txs.slice(),
     transfers: () => moves.slice(),
     onTx(f: (t: SimTx) => void) { listeners.add(f); return () => void listeners.delete(f); },
+    /** Everything on the chain, for saving the built-in network (util.encode keeps the bigints, Maps and Sets). */
+    dump: () => ({ usdc, eth, pockets, txs, moves, block }),
+    load(d: { usdc: Map<string, bigint>; eth: Map<string, bigint>; pockets: Map<string, PocketRec>; txs: SimTx[]; moves: typeof moves; block: bigint }) {
+      for (const [m, src] of [[usdc, d.usdc], [eth, d.eth], [pockets, d.pockets]] as const) { m.clear(); for (const [k, v] of src) (m as Map<string, unknown>).set(k, v); }
+      txs.splice(0, txs.length, ...d.txs);
+      moves.splice(0, moves.length, ...d.moves);
+      block = d.block;
+    },
 
     /** PocketFactory.create: deploys a pocket and emits PocketCreated. */
     createPocket(from: Hex, a: { agent: Hex; cap: bigint; askAbove: bigint; expiresAt: bigint; sellers: Hex[] }, at?: number) {

@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
 import * as Clipboard from "expo-clipboard";
 import { useApp } from "../../store";
 import * as api from "../../lib/api";
 import { ENV_API, detectDev, getApi, isHttpUrl, normalizeUrl } from "../../lib/runtime";
 import { onRelay, relayLinked } from "../../lib/relay";
+import { forgetSaved } from "../../lib/builtin";
 import { isPrivateKey } from "../../lib/keystore";
 import { c, motion } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
@@ -25,6 +26,7 @@ export default function Settings() {
   const [test, setTest] = useState<{ state: "idle" | "busy" | "ok" | "fail"; text?: string }>({ state: "idle" });
   const [copied, setCopied] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [startOver, setStartOver] = useState(false); // first tap arms, second tap starts over
   const [adding, setAdding] = useState(false);
   const [addr, setAddr] = useState("");
   const [about, setAbout] = useState(false);
@@ -88,6 +90,12 @@ export default function Settings() {
         {dev || !custom ? <ListRow a11y="Get test funds" onPress={getFunds} icon="plus" title="Get test funds" sub={funds.text ?? "Adds test money to your wallet"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
         <ListRow a11y="Add an existing pocket" onPress={() => setAdding(!adding)} icon="layers" title="Add an existing pocket" sub="Track a pocket by its address"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} icon="key" title="Import a key" sub="Use a test key you already have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
+        {/* a browser tab keeps the built-in network across reloads (lib/builtin.ts); this is the way back to a fresh one */}
+        {source === "builtin" && Platform.OS === "web" ? (
+          <ListRow a11y="Start the built-in network over" icon="refresh" title={startOver ? "Tap again to start over" : "Start over"}
+            sub={startOver ? "Pockets, chat and memory go back to the beginning" : "Reloading keeps your pockets and chat; this starts fresh"} rightTone="negative"
+            onPress={() => { if (!startOver) { setStartOver(true); setTimeout(() => setStartOver(false), 4000); return; } forgetSaved(); globalThis.location?.reload(); }} />
+        ) : null}
       </ListCard>
       <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 8 }}>Test network only. This wallet holds test money: do not put real money on it.</T>
       {adding ? (

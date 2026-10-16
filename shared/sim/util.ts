@@ -35,9 +35,33 @@ export function rng(seed = 0x5eed) {
       for (let i = 0; i < bytes; i++) s += Math.floor(next() * 256).toString(16).padStart(2, "0");
       return s as Hex;
     },
+    /** The generator's position, so a saved world carries on the same sequence after a reload. */
+    get state() { return a; },
+    set state(v: number) { a = v >>> 0; },
   };
 }
 export type Rng = ReturnType<typeof rng>;
+
+/** JSON that keeps bigints, Maps and Sets (a saved built-in network). */
+export function encode(v: unknown): string {
+  return JSON.stringify(v, function (k, x) {
+    const raw = (this as Record<string, unknown>)[k];
+    if (typeof raw === "bigint") return { $b: raw.toString() };
+    if (raw instanceof Map) return { $m: [...raw.entries()] };
+    if (raw instanceof Set) return { $s: [...raw.values()] };
+    return x;
+  });
+}
+export function decode<T = unknown>(s: string): T {
+  return JSON.parse(s, (_, x) => {
+    if (x && typeof x === "object" && !Array.isArray(x)) {
+      if (typeof x.$b === "string" && Object.keys(x).length === 1) return BigInt(x.$b);
+      if (Array.isArray(x.$m) && Object.keys(x).length === 1) return new Map(x.$m);
+      if (Array.isArray(x.$s) && Object.keys(x).length === 1) return new Set(x.$s);
+    }
+    return x;
+  });
+}
 
 /** Plain JSON clone with bigints as decimal strings: what a client receives from the real server. */
 export const wire = <T,>(v: T): T => JSON.parse(JSON.stringify(v, (_, x) => (typeof x === "bigint" ? x.toString() : x)));
