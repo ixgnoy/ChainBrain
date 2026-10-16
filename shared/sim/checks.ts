@@ -36,7 +36,7 @@ export const GATES: Record<GateId, { layer: Layer; title: string; plain: string 
   privacy: { layer: "tools", title: "Nothing to leak", plain: "No tool returns the owner's key, main wallet, other pockets or the agent's instructions, and the wallet signs only USDC payments it built." },
   signature: { layer: "contract", title: "Signature check (ERC-1271)", plain: "The pocket approves only an exact USDC transfer out of itself, signed by the agent's key." },
   owner: { layer: "contract", title: "Owner-only rules", plain: "Cap, sellers, ask-me limit and expiry change only in a transaction from the owner's key." },
-  active: { layer: "contract", title: "Pocket active", plain: "A revoked or expired pocket pays no one." },
+  active: { layer: "contract", title: "Pocket active", plain: "A revoked, frozen or expired pocket pays no one." },
   seller: { layer: "contract", title: "Allowed seller", plain: "Money can only go to sellers on the pocket's list." },
   cap: { layer: "contract", title: "Per-payment cap", plain: "No single payment above the cap." },
   budget: { layer: "contract", title: "Pocket balance", plain: "The worst case is what is in the pocket; the main wallet is out of reach." },
@@ -52,6 +52,8 @@ export function gateOf(code?: string): GateId {
   switch (code) {
     case "INTENT_NOT_CONFIRMED": case "INTENT_EXPIRED": case "PRICE_ABOVE_INTENT": case "INTENT_TOTAL_REACHED": case "INTENT_ITEMS_REACHED": case "QUOTE_MISMATCH": case "QUOTE_UNKNOWN": case "QUOTE_ALREADY_PAID":
       return "intent";
+    case "COUNTERPARTY_HIGH_RISK": return "intent"; // Radar: the wallet tools refuse to sign for a seller whose money traces to a drainer
+    case "COUNTERPARTY_REVIEW": case "SENTINEL_HOLD": return "cosign"; // Radar's review / the Sentinel's hold: only the owner's signature lets it through
     case "POCKET_REVOKED": case "POCKET_FROZEN": case "POCKET_EXPIRED": return "active";
     case "SELLER_NOT_ALLOWED": return "seller";
     case "OVER_CAP": return "cap";

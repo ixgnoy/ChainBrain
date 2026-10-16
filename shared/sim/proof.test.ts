@@ -213,3 +213,10 @@ test("scenes 9 and 10 from the Judges tab: Radar blocks TradeWire and the agent 
   const security = scorecard(f).find((g) => g.id === "security")!.items;
   assert.ok(security.find((i) => i.id === "radarBlocked")!.done && security.find((i) => i.id === "sentinelFrozen")!.done);
 });
+
+test("Radar and Sentinel codes stop at the gate that refused them, and a freeze at Pocket active", () => {
+  assert.equal(gateOf("POCKET_FROZEN"), "active");
+  assert.equal(gateOf("COUNTERPARTY_HIGH_RISK"), "intent");
+  assert.equal(gateOf("COUNTERPARTY_REVIEW"), "cosign");
+  assert.equal(gateOf("SENTINEL_HOLD"), "cosign");
+});
