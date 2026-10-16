@@ -119,6 +119,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [balances, setBalances] = useState<Ctx["balances"]>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [meta, setMeta] = useState<Record<string, PocketMeta>>({});
+  // names of pockets made on the built-in network this session (never written to storage): kept apart from the server's, so a
+  // trip to a server and back neither loses them nor brings the server's names along
+  const builtinMeta = useRef<Record<string, PocketMeta>>({});
   const [views, setViews] = useState<Record<string, PocketView>>({});
   const [pocketsLoaded, setPocketsLoaded] = useState(false);
   const [activeAddr, setActiveAddr] = useState<string>();
@@ -222,7 +225,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         for (const p of seeded) m[p.address.toLowerCase()] = { name: p.name, style: p.style };
         ownerTxRef.current = txs.map((t) => ({ kind: t.kind, pocket: t.pocket.toLowerCase(), hash: t.hash, at: t.at, amount: t.amount }));
         setOwnerTxs(ownerTxRef.current);
-        setAddresses(list); setMeta((old) => ({ ...m, ...old })); setActiveAddr((a) => a ?? seeded[0]?.address ?? list[0]); setPocketsLoaded(true);
+        setAddresses(list); setMeta({ ...m, ...builtinMeta.current }); setActiveAddr((a) => a ?? seeded[0]?.address ?? list[0]); setPocketsLoaded(true);
         startOutsideAgents(seeded); // Claude asks for a co-signature a little after launch (lands in the Approvals inbox)
       });
       return () => { alive = false; };
@@ -281,7 +284,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addrRef.current = next;
     setAddresses(next); if (o.activate !== false) setActiveAddr(a); // a pocket for an outside agent never becomes the chat's pocket
     if (!local) await savePockets(wallet.address, next);
-    if (m) { const nm = { ...meta, [a.toLowerCase()]: m }; setMeta(nm); if (!local) await saveMeta(wallet.address, nm); }
+    if (m) {
+      const nm = { ...meta, [a.toLowerCase()]: m }; setMeta(nm);
+      if (local) builtinMeta.current = { ...builtinMeta.current, [a.toLowerCase()]: m }; else await saveMeta(wallet.address, nm);
+    }
     await refreshPockets();
   }, [wallet, meta, refreshPockets, local]);
 
