@@ -52,7 +52,8 @@ export function T({ v = "body", color = "ink", w, style, ...p }: TextProps & { v
 
 /** An eyebrow: small uppercase label above a group ("HOLDS POCKET", "AGENT'S NOTE"). */
 export function Eyebrow({ color = "muted", style, ...p }: TextProps & { color?: Tone }) {
-  return <T v="tab" color={color} style={[{ textTransform: "uppercase", letterSpacing: 0.9 }, style]} {...p} />;
+  // sentence case, untracked: a tracked uppercase label over every card is the commonest "template" tell (loop 3, overnight)
+  return <T v="cap" w="semi" color={color} style={style} {...p} />;
 }
 
 /** A static figure in Clash Display Medium ("-US$0.30", "+US$5.00", "4/10"), VaultBank's list amounts: the currency is set at

@@ -11,7 +11,7 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] Pocket page: richer receipts and covers; the run payoff on video
 - [ ] Intro: a 4th page showing a sentence becoming an app (update the e2e "three pages" check)
 - [ ] AX5 large-text pass (Next up tiles, chips, timeline, Brain); VoiceOver pass on the chart scrub
-- [ ] Console: Live and Judges polish; parity of the pocket app view with the phone
+- [ ] Console: parity of the pocket app view with the phone; the Evidence and Sellers pages
 
 ## Done
 
@@ -48,6 +48,14 @@ Phone first, then the web console. Each slice goes research → implement → va
 
 - [x] **Activity pulse**: 14 columns of small squares, one per payment or refusal (ink: paid on its own; blue: co-signed; vermillion: refused or blocked), with today marked. The header is labelled "All time", so its 30 doesn't read as contradicting the pulse's 14-day counts.
   - Evidence: `w-27-activity-pulse.png`; phone tests 44 pass. No e2e this slice, because Activity has no e2e-dependent targets and the previous slice ran 57/57.
+
+- [x] **Eyebrow sweep** (critique: tracked uppercase labels over every card read as a template). `Eyebrow` is now sentence case and untracked (12 uses), as are Home's "In agent pockets", the pocket page's "Where the money is", and compose's Can / Can't.
+  - Kept as conventions: the card print ("AVAILABLE", "CONTRACT"), the network chip, the Next up day label, and status banners.
+  - Evidence: `w-28-eyebrows.png`; e2e 57/57 (the e2e's /IGNORED/, /CONTRACT/ and /CHAINBRAIN/ checks read tags that were kept).
+- [x] **Console first glance** (5c0ae57):
+  - Live opens on the pocket an agent last touched, not the newest pocket seeding created (which had three empty states).
+  - The Judges scoreboard says "4 attacks to try" before anything is tried, not "0 of 4 attacks blocked".
+  - Web tests 81 pass; build clean.
 
 Earlier the same day, before this log existed:
 - Home wallet stack, live card signs and Next up (e68c433)

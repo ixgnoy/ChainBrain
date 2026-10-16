@@ -202,7 +202,7 @@ export default function PocketDetail() {
         {pocket.revoked ? (
           <Rise index={2} base={90}>
             <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 16, gap: 12 }}>
-              <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>Where the money is</T>
+              <T v="head">Where the money is</T>
               {returned > 0n ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                   <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c.greenSoft, alignItems: "center", justifyContent: "center" }}><Icon name="arrowIn" size={19} color={c.greenInk} stroke={2.2} /></View>

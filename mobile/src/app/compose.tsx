@@ -231,11 +231,11 @@ export default function Compose() {
                   <T v="head">{`${agent.name} gets its own key for this pocket`}</T>
                   <View style={{ flexDirection: "row", gap: 16 }}>
                     <View style={{ flex: 1, gap: 6 }}>
-                      <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>Can</T>
+                      <T v="cap" w="semi" color="muted">Can</T>
                       {CAN.map((x) => <View key={x} style={{ flexDirection: "row", gap: 6 }}><Icon name="check" size={14} color={c.greenInk} /><T v="cap" style={{ flex: 1 }}>{x}</T></View>)}
                     </View>
                     <View style={{ flex: 1, gap: 6 }}>
-                      <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>Can't</T>
+                      <T v="cap" w="semi" color="muted">Can't</T>
                       {CANNOT.map((x) => <View key={x} style={{ flexDirection: "row", gap: 6 }}><Icon name="ban" size={14} color={c.vermillionInk} /><T v="cap" style={{ flex: 1 }}>{x}</T></View>)}
                     </View>
                   </View>

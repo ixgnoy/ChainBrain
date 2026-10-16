@@ -196,7 +196,7 @@ function Home({ ready }: { ready: boolean }) {
         <Animated.View style={pulseStyle}>
           <Card pad={18} style={{ marginHorizontal: 16, flexDirection: "row", alignItems: "flex-end", gap: 12 }}>
             <View style={{ flex: 1 }}>
-              <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>In agent pockets</T>
+              <T v="cap" w="semi" color="muted">In agent pockets</T>
               <View style={{ marginTop: 4 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
             </View>
             <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ alignItems: "flex-end", paddingBottom: 4 }}>
