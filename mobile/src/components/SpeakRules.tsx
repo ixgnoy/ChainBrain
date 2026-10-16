@@ -3,7 +3,7 @@
 // can and cannot happen, computed by code from the pocket's own rule order. Open questions are one tap each; answering
 // recomputes the card on the phone. "Use these rules" only fills the form: the owner still reviews and signs.
 import React, { useState } from "react";
-import { View } from "react-native";
+import { Keyboard, View } from "react-native";
 import { useApp } from "../store";
 import { c } from "../tokens";
 import { Button, Field } from "../ui/kit";
@@ -37,6 +37,7 @@ export function SpeakRules({ onUse }: { onUse(d: Draft): void }) {
   const EXAMPLE = exampleFor(cfg?.sellers ?? []);
 
   const build = async () => {
+    Keyboard.dismiss(); // the result (proof card, questions, Use these rules) is under the keyboard otherwise
     const s = text.trim() || EXAMPLE;
     if (!text.trim()) setText(EXAMPLE);
     setBusy(true); setErr(null);
