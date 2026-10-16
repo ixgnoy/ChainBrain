@@ -1,4 +1,4 @@
-// Hidden auto-play for recording the video: plays scenes 1-8 on the phone by itself, the way the presenter would. It
+// Hidden auto-play for recording the video: plays scenes 1-10 on the phone by itself, the way the presenter would. It
 // creates the Research pocket in the wizard, types each sentence, answers the one question, confirms tasks, slides to
 // co-sign, holds to revoke, switches to One purchase, applies the fix and asks again. Every press goes through a
 // target the screen registered (lib/autoplayTargets.ts), so what the camera sees is the real UI doing real work; the
@@ -22,7 +22,7 @@ export type HostState = {
   ownerTxCount: number;
 };
 export type AutoplayHost = {
-  navigate(path: "/" | "/agent"): void;
+  navigate(path: "/" | "/agent" | "/brain"): void;
   state(): HostState;
   subscribe(f: () => void): () => void;
   /** Scene 5's on-chain backstop on this phone's network: the agent key signs the injected transfer; the pocket reverts it. */
@@ -176,9 +176,21 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await drive();
     await wait(3000);
 
-    // ---- close on Home: the stack, the frozen Research card and the fixed One purchase card
-    host.navigate("/");
-    await wait(4000);
+    // ---- scenes 9 and 10 run on the lived-in Research data pocket (the new one was revoked in scene 7)
+    await must("picker.open");
+    await wait(900);
+    await must("picker.pocket", "Research data");
+    await wait(1400);
+    // scene 9 (Radar): a drainer pays DataPro on-chain; Radar blocks DataPro and the agent buys DataLite instead
+    await say(text("9").text);
+    await wait(3500);
+    // scene 10 (Sentinel): the fooled agent keeps trying Harbour Wines; the Sentinel freezes the pocket on-chain
+    await say(text("10").text);
+    await wait(3500);
+
+    // ---- close on the Brain tab: what the AI understood, blocked, screened, froze and remembers, for this pocket
+    host.navigate("/brain");
+    await wait(5000);
   }
 
   return self;

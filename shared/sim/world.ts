@@ -35,6 +35,9 @@ export const SIM_SENTINEL: Hex = "0x5e471e10000000000000000000000000000c0de5";
 /** The account that submits the forced transfer (server/scripts/force-transfer.ts FORCE_PK). */
 export const FORCE_SENDER: Hex = "0x4f0e1c8d2b7a6953e1f0c2d4b6a8e9f1c3d5e7a9";
 
+/** Bump when the dump's shape changes: an older saved network is then dropped, not misread. */
+const DUMP_VERSION = 1;
+
 export function createWorld(opts: WorldOptions = {}) {
   const r: Rng = makeRng(opts.seed ?? 0x5eed);
   const base = opts.now ?? (() => Date.now());
@@ -439,6 +442,12 @@ export function createWorld(opts: WorldOptions = {}) {
   // ---- public surface: the same calls as the wallet API and the chain
   const config: SimConfig = { agent: SIM_AGENT, factory: SIM_FACTORY, usdc: USDC, sellersUrl: "", sellers: sellers(), abis: { pocket: [], factory: [], erc20: [] } };
 
+  /** The whole network, for keeping it across a page reload (mobile/src/lib/builtin.ts); encode with util.encode. */
+  const dump = () => ({
+    v: DUMP_VERSION, rng: r.state, chain: chain.dump(), recent, lastAt, seq, approvals, tasks, injected, labels: labels.dump(),
+    radarLast, radarWatch, radarAlerts, watches, memory: memory.dump(), autoOwners,
+  });
+
   const world = {
     chain, publish, now,
     setSpeed(s: number) { speed = s; },
@@ -560,6 +569,32 @@ export function createWorld(opts: WorldOptions = {}) {
     task,
     approvals: () => [...approvals.values()],
     NEVER,
+
+    dump,
+    /**
+     * Restore a dump. Work that was in flight is not: no agent is mid-turn after a reload, so an approval still pending
+     * is closed as timed out (and published, so every screen sees it end).
+     */
+    load(d: ReturnType<typeof dump>): boolean {
+      if (!d || d.v !== DUMP_VERSION) return false;
+      r.state = d.rng;
+      chain.load(d.chain);
+      recent.splice(0, recent.length, ...d.recent);
+      lastAt = d.lastAt; seq = d.seq;
+      const fill = <K, V>(m: Map<K, V>, src: Map<K, V>) => { m.clear(); for (const [k, v] of src) m.set(k, v); };
+      fill(approvals, d.approvals); fill(tasks, d.tasks); fill(injected, d.injected); fill(radarLast, d.radarLast);
+      fill(radarWatch, d.radarWatch); fill(watches, d.watches);
+      radarAlerts.splice(0, radarAlerts.length, ...d.radarAlerts);
+      labels.load(d.labels); memory.load(d.memory);
+      autoOwners.clear(); for (const o of d.autoOwners) autoOwners.add(o);
+      busy.clear(); waiters.clear();
+      for (const a of approvals.values()) {
+        if (a.status !== "pending") continue;
+        a.status = "timeout";
+        publish({ type: evType(a.kind), pocket: a.pocket, approval: a });
+      }
+      return true;
+    },
   };
   return world;
 }

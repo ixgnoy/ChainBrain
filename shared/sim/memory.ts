@@ -78,6 +78,12 @@ export function createMemory(now: () => number = () => Date.now()) {
       return true;
     },
     clear() { current.clear(); audit.clear(); },
+    dump: () => ({ current, audit }),
+    load(d: { current: typeof current; audit: typeof audit }) {
+      current.clear(); audit.clear();
+      for (const [k, v] of d.current) current.set(k, v);
+      for (const [k, v] of d.audit) audit.set(k, v);
+    },
   };
 }
 export type MemoryStore = ReturnType<typeof createMemory>;
