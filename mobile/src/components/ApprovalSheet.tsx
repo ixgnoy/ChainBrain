@@ -257,10 +257,11 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
           </>
         )}
         {expired && isPay ? <T v="sub" color="warning">The 10-minute window passed. The agent will ask again if it still wants this.</T> : null}
-        {error ? <ErrorNote text={error} /> : null}
       </SheetScroll>
 
       <View style={{ paddingHorizontal: 20, paddingTop: 12, gap: 4 }}>
+        {/* next to the button that failed: inside the scroll it sat below the fold and a failed co-sign looked like nothing happened */}
+        {error ? <View style={{ paddingBottom: 8 }}><ErrorNote text={error} /></View> : null}
         {isPay ? (
           owned && wallet ? (
             <>
