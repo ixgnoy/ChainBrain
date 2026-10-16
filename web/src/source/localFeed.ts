@@ -83,10 +83,12 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
       const { all, ok } = txCache;
       const evs = world.allEvents();
       if (!evCache || evCache.n !== evs.length || evCache.last !== evs.at(-1)) evCache = { n: evs.length, last: evs.at(-1), out: evs.map(scrub) };
+      // a pocket app carries the owner's own title (the sentence it was made from): it names the pocket here too
+      const titles = new Map(evCache.out.filter((e) => e.type === "app" && e.pocket).map((e) => [String(e.pocket).toLowerCase(), String((e as { spec?: { title?: string } }).spec?.title ?? "")]));
       const pockets: PocketState[] = world.chain.pockets().map((p) => ({
         address: p.address as Address, owner: p.owner as Address, agent: p.agent as Address, createdTx: p.createdTx as Hex | undefined, createdBlock: p.createdBlock,
         balance: p.balance, cap: p.cap, askAbove: p.askAbove, expiresAt: Number(p.expiresAt), revoked: p.revoked, frozen: p.frozen, allowed: p.allowed,
-        name: nameOf(p.owner, p.cap, autopilot.presenter),
+        name: titles.get(p.address.toLowerCase()) || nameOf(p.owner, p.cap, autopilot.presenter),
       })).sort((a, b) => Number((b.createdBlock ?? 0n) - (a.createdBlock ?? 0n)));
       return { events: evCache.out, pockets, txs: ok, allTxs: all, follow: autopilot.active, scene: autopilot.state.scene };
     },

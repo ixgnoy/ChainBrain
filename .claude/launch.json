@@ -27,6 +27,15 @@
         "cd mobile && npx expo start --no-dev --minify --port 8092"
       ],
       "port": 8092
+    },
+    {
+      "name": "web-console-5174",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "pnpm --dir web dev --port 5174 --strictPort"
+      ],
+      "port": 5174
     }
   ]
 }

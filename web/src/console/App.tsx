@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { NetworkProvider, useNetwork } from "./useNetwork";
 import { Live } from "./Live";
 import { Pockets, Judges } from "./pages";
+import { PocketAppView } from "./PocketApp";
 import { Explorer } from "./Explorer";
 import { Evidence } from "./Evidence";
 import SellerView from "../seller/SellerView";
@@ -129,7 +130,9 @@ function Shell() {
             <Live pocket={pocket} present={present} goJudges={() => go({ tab: "judges" })} />
           </>
         )}
-        {!present && tab === "pockets" && <div className="mx-auto max-w-[1040px]"><Pockets open={openPocket} /></div>}
+        {!present && tab === "pockets" && (pinned
+          ? <div className="mx-auto max-w-[1180px]"><PocketAppView address={pinned} back={() => go({ tab: "pockets", pocket: null })} watch={openPocket} /></div>
+          : <div className="mx-auto max-w-[1040px]"><Pockets open={(a) => go({ tab: "pockets", pocket: a })} /></div>)}
         {!present && tab === "sellers" && <div className="mx-auto max-w-[1040px]"><PageTitle title="Sellers" sub="The other side of every payment: what each shop sees when an agent buys or gets refused." /><SellerView /></div>}
         {!present && tab === "explorer" && <Explorer route={route.explorer} watch={watchLive} />}
         {!present && tab === "evidence" && <div className="mx-auto max-w-[1180px]"><Evidence /></div>}
