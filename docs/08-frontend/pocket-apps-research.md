@@ -81,3 +81,18 @@ The ctx7 library ids were `/websites/swmansion_react-native-reanimated` and `/wc
 
 - **Charts.** "Performance vs target" points to a bullet chart with a marker line, with the number and target as text beside it. Trend over time points to a line chart with a visible data-table fallback. → The budget meter is a bullet bar with a labelled limit tick. The price chart gives screen readers its quotes as a list ("09:00 Tue, US$0.046 …").
 - **Suggestion not taken.** The product search suggested "glassmorphism plus dark mode" for fintech. Our design system forbids both and takes precedence.
+
+## Loop 2: what validation turned up (17 Oct 2026)
+
+The first browser run at 390 pt and the first full e2e pass turned up four things. Each was researched, then fixed.
+
+| Found | Source | Decision |
+| --- | --- | --- |
+| Amounts showed as "US$9.9" in the compose preview | CSS Align 3: a clipped (`overflow:hidden`) box takes its baseline from its bottom edge ([css-align-3 §9.1](https://www.w3.org/TR/css-align-3/)). Browsers disagree on the exact edge ([Firefox bug 1036404](https://bugzilla.mozilla.org/show_bug.cgi?id=1036404)). | A row holding money reels is bottom-aligned, never `baseline`. The comment in `PocketApp.tsx` says why |
+| Entrances switched their style to `undefined` once settled | Reanimated: removing an animated style "doesn't unset values that were applied" ([useAnimatedStyle](https://docs.swmansion.com/react-native-reanimated/docs/core/useAnimatedStyle)). `FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS` changes what happens on detach ([feature flags](https://docs.swmansion.com/react-native-reanimated/docs/guides/feature-flags)). | A settled block takes a plain style at its resting values, as the app's `Reveal` already does |
+| A scale in the entrance made the money reels measure their digits too small (web) | Reproduced in the preview | Entrances use translate and opacity only. Both are cheap ([performance guide](https://docs.swmansion.com/react-native-reanimated/docs/guides/performance)) |
+| Shelf covers scroll sideways inside the vertical page | `directionalLockEnabled` is iOS-only and off by default. `nestedScrollEnabled` is Android-only ([ScrollView](https://reactnative.dev/docs/scrollview)) | The covers strip sets `directionalLockEnabled` |
+| Fixed-height tiles would clip at accessibility text sizes | WCAG 1.4.4: text resizes to 200% without loss ([Understanding 1.4.4](https://w3c.github.io/wcag/understanding/resize-text)) | Tiles and covers use `minHeight`. At large text the four next-run tiles wrap two by two. Example chips are 44 pt |
+| How should a routine that pays on its own notify? | Apple HIG interruption levels: Passive for "information people can view at their leisure", Time Sensitive for now ([Managing notifications](https://developer.apple.com/design/human-interface-guidelines/managing-notifications)). Revolut alerts only before a payment or when funds are short ([Finextra, 2020](https://www.finextra.com/pressarticle/84380/revolut-launches-smart-subscriptions-feature)) | A run's receipt is silent and in the app (recent runs, the shelf, the meter). Only the cheque past the allowance asks, through the existing ask path (`lib/notify.ts notifyAsk`). No per-run push |
+
+Not verified, so no decision rests on it: whether Yoga on iOS takes a baseline from the first child. The bottom-alignment fix avoids the question on every platform. The note that Expo Go runs JavaScript slower than a release build means 60 fps has to be judged on a device.

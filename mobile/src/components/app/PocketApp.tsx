@@ -16,6 +16,7 @@ import { SellerMark, hasSellerMark } from "../../ui/SellerMark";
 import { WorkingLine } from "../../ui/WorkingLine";
 import { useSettled } from "../../ui/Reveal";
 import { EASE_OUT, useReduceMotion } from "../../ui/motion";
+import { useLargeText } from "../../ui/fontScale";
 import { cleanText } from "../../lib/sanitize";
 import { usd } from "../../lib/util";
 import { PriceChart } from "./PriceChart";
@@ -82,8 +83,10 @@ function Assemble({ i, mode, children }: { i: number; mode: "build" | "page" | "
     // translate only: a scale on the way in makes the money reels measure their digits too small on web (ui/RollingNumber.tsx)
     transform: [{ translateY: reduce ? 0 : (1 - p.value) * dy }],
   }));
-  return <Animated.View style={settled ? undefined : a}>{children}</Animated.View>;
+  // settled: a plain style at the resting values, never `undefined` (Reanimated 4 leaves detached animated values applied)
+  return <Animated.View style={settled ? REST : a}>{children}</Animated.View>;
 }
+const REST = { opacity: 1, transform: [{ translateY: 0 }] };
 
 /** A block's card: a small uppercase label, an optional right-hand note, the content. */
 function BlockCard({ label, right, children, flush }: { label: string; right?: React.ReactNode; children: React.ReactNode; flush?: boolean }) {
@@ -158,7 +161,7 @@ function Shelf({ ctx }: { ctx: AppCtx }) {
         <T v="sub" color="ink2">{all.length === 1 ? "report bought" : "reports bought"}</T>
       </View>
       {list.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 18, gap: 10 }}>
+        <ScrollView horizontal directionalLockEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 18, gap: 10 }}>
           {list.slice(0, 8).map((x, i) => <Cover key={`${x.at}-${i}`} i={i} x={x} ctx={ctx} />)}
         </ScrollView>
       ) : <View style={{ paddingHorizontal: 18 }}><Empty icon="file" text={ctx.routine || ctx.spec.routine ? "Nothing bought yet. The first run fills the shelf." : "Nothing bought yet."} /></View>}
@@ -381,12 +384,13 @@ function NextRun({ ctx }: { ctx: AppCtx }) {
   const times = rt ? upcoming(rt, 4) : nextRuns(rs.cadence, ctx.now, 4);
   const paused = rt?.status === "paused";
   const who = agentName(ctx.agentId);
-  const what = rs.kind === "price-watch" ? "check" : rs.kind === "renewals" ? "renewal" : "run";
+  const big = useLargeText();
   return (
     <BlockCard label={rs.kind === "price-watch" ? "Next check" : rs.kind === "renewals" ? "Next renewal" : "Next run"} right={times[0] && !paused ? `${day(times[0])} · ${inWords(times[0], ctx.now)}` : paused ? "Paused" : undefined}>
-      <View style={{ flexDirection: "row", gap: 8 }}>
+      {/* four day tiles; at accessibility text sizes they wrap two by two instead of clipping */}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         {(times.length ? times : [0, 1, 2, 3].map(() => 0)).map((t, i) => (
-          <View key={i} style={{ flex: 1, minHeight: 74, paddingVertical: 10, borderRadius: radius.tile, backgroundColor: i === 0 && t && !paused ? c.ink : c.tile, alignItems: "center", justifyContent: "center", gap: 2, overflow: "hidden" }}>
+          <View key={i} style={{ flexGrow: 1, flexBasis: big ? "45%" : 0, minHeight: 74, paddingVertical: 10, borderRadius: radius.tile, backgroundColor: i === 0 && t && !paused ? c.ink : c.tile, alignItems: "center", justifyContent: "center", gap: 2, overflow: "hidden" }}>
             {!t ? <Hatch color={c.line} pitch={6} stroke={1.2} /> : null}
             <T v="tab" style={{ textTransform: "uppercase", letterSpacing: 0.8, color: i === 0 && t && !paused ? "rgba(255,255,255,0.7)" : c.muted }}>{t ? new Date(t).toLocaleDateString("en-GB", { weekday: "short" }) : "—"}</T>
             <T v="section" style={{ color: i === 0 && t && !paused ? c.white : c.ink }}>{t ? String(new Date(t).getDate()) : ""}</T>

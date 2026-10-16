@@ -282,7 +282,7 @@ function Stage({ i, children, onY }: { i: number; children: React.ReactNode; /**
   const settled = useSettled(delay + 1000);
   useEffect(() => { v.value = withDelay(delay, reduce ? withTiming(1, { duration: 180 }) : withSpring(1, motion.spring.release)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const a = useAnimatedStyle(() => ({ opacity: Math.min(1, v.value * 1.4), transform: [{ translateY: reduce ? 0 : (1 - v.value) * 24 }] }));
-  return <Animated.View onLayout={onY ? (e) => onY(e.nativeEvent.layout.y) : undefined} style={settled ? undefined : a}>{children}</Animated.View>;
+  return <Animated.View onLayout={onY ? (e) => onY(e.nativeEvent.layout.y) : undefined} style={settled ? { opacity: 1, transform: [{ translateY: 0 }] } : a}>{children}</Animated.View>;
 }
 
 /** The card arrives blank (white hatch, no agent), then takes its job's face and its agent's mark with a small lift. */
