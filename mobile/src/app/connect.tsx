@@ -101,7 +101,7 @@ export default function Connect() {
           <Card pad={18} style={{ marginHorizontal: 16, gap: 16 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}><T v="label" style={{ color: c.white, fontSize: 13 }}>1</T></View>
-              <T v="section" style={{ flex: 1 }} accessibilityRole="header">Add ChainBrain to your AI</T>
+              <T v="section" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ flex: 1 }} accessibilityRole="header">Add ChainBrain to your AI</T>
             </View>
             <View style={{ flexDirection: "row", gap: 10 }}>
               {outside.map((a) => {
@@ -146,7 +146,7 @@ export default function Connect() {
           <Card pad={18} style={{ marginHorizontal: 16, marginTop: 12, gap: 10 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: opening ? c.ink : c.line, alignItems: "center", justifyContent: "center" }}><T v="label" style={{ color: c.white, fontSize: 13 }}>2</T></View>
-              <T v="section" style={{ flex: 1 }}>{`${info.name} asks for a pocket`}</T>
+              <T v="section" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ flex: 1 }}>{`${info.name} asks for a pocket`}</T>
             </View>
             {opening && !consent ? (
               <Animated.View entering={FadeIn.duration(motion.base)} exiting={FadeOut.duration(motion.exit)} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -158,7 +158,7 @@ export default function Connect() {
             )}
           </Card>
         </Reveal>
-        <Eyebrow color="mutedOnCanvas" style={{ textAlign: "center", marginTop: 18, paddingHorizontal: 24 }}>One pocket per agent grant · disconnect any time</Eyebrow>
+        <Eyebrow color="mutedOnCanvas" accessibilityLabel="One pocket per agent grant, disconnect any time" style={{ textAlign: "center", marginTop: 18, paddingHorizontal: 24, lineHeight: 18 }}>{"One pocket per agent grant\nDisconnect any time"}</Eyebrow>
       </Screen>
       <ConsentSheet agent={agent} visible={consent} onClose={() => { setConsent(false); setOpening(false); }} onAllowed={allowed} />
     </View>

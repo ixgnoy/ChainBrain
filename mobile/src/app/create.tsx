@@ -4,7 +4,7 @@ import { router, Stack } from "expo-router";
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming, type EntryExitAnimationFunction } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "../store";
-import { c, F, motion } from "../tokens";
+import { c, F, motion, radius } from "../tokens";
 import { BackHeader } from "../ui/BackHeader";
 import { Button, Card, Field, Press, SummaryCard, type PressTap } from "../ui/kit";
 import { useAutoplayTarget } from "../lib/autoplayTargets";
@@ -78,8 +78,8 @@ function Option({ on, title, sub, onPress, tapRef }: { on: boolean; title: strin
   const tick = useAnimatedStyle(() => ({ opacity: Math.min(1, Math.max(0, sel.value)), transform: [{ scale: reduce ? 1 : 0.6 + 0.4 * sel.value }] }));
   return (
     <Press kind="row" haptics="select" onPress={onPress} tapRef={tapRef} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={title}>
-      <Animated.View style={[{ padding: 16, borderRadius: 20, borderWidth: 1.5, gap: 2, flexDirection: "row", alignItems: "center" }, box]}>
-        <View style={{ flex: 1, gap: 2 }}><T v="row" w="semi">{title}</T><T v="sub" color="ink2">{sub}</T></View>
+      <Animated.View style={[{ padding: 16, borderRadius: radius.tile, borderCurve: "continuous", borderWidth: 1.5, gap: 2, flexDirection: "row", alignItems: "center" }, box]}>
+        <View style={{ flex: 1, gap: 2 }}><T v="head">{title}</T><T v="sub" color="ink2">{sub}</T></View>
         <Animated.View style={tick}><Icon name="check" size={20} color={c.accent} stroke={2.2} /></Animated.View>
       </Animated.View>
     </Press>
@@ -95,7 +95,7 @@ function PickChip({ label, on, onPress }: { label: string; on?: boolean; onPress
   const txt = useAnimatedStyle(() => ({ color: interpolateColor(sel.value, [0, 1], [c.ink2, c.onAccent]) }));
   return (
     <Press haptics="select" onPress={onPress} scale={0.96} accessibilityRole="button" accessibilityState={{ selected: !!on }} style={{ borderRadius: 9999 }}>
-      <Animated.View style={[{ height: 40, paddingHorizontal: 16, borderRadius: 9999, justifyContent: "center" }, box]}>
+      <Animated.View style={[{ height: 40, paddingHorizontal: 11, borderRadius: 9999, justifyContent: "center" }, box]}>
         <Animated.Text style={[{ fontFamily: F.semi, fontSize: 14, lineHeight: 20 }, txt]}>{label}</Animated.Text>
       </Animated.View>
     </Press>
@@ -106,7 +106,8 @@ const BigNumber = ({ value, suffix }: { value: string; suffix?: string }) => (
   <View style={{ alignItems: "center", gap: 4, paddingVertical: 8 }}><Money v="balance" value={value} />{suffix ? <T v="sub" color="muted">{suffix}</T> : null}</View>
 );
 const Title = ({ h, sub }: { h: string; sub: string }) => (
-  <View style={{ gap: 6 }}><T v="section" accessibilityRole="header" style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>{h}</T><T v="body" color="ink2" numberOfLines={3}>{sub}</T></View>
+  // the last two words stay together, so a wide Clash title never leaves one word alone on its second line
+  <View style={{ gap: 6 }}><T v="section" accessibilityRole="header" accessibilityLabel={h} style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>{h.replace(/ (\S+)$/, "\u00a0$1")}</T><T v="body" color="ink2" numberOfLines={3}>{sub}</T></View>
 );
 
 /** Success: the card rises, the mark draws, the budget rolls in, the two hashes fade up. The first pocket ever gets one soft ring. */
@@ -278,7 +279,7 @@ export default function Create() {
         <View style={{ gap: 20 }}>
           <Title h="How much goes in?" sub="This is the agent's whole budget. When it is gone, the agent stops." />
           <BigNumber value={money2(funds)} />
-          <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>{FUND_PRESETS.map((v) => <PickChip key={v} on={funds === v} label={`US$${money2(v)}`} onPress={() => setFunds(v)} />)}</View>
+          <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>{FUND_PRESETS.map((v) => <PickChip key={v} on={funds === v} label={`US$${money2(v)}`} onPress={() => setFunds(v)} />)}</View>
           <Slider min={0.05} max={10} step={0.05} value={funds} onChange={setFunds} />
           {balances && <T v="cap" color="muted" style={{ textAlign: "center" }}>Main wallet: US${usd(balances.usdc)}{balances.usdc < parseUsd(money2(funds)) ? ". Not enough for this budget." : ""}</T>}
         </View>);
@@ -320,7 +321,7 @@ export default function Create() {
       default: return (
         <View style={{ gap: 16 }}>
           <Title h="Looks right?" sub="Two steps signed on this phone: create the pocket, then add the money. The agent gets exactly these limits." />
-          <View style={{ backgroundColor: c.accentSoft, borderRadius: 20, padding: 16, gap: 4 }} accessibilityLiveRegion="polite">
+          <View style={{ backgroundColor: c.accentSoft, borderRadius: radius.tile, borderCurve: "continuous", padding: 16, gap: 4 }} accessibilityLiveRegion="polite">
             <T v="cap" w="semi" color="accent">Most the agent can lose</T>
             <Money v="balance" value={values.budget} color="ink" />
             <T v="sub" color="ink2">{worstCase(parseUsd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>

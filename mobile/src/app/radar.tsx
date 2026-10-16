@@ -156,8 +156,8 @@ export default function RadarAlertPage() {
 
 function Fact({ k, v, strong }: { k: string; v: string; strong?: boolean }) {
   return (
-    <View style={{ flex: 1, padding: 10, borderRadius: 12, backgroundColor: c.fill, gap: 2 }}>
-      <T v="cap" color="muted" numberOfLines={1}>{k}</T>
+    <View style={{ flex: 1, padding: 10, borderRadius: 12, borderCurve: "continuous", backgroundColor: c.fill, gap: 4, justifyContent: "space-between" }}>
+      <T v="cap" color="muted" numberOfLines={2}>{k}</T>
       <T v="head" style={{ color: strong ? c.vermillionInk : c.ink, fontSize: 16 }} numberOfLines={1}>{v}</T>
     </View>
   );
