@@ -1,5 +1,5 @@
-# Demo runbook: phone + console, scenes 1-8
-Last updated: 2026-10-15
+# Demo runbook: phone + console, scenes 1-11
+Last updated: 2026-10-16
 
 How to run the live demo on stage, or record the video, with nothing but a laptop and an iPhone. Both apps open on their **built-in network** (the wallet API, tool layer, agent and Pocket.sol rules running in the app), so no chain, server, model key or Wi-Fi to the internet is needed. Built-in hashes are not on Base Sepolia; for the evidence table use hashes from a real run ([evidence](../evidence.md)), and say so if asked.
 
@@ -29,6 +29,14 @@ The stepper at the bottom of the console (1 to 8) types each scene on the phone 
 | 7 | Play 7, confirm. After "Paid Exa", phone header **Stop**, hold to revoke (or tap twice) | Second payment refused POCKET_REVOKED; "Agent stopped" card with the revoke hash; Return funds | Kill switch, graceful stop |
 | 8 | Phone header: tap the pocket name, pick **One purchase**. Play 8, confirm | "Nothing was bought" card: OVER_CAP, SELLER_NOT_ALLOWED; tap **Raise cap and budget to US$0.007**, slide, then **Ask again**: paid; the old card now reads "Fixed" | Safe fallback, one-tap fix |
 
+**The AI brain, scenes 9-11 (phone chips or auto-play).** Each one ends on a card judges can read; the **Brain** tab then shows all ten features for the pocket ([ai-brain.md](../ai-brain.md)).
+
+| # | Do | Judges see | Scored |
+| --- | --- | --- | --- |
+| 9 | On the scene-1 pocket, tap the chip "Credit report after a drainer pays TradeWire", confirm | A drainer pays TradeWire on-chain; Radar card 9/10 Blocked with the money trail; the agent buys Nansen's data instead; a Radar alert on every pocket that paid TradeWire before | Counterparty risk, adaptation |
+| 10 | Same pocket, chip "Fooled agent keeps trying Harbour Wines", confirm | Three refusals in a minute, then the Sentinel card "Froze this pocket on-chain. Only you can unfreeze it." with the freeze hash; Unfreeze on the pocket page | Second AI layer, on-chain kill switch |
+| 11 | Pick **Premium reports** (DataPro only), chip "Premium report, price negotiated", confirm, then slide to approve | Haggle ladder: asked US$1.50, you US$0.90, they US$1.20, you US$1.05, final US$1.10; "US$0.40 saved, numbers only"; the co-signed paid card "Negotiated from US$1.50" | Agent intelligence with hard guards |
+
 Optional, between 6 and 7 (privilege escalation, scored under Security): console Judges, **Claim to be the admin**. The phone's agent refuses ("Only the owner's key can change this pocket's cap or sellers"), then the agent's key is made to try `setCap` and `setSeller` anyway and both revert `NOT_OWNER` on the chain; the arena card shows the rule and the two reverted hashes.
 
 Close on the console Live: the worst-case bar ("can lose at most US$X, only to Exa, CoinGecko and Nansen") and the evidence strip (paid, co-signed, refused, injections ignored, transfers reverted).
@@ -50,7 +58,7 @@ With a phone linked, every attack runs on the phone's pocket and appears in its 
 
 1. Laptop: relay and console as above, console on `#present` (it follows the phone; the scorecard ticks as scenes land).
 2. Phone: reload the app (shake, Reload), Skip the intro, open the **Agent** tab.
-3. **Open the chat (Agents tab, ChainBrain's card, Chat) and long-press its header for about 1.5 s.** The phone plays the whole story by itself, typing each sentence and pressing every control the way a person would: New pocket through the wizard (create and fund hashes), scenes 1, 4, 5 (and the forced transfer), 6, the escalation attempt, 7 (hold to revoke: the pocket is frozen and its money returned in one hold), 8 (One purchase, dead end, one-tap fix, ask again); then it connects Claude (pairing link, consent, Claude's own pocket), confirms Claude's task and co-signs its payment from the Approvals inbox, plays scene 9 (Radar blocks DataPro and opens the money trail) and scene 10 (the Sentinel freezes a probing agent), and ends on Home with the revoked card in the deck. About 6 minutes. Nothing on screen says it is automatic.
+3. **Open the chat (Agents tab, ChainBrain's card, Chat) and long-press its header for about 1.5 s.** The phone plays the whole story by itself, typing each sentence and pressing every control the way a person would: New pocket through the wizard (create and fund hashes), scenes 1, 4, 5 (and the forced transfer), 6, the escalation attempt; scene 11 on Premium reports (the haggler, then slide to co-sign US$1.10); back on the new pocket, scene 9 (Radar blocks TradeWire and opens the money trail) and scene 10 (the Sentinel freezes the probing agent); 7 on Research data (hold to revoke: the pocket is frozen and its money returned in one hold), 8 (One purchase, dead end, one-tap fix, ask again); then it connects Claude (pairing link, consent, Claude's own pocket), confirms Claude's task and co-signs its payment from the ask dock, and closes on the **Brain** tab of the scene-1 pocket. About 6 minutes. Nothing on screen says it is automatic.
 4. To stop early: long-press the header again, or tap Stop.
 
 ## If something goes wrong

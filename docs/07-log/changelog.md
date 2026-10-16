@@ -1,5 +1,13 @@
 # Changelog
-Last updated: 2026-10-15
+Last updated: 2026-10-16
+
+## 2026-10-16 (AI brain docs, haggler)
+
+- **New:** [ai-brain.md](../ai-brain.md): the ten AI brain features (understands, plans and buys, adapts, resists, Radar, Sentinel, memory, Speak your rules, Pre-flight, haggler), the AI-only-tightens rule, the haggler's guards, the models and their fallbacks.
+- **Haggler (PR #8, #9):** `counter_offer` tool; sellers' `POST /<seller>/<sku>/offer` and the deal price on `?deal=<id>`; reason codes `OFFER_NOT_LOWER`, `NEGOTIATION_ROUNDS_USED`, `NEGOTIATION_NOT_OFFERED`, `DEAL_ALREADY_AGREED`, `QUOTE_ALREADY_APPROVED`; scene 11 (DataPro US$1.50 to US$1.10).
+- **Demo stability (PR #7):** the built-in network survives a reload or a crashed tab; auto-play runs scenes 1-11 and closes on the Brain tab.
+- **Updated:** README (AI brain summary, scenes 1-11 table with the current sellers, test counts), technical document (seven tools, frozen state and guardian key, section 9 "The AI brain", test summary), security self-assessment (guardian tier, Sentinel freeze, Radar, haggler, AI only tightens), demo runbook (scenes 9-11, auto-play order), mobile.md (Brain tab, haggle card), one-page summary, docs index, AI brain tracker.
+- **Checks run on 16 Oct (latest main):** contracts 24, server 76 (+6 skipped), web 81, phone 44, built-in network 40. Auto-play of scenes 1-11 also verified on an Android phone (Chrome).
 
 ## 2026-10-15 (built-in network, phone linked to console)
 
