@@ -20,6 +20,7 @@ import { notify } from "./lib/toast";
 import { haptic } from "./haptics";
 import { sameView, usd } from "./lib/util";
 import { loadMeta, saveMeta, type PocketMeta } from "./lib/pocketNames";
+import { isTightCap } from "./lib/presets";
 import * as api from "./lib/api";
 import {
   approvalsFrom, authExpired, authMismatch, authOf, ledgerFrom, livePending, mergeEvents, nextCursor, replyOf, sameAddr, sliceTurn,
@@ -28,7 +29,7 @@ import {
 import { getItem, setItem, deleteItem } from "./storage";
 import { addOwnerTx, ownerRows, parseOwnerTxs, type OwnerTx } from "./lib/ownerTxs";
 
-export type Turn = { id: string; pocket: string; text: string; fromAt: number; toAt?: number; reply?: string; stopped?: string; error?: string; done: boolean };
+export type Turn = { id: string; pocket: string; text: string; fromAt: number; toAt?: number; /** the last event when the turn finished: anything later happened after it */ endAt?: number; reply?: string; stopped?: string; error?: string; done: boolean };
 export type Pocket = PocketView & { name: string; style: PocketMeta["style"]; owned: boolean; /** the agent that holds it (immutable agent key) */ agentId?: AgentId };
 export type Sheet = { mode: "fund" | "return" | "revoke"; pocket?: string } | null;
 export type Rules = { pocket: string; field: "cap" | "ask"; amount?: string; topUp?: bigint } | null;
@@ -37,7 +38,8 @@ export type Notice = { title: string; pocket?: string; txs: { label?: string; ha
 export type Conn = "connecting" | "online" | "offline";
 
 const API_KEY = "cb.apiUrl";
-const SOURCE_KEY = "cb.source";
+// an older build saved the server choice; it now lasts until the app is reloaded or relaunched, so the key is cleared
+const OLD_SOURCE_KEY = "cb.source";
 const POLL_MS = 1500;
 
 type Ctx = {
@@ -119,6 +121,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [balances, setBalances] = useState<Ctx["balances"]>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [meta, setMeta] = useState<Record<string, PocketMeta>>({});
+  // names of pockets made on the built-in network this session (never written to storage): kept apart from the server's, so a
+  // trip to a server and back neither loses them nor brings the server's names along
+  const builtinMeta = useRef<Record<string, PocketMeta>>({});
   const [views, setViews] = useState<Record<string, PocketView>>({});
   const [pocketsLoaded, setPocketsLoaded] = useState(false);
   const [activeAddr, setActiveAddr] = useState<string>();
@@ -156,7 +161,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const saved = await getItem(API_KEY);
       if (saved) setRuntimeApi(saved);
       setApiState(getApi());
-      if ((await getItem(SOURCE_KEY)) === "server") setRuntimeSource("server");
+      void deleteItem(OLD_SOURCE_KEY); // every launch (and every full reload) opens on the built-in network
       setSourceReady(true);
       // first launch: create the on-device key silently, no setup screen (an existing key is kept; "Import a key" lives in Settings)
       let k: Hex | null = null;
@@ -222,7 +227,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         for (const p of seeded) m[p.address.toLowerCase()] = { name: p.name, style: p.style };
         ownerTxRef.current = txs.map((t) => ({ kind: t.kind, pocket: t.pocket.toLowerCase(), hash: t.hash, at: t.at, amount: t.amount }));
         setOwnerTxs(ownerTxRef.current);
-        setAddresses(list); setMeta((old) => ({ ...m, ...old })); setActiveAddr((a) => a ?? seeded[0]?.address ?? list[0]); setPocketsLoaded(true);
+        setAddresses(list); setMeta({ ...m, ...builtinMeta.current }); setActiveAddr((a) => a ?? seeded[0]?.address ?? list[0]); setPocketsLoaded(true);
         startOutsideAgents(seeded); // Claude asks for a co-signature a little after launch (lands in the Approvals inbox)
       });
       return () => { alive = false; };
@@ -281,7 +286,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addrRef.current = next;
     setAddresses(next); if (o.activate !== false) setActiveAddr(a); // a pocket for an outside agent never becomes the chat's pocket
     if (!local) await savePockets(wallet.address, next);
-    if (m) { const nm = { ...meta, [a.toLowerCase()]: m }; setMeta(nm); if (!local) await saveMeta(wallet.address, nm); }
+    if (m) {
+      const nm = { ...meta, [a.toLowerCase()]: m }; setMeta(nm);
+      if (local) builtinMeta.current = { ...builtinMeta.current, [a.toLowerCase()]: m }; else await saveMeta(wallet.address, nm);
+    }
     await refreshPockets();
   }, [wallet, meta, refreshPockets, local]);
 
@@ -380,19 +388,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const r = await api.chat(a.address, t);
       await pollRef.current();
-      patchTurn(key, turn.id, { reply: r.reply, stopped: r.stopped, done: true });
+      patchTurn(key, turn.id, { reply: r.reply, stopped: r.stopped, done: true, endAt: eventsRef.current.at(-1)?.at });
     } catch (e) {
       await pollRef.current();
       const late = replyOf(sliceTurn(eventsRef.current, fromAt));
-      patchTurn(key, turn.id, late ? { reply: late, done: true } : { error: "Lost the connection while the agent was working. It may still finish: check Activity.", done: true });
+      patchTurn(key, turn.id, late ? { reply: late, done: true, endAt: eventsRef.current.at(-1)?.at } : { error: "Lost the connection while the agent was working. It may still finish: check Activity.", done: true });
     }
     void refreshPockets();
   }, [active, pockets, turnsBy, refreshPockets]);
 
   // the console's Play button (via the relay): pick the pocket the scene needs, open the chat, type the sentence
   sayRef.current = async (text, preset) => {
-    const live = pockets.filter((p) => p.owned && !p.revoked && p.balance > 0n);
-    const tight = (p: Pocket) => p.cap <= 200_000n;
+    // ChainBrain's own pockets only: Claude's and ChatGPT's pockets name another agent key, so the chat's agent cannot pay from them
+    const live = pockets.filter((p) => p.owned && !p.revoked && p.balance > 0n && (p.agentId ?? "chainbrain") === "chainbrain");
+    const ids = (cfg?.sellers ?? []).map((s) => s.id);
+    const tight = (p: Pocket) => isTightCap(p.cap, ids);
     const target = preset === "one-purchase" ? live.find(tight) : live.find((p) => sameAddr(p.address, activeAddr) && !tight(p)) ?? live.find((p) => !tight(p));
     if (!target) return { ok: false, text: "No pocket on the phone fits this scene" };
     if (turnsBy[target.address.toLowerCase()]?.some((t) => !t.done)) return { ok: false, text: "The agent is still busy on the phone" };
@@ -503,7 +513,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const importKey = useCallback(async (k: string) => { await saveKey(k); setPk(k.trim() as Hex); }, []);
   const newKey = useCallback(async () => { setPk(await createKey()); }, []);
   const setSource = useCallback(async (s: Source) => {
-    if (s === "server") await setItem(SOURCE_KEY, "server"); else await deleteItem(SOURCE_KEY);
     resetConfig(); setCfg(null); setConn("connecting"); setPocketsLoaded(false); setBalances(null); setViews({}); setAnswered(new Set()); setTurnsBy({});
     // nothing from the other network may linger on screen (a stale notice could link its hash to BaseScan)
     setNotice(null); setReceipt(null); setAction(null); setRules(null); setApprovalOpen(false); setQuestionOpen(false); setPickerOpen(false); forcedSeen.current = null;

@@ -37,3 +37,12 @@ export function deadEndOf(events: WalletEvent[], pocket: { address: string; cap:
 }
 
 export const whyText = (t: Tried) => (t.reasons.length ? t.reasons.map(plainReason).join(", ") : "not allowed");
+
+/** "Ask again" after the fix: the owner's own sentence with a maximum that now fits ("…max US$0.005…" becomes "…max
+ *  US$0.007…"), so the agent that understood it the first time understands it again, on any network. */
+export function retryText(task: string, max: string): string {
+  const t = task.trim();
+  const limit = /\b(max(?:imum)?|under|up to|at most)\s+US\$\s?\d+(?:\.\d+)?/i;
+  if (limit.test(t)) return t.replace(limit, (_m, w: string) => `${w} US$${max}`);
+  return `${t.replace(/[.\s]+$/, "")}. Max US$${max}, by tonight.`;
+}

@@ -10,7 +10,8 @@ import Animated, { Extrapolation, cancelAnimation, interpolate, useAnimatedStyle
 import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { c, F, level3, motion, radius } from "../tokens";
-import { useApp } from "../store";
+import { useApp, useAppSelect } from "../store";
+import { cleanText } from "../lib/sanitize";
 import { Hatch } from "../ui/Hatch";
 import { PocketFace, toneFor } from "./PocketFace";
 import { BrandMark } from "../ui/BrandMark";
@@ -75,9 +76,18 @@ function SpillCard({ p, i, t, cw, h, tone }: { p: Pocket; i: number; t: SharedVa
 }
 
 // ---- page 2: a lock closes, then the rules of the contract draw in line by line
-const RULES: [string, string][] = [["Allowed sellers", "Exa, CoinGecko, Nansen"], ["Per payment", "up to US$0.05"], ["Ask me above", "US$0.02"]];
+const BUILTIN_SELLERS = ["Exa", "CoinGecko", "Nansen"];
+/** Sellers to name in the pictures: the built-in network's real providers, or the connected server's own sellers (real
+ *  provider names never appear against a server). */
+function useArtSellers(): string[] {
+  const source = useAppSelect((s) => s.source);
+  const cfg = useAppSelect((s) => s.cfg);
+  return source === "builtin" ? BUILTIN_SELLERS : (cfg?.sellers ?? []).slice(0, 2).map((x) => cleanText(x.name, 16));
+}
 function ContractArt({ active, reduce }: { active: boolean; reduce: boolean }) {
   const t = usePlay(active, reduce, 1500, 200);
+  const sellers = useArtSellers();
+  const RULES: [string, string][] = [["Allowed sellers", sellers.join(", ") || "Two you chose"], ["Per payment", "up to US$0.05"], ["Ask me above", "US$0.02"]];
   const shackle = useAnimatedStyle(() => ({ transform: [{ translateY: -7 * (1 - win(t.value, 0.05, 0.3)) }] }));
   const key = useAnimatedStyle(() => ({ opacity: win(t.value, 0.8, 1) }));
   return (
@@ -111,6 +121,7 @@ function Rule({ k, v, t, from }: { k: string; v: string; t: SharedValue<number>;
 // ---- page 3: the worst case is a small segment of everything you own
 function WorstArt({ active, reduce }: { active: boolean; reduce: boolean }) {
   const t = usePlay(active, reduce, 1500, 200);
+  const sellers = useArtSellers();
   const seg = useAnimatedStyle(() => ({ width: `${22 * win(t.value, 0.05, 0.5)}%` }));
   const label = useAnimatedStyle(() => ({ opacity: win(t.value, 0.4, 0.6) }));
   return (
@@ -128,9 +139,7 @@ function WorstArt({ active, reduce }: { active: boolean; reduce: boolean }) {
       <View style={{ gap: 10 }}>
         <T v="cap" w="medium" color="muted">It can only pay</T>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          <Chip t={t} from={0.55} label="Exa" ok />
-          <Chip t={t} from={0.6} label="CoinGecko" ok />
-          <Chip t={t} from={0.65} label="Nansen" ok />
+          {sellers.map((n, i) => <Chip key={n} t={t} from={0.55 + i * 0.05} label={n} ok />)}
           <Chip t={t} from={0.78} label="Anyone else" />
         </View>
       </View>

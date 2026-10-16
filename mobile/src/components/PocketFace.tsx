@@ -120,10 +120,12 @@ const R = 18;
 /** How much of the card's side shows under the face (pt). */
 const EDGE = 4;
 
-/** "Exp. 30/10", or "Ends 23:59" on its last day. */
+/** "Exp. 30/10", "Exp. 10/27" (month/year) past this year, or "Ends 23:59" on its last day. */
 export const expiryText = (expiresAt: bigint | number) => {
   const d = new Date(Number(expiresAt) * 1000);
   if (d.toDateString() === new Date().toDateString()) return `Ends ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+  // a card's own "MM/YY" once it runs past this year (an ongoing pocket lasts a year): "16/10" alone would read as today
+  if (d.getFullYear() !== new Date().getFullYear()) return `Exp. ${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getFullYear() % 100).padStart(2, "0")}`;
   return `Exp. ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
 };
 

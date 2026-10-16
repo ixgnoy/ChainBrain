@@ -20,6 +20,7 @@ import { txError } from "./ActionSheet";
 import { agentInfo, CAN, CANNOT, type AgentId } from "../../../shared/sim/agents";
 import { parseUsd } from "../lib/shared";
 import { uniqueName } from "../app/create";
+import { useCoverDock } from "./AskDock";
 
 // the built-in network's sellers charge per request (Exa US$0.007, CoinGecko US$0.01, Nansen up to US$0.05)
 const BUDGETS = ["0.20", "0.50", "1"];
@@ -61,6 +62,7 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
     }
   };
 
+  useCoverDock(visible); // the ask dock would sit on Deny
   return (
     <Sheet visible={visible} onClose={onClose}>
       {done ? (

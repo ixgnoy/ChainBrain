@@ -32,13 +32,15 @@ import { devScenes, type Scene } from "../lib/api";
 import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, radarScreens, radarAlerts, sentinelEvents, type WalletEvent } from "../lib/events";
 import { deadEndOf } from "../lib/deadend";
 import { money, usd } from "../lib/util";
+import { isTightCap } from "../lib/presets";
 import { plainAsks } from "../lib/plain";
 import { haptic } from "../haptics";
 import { useGrowCap } from "../ui/fontScale";
 
 type ChipItem = { label: string; text: string };
+// a server without /dev/scenes: tasks that name no seller (real provider names belong to the built-in network only)
 const DEFAULTS: ChipItem[] = [
-  { label: "Search Exa for durian news", text: "Search Exa for durian export news. Max US$0.01, by tonight." },
+  { label: "A durian market report", text: "Get me a market report on durian exports, under US$2, by tonight." },
   { label: "Research a durian deal", text: "Research a durian import deal for me: export news, the USDC price and a check on the exporter's wallet. Under US$0.10, by tonight." },
 ];
 
@@ -141,8 +143,11 @@ function useRideKeyboard(base: number) {
 export default function AgentChat() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
-  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, openApproval, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setPickerOpen, autoplay } = useApp();
-  const [text, setText] = useState("");
+  const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, openApproval, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setPickerOpen, autoplay, cfg } = useApp();
+  // the typed text lives in the Composer (a keystroke must not redraw the whole conversation); here only whether it is empty
+  const [typing, setTyping] = useState(false);
+  const composer = useRef<ComposerApi | null>(null);
+  const setText = (v: string) => composer.current?.set(v);
   const grow = useGrowCap("body");
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [kb, setKb] = useState(false);
@@ -170,13 +175,18 @@ export default function AgentChat() {
 
   const mine = useMemo(() => (active ? events.filter((e) => sameAddr(e.pocket, active.address)) : []), [events, active]);
   const mineLen = mine.length;
-  // attacks that arrived before the first message (the console sets them off through the relay): shown at the top of the chat
-  const loose = useMemo(() => mine.filter((e) => isAttackEvent(e) && (turns.length === 0 || e.at <= turns[0].fromAt)), [mine, turns]);
-  // Radar alerts that arrived between turns (the monitor re-screened a seller this pocket paid): shown after the conversation
-  const inTurn = (at: number) => turns.some((t) => at > t.fromAt && (t.toAt == null || at <= t.toAt));
-  const idleAlerts = useMemo(() => (active ? radarAlerts(mine, active.address).filter((a) => !inTurn(a.at)) : []), [mine, turns, active]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Sentinel decisions outside a chat turn (the console's attack arena, a forced transfer): after the conversation
-  const idleSentinel = useMemo(() => sentinelEvents(mine).filter((v) => !inTurn(v.at)), [mine, turns]); // eslint-disable-line react-hooks/exhaustive-deps
+  // a turn ends with its reply: what happens after it (a forced transfer, the Sentinel freezing the pocket, Radar re-screening
+  // a seller) is shown between the messages where it happened, or after the conversation, where the owner is looking; it is
+  // never folded into the last answer above its reply
+  const endOf = (t: Turn) => t.endAt ?? t.toAt;
+  const inTurn = (at: number) => turns.some((t) => { const end = endOf(t); return at > t.fromAt && (end == null || at <= end); });
+  const idle = useMemo(() => {
+    const alerts = active ? radarAlerts(mine, active.address).filter((a) => !inTurn(a.at)).map((a) => ({ key: a.key, at: a.at, node: <RadarAlertCard key={a.key} a={a} /> })) : [];
+    const sentinel = sentinelEvents(mine).filter((v) => !inTurn(v.at)).map((v) => ({ key: v.key, at: v.at, node: <SentinelCard key={v.key} v={v} /> }));
+    // attacks outside a chat turn (the console sets them off through the relay, a forced transfer from the laptop)
+    const attacks = mine.filter((e) => isAttackEvent(e) && !inTurn(e.at)).map((e, k) => ({ key: `idle${e.type}${e.at}${k}`, at: e.at, node: <AttackCard key={`idle${e.type}${e.at}${k}`} e={e} /> }));
+    return [...alerts, ...sentinel, ...attacks].sort((a, b) => a.at - b.at);
+  }, [mine, turns, active]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // follow the conversation: smooth scroll to the end while the owner is at (or near) the bottom; content growing (steps, cards) retriggers it
   const toEnd = () => {
@@ -235,7 +245,7 @@ export default function AgentChat() {
 
   const follow: ChipItem[] = question ? scenes.filter((s) => s.followUp).map((s) => ({ label: s.followChip ?? s.followUp!, text: s.followUp! })) : [];
   // a tight pocket (cap US$0.20 or less) leads with the dead-end task; otherwise the scenes in story order
-  const tight = !!active && active.cap <= 200_000n;
+  const tight = !!active && isTightCap(active.cap, (cfg?.sellers ?? []).map((s) => s.id));
   const ordered = tight ? [...scenes.filter((s) => s.preset === "one-purchase"), ...scenes.filter((s) => s.preset !== "one-purchase")] : scenes;
   // used suggestions go away; while the agent works only the answer to its question is offered
   const used = new Set(turns.map((t) => t.text.trim()));
@@ -251,7 +261,7 @@ export default function AgentChat() {
     const shown = new Set<string>();
     for (const t of turns) {
       const dup = new Set<string>();
-      for (const x of injectionsOf(sliceTurn(mine, t.fromAt, t.toAt))) { const k = JSON.stringify(x); if (shown.has(k)) dup.add(k); shown.add(k); }
+      for (const x of injectionsOf(sliceTurn(mine, t.fromAt, endOf(t)))) { const k = JSON.stringify(x); if (shown.has(k)) dup.add(k); shown.add(k); }
       out.set(t.id, dup);
     }
     return out;
@@ -259,17 +269,15 @@ export default function AgentChat() {
   const hidden = showAll ? 0 : Math.max(0, turns.length - 3);
   const canStop = !!active && active.owned && !!wallet && !active.revoked && Number(active.expiresAt) * 1000 > Date.now();
   // the last step of THIS task only (an earlier task's payment must not read as this one's)
-  const stopped = active?.revoked ? lastStepText(last ? sliceTurn(mine, last.fromAt, last.toAt) : [], sellerName) : null;
+  const stopped = active?.revoked ? lastStepText(last ? sliceTurn(mine, last.fromAt, endOf(last)) : [], sellerName) : null;
   const stopTx = active ? ownerTxs.filter((t) => t.kind === "revoke" && sameAddr(t.pocket, active.address)).at(-1) : undefined;
   const waitingHere = !!(intent || pay || question);
   const busyHere = chatBusy || waitingHere;
   const dot: DotState = active?.revoked || active?.frozen ? "stopped" : waitingHere ? "waiting" : chatBusy ? "working" : "ready";
   const headStatus = !active ? "Create a pocket first" : active.revoked ? "Stopped · this pocket is off" : active.frozen ? "Frozen by the Sentinel · only you can unfreeze"
     : waitingHere ? "Waiting for you" : chatBusy ? "Working…" : `Ready · ${money(active.balance)} left`;
-  const ready = !!text.trim() && !chatBusy;
   // the stop path is revoking the pocket (confirmed by the hold-to-revoke sheet); without one, send simply hides while the agent works
   const showStop = canStop && chatBusy;
-  const typing = text.trim().length > 0;
   const empty = turns.length === 0 && !sent;
 
   return (
@@ -326,7 +334,6 @@ export default function AgentChat() {
               </View>
             </Rise>
           )}
-          {loose.map((e, k) => <AttackCard key={`loose${e.at}${k}`} e={e} />)}
           {hidden > 0 ? (
             <Press kind="row" haptics="select" onPress={() => setShowAll(true)} accessibilityRole="button" accessibilityLabel={`Show ${hidden} earlier messages`}
               style={{ alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 6, minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: c.fill }}>
@@ -336,14 +343,17 @@ export default function AgentChat() {
           ) : null}
           {turns.slice(hidden).map((t: Turn, k) => {
             const i = hidden + k;
-            const evs = sliceTurn(mine, t.fromAt, t.toAt);
+            const evs = sliceTurn(mine, t.fromAt, endOf(t));
             const disclosures = evs.filter((e) => e.type === "disclosure");
             const reply = t.reply ?? replyOf(evs);
             const isLast = i === turns.length - 1;
             const dead = t.done && active ? deadEndOf(evs, active) : null;
             const refusals = dead ? [] : refusalsOf(evs);
+            // what happened between the previous message and this one (a freeze, a forced transfer), in its place in time
+            const since = turns[i - 1]?.fromAt ?? -Infinity;
             return (
               <View key={t.id} style={{ gap: 10 }}>
+                {idle.filter((x) => x.at > since && x.at <= t.fromAt).map((x) => x.node)}
                 <UserBubble text={t.text} fresh={false} />
                 {disclosures.map((d, k) => (
                   <EventCard key={k} tone="refused" alert={`${t.id}:d${k}`} title={`${cleanText(sellerName(d.sellerId), 40)} asked for more data`}
@@ -375,14 +385,13 @@ export default function AgentChat() {
                   </Rise>
                 )}
                 {t.done ? evs.filter((e) => e.type === "trace" && e.phase === "memory").slice(-1).map((e) => <MemoryLine key={`mem${e.at}`} e={e} />) : null}
-                {t.done && active ? <DeadEndCard id={t.id} evs={evs} pocket={active} sellerName={sellerName} onRetry={isLast && !chatBusy ? send : undefined}
+                {t.done && active ? <DeadEndCard id={t.id} task={t.text} evs={evs} pocket={active} sellerName={sellerName} onRetry={isLast && !chatBusy ? send : undefined}
                   resolved={t.toAt != null && mine.some((e) => e.type === "payment" && e.at > t.toAt!)} /> : null}
                 {isLast && intent ? <TaskWaiting text={intent.text} onOpen={() => openApproval(intent.id)} id={intent.id} /> : null}
               </View>
             );
           })}
-          {idleAlerts.map((a) => <RadarAlertCard key={a.key} a={a} />)}
-          {idleSentinel.map((v) => <SentinelCard key={v.key} v={v} />)}
+          {idle.filter((x) => !last || x.at > last.fromAt).map((x) => x.node)}
           {sent ? <View style={{ gap: 14 }}><UserBubble text={sent.text} fresh /></View> : null}
           {!last && intent ? <TaskWaiting text={intent.text} onOpen={() => openApproval(intent.id)} id={intent.id} /> : null}
           {active?.revoked && turns.length > 0 ? (
@@ -432,19 +441,38 @@ export default function AgentChat() {
         <View style={{ paddingHorizontal: 16 }}>
           {/* grows with the message (up to ~5 lines, then scrolls inside); the send button stays on the last line */}
           <View style={{ flexDirection: "row", alignItems: "flex-end", paddingLeft: 16, paddingRight: 6, paddingVertical: 3, borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: c.card, borderWidth: 1, borderColor: hairline, minHeight: 56, ...level1 }}>
-            <TextInput
-              maxFontSizeMultiplier={grow} value={text} onChangeText={setText} placeholder={text ? "" : question ? "Answer ChainBrain" : "Ask ChainBrain to buy something"} placeholderTextColor={c.faint}
-              multiline submitBehavior="submit" onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}
-              style={[{ flex: 1, color: c.ink, fontFamily: F.medium, fontSize: 16, lineHeight: 22, minHeight: 48, maxHeight: 124, paddingTop: 13, paddingBottom: 13, textAlignVertical: "center" }, Platform.OS === "web" ? ({ outlineStyle: "none", resize: "none" } as object) : null]}
-            />
-            <View style={{ marginBottom: 2 }}>
-              <SendButton ready={ready} stop={showStop} tapRef={sendTap} onPress={() => send(text)}
-                onStop={() => { if (autoplay.running) autoplay.stop(); else if (active) setAction({ mode: "revoke", pocket: active.address }); }}
-                onAutoStop={() => active && setAction({ mode: "revoke", pocket: active.address })} />
-            </View>
+            <Composer api={composer} grow={grow} editable={!!active} question={!!question} busy={chatBusy} showStop={showStop} sendTap={sendTap} onSend={send} onTyping={setTyping}
+              onStop={() => { if (autoplay.running) autoplay.stop(); else if (active) setAction({ mode: "revoke", pocket: active.address }); }}
+              onAutoStop={() => active && setAction({ mode: "revoke", pocket: active.address })} />
           </View>
         </View>
       </Animated.View>
     </View>
+  );
+}
+
+type ComposerApi = { set(v: string): void };
+/** The message field and the send button. It owns the typed text, so a keystroke redraws only this, not the conversation
+ *  above (after a few tasks that was about 2 s per character in Expo Go); the screen hears only when it turns empty or not. */
+function Composer({ api, grow, editable, question, busy, showStop, sendTap, onSend, onTyping, onStop, onAutoStop }: {
+  api: React.MutableRefObject<ComposerApi | null>; grow: number; editable: boolean; question: boolean; busy: boolean; showStop: boolean;
+  sendTap: React.MutableRefObject<PressTap | null>; onSend(v: string): void; onTyping(on: boolean): void; onStop(): void; onAutoStop(): void;
+}) {
+  const [text, setText] = useState("");
+  const typing = text.trim().length > 0;
+  useEffect(() => { onTyping(typing); }, [typing]); // eslint-disable-line react-hooks/exhaustive-deps
+  api.current = { set: setText };
+  const ready = typing && !busy;
+  return (
+    <>
+      <TextInput
+        maxFontSizeMultiplier={grow} value={text} onChangeText={setText} placeholder={text ? "" : question ? "Answer ChainBrain" : "Ask ChainBrain to buy something"} placeholderTextColor={c.faint}
+        multiline submitBehavior="submit" onSubmitEditing={() => onSend(text)} returnKeyType="send" accessibilityLabel="Message" editable={editable}
+        style={[{ flex: 1, color: c.ink, fontFamily: F.medium, fontSize: 16, lineHeight: 22, minHeight: 48, maxHeight: 124, paddingTop: 13, paddingBottom: 13, textAlignVertical: "center" }, Platform.OS === "web" ? ({ outlineStyle: "none", resize: "none" } as object) : null]}
+      />
+      <View style={{ marginBottom: 2 }}>
+        <SendButton ready={ready} stop={showStop} tapRef={sendTap} onPress={() => onSend(text)} onStop={onStop} onAutoStop={onAutoStop} />
+      </View>
+    </>
   );
 }

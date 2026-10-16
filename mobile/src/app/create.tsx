@@ -209,7 +209,9 @@ export default function Create() {
     if (p.askAbove === "never") setAskMode("never"); else if (p.askAbove === "0") setAskMode("always"); else { setAskMode("above"); setAsk(Number(p.askAbove)); }
   };
   const capMax = Math.max(0.05, Math.min(funds, 5));
-  const tick = capMax <= 1 ? 0.01 : 0.05; // one-cent steps for per-request prices
+  // one-cent steps at any budget: the sellers charge per request (US$0.007 to US$0.05), so a cap or ask-me limit below
+  // five cents must stay reachable when the budget is over a dollar
+  const tick = 0.01;
   const capV = Math.min(cap, capMax);
   const askV = Math.min(ask, capV);
   // never two pockets with the same name in a list: "Research data", then "Research data 2"

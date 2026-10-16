@@ -17,7 +17,8 @@ export const isExpired = (p: { revoked: boolean; expiresAt: bigint | number }) =
 export function untilText(expiresAt: bigint | number, now = Date.now()) {
   const d = new Date(Number(expiresAt) * 1000), n = new Date(now);
   const sameDay = d.toDateString() === n.toDateString();
-  return sameDay ? `until ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}` : `until ${dateLabel(Number(expiresAt)).replace(/ \d{4}$/, "")}`;
+  // the year only when it is not this one: an ongoing pocket ends a year from today, which must not read as today
+  return sameDay ? `until ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}` : `until ${d.getFullYear() === n.getFullYear() ? dateLabel(Number(expiresAt)).replace(/ \d{4}$/, "") : dateLabel(Number(expiresAt))}`;
 }
 
 /** "2 sellers · until 23:59" (the agent's address lives in the pocket's Details, not on every row). */

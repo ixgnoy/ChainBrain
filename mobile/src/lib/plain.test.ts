@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createWorld, seedOwner } from "../../../shared/sim";
+import { createWorld, seedOwner, SIM_AGENT, CATALOG, parseUsd, SCENES, type Hex } from "../../../shared/sim";
 import { ledgerFrom } from "./events";
 import { describeRow, visibleRows, plainReason } from "./plain";
 
@@ -21,7 +21,7 @@ test("plain wording: refused rows read as sentences, approved approvals are hidd
 });
 
 import { worstCase } from "./plain";
-import { deadEndOf } from "./deadend";
+import { deadEndOf, retryText } from "./deadend";
 import { addOwnerTx, ownerRows } from "./ownerTxs";
 
 test("worst case line names the balance and the allowed sellers", () => {
@@ -49,4 +49,28 @@ test("dead end: lists sellers tried and the one-tap fix (scene 8)", () => {
   assert.equal(d.tried.length, 2);
   assert.deepEqual(d.fix, { cap: 300_000n, topUp: 100_000n });
   assert.equal(deadEndOf([...evs, { type: "payment", pocket: P, at: 3 }], { address: P, cap: 1n, balance: 1n }), null);
+});
+
+test("dead end: Ask again re-sends the owner's sentence with the maximum that now fits", () => {
+  assert.equal(retryText("Search the web for durian export news, max US$0.005, by tonight.", "0.007"), "Search the web for durian export news, max US$0.007, by tonight.");
+  assert.equal(retryText("Buy a durian export report, max US$0.20, by tonight.", "0.30"), "Buy a durian export report, max US$0.30, by tonight.");
+  assert.equal(retryText("Get a report on durian prices.", "0.30"), "Get a report on durian prices. Max US$0.30, by tonight.");
+});
+
+test("dead end on the built-in network: the re-sent sentence buys once the cap is raised (scene 8)", async () => {
+  const OWNER = "0x00000000000000000000000000000000000d0d0d" as Hex;
+  const w = createWorld({ speed: 0, seed: 5, revokeWindowMs: 0 });
+  w.chain.mint(OWNER, parseUsd("5"));
+  const exa = CATALOG.find((s) => s.id === "exa")!;
+  const { pocket } = w.chain.createPocket(OWNER, { agent: SIM_AGENT, cap: parseUsd("0.005"), askAbove: 2n ** 256n - 1n, expiresAt: BigInt(Math.floor(Date.now() / 1000) + 3600), sellers: [exa.payTo] });
+  w.chain.transfer(OWNER, pocket, parseUsd("0.005"));
+  w.subscribe((e) => { const a = e.approval; if (a?.status === "pending" && a.kind === "intent") setTimeout(() => void w.answer(a.id, { approved: true }), 1); });
+  const task = SCENES.find((s) => s.id === "8")!.text;
+  await w.chat(pocket, task);
+  const d = deadEndOf(w.events(0) as any, { address: pocket, cap: parseUsd("0.005"), balance: parseUsd("0.005") })!;
+  assert.ok(d.fix && d.minPrice === parseUsd("0.007"));
+  w.chain.setCap(OWNER, pocket, d.fix.cap);
+  w.chain.transfer(OWNER, pocket, d.fix.topUp);
+  await w.chat(pocket, retryText(task, "0.007"));
+  assert.ok((w.events(0) as any[]).some((e) => e.type === "payment" && e.sellerId === "exa"));
 });

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, type ScrollViewProps } from "react-native";
+import { StyleSheet, View, type ScrollViewProps } from "react-native";
 import Animated, { useAnimatedScrollHandler, type SharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { c } from "../tokens";
@@ -14,6 +14,10 @@ export function Screen({ children, tabs = true, top = true, scrollY, innerRef, .
   const dock = useDockShown(); // the ask dock (above the tab bar, or the pill on a pushed screen) takes room too
   const onScroll = useMinimizeOnScroll(); // scrolling down folds the glass tab bar's labels away
   const track = useAnimatedScrollHandler({ onScroll: (e) => { if (scrollY) scrollY.value = e.contentOffset.y; } }); // feeds a floating BackHeader
+  // a screen may set its own bottom padding; the dock's room goes on top of it, or the dock covers the screen's last button
+  const own = p.contentContainerStyle;
+  const set = StyleSheet.flatten(own)?.paddingBottom;
+  const bottom = typeof set === "number" ? set : (tabs ? TAB_H : 0) + insets.bottom + 24;
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
       <Animated.ScrollView
@@ -21,7 +25,7 @@ export function Screen({ children, tabs = true, top = true, scrollY, innerRef, .
         keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} scrollEventThrottle={16}
         onScroll={tabs ? onScroll : scrollY ? track : undefined}
         {...(p as any)}
-        contentContainerStyle={[{ paddingTop: top ? insets.top + 12 : 0, paddingBottom: (tabs ? TAB_H : 0) + (dock ? DOCK_SPACE : 0) + insets.bottom + 24 }, p.contentContainerStyle]}
+        contentContainerStyle={[{ paddingTop: top ? insets.top + 12 : 0, paddingBottom: (tabs ? TAB_H : 0) + insets.bottom + 24 }, own, { paddingBottom: bottom + (dock ? DOCK_SPACE : 0) }]}
       >
         {children}
       </Animated.ScrollView>

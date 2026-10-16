@@ -26,3 +26,16 @@ test("brain summary from a real built-in run: task, steps, re-plan after Radar, 
   assert.equal(b.memory?.questions[0], "What did the owner ask for that is still open?");
   assert.equal(sourceWords("m:1234abcd"), "You said this");
 });
+
+test("Understood shows only the question that led to the task it shows, not one from an earlier task", () => {
+  const P = "0x00000000000000000000000000000000000000aa";
+  const ap = (at: number, id: string, kind: "intent" | "question", text: string, status = "approved") =>
+    ({ at, type: "approval", pocket: P, approval: { id, pocket: P, kind, text, status } });
+  const asked = ap(1, "q1", "question", "US$0.10 in total or per lookup?");
+  const first = ap(2, "i1", "intent", "Buy: durian deal research");
+  const second = ap(3, "i2", "intent", "Buy: fruit and wine trade report");
+  const name = (id?: string) => String(id);
+  assert.equal(brainOf([asked, first] as any, P, name).lastQuestion, "US$0.10 in total or per lookup?");
+  assert.equal(brainOf([asked, first, second] as any, P, name).lastQuestion, undefined);
+  assert.equal(brainOf([asked] as any, P, name).lastQuestion, "US$0.10 in total or per lookup?");
+});

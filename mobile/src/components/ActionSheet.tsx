@@ -131,7 +131,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
       <SheetScroll contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 16 }} showsVerticalScrollIndicator={false}>
         <View style={{ gap: 4 }}>
           <T v="section">{COPY[mode].title}</T>
-          <T v="body" color="ink2">{COPY[mode].hint}</T>
+          <T v="body" color="ink2">{mode === "revoke" && chosen && chosen.balance === 0n ? "One transaction, signed here." : COPY[mode].hint}</T>
           {mode === "fund" && balances ? <T v="sub" color="muted">Main wallet: {money(balances.usdc)}</T> : null}
         </View>
         {scoped && chosen ? <OnePocket p={chosen} tone={toneFor(pockets, chosen.address)} /> : null}
