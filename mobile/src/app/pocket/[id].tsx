@@ -136,7 +136,7 @@ export default function PocketDetail() {
         {owned && !pocket.revoked ? (
           <Rise index={2} base={90}>
             <View style={{ flexDirection: "row", gap: 10, paddingHorizontal: PAGE_MARGIN, marginTop: 16 }}>
-              <RoundButton icon="plus" label="Add funds" a11y="Add money" onPress={() => setAction({ mode: "fund", pocket: pocket.address })} />
+              <RoundButton icon="plus" label="Add funds" a11y="Add funds from your main wallet" onPress={() => setAction({ mode: "fund", pocket: pocket.address })} />
               <RoundButton icon="arrowIn" label="Return funds" a11y="Return funds" onPress={() => setAction({ mode: "return", pocket: pocket.address })} />
               <RoundButton danger icon="ban" label="Revoke pocket" a11y="Revoke" onPress={() => setAction({ mode: "revoke", pocket: pocket.address })} />
             </View>

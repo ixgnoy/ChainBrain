@@ -146,7 +146,7 @@ function Home({ ready }: { ready: boolean }) {
       <Rise play={play} index={0}>
         <Animated.View style={pulseStyle}>
           <Card pad={20} style={{ marginHorizontal: 16 }}>
-            <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>Agent pockets</T>
+            <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>In agent pockets</T>
             <View style={{ marginTop: 6 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
             <View style={{ height: 1, backgroundColor: c.fill, marginVertical: 16 }} />
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -155,7 +155,6 @@ function Home({ ready }: { ready: boolean }) {
                 <T v="cap" color="muted">Main wallet</T>
                 {balances ? <Money v="row" value={usd(balances.usdc)} /> : <T v="row" color="muted">{loading ? "Loading…" : "—"}</T>}
               </View>
-              <Button label="Fund" icon="plus" small onPress={() => setAction({ mode: "fund" })} />
             </View>
           </Card>
         </Animated.View>
@@ -163,7 +162,7 @@ function Home({ ready }: { ready: boolean }) {
 
       <Rise play={play} index={1}>
         <View style={{ flexDirection: "row", gap: 10, marginHorizontal: 16, marginTop: 12 }}>
-          <Tile icon="arrowIn" label="Add money" onPress={() => setAction({ mode: "fund" })} />
+          <Tile icon="arrowIn" label="Move money" a11y="Move money from your main wallet to a pocket" onPress={() => setAction({ mode: "fund" })} />
           <Tile icon="squarePlus" label="New pocket" auto="home.newPocket" onPress={() => router.push("/create")} />
           {canConnect
             ? <Tile icon="link" label="Connect" tone="blue" a11y="Connect an agent" auto="home.connect" onPress={() => router.push("/connect")} />
