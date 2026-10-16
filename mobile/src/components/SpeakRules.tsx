@@ -95,7 +95,7 @@ export function SpeakRules({ onUse }: { onUse(d: Draft): void }) {
             </View>
           ))}
           {res.disagreements.length ? <T v="cap" color="muted">Two AI readings disagreed on {res.disagreements.length} {res.disagreements.length === 1 ? "thing" : "things"}; the stricter value is used. {res.disagreements.map((d) => cleanText(d, 80)).join(". ")}.</T> : null}
-          <T v="cap" color="faint">Read by {res.by === "claude" ? "two independent Claude readings" : "the built-in network's fixed reader"}. The card above is computed, not written by the AI.</T>
+          <T v="cap" color="faint">Read by {res.by === "claude" ? "two independent Claude readings" : "a fixed reader (no AI)"}. The card above is computed, not written by the AI.</T>
           <Button label="Use these rules" onPress={() => { haptic.medium(); onUse(res.draft); }} disabled={!res.draft.sellers.length} />
           {!res.draft.sellers.length ? <T v="cap" color="muted">Pick at least one seller above.</T> : null}
         </Rise>
