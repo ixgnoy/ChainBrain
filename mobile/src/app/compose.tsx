@@ -32,6 +32,7 @@ import { SellerMark } from "../ui/SellerMark";
 import { PAGE_MARGIN, pageCardWidth } from "../components/CardFlight";
 import { txError } from "../components/ActionSheet";
 import { AppHeader, PocketApp, type AppCtx } from "../components/app/PocketApp";
+import { Understood } from "../components/app/Understood";
 import { LAYOUT_NAME, agentName } from "../components/app/theme";
 import { startFlight } from "../ui/cardFlight";
 import { uniqueName } from "./create";
@@ -171,6 +172,7 @@ export default function Compose() {
         <Card pad={16} style={{ marginHorizontal: PAGE_MARGIN, gap: 12 }}>
           <Field value={text} onChangeText={(t) => setText(t.slice(0, 300))} placeholder={EXAMPLES[0].text} multiline accessibilityLabel="What the pocket is for, in one sentence"
             style={{ minHeight: 128, paddingVertical: 14, fontSize: 17, lineHeight: 24, textAlignVertical: "top" }} />
+          <Understood text={text} sellers={sellers} />
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {EXAMPLES.map((e) => (
               <Press key={e.label} haptics="select" scale={0.96} onPress={() => { setText(e.text); void compose(e.text); }} accessibilityRole="button" accessibilityLabel={`Example: ${e.label}`}

@@ -142,3 +142,61 @@ Screenshots: `screenshots/pocket-apps/ios-*.png`.
 - 60 fps in Expo Go on a device, since the Simulator is not a frame-rate reference;
 - Dynamic Type at accessibility sizes on iOS (the layouts use `minHeight` and wrap, but this wasn't looked at on a device);
 - the real Face ID sheet's wording in Expo Go on a device. The copy there says "your passcode", because Expo Go has no Face ID usage text.
+
+## Loop 4: first glance for judges (17 Oct 2026)
+
+The brief for this round: judges see the app for a few seconds, so Home has to show what ChainBrain is before anyone scrolls.
+
+### Home: which layout shows 7 pockets at a glance
+
+The seeded owner has seven pockets. The fanned deck showed four, and Home put it below the balance card and the tiles, so on an iPhone 17 it started near the fold. We compared five layouts.
+
+| Layout | Pockets visible | First-glance read | Verdict |
+|---|---|---|---|
+| Vertical wallet stack (Apple Wallet) | all 7, as strips; the front card whole | "a wallet of cards" | **chosen** |
+| Horizontal carousel (snap, scale, parallax) | 1–2 | one hero card | good for a detail view, not Home; its swipe fights the page |
+| Fanned deck plus "See all" grid | 4, then a second screen | pretty, but hides three | what we had |
+| Two-column mini-card grid | all | a dashboard | the most generic look |
+| 2025–26 fintech homes (Revolut 10 and others) | — | — | no verified source on their card layouts |
+
+Sources and facts checked:
+- Apple Wallet's stack is the pattern people already know. The best-known React Native reference, Brent Vatne's `apple-wallet-cards-example`, is from 2016 and has no licence, so we read it and copied nothing. The tutorial write-up describes its structure: one container, the scroll offset driving each card's `translateY`.
+- `tarikfp/react-native-apple-wallet-animation` is MIT but targets an older Reanimated. We used it as reading material only and copied no code.
+- Google Wallet moved to a vertical stack, and coverage criticised look-alike neighbouring cards (gadgethacks). That is why neighbours here never share a face when the pockets allow it.
+
+What we built (`PocketWallet.tsx`):
+- Each card shows its name row plus 5 pt of its stripe. That stops just above the agent's white pill: at 8 pt, a sliver of the pill showed as a stray white line, which we caught in the simulator.
+- The front card shows whole.
+- Order: revoked pockets go to the back. From the front upward, each next card is the first in list order whose face differs from the card below it.
+- On launch the cards drop in back to front, 70 ms apart, tipping flat as they land (rotateX on an inner view).
+- A pull on Home fans the strips apart, with one tick as they open fully.
+- Tapping any card flies it to its page. The card is now the page card's width, so the flight only moves it.
+- All motion is transforms on the UI thread. Reduce Motion turns off the drop and the fan.
+
+The live sign in each card's corner (`glyphOf`, shared) replaces the static strip, so the stack says the pockets are alive:
+- a price watch: its last 16 quotes as a sparkline, the limit dashed, the newest dot vermillion at or below the limit;
+- a routine: the next run ("Mon 09:00");
+- a run in progress: a breathing dot;
+- a paused routine: "Paused";
+- a haggler: what it saved.
+
+A card with none of these shows its balance, as Wallet strips do. Every figure comes from events. A plain pocket gets no invented sign, and a test checks that.
+
+"Next up" (`NextUp.tsx`):
+- Each routine's next run, soonest first, the first tile inverted. The idea is Monzo's upcoming payments (monzo.com/blog/balance-in-trends), which ChainBrain can do exactly because it knows the schedule.
+- The cost is the items' listed prices, or a price watch's limit. "Asks you" shows only when the run would pass what is left of the period's allowance, the same test the runner uses before it raises the cheque.
+
+### New pocket app: understanding while typing
+
+Todoist's Quick Add highlights the dates it recognises as you type (Todoist help). We considered the mirror-text technique (a styled `<Text>` behind a transparent `TextInput`) and rejected it for now: on iOS the multiline input's insets and dynamic type make alignment fragile.
+
+Instead, chips pop in under the box (`Understood.tsx`, `shared/sim/understand.ts`):
+- The app type comes first, shown as a tiny card in that job's face.
+- Then sellers and agents with their official marks, the schedule, the money, the limit, and when it asks.
+- Each new chip gets one selection tick.
+- The parse uses the same rules as the fixed reader and the picker, so what lights up is what Compose uses. Words match whole: "exactly" is not Exa.
+- In the simulator, the price-limit words ("drops below") were taken by the limit chip, so the deal-watcher chip never showed. The app type is now always a chip of its own, not a span.
+
+### Pocket page tabs: considered, not done
+
+Splitting the pocket page into "App" and "Rules & history" tabs would shorten it, but it would hide the signed rules and the worst case behind a tap. Those are the trust story. They stay on the page, in order, below the app.

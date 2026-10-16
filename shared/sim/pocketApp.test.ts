@@ -6,8 +6,9 @@ import { sellers } from "./catalog";
 import { seedOwner } from "./seed";
 import { parseSentence, stricterDraft } from "./speak";
 import { available, nextRun, periodWindow, pickApp, stricterRoutine, validateSpec, cadenceText, cleanLabel, catalogPrompt, type RoutineSpec } from "./pocketApp";
-import { appFromEvents, budgetOf, priceChanges, priceSeries, purchasesOf, routineFromEvents, runsOf, monthBySeller, renewalsOf, sourcesOf, haggleOf } from "./pocketAppData";
+import { appFromEvents, glyphOf, budgetOf, priceChanges, priceSeries, purchasesOf, routineFromEvents, runsOf, monthBySeller, renewalsOf, sourcesOf, haggleOf } from "./pocketAppData";
 import { BAD_SPECS, GOOD_SPECS } from "./pocketApp.fixtures";
+import { understand } from "./understand";
 import { parseUsd } from "./util";
 import type { Hex } from "./types";
 
@@ -200,4 +201,41 @@ test("console seeding: the presenter's routine runs keep their scheduled times (
   const quotes = w.events(0).filter((e) => e.type === "quote");
   assert.ok(quotes.length >= 10);
   for (const q of quotes) assert.equal(new Date(q.at + 8 * 3_600_000).getUTCHours(), 8, `quote at ${new Date(q.at).toISOString()}`);
+});
+
+test("card glyphs: the deal watcher shows its latest quote, a routine its next run, a plain pocket nothing", async () => {
+  const w = createWorld({ speed: 0, seed: 1 });
+  const s = await seedOwner(w, OWNER);
+  const by = (n: string) => s.pockets.find((p) => p.name === n)!;
+  const ev = w.events(0);
+  const g = (n: string) => glyphOf(ev, by(n).address, { layout: by(n).app?.layout, routine: w.routine(by(n).address), now: w.now() });
+  const deal = g("Durian watch");
+  assert.equal(deal?.kind, "price");
+  if (deal?.kind === "price") {
+    assert.equal(deal.limit, 40_000n);
+    assert.equal(deal.price, priceSeries(ev, by("Durian watch").address, { now: w.now(), days: 14 }).quotes.at(-1)!.price, "the newest quote, from events");
+    assert.ok(deal.series.length >= 10 && deal.series.length <= 16);
+  }
+  const ren = g("Data renewals");
+  assert.equal(ren?.kind, "next");
+  if (ren?.kind === "next") { assert.equal(ren.what, "renewal"); assert.ok(ren.at > w.now()); }
+  assert.equal(g("Research data"), null, "no routine, no glyph: nothing invented");
+  assert.equal(g("Premium reports"), null, "nothing haggled yet");
+  w.pauseRoutine(by("Data renewals").address, true);
+  assert.equal(g("Data renewals")?.kind, "paused");
+});
+
+test("live understanding: what lights up while typing is what Compose reads", () => {
+  const reg = sellers();
+  const u = understand("Every morning, get me durian export news from Exa and the USDC price from CoinGecko. Max US$0.05 a week.", reg);
+  assert.deepEqual(u.chips.map((c) => [c.kind, c.label]), [["app", "Research desk"], ["schedule", "Every day at 08:00"], ["seller", "Exa"], ["seller", "CoinGecko"], ["period", "US$0.05 a week"]]);
+  assert.equal(u.layout, "research");
+  const d = understand("Let Claude buy Nansen's smart-money flows every morning when the price drops below US$0.04. Max US$0.20 a week.", reg);
+  assert.deepEqual(d.chips.map((c) => c.kind), ["app", "agent", "seller", "schedule", "limit", "period"]);
+  assert.equal(d.chips[0].label, "Deal watcher");
+  assert.equal(d.agent, "claude");
+  assert.equal(d.layout, "deal");
+  // whole words only: "exactly" is not Exa; spans never overlap
+  assert.equal(understand("exactly that", reg).chips.length, 0);
+  for (const x of [u, d]) for (let i = 1; i < x.spans.length; i++) assert.ok(x.spans[i].start >= x.spans[i - 1].end);
 });
