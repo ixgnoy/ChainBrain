@@ -2,6 +2,8 @@
 // Label fades out by 55 % of travel, the grip squashes/stretches with finger speed (max 0.08), a selection tick every 25 % of
 // travel, commit on release at >= 90 % or a fling > 800 pt/s past 60 % (Rigid + the grip snaps to the end), then a pending
 // state (never shorter than 300 ms) and the done state. Below the threshold the grip springs home with the release velocity.
+// No drag needed (WCAG 2.5.7): a tap arms it ("Tap again to confirm", the grip steps forward) and a second tap within 6 s
+// commits, so one stray tap never does; VoiceOver and Switch Control get the same commit as an "activate" action.
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -16,6 +18,7 @@ import { autoplayAlive, autoplayRun, useAutoplayTarget, type TargetName } from "
 
 const THUMB = 52, PAD = 5; // track 62 px (Stitch approve sheet): black track, vermillion grip, white label
 const MIN_PENDING_MS = 300;
+const ARM_MS = 6000;
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, disabled, auto }: {
@@ -33,9 +36,12 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, d
   const sx = useSharedValue(0);
   const lastTick = useSharedValue(0);
   const drag = useSharedValue(false);
+  const arm = useSharedValue(0);
+  const [armed, setArmed] = useState(false);
+  const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const max = Math.max(w - THUMB - PAD * 2, 1);
   const mounted = useRef(true);
-  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => () => { mounted.current = false; if (armTimer.current) clearTimeout(armTimer.current); }, []);
 
   const fire = useCallback(async () => {
     setState("busy");
@@ -87,11 +93,35 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, d
 
   const commit = () => { "worklet"; scheduleOnRN(haptic.rigid); x.value = withSpring(max, { ...motion.spring.snappy, velocity: 0 }); scheduleOnRN(fire); };
 
+  // the tap path: first tap arms (the grip steps a quarter of the way, the label asks for a second tap), second tap commits
+  const disarm = useCallback(() => {
+    if (armTimer.current) clearTimeout(armTimer.current);
+    armTimer.current = null;
+    setArmed(false);
+    arm.value = withTiming(0, { duration: motion.fast });
+  }, [arm]);
+  const onTap = useCallback(() => {
+    if (disabled || stateNow.current !== "idle") return;
+    if (!armTimer.current) {
+      haptic.select();
+      setArmed(true);
+      arm.value = withTiming(1, { duration: motion.fast });
+      x.value = reduce ? max * 0.25 : withSpring(max * 0.25, motion.spring.snappy);
+      armTimer.current = setTimeout(() => { armTimer.current = null; setArmed(false); arm.value = withTiming(0, { duration: motion.fast }); x.value = reduce ? 0 : withSpring(0, motion.spring.release); }, ARM_MS);
+      return;
+    }
+    disarm();
+    haptic.rigid();
+    x.value = withSpring(max, { ...motion.spring.snappy, velocity: 0 });
+    void fire();
+  }, [disabled, reduce, max, x, arm, fire, disarm]);
+  const tap = Gesture.Tap().enabled(!disabled && state === "idle").maxDuration(500).onEnd((_e, ok) => { if (ok) scheduleOnRN(onTap); });
+
   const pan = Gesture.Pan()
     .enabled(!disabled && state === "idle")
     .activeOffsetX([-4, 4])
     .failOffsetY([-16, 16])
-    .onStart(() => { drag.value = true; lastTick.value = 0; scheduleOnRN(haptic.light); })
+    .onStart(() => { drag.value = true; lastTick.value = 0; scheduleOnRN(haptic.light); scheduleOnRN(disarm); })
     .onUpdate((e) => {
       x.value = Math.min(Math.max(e.translationX, 0), max);
       stretch.value = withTiming(Math.min(Math.abs(e.velocityX) / 2500, 1) * 0.08, { duration: 90 });
@@ -106,7 +136,8 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, d
 
   const fill = useAnimatedStyle(() => ({ width: x.value + THUMB + PAD * 2, opacity: interpolate(x.value, [0, 12], [0, 1], Extrapolation.CLAMP) }));
   const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }, { scaleX: 1 + stretch.value }, { scaleY: 1 - stretch.value * 0.75 }] }));
-  const labelStyle = useAnimatedStyle(() => ({ opacity: interpolate(x.value, [0, max * 0.55], [1, 0], Extrapolation.CLAMP) * (1 - done.value) }));
+  const labelStyle = useAnimatedStyle(() => ({ opacity: interpolate(x.value, [0, max * 0.55], [1, 0], Extrapolation.CLAMP) * (1 - done.value) * (1 - arm.value) }));
+  const armStyle = useAnimatedStyle(() => ({ opacity: arm.value * (1 - pend.value) * (1 - done.value) }));
   const pending = useAnimatedStyle(() => ({ opacity: pend.value }));
   const spinner = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
   const check = useAnimatedStyle(() => ({ opacity: done.value, transform: [{ scale: 0.4 + done.value * 0.6 }] }));
@@ -115,10 +146,10 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, d
 
   const R = (THUMB + PAD * 2) / 2;
   return (
-    <GestureDetector gesture={pan}>
+    <GestureDetector gesture={Gesture.Race(pan, tap)}>
       <Animated.View
         onLayout={(e) => setW(e.nativeEvent.layout.width)}
-        accessible accessibilityRole="button" accessibilityLabel={label}
+        accessible accessibilityRole="button" accessibilityLabel={label} accessibilityHint="Slide the grip to the end, or tap twice"
         accessibilityState={{ disabled: !!disabled, busy: state === "busy" }}
         accessibilityActions={[{ name: "activate" }]}
         onAccessibilityAction={() => { if (!disabled && state === "idle") { haptic.rigid(); x.value = withSpring(max, motion.spring.snappy); void fire(); } }}
@@ -131,6 +162,9 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, d
             <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: c.white, textTransform: "uppercase", letterSpacing: 0.4, fontSize: 15 }}>{label}</T>
             <Icon name="chevronRight" size={16} color="rgba(255,255,255,0.55)" stroke={2.4} />
           </View>
+        </Animated.View>
+        <Animated.View pointerEvents="none" style={[{ position: "absolute", left: THUMB + PAD * 2 + max * 0.25, right: 16, alignItems: "center" }, armStyle]}>
+          <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ color: c.white, fontSize: 15 }}>{armed ? "Tap again to confirm" : ""}</T>
         </Animated.View>
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 0, right: THUMB + PAD * 2, alignItems: "center" }, pending]}>
           <T v="label" style={{ color: c.white, fontSize: 15 }}>Signing…</T>

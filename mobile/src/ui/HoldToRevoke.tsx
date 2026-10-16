@@ -1,6 +1,7 @@
 // Hold-to-revoke kill switch (ideas from react-bits Micro/HoldButton, MIT). A 1.2 s hold fills the bar and ring (near-linear with
 // a touch of ease-in resistance). Haptics: Light at touch-down, selection ticks at 25/50/75 %, Medium at 90 %, Warning on complete
-// followed by a quiet pulse. Letting go early drains the fill back in 200 ms. Pressed scale 0.97.
+// followed by a quiet pulse. Letting go early drains the fill back in 200 ms. Pressed scale 0.97. No hold needed either: a tap
+// arms it ("Tap again to revoke", the bar fills a third) and a second tap within 6 s completes it; VoiceOver gets "activate".
 import React, { useCallback } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -18,6 +19,7 @@ const ACircle = Animated.createAnimatedComponent(Circle);
 const HOLD_MS = 1200;
 const FILL_EASE = Easing.bezier(0.32, 0.1, 0.72, 0.9); // nearly linear, slight resistance at the start
 const R = 15, CIRC = 2 * Math.PI * R;
+const ARM_MS = 6000;
 
 export function HoldToRevoke({ onComplete, label = "Hold to revoke", disabled, busy, auto }: { onComplete: () => void | Promise<unknown>; label?: string; disabled?: boolean; busy?: boolean; /** auto-play target: the real 1.2 s hold, then the same completion */ auto?: TargetName }) {
   const reduce = useReduceMotion();
@@ -27,6 +29,9 @@ export function HoldToRevoke({ onComplete, label = "Hold to revoke", disabled, b
   const stage = useSharedValue(0);
   const finished = useSharedValue(false);
   const [w, setW] = React.useState(0);
+  const [armed, setArmed] = React.useState(false);
+  const armTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(() => () => { if (armTimer.current) clearTimeout(armTimer.current); }, []);
   const complete = useCallback(() => { haptic.warning(); return onComplete(); }, [onComplete]);
   const completeNow = React.useRef(complete);
   completeNow.current = complete;
@@ -77,16 +82,35 @@ export function HoldToRevoke({ onComplete, label = "Hold to revoke", disabled, b
       p.value = finished.value ? withTiming(0, { duration: 500, easing: EASE_OUT }) : withTiming(0, { duration: 200, easing: EASE_OUT });
     });
 
+  // the tap path: first tap arms, second completes
+  const onTap = useCallback(() => {
+    if (disabled || busy) return;
+    if (!armTimer.current) {
+      haptic.select();
+      setArmed(true);
+      p.value = withTiming(0.33, { duration: 220, easing: EASE_OUT });
+      armTimer.current = setTimeout(() => { armTimer.current = null; setArmed(false); p.value = withTiming(0, { duration: 200, easing: EASE_OUT }); }, ARM_MS);
+      return;
+    }
+    clearTimeout(armTimer.current);
+    armTimer.current = null;
+    setArmed(false);
+    finished.value = true;
+    p.value = withSequence(withTiming(1, { duration: 180, easing: EASE_OUT }), withTiming(0, { duration: 500, easing: EASE_OUT }));
+    void complete();
+  }, [disabled, busy, p, finished, complete]);
+  const tap = Gesture.Tap().enabled(!disabled && !busy).maxDuration(400).onEnd((_e, ok) => { if (ok) scheduleOnRN(onTap); });
+
   const bar = useAnimatedStyle(() => ({ width: p.value * w }));
   const ring = useAnimatedProps(() => ({ strokeDashoffset: CIRC * (1 - p.value) }));
   const press = useAnimatedStyle(() => ({ transform: [{ scale: scale.value * (1 + pulse.value * 0.012) }] }));
   const glow = useAnimatedStyle(() => ({ opacity: pulse.value * 0.18 }));
 
   return (
-    <GestureDetector gesture={g}>
+    <GestureDetector gesture={Gesture.Exclusive(g, tap)}>
       <Animated.View
         onLayout={(e) => setW(e.nativeEvent.layout.width)}
-        accessible accessibilityRole="button" accessibilityLabel={label} accessibilityHint="Press and hold for a moment to revoke"
+        accessible accessibilityRole="button" accessibilityLabel={label} accessibilityHint="Press and hold for a moment, or tap twice"
         accessibilityState={{ disabled: !!(disabled || busy), busy: !!busy }}
         accessibilityActions={[{ name: "activate" }]}
         onAccessibilityAction={(e) => { if (e.nativeEvent.actionName === "activate" && !disabled && !busy) complete(); }}
@@ -102,7 +126,7 @@ export function HoldToRevoke({ onComplete, label = "Hold to revoke", disabled, b
             </Svg>
             <Icon name="lock" size={15} color={c.negative} />
           </View>
-          <T v="row" w="semi" color="negative">{busy ? "Revoking…" : label}</T>
+          <T v="row" w="semi" color="negative">{busy ? "Revoking…" : armed ? "Tap again to confirm" : label}</T>
         </View>
       </Animated.View>
     </GestureDetector>
