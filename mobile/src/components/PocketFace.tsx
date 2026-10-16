@@ -6,7 +6,7 @@
 // a lock; when it happens in view the face cross-fades, the card dips and the phone gives a Warning tick.
 import React, { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { c, deck, level3, motion, type DeckFace } from "../tokens";
 import { haptic } from "../haptics";
 import { Money } from "../ui/Money";
@@ -24,6 +24,8 @@ import { contractTail, money, usd } from "../lib/util";
 import { agentInfo } from "../../../shared/sim/agents";
 import type { Layout } from "../../../shared/sim/pocketApp";
 import { FACE, LAYOUT_NAME } from "./app/theme";
+import { glyphKey, type Glyph } from "../../../shared/sim/pocketAppData";
+import Svg, { Circle, Polyline } from "react-native-svg";
 import type { Pocket } from "../store";
 import { isExpired } from "./PocketCard";
 
@@ -43,12 +45,14 @@ export function toneFor(pockets: { address: string; app?: { layout: Layout } }[]
 export const faceOf = (tone: Tone): DeckFace => deck[((tone % deck.length) + deck.length) % deck.length];
 const FROZEN: DeckFace = deck[3];
 
-function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, tilt, still, draft }: { pocket: Pocket; width: number; tone: Tone; /** Warning haptic when it freezes in view */ buzz?: boolean;
+function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, tilt, still, draft, glyph, peek }: { pocket: Pocket; width: number; tone: Tone; /** Warning haptic when it freezes in view */ buzz?: boolean;
   /** lean with the phone (the one card in focus: the pocket page, the front of the deck) */ tilt?: boolean;
   /** the level-3 card shadow (DESIGN.md: fanned cards) */ shadow?: boolean;
   /** the screen showing this card is in front: a freeze that happened while it was away plays when it comes back */ focused?: boolean;
   /** no material layer (the flying copy, small thumbnails) */ still?: boolean;
-  /** not on-chain yet (the compose preview): no contract number */ draft?: boolean }) {
+  /** not on-chain yet (the compose preview): no contract number */ draft?: boolean;
+  /** the live sign in the top corner (Home's wallet stack shows only each card's top strip) */ glyph?: Glyph | null;
+  /** only the top strip shows: without a live sign, the corner carries the balance */ peek?: boolean }) {
   const reduce = useReduceMotion();
   const h = cardHeight(width);
   const k = Math.min(1, width / 340);
@@ -105,7 +109,7 @@ function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, til
       <Animated.View style={[{ position: "absolute", left: 0, top: 0, width, height: h, borderRadius: R, borderCurve: "continuous", backgroundColor: off ? FROZEN.edge : face.edge } as object, shadow ? level3 : null, edgeStyle]} />
       <View style={{ width, height: h, borderRadius: R, overflow: "hidden", borderCurve: "continuous" } as object}>
         <Animated.View style={[{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }, live]}>
-          <Print pocket={pocket} name={name} agent={agent?.name} agentId={pocket.agentId} face={face} k={k} w={width} h={h} still={still} draft={draft} />
+          <Print pocket={pocket} name={name} agent={agent?.name} agentId={pocket.agentId} face={face} k={k} w={width} h={h} still={still} draft={draft} glyph={glyph} peek={peek} />
         </Animated.View>
         {deadOn ? (
           <Animated.View pointerEvents={off ? "auto" : "none"} style={[{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }, dead]}>
@@ -119,7 +123,7 @@ function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, til
 /** Memoised: its props are stable store values, so a new event or ask elsewhere leaves it alone. `focused` only matters to
  *  a card that is off (a freeze seen late plays on return), so a live card ignores it: leaving Home must not redraw the deck. */
 export const PocketFace = React.memo(PocketFaceView, (a, b) =>
-  a.pocket === b.pocket && a.width === b.width && a.tone === b.tone && a.buzz === b.buzz && a.shadow === b.shadow && a.tilt === b.tilt && a.still === b.still && a.draft === b.draft &&
+  a.pocket === b.pocket && a.width === b.width && a.tone === b.tone && a.buzz === b.buzz && a.shadow === b.shadow && a.tilt === b.tilt && a.still === b.still && a.draft === b.draft && glyphKey(a.glyph ?? null) === glyphKey(b.glyph ?? null) && a.peek === b.peek &&
   (a.focused === b.focused || !(b.pocket.revoked || !!b.pocket.frozen || isExpired(b.pocket))));
 
 const R = 18;
@@ -137,7 +141,7 @@ export const expiryText = (expiresAt: bigint | number) => {
 
 /** The print, VaultBank's card anatomy: the pocket name, a stripe across the card carrying the holding agent on a white pill,
  *  the balance, the pocket's rules in one line, and the short pocket number big at the bottom with the expiry. */
-function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draft }: { pocket: Pocket; name: string; agent?: string; agentId?: string; face: DeckFace; k: number; w: number; h: number; state?: string; still?: boolean; draft?: boolean }) {
+function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draft, glyph, peek }: { pocket: Pocket; name: string; agent?: string; agentId?: string; face: DeckFace; k: number; w: number; h: number; state?: string; still?: boolean; draft?: boolean; glyph?: Glyph | null; peek?: boolean }) {
   const ask = pocket.askAbove === NEVER || pocket.askAbove > pocket.cap ? "never asks" : pocket.askAbove === 0n ? "asks every time" : `asks above ${money(pocket.askAbove)}`;
   const tail = contractTail(pocket.address);
   const ink = state ? c.muted : face.ink;
@@ -158,6 +162,8 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draf
             <Icon name="lock" size={12} color={c.vermillionInk} stroke={2.2} />
             <T v="tab" style={{ color: c.vermillionInk, textTransform: "uppercase", letterSpacing: 0.8 }}>{state}</T>
           </View>
+        ) : glyph ? <CardGlyph g={glyph} face={face} /> : peek ? (
+          <T v="row" w="bold" style={{ color: ink, fontVariant: ["tabular-nums"] }} accessibilityElementsHidden>{money(pocket.balance)}</T>
         ) : null}
       </View>
       {/* the stripe, with the agent that holds the pocket on a white pill */}
@@ -190,4 +196,54 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draf
     </View>
     </TextScaleCap>
   );
+}
+
+const hm = (ms: number) => new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+/** "08:00" today, "Tue 08:00" after. */
+const when = (ms: number) => (new Date(ms).toDateString() === new Date().toDateString() ? hm(ms) : `${new Date(ms).toLocaleDateString("en-GB", { weekday: "short" })} ${hm(ms)}`);
+
+/** The live sign in a card's top corner, on the card's own chip colour. Every figure is from the events (glyphOf). */
+function CardGlyph({ g, face }: { g: Glyph; face: DeckFace }) {
+  const ink = face.ink;
+  const label = g.kind === "price" ? `Latest price ${money(g.price)}${g.below ? ", at or below your limit" : ""}`
+    : g.kind === "next" ? `Next ${g.what} ${when(g.at)}` : g.kind === "running" ? `Run ${g.run} going on now` : g.kind === "paused" ? "Routine paused" : `Saved ${money(g.saved)}`;
+  return (
+    <View accessible accessibilityLabel={label} style={{ minHeight: 26, paddingLeft: 8, paddingRight: 9, borderRadius: 13, backgroundColor: face.chip, flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 0 }}>
+      {g.kind === "price" ? <Spark series={g.series} limit={g.limit} color={ink} hot={g.below} /> : null}
+      {g.kind === "next" ? <Icon name="clock" size={12} color={ink} stroke={2.2} /> : null}
+      {g.kind === "paused" ? <Icon name="pause" size={12} color={ink} stroke={2.2} /> : null}
+      {g.kind === "running" ? <Live /> : null}
+      <T v="cap" w="semi" style={{ color: ink, fontVariant: ["tabular-nums"] }} numberOfLines={1}>
+        {g.kind === "price" ? money(g.price) : g.kind === "next" ? when(g.at) : g.kind === "running" ? `Run ${g.run}` : g.kind === "paused" ? "Paused" : `Saved ${money(g.saved)}`}
+      </T>
+    </View>
+  );
+}
+
+/** The last quotes as a 40 x 14 line, the limit dashed under it, the newest point dotted (vermillion at or below the limit). */
+function Spark({ series, limit, color, hot }: { series: bigint[]; limit?: bigint; color: string; hot: boolean }) {
+  const W = 40, H = 14;
+  const vals = series.map(Number);
+  const all = limit != null ? [...vals, Number(limit)] : vals;
+  const lo = Math.min(...all), hi = Math.max(...all);
+  const y = (v: number) => (hi === lo ? H / 2 : 1.5 + (H - 3) * (1 - (v - lo) / (hi - lo)));
+  const x = (i: number) => (vals.length < 2 ? W / 2 : 1.5 + ((W - 5) * i) / (vals.length - 1));
+  const pts = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const last = vals.length - 1;
+  return (
+    <Svg width={W} height={H}>
+      {limit != null ? <Polyline points={`0,${y(Number(limit)).toFixed(1)} ${W},${y(Number(limit)).toFixed(1)}`} stroke={color} strokeOpacity={0.45} strokeWidth={1} strokeDasharray="2,2" fill="none" /> : null}
+      <Polyline points={pts} stroke={color} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" fill="none" />
+      {last >= 0 ? <Circle cx={x(last)} cy={y(vals[last])} r={2.4} fill={hot ? c.vermillion : color} stroke={hot ? c.white : "none"} strokeWidth={hot ? 1 : 0} /> : null}
+    </Svg>
+  );
+}
+
+/** A small dot that breathes while a run is going on (still under Reduce Motion). */
+function Live() {
+  const reduce = useReduceMotion();
+  const o = useSharedValue(1);
+  useEffect(() => { if (!reduce) o.value = withRepeat(withSequence(withTiming(0.35, { duration: 600 }), withTiming(1, { duration: 600 })), -1); }, [reduce, o]);
+  const st = useAnimatedStyle(() => ({ opacity: o.value }));
+  return <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.vermillion }, st]} />;
 }

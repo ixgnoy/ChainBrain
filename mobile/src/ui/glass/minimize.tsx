@@ -34,11 +34,12 @@ export function setMinimized(state: MinimizeState, next: 0 | 1) {
 }
 
 /** Animated.ScrollView onScroll: scrolling down folds the labels away, scrolling up or near the top brings them back. */
-export function useMinimizeOnScroll() {
+export function useMinimizeOnScroll(scrollY?: SharedValue<number>) {
   const state = useMinimizeState();
   const previousY = useSharedValue(0);
   return useAnimatedScrollHandler({
     onScroll: (e) => {
+      if (scrollY) scrollY.value = e.contentOffset.y; // raw, overscroll included (Home's wallet stack spreads on a pull)
       const maxY = Math.max(e.contentSize.height - e.layoutMeasurement.height, 0);
       const y = Math.min(Math.max(e.contentOffset.y, 0), maxY); // ignore rubber-band overscroll
       const dy = y - previousY.value;

@@ -70,9 +70,9 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Give your AI a pocket, not your wallet").waitFor();
     check("intro page 1 shows the pitch line with Skip", true);
     await shot("00-intro");
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click(); // exact: Home's "Next up" tiles say "next run"
     await visible("The limits live in a contract you own").waitFor();
-    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click(); // exact: Home's "Next up" tiles say "next run"
     await visible("The worst case is the pocket balance").waitFor();
     check("intro pages 2 and 3 are reachable and Skip stays visible", await skip.isVisible());
     await skip.click();
@@ -96,7 +96,9 @@ async function until(what, fn, ms = 30000, step = 200) {
   });
 
   await run("tap a card: it opens the pocket page", async () => {
-    await page.getByRole("button", { name: /Research data pocket/ }).click({ position: { x: 120, y: 24 } }); // the visible header strip
+    const card = page.getByRole("button", { name: /Research data pocket/ });
+    await card.evaluate((e) => e.scrollIntoView({ block: "center" })); // the front card of the stack: clear of the tab bar and the ask dock
+    await card.click({ position: { x: 120, y: 24 } }); // its name row
     await page.waitForURL(/pocket\/0x[0-9a-fA-F]{40}/, { timeout: 15000 });
     await visible("Allowed sellers").waitFor();
     await sleep(900);

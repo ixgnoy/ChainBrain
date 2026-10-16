@@ -1,5 +1,7 @@
-// Home (Stitch chainbrain_home, polish from home_vaultbank_style): the agent-pockets pool and the main wallet, three quick
-// actions, the fanned pocket deck, real agent spending as a hatch curve, and recent activity with the agent that acted.
+// Home (Stitch chainbrain_home, polish from home_vaultbank_style): the agent-pockets pool and the main wallet in one line,
+// then every pocket at first glance as a wallet stack (components/PocketWallet.tsx: each card's name and its live sign, the
+// front card whole), three quick actions, the routines' next runs, real agent spending as a hatch curve, and recent activity
+// with the agent that acted.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RefreshControl, useWindowDimensions, View } from "react-native";
 import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
@@ -15,7 +17,12 @@ import { Reveal as Rise, PopIn } from "../../ui/Reveal";
 import { useReduceMotion } from "../../ui/motion";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
-import { PocketStack } from "../../components/PocketStack";
+import { PocketWallet, stripFor } from "../../components/PocketWallet";
+import { NextUp, nextRuns } from "../../components/NextUp";
+import { pageCardWidth, PAGE_MARGIN } from "../../components/CardFlight";
+import { cardHeight } from "../../components/PocketFace";
+import * as api from "../../lib/api";
+import { glyphOf, type Glyph } from "../../../../shared/sim/pocketAppData";
 import { SpendChart } from "../../components/SpendChart";
 import { useIntroDone } from "../../ui/intro";
 import { ActivityRow } from "../../components/ActivityRow";
@@ -65,15 +72,16 @@ let introPlayed = false;
 /** The intro covers Home on every launch: Home mounts again as it lets go, so its entrance is seen. */
 export default function HomeGate() { const done = useIntroDone(); return <Home key={done ? "live" : "wait"} ready={done} />; }
 
-/** While the pockets are read: the deck's shape in quiet grey, so Home doesn't jump (and never says "no pockets" by mistake). */
+/** While the pockets are read: the stack's shape in quiet grey, so Home doesn't jump (and never says "no pockets" by mistake). */
 function LoadingDeck() {
   const { width } = useWindowDimensions();
-  const cw = Math.min(width, 448) - 48;
-  const h = Math.round(cw / 1.586);
+  const cw = pageCardWidth(width);
+  const h = cardHeight(cw);
+  const strip = stripFor(cw);
   return (
-    <View accessible accessibilityLabel="Loading your pockets" style={{ height: h + 60, alignItems: "center" }}>
-      {[2, 1, 0].map((d) => (
-        <View key={d} style={{ position: "absolute", top: 6 + (2 - d) * 28, width: cw * (1 - d * 0.03), height: h, borderRadius: 18, backgroundColor: d === 0 ? c.tile : c.fill, borderWidth: 1, borderColor: c.tileStroke, transform: [{ rotate: `${[-2, 3, -4][d]}deg` }] }} />
+    <View accessible accessibilityLabel="Loading your pockets" style={{ height: 2 * strip + h + 16 }}>
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={{ position: "absolute", left: PAGE_MARGIN, top: i * strip, width: cw, height: h, borderRadius: 18, backgroundColor: i === 2 ? c.tile : c.fill, borderWidth: 1, borderColor: c.tileStroke }} />
       ))}
     </View>
   );
@@ -125,7 +133,19 @@ function LiveStrip() {
 }
 
 function Home({ ready }: { ready: boolean }) {
-  const { pockets, pocketsLoaded, conn, balances, ledger, setReceipt, setAction, refreshPockets, agentOf, agents, cfg } = useApp();
+  const { pockets, pocketsLoaded, conn, balances, ledger, events, setReceipt, setAction, refreshPockets, agentOf, agents, cfg } = useApp();
+  const scrollY = useSharedValue(0);
+  // the clock the run times count down from: a minute is fine-grained enough for "in 3 h"
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(t); }, []);
+  // each pocket's routine (built-in network) and live sign, read again when events arrive
+  const routines = useMemo(() => new Map(pockets.map((p) => [p.address.toLowerCase(), api.routineOf(p.address)])), [pockets, events.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const glyphs = useMemo(() => {
+    const g: Record<string, Glyph | null> = {};
+    for (const p of pockets) { const a = p.address.toLowerCase(); g[a] = p.revoked ? null : glyphOf(events, p.address, { layout: p.app?.layout, routine: routines.get(a), now }); }
+    return g;
+  }, [pockets, events, routines, now]);
+  const upcoming = useMemo(() => nextRuns(pockets, (a) => routines.get(a.toLowerCase()) ?? null, events, cfg?.sellers ?? [], now), [pockets, routines, events, cfg, now]);
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
   const play = useRef(ready && !introPlayed).current;
@@ -155,27 +175,41 @@ function Home({ ready }: { ready: boolean }) {
   };
 
   return (
-    <Screen contentContainerStyle={{ paddingBottom: TAB_SPACE + insets.bottom + 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={c.ink} colors={[c.ink]} />}>
+    <Screen scrollY={scrollY} contentContainerStyle={{ paddingBottom: TAB_SPACE + insets.bottom + 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={c.ink} colors={[c.ink]} />}>
       <HomeHeader />
       <Rise play={play} index={0}>
         <Animated.View style={pulseStyle}>
-          <Card pad={20} style={{ marginHorizontal: 16 }}>
-            <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>In agent pockets</T>
-            <View style={{ marginTop: 6 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
-            <View style={{ height: 1, backgroundColor: c.fill, marginVertical: 16 }} />
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c.fill, alignItems: "center", justifyContent: "center" }}><Icon name="vault" size={19} stroke={2} /></View>
-              <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ flex: 1 }}>
+          <Card pad={18} style={{ marginHorizontal: 16, flexDirection: "row", alignItems: "flex-end", gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>In agent pockets</T>
+              <View style={{ marginTop: 4 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
+            </View>
+            <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ alignItems: "flex-end", paddingBottom: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <Icon name="vault" size={13} color={c.muted} stroke={2} />
                 <T v="cap" color="muted">Main wallet</T>
-                {balances ? <Money v="row" value={usd(balances.usdc)} /> : <T v="row" color="muted">{loading ? "Loading…" : "—"}</T>}
               </View>
+              {balances ? <Money v="row" value={usd(balances.usdc)} /> : <T v="row" color="muted">{loading ? "Loading…" : "—"}</T>}
             </View>
           </Card>
         </Animated.View>
       </Rise>
 
+
+      <LiveStrip />
+
+      <View style={{ marginTop: 16 }}>
+        {loading ? (
+          <LoadingDeck />
+        ) : pockets.length === 0 ? (
+          <EmptyPockets />
+        ) : (
+          <PocketWallet pockets={pockets} play={play} scrollY={scrollY} glyphs={glyphs} />
+        )}
+      </View>
+
       <Rise play={play} index={1}>
-        <View style={{ flexDirection: "row", gap: 10, marginHorizontal: 16, marginTop: 12 }}>
+        <View style={{ flexDirection: "row", gap: 10, marginHorizontal: 16, marginTop: 4 }}>
           <Tile icon="arrowIn" label="Move money" a11y="Move money from your main wallet to a pocket" onPress={() => setAction({ mode: "fund" })} />
           <Tile icon="squarePlus" label="New pocket" auto="home.newPocket" onPress={() => router.push("/compose")} />
           {canConnect
@@ -184,18 +218,12 @@ function Home({ ready }: { ready: boolean }) {
         </View>
       </Rise>
 
-      <LiveStrip />
-
-      <Rise play={play} index={2}>
-        <SectionHeader title="Active pockets" count={pockets.length || undefined} action={pockets.length && canConnect ? "Agents" : undefined} onAction={() => router.navigate("/agents")} />
-        {loading ? (
-          <LoadingDeck />
-        ) : pockets.length === 0 ? (
-          <EmptyPockets />
-        ) : (
-          <PocketStack pockets={pockets} play={play} />
-        )}
-      </Rise>
+      {upcoming.length ? (
+        <Rise play={play} index={2}>
+          <SectionHeader title="Next up" count={upcoming.length} action={canConnect ? "Agents" : undefined} onAction={() => router.navigate("/agents")} />
+          <NextUp runs={upcoming} now={now} />
+        </Rise>
+      ) : null}
 
       <Rise play={play} index={3} style={{ marginTop: 20 }}>
         <SpendChart ledger={ledger} agentOf={spendAgent} play={ready} />

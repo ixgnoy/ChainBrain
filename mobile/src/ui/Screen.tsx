@@ -12,7 +12,7 @@ import { T } from "./Text";
 export function Screen({ children, tabs = true, top = true, scrollY, innerRef, ...p }: ScrollViewProps & { children: React.ReactNode; tabs?: boolean; top?: boolean; scrollY?: SharedValue<number>; innerRef?: React.Ref<any> }) {
   const insets = useSafeAreaInsets();
   const dock = useDockShown(); // the ask dock (above the tab bar, or the pill on a pushed screen) takes room too
-  const onScroll = useMinimizeOnScroll(); // scrolling down folds the glass tab bar's labels away
+  const onScroll = useMinimizeOnScroll(tabs ? scrollY : undefined); // scrolling down folds the glass tab bar's labels away
   const track = useAnimatedScrollHandler({ onScroll: (e) => { if (scrollY) scrollY.value = e.contentOffset.y; } }); // feeds a floating BackHeader
   // a screen may set its own bottom padding; the dock's room goes on top of it, or the dock covers the screen's last button
   const own = p.contentContainerStyle;

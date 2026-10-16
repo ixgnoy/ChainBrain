@@ -174,3 +174,38 @@ export function routineFromEvents(events: Ev[], pocket: string): Routine | null 
   }
   return r;
 }
+
+export type Glyph =
+  | { kind: "price"; price: bigint; limit?: bigint; below: boolean; series: bigint[] }
+  | { kind: "next"; at: number; what: "run" | "check" | "renewal"; runs: number }
+  | { kind: "running"; run: number }
+  | { kind: "paused" }
+  | { kind: "saved"; saved: bigint };
+/** The small live sign in a pocket card's corner (Home's wallet stack shows only each card's top strip, so this is what
+ *  says the pocket is alive): a price watch's latest quote and its last moves, the next scheduled run, a run going on now,
+ *  a paused routine, or what a haggler saved. From the events and the routine only; null when there is nothing true to say. */
+export function glyphOf(events: Ev[], pocket: string, o: { layout?: string; routine?: Routine | null; now: number }): Glyph | null {
+  const rt = o.routine;
+  if (rt) {
+    const r = runningNow(events, pocket);
+    if (r) return { kind: "running", run: r.run };
+    if (rt.status === "paused") return { kind: "paused" };
+    if (rt.kind === "price-watch") {
+      const q = quotesOf(events, pocket, o.now - 14 * 86_400_000);
+      const last = q.at(-1);
+      if (last) {
+        const limit = last.limit ?? (rt.limitPrice ? big(Math.round(Number(rt.limitPrice) * 1e6)) : undefined);
+        return { kind: "price", price: last.price, ...(limit != null ? { limit } : {}), below: limit != null ? last.price <= limit : last.below, series: q.slice(-16).map((x) => x.price) };
+      }
+    }
+    return { kind: "next", at: rt.nextAt, what: rt.kind === "price-watch" ? "check" : rt.kind === "renewals" ? "renewal" : "run", runs: rt.runs };
+  }
+  if (o.layout === "haggle") {
+    const s = savingsOf(events, pocket);
+    if (s.saved > 0n) return { kind: "saved", saved: s.saved };
+  }
+  return null;
+}
+/** A key that changes only when what the glyph shows changes (memoised cards compare it). */
+export const glyphKey = (g: Glyph | null) =>
+  !g ? "" : g.kind === "price" ? `p${g.price}:${g.limit ?? ""}:${g.series.length}` : g.kind === "next" ? `n${g.at}:${g.runs}` : g.kind === "running" ? `r${g.run}` : g.kind === "saved" ? `s${g.saved}` : "x";
