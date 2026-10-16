@@ -192,20 +192,25 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
       await wait(2400);
       await tap("consent.done", undefined, 6000);
       await wait(2600);
-      const claude = (kind: "intent" | "payment") => (s: HostState) => (s.outside ?? []).some((x) => x.agent === "claude" && x.kind === kind);
+      // only requests that arrive after Claude was connected count (the seeded premium request may still be waiting)
+      const seen = new Set((host.state().outside ?? []).map((x) => x.id));
+      const claude = (kind: "intent" | "payment") => (s: HostState) => (s.outside ?? []).some((x) => x.agent === "claude" && x.kind === kind && !seen.has(x.id));
       await until("Claude's task", claude("intent"), 40_000).catch(soft);
       if (claude("intent")(host.state())) {
         host.navigate("/");
         await wait(2200); // the ask dock rises above the tab bar
-        await must("dock.open");
+        await must("dock.open", { agent: "claude", kind: "intent" });
         await wait(1500);
         await must("intent.confirm");
         await until("Claude's payment request", claude("payment"), 40_000).catch(soft);
         if (claude("payment")(host.state())) {
           await wait(2200);
-          await must("dock.open"); // the card turns over to the cheque
+          await must("dock.open", { agent: "claude", kind: "payment" }); // the card turns over to the cheque
           await wait(2600);
+          const paidBefore = host.state().lastPaymentAt;
           await must("approval.slide");
+          // let Claude's payment settle before scene 9: there Radar flags DataPro, and an unsettled payment would be refused
+          await until("Claude's payment settles", (s) => s.lastPaymentAt > paidBefore, 30_000).catch(soft);
           await wait(3200);
         }
       }

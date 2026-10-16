@@ -57,7 +57,7 @@ test("auto-play: wizard, scenes 1-8, Claude via Connect and the ask dock, then s
     void (async () => { await w.act("claude", pocket, firstRun()); await w.act("claude", pocket, errand({ what: "Durian 2026 forecast", maxPrice: "2.00", maxTotal: "2.00", buys: [["datapro", "premium-report"]] })); })();
   });
   on("consent.done", () => {});
-  on("dock.open", () => { focus = w.approvals().filter((a) => a.status === "pending" && a.agent && a.agent !== "chainbrain").sort((x, y) => (x.createdAt ?? 0) - (y.createdAt ?? 0))[0]?.id; });
+  on("dock.open", (arg) => { focus = w.approvals().filter((a) => a.status === "pending" && a.agent === arg?.agent && a.kind === arg?.kind).sort((x, y) => (y.createdAt ?? 0) - (x.createdAt ?? 0))[0]?.id; });
   on("radar.open", () => {});
   on("deadend.fix", () => {});
   on("rules.slide", () => { w.chain.setCap(OWNER, active, parseUsd("0.30")); w.chain.transfer(OWNER, active, parseUsd("0.10")); });

@@ -30,7 +30,7 @@ export type TargetName =
   | "consent.done"        // consent success: "See Claude" (opens the agent's page)
   | "inbox.open"          // Home header: the bell (opens the Approvals inbox)
   | "inbox.review"        // Approvals inbox: review the first waiting request of agent `arg` (opens the approval sheet)
-  | "dock.open"           // the ask dock above the tab bar: open the outside agent's request (the cheque)
+  | "dock.open"           // the ask dock: open the newest waiting request of `arg` {agent, kind} (the cheque)
   | "radar.open"          // a Radar alert card or row: open the Radar alert page
   | "sheet.close";        // any open sheet that should be dismissed (success screens)
 

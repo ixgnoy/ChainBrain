@@ -18,6 +18,7 @@ import { useReduceMotion } from "../ui/motion";
 import { GLASS_TAB_SPACE } from "../ui/glass/GlassTabBar";
 import { cleanText } from "../lib/sanitize";
 import { authOf, type Approval } from "../lib/events";
+import { useAutoplayTarget } from "../lib/autoplayTargets";
 import { agentInfo } from "../../../shared/sim/agents";
 
 /** Height of the dock plus its gap above the tab bar: what a tab screen adds to its bottom padding while the dock shows. */
@@ -41,6 +42,13 @@ export function AskDock() {
   const first = asks[0];
   const visible = !!first && !approvalOpen;
   useEffect(() => { setShown(visible); }, [visible]);
+  // auto-play opens a precise request (the newest of this agent and kind), so an older ask can't be answered in its place
+  useAutoplayTarget("dock.open", (arg?: { agent?: string; kind?: string }) => {
+    const pick = [...asks].reverse().find((a) => (!arg?.agent || a.agent === arg.agent) && (!arg?.kind || a.kind === arg.kind));
+    if (!pick || approvalOpen) return false;
+    haptic.medium();
+    openApproval(pick.id);
+  });
   useEffect(() => () => setShown(false), []);
   if (!visible) return null;
   const agent = agentInfo(first.agent ?? "");
@@ -73,7 +81,7 @@ function DockBar({ id, a, title, sub, more, agentId, onOpen }: { id: string; a: 
   const ring = useAnimatedStyle(() => ({ opacity: glow.value, transform: [{ scale: 1 + glow.value * 0.25 }] }));
   return (
     <Animated.View style={[{ width: "100%", maxWidth: 448 }, rise]}>
-      <Press kind="row" haptics="none" auto="dock.open" onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${title}. ${sub}. Opens the request`}
+      <Press kind="row" haptics="none" onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${title}. ${sub}. Opens the request`}
         style={{ height: H, borderRadius: 18, borderCurve: "continuous", backgroundColor: c.ink, flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 10, paddingRight: 12, shadowColor: c.ink, shadowOpacity: 0.28, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 10 } as object}>
         <View>
           <Animated.View pointerEvents="none" style={[{ position: "absolute", left: -4, top: -4, right: -4, bottom: -4, borderRadius: 16, borderWidth: 2, borderColor: c.vermillion }, ring]} />
