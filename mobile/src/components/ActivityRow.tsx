@@ -8,6 +8,7 @@ import { SellerMark, hasSellerMark } from "../ui/SellerMark";
 import { agentInfo } from "../../../shared/sim/agents";
 import { Rise } from "../ui/Rise";
 import { Figure, T } from "../ui/Text";
+import { useLargeText } from "../ui/fontScale";
 import { Icon, type IconName } from "../ui/Icon";
 import { cleanText } from "../lib/sanitize";
 import { describeRow } from "../lib/plain";
@@ -37,7 +38,7 @@ export function BrandSquare({ label, icon, tone = "fill", sellerId, badge }: { l
   const t = SQ[tone];
   const face = sellerId && hasSellerMark(sellerId) ? <SellerMark id={sellerId} size={44} radius={12} /> : (
     <View style={{ width: 44, height: 44, borderRadius: 12, borderCurve: "continuous", backgroundColor: t.bg, alignItems: "center", justifyContent: "center" } as ViewStyle}>
-      {icon ? <Icon name={icon} size={20} color={t.fg} stroke={1.75} /> : <T v="head" style={{ color: t.fg, fontSize: 15, lineHeight: 18, letterSpacing: 0.2 }}>{initials(label ?? "?")}</T>}
+      {icon ? <Icon name={icon} size={20} color={t.fg} stroke={1.75} /> : <T v="head" allowFontScaling={false} style={{ color: t.fg, fontSize: 15, lineHeight: 18, letterSpacing: 0.2 }}>{initials(label ?? "?")}</T>}
     </View>
   );
   if (!badge) return face;
@@ -59,6 +60,7 @@ export function TxRow({ square, title, sub, subLead, subTone = "muted", right, r
   right?: string; rightTone?: "ink" | "muted" | "greenInk"; rightSub?: string; rightSubTone?: "muted" | "blueInk" | "vermillionInk" | "greenInk" | "ink2";
   strike?: boolean; onPress?: () => void; a11y?: string; last?: boolean; titleLines?: number;
 }) {
+  const big = useLargeText();
   const body = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 68, paddingLeft: 16, paddingRight: 14, paddingVertical: 10 }}>
       {square}
@@ -67,7 +69,7 @@ export function TxRow({ square, title, sub, subLead, subTone = "muted", right, r
         {sub ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
             {subLead}
-            <T v="sub" color={subTone} numberOfLines={1} style={{ flexShrink: 1, fontSize: 12.5, lineHeight: 17 }}>{sub}</T>
+            <T v="sub" color={subTone} numberOfLines={big ? 2 : 1} style={{ flexShrink: 1, fontSize: 12.5, lineHeight: 17 }}>{sub}</T>
           </View>
         ) : null}
       </View>

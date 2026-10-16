@@ -14,6 +14,7 @@ import { SuccessMark, landingDip } from "../ui/SuccessMark";
 import { SlideToConfirm } from "../ui/SlideToConfirm";
 import { Slider } from "../ui/Slider";
 import { T } from "../ui/Text";
+import { useGrowCap, useLargeText } from "../ui/fontScale";
 import { Icon } from "../ui/Icon";
 import { EASE_OUT, settle, useReduceMotion } from "../ui/motion";
 import { txError } from "../components/ActionSheet";
@@ -90,6 +91,7 @@ function Option({ on, title, sub, onPress, tapRef }: { on: boolean; title: strin
 /** Filter chip whose fill cross-fades grey/teal when it is picked. */
 function PickChip({ label, on, onPress }: { label: string; on?: boolean; onPress: () => void }) {
   const reduce = useReduceMotion();
+  const grow = useGrowCap("body");
   const sel = useSharedValue(on ? 1 : 0);
   React.useEffect(() => { settle(sel, on ? 1 : 0, reduce, motion.spring.snappy); }, [on]); // eslint-disable-line react-hooks/exhaustive-deps
   const box = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(sel.value, [0, 1], [c.card, c.accent]) }));
@@ -97,7 +99,7 @@ function PickChip({ label, on, onPress }: { label: string; on?: boolean; onPress
   return (
     <Press haptics="select" onPress={onPress} scale={0.96} accessibilityRole="button" accessibilityState={{ selected: !!on }} style={{ borderRadius: 9999 }}>
       <Animated.View style={[{ minHeight: 40, paddingHorizontal: 11, borderRadius: 9999, justifyContent: "center" }, box]}>
-        <Animated.Text style={[{ fontFamily: F.semi, fontSize: 14, lineHeight: 20 }, txt]}>{label}</Animated.Text>
+        <Animated.Text maxFontSizeMultiplier={grow} style={[{ fontFamily: F.semi, fontSize: 14, lineHeight: 20 }, txt]}>{label}</Animated.Text>
       </Animated.View>
     </Press>
   );
@@ -106,10 +108,13 @@ function PickChip({ label, on, onPress }: { label: string; on?: boolean; onPress
 const BigNumber = ({ value, suffix }: { value: string; suffix?: string }) => (
   <View style={{ alignItems: "center", gap: 4, paddingVertical: 8 }}><Money v="balance" value={value} />{suffix ? <T v="sub" color="muted">{suffix}</T> : null}</View>
 );
-const Title = ({ h, sub }: { h: string; sub: string }) => (
+const Title = ({ h, sub }: { h: string; sub: string }) => {
+  const big = useLargeText();
+  return (
   // the last two words stay together, so a wide Clash title never leaves one word alone on its second line
-  <View style={{ gap: 6 }}><T v="section" accessibilityRole="header" accessibilityLabel={h} style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>{h.replace(/ (\S+)$/, "\u00a0$1")}</T><T v="body" color="ink2" numberOfLines={3}>{sub}</T></View>
-);
+  <View style={{ gap: 6 }}><T v="section" accessibilityRole="header" accessibilityLabel={h} style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>{h.replace(/ (\S+)$/, "\u00a0$1")}</T><T v="body" color="ink2" numberOfLines={big ? 6 : 3}>{sub}</T></View>
+  );
+};
 
 /** Success: the card rises, the mark draws, the budget rolls in, the two hashes fade up. The first pocket ever gets one soft ring. */
 function Done({ name, budget, createTx, fundTx, first, onOpen }: { name: string; budget: string; createTx?: string; fundTx?: string; first: boolean; onOpen: () => void }) {
@@ -169,6 +174,7 @@ export function uniqueName(base: string, taken: string[]): string {
 export default function Create() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
+  const big = useLargeText();
   const { cfg, wallet, addPocket, balances, refreshPockets, recordTx, setNotice, pockets } = useApp();
   const first = useRef(pockets.length === 0); // the first pocket ever gets the one celebration
   const dir = useRef(1);
@@ -214,7 +220,9 @@ export default function Create() {
   const style = preset === "custom" ? "custom" : styleForPreset(values.label);
 
   const canNext = step === 0 ? name.trim().length > 0 : step === 2 ? sellers.length > 0 : true;
-  const go = (n: number) => { const t = Math.max(0, Math.min(STEPS.length - 1, n)); dir.current = t >= step ? 1 : -1; haptic.select(); setStep(t); };
+  // each step opens at its top (its title), not at the scroll position the last step was left at
+  const scroller = useRef<ScrollView>(null);
+  const go = (n: number) => { const t = Math.max(0, Math.min(STEPS.length - 1, n)); dir.current = t >= step ? 1 : -1; haptic.select(); scroller.current?.scrollTo({ y: 0, animated: false }); setStep(t); };
   const REVIEW = STEPS.length - 1;
   // a preset already sets every limit, so Continue on the first page goes straight to Review (every row there is editable);
   // Custom walks each page. Editing a row from Review comes back to Review.
@@ -309,7 +317,7 @@ export default function Create() {
             <View key={cat} style={{ gap: 10 }}>
               <T v="sub" w="semi" color="muted" accessibilityRole="header" style={{ marginTop: 6 }}>{cleanText(cat, 30)}</T>
               {list.map((s) => (
-                <Option key={s.id} on={sellers.includes(s.id)} onPress={() => toggle(s.id)} title={cleanText(s.name, 40)} sub={s.items.map((i) => (i.price ? `US$${cleanText(i.price, 8)}` : "free")).join(", ")} />
+                <Option key={s.id} on={sellers.includes(s.id)} onPress={() => toggle(s.id)} title={cleanText(s.name, 40)} sub={[...new Set(s.items.map((i) => (i.price ? `US$${cleanText(i.price, 8)}` : "free")))].join(", ")} />
               ))}
             </View>
           ))}
@@ -363,22 +371,26 @@ export default function Create() {
     }
   })();
 
+  // the product's one sentence, live: every choice above changes what a hijacked agent could lose. Pinned over the buttons;
+  // at large text it would take half the screen there, so it follows the step's content instead
+  const worstNote = step > 0 && step < STEPS.length - 1 ? (
+    <View accessibilityLiveRegion="polite" style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", padding: 12, marginBottom: big ? 0 : 6, borderRadius: 16, backgroundColor: c.accentSoft }}>
+      <Icon name="shield" size={16} color={c.accent} />
+      <T v="cap" color="ink2" style={{ flex: 1 }}>{worstCase(parseUsd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
+    </View>
+  ) : null;
+
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
       <BackHeader title={step === STEPS.length - 1 ? "Review" : `${step + 1} of ${STEPS.length}`} muted close onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))} />
       <Stack.Screen options={{ gestureEnabled: stage === "idle" }} />
       <ProgressBar step={step} total={STEPS.length} />
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 12, gap: 22 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scroller} contentContainerStyle={{ padding: 20, paddingTop: 12, gap: 22 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Animated.View key={step} entering={slideIn(dir.current, reduce)} exiting={slideOut(dir.current, reduce)}>{page}</Animated.View>
+        {big ? worstNote : null}
       </ScrollView>
       <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: insets.bottom + 12, gap: 6, backgroundColor: c.canvas }}>
-        {step > 0 && step < STEPS.length - 1 ? (
-          // the product's one sentence, live: every choice above changes what a hijacked agent could lose
-          <View accessibilityLiveRegion="polite" style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", padding: 12, marginBottom: 6, borderRadius: 16, backgroundColor: c.accentSoft }}>
-            <Icon name="shield" size={16} color={c.accent} />
-            <T v="cap" color="ink2" style={{ flex: 1 }}>{worstCase(parseUsd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
-          </View>
-        ) : null}
+        {big ? null : worstNote}
         {step === STEPS.length - 1 ? (
           <SlideToConfirm key={String(error)} label={progress.current.pocket ? "Slide to retry" : "Slide to create and fund"} doneLabel="Pocket created" onConfirm={create} auto="wizard.create" disabled={!wallet || !cfg || tonightPassed} />
         ) : (

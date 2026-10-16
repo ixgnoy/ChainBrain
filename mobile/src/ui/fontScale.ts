@@ -18,3 +18,6 @@ export function useTextScale(kind: Grow = "body") {
   const { fontScale } = useWindowDimensions();
   return Math.max(1, Math.min(fontScale || 1, useGrowCap(kind)));
 }
+
+/** True from about the first accessibility text size: rows of side-by-side tiles stack, one-line chips may wrap. */
+export const useLargeText = () => useTextScale("body") >= 1.35;

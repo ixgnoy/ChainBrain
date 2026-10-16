@@ -9,6 +9,7 @@ import { EASE_OUT, glide, settle, useReduceMotion } from "./motion";
 import { autoplayAlive, autoplayRun, useAutoplayTarget, type TargetName } from "../lib/autoplayTargets";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
+import { useGrowCap } from "./fontScale";
 
 const APressable = Animated.createAnimatedComponent(Pressable);
 
@@ -219,11 +220,12 @@ export function ListCard({ children, style, head }: { children: React.ReactNode;
 export function Field(p: TextInputProps & { label?: string }) {
   const { label, style, ...rest } = p;
   const [focus, setFocus] = useState(false);
+  const grow = useGrowCap("body");
   return (
     <View style={{ gap: 8 }}>
       {label ? <T v="sub" w="medium" color="ink2">{label}</T> : null}
       <TextInput
-        placeholderTextColor={c.faint} accessibilityLabel={rest.accessibilityLabel ?? label}
+        maxFontSizeMultiplier={grow} placeholderTextColor={c.faint} accessibilityLabel={rest.accessibilityLabel ?? label}
         onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
         {...rest}
         style={[{ minHeight: 52, borderRadius: radius.input, backgroundColor: c.fill, paddingHorizontal: 16, fontFamily: F.medium, fontSize: 16, color: c.ink, borderWidth: 1.5, borderColor: focus ? c.ink : "transparent", outlineStyle: "none" } as object, style]}

@@ -34,6 +34,7 @@ import { deadEndOf } from "../lib/deadend";
 import { money, usd } from "../lib/util";
 import { plainAsks } from "../lib/plain";
 import { haptic } from "../haptics";
+import { useGrowCap } from "../ui/fontScale";
 
 type ChipItem = { label: string; text: string };
 const DEFAULTS: ChipItem[] = [
@@ -142,6 +143,7 @@ export default function AgentChat() {
   const insets = useSafeAreaInsets();
   const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, openApproval, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setPickerOpen, autoplay } = useApp();
   const [text, setText] = useState("");
+  const grow = useGrowCap("body");
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [kb, setKb] = useState(false);
   // optimistic bubble: shown the instant the owner sends, until the store has the real turn (it polls once before adding it)
@@ -431,7 +433,7 @@ export default function AgentChat() {
           {/* grows with the message (up to ~5 lines, then scrolls inside); the send button stays on the last line */}
           <View style={{ flexDirection: "row", alignItems: "flex-end", paddingLeft: 16, paddingRight: 6, paddingVertical: 3, borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: c.card, borderWidth: 1, borderColor: hairline, minHeight: 56, ...level1 }}>
             <TextInput
-              value={text} onChangeText={setText} placeholder={text ? "" : question ? "Answer ChainBrain" : "Ask ChainBrain to buy something"} placeholderTextColor={c.faint}
+              maxFontSizeMultiplier={grow} value={text} onChangeText={setText} placeholder={text ? "" : question ? "Answer ChainBrain" : "Ask ChainBrain to buy something"} placeholderTextColor={c.faint}
               multiline submitBehavior="submit" onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}
               style={[{ flex: 1, color: c.ink, fontFamily: F.medium, fontSize: 16, lineHeight: 22, minHeight: 48, maxHeight: 124, paddingTop: 13, paddingBottom: 13, textAlignVertical: "center" }, Platform.OS === "web" ? ({ outlineStyle: "none", resize: "none" } as object) : null]}
             />

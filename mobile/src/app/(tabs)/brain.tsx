@@ -14,6 +14,7 @@ import Svg, { Circle } from "react-native-svg";
 import { Eyebrow, Figure, T } from "../../ui/Text";
 import { Icon, type IconName } from "../../ui/Icon";
 import { Rise } from "../../ui/Rise";
+import { useLargeText } from "../../ui/fontScale";
 import { haptic } from "../../haptics";
 import { cleanText } from "../../lib/sanitize";
 import { money, usd } from "../../lib/util";
@@ -35,8 +36,8 @@ function Panel({ title, pill, pillTone = "fill", children, delay = 0, a11y }: { 
   return (
     <Rise dy={10} delay={delay} style={{ marginTop: 12, marginHorizontal: 16 }}>
       <Card pad={18}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }} accessible accessibilityRole="header" accessibilityLabel={a11y ?? `${title}${pill ? `. ${pill}` : ""}`}>
-          <T v="head" style={{ flex: 1 }}>{title}</T>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: 10, rowGap: 6 }} accessible accessibilityRole="header" accessibilityLabel={a11y ?? `${title}${pill ? `. ${pill}` : ""}`}>
+          <T v="head" style={{ flexGrow: 1, flexShrink: 0, maxWidth: "100%" }}>{title}</T>
           {pill ? <View style={{ paddingHorizontal: 10, minHeight: 24, paddingVertical: 2, borderRadius: 12, backgroundColor: tone[0], justifyContent: "center" }}><T v="cap" w="semi" style={{ color: tone[1] }}>{pill}</T></View> : null}
         </View>
         {children ? <View style={{ gap: 12, marginTop: 14 }}>{children}</View> : null}
@@ -50,7 +51,7 @@ function Face({ id, name, size = 28 }: { id?: string; name: string; size?: numbe
   if (id && hasSellerMark(id)) return <SellerMark id={id} size={size} radius={Math.round(size * 0.27)} />;
   return (
     <View style={{ width: size, height: size, borderRadius: Math.round(size * 0.27), backgroundColor: c.fill, alignItems: "center", justifyContent: "center" }}>
-      <T v="cap" w="bold" style={{ fontSize: Math.round(size * 0.38) }}>{initials(name)}</T>
+      <T v="cap" w="bold" allowFontScaling={false} style={{ fontSize: Math.round(size * 0.38), lineHeight: Math.round(size * 0.48) }}>{initials(name)}</T>
     </View>
   );
 }
@@ -73,11 +74,12 @@ function FunnelBar({ label, n, max, color }: { label: string; n: number; max: nu
 /** A counter for one kind of attack: four sit in a row; a non-zero one turns ink, zero stays quiet. */
 function Counter({ icon, n, label, a11y }: { icon: IconName; n: number; label: string; a11y: string }) {
   const on = n > 0;
+  const big = useLargeText();
   return (
-    <View style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 6, borderRadius: 14, backgroundColor: on ? c.ink : c.fill, alignItems: "center", gap: 4 }} accessible accessibilityLabel={`${n} ${a11y}`}>
+    <View style={{ flexGrow: 1, flexBasis: big ? "45%" : 0, paddingVertical: 10, paddingHorizontal: 6, borderRadius: 14, backgroundColor: on ? c.ink : c.fill, alignItems: "center", gap: 4 }} accessible accessibilityLabel={`${n} ${a11y}`}>
       <Icon name={icon} size={16} color={on ? c.white : c.faint} stroke={1.75} />
       <T v="head" style={{ color: on ? c.white : c.faint, fontSize: 20, lineHeight: 24 }}>{String(n)}</T>
-      <T v="cap" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: on ? "rgba(255,255,255,0.7)" : c.muted, fontSize: 11 }}>{label}</T>
+      <T v="cap" numberOfLines={big ? 2 : 1} adjustsFontSizeToFit={!big} minimumFontScale={0.8} style={{ color: on ? "rgba(255,255,255,0.7)" : c.muted, fontSize: 11, textAlign: "center" }}>{label}</T>
     </View>
   );
 }
@@ -97,10 +99,11 @@ function Ring({ share, size = 56 }: { share: number; size?: number }) {
 function MemoryChip({ m, onForget, idOf }: { m: MemoryItem; onForget(): void; idOf(name: string): string | undefined }) {
   // shared/sim/reflect.ts writes: Bought "<item>" from <seller> for US$<amount>[, co-signed by the owner]
   const buy = /^Bought "(.+)" from (.+) for (US\$[\d.]+)(, co-signed by the owner)?$/.exec(m.text);
+  const big = useLargeText();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: buy ? 6 : 12, paddingRight: 4, minHeight: 40, borderRadius: 20, backgroundColor: c.fill, maxWidth: "100%" }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: buy ? 6 : 12, paddingRight: 4, paddingVertical: 4, minHeight: 40, borderRadius: 20, backgroundColor: c.fill, maxWidth: "100%" }}>
       {buy ? <Face id={idOf(buy[2])} name={buy[2]} size={28} /> : null}
-      <T v="sub" numberOfLines={1} style={{ flexShrink: 1 }}>{cleanText(buy ? buy[1] : m.text, 90)}</T>
+      <T v="sub" numberOfLines={big ? 2 : 1} style={{ flexShrink: 1 }}>{cleanText(buy ? buy[1] : m.text, 90)}</T>
       {buy ? <Figure text={buy[3]} size={13} color="muted" /> : null}
       <Press kind="icon" haptics="select" onPress={onForget} accessibilityRole="button" accessibilityLabel={`Forget: ${m.text}`} hitSlop={8}
         style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
@@ -222,9 +225,9 @@ export default function BrainTab() {
           {task.filter((r) => r.k === "Buy" || !r.k).slice(0, 1).map((r, i) => <T key={i} v="row">{cap1(r.v)}</T>)}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
             {task.filter((r) => r.k && r.k !== "Buy").map((r, i) => (
-              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, minHeight: 30, borderRadius: 15, backgroundColor: c.fill }}>
+              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 4, minHeight: 30, borderRadius: 15, backgroundColor: c.fill, maxWidth: "100%" }}>
                 <Icon name={r.k === "Deadline" ? "clock" : "gauge"} size={13} color={c.muted} />
-                <T v="cap" w="medium" numberOfLines={1}>{r.v}</T>
+                <T v="cap" w="medium" style={{ flexShrink: 1 }}>{r.v}</T>
               </View>
             ))}
           </View>
@@ -255,7 +258,7 @@ export default function BrainTab() {
 
       {/* what it resisted: four counters */}
       <Panel title="Stopped" pill={b.resisted.total ? "No money moved" : "Nothing yet"} pillTone={b.resisted.total ? "green" : "fill"} delay={90}>
-        <View style={{ flexDirection: "row", gap: 6 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
           <Counter icon="shield" n={b.resisted.injections} label="Hidden orders" a11y="hidden orders in seller pages ignored" />
           <Counter icon="lock" n={b.resisted.dataRequests} label="Data asks" a11y="requests for your data or a signature refused" />
           <Counter icon="alert" n={b.resisted.attacks} label="Chat attacks" a11y="chat attacks refused" />
