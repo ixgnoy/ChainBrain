@@ -82,6 +82,8 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
   }
   // Scene 1's pocket: US$1, cap US$0.05, ask above US$0.02, Exa, CoinGecko and Nansen, until tonight. Scene 8's: US$0.005, Exa only.
   const researchPocket = () => newPocket(presenter, { cap: "0.05", ask: "0.02", sellers: ["exa", "coingecko", "nansen"], fund: "1" });
+  // Scene 9's: the research pocket that also allows TradeWire, so Radar (not the allowlist) is what stops the dirty seller
+  const radarPocket = () => newPocket(presenter, { cap: "0.05", ask: "0.02", sellers: ["exa", "coingecko", "nansen", "tradewire"], fund: "1" });
   const tightPocket = () => newPocket(presenter, { cap: "0.005", ask: "never", sellers: ["exa"], fund: "0.005", expiresAt: BigInt(Math.floor((world.now() + 20 * HOUR) / 1000)) });
 
   async function chat(pocket: Hex, text: string) {
@@ -244,7 +246,7 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
       if (!s) throw new Error(`no scene ${id}`);
       hold();
       try {
-        const pocket = s.preset === "one-purchase" ? await tightPocket() : await researchPocket();
+        const pocket = s.preset === "one-purchase" ? await tightPocket() : s.id === "9" ? await radarPocket() : await researchPocket();
         setActive(pocket);
         await play(s, pocket, true);
         return { pocket };

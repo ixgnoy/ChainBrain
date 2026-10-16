@@ -194,3 +194,22 @@ test("explorer: a payment has USDC AuthorizationUsed + Transfer logs; a revert h
   assert.equal(txsOfAddress(pocket, all).length, all.filter((t) => t.pocket === pocket).length);
   assert.equal(networkLabel({ builtin: false, chainName: "Base Sepolia" }), "Base Sepolia");
 });
+
+test("scenes 9 and 10 from the Judges tab: Radar blocks TradeWire and the agent re-plans; the Sentinel freezes the pocket; both are evidence", async () => {
+  const w = createWorld({ speed: 0, seed: 5, revokeWindowMs: 0 });
+  const ap = createAutopilot(w, { background: false });
+  const p9 = (await ap.runScene("9")).pocket, p10 = (await ap.runScene("10")).pocket;
+  const pays9 = w.events(0, p9).filter((e) => e.type === "payment");
+  assert.deepEqual(pays9.map((e) => e.sellerId), ["nansen"], "TradeWire is allowed on the pocket, Radar blocks it, Nansen is bought instead");
+  assert.ok(w.chain.view(p10).frozen);
+  const f = factsFrom(w.events(0), w.txs(), { ...opts, pockets: [p9, p10] });
+  assert.match(f.radarBlocked!.detail, /Radar scored TradeWire 9\/10 and blocked it; nothing was paid to it, then Nansen was paid instead/);
+  assert.equal(f.radarBlocked!.txs[0], pays9[0].tx);
+  assert.match(f.sentinelFrozen!.detail, /froze the pocket on-chain .*POCKET_FROZEN/);
+  assert.equal(w.txs().find((t) => t.hash === f.sentinelFrozen!.txs[0])?.label, "Frozen by the Sentinel");
+  const rows = evidenceRows(f, w.txs());
+  assert.deepEqual(rows.map((r) => r.scene), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "A"]);
+  assert.deepEqual(rows.filter((r) => r.status === "pass").map((r) => r.scene).filter((s) => s === "9" || s === "10"), ["9", "10"]);
+  const security = scorecard(f).find((g) => g.id === "security")!.items;
+  assert.ok(security.find((i) => i.id === "radarBlocked")!.done && security.find((i) => i.id === "sentinelFrozen")!.done);
+});
