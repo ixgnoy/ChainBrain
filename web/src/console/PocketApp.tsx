@@ -274,8 +274,36 @@ function Runs({ c, block, i }: { c: Ctx; block: Block; i: number }) {
             {r.ignored.map((x, k) => <div key={k} className="flex gap-2.5 rounded-xl bg-tile p-3 text-[12px]"><ShieldCheck className="size-4 shrink-0 text-green-ink" {...I} aria-hidden /><span><b>{c.seller(x.sellerId)} tried to change this routine. Nothing changed.</b>{x.excerpt && <span className="block text-muted">“{cleanText(x.excerpt, 110)}”</span>}</span></div>)}
           </li>
         );
-      })}</ul> : <EmptyHatch text="No runs yet." />}
+      })}</ul> : c.spec.routine ? <WhatNext c={c} /> : <EmptyHatch text="No runs yet." />}
     </Block>
+  );
+}
+
+/** Before the first run (as on the phone): when it runs, who buys what, what it pays, where it lands, when it asks. */
+function WhatNext({ c }: { c: Ctx }) {
+  const rs = c.routine ?? c.spec.routine!;
+  const at = c.routine?.nextAt ?? nextRuns(rs.cadence, c.now, 1)[0];
+  const watch = rs.kind === "price-watch";
+  const sellers = [...new Set(rs.items.map((x) => x.sellerId))];
+  const total = rs.items.reduce((n, it) => n + Number(c.registry.find((s) => s.id === it.sellerId)?.items.find((i: { sku: string; price: string | null }) => i.sku === it.sku)?.price ?? 0), 0);
+  const steps: [string, string, React.ReactNode?][] = [
+    [`First ${watch ? "check" : "run"} ${day(at)} · ${hm(at)}`, cadenceText(rs.cadence)],
+    [`${c.agent} ${watch ? "checks" : "buys"} ${rs.items.length === 1 ? c.item(rs.items[0].sellerId, rs.items[0].sku) : `${rs.items.length} items`}`, sellers.map((x) => c.seller(x)).join(" · "),
+      <span className="flex -space-x-2">{sellers.slice(0, 3).map((x) => <SellerLogo key={x} id={x} name={c.seller(x)} className="size-6 rounded-[8px] ring-2 ring-card" />)}</span>],
+    watch ? [`Buys only at US$${rs.limitPrice} or less`, "Above that, it only logs the price"] : [`Pays US$${total.toFixed(3).replace(/0$/, "")}`, "The sellers' listed prices"],
+    [`Past US$${rs.allowance.amount} a ${rs.allowance.period}, ${c.agent} asks its owner`, "A co-signature, or it doesn't pay"],
+  ];
+  return (
+    <ol aria-label="What happens next" className="grid">
+      {steps.map(([t, sub, lead], k) => (
+        <li key={k} className="relative flex gap-3 pb-4 last:pb-0">
+          {k < steps.length - 1 && <span aria-hidden className="absolute left-[7px] top-5 bottom-0 w-0.5 bg-fill" />}
+          <span aria-hidden className={cn("relative mt-1 grid size-4 shrink-0 place-items-center rounded-full border-2 bg-card", k === 0 ? "border-dashed border-ink" : "border-line")}>{k === 0 && <span className="size-1.5 rounded-full bg-vermillion" />}</span>
+          <span className="min-w-0 flex-1"><span className={cn("block text-[15px]", k === 0 ? "font-bold" : "font-semibold")}>{t}</span><span className="block text-[12px] text-muted">{sub}</span></span>
+          {lead}
+        </li>
+      ))}
+    </ol>
   );
 }
 
