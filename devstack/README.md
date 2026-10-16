@@ -105,9 +105,9 @@ node devstack/e2e/builtin.cjs --url http://localhost:8091
 node devstack/e2e/e2e.cjs
 ```
 
-Boots its own stack on other ports (18787, 14021, 18546), so it can run beside a live one. Through HTTP only it creates pockets as account 0, runs scenes 1-8, signs payment approvals with `eth_signTypedData_v4`, and checks events and reason codes, plus the `/dev/*` routes and the relay.
+`pnpm --dir devstack test` boots its own stack on other ports (18787, 14021, 18546), so it can run beside a live one. Through HTTP only it creates pockets as account 0, runs scenes 1-8, signs payment approvals with `eth_signTypedData_v4`, and checks events and reason codes, plus the `/dev/*` routes and the relay.
 
-`e2e/builtin.cjs` drives the phone (Expo web on :8091 or a static export) on its built-in network, scenes 1-8, 26 checks, no stack needed. `e2e/e2e.cjs` (45 checks) needs a live stack: it switches the phone to the server by setting localStorage `cb.source=server` and the console with `?server=`.
+`e2e/builtin.cjs` drives the phone (Expo web on :8091 or a static export) on its built-in network, scenes 1-8, 48 checks, no stack needed. `e2e/e2e.cjs` (57 checks on 16 Oct) needs a fresh running stack, a web build (`pnpm --dir web build`) and a phone web export pointed at the stack (`cd mobile && EXPO_PUBLIC_API_URL=http://localhost:8787 npx expo export --platform web --output-dir dist`). It switches the phone to the server through localStorage (`cb.source=server`, `cb.apiUrl`) and the console with `?server=`, then creates two pockets in the wizard, plays scenes 1-3 (question, task card, auto payment, co-signed cheque), opens Activity and a receipt, and stops scene 7 from the chat with hold-to-revoke. For a stack on other ports set `E2E_API`, `E2E_WEB_PORT` and `E2E_PHONE_PORT`, and pass `--mobile-dist <dir>`.
 
 ## Limitations
 
