@@ -1,5 +1,7 @@
 // The exact EIP-712 message an owner co-signs (USDC TransferWithAuthorization), shared by the wallet and the built-in network.
-import type { Address, Hex } from "viem";
+import { hashTypedData, hexToBigInt, parseSignature, type Address, type Hex } from "viem";
+import { publicKeyToAddress } from "viem/accounts";
+import { secp256k1 } from "@noble/curves/secp256k1";
 
 const USDC: Address = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
 
@@ -15,3 +17,13 @@ export const transferTypedData = (a: Authorization) => ({
   primaryType: "TransferWithAuthorization" as const,
   message: { from: a.from, to: a.to, value: BigInt(a.value), validAfter: BigInt(a.validAfter), validBefore: BigInt(a.validBefore), nonce: a.nonce },
 });
+
+/** Who signed an owner's co-signature. viem's recoverTypedDataAddress loads secp256k1 with a dynamic import(), a separate
+ *  chunk that Expo Go cannot fetch from a production (--no-dev) bundle, so every built-in co-sign failed there; the same
+ *  curve imported statically works on every build. */
+export function recoverTransferSigner(a: Authorization, signature: Hex): Address {
+  const { r, s, v, yParity } = parseSignature(signature);
+  const bit = yParity ?? (Number(v) >= 27 ? Number(v) - 27 : Number(v));
+  const pub = new secp256k1.Signature(hexToBigInt(r), hexToBigInt(s)).addRecoveryBit(bit).recoverPublicKey(hashTypedData(transferTypedData(a)).slice(2)).toHex(false);
+  return publicKeyToAddress(`0x${pub}`);
+}

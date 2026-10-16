@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { recoverTypedDataAddress, verifyTypedData } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { parseUsd, formatUsd, NEVER, transferTypedData, type Authorization } from "./shared";
+import { recoverTransferSigner } from "./typed";
 import { PRESETS, toPocketArgs, isTightCap } from "./presets";
 import { ownerWallet, pocketStatus } from "./wallet";
 import { approvalsFrom } from "./events";
@@ -53,4 +54,14 @@ test("the dead-end pocket is told apart on both networks (console Play, chat sug
   assert.equal(isTightCap(50_000n, builtinIds), false); // built-in Research data, US$0.05: research scenes play here
   assert.equal(isTightCap(200_000n, devIds), true); // dev stack scene 8 pocket, US$0.20
   assert.equal(isTightCap(2_000_000n, devIds), false); // dev stack Research data, US$2
+});
+
+test("the built-in network recovers the co-signer without viem's dynamic import (Expo Go --no-dev cannot load that chunk)", async () => {
+  const PK = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const;
+  const me = privateKeyToAccount(PK);
+  const auth: Authorization = { from: "0x645fe31beda926b30f0939ef4a741cb861c8faa6", to: "0x2c9b41e6f3a07d58b9c2e1f4a6d83b07e5c9a1f3", value: "50000", validAfter: "0", validBefore: "1792146589", nonce: "0xbf163731acede3da45841716bd51891e2c169eb3a931af8c4e636a5de8d58447" };
+  const sig = await me.signTypedData(transferTypedData(auth));
+  assert.equal(recoverTransferSigner(auth, sig), me.address);
+  assert.equal(recoverTransferSigner(auth, sig), await recoverTypedDataAddress({ ...transferTypedData(auth), signature: sig }));
+  assert.notEqual(recoverTransferSigner({ ...auth, value: "50001" }, sig), me.address);
 });
