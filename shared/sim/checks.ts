@@ -16,7 +16,7 @@ export type Gate = { id: GateId; layer: Layer; title: string; state: GateState; 
 export type AttemptKind = "payment" | "refusal" | "precheck" | "forced" | "hijack" | "escalation" | "extraction" | "induced" | "disclosure" | "injection";
 export type Attempt = {
   id: string; at: number; pocket?: string; kind: AttemptKind;
-  /** "DataLite · US$0.30", "0x0000…ABC0 · US$50.00". */
+  /** "Exa · US$0.007", "0x0000…ABC0 · US$50.00". */
   title: string;
   /** One plain sentence for the big screen. */
   headline: string;

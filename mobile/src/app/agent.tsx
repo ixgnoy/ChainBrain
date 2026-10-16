@@ -37,8 +37,8 @@ import { haptic } from "../haptics";
 
 type ChipItem = { label: string; text: string };
 const DEFAULTS: ChipItem[] = [
-  { label: "Buy the DataLite report", text: "Buy the DataLite durian report. Max US$1, by tonight." },
-  { label: "Durian report under US$2", text: "Get me a market report on durian exports, under US$2, by tonight." },
+  { label: "Search Exa for durian news", text: "Search Exa for durian export news. Max US$0.01, by tonight." },
+  { label: "Research a durian deal", text: "Research a durian import deal for me: export news, the USDC price and a check on the exporter's wallet. Under US$0.10, by tonight." },
 ];
 
 /** "US$2 in total or per report?" -> ["US$2 in total", "US$2 per report"]: the two answers a one-tap reply needs. */
@@ -106,7 +106,7 @@ function AgentCardBlock({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** "Paid DataLite US$0.30" or "Asked for a price: US$0.30": the latest finished step in the pocket's events. */
+/** "Paid Exa US$0.007" or "Asked for a price: US$0.007": the latest finished step in the pocket's events. */
 export function lastStepText(events: WalletEvent[], sellerName: (id?: string) => string): string | null {
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];

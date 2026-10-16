@@ -259,7 +259,7 @@ export function radarAlerts(events: WalletEvent[], pocket?: string): RadarAlert[
   return [...by.values()].sort((a, b) => a.at - b.at);
 }
 
-/** The narrative without its "Risk 9/10 for DataPro: blocked." head (the card shows that as a title and a score bar). */
+/** The narrative without its "Risk 9/10 for TradeWire: blocked." head (the card shows that as a title and a score bar). */
 export const radarBody = (n: string) => n.replace(/^Risk \d+\/10 for [^:]+: [^.]+\.\s*/, "");
 
 // ---------------------------------------------------------------- Sentinel (server/src/sentinel, shared/sim/sentinel.ts)

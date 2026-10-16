@@ -24,7 +24,7 @@ export function worstCase(p: PocketState, txs: ChainTx[], sellerName: (id: strin
   return { max, funded, share, to: p.allowed.map(sellerName), stopped, fundedKnown: put > 0n };
 }
 
-/** "DataLite", "DataLite or DataPro", "DataLite, DataPro or Harbour Wines". */
+/** "Exa", "Exa or Nansen", "Exa, CoinGecko or Nansen". */
 export const orList = (xs: string[]) => (xs.length === 0 ? "nobody" : xs.length === 1 ? xs[0] : `${xs.slice(0, -1).join(", ")} or ${xs[xs.length - 1]}`);
 
 export type Segment = { key: "spent" | "risk" | "safe"; label: string; value: bigint };

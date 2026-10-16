@@ -108,7 +108,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const outside = (a.agent ?? "chainbrain") !== "chainbrain";
   const amountUnits = (() => { try { return typeof a.data?.amount === "string" ? parseUsd(a.data.amount) : null; } catch { return null; } })();
 
-  // "Claude pays DataPro US$1.50 from Market news. US$3.40 stays in the pocket."
+  // "Claude pays Nansen US$0.05 from Market news. US$0.362 stays in the pocket."
   const left = pocket && amountUnits != null && pocket.balance >= amountUnits ? pocket.balance - amountUnits : null;
   const moneyLine = `${who} pays ${seller} US$${amount ?? "?"}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}.${left != null ? ` US$${usd(left)} stays in the pocket.` : ""}`;
   const until = auth ? new Date(Number(auth.validBefore) * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : null;

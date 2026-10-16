@@ -80,9 +80,9 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
     await world.ownerTx(() => chain.transfer(owner, pocket, parseUsd(s.fund)));
     return pocket;
   }
-  // Scene 1's pocket: US$5, cap US$2, ask above US$1, DataLite and DataPro, until tonight. Scene 8's: US$0.20, one purchase.
-  const researchPocket = () => newPocket(presenter, { cap: "2", ask: "1", sellers: ["datalite", "datapro"], fund: "5" });
-  const tightPocket = () => newPocket(presenter, { cap: "0.20", ask: "never", sellers: ["datalite"], fund: "0.20", expiresAt: BigInt(Math.floor((world.now() + 20 * HOUR) / 1000)) });
+  // Scene 1's pocket: US$1, cap US$0.05, ask above US$0.02, Exa, CoinGecko and Nansen, until tonight. Scene 8's: US$0.005, Exa only.
+  const researchPocket = () => newPocket(presenter, { cap: "0.05", ask: "0.02", sellers: ["exa", "coingecko", "nansen"], fund: "1" });
+  const tightPocket = () => newPocket(presenter, { cap: "0.005", ask: "never", sellers: ["exa"], fund: "0.005", expiresAt: BigInt(Math.floor((world.now() + 20 * HOUR) / 1000)) });
 
   async function chat(pocket: Hex, text: string) {
     try { await world.chat(pocket, text); } catch { /* the story goes on */ }
@@ -130,12 +130,12 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
       return pocket;
     };
     // oldest first: event times only move forward; the presenter's today starts 4.5 hours ago
-    const p1 = await world.past(7 * HOUR, make(research, { cap: "2", ask: "1", sellers: ["datalite", "datapro"], fund: "6" }));
-    await world.past(6 * HOUR + 50 * MIN, () => world.chat(p1, "Get the DataPro premium durian report with the 2026 forecast. Max US$2, by tonight."));
-    const p2 = await world.past(6 * HOUR + 20 * MIN, make(trading, { cap: "1", ask: "0.5", sellers: ["datalite", "harbour-wines"], fund: "3" }));
-    await world.past(6 * HOUR, () => world.chat(p2, "Buy Harbour Wines' fruit and wine trade report. Max US$1, by tonight. Confirmed, go ahead."));
-    const p3 = await world.past(5 * HOUR + 30 * MIN, make(small, { cap: "0.5", ask: "never", sellers: ["datalite"], fund: "1.5" }));
-    await world.past(5 * HOUR + 15 * MIN, () => world.chat(p3, "Buy the DataLite durian report. Max US$1, by tonight."));
+    const p1 = await world.past(7 * HOUR, make(research, { cap: "0.05", ask: "0.02", sellers: ["exa", "coingecko", "nansen"], fund: "1" }));
+    await world.past(6 * HOUR + 50 * MIN, () => world.chat(p1, "Check the exporter's wallet with Nansen's counterparty data. Max US$0.05, by tonight."));
+    const p2 = await world.past(6 * HOUR + 20 * MIN, make(trading, { cap: "0.05", ask: "0.02", sellers: ["exa", "harbour-wines"], fund: "0.5" }));
+    await world.past(6 * HOUR, () => world.chat(p2, "Buy Harbour Wines' fruit and wine trade report. Max US$0.05, by tonight. Confirmed, go ahead."));
+    const p3 = await world.past(5 * HOUR + 30 * MIN, make(small, { cap: "0.01", ask: "never", sellers: ["exa"], fund: "0.1" }));
+    await world.past(5 * HOUR + 15 * MIN, () => world.chat(p3, "Search Exa for durian export news. Max US$0.01, by tonight."));
     await world.past(5 * HOUR, async () => { chain.revoke(small, p3); chain.returnFunds(small, p3); });
     others.push({ owner: research, pocket: p1 }, { owner: trading, pocket: p2 });
   }
@@ -147,8 +147,8 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
     await seedOwnerToday(world, presenter, prior);
     world.autoOwner(presenter, true);
     // a little recent activity from the rest of the network
-    await world.past(13 * MIN, async () => { if (others[1]?.pocket) await world.chat(others[1].pocket, "Buy the DataLite fruit trade report. Max US$1, by tonight."); });
-    await world.past(6 * MIN, async () => { if (others[0]?.pocket) await world.chat(others[0].pocket, "Buy the DataLite durian report. Max US$1, by tonight."); });
+    await world.past(13 * MIN, async () => { if (others[1]?.pocket) await world.chat(others[1].pocket, "Search Exa for SE Asia fruit trade news. Max US$0.01, by tonight."); });
+    await world.past(6 * MIN, async () => { if (others[0]?.pocket) await world.chat(others[0].pocket, "Get the USDC price from CoinGecko. Max US$0.01, by tonight."); });
     const mine = chain.pocketsOf(presenter);
     setActive(mine.find((p) => p.balance > 0n && !p.revoked)?.address ?? mine[0]?.address);
   }
@@ -189,10 +189,10 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
   }
 
   const ROTATION: { need: (v: ReturnType<typeof chain.view>) => boolean; text: string }[] = [
-    { need: (v) => v.allowed.includes("datalite") && v.balance >= parseUsd("0.35"), text: "Buy the DataLite durian report. Max US$1, by tonight." },
-    { need: (v) => v.allowed.includes("datalite") && v.balance >= parseUsd("0.35"), text: "Buy the DataLite fruit trade report. Max US$1, by tonight." },
-    { need: (v) => v.allowed.includes("datapro") && v.cap >= parseUsd("1.5") && v.balance >= parseUsd("1.5"), text: "Get the DataPro premium durian report with the 2026 forecast. Max US$2, by tonight." },
-    { need: (v) => v.allowed.includes("harbour-wines") && v.balance >= parseUsd("0.4"), text: "Buy Harbour Wines' fruit and wine trade report. Max US$1, by tonight. Confirmed, go ahead." },
+    { need: (v) => v.allowed.includes("exa") && v.balance >= parseUsd("0.007"), text: "Search Exa for durian export news. Max US$0.01, by tonight." },
+    { need: (v) => v.allowed.includes("coingecko") && v.balance >= parseUsd("0.01"), text: "Get the USDC price from CoinGecko. Max US$0.01, by tonight." },
+    { need: (v) => v.allowed.includes("nansen") && v.cap >= parseUsd("0.05") && v.balance >= parseUsd("0.05"), text: "Check the exporter's wallet with Nansen's counterparty data. Max US$0.05, by tonight." },
+    { need: (v) => v.allowed.includes("harbour-wines") && v.balance >= parseUsd("0.02"), text: "Buy Harbour Wines' fruit and wine trade report. Max US$0.05, by tonight. Confirmed, go ahead." },
   ];
   async function backgroundTraffic(tok: number) {
     while (running && tok === token) {

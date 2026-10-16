@@ -203,7 +203,7 @@ export const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 /**
  * The strongest factor as a money trail for the phone: names from where the money started to the counterparty
- * ("Demo drainer → DataPro" for source exposure, "DataPro → Mixer" for destination), plus its share.
+ * ("Demo drainer → TradeWire" for source exposure, "TradeWire → Mixer" for destination), plus its share.
  */
 export function trailOf(f: Factor | undefined, nameOf: (a: string) => string): { trail?: string[]; share?: number; direction?: "self" | Direction } {
   if (!f) return {};

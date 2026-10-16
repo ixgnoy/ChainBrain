@@ -1,5 +1,5 @@
 // A local notification when an agent asks for a co-signature while ChainBrain is in the background ("Claude asks to pay
-// US$1.50 to DataPro"); tapping it opens that request. Opt-in: the cheque offers it once, with the reason, before iOS asks.
+// US$0.05 to Nansen"); tapping it opens that request. Opt-in: the cheque offers it once, with the reason, before iOS asks.
 // Web: no notifications.
 import { AppState, Platform } from "react-native";
 import * as Notifications from "expo-notifications";

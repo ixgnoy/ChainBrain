@@ -39,7 +39,7 @@ export function DeadEndCard({ id, evs, pocket, sellerName, onRetry, resolved }: 
         fixed ? (
           <View style={{ gap: 10 }}>
             <T v="sub" color="positive">Your rules now allow this.</T>
-            {onRetry && d.minPrice != null ? <Button label={`Ask again, max US$${usd(d.minPrice)}`} small auto="deadend.askAgain" onPress={() => onRetry(`Buy the DataLite durian report. Max US$${usd(d.minPrice!)}, by tonight.`)} /> : <T v="sub" color="ink2">{again}</T>}
+            {onRetry && d.minPrice != null ? <Button label={`Ask again, max US$${usd(d.minPrice)}`} small auto="deadend.askAgain" onPress={() => onRetry(`Search Exa for durian export news. Max US$${usd(d.minPrice!)}, by tonight.`)} /> : <T v="sub" color="ink2">{again}</T>}
           </View>
         )
         : !d.fix && !d.needsSeller ? <T v="sub" color="ink2">{again}</T>

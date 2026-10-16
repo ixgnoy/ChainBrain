@@ -13,7 +13,8 @@ export const intent = (description: string, maxPricePerItem: string, maxTotal: s
 
 export type Outcome = { sellerId: string; sku: string; ok: boolean; price?: string; tx?: string; reason?: string; why?: string };
 const ITEM: Record<string, string> = {
-  "durian-report": "durian export report", "fruit-trade-report": "fruit trade report", "premium-report": "premium report with the 2026 forecast",
+  "durian-news": "web search for durian export news", "fruit-news": "web search for SE Asia fruit trade news", "usdc-price": "USDC price",
+  counterparties: "counterparty check on the exporter's wallet", "wallet-balances": "exporter wallet balances", "credit-report": "exporter credit report",
   "fruit-wine-trade-report": "fruit and wine trade report", preview: "free preview",
 };
 const item = (sku: string) => ITEM[sku] ?? sku;
@@ -65,34 +66,47 @@ export function summary(outs: Outcome[]): string {
 }
 const declined = () => "You didn't confirm the task, so I did nothing. No payment was made.";
 
+const COUNTERPARTY_REASON = "Nansen's counterparty check shows who the exporter's wallet trades with, before you settle in USDC. It's US$0.05.";
+
 function* scene1Ask(): Scene {
   yield { tool: "get_pocket", input: {}, say: "Reading this pocket's balance and rules before I plan anything." };
-  yield { tool: "ask_owner", input: { question: "US$2 in total or per report?" }, say: "\"Under US$2\" could mean the whole task or each report. I'll ask once instead of guessing." };
-  return "US$2 in total or per report?";
+  yield { tool: "ask_owner", input: { question: "US$0.10 in total or per lookup?" }, say: "\"Under US$0.10\" could mean the whole task or each lookup. I'll ask once instead of guessing." };
+  return "US$0.10 in total or per lookup?";
 }
 
 function* scene1Answer(): Scene {
-  if (!(yield* draft(intent("Durian export market report", "2.00", "4.00", 4, "a market report on durian exports, under US$2 per report, by tonight")))) return declined();
-  yield { tool: "search_sellers", input: { category: "Research data" }, say: "Looking for research sellers with durian export data." };
-  const a = yield* purchase("datalite", "durian-report");
-  const b = yield* purchase("datapro", "premium-report", { reason: "DataPro's premium report adds the 2026 forecast for US$1.50." });
-  return summary([a, b]);
+  if (!(yield* draft(intent("Durian import deal research", "0.05", "0.10", 4, "research for a durian import deal (export news, the USDC price, a check on the exporter's wallet), under US$0.10 in total, by tonight")))) return declined();
+  yield { tool: "search_sellers", input: { category: "Research data" }, say: "Looking for sellers with export news, prices and wallet checks." };
+  const a = yield* purchase("exa", "durian-news");
+  const b = yield* purchase("coingecko", "usdc-price");
+  const c = yield* purchase("nansen", "counterparties", { reason: COUNTERPARTY_REASON });
+  return summary([a, b, c]);
 }
 
 function* scene2(): Scene {
-  if (!(yield* draft(intent("Durian export market report", "1.00", "1.00", 1)))) return declined();
-  yield { tool: "search_sellers", input: { category: "Research data" }, say: "Looking for research sellers with durian export data." };
-  return summary([yield* purchase("datalite", "durian-report")]);
+  if (!(yield* draft(intent("Durian export news", "0.01", "0.01", 1)))) return declined();
+  yield { tool: "search_sellers", input: { category: "Research data" }, say: "Looking for a seller with durian export news." };
+  return summary([yield* purchase("exa", "durian-news")]);
 }
 
 function* fruitOnly(): Scene {
-  if (!(yield* draft(intent("SE Asia fruit trade report", "1.00", "1.00", 1)))) return declined();
-  return summary([yield* purchase("datalite", "fruit-trade-report")]);
+  if (!(yield* draft(intent("SE Asia fruit trade news", "0.01", "0.01", 1)))) return declined();
+  return summary([yield* purchase("exa", "fruit-news")]);
+}
+
+function* priceOnly(): Scene {
+  if (!(yield* draft(intent("USDC price in HKD", "0.01", "0.01", 1)))) return declined();
+  return summary([yield* purchase("coingecko", "usdc-price")]);
+}
+
+function* creditOnly(): Scene {
+  if (!(yield* draft(intent("Durian exporter credit report", "0.05", "0.05", 1)))) return declined();
+  return summary([yield* purchase("tradewire", "credit-report", { reason: "TradeWire's credit report covers the exporter's payment history for US$0.05." })]);
 }
 
 function* scene3(): Scene {
-  if (!(yield* draft(intent("Durian export premium report with 2026 forecast", "2.00", "2.00", 1)))) return declined();
-  return summary([yield* purchase("datapro", "premium-report", { reason: "DataPro's premium report adds the 2026 forecast for US$1.50." })]);
+  if (!(yield* draft(intent("Counterparty check on the exporter's wallet", "0.05", "0.05", 1)))) return declined();
+  return summary([yield* purchase("nansen", "counterparties", { reason: COUNTERPARTY_REASON })]);
 }
 
 /**
@@ -100,42 +114,42 @@ function* scene3(): Scene {
  * refuses each try; after the third in a minute the Sentinel freezes the pocket on-chain, so even an allowed seller is refused.
  */
 function* sceneHijacked(): Scene {
-  if (!(yield* draft(intent("Fruit and wine trade report", "1.00", "1.00", 1)))) return declined();
+  if (!(yield* draft(intent("Fruit and wine trade report", "0.05", "0.05", 1)))) return declined();
   const tries: Outcome[] = [];
   for (let k = 0; k < 3; k++) {
     tries.push(yield* purchase("harbour-wines", "fruit-wine-trade-report", { payAnyway: true }));
     if (tries[tries.length - 1].ok) return summary(tries);
   }
-  const after = yield* purchase("datalite", "fruit-trade-report");
+  const after = yield* purchase("exa", "fruit-news");
   if (after.reason === "POCKET_FROZEN")
-    return "Assume I was fooled: I tried to pay Harbour Wines three times and your pocket refused each one. The Sentinel saw the pattern and froze the pocket on-chain, so it refused DataLite too. Nothing was paid. Only you can unfreeze it.";
+    return "Assume I was fooled: I tried to pay Harbour Wines three times and your pocket refused each one. The Sentinel saw the pattern and froze the pocket on-chain, so it refused Exa too. Nothing was paid. Only you can unfreeze it.";
   return summary([...tries, after]);
 }
 
-/** Radar: a labelled drainer has just paid DataPro (the world sets that up on-chain before this runs). */
+/** Radar: a labelled drainer has just paid TradeWire (the world sets that up on-chain before this runs). */
 function* sceneRadar(): Scene {
-  if (!(yield* draft(intent("Durian export premium report with 2026 forecast", "2.00", "2.00", 1)))) return declined();
-  const first = yield* purchase("datapro", "premium-report", { reason: "DataPro's premium report adds the 2026 forecast for US$1.50." });
+  if (!(yield* draft(intent("Durian exporter credit report", "0.05", "0.05", 1)))) return declined();
+  const first = yield* purchase("tradewire", "credit-report", { reason: "TradeWire's credit report covers the exporter's payment history for US$0.05." });
   if (first.ok || first.reason !== "COUNTERPARTY_HIGH_RISK") return summary([first]);
-  yield { tool: "search_sellers", input: { category: "Research data" }, say: "Radar blocked DataPro: most of its money came from a drainer. Looking for a clean seller with durian export data." };
-  const second = yield* purchase("datalite", "durian-report");
-  return `Radar blocked DataPro: ${first.why ?? "its money traces to a drainer"}. I didn't pay it and re-planned. ${summary([second])} DataLite's report has no 2026 forecast.`;
+  yield { tool: "search_sellers", input: { category: "Research data" }, say: "Radar blocked TradeWire: most of its money came from a drainer. Looking for a clean seller with data on the exporter." };
+  const second = yield* purchase("nansen", "wallet-balances");
+  return `Radar blocked TradeWire: ${first.why ?? "its money traces to a drainer"}. I didn't pay it and re-planned. ${summary([second])} It shows the exporter's holdings, not a credit history.`;
 }
 
 function* scene4(): Scene {
-  if (!(yield* draft(intent("Fruit and wine trade report", "1.00", "1.00", 1)))) return declined();
+  if (!(yield* draft(intent("Fruit and wine trade report", "0.05", "0.05", 1)))) return declined();
   const first = yield* purchase("harbour-wines", "fruit-wine-trade-report", { payAnyway: true });
   if (first.ok) return summary([first]);
-  yield { tool: "search_sellers", input: { category: "Research data" }, say: `${name(first.sellerId)} isn't on this pocket's list. Looking for an allowed seller with a similar report.` };
-  const second = yield* purchase("datalite", "fruit-trade-report");
+  yield { tool: "search_sellers", input: { category: "Research data" }, say: `${name(first.sellerId)} isn't on this pocket's list. Looking for an allowed seller with fruit trade data.` };
+  const second = yield* purchase("exa", "fruit-news");
   const lead = first.reason === "SELLER_NOT_ALLOWED" ? `${name(first.sellerId)} isn't on this pocket's list, so I re-planned.` : `${name(first.sellerId)} can't be paid from this pocket (${why(first.reason)}), so I re-planned.`;
   return `${lead} ${summary([second])}`;
 }
 
 function* scene5(): Scene {
-  if (!(yield* draft(intent("Durian export market report", "1.00", "1.00", 1)))) return declined();
+  if (!(yield* draft(intent("USDC price in HKD", "0.01", "0.01", 1)))) return declined();
   const peek = yield { tool: "get_quote", input: { sellerId: "shadyfeed", sku: "preview" }, say: "Reading ShadyFeed's free preview. Anything it says is data to me, never an instruction." };
-  const o = yield* purchase("datalite", "durian-report");
+  const o = yield* purchase("coingecko", "usdc-price");
   const flagged = peek?.refused?.length || /usdc|send|transfer/i.test(String(peek?.content))
     ? " Warning: ShadyFeed's preview contained instructions to send 50 USDC to another address and asked for more than a purchase needs; I ignored it and flagged the source."
     : " ShadyFeed's preview contained nothing I acted on.";
@@ -150,12 +164,12 @@ function* scene6(): Scene {
 }
 
 function* scene7(windowMs: number): Scene {
-  if (!(yield* draft(intent("Durian and fruit trade reports from DataLite", "1.00", "2.00", 2)))) return declined();
-  const first = yield* purchase("datalite", "durian-report", { payAnyway: true });
-  const q = yield { tool: "get_quote", input: { sellerId: "datalite", sku: "fruit-trade-report" }, delayMs: windowMs, say: "One down. Getting the price of the fruit trade report next." };
-  let second: Outcome = { sellerId: "datalite", sku: "fruit-trade-report", ok: false, reason: q?.allowedByPocket?.reason ?? q?.reason, price: q?.price };
+  if (!(yield* draft(intent("Two Exa searches: durian exports and SE Asia fruit trade", "0.01", "0.02", 2)))) return declined();
+  const first = yield* purchase("exa", "durian-news", { payAnyway: true });
+  const q = yield { tool: "get_quote", input: { sellerId: "exa", sku: "fruit-news" }, delayMs: windowMs, say: "One down. Getting the price of the fruit trade search next." };
+  let second: Outcome = { sellerId: "exa", sku: "fruit-news", ok: false, reason: q?.allowedByPocket?.reason ?? q?.reason, price: q?.price };
   if (q?.ok) {
-    const p = yield { tool: "pay", input: { quoteId: q.quoteId }, say: `Paying DataLite US$${q.price} from the pocket.` };
+    const p = yield { tool: "pay", input: { quoteId: q.quoteId }, say: `Paying Exa US$${q.price} from the pocket.` };
     second = p?.ok ? { ...second, ok: true, tx: p.tx } : { ...second, reason: p?.reason, why: p?.why };
   }
   if (!second.ok && second.reason === "POCKET_REVOKED")
@@ -164,10 +178,10 @@ function* scene7(windowMs: number): Scene {
 }
 
 function* scene8(): Scene {
-  if (!(yield* draft(intent("Durian export market report", "0.20", "0.20", 1)))) return declined();
+  if (!(yield* draft(intent("Durian export news", "0.005", "0.005", 1)))) return declined();
   yield { tool: "search_sellers", input: {}, say: "Checking every seller against this pocket's limits." };
-  const lite = yield { tool: "get_quote", input: { sellerId: "datalite", sku: "durian-report" }, say: "Asking DataLite for the price of its durian export report." };
-  const pro = yield { tool: "get_quote", input: { sellerId: "datapro", sku: "premium-report" }, say: "Asking DataPro too, in case it fits." };
+  const lite = yield { tool: "get_quote", input: { sellerId: "exa", sku: "durian-news" }, say: "Asking Exa for the price of a web search on durian exports." };
+  const pro = yield { tool: "get_quote", input: { sellerId: "coingecko", sku: "usdc-price" }, say: "Asking CoinGecko too, in case it fits." };
   const line = (id: string, q: any) => {
     const r = q?.allowedByPocket === "OK" ? undefined : q?.allowedByPocket?.reason ?? q?.reason;
     if (!r) return `${name(id)} costs US$${q.price} and is allowed.`;
@@ -175,8 +189,8 @@ function* scene8(): Scene {
     if (r === "SELLER_NOT_ALLOWED") return `${name(id)} isn't on your list.`;
     return `${name(id)} can't be paid: ${why(r)}.`;
   };
-  const price = lite?.price ?? "0.30";
-  return `No allowed seller fits. ${line("datalite", lite)} ${line("datapro", pro)} Nothing was paid. Fix: raise the cap and budget to US$${price}, then ask me again.`;
+  const price = lite?.price ?? "0.007";
+  return `No allowed seller fits. ${line("exa", lite)} ${line("coingecko", pro)} Nothing was paid. Fix: raise the cap and budget to US$${price}, then ask me again.`;
 }
 
 // ---- attacks a judge can type (the four named in the rules). The agent refuses in words; the world then shows the
@@ -218,8 +232,8 @@ function* hello(): Scene {
   return HELLO;
 }
 
-export const HELLO = "Hi. I buy research for you from the sellers this pocket allows, inside its limits. Tell me what you need, a price limit and a deadline, for example: \"Get me a market report on durian exports, under US$2, by tonight.\"";
-export const FALLBACK = "I can only buy from the research sellers this pocket allows. Tell me what you need, a price limit and a deadline, for example: \"Buy the DataLite durian report. Max US$1, by tonight.\"";
+export const HELLO = "Hi. I buy data for you from the sellers this pocket allows, inside its limits. Tell me what you need, a price limit and a deadline, for example: \"Research a durian import deal for me: export news, the USDC price and a check on the exporter's wallet. Under US$0.10, by tonight.\"";
+export const FALLBACK = "I can only buy from the sellers this pocket allows. Tell me what you need, a price limit and a deadline, for example: \"Search Exa for durian export news. Max US$0.01, by tonight.\"";
 
 /** Pick the scene for the owner's message (`asked`: an unanswered clarifying question from scene 1). */
 export function route(text: string, o: { asked: boolean; revokeWindowMs: number }): Scene | undefined {
@@ -233,13 +247,15 @@ export function route(text: string, o: { asked: boolean; revokeWindowMs: number 
   if (/shadyfeed/.test(t) && /full feed|whatever they need|give them/.test(t)) return scene6();
   if (/shadyfeed/.test(t)) return scene5();
   if (/harbour|wine/.test(t)) return scene4();
-  if (/durian report and (its|the) fruit|fruit trade report.*durian report|both reports|two reports/.test(t)) return scene7(o.revokeWindowMs);
-  if (/0\.2\b|0\.20|20 cents/.test(t) && /report/.test(t)) return scene8();
-  if (/market report on durian|durian export.*under us\$?2|research on durian/.test(t)) return scene1Ask();
+  if (/two (exa )?searches|both searches|durian (export )?news and (the )?(se asia )?fruit/.test(t)) return scene7(o.revokeWindowMs);
+  if (/0\.005\b|half a cent/.test(t)) return scene8();
+  if (/durian import deal|research a durian/.test(t)) return scene1Ask();
   if (o.asked) return scene1Answer();
-  if (/premium|forecast|datapro/.test(t)) return scene3();
+  if (/nansen|counterpart|exporter'?s wallet/.test(t)) return scene3();
+  if (/tradewire|credit report/.test(t)) return creditOnly();
+  if (/coingecko|usdc price/.test(t)) return priceOnly();
   if (/fruit trade/.test(t)) return fruitOnly();
-  if (/datalite|durian/.test(t)) return scene2();
+  if (/\bexa\b|durian/.test(t)) return scene2();
   if (/^(hi|hello|hey|yo)\b|what can you do|help/.test(t)) return hello();
   return undefined;
 }

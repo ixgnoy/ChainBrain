@@ -1,4 +1,6 @@
 # Demo script: 5-minute video, 10-minute deck, live defence, minimum slice
+
+> **Built-in network (the app's default, and the video):** the sellers are real x402 data providers at their published per-request prices, Exa US$0.007, CoinGecko US$0.01 and Nansen US$0.05, with the durian deal as the task (see `docs/06-pitch/demo-runbook.md` and `shared/brand/SOURCES.md`). The table below is the real test chain's story, where the team's own sellers DataLite and DataPro stay: on a public chain those payees are the team's addresses, so real company names would be false.
 Last updated: 2026-10-14
 
 > **How to run it (15 Oct):** step-by-step presenter runbook for the phone + console, built-in network, scenes 1-8: [demo-runbook.md](demo-runbook.md).

@@ -15,8 +15,8 @@ test("plain wording: refused rows read as sentences, approved approvals are hidd
   assert.equal(v.sub, "Refused: seller not on your list");
   assert.equal(v.rightSub, "Refused");
   const signed = rows.find((r) => r.cosigned)!;
-  assert.equal(describeRow(signed, "DataPro", "x").rightSub, "Co-signed");
-  assert.equal(describeRow(signed, "DataPro", "x").right, "US$1.50");
+  assert.equal(describeRow(signed, "Nansen", "x").rightSub, "Co-signed");
+  assert.equal(describeRow(signed, "Nansen", "x").right, "US$0.05");
   assert.equal(plainReason("SOMETHING_NEW"), "not allowed by your rules");
 });
 
@@ -25,8 +25,8 @@ import { deadEndOf } from "./deadend";
 import { addOwnerTx, ownerRows } from "./ownerTxs";
 
 test("worst case line names the balance and the allowed sellers", () => {
-  assert.equal(worstCase(3_200_000n, ["DataLite", "DataPro"]), "If the agent is hijacked, the most it can lose is US$3.20, only to DataLite and DataPro.");
-  assert.match(worstCase(300_000n, ["DataLite"]), /only to DataLite\.$/);
+  assert.equal(worstCase(1_285_000n, ["Exa", "Nansen"]), "If the agent is hijacked, the most it can lose is US$1.285, only to Exa and Nansen.");
+  assert.match(worstCase(5_000n, ["Exa"]), /only to Exa\.$/);
   assert.match(worstCase(0n, []), /empty/);
 });
 

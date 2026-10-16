@@ -21,15 +21,18 @@ import { agentInfo, CAN, CANNOT, type AgentId } from "../../../shared/sim/agents
 import { parseUsd } from "../lib/shared";
 import { uniqueName } from "../app/create";
 
-const BUDGETS = ["2", "5", "10"];
-const CAP = "2", ASK = "0.50", DAYS = 7;
+// the built-in network's sellers charge per request (Exa US$0.007, CoinGecko US$0.01, Nansen up to US$0.05)
+const BUDGETS = ["0.20", "0.50", "1"];
+const CAP = "0.05", ASK = "0.02", DAYS = 7;
 
 export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: AgentId; visible: boolean; onClose: () => void; onAllowed: (pocket: Address) => void }) {
   const { pockets, wallet, cfg, addPocket, recordTx, refreshPockets, balances } = useApp();
   const info = agentInfo(agent)!;
-  const [budget, setBudget] = useState("5");
+  const [budget, setBudget] = useState("0.50");
   const research = useMemo(() => (cfg?.sellers ?? []).filter((s) => s.category === "Research data" && s.id !== "shadyfeed"), [cfg]);
-  const [sellers, setSellers] = useState<string[]>(["datalite", "datapro"]);
+  const [sellers, setSellers] = useState<string[]>(["exa", "coingecko", "nansen"]);
+  const names = sellers.map((id) => cfg?.sellers.find((s) => s.id === id)?.name ?? id);
+  const sellerList = names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}`;
   const [done, setDone] = useState<{ pocket: Address; name: string; txs: { label: string; hash: string }[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const others = pockets.filter((p) => !p.revoked);
@@ -62,7 +65,7 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
     <Sheet visible={visible} onClose={onClose}>
       {done ? (
         <View style={{ paddingHorizontal: 20, paddingBottom: 12, gap: 16 }}>
-          <SheetSuccess title={`${info.name} can use ${done.name}`} sub={`US$${budget} in the pocket. ${info.name} pays only DataLite or DataPro, asks you above US$${ASK}, and stops when you disconnect it.`} txs={done.txs} />
+          <SheetSuccess title={`${info.name} can use ${done.name}`} sub={`US$${budget} in the pocket. ${info.name} pays only ${sellerList}, asks you above US$${ASK}, and stops when you disconnect it.`} txs={done.txs} />
           <Button label={`See ${info.name}`} onPress={() => onAllowed(done.pocket)} auto="consent.done" />
         </View>
       ) : (

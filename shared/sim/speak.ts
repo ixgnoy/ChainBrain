@@ -25,7 +25,9 @@ const money = /us?\$\s?(\d+(?:\.\d{1,2})?)|(\d+(?:\.\d{1,2})?)\s?(?:usd|usdc|dol
 export function parseSentence(text: string, sellers: Seller[]): Compiled {
   const t = ` ${text.toLowerCase()} `;
   const questions: Question[] = [];
-  const picked = sellers.filter((s) => t.includes(s.name.toLowerCase()) || t.includes(s.id.replace(/-/g, " ")));
+  // whole words only: "Exa" must not match "exactly" or "example"
+  const word = (w: string) => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(t);
+  const picked = sellers.filter((s) => word(s.name.toLowerCase()) || word(s.id.replace(/-/g, " ")));
   const amountNear = (re: RegExp) => { const m = re.exec(t); if (!m) return undefined; const a = money.exec(m[0]); return a ? fmt(num(a[1] ?? a[2])) : undefined; };
   const cap = amountNear(/(?:at most|up to|max(?:imum)?|no more than|under)\s+us?\$\s?\d+(?:\.\d{1,2})?\s*(?:each|per (?:payment|report|item|purchase))|us?\$\s?\d+(?:\.\d{1,2})?\s*(?:each|per (?:payment|report|item|purchase))/);
   const budget = amountNear(/us?\$\s?\d+(?:\.\d{1,2})?\s*(?:budget|in total|total|for (?:the|this|a) (?:pocket|task|week|month))|(?:budget|total)(?: of)?\s+us?\$\s?\d+(?:\.\d{1,2})?|^\s*(?:give it |put in |fund (?:it )?with )?us?\$\s?\d+(?:\.\d{1,2})?\s+(?:for|to)/);

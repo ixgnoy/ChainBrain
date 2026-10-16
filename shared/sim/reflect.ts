@@ -15,7 +15,7 @@ export const ownerEvidence = (text: string): Evidence => ({ id: `m:${hash8(text)
 const eid = (e: SimEvent) => `e:${e.at}`;
 const usd = (v: unknown) => { try { return `US$${formatUsd(BigInt(String(v ?? 0)))}`; } catch { return "US$?"; } };
 const itemOf = (sellerId: string, sku: string) => sellerById(sellerId)?.items.find((i) => i.sku === sku)?.description ?? sku;
-const SELLERS = /\b(datalite|datapro|harbour wines|shadyfeed)\b/i;
+const SELLERS = /\b(exa|coingecko|nansen|tradewire|harbour wines|shadyfeed)\b/i;
 
 /** Answers the questions from evidence and proposes operations on the current snapshot. */
 export function scriptedReflection(prev: Snapshot, owner: Evidence[], events: SimEvent[]): { reflection: Reflection; evidence: Evidence[] } {
@@ -27,7 +27,7 @@ export function scriptedReflection(prev: Snapshot, owner: Evidence[], events: Si
   // the owner's own words: preferences and "never" rules (a "never" narrows, so it is always allowed)
   for (const m of owner) {
     const t = m.text;
-    const pref = /\bi (?:prefer|like|trust)\s+(datalite|datapro|harbour wines)\b/i.exec(t);
+    const pref = /\bi (?:prefer|like|trust)\s+(exa|coingecko|nansen|tradewire|harbour wines)\b/i.exec(t);
     if (pref) ops.push({ op: "add", kind: "preference", text: `Prefers ${sellerName(pref[1].toLowerCase().replace(" ", "-"))}`, source: m.id, effect: "neutral" });
     const never = /\b(?:never|don'?t ever|do not)\s+(buy|use|pay)\s+([^.,!?]{3,40})/i.exec(t);
     if (never) ops.push({ op: "add", kind: "preference", text: `Never ${never[1].toLowerCase()} ${never[2].trim()}`, source: m.id, effect: "narrow" });

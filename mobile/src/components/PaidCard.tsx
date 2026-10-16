@@ -1,5 +1,5 @@
 // A settled payment inside the agent chat, in the shared event-card grammar: the check draws (Success haptic once per payment),
-// "Paid DataLite", what was bought, whether the owner co-signed, the amount on the right; a tap opens the receipt.
+// "Paid Exa", what was bought, whether the owner co-signed, the amount on the right; a tap opens the receipt.
 import React from "react";
 import { useApp } from "../store";
 import { T } from "../ui/Text";

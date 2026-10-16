@@ -75,7 +75,7 @@ function SpillCard({ p, i, t, cw, h, tone }: { p: Pocket; i: number; t: SharedVa
 }
 
 // ---- page 2: a lock closes, then the rules of the contract draw in line by line
-const RULES: [string, string][] = [["Allowed sellers", "DataLite, DataPro"], ["Per payment", "up to US$2.00"], ["Ask me above", "US$1.00"]];
+const RULES: [string, string][] = [["Allowed sellers", "Exa, CoinGecko, Nansen"], ["Per payment", "up to US$0.05"], ["Ask me above", "US$0.02"]];
 function ContractArt({ active, reduce }: { active: boolean; reduce: boolean }) {
   const t = usePlay(active, reduce, 1500, 200);
   const shackle = useAnimatedStyle(() => ({ transform: [{ translateY: -7 * (1 - win(t.value, 0.05, 0.3)) }] }));
@@ -128,8 +128,9 @@ function WorstArt({ active, reduce }: { active: boolean; reduce: boolean }) {
       <View style={{ gap: 10 }}>
         <T v="cap" w="medium" color="muted">It can only pay</T>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          <Chip t={t} from={0.55} label="DataLite" ok />
-          <Chip t={t} from={0.65} label="DataPro" ok />
+          <Chip t={t} from={0.55} label="Exa" ok />
+          <Chip t={t} from={0.6} label="CoinGecko" ok />
+          <Chip t={t} from={0.65} label="Nansen" ok />
           <Chip t={t} from={0.78} label="Anyone else" />
         </View>
       </View>

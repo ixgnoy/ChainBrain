@@ -1,28 +1,43 @@
-// The seller catalogue, kept identical to server/src/sellers.json (ids, skus, prices) and server/src/content/* (what a
-// purchase delivers), so a story told on the built-in network matches the real one word for word.
+// The built-in network's sellers. Exa, CoinGecko and Nansen are real data providers that sell to agents per request over
+// x402; their items and prices are the ones each publishes (Exa's x402 guide: /search US$0.007; CoinGecko's x402 docs:
+// US$0.01 per request; Nansen's x402 docs: basic endpoints US$0.01, premium US$0.05). What a purchase delivers here is
+// illustrative content of the right shape, generated on this test network, not a live response. The other sellers are
+// fictional on purpose: Harbour Wines (not on any pocket's list), ShadyFeed (a phishing feed) and TradeWire (paid by a
+// labelled drainer in the Radar scene), so no real company is ever shown as malicious. The real server (server/src/
+// sellers.json) keeps its own sellers: on the public test chain it pays the team's addresses, so it must not use real names.
 import type { Hex, SimSeller } from "./types";
 
 export type CatalogItem = { sku: string; description: string; price: string | null; content: string };
 export type CatalogSeller = Omit<SimSeller, "items"> & { items: CatalogItem[] };
 
-const DURIAN = `# Durian exports to China, 2025 (DataLite)
-- Total volume: 1.42 million tonnes (+9% year on year)
-- Top origins: Thailand 61%, Vietnam 31%, Malaysia 6%, Philippines 2%
-- Average wholesale price: CNY 38 per kg (Q4)
-- Peak months: May to July
-- Fastest-growing channel: frozen Musang King pulp (+22%)`;
+const NEWS = `# Web search: durian exports to China (Exa, 10 results)
+- Thai durian exports to China hit a record season, customs data show
+- Vietnam's frozen durian approved for China, new orchards registered
+- Malaysia's Musang King gains share in premium segment
+- Laos-China railway cuts transit for Thai fruit to under 24 hours
+(and 6 more links)`;
 
-const FRUIT = `# SE Asia fruit trade report 2025 (DataLite)
-- Regional fruit exports: US$28.4 billion (+6%)
-- Durian 24%, mangosteen 9%, longan 8%, dragon fruit 7%
-- China takes 58% of regional fruit exports by value
-- Cold-chain capacity up 14% at Laem Chabang and Hai Phong`;
+const FRUIT = `# Web search: SE Asia fruit trade (Exa, 10 results)
+- ASEAN fruit exports to China up year on year, durian leads
+- Cold-chain capacity expands at Laem Chabang and Hai Phong
+- Mangosteen and longan shipments rise ahead of the holidays
+(and 7 more links)`;
 
-const PREMIUM = `# Durian exports premium report with 2026 forecast (DataPro)
-- 2024 baseline: 1.30 million tonnes; 2025: 1.42 million tonnes
-- 2026 forecast: 1.55 to 1.61 million tonnes (base case 1.58)
-- Price outlook: CNY 34 to 40 per kg; downside risk from Vietnamese supply
-- Watch list: phytosanitary rule changes, rail freight via Laos`;
+const PRICE = `# USDC price (CoinGecko, simple price)
+- usd-coin: 1.000 USD, 7.78 HKD
+- 24 h volume and last-updated time included`;
+
+const COUNTERPARTIES = `# Counterparties of the exporter's wallet (Nansen, premium)
+- Top counterparties by volume, last 30 days, with Nansen labels
+- No interaction with wallets labelled as exploit, drainer or sanctioned
+- Most volume with two exchange deposit addresses and one freight forwarder`;
+
+const BALANCES = `# Exporter wallet balances (Nansen, Current Balances)
+- Holdings by token and chain, in USD
+- Stablecoins make up most of the balance`;
+
+const CREDIT = `# Durian exporter credit report (TradeWire)
+- Payment history and trade references for the exporter`;
 
 const HARBOUR = `# Fruit and wine trade report (Harbour Wines)
 - Hong Kong fruit wine imports: HK$410 million
@@ -43,19 +58,30 @@ export const SHADY_PREVIEW = {
 
 export const CATALOG: CatalogSeller[] = [
   {
-    id: "datalite", name: "DataLite", category: "Research data", payTo: "0x7a3e5b1c0d94f2a86b1e4c7d3f25a90b6c1d8e42",
+    id: "exa", name: "Exa", category: "Research data", payTo: "0x7a3e5b1c0d94f2a86b1e4c7d3f25a90b6c1d8e42",
     items: [
-      { sku: "durian-report", description: "Durian exports to China, 2025 market report", price: "0.30", content: DURIAN },
-      { sku: "fruit-trade-report", description: "SE Asia fruit trade report 2025", price: "0.35", content: FRUIT },
+      { sku: "durian-news", description: "Web search: durian export news (10 results)", price: "0.007", content: NEWS },
+      { sku: "fruit-news", description: "Web search: SE Asia fruit trade news (10 results)", price: "0.007", content: FRUIT },
     ],
   },
   {
-    id: "datapro", name: "DataPro", category: "Research data", payTo: "0x2c9b41e6f3a07d58b9c2e1f4a6d83b07e5c9a1f3",
-    items: [{ sku: "premium-report", description: "Durian exports premium report with 2026 forecast", price: "1.50", content: PREMIUM }],
+    id: "coingecko", name: "CoinGecko", category: "Research data", payTo: "0x4b8d2e71c9a03f56e1b7d4c2a9f80e3d6b1c5a27",
+    items: [{ sku: "usdc-price", description: "USDC price in HKD and USD", price: "0.01", content: PRICE }],
+  },
+  {
+    id: "nansen", name: "Nansen", category: "Research data", payTo: "0x2c9b41e6f3a07d58b9c2e1f4a6d83b07e5c9a1f3",
+    items: [
+      { sku: "counterparties", description: "Counterparties of the exporter's wallet", price: "0.05", content: COUNTERPARTIES },
+      { sku: "wallet-balances", description: "Exporter wallet balances", price: "0.01", content: BALANCES },
+    ],
+  },
+  {
+    id: "tradewire", name: "TradeWire", category: "Research data", payTo: "0x6f2a9c4e1b7d03a58e9c2b6d4f1a73e0c8b5d912",
+    items: [{ sku: "credit-report", description: "Durian exporter credit report", price: "0.05", content: CREDIT }],
   },
   {
     id: "harbour-wines", name: "Harbour Wines", category: "Food and drink", payTo: "0x9e1f7c3a5b28d4e06a7b9c1d2e3f4a5b6c7d8e90",
-    items: [{ sku: "fruit-wine-trade-report", description: "Fruit and wine trade report", price: "0.40", content: HARBOUR }],
+    items: [{ sku: "fruit-wine-trade-report", description: "Fruit and wine trade report", price: "0.02", content: HARBOUR }],
   },
   {
     id: "shadyfeed", name: "ShadyFeed", category: "Research data", payTo: "0x51ade0f3b6c4e2a9d87b1c5e3f9a2b4c6d8e0f17",
@@ -68,5 +94,5 @@ export const sellerById = (id: string) => CATALOG.find((s) => s.id === id);
 export const sellerByPayTo = (a: string) => CATALOG.find((s) => s.payTo.toLowerCase() === a.toLowerCase());
 export const sellerName = (id: string) => sellerById(id)?.name ?? id;
 export const ATTACKER: Hex = "0x000000000000000000000000000000000000ABC0";
-/** A wallet the built-in network labels "drainer" (Radar demo): it pays DataPro in scene 9. */
+/** A wallet the built-in network labels "drainer" (Radar demo): it pays TradeWire in scene 9. */
 export const DRAINER: Hex = "0xd4a1e5f0bad00000000000000000000000000dea";

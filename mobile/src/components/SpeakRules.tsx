@@ -15,7 +15,7 @@ import { cleanText } from "../lib/sanitize";
 import * as api from "../lib/api";
 import { answer, proof, type Compiled, type Draft } from "../../../shared/sim/speak";
 
-export const EXAMPLE = "US$5 for durian research from DataLite or DataPro, at most US$2 each, ask me above US$1, until tonight";
+export const EXAMPLE = "US$1 for durian research from Exa, CoinGecko or Nansen, at most US$0.05 each, ask me above US$0.02, until tonight";
 
 export function SpeakRules({ onUse }: { onUse(d: Draft): void }) {
   const { cfg } = useApp();

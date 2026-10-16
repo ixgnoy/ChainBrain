@@ -399,7 +399,7 @@ export function createWorld(opts: WorldOptions = {}) {
     const answering = !!t.asked;
     t.asked = false;
     const scene: Scene | undefined = route(text, { asked: answering, revokeWindowMs: opts.revokeWindowMs ?? 9000 });
-    if (scene && /drainer/i.test(text) && !attackOf(text)) await world.drainerPays("datapro");
+    if (scene && /drainer/i.test(text) && !attackOf(text)) await world.drainerPays("tradewire");
     await jitter(500, 900); // first token
     if (!scene) {
       const reply = FALLBACK;

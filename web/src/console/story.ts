@@ -108,6 +108,6 @@ export function pocketNamer(pockets: PocketState[]): (address: string) => string
 }
 
 // ------------------------------------------------------------------ plain tool-call rows for presenter mode
-/** "get_quote(sellerId=datalite sku=x) → within rules" -> the part after the arrow (or nothing for a call still running). */
+/** "get_quote(sellerId=exa sku=x) → within rules" -> the part after the arrow (or nothing for a call still running). */
 export const plainSummary = (title: string) => (title.includes("→") ? title.split("→").slice(1).join("→").trim() : "");
 export const argsOf = (title: string) => /\((.*)\)\s*(?:→|$)/.exec(title)?.[1] ?? "";

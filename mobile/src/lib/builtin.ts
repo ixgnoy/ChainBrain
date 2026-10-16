@@ -42,13 +42,13 @@ export function startOutsideAgents(pockets: SeededPocket[], delayMs = 12_000) {
 
 /** The owner allowed an outside agent and gave it a new pocket (Connect, consent sheet): it connects, reads the pocket, then
  *  starts the task it came for. That task needs the owner twice, in the Approvals inbox: confirm the task, then co-sign the
- *  premium report (US$1.50, above the pocket's US$0.50 ask-me limit). Resolves when its run ends. */
+ *  counterparty check (US$0.05, above the pocket's US$0.02 ask-me limit). Resolves when its run ends. */
 export async function startGrantedAgent(id: AgentId, pocket: Hex) {
   const w = builtin();
   w.connect(id);
   await w.act(id, pocket, firstRun());
   await w.sleep(1800);
-  return w.act(id, pocket, errand({ what: "Durian 2026 forecast for this week's market brief", maxPrice: "2.00", maxTotal: "2.00", buys: [["datapro", "premium-report"]], say: "Writing down what I'd like to buy, so you can confirm it before I spend anything." }));
+  return w.act(id, pocket, errand({ what: "A check on the exporter's wallet for this week's market brief", maxPrice: "0.05", maxTotal: "0.05", buys: [["nansen", "counterparties"]], say: "Writing down what I'd like to buy, so you can confirm it before I spend anything." }));
 }
 
 /** Tests: start over. */

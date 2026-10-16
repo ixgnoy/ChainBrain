@@ -26,8 +26,8 @@ test("agentViews: numbers come from the pockets and the ledger", async () => {
   const views = agentViews({ pockets, events, ledger, pending: livePending(events), states: w.agents() });
   const claude = views.find((a) => a.id === "claude")!;
   assert.equal(claude.pockets.length, 1);
-  assert.equal(claude.balance, 4_900_000n);
-  assert.equal(claude.spent, 3_100_000n); // 0.30 + 0.35 + 1.50 + 0.30 + 0.35 + 0.30
+  assert.equal(claude.balance, 412_000n);
+  assert.equal(claude.spent, 88_000n); // Exa 0.007 + 0.007, TradeWire 0.05, Exa 0.007, CoinGecko 0.01, Exa 0.007
   assert.equal(claude.payments, 6);
   assert.equal(claude.refusals, 1);
   assert.equal(claude.status, "connected");

@@ -122,7 +122,7 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await say(text("1").text);
     await until("the clarifying question", (s) => s.pending.some((p) => p.kind === "question"), 20_000);
     await wait(1800);
-    await must("question.answer", "per report");
+    await must("question.answer", "in total");
     await drive();
     await wait(3000);
 
@@ -209,14 +209,14 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
           await wait(2600);
           const paidBefore = host.state().lastPaymentAt;
           await must("approval.slide");
-          // let Claude's payment settle before scene 9: there Radar flags DataPro, and an unsettled payment would be refused
+          // let Claude's payment settle before scene 9: there Radar flags TradeWire, and an unsettled payment would be refused
           await until("Claude's payment settles", (s) => s.lastPaymentAt > paidBefore, 30_000).catch(soft);
           await wait(3200);
         }
       }
     }
 
-    // ---- scene 9: Radar blocks DataPro after a drainer pays it; scene 10: the Sentinel freezes a probing agent
+    // ---- scene 9: Radar blocks TradeWire after a drainer pays it; scene 10: the Sentinel freezes a probing agent
     host.navigate("/agent");
     await wait(1600);
     await must("picker.open");

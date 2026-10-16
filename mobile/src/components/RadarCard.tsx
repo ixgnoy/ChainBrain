@@ -1,5 +1,5 @@
 // Radar in the agent chat and Activity: what the on-chain screening found about a seller before money moved. A risky seller gets a
-// full card (title, the plain sentence, a 10-step score bar, the money trail "Demo drainer → DataPro"); clean sellers fold into one
+// full card (title, the plain sentence, a 10-step score bar, the money trail "Demo drainer → TradeWire"); clean sellers fold into one
 // quiet line, so the owner still sees that every seller was checked. The narrative comes from a fixed template on the server, never
 // from a model or the seller, and it is cleaned and bounded here anyway.
 import React from "react";
@@ -30,7 +30,7 @@ export function ScoreBar({ score, verdict }: { score: number; verdict: RadarView
   );
 }
 
-/** "Demo drainer → 0x12…9a → DataPro", wrapping on small phones. The counterparty is the last chip. */
+/** "Demo drainer → 0x12…9a → TradeWire", wrapping on small phones. The counterparty is the last chip. */
 export function Trail({ names }: { names: string[] }) {
   if (names.length < 2) return null;
   return (
@@ -72,7 +72,7 @@ export function RadarCard({ v, id }: { v: RadarView; id: string }) {
   );
 }
 
-/** Every seller screened clean in this turn, as one quiet line: "Radar checked DataLite and DataPro: no known risk". */
+/** Every seller screened clean in this turn, as one quiet line: "Radar checked Exa and Nansen: no known risk". */
 export function RadarClean({ list }: { list: RadarView[] }) {
   if (!list.length) return null;
   const names = list.map((v) => cleanText(v.counterparty, 30));
