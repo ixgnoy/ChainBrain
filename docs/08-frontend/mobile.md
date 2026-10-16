@@ -15,7 +15,7 @@ EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787 npx expo start       # address o
 
 ## Built-in network (default)
 
-`shared/sim` runs the wallet API, tool layer, scripted agent and the Pocket.sol rules in the app on a virtual chain (`src/lib/builtin.ts`). It is seeded with two weeks of real activity, produced by running the same plans through the world on a clock set back in time (`shared/sim/seed.ts`): Research data (held by ChainBrain's agent), Market news (held by **Claude**, connected 12 days ago), Trade quotes (held by **ChatGPT**, connected 9 days ago) and One purchase (ChainBrain, for scene 8); main wallet US$54.80. The sellers are real x402 data providers at their published per-request prices: **Exa** (web search, US$0.007), **CoinGecko** (USDC price, US$0.01) and **Nansen** (wallet data, US$0.01 or US$0.05), with official logos (`shared/brand/SOURCES.md`); TradeWire, Harbour Wines and ShadyFeed are fictional on purpose (Radar, refusal and injection scenes). A little after launch Claude asks, from the ask dock, to co-sign Nansen's US$0.05 counterparty check, above its pocket's US$0.02 limit. Every owner action, agent turn, co-sign and refusal works offline; scenes 1-11 play end to end. Paid cards show in chat, replies stream, and receipts say what was bought.
+`shared/sim` runs the wallet API, tool layer, scripted agent and the Pocket.sol rules in the app on a virtual chain (`src/lib/builtin.ts`). It is seeded with two weeks of real activity, produced by running the same plans through the world on a clock set back in time (`shared/sim/seed.ts`): Research data (held by ChainBrain's agent), Market news (held by **Claude**, connected 12 days ago), Trade quotes (held by **ChatGPT**, connected 9 days ago), One purchase (ChainBrain, for scene 8), Premium reports (scene 11), and the two routine pockets Durian watch (Claude's deal watcher) and Data renewals (ChainBrain's subscriptions); main wallet US$54.80. The sellers are real x402 data providers at their published per-request prices: **Exa** (web search, US$0.007), **CoinGecko** (USDC price, US$0.01) and **Nansen** (wallet data, US$0.01 or US$0.05), with official logos (`shared/brand/SOURCES.md`); TradeWire, Harbour Wines and ShadyFeed are fictional on purpose (Radar, refusal and injection scenes). A little after launch Claude asks, from the ask dock, to co-sign Nansen's US$0.05 counterparty check, above its pocket's US$0.02 limit. Every owner action, agent turn, co-sign and refusal works offline; scenes 1-11 play end to end. Paid cards show in chat, replies stream, and receipts say what was bought.
 
 **Agents.** Each pocket names exactly one agent key (Pocket.sol `agent` is immutable); one agent can hold several pockets, each granted separately. Claude and ChatGPT are connected agents on the built-in network (`shared/sim/agents.ts`): they act through the same wallet tools as the in-app agent, so the pocket rules, Radar and the Sentinel decide for them too. **Disconnect** stops an agent and declines its open requests; the money stays in its pockets. **Revoke** (one hold) freezes a pocket for good and returns everything left to the main wallet: two owner transactions. On a real server only the built-in agent exists until ChainBrain's MCP server ships, so Connect is not offered there.
 
@@ -24,6 +24,57 @@ It is meant for demos and offline use. Its hashes are not on a public chain, so 
 **Use a real server:** Settings, Advanced, **Custom server** switch, enter the URL, Test, Connect. The choice holds while the app runs (backgrounding, tab switches); a full reload or relaunch opens on the built-in network again. The address stays filled in (`cb.apiUrl`). Switch it off to return to the built-in network.
 
 **Link to the web console:** on the built-in network the phone quietly pushes its pockets and events to a relay (`src/lib/relay.ts`, backs off when none answers). On the laptop run `pnpm --dir devstack relay` (or the full `pnpm --dir devstack start`), start the phone with `EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787`, and keep it on the built-in network. The console then mirrors the phone, and the Judges tab's plant and forced transfer run on the phone's pockets.
+
+## Pocket apps (17 Oct)
+
+Every pocket page is its own app. Full description: [pocket-apps.md](pocket-apps.md).
+
+**The pocket page,** top to bottom:
+- **The card,** with its job's face: research desk black, deal watcher powder blue, subscriptions white hatch, haggler vermillion.
+- **Who runs it:** the agent's own mark, its name and the layout, what it may do on its own, and a status. Tapping it opens the agent.
+- **Add, Return and Revoke.**
+- **The blocks the pocket's spec names.**
+- **The owner zone,** which the AI never touches:
+  - Rules you signed;
+  - Worst case;
+  - Allowed sellers;
+  - History.
+
+**Blocks by layout:**
+
+| Layout | Blocks |
+| --- | --- |
+| Research desk | Report covers |
+| Deal watcher | Every quote charted against the owner's dashed limit, with buys marked |
+| Subscriptions | Spend by seller this month, renewals, price changes |
+| Haggler | The negotiation ladder and savings |
+
+Every routine pocket also has:
+- the period budget meter;
+- next runs with "Have <agent> run it now" and Pause;
+- recent runs, including any ignored rewrite attempt;
+- "Will never", with each line tagged Contract or ChainBrain.
+
+**New pocket app** (Home → New pocket, `app/compose.tsx`):
+1. Say one sentence, or tap an example.
+2. The proof card appears: worst case, three fact tiles, and the test payments folded behind a disclosure.
+3. The pocket app builds itself:
+   - the card arrives blank, then takes its face and its agent's mark;
+   - the blocks fly up one after another;
+   - the budget meter fills to the allowance.
+4. Slide, then Face ID (or the passcode in Expo Go; nothing on web): the pocket is created and funded, and the routine is stored as typed fields.
+5. The card flies into its app.
+
+"Set it up step by step instead" opens the old wizard, which is still how scene 1 starts.
+
+**Routines.** They run on the built-in network: a 20-second ticker while the app is open, plus "run it now". When a run would pass its allowance, the cheque opens. It says "Run 3 would pass this week's US$0.05" and shows the week on one bar.
+
+**Seeded pocket apps:**
+- Durian watch: Claude's deal watcher, with 12 days of real quotes.
+- Data renewals: ChainBrain's subscriptions, two Mondays renewed.
+- Every other seeded pocket gets the app composed from its sentence.
+
+**Auto-play** plays scene 12 after Claude's connect and before the closing Brain tab.
 
 ## What a judge sees (VaultBank round, 16 Oct)
 

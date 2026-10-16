@@ -1,5 +1,5 @@
 # Licences and Reuse Check
-Last updated: 2026-10-14
+Last updated: 2026-10-17 (pocket apps: section "Pocket apps, 17 Oct" at the end)
 
 > **Status (14 Oct, v2):** This is the research-time licence check. The real dependencies (OpenZeppelin 5.4, viem, Hono, x402, Expo, React Native, Vite, Phosphor Icons, Geist fonts, plus web3j and OkHttp on Android) are listed in the [top README licences section](../../README.md). Repos in `reference/` are read-only and git-ignored, so links into it only work in a local clone. Spec: [product design](../02-product/product-design.md).
 
@@ -215,3 +215,28 @@ Accessed 2026-10-13:
 - Local repo evidence (LICENSE, NOTICE, README, package.json, SPDX headers, read only): `/Users/user/Workspace/Projects/shenzhen/lianainao-fintechathon/reference/repos/` (`build/`, `from-prior/`, `identity/`, `industry/`, `prior-art/`, `competitors/`, `security/`)
 
 Related docs: [stack and repos](stack-and-repos.md), [x402 and pocket feasibility](x402-pocket-feasibility.md), [master index](../README.md), [product spec](../02-product/product-design.md).
+
+
+## Pocket apps, 17 Oct: what was read and what was reused
+
+Licences were checked against each cloned repo's `LICENSE` file on 2026-10-17.
+
+**No code was copied.** Each idea below was re-written in our own words and code, so no licence text or NOTICE file has to ship. If code from any of these is ever copied, keep its licence and copyright notice, mark the changed files, and add it to `THIRD_PARTY_NOTICES.md`.
+
+| Source | Licence | Taken (as an idea) | Ours |
+| --- | --- | --- | --- |
+| [vercel-labs/json-render](https://github.com/vercel-labs/json-render) | Apache-2.0 | A catalogue of components, each with a description and an example; the model prompt generated from the catalogue; structural checks after parsing | `shared/sim/pocketApp.ts` `BLOCKS`, `catalogPrompt`, `validateSpec` |
+| [a2ui-project/a2ui](https://github.com/a2ui-project/a2ui) | Apache-2.0 | A versioned catalogue id; the component tree kept apart from its data; actions that move money need a user gesture | `catalogue: "chainbrain.pocket.v1"`; blocks never carry values; money moves only on the owner's slide |
+| [CopilotKit](https://github.com/CopilotKit/CopilotKit), [ag-ui](https://github.com/ag-ui-protocol/ag-ui) | MIT | Validate the whole snapshot, then render it progressively | The "assembles itself" animation plays a validated spec in block order |
+| [Vercel AI SDK](https://github.com/vercel/ai) | Apache-2.0 | A typed tool result maps to a fixed component | The forced `compose_pocket_app` tool, rendered by our components |
+| [thesysdev/openui](https://github.com/thesysdev/openui) | MIT | Read only | — |
+| [MetaMask/delegation-framework](https://github.com/MetaMask/delegation-framework) `ERC20PeriodTransferEnforcer` | MIT and Apache-2.0 | Period semantics: spend counts in the current period only, with no carry-over | `periodWindow` / `available`, off-chain. Pocket.sol is unchanged |
+| [google-agentic-commerce/AP2](https://github.com/google-agentic-commerce/AP2) | Apache-2.0 | The `IntentMandate` vocabulary: description, merchants, skus, expiry | A routine's typed fields (our extension; AP2 has no recurring mandate) |
+
+**New dependencies:** none on the phone or the console. The server's existing `zod` (MIT) builds the spec schema.
+
+**Fonts:** Clash Display and General Sans come from Fontshare. They are still fetched at install and not committed.
+
+**Brand marks:** the Claude, OpenAI, Exa, CoinGecko and Nansen marks are shown unaltered, at avatar size, never recoloured (`shared/brand/SOURCES.md`). Anthropic's trademark guidelines and OpenAI's brand page are cited in `docs/08-frontend/pocket-apps-research.md`.
+
+**One data note:** Nansen's "smart-money flows" quote on the built-in network moves by day around Nansen's published US$0.05. This was the owner's call, for the deal watcher, and is said in `shared/sim/catalog.ts`. It is never shown as a live Nansen price.

@@ -74,7 +74,7 @@ function Block({ label, right, children, wide, i }: { label: string; right?: Rea
   return (
     // the app builds itself on the console too: each block rises after the one before it
     <div className={cn("fade-up", wide && "lg:col-span-2")} style={{ animationDelay: `${Math.min(i, 8) * 70}ms` }}><Card className="h-full p-5">
-      <div className="mb-4 flex items-center justify-between gap-3"><h3 className="eyebrow text-muted">{label}</h3>{typeof right === "string" ? <span className="truncate text-[12px] text-muted">{right}</span> : right}</div>
+      <div className="mb-4 flex items-center justify-between gap-3"><h3 className="font-display text-[17px] font-semibold leading-[22px]">{label}</h3>{typeof right === "string" ? <span className="truncate text-[12px] text-muted">{right}</span> : right}</div>
       {children}
     </Card></div>
   );
@@ -360,10 +360,10 @@ export function PocketAppView({ address, back, watch }: { address: string; back(
           <div className="flex items-center gap-3">
             <AgentMark id={a?.id} />
             <div className="min-w-0 flex-1"><div className="font-display text-[18px] font-semibold">{a?.name ?? "Agent"}</div><div className="text-[13px] text-muted-canvas">{LAYOUT_NAME[app.layout]} · {line}</div></div>
-            {rs && <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-card px-2.5 text-[11px] font-bold uppercase tracking-wide"><span className={cn("size-2 rounded-full", routine?.status === "paused" ? "bg-faint" : "bg-green")} />{routine?.status === "paused" ? "Paused" : "Active"}</span>}
+            {rs && <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-card px-2.5 text-[12px] font-semibold"><span className={cn("size-2 rounded-full", routine?.status === "paused" ? "bg-faint" : "bg-green")} />{routine?.status === "paused" ? "Paused" : "Active"}</span>}
           </div>
           <Card className="p-4">
-            <h3 className="eyebrow mb-3 text-muted">Rules the owner signed</h3>
+            <h3 className="mb-3 font-display text-[17px] font-semibold">Rules the owner signed</h3>
             <dl className="grid grid-cols-3 gap-2 text-[13px]">
               <div><dt className="text-muted">Cap</dt><dd className="num font-semibold">{usd(p.cap)}</dd></div>
               <div><dt className="text-muted">Asks above</dt><dd className="num font-semibold">{p.askAbove === NEVER || p.askAbove > p.cap ? "Never" : p.askAbove === 0n ? "Every time" : usd(p.askAbove)}</dd></div>

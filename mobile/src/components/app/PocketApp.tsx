@@ -93,7 +93,8 @@ function BlockCard({ label, right, children, flush }: { label: string; right?: R
   return (
     <Card pad={18} style={{ marginHorizontal: 16, gap: 14, ...(flush ? { paddingHorizontal: 0 } : null) }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, paddingHorizontal: flush ? 18 : 0 }}>
-        <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }} accessibilityRole="header">{label}</T>
+        {/* a sentence-case Clash title, not a tracked uppercase eyebrow: each block reads as a page of the app, not a template */}
+        <T v="head" accessibilityRole="header" numberOfLines={1} style={{ flexShrink: 1 }}>{label}</T>
         {typeof right === "string" ? <T v="cap" color="muted" numberOfLines={1} style={{ flexShrink: 1 }}>{right}</T> : right}
       </View>
       {children}
@@ -140,7 +141,7 @@ export function AppHeader({ ctx, onOpen }: { ctx: AppCtx; /** opens the agent's 
       {state ? (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: c.card }}>
           <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: state === "Paused" ? c.faint : state === "Running" ? c.vermillion : c.green }} />
-          <T v="tab" w="bold" style={{ letterSpacing: 0.6, textTransform: "uppercase" }}>{state}</T>
+          <T v="cap" w="semi">{state}</T>
         </View>
       ) : null}
       {onOpen ? <Icon name="chevronRight" size={18} color={c.mutedOnCanvas} /> : null}

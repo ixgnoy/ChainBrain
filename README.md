@@ -106,9 +106,14 @@ Scenes 1-8 play on the built-in network (offline), on the dev stack, and on the 
 | 9 | Radar: a drainer pays TradeWire; Radar scores it 9/10, the agent buys from Nansen instead and past payers get an alert | drainer tx |
 | 10 | Sentinel: a fooled agent keeps trying Harbour Wines; after 3 refusals in a minute the pocket is frozen on-chain | freeze tx |
 | 11 | Haggler: DataPro US$1.50 negotiated to US$1.10 with numbers only (3 offers at most); the owner co-signs the agreed price | co-signed payment tx |
+| 12 | Routine pocket app: one sentence makes a research desk with a routine (every morning, max US$0.05 a week); two runs pay on their own, a seller's attempt to rewrite the routine is ignored, the third run past the allowance comes to the owner as a cheque | co-signed payment tx |
 
 ## Third-party licences
 
 - Apache-2.0: x402, web3j, OkHttp, Jetpack Compose and AndroidX
 - MIT: OpenZeppelin Contracts, viem, Hono, Expo, React Native, React, Vite, Phosphor Icons
 - SIL OFL 1.1: Geist and Geist Mono fonts
+- ITF Free Font License: Clash Display and General Sans (Fontshare), fetched at install, never redistributed
+- MIT: Lucide icons, React Native Reanimated, React Native SVG, zod (server)
+- Ideas only, no code copied (pocket apps, 17 Oct): vercel-labs/json-render and a2ui-project/a2ui (Apache-2.0), CopilotKit and ag-ui-protocol/ag-ui (MIT), thesysdev/openui (MIT), MetaMask/delegation-framework's period enforcer semantics (MIT and Apache-2.0), google-agentic-commerce/AP2's IntentMandate vocabulary (Apache-2.0). See `docs/04-build/licences-and-reuse.md`
+- Brand marks: Claude, OpenAI, Exa, CoinGecko and Nansen marks are shown unaltered at avatar size, per `shared/brand/SOURCES.md`

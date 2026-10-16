@@ -4,6 +4,14 @@ Combined on 14 Oct 2026 on branch `feat/integrate` (local, not pushed). It is th
 
 ## What is here
 
+
+- **Pocket apps (17 Oct).** Every pocket is its own app:
+  - its layout and card face come from its job;
+  - the agent shows by its own mark;
+  - the screen is composed from fixed blocks;
+  - routines run and send the owner a cheque past their allowance.
+  
+  Read [pocket-apps.md](pocket-apps.md), then the [research log](pocket-apps-research.md).
 | Folder | What | Docs |
 | --- | --- | --- |
 | `web/` | Network console: the whole system for the laptop demo and judges (live agent trace beside the active pocket and the sellers' side, all pockets, every tx hash, red-team box, forced-transfer test). No login | [web.md](web.md) |
