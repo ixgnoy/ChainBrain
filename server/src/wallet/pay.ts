@@ -25,7 +25,7 @@ export async function fetchQuote(sellerId: string, sku: string): Promise<{ kind:
 
 export function track(pocket: Address, q: Quote): QuoteRec {
   const s = state(pocket);
-  const rec: QuoteRec = { ...q, quoteId: `q${s.nextQuote++}`, paid: false };
+  const rec: QuoteRec = { ...q, quoteId: `q${s.nextQuote++}`, paid: false, list: q.amount, ask: q.amount, rounds: 0 };
   s.quotes.set(rec.quoteId, rec);
   return rec;
 }
@@ -84,7 +84,7 @@ export async function settle(pocket: Address, rec: QuoteRec, intentHash: Hex): P
     const s = state(pocket);
     s.spent += rec.amount;
     s.items += 1;
-    bus.publish({ type: "payment", pocket, sellerId: rec.sellerId, sku: rec.sku, amount: rec.amount, tx: settled.transaction, nonce: auth.nonce, intentHash, cosigned: !!rec.ownerSig });
+    bus.publish({ type: "payment", pocket, sellerId: rec.sellerId, sku: rec.sku, amount: rec.amount, tx: settled.transaction, nonce: auth.nonce, intentHash, cosigned: !!rec.ownerSig, ...(rec.amount < rec.list ? { list: rec.list } : {}) });
     return { ok: true, tx: settled.transaction, body: await r.text() };
   } catch (e) {
     return fail(reasonOf(e) ?? "SETTLEMENT_FAILED", String(e));

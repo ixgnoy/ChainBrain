@@ -19,7 +19,7 @@ export type Authorization = { from: Hex; to: Hex; value: string; validAfter: str
 
 export type SimSeller = {
   id: string; name: string; category: string; payTo: Hex;
-  items: { sku: string; description: string; price: string | null }[];
+  items: { sku: string; description: string; price: string | null; /** the seller takes offers (the haggler); its floor stays private */ negotiable?: boolean }[];
 };
 
 export type SimConfig = { agent: Hex; factory: Hex; usdc: Hex; sellersUrl: string; sellers: SimSeller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };

@@ -4,7 +4,7 @@
       { "sku": "durian-report", "description": "Durian exports to China, 2025 market report", "price": "0.30", "content": "datalite-durian.md" },
       { "sku": "fruit-trade-report", "description": "SE Asia fruit trade report 2025", "price": "0.35", "content": "datalite-fruit.md" } ] },
   { "id": "datapro", "name": "DataPro", "category": "Research data", "keyEnv": "SELLER_DATAPRO_PK",
-    "items": [ { "sku": "premium-report", "description": "Durian exports premium report with 2026 forecast", "price": "1.50", "content": "datapro-premium.md" } ] },
+    "items": [ { "sku": "premium-report", "description": "Durian exports premium report with 2026 forecast", "price": "1.50", "floor": "1.10", "content": "datapro-premium.md" } ] },
   { "id": "harbour-wines", "name": "Harbour Wines", "category": "Food and drink", "keyEnv": "SELLER_HARBOUR_WINES_PK",
     "items": [ { "sku": "fruit-wine-trade-report", "description": "Fruit and wine trade report", "price": "0.40", "content": "harbour-report.md" } ] },
   { "id": "shadyfeed", "name": "ShadyFeed", "category": "Research data", "keyEnv": "SELLER_SHADYFEED_PK",

@@ -1,4 +1,4 @@
-// Hidden auto-play for recording the video: plays scenes 1-10 on the phone by itself, the way the presenter would. It
+// Hidden auto-play for recording the video: plays scenes 1-11 on the phone by itself, the way the presenter would. It
 // creates the Research pocket in the wizard, types each sentence, answers the one question, confirms tasks, slides to
 // co-sign, holds to revoke, switches to One purchase, applies the fix and asks again. Every press goes through a
 // target the screen registered (lib/autoplayTargets.ts), so what the camera sees is the real UI doing real work; the
@@ -141,11 +141,16 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await say(ESCALATION_TEXT);
     await wait(3000);
 
+    // ---- scene 11 (haggler): the agent negotiates DataPro's premium report down, numbers only, then the owner co-signs.
+    // Before scene 9: after it, Radar blocks DataPro.
+    await say(text("11").text);
+    await wait(3500);
+
     // ---- scene 9 (Radar): a drainer pays DataPro on-chain; Radar blocks DataPro and the agent buys DataLite instead
     await say(text("9").text);
     await wait(3500);
     // ---- scene 10 (Sentinel): the fooled agent keeps trying Harbour Wines; the Sentinel freezes this pocket on-chain.
-    // The new pocket now holds the whole story (1, 4, 5, 6, escalation, 9, 10): the Brain tab shows it at the end.
+    // The new pocket now holds the whole story (1, 4, 5, 6, escalation, 11, 9, 10): the Brain tab shows it at the end.
     await say(text("10").text);
     await wait(3500);
 

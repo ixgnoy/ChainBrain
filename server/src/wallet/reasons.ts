@@ -24,6 +24,11 @@ export const REASONS = {
   COUNTERPARTY_REVIEW: "Radar found risk in this seller's funds: call ask_owner with this quote first",
   POCKET_FROZEN: "The pocket is frozen (by the Sentinel or the owner); only the owner can unfreeze",
   SENTINEL_HOLD: "The Sentinel saw unusual behaviour: call ask_owner with this quote; the owner must co-sign the next payment",
+  OFFER_NOT_LOWER: "An offer must be lower than the seller's current price and never above its first quote (offering exactly its counter accepts it)",
+  NEGOTIATION_ROUNDS_USED: "No offers left on this quote (3 at most): accept the seller's last counter or pay the quote",
+  NEGOTIATION_NOT_OFFERED: "This seller does not take offers on this item: pay its price or pick another",
+  DEAL_ALREADY_AGREED: "A price is already agreed on this quote: pay it (or ask_owner first if it needs approval)",
+  QUOTE_ALREADY_APPROVED: "The owner already approved this quote's price, so it cannot be renegotiated",
 } as const;
 
 export type Reason = keyof typeof REASONS;

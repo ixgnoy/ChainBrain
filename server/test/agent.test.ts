@@ -62,7 +62,7 @@ it("the real tool schemas are plain JSON Schema objects the API accepts", async 
   const { buildRequest } = await import("../src/agent/loop");
   const { tools } = await import("../src/wallet/tools");
   const req = buildRequest(tools, [{ role: "user", content: "hi" }]);
-  expect(req.tools!.map((t: any) => t.name).sort()).toEqual(["ask_owner", "draft_intent", "get_pocket", "get_quote", "pay", "search_sellers"]);
+  expect(req.tools!.map((t: any) => t.name).sort()).toEqual(["ask_owner", "counter_offer", "draft_intent", "get_pocket", "get_quote", "pay", "search_sellers"]);
   for (const t of req.tools as any[]) {
     expect(t.input_schema.type).toBe("object");
     expect(t.input_schema).not.toHaveProperty("$schema");

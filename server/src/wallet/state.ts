@@ -3,7 +3,8 @@ import type { Authorization } from "./scheme";
 import type { Intent } from "./intent";
 
 export type Quote = { quoteId: string; sellerId: string; sku: string; url: string; description: string; payTo: Address; amount: bigint; asset: Address };
-export type QuoteRec = Quote & { paid: boolean; auth?: Authorization; ownerSig?: Hex };
+/** `list`: the seller's first price; `ask`: its current one while the agent haggles (counter_offer); `amount`: what pay settles. */
+export type QuoteRec = Quote & { paid: boolean; auth?: Authorization; ownerSig?: Hex; list: bigint; ask: bigint; rounds: number; dealId?: string; agreed?: boolean };
 export type PocketState = { intent?: Intent; seq: bigint; spent: bigint; items: number; quotes: Map<string, QuoteRec>; nextQuote: number };
 
 // ponytail: in-memory per process; a restart forgets the task (on-chain state is unaffected). Persist if the demo needs restarts.
