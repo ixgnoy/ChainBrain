@@ -156,3 +156,27 @@ it("a failed force on the phone is an error, never 'NOT refused'", async () => {
   expect((await done2).text).toBe("The transfer was NOT refused.");
   feed.stop();
 });
+
+it("with no relay on the laptop it looks less and less often (6, 12, 24, then every 30 s) and again at once on focus", async () => {
+  const { relayRetryMs } = await import("./linkedFeed");
+  expect([0, 1, 2, 3, 4, 9].map(relayRetryMs)).toEqual([6000, 6000, 12000, 24000, 30000, 30000]);
+  vi.useFakeTimers();
+  const calls: number[] = [];
+  vi.stubGlobal("fetch", vi.fn(async () => { calls.push(Date.now()); throw new TypeError("Failed to fetch"); }));
+  const feed = createLinkedFeed(localStub(), "http://relay");
+  feed.start();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(calls).toHaveLength(1);
+  await vi.advanceTimersByTimeAsync(6000);
+  expect(calls).toHaveLength(2);
+  await vi.advanceTimersByTimeAsync(11_000);
+  expect(calls).toHaveLength(2); // the next look is 12 s after the second miss
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(calls).toHaveLength(3);
+  dispatchEvent(new Event("focus"));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(calls).toHaveLength(4);
+  feed.stop();
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(calls).toHaveLength(4);
+});

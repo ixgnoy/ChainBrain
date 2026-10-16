@@ -24,6 +24,9 @@ const toTx = (t: Wire): ChainTx => ({
   method: t.method, reason: t.reason, args: t.args, label: t.label,
 });
 
+/** How long to wait before looking for the relay again: 6 s while it answers, doubling to 30 s while nothing is there. */
+export const relayRetryMs = (misses: number) => (misses <= 0 ? 6000 : Math.min(30_000, 6000 * 2 ** (misses - 1)));
+
 /** The pocket the phone is working on right now: whichever has the newest event or transaction. */
 export function latestPocket(events: WalletEvent[], txs: ChainTx[], pockets: PocketState[]): string | undefined {
   let best: string | undefined, at = -1;
@@ -41,7 +44,7 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
   let quiet = false; // the phone has been silent: its data is kept (it resumes with the same session) but it is not driving the console
   let es: EventSource | null = null;
   let probe: ReturnType<typeof setTimeout> | undefined;
-  let held = false, stopped = true, gen = 0, offLocal = () => {};
+  let held = false, stopped = true, gen = 0, misses = 0, offLocal = () => {};
   const waiting = new Map<number, (r: any) => void>();
   // the merged lists keep their identity until the local network or the phone sends something new
   let mergeKey: unknown[] = [];
@@ -76,12 +79,15 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
     emit();
   };
   const close = () => { es?.close(); es = null; };
-  // Look for a relay quietly every few seconds; open the stream only once a phone is there.
+  // Look for a relay quietly every few seconds; open the stream only once a phone is there. With no relay on this laptop at
+  // all (the browser logs every refused request) the look backs off to every 30 s, and looks again at once on focus.
   const look = async () => {
     if (stopped || es) return;
     const mine = gen; // a stop/start (React StrictMode) while the request is out must not open a second stream
+    if (probe) { clearTimeout(probe); probe = undefined; }
     try {
       const r = await fetch(`${relay}/state`);
+      misses = 0;
       const linked = r.ok && (await r.json()).linked;
       if (mine !== gen || stopped || es) return;
       if (linked) {
@@ -90,9 +96,10 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
         es.onerror = () => { close(); phone = null; quiet = false; setLinked(false); emit(); probe = setTimeout(look, 4000); };
         return;
       }
-    } catch { /* no relay on this laptop */ }
-    if (mine === gen && !stopped) probe = setTimeout(look, 6000);
+    } catch { misses += 1; /* no relay on this laptop */ }
+    if (mine === gen && !stopped && !es) probe = setTimeout(look, relayRetryMs(misses));
   };
+  const onFocus = () => { if (misses > 0 && probe) { misses = 0; void look(); } }; // only while waiting, never beside a look in flight
   const command = async (body: object, ms = 12_000): Promise<any> => {
     const r = await fetch(`${relay}/command`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error(r.status === 409 ? "The phone is not connected" : `Relay answered ${r.status}`);
@@ -172,10 +179,12 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
       stopped = false;
       offLocal = local.subscribe(emit);
       local.start();
+      if (typeof addEventListener === "function") addEventListener("focus", onFocus);
       void look();
     },
     stop() {
       stopped = true; gen++; offLocal(); local.stop(); close();
+      if (typeof removeEventListener === "function") removeEventListener("focus", onFocus);
       if (probe) clearTimeout(probe);
       setLinked(false);
     },
