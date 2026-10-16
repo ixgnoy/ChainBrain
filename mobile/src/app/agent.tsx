@@ -4,7 +4,7 @@ import Animated, { FadeIn, FadeOut, useAnimatedKeyboard, useAnimatedReaction, us
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useApp, type Turn } from "../store";
-import { c, F, hairline, level1, lift } from "../tokens";
+import { c, F, hairline, level1, lift, radius } from "../tokens";
 import { Avatar, Button, Press, type PressTap } from "../ui/kit";
 import { autoplayAlive, autoplayRun, typeOut, useAutoplayTarget } from "../lib/autoplayTargets";
 import { StatusDot, type DotState } from "../ui/StatusDot";
@@ -86,7 +86,7 @@ function Reply({ id, text }: { id: string; text: string }) {
 function UserBubble({ text, fresh }: { text: string; fresh: boolean }) {
   return (
     <Rise instant={!fresh} dy={24} spring="snappy" style={{ alignSelf: "flex-end", maxWidth: "84%" }}>
-      <View style={{ backgroundColor: c.ink, paddingHorizontal: 18, paddingVertical: 14, borderRadius: 22, borderBottomRightRadius: 6 }}>
+      <View style={{ backgroundColor: c.ink, paddingHorizontal: 18, paddingVertical: 14, borderRadius: 18, borderBottomRightRadius: 6, borderCurve: "continuous" }}>
         <T v="body" style={{ color: c.white }}>{cleanText(text, 1000)}</T>
       </View>
     </Rise>
@@ -98,7 +98,7 @@ function AgentCardBlock({ children }: { children: React.ReactNode }) {
   return (
     <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
       <AgentAvatar kind="chainbrain" size={30} />
-      <View style={{ flex: 1, backgroundColor: c.card, borderRadius: 20, borderTopLeftRadius: 6, borderWidth: 1, borderColor: hairline, padding: 16, gap: 8, ...level1 }}>
+      <View style={{ flex: 1, backgroundColor: c.card, borderRadius: radius.card, borderTopLeftRadius: 6, borderCurve: "continuous", borderWidth: 1, borderColor: hairline, padding: 16, gap: 8, ...level1 }}>
         <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>ChainBrain</T>
         {children}
       </View>
@@ -279,11 +279,11 @@ export default function AgentChat() {
         </Press>
         <Press kind="row" haptics="select" auto="picker.open" onPress={() => { if (pockets.filter((p) => (p.agentId ?? "chainbrain") === "chainbrain").length > 1) setPickerOpen(true); }} onLongPress={() => autoplay.toggle()} delayLongPress={HOLD_MS} hitSlop={6}
           accessibilityRole="button" accessibilityLabel={active ? `${active.name}, ${headStatus}. Change pocket` : "No pocket yet"}
-          style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minHeight: 52, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 18, backgroundColor: c.card, borderWidth: 1, borderColor: hairline }}>
+          style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minHeight: 52, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: c.card, borderWidth: 1, borderColor: hairline }}>
           <AgentAvatar kind="chainbrain" size={38} badge={dot === "ready" ? c.green : dot === "stopped" ? c.faint : c.vermillion} />
           <View style={{ flex: 1, gap: 1 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-              <T v="row" w="bold" numberOfLines={1} accessibilityRole="header" style={{ flexShrink: 1 }}>ChainBrain Agent</T>
+              <T v="head" numberOfLines={1} accessibilityRole="header" style={{ flexShrink: 1 }}>ChainBrain Agent</T>
               <Icon name="circleCheck" size={14} color={c.vermillion} stroke={2.2} />
             </View>
             <T v="cap" color="muted" numberOfLines={1}>{active ? `Pocket: ${cleanText(active.name, 22)} · ${headStatus}` : "Create a pocket first"}</T>
@@ -312,7 +312,7 @@ export default function AgentChat() {
                     {prompts.map(({ label, text: say }, i) => (
                       <Rise key={label} delay={80 + i * 50} dy={8}>
                         <Press kind="row" haptics="select" onPress={() => send(say)} disabled={chatBusy} accessibilityRole="button" accessibilityLabel={cleanText(say, 160)}
-                          style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 58, paddingHorizontal: 16, borderRadius: 18, backgroundColor: c.card, borderWidth: 1, borderColor: c.tileStroke }}>
+                          style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 58, paddingHorizontal: 16, borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: c.card, borderWidth: 1, borderColor: c.tileStroke }}>
                           <Icon name={i === 0 ? "chat" : "bolt"} size={20} color={c.vermillion} />
                           <T v="row" style={{ flex: 1, fontSize: 15, lineHeight: 22 }} numberOfLines={2}>{cleanText(label, 80)}</T>
                           <Icon name="chevronRight" size={16} color={c.faint} />
@@ -405,7 +405,7 @@ export default function AgentChat() {
         {away ? (
           <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(120)} style={{ position: "absolute", right: 16, bottom: 12, zIndex: 5 }} pointerEvents="box-none">
             <Press kind="icon" haptics="select" onPress={() => { stick.current = true; setAway(false); scroll.current?.scrollToEnd({ animated: !reduce }); }} accessibilityRole="button" accessibilityLabel="Jump to latest"
-              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: c.card, alignItems: "center", justifyContent: "center", ...lift }}>
+              style={{ width: 40, height: 40, borderRadius: 12, borderCurve: "continuous", backgroundColor: c.card, alignItems: "center", justifyContent: "center", ...lift }}>
               <Icon name="arrowDown" size={18} color={c.ink} stroke={2} />
             </Press>
           </Animated.View>
@@ -429,7 +429,7 @@ export default function AgentChat() {
         ) : null}
         <View style={{ paddingHorizontal: 16 }}>
           {/* grows with the message (up to ~5 lines, then scrolls inside); the send button stays on the last line */}
-          <View style={{ flexDirection: "row", alignItems: "flex-end", paddingLeft: 20, paddingRight: 6, paddingVertical: 3, borderRadius: 28, backgroundColor: c.card, borderWidth: 1, borderColor: hairline, minHeight: 56, ...level1 }}>
+          <View style={{ flexDirection: "row", alignItems: "flex-end", paddingLeft: 16, paddingRight: 6, paddingVertical: 3, borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: c.card, borderWidth: 1, borderColor: hairline, minHeight: 56, ...level1 }}>
             <TextInput
               value={text} onChangeText={setText} placeholder={text ? "" : question ? "Answer ChainBrain" : "Ask ChainBrain to buy something"} placeholderTextColor={c.faint}
               multiline submitBehavior="submit" onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}

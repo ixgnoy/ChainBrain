@@ -49,3 +49,15 @@ export function T({ v = "body", color = "ink", w, style, ...p }: TextProps & { v
 export function Eyebrow({ color = "muted", style, ...p }: TextProps & { color?: Tone }) {
   return <T v="tab" color={color} style={[{ textTransform: "uppercase", letterSpacing: 0.9 }, style]} {...p} />;
 }
+
+/** A static figure in Clash Display Medium ("-US$0.30", "+US$5.00", "4/10"), VaultBank's list amounts: the currency is set at
+ *  75 % on the same baseline, like `Money`. For amounts that roll, use `Money`. */
+export function Figure({ text, size = 16, color = "ink", strike, style, ...p }: TextProps & { text: string; size?: number; color?: Tone; strike?: boolean }) {
+  const m = /^([+\-−]?)(US\$)(.*)$/.exec(text);
+  const base: TextStyle = { fontFamily: F.display, fontSize: size, lineHeight: Math.round(size * 1.25), letterSpacing: -0.01 * size, color: c[color], fontVariant: ["tabular-nums"], textDecorationLine: strike ? "line-through" : "none" };
+  return (
+    <RNText numberOfLines={1} accessibilityLabel={text} {...p} style={[base, style]}>
+      {m ? <>{m[1]}<RNText style={{ fontSize: Math.round(size * 0.75) }}>{m[2]}</RNText>{m[3]}</> : text}
+    </RNText>
+  );
+}

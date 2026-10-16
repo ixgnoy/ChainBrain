@@ -1,7 +1,7 @@
 // The task confirmation card: the server's fixed three-line template (Buy / Price / Deadline), never rewritten by the AI.
 import React from "react";
 import { View } from "react-native";
-import { c } from "../tokens";
+import { c, radius } from "../tokens";
 import { Button } from "../ui/kit";
 import { T } from "../ui/Text";
 import { Rise, firstTime } from "../ui/Rise";
@@ -29,8 +29,8 @@ export const parseIntent = (text: string) =>
 export function IntentCard({ text, onConfirm, onDecline, busy, error, flat, enter, title = "Your agent wants to start this task" }: { title?: string; text: string; onConfirm?(): void; onDecline?(): void; busy?: boolean; error?: string | null; flat?: boolean; /** chat: enter once (scale 0.96 to 1, 12 pt rise, snappy) with a medium haptic: the owner is needed */ enter?: boolean | string }) {
   const rows = parseIntent(text);
   const card = (
-    <View style={{ borderRadius: 20, backgroundColor: flat ? c.canvas : c.canvas, padding: 16, gap: 12 }}>
-      <T v="row" w="semi">{title}</T>
+    <View style={{ borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: flat ? c.canvas : c.canvas, padding: 16, gap: 12 }}>
+      <T v="head">{title}</T>
       {rows.map((r, i) => (
         <View key={i} style={{ gap: 1 }}>
           {r.k ? <T v="cap" color="muted">{LABEL[r.k] ?? r.k}</T> : null}
