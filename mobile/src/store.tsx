@@ -38,7 +38,8 @@ export type Notice = { title: string; pocket?: string; txs: { label?: string; ha
 export type Conn = "connecting" | "online" | "offline";
 
 const API_KEY = "cb.apiUrl";
-const SOURCE_KEY = "cb.source";
+// an older build saved the server choice; it now lasts until the app is reloaded or relaunched, so the key is cleared
+const OLD_SOURCE_KEY = "cb.source";
 const POLL_MS = 1500;
 
 type Ctx = {
@@ -160,7 +161,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const saved = await getItem(API_KEY);
       if (saved) setRuntimeApi(saved);
       setApiState(getApi());
-      if ((await getItem(SOURCE_KEY)) === "server") setRuntimeSource("server");
+      void deleteItem(OLD_SOURCE_KEY); // every launch (and every full reload) opens on the built-in network
       setSourceReady(true);
       // first launch: create the on-device key silently, no setup screen (an existing key is kept; "Import a key" lives in Settings)
       let k: Hex | null = null;
@@ -512,7 +513,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const importKey = useCallback(async (k: string) => { await saveKey(k); setPk(k.trim() as Hex); }, []);
   const newKey = useCallback(async () => { setPk(await createKey()); }, []);
   const setSource = useCallback(async (s: Source) => {
-    if (s === "server") await setItem(SOURCE_KEY, "server"); else await deleteItem(SOURCE_KEY);
     resetConfig(); setCfg(null); setConn("connecting"); setPocketsLoaded(false); setBalances(null); setViews({}); setAnswered(new Set()); setTurnsBy({});
     // nothing from the other network may linger on screen (a stale notice could link its hash to BaseScan)
     setNotice(null); setReceipt(null); setAction(null); setRules(null); setApprovalOpen(false); setQuestionOpen(false); setPickerOpen(false); forcedSeen.current = null;

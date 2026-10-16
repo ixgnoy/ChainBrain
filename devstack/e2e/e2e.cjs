@@ -240,8 +240,9 @@ async function webFlow(browser, _scenes, issues) {
 async function phoneFlow(browser, scenes, issues) {
   const S = Object.fromEntries(scenes.map((s) => [s.id, s]));
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: false, isMobile: false });
-  // the app opens on its built-in network; this run is against the dev stack (Settings, Advanced, Custom server)
-  await ctx.addInitScript(([api]) => { localStorage.setItem("cb.source", "server"); localStorage.setItem("cb.apiUrl", api); }, [API]);
+  // the app opens on its built-in network on every launch and every reload; this run switches to the dev stack the way a
+  // person does (Settings, Advanced, Custom server, Connect). The address field remembers the stack's URL.
+  await ctx.addInitScript(([api]) => { localStorage.setItem("cb.apiUrl", api); }, [API]);
   const page = await ctx.newPage();
   watch(page, "phone", issues);
   page.setDefaultTimeout(20000);
@@ -274,8 +275,31 @@ async function phoneFlow(browser, scenes, issues) {
   // the task card opens by itself as a sheet
   const confirmTask = async () => { const b = page.getByRole("button", { name: "Confirm task" }).last(); await b.waitFor({ timeout: 40000 }); await sleep(450); await b.click(); };
   let wallet, pocket;
+  const useServer = async () => {
+    await tab("Settings");
+    const sw = page.getByRole("switch", { name: "Custom server" });
+    await sw.waitFor();
+    if ((await sw.getAttribute("aria-checked")) !== "true") {
+      await sw.click();
+      await page.getByRole("button", { name: "Connect", exact: true }).click();
+    }
+    // connected: the line under the address field says so (it can sit under the floating tab bar, so read the text)
+    await until("connected to the stack", async () => /Connected · local test network/.test(await body()), 30000);
+    await tab("Home");
+  };
+  const load = async () => { await page.goto(`http://127.0.0.1:${PHONE_PORT}/`); await skipIntro(); await useServer(); };
 
   await page.goto(`http://127.0.0.1:${PHONE_PORT}/`); await skipIntro();
+
+  await stp("phone: opens on its built-in network; the server is a quiet switch in Settings", async () => {
+    await visible("Research data").waitFor({ timeout: 40000 }); // the built-in network's seeded pockets
+    await tab("Settings");
+    const sw = page.getByRole("switch", { name: "Custom server" });
+    check("Custom server is off on launch", (await sw.getAttribute("aria-checked")) !== "true");
+    await tab("Home");
+    await useServer();
+    check("Settings, Custom server, Connect: on the dev stack", true);
+  });
 
   await stp("phone: first launch goes straight to Home (key made silently, no login)", async () => {
     await visible("Main wallet").waitFor({ timeout: 40000 });
@@ -289,8 +313,7 @@ async function phoneFlow(browser, scenes, issues) {
     wallet = privateKeyToAccount(pk).address;
     check("phone key is its own account (not the dev owner)", wallet.toLowerCase() !== OWNER.toLowerCase(), wallet);
     await tab("Settings");
-    await visible(/local test network/i).waitFor();
-    check("Settings names the local test network quietly", true);
+    check("Settings names the local test network quietly", /local test network/i.test(await body()));
     await tab("Home");
   });
 
@@ -316,7 +339,7 @@ async function phoneFlow(browser, scenes, issues) {
     return (page.url().match(/0x[0-9a-fA-F]{40}/) ?? [])[0];
   };
   const openNewestPocket = async (count, balance) => {
-    await page.goto(`http://127.0.0.1:${PHONE_PORT}/`); await skipIntro();
+    await load();
     await until(`${count} pocket cards`, async () => (await page.getByRole("button", { name: /pocket, [\d.]+ USDC/ }).count()) >= count, 40000);
     await page.getByRole("button", { name: new RegExp(`pocket, ${balance} USDC`) }).first().click({ position: { x: 120, y: 24 } }); // the visible header strip of the front card
     await page.getByRole("button", { name: "Revoke", exact: true }).waitFor();

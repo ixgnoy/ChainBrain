@@ -21,7 +21,7 @@ EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787 npx expo start       # address o
 
 It is meant for demos and offline use. Its hashes are not on a public chain, so they open in-app receipts and sheets, and BaseScan links appear only when connected to a real server on the public chain.
 
-**Use a real server:** Settings, Advanced, **Custom server** switch, enter the URL, Test, Connect. The choice is remembered (`cb.source` in SecureStore). Switch it off to return to the built-in network.
+**Use a real server:** Settings, Advanced, **Custom server** switch, enter the URL, Test, Connect. The choice holds while the app runs (backgrounding, tab switches); a full reload or relaunch opens on the built-in network again. The address stays filled in (`cb.apiUrl`). Switch it off to return to the built-in network.
 
 **Link to the web console:** on the built-in network the phone quietly pushes its pockets and events to a relay (`src/lib/relay.ts`, backs off when none answers). On the laptop run `pnpm --dir devstack relay` (or the full `pnpm --dir devstack start`), start the phone with `EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787`, and keep it on the built-in network. The console then mirrors the phone, and the Judges tab's plant and forced transfer run on the phone's pockets.
 
