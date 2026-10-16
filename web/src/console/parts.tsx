@@ -6,7 +6,7 @@ import type { ChipKind } from "../lib/trace";
 import type { PocketState } from "./chain";
 import { cn } from "../lib/cn";
 import { agentByAddress } from "@sim/agents";
-import { CLAUDE_SPARK, OPENAI_BLOSSOM, type Mark } from "../../../shared/brand/marks";
+import { CLAUDE_SPARK, OPENAI_BLOSSOM, SELLER_MARKS, isLayered, type Mark } from "../../../shared/brand/marks";
 
 export const usd = (n?: bigint) => (n == null ? "–" : `US$${formatUsd(n)}`);
 export const NEVER = 2n ** 256n - 1n;
@@ -80,6 +80,21 @@ export function agentOfKey(key: string | undefined, serverAgent?: string): { id:
 
 function MarkSvg({ mark, size }: { mark: Mark; size: number }) {
   return <svg width={size} height={size} viewBox={mark.viewBox} aria-hidden>{mark.paths.map((d, i) => <path key={i} d={d} fill={mark.fill} />)}</svg>;
+}
+
+/** A seller's brand square: its official mark (CoinGecko, Exa, Nansen, from shared/brand) unaltered, or its first letter for the
+ *  demo's fictional shops. Exa's icon is already a square tile and fills it; the others sit on white. */
+export function SellerLogo({ id, name, className }: { id: string; name: string; className?: string }) {
+  const mark = SELLER_MARKS[id];
+  if (!mark) return <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-[12px] bg-blue-soft text-[13px] font-bold text-blue-ink", className)}>{name[0]}</span>;
+  const bleed = id === "exa";
+  return (
+    <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center overflow-hidden rounded-[12px]", !bleed && "bg-white ring-1 ring-tile-stroke ring-inset", className)}>
+      <svg className={bleed ? "size-full" : id === "nansen" ? "size-[78%]" : "size-[70%]"} viewBox={mark.viewBox}>
+        {isLayered(mark) ? mark.layers.map((l, i) => <path key={i} d={l.d} fill={l.fill} />) : mark.paths.map((d, i) => <path key={i} d={d} fill={mark.fill} fillRule={mark.fillRule} />)}
+      </svg>
+    </span>
+  );
 }
 
 /** A small agent chip: the agent's mark and name; falls back to the short key. */

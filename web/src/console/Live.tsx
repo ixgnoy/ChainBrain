@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ShieldAlert, ShieldCheck, Check, Minus, Wallet, Clock, Timer, Bot } from "lucide-react";
 import { useNetwork } from "./useNetwork";
-import { Expected, PhoneTag, Reason, TxHash, Verdict, clock, pocketStatus, usd, NEVER, AgentTag } from "./parts";
+import { Expected, PhoneTag, Reason, TxHash, Verdict, clock, pocketStatus, usd, NEVER, AgentTag, SellerLogo } from "./parts";
 import { argsOf, evidenceOf, injectionOf, plainSummary, type Injection } from "./story";
 import { txLabel } from "./network";
 import { orList, worstCase, worstSegments } from "./worst";
@@ -216,7 +216,7 @@ function PocketCard({ p, name, phone, stopped, status, present }: { p: PocketSta
         <div className="flex items-end justify-between gap-3 px-5 pb-4 pt-4">
           <div className="min-w-0">
             {!present && <div className="text-[13px] font-medium leading-5 text-ink2"><ShieldCheck className="mr-1 inline size-3.5 align-[-2px]" {...I} aria-hidden />Cap {usd(p.cap)} · {ask}</div>}
-            <div className="flex items-center gap-2"><span className="font-extrabold num text-[24px] leading-8" aria-label={`Pocket contract ending ${p.address.slice(-4)}`}>0x…{p.address.slice(-4).toLowerCase()}</span><span className="rounded-[5px] bg-ink/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink2">Contract</span></div>
+            <div className="flex items-center gap-2"><span className="font-extrabold num whitespace-nowrap text-[24px] leading-8" aria-label={`Pocket contract ending ${p.address.slice(-4)}`}>0x…{p.address.slice(-4).toLowerCase()}</span><span className="shrink-0 rounded-[5px] bg-ink/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink2">Contract</span></div>
           </div>
           <span className="num inline-flex shrink-0 items-center gap-1.5 pb-1 text-[13px] font-semibold"><Timer className="size-3.5" {...I} aria-hidden />Until {ends}</span>
         </div>
@@ -310,7 +310,7 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
               <h3 className="mb-3 text-[18px] font-bold leading-6 tracking-[-0.02em]">Allowed sellers</h3>
               <ul className="space-y-1.5">{cfg.sellers.map((s) => {
                 const ok = p.allowed.includes(s.id);
-                return <li key={s.id} className={cn("tile flex items-center gap-3 px-3.5 py-2.5 text-[14px] leading-5", ok ? "text-ink" : "text-muted")}><span aria-hidden className={cn("grid size-6 shrink-0 place-items-center rounded-full", ok ? "bg-ink text-on-accent" : "bg-line text-muted")}>{ok ? <Check className="size-3.5" strokeWidth={3} /> : <Minus className="size-3.5" strokeWidth={3} />}</span><span className="font-bold">{s.name}</span><span className="ml-auto text-[13px] text-muted">{ok ? "allowed" : "not allowed"}</span></li>;
+                return <li key={s.id} className={cn("tile flex items-center gap-3 px-3.5 py-2.5 text-[14px] leading-5", ok ? "text-ink" : "text-muted")}><span aria-hidden className={cn("grid size-6 shrink-0 place-items-center rounded-full", ok ? "bg-ink text-on-accent" : "bg-line text-muted")}>{ok ? <Check className="size-3.5" strokeWidth={3} /> : <Minus className="size-3.5" strokeWidth={3} />}</span><SellerLogo id={s.id} name={s.name} className={cn("size-6 rounded-[7px] text-[11px]", !ok && "opacity-45 grayscale")} /><span className="font-bold">{s.name}</span><span className="ml-auto text-[13px] text-muted">{ok ? "allowed" : "not allowed"}</span></li>;
               })}</ul>
             </Card>
           )}
@@ -338,7 +338,7 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
         const got = rs.filter((r) => r.outcome === "paid").reduce((n, r) => n + (r.amount ?? 0n), 0n);
         return (
           <section key={s.id} className="border-b border-line py-3.5 last:border-0">
-            <div className="flex items-center gap-3"><span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-[12px] bg-blue-soft text-[13px] font-bold text-blue-ink">{s.name[0]}</span><div className="min-w-0 flex-1 truncate text-[15px] font-bold tracking-[-0.01em]">{s.name}</div>{got > 0n ? <span className="num shrink-0 text-[14px] font-bold text-green-ink">+{usd(got)}</span> : <span className="shrink-0 text-[13px] text-muted">Nothing paid</span>}</div>
+            <div className="flex items-center gap-3"><SellerLogo id={s.id} name={s.name} /><div className="min-w-0 flex-1 truncate text-[15px] font-bold tracking-[-0.01em]">{s.name}</div>{got > 0n ? <span className="num shrink-0 text-[14px] font-bold text-green-ink">+{usd(got)}</span> : <span className="shrink-0 text-[13px] text-muted">Nothing paid</span>}</div>
             <ul className="mt-2 space-y-1.5 pl-12">{dedupe(rs).map(({ r, n }) => (
               <li key={r.key} className="t-body text-[13px] leading-5">
                 {r.outcome === "paid"
@@ -381,7 +381,7 @@ function SellerStrip({ perSeller }: { perSeller: { s: { id: string; name: string
       <ul>{perSeller.map(({ s, rows }) => {
         const got = rows.filter((r) => r.outcome === "paid").reduce((n, r) => n + (r.amount ?? 0n), 0n);
         const no = rows.filter((r) => r.outcome === "refused").length;
-        return <li key={s.id} className="t-body flex items-center justify-between gap-3 border-b border-line py-2 text-[14px] last:border-0"><span className="font-medium">{s.name}</span><span className="num text-ink2">{got > 0n ? <span className="font-bold text-green-ink">+{usd(got)}</span> : "Nothing paid"}{no > 0 && <span className="text-muted"> · {no} refused</span>}</span></li>;
+        return <li key={s.id} className="t-body flex items-center justify-between gap-3 border-b border-line py-2 text-[14px] last:border-0"><span className="flex items-center gap-2 font-medium"><SellerLogo id={s.id} name={s.name} className="size-6 rounded-[7px] text-[11px]" />{s.name}</span><span className="num text-ink2">{got > 0n ? <span className="font-bold text-green-ink">+{usd(got)}</span> : "Nothing paid"}{no > 0 && <span className="text-muted"> · {no} refused</span>}</span></li>;
       })}</ul>
     </>
   );
