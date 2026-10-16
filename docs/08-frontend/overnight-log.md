@@ -5,10 +5,28 @@ Phone first, then the web console. Each slice goes research → implement → va
 ## Backlog
 
 - [ ] Approvals inbox at Home's level (the receipt is done)
+- [ ] Brain: a visual lead for the active pocket (what it understood, as the same chips as New pocket app; the funnel as one picture) in place of the dense "Worst case right now" card
+- [ ] Approvals: decisions as a mini timeline with agent marks; "Nothing waiting" with the next scheduled run that could ask
 - [ ] Compose: highlight understood words in the sentence itself (mirror text), if it aligns on iOS at all text sizes; otherwise improve the chips
 - [ ] Pocket page: richer covers on the shelf
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: the Evidence and Sellers pages
+
+## Critique pass 1 (headless Chromium at 402 × 874, plus iOS)
+
+Each screen is scored 1–5 on first-glance wow / hierarchy / visuals over text / motion / system consistency / "AI-made" tells (5 means no tells).
+
+| Screen | Wow | Hier. | Visual | Motion | System | AI tells | Action |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Home | 5 | 5 | 5 | 5 | 5 | 4 | the hero eyebrow fixed; split bar added |
+| Pocket page | 4 | 4 | 4 | 4 | 5 | 4 | — |
+| New pocket app | 3 | 4 | 3 | 4 | 4 | 4 | examples became mini app cards |
+| Agents | 3→4 | 4 | 3→5 | 3 | 4→5 | 3→4 | done (wallet strips) |
+| Activity | 3→4 | 4 | 2→4 | 3 | 4 | 4 | done (pulse) |
+| Brain | 3 | 3 | 3 | 3 | 4 | 3→4 | backlog |
+| Approvals | 4 | 4 | 3 | 3 | 4 | 3→4 | backlog |
+| Settings | 3→4 | 4 | 2→4 | 3 | 4→5 | 4 | done (wallet card) |
+| Console Live / Judges | 3→4 | 4 | 4 | 3 | 4 | 4 | done (default pocket, scoreboard) |
 
 ## Done
 
@@ -90,6 +108,9 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [x] **Console "What happens next"** (24a6174): the phone's pre-first-run timeline, ported to the console's pocket view.
   - Not visually verified: no seeded pocket has a routine with zero runs. Typecheck, build and 81 web tests pass.
 - **Run payoff on video**: not recorded. Data renewals has no run-now block, and Durian watch's run only logs a price above its limit. The payoff path (report onto the shelf, run row, success tap) is exercised end to end by e2e scene 12, where runs 1 and 2 pay and run 3 raises the cheque, which passes. Moved to "Not verified".
+
+- [x] **New pocket app: the examples as mini app cards**. The four examples are a 2×2 of small cards, each in its job's face (black research desk, blue deal watcher, white-hatch subscriptions, vermillion haggler) with the agent that would hold it. Before typing, the owner sees the four kinds of app.
+  - Evidence: `w-34-compose-examples.png`; e2e 57/57.
 
 Earlier the same day, before this log existed:
 - Home wallet stack, live card signs and Next up (e68c433)

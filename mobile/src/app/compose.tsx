@@ -11,7 +11,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSequence, wi
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Address } from "viem";
 import { useApp, type Pocket } from "../store";
-import { c, motion, radius } from "../tokens";
+import { c, deck, motion, radius } from "../tokens";
 import { BackHeader } from "../ui/BackHeader";
 import { Button, Card, Field, Press } from "../ui/kit";
 import { T } from "../ui/Text";
@@ -33,7 +33,9 @@ import { PAGE_MARGIN, pageCardWidth } from "../components/CardFlight";
 import { txError } from "../components/ActionSheet";
 import { AppHeader, PocketApp, type AppCtx } from "../components/app/PocketApp";
 import { Understood } from "../components/app/Understood";
-import { LAYOUT_NAME, agentName } from "../components/app/theme";
+import { FACE, LAYOUT_NAME, agentName } from "../components/app/theme";
+import { Hatch } from "../ui/Hatch";
+import { AgentAvatar } from "../ui/AgentAvatar";
 import { startFlight } from "../ui/cardFlight";
 import { uniqueName } from "./create";
 import { answer, proof, type Draft } from "../../../shared/sim/speak";
@@ -41,11 +43,11 @@ import { AGENTS, CAN, CANNOT } from "../../../shared/sim/agents";
 import { BLOCK_TYPES, type Layout } from "../../../shared/sim/pocketApp";
 
 type Composed = Awaited<ReturnType<typeof api.composeApp>>;
-const EXAMPLES: { icon: IconName; label: string; text: string; layout: Layout }[] = [
-  { icon: "file", label: "Morning brief", layout: "research", text: "Every morning, get me durian export news from Exa and the USDC price from CoinGecko. Max US$0.05 a week." },
-  { icon: "chart", label: "Claude watches a price", layout: "deal", text: "Let Claude buy Nansen's smart-money flows every morning when the price drops below US$0.04. Max US$0.20 a week." },
-  { icon: "refresh", label: "ChatGPT renews feeds", layout: "subscriptions", text: "Have ChatGPT renew Exa durian news and the CoinGecko USDC price every Monday, max US$0.10 a month." },
-  { icon: "target", label: "Haggle a report", layout: "haggle", text: "Get DataPro's premium report, but negotiate the price down first, at most US$2 each, ask me above US$1, one-off." },
+const EXAMPLES: { icon: IconName; label: string; text: string; layout: Layout; agent: string }[] = [
+  { icon: "file", label: "Morning brief", layout: "research", agent: "chainbrain", text: "Every morning, get me durian export news from Exa and the USDC price from CoinGecko. Max US$0.05 a week." },
+  { icon: "chart", label: "Claude watches a price", layout: "deal", agent: "claude", text: "Let Claude buy Nansen's smart-money flows every morning when the price drops below US$0.04. Max US$0.20 a week." },
+  { icon: "refresh", label: "ChatGPT renews feeds", layout: "subscriptions", agent: "chatgpt", text: "Have ChatGPT renew Exa durian news and the CoinGecko USDC price every Monday, max US$0.10 a month." },
+  { icon: "target", label: "Haggle a report", layout: "haggle", agent: "chainbrain", text: "Get DataPro's premium report, but negotiate the price down first, at most US$2 each, ask me above US$1, one-off." },
 ];
 const ZERO = "0x0000000000000000000000000000000000000000" as Address;
 
@@ -173,14 +175,24 @@ export default function Compose() {
           <Field value={text} onChangeText={(t) => setText(t.slice(0, 300))} placeholder={EXAMPLES[0].text} multiline accessibilityLabel="What the pocket is for, in one sentence"
             style={{ minHeight: 128, paddingVertical: 14, fontSize: 17, lineHeight: 24, textAlignVertical: "top" }} />
           <Understood text={text} sellers={sellers} />
+          {/* the four kinds of app, as small cards in their job's face with the agent that would hold them: tap one to try it */}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {EXAMPLES.map((e) => (
-              <Press key={e.label} haptics="select" scale={0.96} onPress={() => { setText(e.text); void compose(e.text); }} accessibilityRole="button" accessibilityLabel={`Example: ${e.label}`}
-                style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, borderRadius: 22, backgroundColor: c.fill }}>
-                <Icon name={e.icon} size={15} color={c.ink2} />
-                <T v="cap" w="semi" color="ink2">{e.label}</T>
-              </Press>
-            ))}
+            {EXAMPLES.map((e) => {
+              const f = deck[FACE[e.layout]];
+              const hatched = "hatch" in f && f.hatch;
+              return (
+                <Press key={e.label} haptics="select" scale={0.96} onPress={() => { setText(e.text); void compose(e.text); }} accessibilityRole="button" accessibilityLabel={`Example: ${e.label}, a ${LAYOUT_NAME[e.layout].toLowerCase()}`}
+                  style={{ flexGrow: 1, flexBasis: "45%", minHeight: 86, borderRadius: 14, backgroundColor: f.face, overflow: "hidden", borderWidth: hatched ? 1 : 0, borderColor: c.tileStroke }}>
+                  {hatched ? <Hatch color={c.line} pitch={7} stroke={1.3} /> : null}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingTop: 10 }}>
+                    <AgentAvatar kind={e.agent} size={20} />
+                    <T v="tab" numberOfLines={1} style={{ color: f.sub, flexShrink: 1 }}>{LAYOUT_NAME[e.layout]}</T>
+                  </View>
+                  <View style={{ height: 6, backgroundColor: f.band, marginTop: 8 }} />
+                  <T v="cap" w="semi" numberOfLines={2} style={{ color: f.ink, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 10 }}>{e.label}</T>
+                </Press>
+              );
+            })}
           </View>
           <Button label={res ? "Compose again" : "Compose my pocket app"} kind={res ? "secondary" : "primary"} icon="layers" loading={reading} onPress={() => void compose()} />
           {err ? <T v="sub" color="negative">{err}</T> : null}
