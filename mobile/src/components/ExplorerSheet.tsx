@@ -79,10 +79,12 @@ function Body({ hash, close }: { hash: string; close: () => void }) {
     let t = all.find((x) => x.hash.toLowerCase() === hash.toLowerCase());
     if (!t) {
       // a server or fork: what the phone itself knows about this hash
-      const row = ledger.find((r) => r.tx?.toLowerCase() === hash.toLowerCase());
+      // the owner's own transactions first: they are also ledger rows (kind "owner"), and a fund or return read as an agent's
+      // payment ("Research data paid someone", transferWithAuthorization) when the ledger row was taken for one
       const own = ownerTxs.find((o) => o.hash.toLowerCase() === hash.toLowerCase());
-      if (row) t = { hash, kind: row.kind === "forced" ? "out" : "payment", pocket: row.pocket, at: row.at, amount: row.amount, status: row.outcome === "refused" ? "reverted" : "success", counterparty: cfg.sellers.find((s) => s.id === row.sellerId)?.payTo, reason: row.reasons[0], args: row.cosigned ? { cosigned: "true" } : undefined };
-      else if (own) t = { hash, kind: own.kind === "cap" || own.kind === "ask" || own.kind === "seller" ? "rules" : own.kind, pocket: own.pocket, at: own.at, amount: own.amount, status: "success", from: wallet?.address, label: own.note };
+      const row = ledger.find((r) => r.kind !== "owner" && r.tx?.toLowerCase() === hash.toLowerCase());
+      if (own) t = { hash, kind: own.kind === "cap" || own.kind === "ask" || own.kind === "seller" || own.kind === "unfreeze" ? "rules" : own.kind, pocket: own.pocket, at: own.at, amount: own.amount, status: "success", from: wallet?.address, counterparty: own.kind === "return" ? wallet?.address : undefined, label: own.kind === "unfreeze" ? "unfrozen" : own.note };
+      else if (row) t = { hash, kind: row.kind === "forced" ? "out" : "payment", pocket: row.pocket, at: row.at, amount: row.amount, status: row.outcome === "refused" ? "reverted" : "success", counterparty: cfg.sellers.find((s) => s.id === row.sellerId)?.payTo, reason: row.reasons[0], args: row.cosigned ? { cosigned: "true" } : undefined };
     }
     return t ? explainTx(t, { usdc: cfg.usdc, factory: cfg.factory, nameOf }, all) : null;
   }, [hash, cfg, isBuiltin, ledger, ownerTxs, pockets]); // eslint-disable-line react-hooks/exhaustive-deps
