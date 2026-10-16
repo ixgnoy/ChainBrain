@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { TiltProvider } from "../ui/tilt";
+import { AskDock } from "../components/AskDock";
 import { c } from "../tokens";
 import { AppProvider, useApp } from "../store";
 import { ApprovalSheet } from "../components/ApprovalSheet";
@@ -52,6 +53,8 @@ function Shell() {
             <Stack.Screen name="radar" />
             <Stack.Screen name="create" options={{ presentation: Platform.OS === "web" ? undefined : "modal", animation: Platform.OS === "web" ? "fade" : Platform.OS === "ios" ? "default" : "slide_from_bottom", gestureEnabled: true }} />
           </Stack>
+          {/* an outside agent's request, on every screen (it places itself by route) */}
+          <AskDock />
           <CardFlightHost />
           <ApprovalSheet />
           <QuestionSheet />

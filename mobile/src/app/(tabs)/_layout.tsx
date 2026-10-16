@@ -9,7 +9,6 @@ import { c } from "../../tokens";
 import { GlassTabBar, GlassTabButton, type GlassTabItem } from "../../ui/glass/GlassTabBar";
 import { TabBarMinimizeProvider } from "../../ui/glass/minimize";
 import { renderTabScreen } from "../../ui/glass/TabTransition";
-import { AskDock } from "../../components/AskDock";
 
 const ITEMS: (GlassTabItem & { href: string })[] = [
   { name: "index", href: "/", label: "Home", icon: "home" },
@@ -37,7 +36,6 @@ export default function TabsLayout() {
             </GlassTabBar>
           </TabList>
         </Tabs>
-        <AskDock />
       </View>
     </TabBarMinimizeProvider>
   );

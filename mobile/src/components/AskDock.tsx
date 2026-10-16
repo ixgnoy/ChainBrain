@@ -1,10 +1,13 @@
-// The ask dock: when an outside agent (Claude, ChatGPT) asks for a co-signature or to start a task, a slim black bar docks
-// above the tab bar on every tab: the agent's mark, what it wants, a countdown ring for the 10-minute window, "+2" when
-// more are waiting. It never covers content (Screen adds room while it shows). Tap: the request opens as the cheque in the
-// approval sheet. Like a now-playing bar: unmissable, never in the way. ChainBrain's own asks open the sheet directly.
+// The ask dock: when an outside agent (Claude, ChatGPT) asks for a co-signature or to start a task, a black bar docks above
+// the tab bar: the agent's mark, what it wants, a countdown ring for the 10-minute window, "+2" when more are waiting. After
+// a few seconds it folds into a compact pill on the right (mark, amount, ring), so it never sits on the deck for long. On
+// every other screen (chat, a pocket, an agent, Connect, Radar) the compact pill floats at the bottom right, above the chat's
+// composer; the wizard and the Approvals inbox (which lists every request) hide it. Screens add room while it shows. Tap:
+// the request opens as the cheque in the approval sheet. ChainBrain's own asks open the sheet directly.
 import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { View } from "react-native";
-import Animated, { FadeOutDown, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { FadeOutDown, LinearTransition, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import { useSegments } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 import { useApp } from "../store";
@@ -21,9 +24,13 @@ import { authOf, type Approval } from "../lib/events";
 import { useAutoplayTarget } from "../lib/autoplayTargets";
 import { agentInfo } from "../../../shared/sim/agents";
 
-/** Height of the dock plus its gap above the tab bar: what a tab screen adds to its bottom padding while the dock shows. */
+/** Height of the dock plus its gap: what a screen adds to its bottom padding while the dock shows. */
 export const DOCK_SPACE = 72;
 const H = 60;
+/** How long a new request shows as the full bar on a tab before it folds into the compact pill. */
+const FULL_MS = 8000;
+// requests that already had their full-bar moment (folding survives tab switches and re-renders)
+const folded = new Set<string>();
 
 // whether the dock is up, for Screen's bottom padding
 let shown = false;
@@ -38,9 +45,11 @@ export const outsideAsks = (pending: Approval[]) =>
 export function AskDock() {
   const { pending, approvalOpen, openApproval, sellerName } = useApp();
   const insets = useSafeAreaInsets();
+  const segments = useSegments() as string[];
+  const where = segments[0] === "(tabs)" ? "tabs" : segments[0] === "create" || segments[0] === "approvals" ? "hidden" : segments[0] === "agent" ? "chat" : "pushed";
   const asks = outsideAsks(pending);
   const first = asks[0];
-  const visible = !!first && !approvalOpen;
+  const visible = !!first && !approvalOpen && where !== "hidden";
   useEffect(() => { setShown(visible); }, [visible]);
   // auto-play opens a precise request (the newest of this agent and kind), so an older ask can't be answered in its place
   useAutoplayTarget("dock.open", (arg?: { agent?: string; kind?: string }) => {
@@ -50,17 +59,45 @@ export function AskDock() {
     openApproval(pick.id);
   });
   useEffect(() => () => setShown(false), []);
+  // the full bar for a new request, then the compact pill
+  const [, rerender] = useState(0);
+  useEffect(() => {
+    if (!first || folded.has(first.id)) return;
+    const t = setTimeout(() => { folded.add(first.id); rerender((n) => n + 1); }, FULL_MS);
+    return () => clearTimeout(t);
+  }, [first?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!visible) return null;
+  const compact = where !== "tabs" || folded.has(first.id);
   const agent = agentInfo(first.agent ?? "");
   const who = agent?.name ?? "An agent";
   const amount = first.data?.amount ? `US$${cleanText(String(first.data.amount), 10)}` : null;
   const title = first.kind === "payment" ? `${who} asks ${amount ?? "to pay"}` : `${who} has a task for you`;
   const sub = first.kind === "payment" ? `To ${cleanText(sellerName(first.data?.sellerId), 24)} · needs your co-sign` : cleanText(first.text ?? "Confirm it before it starts", 48);
-  // sits just above the expanded tab bar (GlassTabBar: bar height + its bottom margin)
-  const bottom = Math.max(insets.bottom - 12, 12) + GLASS_TAB_SPACE - 24 + 10;
+  // tabs: just above the expanded tab bar (GlassTabBar: bar height + its bottom margin); chat: above the composer
+  const bottom = where === "tabs" ? Math.max(insets.bottom - 12, 12) + GLASS_TAB_SPACE - 24 + 10 : where === "chat" ? insets.bottom + 84 : insets.bottom + 12;
+  const open = () => { haptic.medium(); openApproval(first.id); };
   return (
-    <Animated.View key={first.id} exiting={FadeOutDown.duration(motion.exit)} pointerEvents="box-none" style={{ position: "absolute", left: 16, right: 16, bottom, alignItems: "center" }}>
-      <DockBar id={first.id} a={first} title={title} sub={sub} more={asks.length - 1} agentId={agent?.id ?? "chainbrain"} onOpen={() => { haptic.medium(); openApproval(first.id); }} />
+    <Animated.View key={first.id} exiting={FadeOutDown.duration(motion.exit)} pointerEvents="box-none" style={{ position: "absolute", left: 16, right: 16, bottom, alignItems: compact ? "flex-end" : "center" }}>
+      {compact
+        ? <DockPill a={first} who={who} amount={amount} more={asks.length - 1} agentId={agent?.id ?? "chainbrain"} title={title} sub={sub} onOpen={open} />
+        : <DockBar id={first.id} a={first} title={title} sub={sub} more={asks.length - 1} agentId={agent?.id ?? "chainbrain"} onOpen={open} />}
+    </Animated.View>
+  );
+}
+
+/** The folded dock: the agent's mark, the amount (or "Task") and the ring, right-aligned; same tap. */
+function DockPill({ a, who, amount, more, agentId, title, sub, onOpen }: { a: Approval; who: string; amount: string | null; more: number; agentId: string; title: string; sub: string; onOpen: () => void }) {
+  return (
+    <Animated.View layout={LinearTransition.springify().duration(motion.spring.smooth.duration)}>
+      <Press kind="round" haptics="none" onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${title}. ${sub}. Opens the request`}
+        style={{ height: 52, borderRadius: 26, backgroundColor: c.ink, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 6, paddingRight: 8, shadowColor: c.ink, shadowOpacity: 0.28, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 10 }}>
+        <AgentAvatar kind={agentId} size={40} badge={c.vermillion} />
+        <View>
+          <T v="head" numberOfLines={1} style={{ color: c.white, fontSize: 15, lineHeight: 19 }}>{amount ?? "Task"}</T>
+          <T v="cap" numberOfLines={1} style={{ color: "rgba(255,255,255,0.64)", fontSize: 11, lineHeight: 14 }}>{more > 0 ? `${who} · +${more} more` : who}</T>
+        </View>
+        {a.kind === "payment" ? <Countdown a={a} size={34} /> : <Icon name="chevronUp" size={18} color={c.white} stroke={2} />}
+      </Press>
     </Animated.View>
   );
 }
