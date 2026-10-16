@@ -105,7 +105,7 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
 
   /** `own`: a judge's scene (runScene), which itself holds the story, so its pause must not wait at the story's gate. */
   async function play(s: SceneInfo, pocket: Hex, own = false) {
-    current = s.id; emit();
+    current = s.id; active = pocket; emit(); // Live follows the scene being played (a judge's runScene may have moved it)
     try { await playScene(s, pocket, own); } finally { current = undefined; emit(); }
   }
   async function playScene(s: SceneInfo, pocket: Hex, own: boolean) {
@@ -174,7 +174,7 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
         await gap(); if (!alive()) break;
         await play(scene("6"), research);
         await gap(); if (!alive()) break;
-        current = "A"; emit();
+        current = "A"; active = research; emit();
         await chat(research, ESCALATION_TEXT); // privilege escalation: refused, and the agent key's setCap reverts NOT_OWNER
         current = undefined; emit();
         await gap(); if (!alive()) break;
