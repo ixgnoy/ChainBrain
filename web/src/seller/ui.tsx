@@ -94,6 +94,7 @@ export function RoundAction({ icon, label, onClick, soft, active }: { icon: Reac
 }
 
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "hot" | "outline" | "soft" | "ghost" };
+/** VaultBank's rectangle button, radius 14 (design-system v5); pills stay for chips, tabs and status labels. */
 export function Button({ variant = "primary", className, ...p }: BtnProps) {
   const v = {
     primary: "bg-ink text-on-accent hover:bg-accent-press",
@@ -102,7 +103,7 @@ export function Button({ variant = "primary", className, ...p }: BtnProps) {
     soft: "bg-blue text-blue-ink hover:bg-blue-press",
     ghost: "text-ink hover:bg-tile",
   }[variant];
-  return <button type="button" {...p} className={cn("pressable inline-flex h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-6 text-[15px] font-bold tracking-[-0.01em] disabled:pointer-events-none disabled:opacity-40", v, className)} />;
+  return <button type="button" {...p} className={cn("pressable inline-flex h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[14px] px-6 text-[15px] font-bold tracking-[-0.01em] disabled:pointer-events-none disabled:opacity-40", v, className)} />;
 }
 
 export function Stat({ label, value, note, className }: { label: string; value: ReactNode; note?: ReactNode; className?: string }) {
@@ -140,10 +141,10 @@ export function DetailSheet({ open, onOpenChange, title, description = "Details 
   );
 }
 
-/** A native select wearing the pill look (the OS control stays underneath for keyboards and screen readers). */
+/** A native select in the input shape, radius 14 like the buttons (the OS control stays underneath for keyboards and screen readers). */
 export function PillSelect({ label, value, onChange, children, shown, className, tone = "card" }: { label: string; value: string; onChange(v: string): void; children: ReactNode; shown: ReactNode; className?: string; tone?: "card" | "fill" }) {
   return (
-    <label className={cn("relative flex h-12 min-w-0 items-center gap-2 rounded-full pl-5 pr-11 text-[15px] font-semibold shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] transition-colors focus-within:outline-2 focus-within:outline-accent", tone === "card" ? "bg-card hover:bg-tile" : "bg-tile hover:bg-fill", className)}>
+    <label className={cn("relative flex h-12 min-w-0 items-center gap-2 rounded-[14px] pl-5 pr-11 text-[15px] font-semibold shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] transition-colors focus-within:outline-2 focus-within:outline-accent", tone === "card" ? "bg-card hover:bg-tile" : "bg-tile hover:bg-fill", className)}>
       <span className="min-w-0 truncate">{shown}</span>
       <ChevronDown className="pointer-events-none absolute right-4 size-4 text-muted" aria-hidden />
       <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 size-full cursor-pointer appearance-none opacity-0">{children}</select>

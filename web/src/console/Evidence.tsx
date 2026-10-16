@@ -49,7 +49,7 @@ export function Evidence() {
                 <div key={r.scene} role="row" data-testid={`evidence-row-${r.scene}`} data-status={r.status} className="grid gap-x-5 gap-y-2 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.5fr)_minmax(0,1.6fr)_minmax(0,1.3fr)_104px]">
                   <div role="cell" className="flex items-start gap-3">
                     <span aria-hidden className="num grid size-8 shrink-0 place-items-center rounded-[10px] bg-ink text-[13px] font-extrabold text-on-accent">{r.scene}</span>
-                    <div className="min-w-0"><div className="text-[15px] font-bold leading-5 tracking-[-0.01em]">{r.title}</div><p className="mt-0.5 text-[13px] leading-5 text-muted">{r.proves}</p></div>
+                    <div className="min-w-0"><div className="text-[15px] font-bold leading-5 tracking-[-0.01em]">{r.title.replace(/-/g, "\u2011") /* "re-plan" never breaks at its hyphen in the narrow column */}</div><p className="mt-0.5 text-[13px] leading-5 text-muted">{r.proves}</p></div>
                   </div>
                   <div role="cell" className="text-[14px] leading-5 text-ink2"><span className="eyebrow mb-0.5 block text-muted lg:hidden">Expected</span>{r.expected}</div>
                   <div role="cell" className={cn("text-[14px] leading-5", r.status === "pending" ? "text-muted" : "text-ink")}><span className="eyebrow mb-0.5 block text-muted lg:hidden">Actual</span>{r.actual}</div>

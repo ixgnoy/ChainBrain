@@ -27,7 +27,7 @@ function Scoreboard({ attempts }: { attempts: Attempt[] }) {
       <div data-testid="arena-scoreboard" data-blocked={line.blocked} data-tried={line.tried} data-lost={line.lost} className="relative flex flex-wrap items-end justify-between gap-x-6 gap-y-5">
         <div>
           <p className="eyebrow mb-2 text-white/60">Scoreboard</p>
-          <p className="figure text-[34px] leading-[40px] sm:text-[56px] sm:leading-[60px]" aria-live="polite">{line.blocked} of {line.total} attacks blocked<span className={cn("block sm:inline", board.lost > 0n ? "text-vermillion" : "text-green")}><span className="hidden text-white sm:inline"> · </span>{line.lost} lost</span></p>
+          <p className="figure text-[29px] leading-[36px] sm:text-[56px] sm:leading-[60px]" aria-live="polite">{line.blocked} of {line.total} attacks{"\u00a0"}blocked<span className={cn("block sm:inline", board.lost > 0n ? "text-vermillion" : "text-green")}><span className="hidden text-white sm:inline"> · </span>{line.lost} lost</span></p>
           <p className="mt-2 text-[14px] font-medium text-white/70">{line.tried === 0 ? "Nothing tried yet. Pick an attack below." : line.untried.length ? `${line.untried.length} not tried yet.` : "Every attack has been tried."}</p>
         </div>
         <ul className="relative flex flex-wrap gap-2" aria-label="Attack results">
@@ -130,7 +130,7 @@ export function Arena({ aim, setAim, watch }: { aim: string; setAim(a: string): 
 
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <Button variant="hot" data-testid={`arena-fire-${c.key}`} className="h-11 px-5 text-[14px]" disabled={!aim && c.key !== "injection" || !can[c.key] || !!f?.busy} onClick={oneTap(c)}>{f?.busy ? <><Loader className="size-4 animate-spin" aria-hidden />Running…</> : c.button}</Button>
-                  {c.key === "extraction" && canChat && <button type="button" disabled={!scene("6") || !!f?.busy} onClick={() => void extractionScene()} className="pressable relative h-11 rounded-full bg-blue px-4 text-[14px] font-bold text-blue-ink hover:bg-blue-press disabled:opacity-40">Or play scene 6 (ShadyFeed asks)</button>}
+                  {c.key === "extraction" && canChat && <button type="button" disabled={!scene("6") || !!f?.busy} onClick={() => void extractionScene()} className="pressable relative h-11 rounded-[14px] bg-blue px-4 text-[14px] font-bold text-blue-ink hover:bg-blue-press disabled:opacity-40">Or play scene 6 (ShadyFeed asks)</button>}
                 </div>
                 {!can[c.key] && <p className="mt-2 text-[13px] leading-5 text-muted">{why[c.key]}</p>}
 

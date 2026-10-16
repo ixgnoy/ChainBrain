@@ -87,7 +87,7 @@ function Shell() {
     <nav aria-label="Main" className="fixed inset-x-3 bottom-3 z-30 flex gap-1 rounded-full bg-card p-1.5 shadow-level3 md:static md:inset-auto md:bottom-auto md:z-auto md:shadow-[var(--shadow-level1)]">
       {TABS.map(([id, label]) => (
         <button key={id} type="button" onClick={() => go({ tab: id })} aria-current={tab === id ? "page" : undefined}
-          className={cn("pressable h-11 min-w-0 flex-1 whitespace-nowrap rounded-full px-0.5 text-[12px] font-bold md:h-11 md:flex-none md:px-5 md:text-[15px]", tab === id ? "bg-ink text-on-accent" : "text-ink2 hover:bg-tile")}>{label}</button>
+          className={cn("pressable h-11 min-w-0 flex-auto whitespace-nowrap rounded-full px-1 text-[12px] font-bold md:h-11 md:flex-none md:px-5 md:text-[15px]", tab === id ? "bg-ink text-on-accent" : "text-ink2 hover:bg-tile")}>{label}</button>
       ))}
     </nav>
   );

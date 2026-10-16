@@ -60,7 +60,7 @@ function useChain() {
 function Crumbs({ here }: { here: string }) {
   return (
     <nav aria-label="Explorer" className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px]">
-      <button type="button" onClick={() => history.back()} aria-label="Back" className="pressable mr-1 inline-flex h-11 items-center gap-1.5 rounded-full bg-card px-4 font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile"><ArrowLeft className="size-4" strokeWidth={2} aria-hidden />Back</button>
+      <button type="button" onClick={() => history.back()} aria-label="Back" className="pressable mr-1 inline-flex h-11 items-center gap-1.5 rounded-[14px] bg-card px-4 font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile"><ArrowLeft className="size-4" strokeWidth={2} aria-hidden />Back</button>
       <a href={explorerHref.home} className="font-bold text-ink hover:underline">Explorer</a><span className="text-faint" aria-hidden>›</span><span className="text-ink2">{here}</span>
     </nav>
   );
@@ -128,11 +128,11 @@ function SearchBox() {
   const go = (e: FormEvent) => { e.preventDefault(); const t = searchTarget(q); if (t) { setBad(false); location.hash = t.slice(1); setQ(""); } else setBad(!!q.trim()); };
   return (
     <form onSubmit={go} role="search" className="mb-5">
-      <label className="card relative flex h-14 items-center rounded-full pl-5 pr-2 focus-within:outline-2 focus-within:outline-ink">
+      <label className="card relative flex h-14 items-center rounded-[16px] pl-5 pr-2 focus-within:outline-2 focus-within:outline-ink">
         <Search className="mr-3 size-4 shrink-0 text-muted" strokeWidth={1.75} aria-hidden />
         <input aria-label="Search the explorer" value={q} onChange={(e) => { setQ(e.target.value); setBad(false); }} placeholder="Transaction hash, address or block number" spellCheck={false} autoCapitalize="off"
           className="num min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-faint" />
-        <Button type="submit" className="h-10 px-5 text-[14px]">Search</Button>
+        <Button type="submit" className="h-10 rounded-[10px] px-5 text-[14px]">Search</Button>
       </label>
       {bad && <p role="alert" className="mt-2 pl-5 text-[13px] font-semibold text-vermillion-ink">That is not a transaction hash, an address or a block number.</p>}
     </form>
@@ -266,7 +266,7 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
       </Section>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        {net.explorer && <a href={net.explorer(hash)} target="_blank" rel="noreferrer noopener" className="pressable inline-flex h-11 items-center gap-2 rounded-full bg-card px-5 text-[14px] font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile">View on BaseScan<ExternalLink className="size-4" strokeWidth={1.75} aria-hidden /></a>}
+        {net.explorer && <a href={net.explorer(hash)} target="_blank" rel="noreferrer noopener" className="pressable inline-flex h-11 items-center gap-2 rounded-[14px] bg-card px-5 text-[14px] font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile">View on BaseScan<ExternalLink className="size-4" strokeWidth={1.75} aria-hidden /></a>}
         {watch && t?.pocket && <Button className="h-11 px-5 text-[14px]" onClick={() => watch(t.pocket)}>Watch it in Live</Button>}
       </div>
     </div>
@@ -286,8 +286,8 @@ function BlockPage({ number }: { number: string }) {
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3"><h1 className="title-serif text-[32px] leading-10 sm:text-[40px] sm:leading-[46px]">Block {number}</h1><Pill tone="neutral">{net.chainName}</Pill></div>
         <div className="flex gap-2">
-          <a aria-disabled={!older} href={older ? explorerHref.block(older.number) : undefined} className={cn("pressable inline-flex h-11 items-center gap-1 rounded-full bg-card px-4 text-[14px] font-bold shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)]", older ? "text-ink hover:bg-tile" : "pointer-events-none text-faint")}><ChevronLeft className="size-4" aria-hidden />Older</a>
-          <a aria-disabled={!newer} href={newer ? explorerHref.block(newer.number) : undefined} className={cn("pressable inline-flex h-11 items-center gap-1 rounded-full bg-card px-4 text-[14px] font-bold shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)]", newer ? "text-ink hover:bg-tile" : "pointer-events-none text-faint")}>Newer<ChevronRight className="size-4" aria-hidden /></a>
+          <a aria-disabled={!older} href={older ? explorerHref.block(older.number) : undefined} className={cn("pressable inline-flex h-11 items-center gap-1 rounded-[14px] bg-card px-4 text-[14px] font-bold shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)]", older ? "text-ink hover:bg-tile" : "pointer-events-none text-faint")}><ChevronLeft className="size-4" aria-hidden />Older</a>
+          <a aria-disabled={!newer} href={newer ? explorerHref.block(newer.number) : undefined} className={cn("pressable inline-flex h-11 items-center gap-1 rounded-[14px] bg-card px-4 text-[14px] font-bold shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)]", newer ? "text-ink hover:bg-tile" : "pointer-events-none text-faint")}>Newer<ChevronRight className="size-4" aria-hidden /></a>
         </div>
       </header>
       {b ? (
