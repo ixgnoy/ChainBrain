@@ -13,6 +13,7 @@ import { Icon } from "../ui/Icon";
 import { AgentAvatar } from "../ui/AgentAvatar";
 import { SellerMark, hasSellerMark } from "../ui/SellerMark";
 import { cleanText } from "../lib/sanitize";
+import { useLargeText } from "../ui/fontScale";
 import { money } from "../lib/util";
 import type { Routine } from "../../../shared/sim/pocketApp";
 import { budgetOf } from "../../../shared/sim/pocketAppData";
@@ -71,6 +72,7 @@ export function NextUp({ runs, now }: { runs: NextRun[]; now: number }) {
 }
 
 function RunTile({ r, first, now }: { r: NextRun; first: boolean; now: number }) {
+  const big = useLargeText(); // the marks and the price stack, so a figure never breaks across lines
   const ink = first ? c.white : c.ink;
   const sub = first ? "rgba(255,255,255,0.66)" : c.muted;
   const agent = agentInfo(r.pocket.agentId ?? "")?.name ?? "ChainBrain";
@@ -92,7 +94,7 @@ function RunTile({ r, first, now }: { r: NextRun; first: boolean; now: number })
         <T v="cap" style={{ color: sub }}>{until(r.at, now)}</T>
       </View>
       <T v="cap" w="semi" numberOfLines={1} style={{ color: ink }}>{name}</T>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={{ flexDirection: big ? "column" : "row", alignItems: big ? "flex-start" : "center", gap: 8 }}>
         <View style={{ flexDirection: "row" }}>
           {sellers.filter(hasSellerMark).slice(0, 3).map((s, i) => (
             <View key={s} style={{ marginLeft: i ? -6 : 0, borderRadius: 7, borderWidth: 2, borderColor: first ? c.ink : c.card }}><SellerMark id={s} size={22} radius={6} /></View>
@@ -104,7 +106,7 @@ function RunTile({ r, first, now }: { r: NextRun; first: boolean; now: number })
             <T v="tab" w="bold" style={{ color: c.white }}>Asks you</T>
           </View>
         ) : (
-          <T v="cap" style={{ color: sub, flex: 1 }} numberOfLines={2}>{price}</T>
+          <T v="cap" style={{ color: sub, flex: big ? undefined : 1 }} numberOfLines={big ? 3 : 2}>{price}</T>
         )}
       </View>
     </Press>

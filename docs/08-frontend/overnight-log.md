@@ -4,11 +4,11 @@ Phone first, then the web console. Each slice goes research → implement → va
 
 ## Backlog
 
-- [ ] Approvals inbox and Receipt sheet at Home's level
+- [ ] Approvals inbox at Home's level (the receipt is done)
 - [ ] Settings at Home's level
 - [ ] Compose: highlight understood words in the sentence itself (mirror text), if it aligns on iOS at all text sizes; otherwise improve the chips
 - [ ] Pocket page: richer receipts and covers; the run payoff on video
-- [ ] AX5 large-text pass (Next up tiles, chips, timeline, Brain); VoiceOver pass on the chart scrub
+- [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: parity of the pocket app view with the phone; the Evidence and Sellers pages
 
 ## Done
@@ -69,6 +69,20 @@ Phone first, then the web console. Each slice goes research → implement → va
   Page 1's text went back to its original line. The e2e intro test now walks four pages, adding one Next and checking the new title, with no check weakened.
   - Evidence: `w-30-intro-sentence.png` (typing, and done); e2e 57/57.
 
+- [x] **Payment receipt**:
+  - the seller's mark is the hero, with the paying agent's mark on its corner;
+  - the sentence names the agent ("ChatGPT paid Exa on its own");
+  - six green checks show the Pocket.sol rules the payment passed. A settled payment passed all of them by construction, and a co-signed one shows "You co-signed" in blue;
+  - the pocket appears as its card strip.
+
+  Refusals and other receipts are unchanged. Evidence: `w-31-receipt.png`.
+- [x] **AX5 pass (iOS, accessibility-extra-extra-extra-large)**. Three problems found and fixed:
+  - Home's total ran into the main wallet; the hero now stacks at large sizes;
+  - a Next up tile broke "US$0.067" across two lines; the marks and the price now stack;
+  - the digest's counts truncated ("co-signed…"); they now go full width.
+
+  The card print is capped at 1×, so the stack holds. Evidence: `ios-30-ax5-home.png`, `ios-31-ax5-nextup-digest.png`. The simulator's text size was set back to the default afterwards.
+
 Earlier the same day, before this log existed:
 - Home wallet stack, live card signs and Next up (e68c433)
 - compose chips (b544f42)
@@ -90,4 +104,4 @@ E2E: 57/57.
 
 - 60 fps on a physical iPhone. Simulator timing is meaningless while Chromium runs beside it.
 - VoiceOver on the chart's adjustable action. It is wired, but not listened to.
-- AX5 text on the Next up tiles and the chips.
+- AX5 on the compose chips and Brain (checked: Home, Next up, digest).

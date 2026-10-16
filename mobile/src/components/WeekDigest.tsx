@@ -55,25 +55,25 @@ export const WeekDigest = React.memo(function WeekDigest({ d, itemName, sellerNa
           </ScrollView>
         ) : null}
         <View style={{ flexDirection: "row", flexWrap: big ? "wrap" : "nowrap", gap: 8, paddingHorizontal: 18 }}>
-          <Count icon="receipt" n={d.bought} label="bought" sub={`US$${usd(d.spent)}`} tone="ink" />
-          <Count icon="faceId" n={d.cosigned} label="co-signed by you" tone="blue" />
-          <Count icon="shieldCheck" n={d.stopped} label="stopped" tone="vermillion" />
+          <Count big={big} icon="receipt" n={d.bought} label="bought" sub={`US$${usd(d.spent)}`} tone="ink" />
+          <Count big={big} icon="faceId" n={d.cosigned} label="co-signed by you" tone="blue" />
+          <Count big={big} icon="shieldCheck" n={d.stopped} label="stopped" tone="vermillion" />
         </View>
       </Press>
     </Card>
   );
 });
 
-function Count({ icon, n, label, sub, tone }: { icon: IconName; n: number; label: string; sub?: string; tone: "ink" | "blue" | "vermillion" }) {
+function Count({ icon, n, label, sub, tone, big }: { icon: IconName; n: number; label: string; sub?: string; tone: "ink" | "blue" | "vermillion"; /** largest text sizes: full width, one under the other */ big?: boolean }) {
   const bg = { ink: c.fill, blue: c.blueSoft, vermillion: c.vermillionSoft }[tone];
   const fg = { ink: c.ink, blue: c.blueInk, vermillion: c.vermillionInk }[tone];
   return (
-    <View style={{ flexGrow: 1, flexBasis: 0, minWidth: 96, padding: 12, borderRadius: radius.tile, backgroundColor: bg, gap: 4 }}>
+    <View style={{ flexGrow: 1, flexBasis: big ? "100%" : 0, minWidth: 96, padding: 12, borderRadius: radius.tile, backgroundColor: bg, gap: 4 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <T v="section" style={{ color: fg, fontVariant: ["tabular-nums"] }}>{String(n)}</T>
         <Icon name={icon} size={16} color={fg} stroke={2} />
       </View>
-      <T v="cap" style={{ color: fg }} numberOfLines={2}>{sub ? `${label} · ${sub}` : label}</T>
+      <T v="cap" style={{ color: fg }} numberOfLines={big ? 3 : 2}>{sub ? `${label} · ${sub}` : label}</T>
     </View>
   );
 }

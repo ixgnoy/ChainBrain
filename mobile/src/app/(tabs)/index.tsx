@@ -15,6 +15,7 @@ import { Avatar, Button, Card, ListCard, Press, SectionHeader, Tile } from "../.
 import { Money } from "../../ui/Money";
 import { Reveal as Rise, PopIn } from "../../ui/Reveal";
 import { useReduceMotion } from "../../ui/motion";
+import { useLargeText } from "../../ui/fontScale";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { PocketWallet, stripFor } from "../../components/PocketWallet";
@@ -162,6 +163,7 @@ function Home({ ready }: { ready: boolean }) {
   const pauseAll = (pause: boolean) => { haptic.medium(); for (const r of liveRoutines) if ((r.status === "active") === pause) api.pauseRoutine(r.pocket, pause); };
   const upcoming = useMemo(() => nextRuns(pockets, (a) => routines.get(a.toLowerCase()) ?? null, events, cfg?.sellers ?? [], now), [pockets, routines, events, cfg, now]);
   const reduce = useReduceMotion();
+  const big = useLargeText();
   const insets = useSafeAreaInsets();
   const play = useRef(ready && !introPlayed).current;
   useEffect(() => { if (ready) introPlayed = true; }, [ready]);
@@ -194,12 +196,13 @@ function Home({ ready }: { ready: boolean }) {
       <HomeHeader />
       <Rise play={play} index={0}>
         <Animated.View style={pulseStyle}>
-          <Card pad={18} style={{ marginHorizontal: 16, flexDirection: "row", alignItems: "flex-end", gap: 12 }}>
+          {/* one line; at the largest text sizes the main wallet moves under the total, or the two run into each other */}
+          <Card pad={18} style={{ marginHorizontal: 16, flexDirection: big ? "column" : "row", alignItems: big ? "flex-start" : "flex-end", gap: 12 }}>
             <View style={{ flex: 1 }}>
               <T v="cap" w="semi" color="muted">In agent pockets</T>
               <View style={{ marginTop: 4 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
             </View>
-            <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ alignItems: "flex-end", paddingBottom: 4 }}>
+            <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ alignItems: big ? "flex-start" : "flex-end", paddingBottom: 4 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
                 <Icon name="vault" size={13} color={c.muted} stroke={2} />
                 <T v="cap" color="muted">Main wallet</T>
