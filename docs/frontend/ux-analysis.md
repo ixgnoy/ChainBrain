@@ -118,7 +118,7 @@ It is a presenter and judge view, not an owner's app, so the bar is clarity at a
 
 ## Plan
 
-- **Now (about a day):** fixes 2, 3, 4, 5, 6, 7, 9 and 10. All are copy, layout or routing changes on existing components.
+- **Now: done 16 Oct** (fixes 2, 3, 4, 5, 6, 7, 9 and 10, one commit each from `6bab1e5` to `2fb64c5`, verified in Expo Go on the iOS Simulator; built-in e2e 48/48). Found on the way: Home briefly shows the empty "Create your first pocket" state while the built-in network seeds on launch; show a loading deck instead.
 - **Next:** fix 1 (text scaling across the type scale and fixed-height controls, then a pass at every text size), and fix 8 (Face ID as the signature, slide only for large amounts).
 - **Later, needs a development build:** Time Sensitive notifications and a Live Activity for pending co-signs; notification permission asked at Connect.
 - **Measure once real people use it:** approval rate and median time to decide per co-sign (fatigue shows up as fast approvals near 100 %), dock-to-cheque opens, intro skips, revoke reversals (re-creating a pocket for the same agent within an hour suggests a wrong-pocket revoke).
