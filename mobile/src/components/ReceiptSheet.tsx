@@ -13,6 +13,35 @@ import { chainFor, toolResultOf, type LedgerRow, type WalletEvent } from "../lib
 import { plainAsks, plainReason } from "../lib/plain";
 import { usd, stamp, shortHex } from "../lib/util";
 import { TxLink } from "./TxLink";
+import { Icon } from "../ui/Icon";
+import { SellerMark, hasSellerMark } from "../ui/SellerMark";
+import { AgentAvatar } from "../ui/AgentAvatar";
+import { PocketFace, toneFor } from "./PocketFace";
+import { stripFor } from "./PocketWallet";
+import { agentInfo } from "../../../shared/sim/agents";
+import { useWindowDimensions } from "react-native";
+
+/** The rules Pocket.sol checked before this payment settled: a settled payment passed every one (it could not have
+ *  settled otherwise), so these are facts of the payment, not decoration. The ask-me rule says who let it through. */
+function Checks({ cosigned }: { cosigned?: boolean }) {
+  const items: [string, boolean][] = [["Agent's signature", false], ["Pocket active", false], ["Allowed seller", false], ["Under the cap", false], ["Within the balance", false], [cosigned ? "You co-signed" : "Under ask-me", !!cosigned]];
+  return (
+    <View accessible accessibilityLabel={`The pocket contract checked six rules and the payment passed them all${cosigned ? ", with your co-signature" : ""}`} style={{ gap: 10 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Icon name="shieldCheck" size={16} color={c.greenInk} stroke={2.2} />
+        <T v="sub" w="semi">Passed every check in the pocket contract</T>
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+        {items.map(([k, blue]) => (
+          <View key={k} style={{ flexDirection: "row", alignItems: "center", gap: 5, minHeight: 28, paddingLeft: 6, paddingRight: 10, borderRadius: 14, backgroundColor: blue ? c.blueSoft : c.greenSoft }}>
+            <Icon name={blue ? "faceId" : "check"} size={13} color={blue ? c.blueInk : c.greenInk} stroke={2.6} />
+            <T v="cap" w="semi" style={{ color: blue ? c.blueInk : c.greenInk }}>{k}</T>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
 
 /** What a payment delivered: the seller's content from the pay tool's result, unwrapped, as short lines. */
 export function deliveredLines(events: WalletEvent[], tx?: string): string[] {
@@ -35,10 +64,12 @@ export function ReceiptSheet() {
 }
 
 function Body({ row, close }: { row: LedgerRow; close: () => void }) {
-  const { sellerName, findPocket, events, dev, source } = useApp();
+  const { sellerName, findPocket, events, dev, source, pockets } = useApp();
+  const { width: winW } = useWindowDimensions();
   const pocket = findPocket(row.pocket);
   const bad = row.outcome === "refused" || row.outcome === "declined";
   const seller = cleanText(sellerName(row.sellerId), 60);
+  const who = agentInfo(pocket?.agentId ?? "")?.name ?? "Your agent";
   const chain = useMemo(() => (row.kind === "payment" ? chainFor(events, row) : null), [events, row]);
   const noMoney = row.amount == null || row.kind === "disclosure" || row.kind === "intent" || (row.kind === "owner" && row.amount == null);
   const headline = row.kind === "owner" ? row.text : row.kind === "disclosure" ? "Nothing was shared" : row.kind === "intent" ? (row.outcome === "approved" ? "Task confirmed" : "Task declined") : null;
@@ -48,7 +79,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
     ? bad ? "Someone submitted a transfer out of this pocket with the agent's signature, straight to the token contract. The pocket checks every transfer on-chain: this address is not allowed, so it reverted and nothing moved." : "Money left the pocket to an address outside your list."
     : row.kind === "owner" ? `${row.text}${row.detail ? ` (${cleanText(row.detail, 80)})` : ""}. You signed this on your phone.`
     : row.kind === "payment"
-    ? row.cosigned ? `Your agent paid ${seller}. You co-signed this payment on your phone.` : `Your agent paid ${seller} on its own, within your limits.`
+    ? row.cosigned ? `${who} paid ${seller}. You co-signed this payment on your phone.` : `${who} paid ${seller} on its own, within your limits.`
     : row.kind === "disclosure" ? `${seller} asked for ${plainAsks(row.asked ?? [], !!row.signRequest)}. Your wallet refused, so nothing was shared.`
     : row.kind === "intent" ? cleanText(row.text, 300)
     : bad ? `This payment was not made: ${plainReason(row.reasons[0] ?? "")}.` : row.outcome === "pending" ? "Your agent is waiting for you to approve this payment." : cleanText(row.text, 300);
@@ -65,7 +96,8 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
   if (row.kind === "forced") facts.push(["To", row.detail ? shortHex(row.detail) : "Unknown address"]);
   else if (row.kind !== "intent" && row.kind !== "owner") facts.push(["Seller", seller]);
   if (row.description) facts.push(["Item", cleanText(row.description, 80)]);
-  facts.push(["Pocket", pocket ? cleanText(pocket.name, 40) : "n/a"], ["When", stamp(row.at)]);
+  if (row.kind !== "payment" || !pocket) facts.push(["Pocket", pocket ? cleanText(pocket.name, 40) : "n/a"]); // a payment shows its pocket as the card
+  facts.push(["When", stamp(row.at)]);
   const tech: [string, string][] = [["Network", dev ? "Local test network" : source === "builtin" ? "Test network" : "Base Sepolia (test network)"]];
     if (row.detail && row.kind !== "forced") tech.push(["Detail", cleanText(row.detail, 200)]);
   if (row.sku) tech.push(["Item code", cleanText(row.sku, 60)]);
@@ -76,6 +108,15 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
     <View>
       <ScrollView style={{ maxHeight: 640 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 8, gap: 20 }} showsVerticalScrollIndicator={false}>
         <View style={{ alignItems: "center", gap: 10, paddingTop: 4 }}>
+          {row.kind === "payment" && row.sellerId && hasSellerMark(row.sellerId) ? (
+            <Reveal {...R(0)}>
+              {/* who paid whom: the seller's mark, the agent that paid on its corner */}
+              <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ marginBottom: 4 }}>
+                <SellerMark id={row.sellerId} size={60} radius={17} />
+                {pocket?.agentId ? <View style={{ position: "absolute", right: -10, bottom: -8, borderRadius: 12, borderWidth: 3, borderColor: c.card }}><AgentAvatar kind={pocket.agentId} size={28} /></View> : null}
+              </View>
+            </Reveal>
+          ) : null}
           <Reveal {...R(0)}>
             {noMoney ? <T v="amount" color={bad ? "negative" : "ink"} style={{ textAlign: "center" }}>{headline ?? "No payment made"}</T> : (
               <Money v="balance" value={usd(row.amount)} countIn color={bad ? "muted" : "ink"} strike={bad} />
@@ -84,6 +125,14 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
           <Reveal {...R(1)}><View style={{ alignSelf: "center" }}><Pill label={status} tone={bad ? "negative" : row.outcome === "pending" ? "warning" : "accent"} /></View></Reveal>
         </View>
         <Reveal {...R(2)}><T v="body" color="ink2" style={{ textAlign: "center" }}>{sentence}</T></Reveal>
+        {row.kind === "payment" && !bad ? <Reveal {...R(3)}><Checks cosigned={row.cosigned} /></Reveal> : null}
+        {row.kind === "payment" && pocket ? (
+          <Reveal {...R(3)}>
+            <View accessible accessibilityLabel={`From the ${cleanText(pocket.name, 40)} pocket`} style={{ height: stripFor(Math.min(winW, 480) - 40), borderRadius: 18, overflow: "hidden" }}>
+              <PocketFace pocket={pocket} width={Math.min(winW, 480) - 40} tone={toneFor(pockets, pocket.address)} still peek />
+            </View>
+          </Reveal>
+        ) : null}
         <View style={{ backgroundColor: c.canvas, borderRadius: 20, paddingHorizontal: 16 }}>
           {facts.map(([k, v], i) => cell(k, v, 3 + i))}
         </View>
