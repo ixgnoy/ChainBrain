@@ -184,7 +184,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingTop: 4 }}>
               <AgentAvatar kind={agent?.id ?? "chainbrain"} size={44} badge={c.vermillion} />
               <View style={{ flex: 1, gap: 2 }}>
-                <T v="section" accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{`${who} asks you to co-sign`}</T>
+                <T v="section" accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{allowance ? `${who} asks you` : `${who} asks you to co-sign`}</T>
                 <T v="sub" style={{ color: c.vermillionInk }}>{why}</T>
               </View>
               {auth && !expired ? <Countdown a={a} size={46} onLight /> : null}

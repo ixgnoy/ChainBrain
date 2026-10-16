@@ -1,5 +1,5 @@
-// End-to-end run of the phone app on its built-in network (the default on every launch): scenes 1-8 from the spec,
-// nothing else running. Point it at the Expo web dev server or a static export:
+// End-to-end run of the phone app on its built-in network (the default on every launch): scenes 1-8 from the spec, the
+// pocket apps (a deal watcher's chart, scene 12's pocket app made from one sentence and its routine), nothing else running. Point it at the Expo web dev server or a static export:
 //   (cd mobile && npx expo start --web --port 8091)      # or: npx expo export --platform web --output-dir dist + any static server
 //   node devstack/e2e/builtin.cjs [--url http://localhost:8091] [--shots <dir>] [--headed]
 const { chromium } = require("../../web/node_modules/@playwright/test");
@@ -39,7 +39,7 @@ async function until(what, fn, ms = 30000, step = 200) {
   const chip = async (label) => { await visible(label).click(); };
   const slide = async (name) => {
     const el = page.getByRole("button", { name });
-    await el.waitFor(); await sleep(550);
+    await el.waitFor(); await el.scrollIntoViewIfNeeded(); await sleep(550); // a long page (New pocket app) keeps it below the fold
     const b = await el.boundingBox();
     await page.mouse.move(b.x + 30, b.y + b.height / 2); await page.mouse.down();
     for (let i = 1; i <= 12; i++) { await page.mouse.move(b.x + 30 + ((b.width - 40) * i) / 12, b.y + b.height / 2); await sleep(20); }
@@ -102,6 +102,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await sleep(900);
     const t = await body();
     check("pocket page shows the same card (expiry) and its rules", /Exp\. \d\d\/\d\d|Ends \d\d:\d\d/.test(t) && /Allowed sellers/.test(t));
+    check("it is a research desk app: who runs it, its library, then the rules you signed", /ChainBrain/.test(t) && /Research desk/.test(t) && /reports bought/.test(t) && /Rules you signed/.test(t));
     await shot("01a-pocket-page");
     await page.goBack();
     await visible("Agent pockets").waitFor();
@@ -172,6 +173,8 @@ async function until(what, fn, ms = 30000, step = 200) {
   await run("scene 1: create and fund a Research pocket in the wizard", async () => {
     await tab("Home");
     await page.getByRole("button", { name: "New pocket" }).first().click();
+    await visible("Say what it's").waitFor();
+    await page.getByRole("button", { name: "Set it up step by step instead" }).click();
     await visible("What is it for?").waitFor();
     await page.getByText(/US\$1 budget · up to US\$0\.05 each/).first().click();
     // a preset sets every limit, so one press goes straight to Review
@@ -312,6 +315,58 @@ async function until(what, fn, ms = 30000, step = 200) {
     await page.getByRole("button", { name: "Done" }).filter({ visible: true }).last().click();
     await sleep(500);
     await page.getByRole("button", { name: "Done" }).filter({ visible: true }).last().click();
+  });
+
+  await run("pocket apps: Claude's deal watcher charts every quote against the owner's limit", async () => {
+    await tab("Agents");
+    await visible("Connected agents").waitFor();
+    await page.getByRole("button", { name: /^Claude/ }).first().click();
+    await page.getByRole("button", { name: /Durian watch, / }).click();
+    await page.waitForURL(/pocket\/0x[0-9a-fA-F]{40}/, { timeout: 15000 });
+    await visible("Rules you signed").waitFor();
+    await sleep(1200);
+    const t = await body();
+    check("deal watcher: Claude runs it, checks every day, buys at the limit or less", /Claude/.test(t) && /Deal watcher/.test(t) && /buys at US\$0\.04 or less/.test(t));
+    check("its chart is the seller's real quotes, with the limit and the buys", (await page.getByLabel(/^Quoted prices: /).count()) === 1 && /Your limit/.test(t) && /\d+ bought/.test(t) && /\d+ quotes/.test(t));
+    check("Will never: contract and ChainBrain, said apart", /Will never/i.test(t) && /CONTRACT/.test(t) && /CHAINBRAIN/.test(t));
+    await shot("13-deal-watcher");
+    await page.goBack(); await sleep(400); await page.goBack(); await sleep(600);
+  });
+
+  await run("scene 12: one sentence makes a pocket app; its routine runs, and the run past its allowance asks", async () => {
+    await tab("Home");
+    await page.getByRole("button", { name: "New pocket" }).first().click();
+    await visible("Say what it's").waitFor();
+    await page.getByLabel("What the pocket is for, in one sentence").fill("Every morning, get me durian export news from Exa and the USDC price from CoinGecko. Max US$0.05 a week.");
+    await page.getByRole("button", { name: "Compose my pocket app" }).click();
+    await visible("Your pocket app").waitFor();
+    await sleep(2600);
+    let t = await body();
+    check("proof card: worst case US$0.10, the weekly allowance, every test payment as expected", /Worst case, even if the agent is fooled/.test(t) && /US\$0\.10/.test(t) && /a week, on its own/.test(t) && /6 payments tried · all as expected/.test(t));
+    check("the app is composed from the fixed blocks", /Research desk · 6 of 13 blocks/.test(t) && /draft/i.test(t));
+    await shot("14-compose");
+    await slide("Slide to create · US$0.10");
+    await page.waitForURL(/pocket\/0x[0-9a-fA-F]{40}/, { timeout: 30000 });
+    await visible("Rules you signed").waitFor();
+    const run = page.getByRole("button", { name: "Have ChainBrain run it now" });
+    await run.click();
+    await until("run 1", async () => /Paid US\$0\.017/.test(await body()), 30000);
+    await sleep(800);
+    await run.click();
+    await until("run 2", async () => (await body()).match(/Paid US\$0\.017/g)?.length >= 2, 30000);
+    t = await body();
+    check("two runs paid inside the week's allowance", /US\$0\.034/.test(t) && /of US\$0\.05 a week/.test(t));
+    await shot("15-routine-runs");
+    await run.click();
+    await visible("Run 3 would pass this week's US$0.05").waitFor({ timeout: 30000 });
+    t = await body();
+    check("the third run raises the cheque with this week's bar", /US\$0\.051 of US\$0\.05/.test(t) && /US\$0\.041 spent \+ US\$0\.01 now/.test(t));
+    await shot("16-routine-cheque");
+    await slide("Slide to approve US$0.01");
+    await until("run 3", async () => /co-signed by you on its cheque/.test(await body()), 30000);
+    check("co-signed: the meter shows the US$0.001 over", /US\$0\.001 over/.test(await body()));
+    await shot("17-routine-over");
+    await page.goBack(); await sleep(800); // back to Home (New pocket app replaced itself with the pocket page)
   });
 
   await run("settings: subtle custom server switch", async () => {

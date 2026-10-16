@@ -3,7 +3,7 @@
 // (devstack/src/model.ts), on top of the in-memory chain. The apps talk to it through the same calls they use for
 // the real server, so every screen behaves the same in both.
 import { CATALOG, quotedPrice, sellerById, sellerByPayTo, sellerName, sellers, ATTACKER, DRAINER } from "./catalog";
-import { available, nextRun, pickApp, validateRoutine, type PocketAppSpec, type Routine, type RoutineSpec } from "./pocketApp";
+import { available, nextRun, pickApp, validateRoutine, type Routine, type RoutineSpec } from "./pocketApp";
 import { createMemory, consolidate } from "./memory";
 import { parseSentence, proof } from "./speak";
 import { rules as sentinelRules, ruleSeverity, gate, scriptedAi, stateText, PROBE_REASONS, RANK, type Severity, type Signal, type AiAnswer } from "./sentinel";

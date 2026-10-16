@@ -124,7 +124,8 @@ export function runningNow(events: Ev[], pocket: string): { run: number; since: 
   return last && last.kind === "run-start" ? { run: last.run, since: last.at } : null;
 }
 
-export type HaggleStep = { round: number; offer: bigint; reply: string; price: bigint; final: boolean; at: number };
+/** `accepting`: the agent offered exactly the seller's counter, which accepts it (no new offer). */
+export type HaggleStep = { round: number; offer: bigint; reply: string; price: bigint; final: boolean; at: number; accepting: boolean };
 /** The latest negotiation: list price, each offer and the seller's answer, and what was paid (haggler hero). */
 export function haggleOf(events: Ev[], pocket: string) {
   const hs = mine(events, pocket).filter((e) => e.type === "haggle");
@@ -134,7 +135,7 @@ export function haggleOf(events: Ev[], pocket: string) {
     const p = purchasesOf(events, pocket).at(-1);
     return p ? { sellerId: p.sellerId, sku: p.sku, list: p.list ?? p.amount, steps: [] as HaggleStep[], paid: p.amount, paidAt: p.at, tx: p.tx, cosigned: p.cosigned } : null;
   }
-  const steps: HaggleStep[] = hs.filter((e) => e.quoteId === last.quoteId).map((e) => ({ round: e.round, offer: big(e.offer), reply: String(e.reply), price: big(e.price), final: !!e.final, at: e.at }));
+  const steps: HaggleStep[] = hs.filter((e) => e.quoteId === last.quoteId).map((e) => ({ round: e.round, offer: big(e.offer), reply: String(e.reply), price: big(e.price), final: !!e.final, at: e.at, accepting: !!e.accepting }));
   const paid = purchasesOf(events, pocket).filter((p) => p.at >= (steps[0]?.at ?? 0) && p.sellerId === last.sellerId).at(-1);
   return { sellerId: String(last.sellerId), sku: String(last.sku), list: big(last.list), steps, paid: paid?.amount, paidAt: paid?.at, tx: paid?.tx, cosigned: paid?.cosigned ?? false };
 }

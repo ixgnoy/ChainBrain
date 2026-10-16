@@ -41,6 +41,8 @@ export type AppCtx = {
   preview?: boolean;
   sellerName(id?: string): string;
   itemName(sellerId: string, sku: string): string;
+  /** the network's sellers and their items (list prices, which take offers) */
+  registry?: { id: string; items: { sku: string; short?: string; description: string; price: string | null; negotiable?: boolean }[] }[];
   running?: { run: number } | null;
   onRunNow?(): void;
   onPause?(paused: boolean): void;
@@ -102,7 +104,7 @@ const Mark = ({ id, size = 32 }: { id: string; size?: number }) => (hasSellerMar
 
 function Empty({ icon, text }: { icon: "clock" | "file" | "chart" | "target"; text: string }) {
   return (
-    <View style={{ height: 96, borderRadius: radius.tile, overflow: "hidden", backgroundColor: c.tile, alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 16 }}>
+    <View style={{ minHeight: 96, paddingVertical: 14, borderRadius: radius.tile, overflow: "hidden", backgroundColor: c.tile, alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 16 }}>
       <Hatch color={c.line} pitch={7} stroke={1.2} opacity={0.6} />
       <Icon name={icon} size={22} color={c.ink2} stroke={1.6} />
       <T v="sub" color="ink2" style={{ textAlign: "center" }}>{text}</T>
@@ -173,12 +175,12 @@ function Cover({ x, i, ctx }: { x: ReturnType<typeof purchasesOf>[number]; i: nu
   return (
     <Animated.View style={a}>
       <Press kind="row" haptics="light" onPress={() => ctx.onReceipt?.(x.tx)} accessibilityRole="button" accessibilityLabel={`${name} from ${ctx.sellerName(x.sellerId)}, US$${usd(x.amount)}, ${day(x.at)}, receipt`}
-        style={{ width: 136, height: 176, borderRadius: radius.tile, backgroundColor: i === 0 ? c.ink : c.tile, overflow: "hidden" }}>
+        style={{ width: 136, minHeight: 176, borderRadius: radius.tile, backgroundColor: i === 0 ? c.ink : c.tile, overflow: "hidden" }}>
         <View style={{ height: 72, alignItems: "flex-start", justifyContent: "flex-end", padding: 12, overflow: "hidden" }}>
           <Hatch color={i === 0 ? "#FFFFFF" : c.line} pitch={7} stroke={1.3} opacity={i === 0 ? 0.16 : 0.9} />
           <View style={{ borderRadius: 11, borderWidth: 2, borderColor: i === 0 ? c.ink : c.tile }}><Mark id={x.sellerId} size={36} /></View>
         </View>
-        <View style={{ flex: 1, padding: 12, paddingTop: 8, justifyContent: "space-between" }}>
+        <View style={{ flex: 1, padding: 12, paddingTop: 8, justifyContent: "space-between", gap: 8 }}>
           <T v="sub" w="semi" numberOfLines={3} style={{ color: i === 0 ? c.white : c.ink, lineHeight: 18 }}>{short(name)}</T>
           <View>
             <T v="cap" numberOfLines={1} style={{ color: i === 0 ? "rgba(255,255,255,0.64)" : c.muted }}>{`${day(x.at)}${x.run ? ` · run ${x.run}` : ""}`}</T>
@@ -259,17 +261,34 @@ function MonthSpend({ ctx }: { ctx: AppCtx }) {
 function Ladder({ ctx }: { ctx: AppCtx }) {
   const h = ctx.address ? haggleOf(ctx.events, ctx.address) : null;
   if (!h) {
+    // before any deal: the seller's real list price, then three empty rounds (what the agent will try), then the pocket's cap
+    const item = ctx.rules.sellers.map((id) => ({ id, it: ctx.registry?.find((x) => x.id === id)?.items.find((i) => i.negotiable && i.price) })).find((x) => x.it);
+    const list = item?.it?.price ? Number(item.it.price) : 0;
     return (
-      <BlockCard label="The deal">
-        <Empty icon="target" text={`No deal yet. ${agentName(ctx.agentId)} asks the price, offers less in up to three rounds, and pays only what the pocket allows.`} />
+      <BlockCard label="The deal" right={item?.it ? short(item.it.short ?? item.it.description) : undefined}>
+        {item?.it && list ? (
+          <View style={{ gap: 8 }} accessible accessibilityLabel={`${ctx.sellerName(item.id)} lists it at US$${item.it.price}. ${agentName(ctx.agentId)} offers less, up to three rounds, and pays at most US$${usd(ctx.rules.cap)}.`}>
+            <LadderRow i={0} label={`${ctx.sellerName(item.id)} lists it at`} price={BigInt(Math.round(list * 1e6))} frac={1} who="seller" />
+            {[1, 2, 3].map((r) => (
+              <View key={r} style={{ gap: 4 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <T v="cap" color="muted">{`Round ${r}`}</T>
+                  <T v="cap" color="faint">{r === 1 ? "first offer" : "if it counters"}</T>
+                </View>
+                <View style={{ height: 14, borderRadius: 5, borderWidth: 1.5, borderStyle: "dashed", borderColor: c.line }} />
+              </View>
+            ))}
+          </View>
+        ) : <Empty icon="target" text={`No deal yet. ${agentName(ctx.agentId)} asks the price and offers less, in up to three rounds.`} />}
         {ctx.onAsk && !ctx.preview ? <Button label={`Ask ${agentName(ctx.agentId)} in chat`} kind="secondary" icon="chat" small onPress={ctx.onAsk} /> : null}
       </BlockCard>
     );
   }
   const rows: { who: "seller" | "agent" | "paid"; label: string; price: bigint }[] = [{ who: "seller", label: `${ctx.sellerName(h.sellerId)} asks`, price: h.list }];
   for (const s of h.steps) {
+    if (s.accepting) continue; // taking the seller's counter is not a new offer: the paid row says it
     rows.push({ who: "agent", label: `${agentName(ctx.agentId)} offers`, price: s.offer });
-    if (s.reply !== "accept") rows.push({ who: "seller", label: s.final ? "Final price" : "Counter", price: s.price });
+    if (s.reply !== "accept") rows.push({ who: "seller", label: s.final ? `${ctx.sellerName(h.sellerId)}'s final price` : `${ctx.sellerName(h.sellerId)} counters`, price: s.price });
   }
   if (h.paid != null) rows.push({ who: "paid", label: h.cosigned ? "Paid · co-signed by you" : "Paid", price: h.paid });
   const max = Number(h.list) || 1;
@@ -367,7 +386,7 @@ function NextRun({ ctx }: { ctx: AppCtx }) {
     <BlockCard label={rs.kind === "price-watch" ? "Next check" : rs.kind === "renewals" ? "Next renewal" : "Next run"} right={times[0] && !paused ? `${day(times[0])} · ${inWords(times[0], ctx.now)}` : paused ? "Paused" : undefined}>
       <View style={{ flexDirection: "row", gap: 8 }}>
         {(times.length ? times : [0, 1, 2, 3].map(() => 0)).map((t, i) => (
-          <View key={i} style={{ flex: 1, height: 74, borderRadius: radius.tile, backgroundColor: i === 0 && t && !paused ? c.ink : c.tile, alignItems: "center", justifyContent: "center", gap: 2, overflow: "hidden" }}>
+          <View key={i} style={{ flex: 1, minHeight: 74, paddingVertical: 10, borderRadius: radius.tile, backgroundColor: i === 0 && t && !paused ? c.ink : c.tile, alignItems: "center", justifyContent: "center", gap: 2, overflow: "hidden" }}>
             {!t ? <Hatch color={c.line} pitch={6} stroke={1.2} /> : null}
             <T v="tab" style={{ textTransform: "uppercase", letterSpacing: 0.8, color: i === 0 && t && !paused ? "rgba(255,255,255,0.7)" : c.muted }}>{t ? new Date(t).toLocaleDateString("en-GB", { weekday: "short" }) : "—"}</T>
             <T v="section" style={{ color: i === 0 && t && !paused ? c.white : c.ink }}>{t ? String(new Date(t).getDate()) : ""}</T>
@@ -533,7 +552,7 @@ function Savings({ ctx }: { ctx: AppCtx }) {
       <View style={{ gap: 6 }}>
         <View style={{ height: 12, borderRadius: 4, overflow: "hidden", backgroundColor: c.fill }}><Hatch color={c.ink} pitch={6} stroke={1.2} opacity={0.5} /></View>
         <View style={{ height: 12, width: `${frac * 100}%`, borderRadius: 4, backgroundColor: c.ink }} />
-        <T v="cap" color="muted">{`First prices US$${usd(s.list)} · paid US$${usd(s.paid)}`}</T>
+        <T v="cap" color="muted">{`${s.count === 1 ? "First price" : "First prices"} US$${usd(s.list)} · paid US$${usd(s.paid)}`}</T>
       </View>
     </BlockCard>
   );

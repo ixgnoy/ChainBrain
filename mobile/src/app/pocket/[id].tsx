@@ -114,7 +114,7 @@ export default function PocketDetail() {
   const ctx: AppCtx = {
     spec, address: pocket.address, agentId: pocket.agentId, events, routine: routine && !pocket.revoked ? routine : routine ? { ...routine, status: "paused" } : null,
     balance: pocket.balance, funded: funded > 0n ? funded : undefined, rules: { cap: pocket.cap, sellers: pocket.allowed }, now: Date.now(),
-    sellerName: (s) => cleanText(sellerName(s), 24), itemName, running: runningNow(events, pocket.address),
+    sellerName: (s) => cleanText(sellerName(s), 24), itemName, registry: cfg?.sellers, running: runningNow(events, pocket.address),
     onRunNow: owned && !off ? async () => {
       haptic.medium(); setRunErr(null);
       const r = await api.runRoutineNow(pocket.address).catch(() => ({ ok: false as const, reason: "ERROR" }));
@@ -173,8 +173,8 @@ export default function PocketDetail() {
           <Rise index={2} base={90}>
             <View style={{ flexDirection: "row", gap: 10, paddingHorizontal: PAGE_MARGIN, marginTop: 16 }}>
               <RoundButton icon="plus" label="Add funds" a11y="Add funds from your main wallet" onPress={() => setAction({ mode: "fund", pocket: pocket.address })} />
-              <RoundButton icon="arrowIn" label="Return funds" a11y="Return funds" onPress={() => setAction({ mode: "return", pocket: pocket.address })} />
-              <RoundButton danger icon="ban" label="Revoke pocket" a11y="Revoke" onPress={() => setAction({ mode: "revoke", pocket: pocket.address })} />
+              <RoundButton icon="arrowIn" label="Return" a11y="Return funds" onPress={() => setAction({ mode: "return", pocket: pocket.address })} />
+              <RoundButton danger icon="ban" label="Revoke" a11y="Revoke" onPress={() => setAction({ mode: "revoke", pocket: pocket.address })} />
             </View>
           </Rise>
         ) : !owned ? (
