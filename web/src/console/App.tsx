@@ -90,10 +90,10 @@ function Shell() {
   const following = !pinned;
 
   const nav = (
-    <nav aria-label="Main" className="fixed inset-x-3 bottom-3 z-30 flex gap-1 rounded-full bg-card p-1.5 shadow-level3 md:static md:inset-auto md:bottom-auto md:z-auto md:shadow-[var(--shadow-level1)]">
+    <nav aria-label="Main" className="fixed inset-x-3 bottom-3 z-30 flex gap-1 rounded-full bg-card p-1.5 shadow-level3 lg:static lg:inset-auto lg:bottom-auto lg:z-auto lg:shadow-[var(--shadow-level1)]">
       {TABS.map(([id, label]) => (
         <button key={id} type="button" onClick={() => go({ tab: id })} aria-current={tab === id ? "page" : undefined}
-          className={cn("pressable h-11 min-w-0 flex-auto whitespace-nowrap rounded-full px-1 text-[12px] font-bold md:h-11 md:flex-none md:px-5 md:text-[15px]", tab === id ? "bg-ink text-on-accent" : "text-ink2 hover:bg-tile")}>{label}</button>
+          className={cn("pressable h-11 min-w-0 flex-auto whitespace-nowrap rounded-full px-1 text-[12px] font-bold lg:h-11 lg:flex-none lg:px-5 lg:text-[15px]", tab === id ? "bg-ink text-on-accent" : "text-ink2 hover:bg-tile")}>{label}</button>
       ))}
     </nav>
   );
@@ -111,12 +111,12 @@ function Shell() {
         <header className="sticky top-0 z-30 bg-canvas">
           <div className="mx-auto flex max-w-[1680px] items-center gap-x-8 px-4 py-3 sm:px-8 sm:py-4">
             <div className="flex items-center gap-3"><Mark /><div className="leading-tight"><div className="text-[19px] font-extrabold tracking-[-0.03em]">ChainBrain</div><div className="eyebrow mt-0.5 text-muted-canvas">Network console</div></div></div>
-            <div className="hidden md:block">{nav}</div>
-            <div className="ml-auto flex items-center gap-2"><span className="hidden lg:block"><TestnetChip /></span><Settings presenter={() => go({ present: true })} /></div>
+            <div className="hidden lg:block">{nav}</div>
+            <div className="ml-auto flex items-center gap-2"><span className="hidden xl:block"><TestnetChip /></span><Settings presenter={() => go({ present: true })} /></div>
           </div>
         </header>
       )}
-      <main className={cn("mx-auto max-w-[1680px] px-4 sm:px-8", present ? "pt-1 pb-[calc(var(--stepper-h,6rem)+0.5rem)]" : "pt-4 pb-28 md:pb-16")}>
+      <main className={cn("mx-auto max-w-[1680px] px-4 sm:px-8", present ? "pt-1 pb-[calc(var(--stepper-h,6rem)+0.5rem)]" : "pt-4 pb-28 lg:pb-16")}>
         {tab === "live" && (
           <>
             <h1 className="sr-only">Live</h1>
@@ -134,9 +134,9 @@ function Shell() {
         {!present && tab === "explorer" && <Explorer route={route.explorer} watch={watchLive} />}
         {!present && tab === "evidence" && <div className="mx-auto max-w-[1180px]"><Evidence /></div>}
         {!present && tab === "judges" && <div className="mx-auto max-w-[1040px]"><Judges pocket={pocket} open={watchLive} /></div>}
-        {!present && <div className="mt-12 text-center lg:hidden"><TestnetChip /></div>}
+        {!present && <div className="mt-12 text-center xl:hidden"><TestnetChip /></div>}
       </main>
-      {!present && <div className="md:hidden">{nav}</div>}
+      {!present && <div className="lg:hidden">{nav}</div>}
       {present && <Stepper pocket={pocket} onExit={() => go({ present: false })} />}
     </div>
   );
