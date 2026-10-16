@@ -79,7 +79,11 @@ function Shell() {
   }, [pinned, pockets]);
   // ONE pocket per render: the one a person picked, else the one the story (or the linked phone) is on, else the last one touched.
   // Trace, balance, rules and sellers all read this same value.
-  const latest = useMemo(() => [...events].reverse().map(eventPocket).find(Boolean) ?? pockets[0]?.address, [events, pockets]);
+  // the last one an agent touched (a payment, a refusal, a call, an ask, a routine run): seeding ends by creating and funding
+  // other owners' pockets, and opening on an empty one made Live's first glance three empty states
+  const AGENT = new Set(["payment", "refusal", "trace", "approval", "routine", "quote", "attack", "sentinel"]);
+  const latest = useMemo(() => [...events].reverse().filter((e) => AGENT.has(String((e as { type?: string }).type))).map(eventPocket).find(Boolean)
+    ?? [...events].reverse().map(eventPocket).find(Boolean) ?? pockets[0]?.address, [events, pockets]); // eslint-disable-line react-hooks/exhaustive-deps
   const pocket = pinned ?? follow ?? latest;
   const go = (next: Omit<Partial<Route>, "pocket"> & { pocket?: string | null }) => {
     const r: Route = { tab: next.tab ?? tab, present: next.present ?? present, pocket: next.pocket === null ? undefined : next.pocket ?? pinned, explorer: HOME };

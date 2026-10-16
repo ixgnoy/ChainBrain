@@ -29,7 +29,7 @@ function Scoreboard({ attempts }: { attempts: Attempt[] }) {
       <div data-testid="arena-scoreboard" data-blocked={line.blocked} data-tried={line.tried} data-lost={line.lost} className="relative flex flex-wrap items-end justify-between gap-x-6 gap-y-5">
         <div>
           <p className="eyebrow mb-2 text-white/60">Scoreboard</p>
-          <p className="figure text-[29px] leading-[36px] sm:text-[56px] sm:leading-[60px]" aria-live="polite">{line.blocked} of {line.total} attacks{"\u00a0"}blocked<span className={cn("block sm:inline", board.lost > 0n ? "text-vermillion" : "text-green")}><span className="hidden text-white sm:inline"> · </span>{line.lost} lost</span></p>
+          <p className="figure text-[29px] leading-[36px] sm:text-[56px] sm:leading-[60px]" aria-live="polite">{line.tried === 0 ? <>{line.total} attacks to{"\u00a0"}try</> : <>{line.blocked} of {line.tried} {line.tried === 1 ? "attack" : "attacks"}{"\u00a0"}blocked</>}<span className={cn("block sm:inline", board.lost > 0n ? "text-vermillion" : "text-green")}><span className="hidden text-white sm:inline"> · </span>{line.lost} lost</span></p>
           <p className="mt-2 text-[14px] font-medium text-white/70">{line.tried === 0 ? "Nothing tried yet. Pick an attack below." : line.untried.length ? `${line.untried.length} not tried yet.` : "Every attack has been tried."}</p>
         </div>
         <ul className="relative flex flex-wrap gap-2" aria-label="Attack results">
