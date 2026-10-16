@@ -32,7 +32,13 @@ export type TargetName =
   | "inbox.review"        // Approvals inbox: review the first waiting request of agent `arg` (opens the approval sheet)
   | "dock.open"           // the ask dock: open the newest waiting request of `arg` {agent, kind} (the cheque)
   | "radar.open"          // a Radar alert card or row: open the Radar alert page
-  | "sheet.close";        // any open sheet that should be dismissed (success screens)
+  | "sheet.close"         // any open sheet that should be dismissed (success screens)
+  | "home.compose"        // Home: "New pocket app" (opens the compose flow)
+  | "compose.text"        // compose: type `arg.text` into the sentence field, then compose (resolves when the app has assembled)
+  | "compose.create"      // compose: slide to create the pocket app (resolves when the slide commits)
+  | "compose.open"        // compose success: open the new pocket app (the card flies into it)
+  | "compose.manual"      // compose: "Set it up step by step instead" (the wizard)
+  | "routine.runNow";     // pocket app: "Run … next … now"
 
 /** Return false when the control cannot act yet (not laid out, disabled): the press is retried. */
 type Handler = (arg?: any) => unknown | Promise<unknown>;

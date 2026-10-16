@@ -60,7 +60,7 @@ export async function ping(base = getApi()): Promise<{ ms: number; agent?: strin
 
 export type Scene = { id: string; title: string; text: string; chip?: string; followChip?: string; preset: string | null; note?: string; followUp?: string | null };
 export async function devScenes(): Promise<Scene[]> {
-  if (isBuiltin()) return SCENES;
+  if (isBuiltin()) return SCENES.filter((s) => s.where !== "compose"); // scene 12's sentence makes a pocket app, not a chat task
   const r = await fetchTimeout(`${getApi()}/dev/scenes`, {}, 5000);
   if (!r.ok) return [];
   const j = await r.json();
@@ -97,3 +97,26 @@ export async function compileRules(sentence: string): Promise<import("../../../s
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
+
+// ---- pocket apps (shared/sim/pocketApp.ts)
+type Composed = import("../../../shared/sim/speak").Compiled & {
+  proof: import("../../../shared/sim/speak").Proof; spec: import("../../../shared/sim/pocketApp").PocketAppSpec;
+  agent: import("../../../shared/sim/pocketApp").AgentChoice; specBy: "picker" | "claude";
+};
+/** POST /api/pocket-app/compose: one sentence -> the rules, the proof card, the pocket app spec and the agent. Creates nothing. */
+export async function composeApp(sentence: string): Promise<Composed> {
+  if (isBuiltin()) return builtin().composeApp(sentence) as Composed;
+  const r = await fetchTimeout(`${getApi()}/api/pocket-app/compose`, { method: "POST", headers: json, body: JSON.stringify({ sentence }) }, 30000);
+  if (!r.ok) throw new Error(`compose ${r.status}`);
+  return (await r.json()) as Composed;
+}
+type Routine = import("../../../shared/sim/pocketApp").Routine;
+type RoutineSpec = import("../../../shared/sim/pocketApp").RoutineSpec;
+/** Routines run on the built-in network; a wallet server keeps none yet, so these answer null / false there. */
+export const routineOf = (pocket: string): Routine | null => (isBuiltin() ? builtin().routine(pocket) : null);
+export const setRoutine = (pocket: Address, spec: RoutineSpec): Routine | null => (isBuiltin() ? builtin().setRoutine(pocket, spec) : null);
+export async function runRoutineNow(pocket: Address) {
+  if (!isBuiltin()) return { ok: false as const, reason: "NOT_ON_THIS_NETWORK" };
+  return builtin().runRoutineNow(pocket);
+}
+export const pauseRoutine = (pocket: string, paused: boolean) => (isBuiltin() ? builtin().pauseRoutine(pocket, paused) : false);

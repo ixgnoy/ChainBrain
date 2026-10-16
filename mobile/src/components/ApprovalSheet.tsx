@@ -121,7 +121,9 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
     const last = sentinelEvents(mine).filter((v) => v.kind === "hold" || v.kind === "clear" || v.kind === "freeze").at(-1);
     return last?.kind === "hold" && !mine.some((e) => e.type === "payment" && e.cosigned && e.at > last.at);
   }, [events, pocket]);
-  const why = overLimit ? limitText : held ? "The Sentinel wants your OK on this payment" : risky ? "Radar wants your OK on this seller" : limitText;
+  // a routine run past its period allowance (shared/sim/world.ts runRoutine): the runner asks, not the contract
+  const allowance = a.data?.allowance as { period: string; allowance: string; spent: string; after: string; run: number } | undefined;
+  const why = allowance ? `Run ${allowance.run} would pass this ${allowance.period}'s US$${allowance.allowance}` : overLimit ? limitText : held ? "The Sentinel wants your OK on this payment" : risky ? "Radar wants your OK on this seller" : limitText;
   const whyCode = !overLimit && held ? "SENTINEL_HOLD" : risky ? "COUNTERPARTY_REVIEW" : "NEEDS_OWNER_APPROVAL";
 
   // "Claude pays Nansen US$0.05 from Market news. US$0.362 stays in the pocket."
@@ -203,6 +205,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
                 </View>
               ) : null}
             </View>
+            {allowance ? <AllowanceStrip {...allowance} amount={amount ?? "0"} /> : null}
             {risky ? (
               <View style={{ gap: 8, padding: 14, borderRadius: 16, backgroundColor: c.vermillionSoft }} accessible accessibilityLabel={`Radar: risk ${radar!.score} out of 10. ${cleanText(radarBody(String(radar!.narrative ?? "")), 300)}`}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -292,5 +295,29 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
         )}
       </View>
     </Animated.View>
+  );
+}
+
+/** The routine's week (or day, or month) on one bar: what it already spent, this payment on top, and the allowance marked.
+ *  Checkable figures rather than an explanation (docs/08-frontend/pocket-apps-research.md, Kim et al. 2025). */
+function AllowanceStrip({ period, allowance, spent, after, amount }: { period: string; allowance: string; spent: string; after: string; amount: string }) {
+  const lim = Number(allowance), sp = Number(spent), af = Number(after);
+  const scale = Math.max(af, lim) || 1;
+  return (
+    <View style={{ gap: 10, padding: 14, borderRadius: 16, backgroundColor: c.fill }} accessible
+      accessibilityLabel={`This ${period}: US$${spent} spent, plus this US$${amount}, makes US$${after}, past your US$${allowance} a ${period}`}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>{`This ${period}`}</T>
+        <T v="cap" w="bold">{`US$${after} of US$${allowance}`}</T>
+      </View>
+      <View style={{ height: 14, borderRadius: 5, backgroundColor: c.card, flexDirection: "row", overflow: "hidden" }}>
+        <View style={{ width: `${(sp / scale) * 100}%`, backgroundColor: c.ink }} />
+        <View style={{ width: `${((af - sp) / scale) * 100}%`, backgroundColor: c.vermillion }} />
+      </View>
+      <View style={{ position: "absolute", left: 14 + 0, right: 14, top: 38, height: 22 }} pointerEvents="none">
+        <View style={{ position: "absolute", left: `${(lim / scale) * 100}%`, width: 2, height: 22, marginLeft: -1, backgroundColor: c.ink }} />
+      </View>
+      <T v="cap" color="ink2">{`US$${spent} spent + US$${amount} now. Your routine runs on its own up to US$${allowance} a ${period}; this one needs you.`}</T>
+    </View>
   );
 }

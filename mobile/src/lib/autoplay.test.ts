@@ -7,7 +7,7 @@ import { registerTarget, resetTargets, autoplayRunning, typeOut, type TargetName
 const OWNER = "0x0000000000000000000000000000000000a11ce0" as Hex;
 const payTo = (...ids: string[]) => CATALOG.filter((s) => ids.includes(s.id)).map((s) => s.payTo);
 
-test("auto-play: wizard, scenes 1-11, Claude via Connect and the ask dock, through the screens' targets, on the real built-in network", async () => {
+test("auto-play: wizard, scenes 1-11, Claude via Connect and the ask dock, then scene 12's pocket app and its routine, through the screens' targets, on the real built-in network", async () => {
   resetTargets();
   const w = createWorld({ speed: 0.005, seed: 3, revokeWindowMs: 9000 });
   const { pockets: seeded } = await seedOwner(w, OWNER);
@@ -22,6 +22,20 @@ test("auto-play: wizard, scenes 1-11, Claude via Connect and the ask dock, throu
   // what each screen's handler does when a finger presses it
   let continues = 0;
   on("home.newPocket", () => {});
+  on("compose.manual", () => {});
+  // scene 12: New pocket app composes from the sentence; the slide creates and funds it and stores its routine
+  let composed: any;
+  let routinePocket: Hex | undefined;
+  on("compose.text", ({ text }) => { composed = w.composeApp(text); assert.equal(composed.spec.layout, "research"); assert.ok(composed.spec.routine); });
+  on("compose.create", () => {
+    const d = composed.draft;
+    const { pocket } = w.chain.createPocket(OWNER, { agent: SIM_AGENT, cap: parseUsd(d.cap), askAbove: NEVER, expiresAt: BigInt(Math.floor(Date.now() / 1000) + 365 * 86_400), sellers: payTo(...d.sellers) });
+    w.chain.transfer(OWNER, pocket, parseUsd(d.budget));
+    w.setRoutine(pocket, composed.spec.routine);
+    active = routinePocket = pocket;
+  });
+  on("compose.open", () => {});
+  on("routine.runNow", () => { void w.runRoutineNow(active); });
   on("wizard.preset", (p) => assert.equal(p, "research"));
   on("wizard.continue", () => { if (++continues === 1) on("wizard.create", async () => { // a preset goes straight to Review
     const { pocket } = w.chain.createPocket(OWNER, { agent: SIM_AGENT, cap: parseUsd("0.05"), askAbove: parseUsd("0.02"), expiresAt: BigInt(Math.floor(Date.now() / 1000) + 6 * 3600), sellers: payTo("exa", "coingecko", "nansen") });
@@ -81,10 +95,11 @@ test("auto-play: wizard, scenes 1-11, Claude via Connect and the ask dock, throu
     lastPaymentAt: Math.max(0, ...w.events(0).filter((e) => e.type === "payment" && w.chain.view(e.pocket!).owner === OWNER).map((e) => e.at)),
     ownerTxCount: w.txs().filter((t) => t.from === OWNER).length,
     outside: w.approvals().filter((a) => a.status === "pending" && a.agent && a.agent !== "chainbrain").map((a) => ({ id: a.id, kind: a.kind, agent: a.agent })),
+    routineRuns: w.events(0, active).filter((e) => e.type === "routine" && e.kind === "run").length,
   });
   const ap = createAutoplay({
     navigate: () => {}, state, subscribe: (f) => { subs.add(f); return () => void subs.delete(f); },
-    forceTransfer: (p) => w.forceTransfer(p as Hex), sleep: (ms) => new Promise((r) => setTimeout(r, Math.min(ms, 5))), pace: 0,
+    forceTransfer: (p) => w.forceTransfer(p as Hex), inject: (id, t) => { w.inject(id, t); }, sleep: (ms) => new Promise((r) => setTimeout(r, Math.min(ms, 5))), pace: 0,
   });
   ap.start();
   assert.equal(autoplayRunning(), true);
@@ -96,7 +111,14 @@ test("auto-play: wizard, scenes 1-11, Claude via Connect and the ask dock, throu
   for (const id of ["pocketCreated", "onchainPayment", "cosigned", "clarifyingQuestion", "refusedReplanned", "injectionIgnored", "dataRefused", "forcedReverted", "escalationBlocked", "killSwitch", "safeStop", "fixApplied"] as const) assert.ok(f[id], `${id} (pressed: ${pressed.join(", ")})`);
   assert.ok(w.events(0).some((e) => e.type === "refusal" && e.reason === "POCKET_REVOKED"), "scene 7: the second payment was refused after the revoke");
   assert.equal(w.chain.view(seeded[1].address).cap, parseUsd("0.007"));
-  assert.equal(pressed.filter((p) => p === "approval.slide").length, 3, "Nansen in scene 1, DataPro's negotiated US$1.10 in scene 11, then Claude's counterparty check");
+  assert.equal(pressed.filter((p) => p === "approval.slide").length, 4, "Nansen in scene 1, DataPro's negotiated US$1.10 in scene 11, Claude's counterparty check, then the routine's cheque in scene 12");
+  // scene 12: three runs this week, two on their own, one co-signed past the allowance; the rewrite attempt ignored
+  assert.ok(routinePocket, "scene 12 made its pocket app");
+  const rp = w.events(0, routinePocket).filter((e) => e.type === "payment");
+  assert.equal(rp.length, 6);
+  assert.equal(rp.filter((e) => e.cosigned).length, 1);
+  assert.ok(w.events(0, routinePocket).some((e) => e.type === "routine" && e.kind === "ignored" && e.sellerId === "exa"), "the seller's rewrite attempt was reported");
+  assert.equal(w.routine(routinePocket!)!.runs, 3);
   assert.ok(claudePocket, "Claude got its own pocket");
   assert.ok(w.events(0).some((e) => e.type === "payment" && e.agent === "claude" && e.cosigned && e.pocket === claudePocket), "Claude's co-signed payment from its new pocket");
   assert.ok(w.events(0).some((e) => e.type === "radar" && e.kind === "alert"), "scene 9: Radar alerted the pockets that paid TradeWire before");

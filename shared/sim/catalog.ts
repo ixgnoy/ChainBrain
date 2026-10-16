@@ -14,7 +14,7 @@ import type { Hex, SimSeller } from "./types";
 
 /** `floor`: the lowest price the seller accepts when the agent haggles (private to the seller; never sent to the agent). */
 /** `moves`: the quote changes by day around `price` (quotedPrice). */
-export type CatalogItem = { sku: string; description: string; price: string | null; content: string; floor?: string; moves?: true };
+export type CatalogItem = { sku: string; /** a few words, for rows */ short?: string; description: string; price: string | null; content: string; floor?: string; moves?: true };
 export type CatalogSeller = Omit<SimSeller, "items"> & { items: CatalogItem[] };
 
 const NEWS = `# Web search: durian exports to China (Exa, 10 results)
@@ -77,37 +77,37 @@ export const CATALOG: CatalogSeller[] = [
   {
     id: "exa", name: "Exa", category: "Research data", payTo: "0x7a3e5b1c0d94f2a86b1e4c7d3f25a90b6c1d8e42",
     items: [
-      { sku: "durian-news", description: "Web search: durian export news (10 results)", price: "0.007", content: NEWS },
-      { sku: "fruit-news", description: "Web search: SE Asia fruit trade news (10 results)", price: "0.007", content: FRUIT },
+      { sku: "durian-news", short: "Durian export news", description: "Web search: durian export news (10 results)", price: "0.007", content: NEWS },
+      { sku: "fruit-news", short: "SE Asia fruit trade news", description: "Web search: SE Asia fruit trade news (10 results)", price: "0.007", content: FRUIT },
     ],
   },
   {
     id: "coingecko", name: "CoinGecko", category: "Research data", payTo: "0x4b8d2e71c9a03f56e1b7d4c2a9f80e3d6b1c5a27",
-    items: [{ sku: "usdc-price", description: "USDC price in HKD and USD", price: "0.01", content: PRICE }],
+    items: [{ sku: "usdc-price", short: "USDC price", description: "USDC price in HKD and USD", price: "0.01", content: PRICE }],
   },
   {
     id: "nansen", name: "Nansen", category: "Research data", payTo: "0x2c9b41e6f3a07d58b9c2e1f4a6d83b07e5c9a1f3",
     items: [
-      { sku: "counterparties", description: "Counterparties of the exporter's wallet", price: "0.05", content: COUNTERPARTIES },
-      { sku: "wallet-balances", description: "Exporter wallet balances", price: "0.01", content: BALANCES },
-      { sku: "smart-money", description: "Smart-money flows: durian exporters", price: "0.05", content: FLOWS, moves: true },
+      { sku: "counterparties", short: "Exporter counterparties", description: "Counterparties of the exporter's wallet", price: "0.05", content: COUNTERPARTIES },
+      { sku: "wallet-balances", short: "Exporter balances", description: "Exporter wallet balances", price: "0.01", content: BALANCES },
+      { sku: "smart-money", short: "Smart-money flows", description: "Smart-money flows: durian exporters", price: "0.05", content: FLOWS, moves: true },
     ],
   },
   {
     id: "tradewire", name: "TradeWire", category: "Research data", payTo: "0x6f2a9c4e1b7d03a58e9c2b6d4f1a73e0c8b5d912",
-    items: [{ sku: "credit-report", description: "Durian exporter credit report", price: "0.05", content: CREDIT }],
+    items: [{ sku: "credit-report", short: "Exporter credit report", description: "Durian exporter credit report", price: "0.05", content: CREDIT }],
   },
   {
     id: "datapro", name: "DataPro", category: "Research data", payTo: "0x3d7e92a1c5f04b68e2a9d1c7b3f50e8a6c2d4b19",
-    items: [{ sku: "premium-report", description: "Durian exports premium report with 2026 forecast", price: "1.50", floor: "1.10", content: PREMIUM }],
+    items: [{ sku: "premium-report", short: "Premium report, 2026 forecast", description: "Durian exports premium report with 2026 forecast", price: "1.50", floor: "1.10", content: PREMIUM }],
   },
   {
     id: "harbour-wines", name: "Harbour Wines", category: "Food and drink", payTo: "0x9e1f7c3a5b28d4e06a7b9c1d2e3f4a5b6c7d8e90",
-    items: [{ sku: "fruit-wine-trade-report", description: "Fruit and wine trade report", price: "0.02", content: HARBOUR }],
+    items: [{ sku: "fruit-wine-trade-report", short: "Fruit and wine report", description: "Fruit and wine trade report", price: "0.02", content: HARBOUR }],
   },
   {
     id: "shadyfeed", name: "ShadyFeed", category: "Research data", payTo: "0x51ade0f3b6c4e2a9d87b1c5e3f9a2b4c6d8e0f17",
-    items: [{ sku: "preview", description: "Free durian price preview", price: null, content: JSON.stringify(SHADY_PREVIEW) }],
+    items: [{ sku: "preview", short: "Free price preview", description: "Free durian price preview", price: null, content: JSON.stringify(SHADY_PREVIEW) }],
   },
 ];
 

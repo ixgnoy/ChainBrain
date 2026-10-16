@@ -177,7 +177,7 @@ function Home({ ready }: { ready: boolean }) {
       <Rise play={play} index={1}>
         <View style={{ flexDirection: "row", gap: 10, marginHorizontal: 16, marginTop: 12 }}>
           <Tile icon="arrowIn" label="Move money" a11y="Move money from your main wallet to a pocket" onPress={() => setAction({ mode: "fund" })} />
-          <Tile icon="squarePlus" label="New pocket" auto="home.newPocket" onPress={() => router.push("/create")} />
+          <Tile icon="squarePlus" label="New pocket" auto="home.newPocket" onPress={() => router.push("/compose")} />
           {canConnect
             ? <Tile icon="link" label="Connect" tone="blue" a11y="Connect an agent" auto="home.connect" onPress={() => router.push("/connect")} />
             : <Tile icon="chat" label="Ask agent" tone="blue" onPress={() => router.navigate("/agent")} />}

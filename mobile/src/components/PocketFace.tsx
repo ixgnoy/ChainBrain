@@ -22,6 +22,8 @@ import { NEVER } from "../lib/shared";
 import { cleanText } from "../lib/sanitize";
 import { contractTail, money, usd } from "../lib/util";
 import { agentInfo } from "../../../shared/sim/agents";
+import type { Layout } from "../../../shared/sim/pocketApp";
+import { FACE, LAYOUT_NAME } from "./app/theme";
 import type { Pocket } from "../store";
 import { isExpired } from "./PocketCard";
 
@@ -29,20 +31,24 @@ export const CARD_RATIO = 1.586;
 export const cardHeight = (w: number) => Math.round(w / CARD_RATIO);
 /** Deck slot 0..3 (black, vermillion, blue, white hatch). Older callers passed "navy" / "teal". */
 export type Tone = number;
-/** Stable per pocket: the list is newest first, so a pocket's rank from the end is its creation order; the oldest is black,
- *  then vermillion, blue, white hatch, and a new pocket never recolours the others. */
-export function toneFor(pockets: { address: string }[], address: string): Tone {
+/** The card face says what the pocket is for (pocket apps, components/app/theme.ts): research desk black, haggler vermillion,
+ *  deal watcher powder blue, subscriptions white hatch. A pocket without an app keeps the older rule: its creation order
+ *  (the list is newest first), so a new pocket never recolours the others. */
+export function toneFor(pockets: { address: string; app?: { layout: Layout } }[], address: string): Tone {
   const i = pockets.findIndex((p) => p.address.toLowerCase() === address.toLowerCase());
+  const layout = i >= 0 ? pockets[i].app?.layout : undefined;
+  if (layout) return FACE[layout];
   return (i < 0 ? 0 : pockets.length - 1 - i) % deck.length;
 }
 export const faceOf = (tone: Tone): DeckFace => deck[((tone % deck.length) + deck.length) % deck.length];
 const FROZEN: DeckFace = deck[3];
 
-function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, tilt, still }: { pocket: Pocket; width: number; tone: Tone; /** Warning haptic when it freezes in view */ buzz?: boolean;
+function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, tilt, still, draft }: { pocket: Pocket; width: number; tone: Tone; /** Warning haptic when it freezes in view */ buzz?: boolean;
   /** lean with the phone (the one card in focus: the pocket page, the front of the deck) */ tilt?: boolean;
   /** the level-3 card shadow (DESIGN.md: fanned cards) */ shadow?: boolean;
   /** the screen showing this card is in front: a freeze that happened while it was away plays when it comes back */ focused?: boolean;
-  /** no material layer (the flying copy, small thumbnails) */ still?: boolean }) {
+  /** no material layer (the flying copy, small thumbnails) */ still?: boolean;
+  /** not on-chain yet (the compose preview): no contract number */ draft?: boolean }) {
   const reduce = useReduceMotion();
   const h = cardHeight(width);
   const k = Math.min(1, width / 340);
@@ -99,7 +105,7 @@ function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, til
       <Animated.View style={[{ position: "absolute", left: 0, top: 0, width, height: h, borderRadius: R, borderCurve: "continuous", backgroundColor: off ? FROZEN.edge : face.edge } as object, shadow ? level3 : null, edgeStyle]} />
       <View style={{ width, height: h, borderRadius: R, overflow: "hidden", borderCurve: "continuous" } as object}>
         <Animated.View style={[{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }, live]}>
-          <Print pocket={pocket} name={name} agent={agent?.name} agentId={pocket.agentId} face={face} k={k} w={width} h={h} still={still} />
+          <Print pocket={pocket} name={name} agent={agent?.name} agentId={pocket.agentId} face={face} k={k} w={width} h={h} still={still} draft={draft} />
         </Animated.View>
         {deadOn ? (
           <Animated.View pointerEvents={off ? "auto" : "none"} style={[{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }, dead]}>
@@ -113,7 +119,7 @@ function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, til
 /** Memoised: its props are stable store values, so a new event or ask elsewhere leaves it alone. `focused` only matters to
  *  a card that is off (a freeze seen late plays on return), so a live card ignores it: leaving Home must not redraw the deck. */
 export const PocketFace = React.memo(PocketFaceView, (a, b) =>
-  a.pocket === b.pocket && a.width === b.width && a.tone === b.tone && a.buzz === b.buzz && a.shadow === b.shadow && a.tilt === b.tilt && a.still === b.still &&
+  a.pocket === b.pocket && a.width === b.width && a.tone === b.tone && a.buzz === b.buzz && a.shadow === b.shadow && a.tilt === b.tilt && a.still === b.still && a.draft === b.draft &&
   (a.focused === b.focused || !(b.pocket.revoked || !!b.pocket.frozen || isExpired(b.pocket))));
 
 const R = 18;
@@ -131,7 +137,7 @@ export const expiryText = (expiresAt: bigint | number) => {
 
 /** The print, VaultBank's card anatomy: the pocket name, a stripe across the card carrying the holding agent on a white pill,
  *  the balance, the pocket's rules in one line, and the short pocket number big at the bottom with the expiry. */
-function Print({ pocket, name, agent, agentId, face, k, w, h, state, still }: { pocket: Pocket; name: string; agent?: string; agentId?: string; face: DeckFace; k: number; w: number; h: number; state?: string; still?: boolean }) {
+function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draft }: { pocket: Pocket; name: string; agent?: string; agentId?: string; face: DeckFace; k: number; w: number; h: number; state?: string; still?: boolean; draft?: boolean }) {
   const ask = pocket.askAbove === NEVER || pocket.askAbove > pocket.cap ? "never asks" : pocket.askAbove === 0n ? "asks every time" : `asks above ${money(pocket.askAbove)}`;
   const tail = contractTail(pocket.address);
   const ink = state ? c.muted : face.ink;
@@ -159,7 +165,7 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still }: { 
         {face.band === face.face || dark ? <Hatch color="#FFFFFF" pitch={6} stroke={1} opacity={0.12} /> : null}
         <View style={{ alignSelf: "flex-start", height: 24 * k + 2, paddingLeft: 3, paddingRight: 10, borderRadius: 999, backgroundColor: c.white, flexDirection: "row", alignItems: "center", gap: 6 }}>
           {agentId ? <AgentAvatar kind={agentId} size={Math.round(18 * k + 2)} /> : <View style={{ width: 6 }} />}
-          <T v="cap" w="semi" numberOfLines={1} style={{ color: c.ink, fontSize: 12 * Math.max(k, 0.9) }}>{agent ? `${agent} · agent pocket` : "Your pocket"}</T>
+          <T v="cap" w="semi" numberOfLines={1} style={{ color: c.ink, fontSize: 12 * Math.max(k, 0.9) }}>{agent ? `${agent} · ${pocket.app ? LAYOUT_NAME[pocket.app.layout].toLowerCase() : "agent pocket"}` : "Your pocket"}</T>
         </View>
       </View>
       {/* the balance and the rules */}
@@ -173,9 +179,9 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still }: { 
         <View>
           <T v="cap" style={{ color: sub, marginBottom: 2 }} numberOfLines={1}>{`Cap ${money(pocket.cap)} · ${ask}`}</T>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <T v="mono" accessibilityLabel={`Pocket contract ending ${pocket.address.slice(-4)}`} style={{ color: ink, fontSize: 20 * k, lineHeight: 26 * k, letterSpacing: 0.2, textTransform: "none" }}>{tail}</T>
+            <T v="mono" accessibilityLabel={draft ? "Not on-chain yet" : `Pocket contract ending ${pocket.address.slice(-4)}`} style={{ color: ink, fontSize: 20 * k, lineHeight: 26 * k, letterSpacing: 0.2, textTransform: "none", opacity: draft ? 0.45 : 1 }}>{draft ? "0x…····" : tail}</T>
             <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, backgroundColor: face.chip }}>
-              <T v="tab" style={{ color: sub, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 9.5, lineHeight: 12 }}>Contract</T>
+              <T v="tab" style={{ color: sub, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 9.5, lineHeight: 12 }}>{draft ? "Draft" : "Contract"}</T>
             </View>
           </View>
         </View>

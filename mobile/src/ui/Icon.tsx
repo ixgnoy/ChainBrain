@@ -6,7 +6,7 @@ import {
   Radar, Brain, Snowflake, Eye, Sparkles, Target, Gauge, ListChecks,
   Bot, Link, QrCode, Unlink, Landmark, Hourglass, FileText, Search, Receipt, Download, ArrowUpRight, Inbox, ShieldCheck, CircleCheck, Mic, CreditCard, Power, ChartColumn, Asterisk, ScanFace, Fingerprint,
   type LucideIcon,
-} from "lucide-react-native";
+ Pause, Play } from "lucide-react-native";
 
 const I = {
   home: House, chat: MessageCircle, activity: Activity, settings: SlidersHorizontal, plus: Plus, undo: Undo2, lock: Lock, x: X, check: Check,
@@ -15,7 +15,7 @@ const I = {
   more: MoreHorizontal, bolt: Zap, shield: ShieldAlert, help: CircleHelp, ban: Ban, edit: Pencil, arrowDown: ArrowDown, squarePlus: SquarePlus, stop: Square, info: Info,
   radar: Radar, brain: Brain, freeze: Snowflake, eye: Eye, sparkles: Sparkles, target: Target, gauge: Gauge, checks: ListChecks,
   bot: Bot, link: Link, qr: QrCode, unlink: Unlink, vault: Landmark, hourglass: Hourglass, file: FileText, search: Search, receipt: Receipt, download: Download,
-  arrowUpRight: ArrowUpRight, inbox: Inbox, shieldCheck: ShieldCheck, circleCheck: CircleCheck, mic: Mic, card: CreditCard, power: Power, chart: ChartColumn, asterisk: Asterisk, faceId: ScanFace, fingerprint: Fingerprint,
+  arrowUpRight: ArrowUpRight, inbox: Inbox, shieldCheck: ShieldCheck, circleCheck: CircleCheck, mic: Mic, card: CreditCard, power: Power, chart: ChartColumn, asterisk: Asterisk, faceId: ScanFace, fingerprint: Fingerprint, pause: Pause, play: Play,
 } satisfies Record<string, LucideIcon>;
 export type IconName = keyof typeof I;
 

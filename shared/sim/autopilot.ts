@@ -3,7 +3,8 @@
 // Sellers and On-chain screens look like a living network. Pure TypeScript on top of the world: no timers of its own,
 // every wait goes through `world.sleep`, so a world at speed 0 runs a whole story instantly (tests).
 import { CATALOG } from "./catalog";
-import { SCENES, type SceneInfo } from "./scenes";
+import { ROUTINE_INJECTION, SCENES, type SceneInfo } from "./scenes";
+import type { RoutineSpec } from "./pocketApp";
 import { seedOwnerHistory, seedOwnerToday } from "./seed";
 import type { Hex } from "./types";
 import { NEVER, lower, parseUsd } from "./util";
@@ -86,6 +87,13 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
   const radarPocket = () => newPocket(presenter, { cap: "0.05", ask: "0.02", sellers: ["exa", "coingecko", "nansen", "tradewire"], fund: "1" });
   // Scene 11's: the haggler's seller, DataPro (fictional), prices in dollars, so its pocket allows it and caps at US$2
   const hagglePocket = () => newPocket(presenter, { cap: "2", ask: "0.02", sellers: ["exa", "coingecko", "nansen", "datapro"], fund: "3" });
+  // Scene 12's: made from its own sentence, like New pocket app does (rules, then the routine as typed fields)
+  async function routinePocket(text: string) {
+    const c = world.composeApp(text) as { draft: { cap: string; askAbove: string; sellers: string[]; budget: string }; spec: { routine: RoutineSpec | null } };
+    const pocket = await newPocket(presenter, { cap: c.draft.cap, ask: c.draft.askAbove === "never" ? "never" : c.draft.askAbove, sellers: c.draft.sellers, fund: c.draft.budget, expiresAt: BigInt(Math.floor(world.now() / 1000) + 365 * 86_400) });
+    if (c.spec.routine) world.setRoutine(pocket, c.spec.routine);
+    return pocket;
+  }
   const tightPocket = () => newPocket(presenter, { cap: "0.005", ask: "never", sellers: ["exa"], fund: "0.005", expiresAt: BigInt(Math.floor((world.now() + 20 * HOUR) / 1000)) });
 
   async function chat(pocket: Hex, text: string) {
@@ -118,6 +126,14 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
       if (own) await world.sleep(r.between(2000, 5000)); else await gap();
       await chat(pocket, s.followUp ?? "Per report.");
     } else if (s.id === "7") await revokeMidTask(pocket, s.text);
+    else if (s.id === "12") {
+      // the routine runs three times this week: twice inside its allowance (the second delivery tries to rewrite it), then a
+      // run past it asks the owner (the presenter co-signs)
+      await world.runRoutineNow(pocket);
+      world.inject("exa", ROUTINE_INJECTION);
+      await world.runRoutineNow(pocket);
+      await world.runRoutineNow(pocket);
+    }
     else await chat(pocket, s.text);
   }
 
@@ -248,7 +264,7 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
       if (!s) throw new Error(`no scene ${id}`);
       hold();
       try {
-        const pocket = s.preset === "one-purchase" ? await tightPocket() : s.id === "9" ? await radarPocket() : s.id === "11" ? await hagglePocket() : await researchPocket();
+        const pocket = s.preset === "one-purchase" ? await tightPocket() : s.id === "9" ? await radarPocket() : s.id === "11" ? await hagglePocket() : s.id === "12" ? await routinePocket(s.text) : await researchPocket();
         setActive(pocket);
         await play(s, pocket, true);
         return { pocket };

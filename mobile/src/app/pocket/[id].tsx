@@ -14,7 +14,6 @@ import { BackHeader, BACK_HEADER_H } from "../../ui/BackHeader";
 import { Avatar, Button, Card, ListCard, ListRow, Press, SectionHeader, Toggle } from "../../ui/kit";
 import { RoundButton } from "../../ui/RollAction";
 import { WorstCase } from "../../components/WorstCase";
-import { SpendBars } from "../../components/SpendBars";
 import { Reveal as Rise } from "../../ui/Reveal";
 import { AnimatedList } from "../../ui/AnimatedList";
 import { Icon } from "../../ui/Icon";
@@ -36,6 +35,10 @@ import { contractTail, money, usd } from "../../lib/util";
 import { NEVER } from "../../lib/shared";
 import { haptic } from "../../haptics";
 import { agentInfo } from "../../../../shared/sim/agents";
+import { runningNow } from "../../../../shared/sim/pocketAppData";
+import { AppHeader, PocketApp, type AppCtx } from "../../components/app/PocketApp";
+import { appOf } from "../../components/app/theme";
+import * as api from "../../lib/api";
 
 /** A rule chip: white pill with a muted label and a bold value; editable ones open the rule sheet. */
 /** A rule as VaultBank's category tile: a coloured dot, the figure big, what it means under it; a pencil when you can edit it. */
@@ -63,7 +66,7 @@ export default function PocketDetail() {
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { pockets, findPocket, pocketsLoaded, cfg, wallet, ledger, events, setAction, setReceipt, refreshPockets, setRules, recordTx, setNotice, sellerName } = useApp();
+  const { pockets, findPocket, pocketsLoaded, cfg, wallet, ledger, events, setAction, setReceipt, refreshPockets, setRules, recordTx, setNotice, sellerName, setActive } = useApp();
   const pocket = findPocket(id);
   const flight = useFlight();
   // the page is full width on a phone: the card can draw in the first frame instead of after a layout pass (web shows the app
@@ -80,6 +83,10 @@ export default function PocketDetail() {
   const mine = useMemo(() => ledger.filter((r) => sameAddr(r.pocket, id)), [ledger, id]);
   const rows = useMemo(() => visibleRows([...mine].reverse()), [mine]);
   const lastFreeze = useMemo(() => sentinelEvents(events.filter((e) => sameAddr(e.pocket, id))).filter((v) => v.kind === "freeze").at(-1), [events, id]);
+
+  // the pocket's routine (typed fields on the built-in network), read again whenever new events arrive
+  const routine = useMemo(() => (id ? api.routineOf(id) : null), [id, events.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [runErr, setRunErr] = useState<string | null>(null);
 
   if (!pocket) {
     return (
@@ -100,6 +107,24 @@ export default function PocketDetail() {
   const revokedAt = mine.find((r) => r.kind === "owner" && r.ownerKind === "revoke")?.at;
   const returned = revokedAt == null ? 0n : mine.filter((r) => r.kind === "owner" && r.ownerKind === "return" && r.at >= revokedAt).reduce((n, r) => n + (r.amount ?? 0n), 0n);
   const W = rootW ? pageCardWidth(rootW) : 0;
+  const spec = appOf(pocket);
+  const funded = mine.filter((r) => r.kind === "owner" && (r.ownerKind === "fund" || r.ownerKind === "return")).reduce((n, r) => n + (r.ownerKind === "fund" ? 1n : -1n) * (r.amount ?? 0n), 0n);
+  const item = (sellerId: string, sku: string) => cfg?.sellers.find((s) => s.id === sellerId)?.items.find((i) => i.sku === sku);
+  const itemName = (sellerId: string, sku: string) => { const it = item(sellerId, sku); return it?.short ?? it?.description ?? sku; };
+  const ctx: AppCtx = {
+    spec, address: pocket.address, agentId: pocket.agentId, events, routine: routine && !pocket.revoked ? routine : routine ? { ...routine, status: "paused" } : null,
+    balance: pocket.balance, funded: funded > 0n ? funded : undefined, rules: { cap: pocket.cap, sellers: pocket.allowed }, now: Date.now(),
+    sellerName: (s) => cleanText(sellerName(s), 24), itemName, running: runningNow(events, pocket.address),
+    onRunNow: owned && !off ? async () => {
+      haptic.medium(); setRunErr(null);
+      const r = await api.runRoutineNow(pocket.address).catch(() => ({ ok: false as const, reason: "ERROR" }));
+      if (!r.ok) { haptic.error(); setRunErr(r.reason === "BUSY" ? "The agent is busy with another task in this pocket. Try again in a moment." : r.reason === "AGENT_DISCONNECTED" ? "This agent is disconnected, so its routine doesn't run." : "That run didn't start."); }
+      else haptic.success();
+    } : undefined,
+    onPause: owned && !off ? (paused) => { haptic.select(); api.pauseRoutine(pocket.address, paused); } : undefined,
+    onReceipt: (tx) => { const row = mine.find((r) => r.kind === "payment" && r.tx === tx); if (row) setReceipt(row); },
+    onAsk: () => { setActive(pocket.address); router.push("/agent"); },
+  };
 
   const toggle = async (name: string, on: boolean, payTo: `0x${string}`) => {
     setBusy(`${on ? "Removing" : "Allowing"} ${name}`); setErr(null);
@@ -140,11 +165,7 @@ export default function PocketDetail() {
 
         {!pocket.revoked ? (
           <Rise index={1} base={60}>
-            <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: PAGE_MARGIN, marginTop: 16 }}>
-              <RuleTile dot={c.ink} label="Cap per payment" value={money(pocket.cap)} a11y={`Edit cap: Cap ${money(pocket.cap)}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "cap" }) : undefined} />
-              <RuleTile dot={c.vermillion} label="Asks you above" value={ask} a11y={`Edit ask-me limit: Ask above ${ask}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "ask" }) : undefined} />
-              <RuleTile dot={c.blue} label={expired ? "Ended" : pocket.frozen ? "Frozen by the Sentinel" : "Ends"} value={untilText(pocket.expiresAt).replace(/^until /, "")} a11y={pocket.frozen ? "Frozen by the Sentinel" : untilText(pocket.expiresAt)} />
-            </View>
+            <View style={{ marginTop: 16 }}><AppHeader ctx={ctx} onOpen={agent ? () => router.push({ pathname: "/agents/[id]", params: { id: agent.id } }) : undefined} /></View>
           </Rise>
         ) : null}
 
@@ -200,38 +221,29 @@ export default function PocketDetail() {
           </Card>
         ) : null}
 
+        {runErr ? <T v="sub" color="vermillionInk" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 12 }}>{runErr}</T> : null}
         {later ? <>
         {!pocket.revoked ? (
-          <Rise index={3} base={130} dy={6}>
-            <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 16 }}>
+          <>
+            {/* the pocket's own app: the blocks its spec names, every figure from the ledger */}
+            <View style={{ marginTop: 16 }}><PocketApp ctx={ctx} /></View>
+
+            {/* the owner zone: fixed, never chosen by the AI */}
+            <SectionHeader title="Rules you signed" right="Your key" />
+            <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: PAGE_MARGIN }}>
+              <RuleTile dot={c.ink} label="Cap per payment" value={money(pocket.cap)} a11y={`Edit cap: Cap ${money(pocket.cap)}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "cap" }) : undefined} />
+              <RuleTile dot={c.vermillion} label="Asks you above" value={ask} a11y={`Edit ask-me limit: Ask above ${ask}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "ask" }) : undefined} />
+              <RuleTile dot={c.blue} label={expired ? "Ended" : pocket.frozen ? "Frozen by the Sentinel" : "Ends"} value={untilText(pocket.expiresAt).replace(/^until /, "")} a11y={pocket.frozen ? "Frozen by the Sentinel" : untilText(pocket.expiresAt)} />
+            </View>
+            <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 12 }}>
               <WorstCase pocket={pocket} sellers={sellerNames} off={off} />
             </Card>
-            <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 12, gap: 14 }}>
-              <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
-                <T v="head">This week</T>
-                <T v="cap" color="muted">Settled payments by day</T>
-              </View>
-              <SpendBars rows={mine} name={(s) => cleanText(sellerName(s), 16)} />
-            </Card>
-          </Rise>
+          </>
         ) : (
           <Rise index={3} base={130} dy={6}>
             <AuditTrail rows={mine} name={(s) => cleanText(sellerName(s), 24)} onExport={exportLog} />
           </Rise>
         )}
-
-        {agent ? (
-          <Press kind="row" haptics="light" onPress={() => router.push({ pathname: "/agents/[id]", params: { id: agent.id } })} accessibilityRole="button" accessibilityLabel={`Held by ${agent.name}`}
-            style={{ marginHorizontal: PAGE_MARGIN, marginTop: 12, flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: radius.card, backgroundColor: c.card }}>
-            <AgentAvatar kind={agent.id} size={40} />
-            <View style={{ flex: 1 }}>
-              <T v="cap" color="muted">Held by</T>
-              <T v="row" w="bold">{agent.kind === "builtin" ? "ChainBrain agent" : agent.name}</T>
-            </View>
-            <T v="mono" color="muted" style={{ fontSize: 11 }}>{contractTail(pocket.agent)}</T>
-            <Icon name="chevronRight" size={18} color={c.muted} />
-          </Press>
-        ) : null}
 
         <SectionHeader title="Allowed sellers" right={`${pocket.allowed.length} of ${(cfg?.sellers ?? []).length}`} />
         <ListCard>

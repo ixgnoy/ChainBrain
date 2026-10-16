@@ -49,7 +49,7 @@ export const reasonText = (code: string) => REASONS[code] ?? code;
 
 export const shortAddr = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
 
-export type Seller = { id: string; name: string; category: string; payTo: Address; items: { sku: string; description: string; price: string | null }[] };
+export type Seller = { id: string; name: string; category: string; payTo: Address; items: { sku: string; /** a few words, for rows (built-in network) */ short?: string; description: string; price: string | null }[] };
 export type Config = { agent: Address; factory: Address; usdc: Address; sellersUrl: string; sellers: Seller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
 
 const cache = new Map<string, Promise<Config>>();

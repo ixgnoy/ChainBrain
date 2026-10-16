@@ -8,7 +8,7 @@ export { createWorld, SIM_AGENT, SIM_FACTORY, SIM_SENTINEL, FORCE_SENDER, type W
 export * from "./sentinel";
 export { seedOwner, seedOwnerHistory, seedOwnerToday, seedApp, SEED_SENTENCES, claudeAsksForPremium, type SeededPocket, type OwnerTxSeed, type Seeded } from "./seed";
 export { AGENTS, CAN, CANNOT, CLAUDE_AGENT, CHATGPT_AGENT, agentInfo, agentByAddress, errand, buy, attempt, firstRun, type AgentId, type AgentInfo, type AgentState, type AgentStatus } from "./agents";
-export { SCENES, type SceneInfo } from "./scenes";
+export { SCENES, ROUTINE_INJECTION, type SceneInfo } from "./scenes";
 export { HELLO, FALLBACK, attackOf, type AttackKind } from "./script";
 export { REASONS, renderIntent } from "./intent";
 export * from "./checks";

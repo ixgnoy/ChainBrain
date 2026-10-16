@@ -7,7 +7,7 @@
 // target the screen registered (lib/autoplayTargets.ts), so what the camera sees is the real UI doing real work; the
 // built-in network decides every outcome. Started and stopped by a long-press on the Agent header. No React Native
 // imports: Node tests drive it with a fake host.
-import { SCENES } from "../../../shared/sim";
+import { ROUTINE_INJECTION, SCENES } from "../../../shared/sim";
 import { ESCALATION_TEXT } from "../../../shared/sim/autopilot";
 import { hasTarget, pressTarget, setAutoplayRunning, type TargetName } from "./autoplayTargets";
 
@@ -25,6 +25,8 @@ export type HostState = {
   ownerTxCount: number;
   /** Requests from outside agents (Claude, ChatGPT) waiting in the Approvals inbox, on any pocket. */
   outside?: { id: string; kind: "intent" | "payment" | "question"; agent?: string }[];
+  /** Routine runs finished on the active pocket (pocket apps). */
+  routineRuns?: number;
 };
 export type AutoplayHost = {
   navigate(path: "/" | "/agent" | "/brain"): void;
@@ -33,6 +35,8 @@ export type AutoplayHost = {
   /** Scene 5's on-chain backstop on this phone's network: the agent key signs the injected transfer; the pocket reverts it. */
   forceTransfer(pocket: string): Promise<unknown>;
   sleep(ms: number): Promise<void>;
+  /** The red-team box on this phone's network: text a seller's next delivery carries (scene 12's rewrite attempt). */
+  inject?(sellerId: string, text: string): void;
   /** Pace multiplier: 1 natural, 0 instant (tests). */
   pace?: number;
 };
@@ -110,6 +114,8 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     const before = host.state().pocketCount;
     await must("home.newPocket");
     await wait(1200);
+    await must("compose.manual"); // scene 1 walks the wizard; the pocket app made from a sentence is scene 12
+    await wait(1000);
     await must("wizard.preset", "research");
     for (let i = 0; i < 8 && !hasTarget("wizard.create"); i++) { await wait(950); await must("wizard.continue"); }
     await wait(1400);
@@ -246,6 +252,33 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
         }
       }
     }
+
+    // ---- scene 12, pocket apps: one sentence makes a pocket with a routine. The proof card, then the app builds itself; slide
+    // to create and the card flies into its app. Its routine runs now, twice, inside the week's US$0.05 (the second run's Exa
+    // delivery tries to rewrite the routine: reported, nothing changes); the third would pass it, so its cheque is co-signed.
+    host.navigate("/");
+    await wait(2200);
+    const before12 = host.state().pocketCount;
+    await must("home.newPocket");
+    await wait(1400);
+    await must("compose.text", { text: text("12").text }, 15_000);
+    await wait(5800); // the proof card, then the blocks fly in one after another
+    await must("compose.create");
+    await until("the pocket app", (s) => s.pocketCount > before12, 30_000);
+    await wait(3200); // it opens by itself: the card flies into its own app
+    await tap("compose.open", undefined, 1200);
+    await wait(2600);
+    const runs0 = host.state().routineRuns ?? 0;
+    const runNow = async (n: number) => { await must("routine.runNow"); await until(`routine run ${n}`, (s) => (s.routineRuns ?? 0) >= runs0 + n, 40_000); await wait(2600); };
+    await runNow(1);
+    host.inject?.("exa", ROUTINE_INJECTION);
+    await runNow(2);
+    await must("routine.runNow");
+    await until("the routine's cheque", (s) => s.pending.some((p) => p.kind === "payment"), 40_000);
+    await wait(2400); // the cheque: this week's bar, the overage in vermillion
+    await must("approval.slide");
+    await until("routine run 3", (s) => (s.routineRuns ?? 0) >= runs0 + 3, 40_000);
+    await wait(3400);
 
     // ---- close on the Brain tab for the pocket made in scene 1 ("Research data · <date>"): what the AI understood,
     // blocked, screened, froze and remembers, all in one place

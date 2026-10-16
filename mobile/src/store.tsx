@@ -30,7 +30,7 @@ import { getItem, setItem, deleteItem } from "./storage";
 import { addOwnerTx, ownerRows, parseOwnerTxs, type OwnerTx } from "./lib/ownerTxs";
 
 export type Turn = { id: string; pocket: string; text: string; fromAt: number; toAt?: number; /** the last event when the turn finished: anything later happened after it */ endAt?: number; reply?: string; stopped?: string; error?: string; done: boolean };
-export type Pocket = PocketView & { name: string; style: PocketMeta["style"]; owned: boolean; /** the agent that holds it (immutable agent key) */ agentId?: AgentId };
+export type Pocket = PocketView & { name: string; style: PocketMeta["style"]; owned: boolean; /** the agent that holds it (immutable agent key) */ agentId?: AgentId; /** its pocket app, when it has one */ app?: PocketMeta["app"] };
 export type Sheet = { mode: "fund" | "return" | "revoke"; pocket?: string } | null;
 export type Rules = { pocket: string; field: "cap" | "ask"; amount?: string; topUp?: bigint } | null;
 /** A just-confirmed owner transaction (or two), shown with its hash on the pocket page and in the agent chat until dismissed. */
@@ -228,7 +228,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // newest first (the card faces follow creation order); the chat starts on Research data, the scenes' pocket
         const list = [...others, ...seeded].sort((a, b) => born(b.address) - born(a.address)).map((p) => p.address as Address);
         const m: Record<string, PocketMeta> = {};
-        for (const p of seeded) m[p.address.toLowerCase()] = { name: p.name, style: p.style };
+        for (const p of seeded) m[p.address.toLowerCase()] = { name: p.name, style: p.style, ...(p.app ? { app: p.app } : {}) };
         // a reload of this tab: the network came back, so do its names, chat and owner transactions (lib/builtin.ts)
         const back = wasRestored();
         ownerTxRef.current = (back && uiGet<OwnerTx[]>("ownerTxs")) || txs.map((t) => ({ kind: t.kind, pocket: t.pocket.toLowerCase(), hash: t.hash, at: t.at, amount: t.amount }));
@@ -268,6 +268,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [wallet, cfg]);
 
   useEffect(() => { void refreshPockets(); }, [refreshPockets, addresses, conn, dev]);
+  // routines run when their time comes while the app is open (built-in network; lib/builtin.ts)
+  useEffect(() => { if (!local) return; const t = setInterval(() => void builtin().tickRoutines().catch(() => {}), 20_000); return () => clearInterval(t); }, [local]);
   useEffect(() => { const t = setInterval(() => void refreshPockets(), 10000); return () => clearInterval(t); }, [refreshPockets]);
 
   // dev stack and an empty phone key: ask /dev/fund for test money once per launch
@@ -282,7 +284,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const v = views[a.toLowerCase()];
     if (!v || !wallet) return [];
     const m = meta[a.toLowerCase()] ?? { name: `Pocket ${short(a)}`, style: "custom" as const };
-    return [{ ...v, name: m.name, style: m.style, owned: isOwner(v, wallet.address), agentId: agentIdOf(v, cfg?.agent) }];
+    return [{ ...v, name: m.name, style: m.style, owned: isOwner(v, wallet.address), agentId: agentIdOf(v, cfg?.agent), ...(m.app ? { app: m.app } : {}) }];
   }), [addresses, views, meta, wallet, cfg]);
 
   const active = pockets.find((p) => sameAddr(p.address, activeAddr)) ?? pockets[0];
@@ -499,6 +501,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     lastPaymentAt: myEvents.reduce((m, e) => (e.type === "payment" && e.at > m ? e.at : m), 0),
     ownerTxCount: ownerTxs.length,
     outside: pending.filter((a) => (a.agent ?? "chainbrain") !== "chainbrain").map((a) => ({ id: a.id, kind: a.kind, agent: a.agent })),
+    routineRuns: active ? myEvents.filter((e) => e.type === "routine" && e.kind === "run" && sameAddr(e.pocket, active.address)).length : 0,
   };
   const hostSubs = useRef(new Set<() => void>());
   useEffect(() => { hostSubs.current.forEach((f) => f()); });
@@ -513,6 +516,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         await builtin().forceTransfer(p as Address);
       },
       sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+      inject: (sellerId, text) => { if (getSource() === "builtin") builtin().inject(sellerId, text); },
     };
     autoplayRef.current = createAutoplay(host);
   }
