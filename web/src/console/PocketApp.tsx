@@ -2,7 +2,7 @@
 // and the routine come from the event stream (shared/sim/pocketAppData.ts appFromEvents / routineFromEvents), every figure
 // from the same selectors the phone uses, so the two screens can never disagree. The card wears its job's face (research
 // desk black, deal watcher powder blue, subscriptions white hatch, haggler vermillion); the agent shows by its own mark.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Ban, Check, ChevronRight, Clock, Radio, ShieldCheck } from "lucide-react";
 import { useNetwork } from "./useNetwork";
 import { AgentTag, SellerLogo, agentOfKey, pocketStatus, usd, NEVER } from "./parts";
@@ -125,6 +125,23 @@ function PriceHero({ c, block, i }: { c: Ctx; block: Block; i: number }) {
     const pts = s.quotes.map((q) => [x(q.at), y(Number(q.price))] as const);
     return { pts, line: pts.map(([a, b], k) => `${k ? "L" : "M"}${a.toFixed(1)},${b.toFixed(1)}`).join(" "), ly: limit != null ? y(Number(limit)) : null, dots: s.buys.map((b) => { const q = s.quotes.reduce((m, z) => (Math.abs(z.at - b.at) < Math.abs(m.at - b.at) ? z : m), s.quotes[0]); return [x(q.at), y(Number(b.amount))] as const; }) };
   }, [s.quotes, s.buys, limit]); // eslint-disable-line react-hooks/exhaustive-deps
+  // hover (or arrow keys) to read any day: the nearest quote, its price, and whether it was in the buy zone
+  const [at, setAt] = useState<number | null>(null);
+  const onMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!plot) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const vx = ((e.clientX - r.left) / r.width) * W;
+    let best = 0;
+    plot.pts.forEach(([px], k) => { if (Math.abs(px - vx) < Math.abs(plot.pts[best][0] - vx)) best = k; });
+    setAt(best);
+  };
+  const onKey = (e: React.KeyboardEvent<SVGSVGElement>) => {
+    if (!plot || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+    e.preventDefault();
+    setAt((k) => Math.max(0, Math.min(plot.pts.length - 1, (k ?? plot.pts.length - 1) + (e.key === "ArrowRight" ? 1 : -1))));
+  };
+  const q = at != null ? s.quotes[at] : null;
+  const inZone = q && limit != null ? q.price <= limit : false;
   return (
     <Block i={i} wide label={item ? `${c.seller(item.sellerId)} · quoted prices` : "Quoted prices"} right={`${days} days`}>
       <div className="mb-3 flex items-end justify-between gap-3">
@@ -132,7 +149,8 @@ function PriceHero({ c, block, i }: { c: Ctx; block: Block; i: number }) {
         {s.quotes.length > 1 && <span className={cn("rounded-full px-2.5 py-1 text-[12px] font-bold", s.change > 0 ? "bg-vermillion-soft text-vermillion-ink" : "bg-green-soft text-green-ink")}>{pct(s.change)} in {days} days</span>}
       </div>
       {plot ? (
-        <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Quoted prices: ${s.quotes.map((q) => `${day(q.at)} ${usd(q.price)}`).join(", ")}${limit != null ? `. Limit ${usd(limit)}` : ""}. ${s.buys.length} bought.`}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full cursor-crosshair rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ink" role="img" tabIndex={0}
+          onMouseMove={onMove} onMouseLeave={() => setAt(null)} onKeyDown={onKey} onBlur={() => setAt(null)} aria-label={`Quoted prices: ${s.quotes.map((q) => `${day(q.at)} ${usd(q.price)}`).join(", ")}${limit != null ? `. Limit ${usd(limit)}` : ""}. ${s.buys.length} bought.`}>
           <defs><pattern id="pa-lines" patternUnits="userSpaceOnUse" width="5" height="8"><line x1="2.5" x2="2.5" y1="0" y2="8" stroke="#111215" strokeWidth="1.2" /></pattern></defs>
           {plot.ly != null && <rect x="0" y={plot.ly} width={W - R} height={H - B - plot.ly} fill="#D1E4FF" opacity="0.75" />}
           <line x1="0" x2={W - R} y1={H - B} y2={H - B} stroke="#D3D3D1" />
@@ -141,6 +159,17 @@ function PriceHero({ c, block, i }: { c: Ctx; block: Block; i: number }) {
           {plot.ly != null && <line x1="0" x2={W - R + 4} y1={plot.ly} y2={plot.ly} stroke="#124977" strokeWidth="1.6" strokeDasharray="5 4" />}
           {plot.dots.map(([a, b], k) => <circle key={k} cx={a} cy={b} r="5" fill="#111215" stroke="#fff" strokeWidth="2" />)}
           <circle cx={plot.pts.at(-1)![0]} cy={plot.pts.at(-1)![1]} r="6" fill="#fff" stroke="#F04E23" strokeWidth="3" />
+          {q && at != null && (
+            <g pointerEvents="none">
+              <line x1={plot.pts[at][0]} x2={plot.pts[at][0]} y1="0" y2={H - B} stroke="#111215" strokeWidth="1.4" />
+              <circle cx={plot.pts[at][0]} cy={plot.pts[at][1]} r="7" fill={inZone ? "#124977" : "#111215"} stroke="#fff" strokeWidth="3" />
+              <g transform={`translate(${Math.min(Math.max(plot.pts[at][0] - 80, 0), W - R - 160)}, 0)`}>
+                <rect width="160" height="28" rx="9" fill="#111215" />
+                <text x="10" y="18" fontSize="12" fill="rgba(255,255,255,0.72)">{day(q.at)}</text>
+                <text x="150" y="18" fontSize="12" fontWeight="700" textAnchor="end" fill={inZone ? "#9DCAFF" : "#fff"}>{usd(q.price)}</text>
+              </g>
+            </g>
+          )}
           {plot.ly != null && limit != null && <g><rect x={W - R + 8} y={plot.ly - 12} width="58" height="24" rx="7" fill="#124977" /><text x={W - R + 37} y={plot.ly + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">≤ {usd(limit).replace("US$", "")}</text></g>}
         </svg>
       ) : <EmptyHatch text={limit != null ? `Every quote lands here. It buys at ${usd(limit)} or less.` : "Every quote lands here."} />}

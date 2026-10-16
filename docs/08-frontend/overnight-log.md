@@ -9,7 +9,7 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] Compose: highlight understood words in the sentence itself (mirror text), if it aligns on iOS at all text sizes; otherwise improve the chips
 - [ ] Pocket page: richer receipts and covers; the run payoff on video
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
-- [ ] Console: parity of the pocket app view with the phone; the Evidence and Sellers pages
+- [ ] Console: the Evidence and Sellers pages; the pocket view's "What happens next" before the first run
 
 ## Done
 
@@ -82,6 +82,9 @@ Phone first, then the web console. Each slice goes research → implement → va
   - the digest's counts truncated ("co-signed…"); they now go full width.
 
   The card print is capped at 1×, so the stack holds. Evidence: `ios-30-ax5-home.png`, `ios-31-ax5-nextup-digest.png`. The simulator's text size was set back to the default afterwards.
+
+- [x] **Home hero split**: a thin bar under the total splits it by pocket, each in its card's face colour, largest first. The VoiceOver label gives each pocket's share. Evidence: `w-32-hero-split.png`; e2e 57/57.
+- [x] **Console chart hover** (parity with the phone's scrub): hover, or the arrow keys on the focused chart, reads any day's quote. The cursor turns blue in the buy zone. Evidence: `c-chart-hover.png`; web tests 81 pass, build clean.
 
 Earlier the same day, before this log existed:
 - Home wallet stack, live card signs and Next up (e68c433)
