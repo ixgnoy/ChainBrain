@@ -7,13 +7,14 @@ import { View } from "react-native";
 import { useApp } from "../store";
 import { c } from "../tokens";
 import { router } from "expo-router";
-import { Avatar, Button, Press } from "../ui/kit";
+import { Button } from "../ui/kit";
 import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { Rise } from "../ui/Rise";
 import { cleanText } from "../lib/sanitize";
 import { radarBody, type RadarAlert, type RadarView } from "../lib/events";
 import { EventCard } from "./EventCard";
+import { BrandSquare, TxRow } from "./ActivityRow";
 
 /** Ten steps, filled up to the score: green while clean, blue from "needs your OK", vermillion from "blocked". */
 export function ScoreBar({ score, verdict }: { score: number; verdict: RadarView["verdict"] }) {
@@ -109,27 +110,16 @@ export function RadarAlertCard({ a }: { a: RadarAlert }) {
   );
 }
 
-/** A Radar alert as an Activity row (same layout as ActivityRow). */
+/** A Radar alert as an Activity row (VaultBank's transaction row, like ActivityRow): the score where the amount goes. */
 export function RadarActivityRow({ a, last, delay = 0, onPress }: { a: RadarAlert; last?: boolean; delay?: number; onPress?: () => void }) {
   const { findPocket } = useApp();
   const pocket = findPocket(a.pocket);
-  const body = (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 56, paddingHorizontal: 16 }}>
-      <Avatar icon="radar" tone="negative" size={40} />
-      <View style={{ flex: 1, gap: 1, paddingVertical: 8 }}>
-        <T v="row" numberOfLines={1}>Radar alert: {cleanText(a.name, 30)}</T>
-        <T v="sub" color="muted" numberOfLines={1}>{[pocket ? cleanText(pocket.name, 24) : undefined, new Date(a.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })].filter(Boolean).join(" · ")}</T>
-      </View>
-      <View style={{ alignItems: "flex-end", gap: 1 }}>
-        <T v="row" w="semi">{a.to.score}/10</T>
-        <T v="cap" w="bold" color={a.to.verdict === "block" ? "vermillionInk" : "blueInk"}>{a.to.verdict === "block" ? "Blocked" : "Needs you"}</T>
-      </View>
-    </View>
-  );
   return (
     <Rise delay={Math.max(delay, 0)} instant={delay < 0} dy={10} layout>
-      {onPress ? <Press kind="row" onPress={onPress} haptics="light" accessibilityRole="button" accessibilityLabel={`Radar alert for ${a.name}, risk ${a.to.score} out of 10`}>{body}</Press> : body}
-      {last ? null : <View style={{ height: 1, backgroundColor: c.fill, marginLeft: 70, marginRight: 16 }} />}
+      <TxRow square={<BrandSquare icon="radar" tone="vermillion" />} title={`Radar alert: ${cleanText(a.name, 30)}`}
+        sub={[pocket ? cleanText(pocket.name, 24) : undefined, new Date(a.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })].filter(Boolean).join(" · ")}
+        right={`${a.to.score}/10`} rightSub={a.to.verdict === "block" ? "Blocked" : "Needs you"} rightSubTone={a.to.verdict === "block" ? "vermillionInk" : "blueInk"}
+        onPress={onPress} last={last} a11y={`Radar alert for ${a.name}, risk ${a.to.score} out of 10`} />
     </Rise>
   );
 }

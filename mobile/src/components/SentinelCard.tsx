@@ -6,7 +6,7 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { useApp } from "../store";
 import { c } from "../tokens";
-import { Avatar, Button, Press } from "../ui/kit";
+import { Button } from "../ui/kit";
 import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { Rise } from "../ui/Rise";
@@ -15,6 +15,7 @@ import { notify } from "../lib/toast";
 import { cleanText } from "../lib/sanitize";
 import { aiName, sameAddr, type SentinelView } from "../lib/events";
 import { EventCard } from "./EventCard";
+import { BrandSquare, TxRow } from "./ActivityRow";
 import { TxLink } from "./TxLink";
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
@@ -90,24 +91,18 @@ export function SentinelLine({ v }: { v: SentinelView }) {
   );
 }
 
-/** A freeze or hold as an Activity row (same layout as ActivityRow). */
+/** A freeze or hold as an Activity row (VaultBank's transaction row, like ActivityRow). */
 export function SentinelActivityRow({ v, last, delay = 0 }: { v: SentinelView; last?: boolean; delay?: number }) {
   const { findPocket, setExplorerTx } = useApp();
   const pocket = findPocket(v.pocket);
-  const body = (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 56, paddingHorizontal: 16 }}>
-      <Avatar icon={v.kind === "freeze" ? "freeze" : "eye"} tone={v.kind === "freeze" ? "fill" : "warning"} size={40} />
-      <View style={{ flex: 1, gap: 1, paddingVertical: 8 }}>
-        <T v="row" numberOfLines={1}>{v.kind === "freeze" ? "Sentinel froze the pocket" : "Sentinel asked for your OK"}</T>
-        <T v="sub" color="muted" numberOfLines={1}>{[pocket ? cleanText(pocket.name, 24) : undefined, new Date(v.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })].filter(Boolean).join(" · ")}</T>
-      </View>
-      <T v="cap" w="medium" color="ink2">{v.kind === "freeze" ? (v.tx ? "On chain" : "Held") : "Needs you"}</T>
-    </View>
-  );
+  const title = v.kind === "freeze" ? "Sentinel froze the pocket" : "Sentinel asked for your OK";
   return (
     <Rise delay={Math.max(delay, 0)} instant={delay < 0} dy={10} layout>
-      {v.tx ? <Press kind="row" onPress={() => setExplorerTx(v.tx!)} haptics="light" accessibilityRole="button" accessibilityLabel={`Sentinel froze ${pocket?.name ?? "the pocket"}. Open transaction`}>{body}</Press> : body}
-      {last ? null : <View style={{ height: 1, backgroundColor: c.line, marginLeft: 70 }} />}
+      <TxRow square={<BrandSquare icon={v.kind === "freeze" ? "freeze" : "eye"} tone={v.kind === "freeze" ? "fill" : "blue"} />} title={title}
+        sub={[pocket ? cleanText(pocket.name, 24) : undefined, new Date(v.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })].filter(Boolean).join(" · ")}
+        rightSub={v.kind === "freeze" ? (v.tx ? "On chain" : "Held") : "Needs you"} rightSubTone={v.kind === "freeze" ? "ink2" : "blueInk"}
+        onPress={v.tx ? () => setExplorerTx(v.tx!) : undefined} last={last}
+        a11y={v.tx ? `Sentinel froze ${pocket?.name ?? "the pocket"}. Open transaction` : title} />
     </Rise>
   );
 }

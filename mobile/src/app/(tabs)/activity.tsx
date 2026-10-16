@@ -6,14 +6,14 @@ import { c } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
 import { router } from "expo-router";
 import { AgentAvatar } from "../../ui/AgentAvatar";
-import { Avatar, Button, ListCard, ListRow } from "../../ui/kit";
+import { Button, ListCard } from "../../ui/kit";
 import { Rise, SHIFT, useStagger } from "../../ui/Rise";
 import { SlidingPills } from "../../ui/SlidingPills";
 import { haptic } from "../../haptics";
 import { useReduceMotion } from "../../ui/motion";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
-import { ActivityItem } from "../../components/ActivityRow";
+import { ActivityItem, BrandSquare, DayHead, TxRow } from "../../components/ActivityRow";
 import { AttackActivityRow, NoteRow, attackInfo, isAttackEvent } from "../../components/AttackCard";
 import { RadarActivityRow } from "../../components/RadarCard";
 import { SentinelActivityRow, isSentinelAlert } from "../../components/SentinelCard";
@@ -76,10 +76,10 @@ export default function Activity() {
       {showNeeds && pending.length > 0 ? (
         <Rise dy={10} exit layout style={{ marginTop: 12 }}><ListCard>
           {pending.map((a) => (
-            <ListRow key={a.id} a11y={a.kind === "question" ? "Your agent has a question" : "Needs your OK"} onPress={() => (a.kind === "question" ? setQuestionOpen(true) : openApproval(a.id))}
-              avatar={a.agent && a.agent !== "chainbrain" ? <AgentAvatar kind={a.agent} size={44} /> : <Avatar icon="clock" tone="warning" />}
+            <TxRow key={a.id} a11y={a.kind === "question" ? "Your agent has a question" : "Needs your OK"} onPress={() => (a.kind === "question" ? setQuestionOpen(true) : openApproval(a.id))}
+              square={a.agent && a.agent !== "chainbrain" ? <AgentAvatar kind={a.agent} size={44} /> : <BrandSquare icon="clock" tone="blue" />}
               title={a.kind === "question" ? "Your agent has a question" : a.kind === "payment" ? cleanText(sellerName(a.data?.sellerId), 30) : "Confirm a task"}
-              sub={a.kind === "payment" ? "Waiting for your OK" : cleanText(a.text.split("\n")[0], 60)} right={a.kind === "payment" ? `US$${cleanText(a.data?.amount, 10)}` : undefined} rightSub="Needs you" rightSubTone="warning" />
+              sub={a.kind === "payment" ? "Waiting for your OK" : cleanText(a.text.split("\n")[0], 60)} right={a.kind === "payment" ? `US$${cleanText(a.data?.amount, 10)}` : undefined} rightSub="Needs you" rightSubTone="blueInk" />
           ))}
         </ListCard></Rise>
       ) : null}
@@ -87,7 +87,7 @@ export default function Activity() {
       {groups.length === 0 ? (
         <Rise dy={8} duration={240}>
           <View style={{ alignItems: "center", paddingTop: 56, gap: 8, paddingHorizontal: 40 }}>
-            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: c.fill, alignItems: "center", justifyContent: "center", marginBottom: 8 }}><Icon name="activity" size={28} color={c.ink2} /></View>
+            <View style={{ width: 64, height: 64, borderRadius: 16, borderCurve: "continuous", backgroundColor: c.card, alignItems: "center", justifyContent: "center", marginBottom: 8 }}><Icon name="activity" size={28} color={c.ink2} /></View>
             <T v="section">No activity yet</T>
             <T v="sub" color="muted" style={{ textAlign: "center" }}>Your agent's purchases and your changes show up here.</T>
             <Button label="Ask agent" kind="outline" small onPress={() => router.navigate("/agent")} style={{ marginTop: 12 }} />
@@ -95,8 +95,7 @@ export default function Activity() {
         </Rise>
       ) : groups.map((g) => (
         <Animated.View key={g.day} layout={reduce ? undefined : SHIFT}>
-          <T v="cap" w="semi" color="muted" accessibilityRole="header" style={{ paddingHorizontal: 20, marginTop: 24, marginBottom: 8 }}>{g.day}</T>
-          <ListCard>{g.rows.map((r) => r.note ? <NoteRow key={r.key} delay={delays[r.key] ?? 0} title={r.note.title} sub={r.note.sub} right="Refused" /> : r.sentinel ? <SentinelActivityRow key={r.key} delay={delays[r.key] ?? 0} v={r.sentinel} /> : r.radar ? <RadarActivityRow key={r.key} delay={delays[r.key] ?? 0} a={r.radar} onPress={() => router.push({ pathname: "/radar", params: { name: r.radar!.name } })} /> : r.atk ? <AttackActivityRow key={r.key} delay={delays[r.key] ?? 0} e={r.atk} onPress={() => { const t = attackInfo(r.atk!)?.tx; if (t) setExplorerTx(t); }} /> : <ActivityItem key={r.key} delay={delays[r.key] ?? 0} row={r.row!} showPocket timeOnly onPress={() => setReceipt(r.row!)} />)}</ListCard>
+          <ListCard head={<DayHead at={g.rows[0].at} />} style={{ marginTop: 16 }}>{g.rows.map((r) => r.note ? <NoteRow key={r.key} delay={delays[r.key] ?? 0} title={r.note.title} sub={r.note.sub} right="Refused" /> : r.sentinel ? <SentinelActivityRow key={r.key} delay={delays[r.key] ?? 0} v={r.sentinel} /> : r.radar ? <RadarActivityRow key={r.key} delay={delays[r.key] ?? 0} a={r.radar} onPress={() => router.push({ pathname: "/radar", params: { name: r.radar!.name } })} /> : r.atk ? <AttackActivityRow key={r.key} delay={delays[r.key] ?? 0} e={r.atk} onPress={() => { const t = attackInfo(r.atk!)?.tx; if (t) setExplorerTx(t); }} /> : <ActivityItem key={r.key} delay={delays[r.key] ?? 0} row={r.row!} showPocket timeOnly onPress={() => setReceipt(r.row!)} />)}</ListCard>
         </Animated.View>
       ))}
     </Screen>

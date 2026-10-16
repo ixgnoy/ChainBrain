@@ -204,11 +204,13 @@ export function ListRow({ avatar, title, sub, right, rightSub, rightTone = "ink"
   );
 }
 
-/** A white list card: its row children (ListRow, PocketRow, ActivityRow) get `last` so the divider after the final one is hidden. */
-export function ListCard({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+/** A white list card: its row children (ListRow, PocketRow, ActivityRow) get `last` so the divider after the final one is hidden.
+ *  `head` sits above the rows inside the card (VaultBank's "Transactions" over the date). */
+export function ListCard({ children, style, head }: { children: React.ReactNode; style?: StyleProp<ViewStyle>; head?: React.ReactNode }) {
   const kids = React.Children.toArray(children).filter(Boolean);
   return (
-    <View style={[{ marginHorizontal: 16, backgroundColor: c.card, borderRadius: radius.card, borderWidth: 1, borderColor: hairline }, level1, style]}>
+    <View style={[{ marginHorizontal: 16, backgroundColor: c.card, borderRadius: radius.card, borderCurve: "continuous", borderWidth: 1, borderColor: hairline } as ViewStyle, level1, style]}>
+      {head}
       {kids.map((k, i) => (React.isValidElement(k) ? React.cloneElement(k as React.ReactElement<{ last?: boolean }>, { last: i === kids.length - 1 }) : k))}
     </View>
   );

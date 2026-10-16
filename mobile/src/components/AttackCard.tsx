@@ -4,17 +4,15 @@
 import React from "react";
 import { View } from "react-native";
 import { useApp } from "../store";
-import { c } from "../tokens";
-import { Avatar } from "../ui/kit";
 import { T } from "../ui/Text";
 import { Rise } from "../ui/Rise";
-import { Press } from "../ui/kit";
 import { Icon } from "../ui/Icon";
 import { cleanText } from "../lib/sanitize";
 import { describeRow } from "../lib/plain";
 import { money, shortHex, stamp } from "../lib/util";
 import type { WalletEvent } from "../lib/events";
 import { EventCard } from "./EventCard";
+import { BrandSquare, TxRow } from "./ActivityRow";
 import { TxLink } from "./TxLink";
 
 /** Forced transfers that reverted, and the attacks the chat refused. (An induced attack that fooled the agent is told by its forced event.) */
@@ -59,26 +57,19 @@ export function AttackCard({ e }: { e: WalletEvent }) {
   );
 }
 
-/** An attack as an Activity row (same layout as ActivityRow). */
+/** An attack as an Activity row (VaultBank's transaction row, like ActivityRow). */
 export function AttackActivityRow({ e, onPress, last, delay = 0 }: { e: WalletEvent; onPress?: () => void; last?: boolean; delay?: number }) {
   const { findPocket } = useApp();
   const a = attackInfo(e);
   if (!a) return null;
   const pocket = findPocket(e.pocket);
-  const body = (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 56, paddingHorizontal: 16 }}>
-      <Avatar icon="shield" tone="fill" size={40} />
-      <View style={{ flex: 1, gap: 1, paddingVertical: 8 }}>
-        <T v="row" numberOfLines={1}>{a.title}</T>
-        <T v="sub" color="muted" numberOfLines={1}>{[pocket ? cleanText(pocket.name, 24) : undefined, new Date(e.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })].filter(Boolean).join(" · ")}</T>
-      </View>
-      <T v="cap" w="medium" color="ink2">{a.verdict}</T>
-    </View>
-  );
+  const forced = e.type === "forced";
   return (
     <Rise delay={Math.max(delay, 0)} instant={delay < 0} dy={10} layout>
-      {onPress ? <Press kind="row" onPress={onPress} haptics="light" accessibilityRole="button" accessibilityLabel={`${a.title}. ${a.verdict}`}>{body}</Press> : body}
-      {last ? null : <View style={{ height: 1, backgroundColor: c.line, marginLeft: 70 }} />}
+      <TxRow square={<BrandSquare icon="shield" />} title={a.title} titleLines={2}
+        sub={[pocket ? cleanText(pocket.name, 24) : undefined, new Date(e.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })].filter(Boolean).join(" · ")}
+        right={forced ? money(amountOf(e)) : undefined} rightTone="muted" strike={forced} rightSub={a.verdict} rightSubTone="ink2"
+        onPress={onPress} last={last} a11y={`${a.title}. ${a.verdict}`} />
     </Rise>
   );
 }
@@ -87,15 +78,7 @@ export function AttackActivityRow({ e, onPress, last, delay = 0 }: { e: WalletEv
 export function NoteRow({ title, sub, right, last, delay = 0 }: { title: string; sub: string; right?: string; last?: boolean; delay?: number }) {
   return (
     <Rise delay={Math.max(delay, 0)} instant={delay < 0} dy={10} layout>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 56, paddingHorizontal: 16 }}>
-        <Avatar icon="shield" tone="fill" size={40} />
-        <View style={{ flex: 1, gap: 1, paddingVertical: 8 }}>
-          <T v="row" numberOfLines={2}>{title}</T>
-          <T v="sub" color="muted" numberOfLines={2}>{sub}</T>
-        </View>
-        {right ? <T v="cap" w="medium" color="ink2">{right}</T> : null}
-      </View>
-      {last ? null : <View style={{ height: 1, backgroundColor: c.line, marginLeft: 70 }} />}
+      <TxRow square={<BrandSquare icon="shield" />} title={title} titleLines={2} sub={sub} rightSub={right} rightSubTone="ink2" last={last} a11y={`${title}. ${sub}`} />
     </Rise>
   );
 }
