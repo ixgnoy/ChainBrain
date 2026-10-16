@@ -1,12 +1,13 @@
-// First-launch intro (and on demand from Settings): three pages, Skip always visible, swipe with the finger (the pager follows
+// First-launch intro (and on demand from Settings): four pages, Skip always visible, swipe with the finger (the pager follows
 // it 1:1 and lets go with its velocity) or press Next. User-paced: nothing moves on its own (NN/g on auto-forwarding, WCAG
 // 2.2.2), so each page is read at the owner's speed. Each page has one illustration built from app primitives (Stitch chainbrain_intro + the
 // vaultbank intro): the owner's real pocket cards are dealt in, tilted and spilling off the edge, while the mark locks in; the rules of a
 // contract draw in under a lock, the worst case fills a hatch bar. No gradients, glow or sparkles.
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { Extrapolation, cancelAnimation, interpolate, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
+import { Understood } from "./app/Understood";
 import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { c, F, level3, motion, radius } from "../tokens";
@@ -24,7 +25,8 @@ import { EASE_OUT, rubberband, useReduceMotion } from "../ui/motion";
 import { finishIntro } from "../ui/intro";
 
 const PAGES = [
-  { title: "Give your AI a pocket, not your wallet", sub: "A pocket holds a small budget for one agent: ChainBrain's own, Claude or ChatGPT. Say what it's for in one sentence and it gets its own app." },
+  { title: "Give your AI a pocket, not your wallet", sub: "A pocket holds a small budget for one agent: ChainBrain's own, Claude or ChatGPT. It can only spend what you put in." },
+  { title: "Say what it's for", sub: "One sentence. ChainBrain reads it into rules you sign, a routine that runs on time, and the pocket's own app." },
   { title: "The limits live in a contract you own", sub: "Which sellers, how much per payment, when to ask you. Only your key can change them." },
   { title: "The worst case is the pocket balance", sub: "Even a tricked agent can only pay sellers you allowed, and never more than the pocket holds." },
 ] as const;
@@ -156,6 +158,48 @@ function Chip({ t, from, label, ok }: { t: SharedValue<number>; from: number; la
   );
 }
 
+// ---- page 2: a sentence types itself, what ChainBrain understood pops in under it (the real reader, components/app/
+// Understood.tsx), and the owner's own deal-watcher card drops into place
+function SentenceArt({ active, reduce, w }: { active: boolean; reduce: boolean; w: number }) {
+  const sellersCfg = useAppSelect((s) => s.cfg?.sellers);
+  const sellers = useMemo(() => (sellersCfg ?? []).map((x) => ({ id: x.id, name: x.name })), [sellersCfg]);
+  const names = useArtSellers();
+  const { pockets } = useApp();
+  const builtin = names[0] === BUILTIN_SELLERS[0];
+  const sentence = builtin ? "Let Claude buy Nansen's smart-money flows every morning when the price drops below US$0.04."
+    : `Every morning, get me ${names[0] ?? "the news"}${names[1] ? ` and ${names[1]}` : ""}. Max US$0.05 a week.`;
+  const [n, setN] = useState(reduce ? sentence.length : 0);
+  useEffect(() => {
+    if (!active) { setN(reduce ? sentence.length : 0); return; }
+    if (reduce) { setN(sentence.length); return; }
+    let i = 0;
+    const t = setInterval(() => { i += 2; setN(Math.min(i, sentence.length)); if (i >= sentence.length) clearInterval(t); }, 45);
+    return () => clearInterval(t);
+  }, [active, reduce, sentence]);
+  const done = n >= sentence.length;
+  const deal = pockets.find((p) => !p.revoked && p.app?.layout === "deal");
+  const cw = Math.round(Math.min(w, 448) * 0.62);
+  const drop = useSharedValue(0);
+  useEffect(() => { drop.value = done && active ? (reduce ? 1 : withSpring(1, motion.spring.deck)) : 0; }, [done, active, reduce, drop]);
+  const card = useAnimatedStyle(() => ({ opacity: drop.value, transform: [{ perspective: 900 }, { translateY: (1 - drop.value) * 40 }, { rotateX: `${(1 - drop.value) * 30}deg` }] }));
+  return (
+    <View style={{ width: Math.min(w - 48, 340), gap: 16, alignItems: "center" }}>
+      <View style={{ alignSelf: "stretch", backgroundColor: c.card, borderRadius: radius.card, padding: 16, gap: 12, ...level3, shadowOpacity: 0.08 }}>
+        <T v="body" accessibilityLabel={sentence} style={{ fontSize: 17, lineHeight: 24, minHeight: 72 }}>
+          {sentence.slice(0, n)}
+          {!done ? <T v="body" style={{ color: c.vermillion }}>|</T> : null}
+        </T>
+        <Understood text={sentence.slice(0, n)} sellers={sellers} />
+      </View>
+      {deal ? (
+        <Animated.View style={card} pointerEvents="none">
+          <PocketFace pocket={deal} width={cw} tone={toneFor(pockets, deal.address)} shadow still />
+        </Animated.View>
+      ) : null}
+    </View>
+  );
+}
+
 // ---- pager
 function Page({ i, w, pos, active, reduce }: { i: number; w: number; pos: SharedValue<number>; active: boolean; reduce: boolean }) {
   const art = useAnimatedStyle(() => {
@@ -169,7 +213,7 @@ function Page({ i, w, pos, active, reduce }: { i: number; w: number; pos: Shared
   return (
     <View style={{ width: w, flex: 1, paddingHorizontal: 24 }}>
       <Animated.View style={[{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 12 }, art]}>
-        {i === 0 ? <DeckArt active={active} reduce={reduce} w={w} /> : i === 1 ? <ContractArt active={active} reduce={reduce} /> : <WorstArt active={active} reduce={reduce} />}
+        {i === 0 ? <DeckArt active={active} reduce={reduce} w={w} /> : i === 1 ? <SentenceArt active={active} reduce={reduce} w={w} /> : i === 2 ? <ContractArt active={active} reduce={reduce} /> : <WorstArt active={active} reduce={reduce} />}
       </Animated.View>
       <Animated.View style={[{ gap: 12, paddingBottom: 20 }, text]}>
         <T v="display" accessibilityRole="header" style={{ fontSize: 34, lineHeight: 40 }}>{PAGES[i].title}</T>

@@ -236,3 +236,11 @@ Not verified:
 - WCAG 2.2 "Focus not obscured" (2.4.11) is the rule behind it: a floating bar must not hide what you scroll to. The folded pill is about half as wide. https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html
 - The motion is timed (the base duration) and reduce motion turns it off. The pill keeps its 52 pt height, so the target stays above 44 pt.
 - The minimise state moved from the tabs layout to the root, because the dock is drawn above the stack, outside the tabs.
+
+## Loop 7: the overnight slices (17 Oct 2026)
+
+- **Agents.** Each agent's pockets were text rows. They are now a small wallet of the same strips as Home's stack, with the same faces, interleave and card flight, so an agent visibly holds its pockets. The first try was a hand of 168 pt cards; it was dropped because the card print can't be read at that size.
+- **Activity.** GitHub's contribution graph shows activity as a grid of squares. Activity now shows the last 14 days as stacked squares per day. Colour carries the outcome (ink, blue, vermillion), each count is written in the legend, so colour is never the only signal (WCAG 1.4.1). https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html
+- **Eyebrows.** The labels over cards are now sentence case and untracked, a pattern Linear and Apple's own apps also use for in-card labels (loop 3 started this for the pocket-app blocks).
+- **Intro.** A new page 2 shows the product's one idea working: a sentence types itself and the real reader's chips appear. Mid-sentence the app type reads "Research desk"; at "drops below" it changes to "Deal watcher". Then the owner's own deal-watcher card drops in. Nothing on the page is staged: it is the same reader as New pocket app and a pocket from the store.
+- **Judges scoreboard.** The scoreboard said "0 of 4 attacks blocked" before anything was tried. A first glance reads that as failure, so it now says "4 attacks to try".

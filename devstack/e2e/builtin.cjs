@@ -64,17 +64,19 @@ async function until(what, fn, ms = 30000, step = 200) {
 
   await page.goto(`${URL0}/`);
 
-  await run("intro: three user-paced pages on the first launch, Skip always there", async () => {
+  await run("intro: four user-paced pages on the first launch, Skip always there", async () => {
     const skip = page.getByRole("button", { name: "Skip" });
     await skip.waitFor({ timeout: 60000 });
     await visible("Give your AI a pocket, not your wallet").waitFor();
     check("intro page 1 shows the pitch line with Skip", true);
     await shot("00-intro");
     await page.getByRole("button", { name: "Next", exact: true }).click(); // exact: Home's "Next up" tiles say "next run"
+    await visible("Say what it's for").waitFor();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
     await visible("The limits live in a contract you own").waitFor();
     await page.getByRole("button", { name: "Next", exact: true }).click(); // exact: Home's "Next up" tiles say "next run"
     await visible("The worst case is the pocket balance").waitFor();
-    check("intro pages 2 and 3 are reachable and Skip stays visible", await skip.isVisible());
+    check("intro pages 2 to 4 are reachable and Skip stays visible", await skip.isVisible());
     await skip.click();
     await skip.waitFor({ state: "detached", timeout: 5000 });
     check("Skip lands on Home", true);

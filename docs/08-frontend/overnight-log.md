@@ -8,7 +8,6 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] Settings at Home's level
 - [ ] Compose: highlight understood words in the sentence itself (mirror text), if it aligns on iOS at all text sizes; otherwise improve the chips
 - [ ] Pocket page: richer receipts and covers; the run payoff on video
-- [ ] Intro: a 4th page showing a sentence becoming an app (update the e2e "three pages" check)
 - [ ] AX5 large-text pass (Next up tiles, chips, timeline, Brain); VoiceOver pass on the chart scrub
 - [ ] Console: parity of the pocket app view with the phone; the Evidence and Sellers pages
 
@@ -61,6 +60,14 @@ Phone first, then the web console. Each slice goes research → implement → va
   - The pull-to-fan, recorded on the iOS production bundle: the strips spread and reveal every agent's pill, then settle.
   - The drop-in is in the launch recording from the first slice.
   - Evidence: `ios-29-pull-fan.png` (a frame mid-pull), `w-29-press-lift.png`.
+
+- [x] **Intro page 2, "Say what it's for"**:
+  - the example sentence types itself;
+  - the real reader's chips appear (the app type flips from Research desk to Deal watcher at "drops below");
+  - the owner's own deal-watcher card drops in.
+
+  Page 1's text went back to its original line. The e2e intro test now walks four pages, adding one Next and checking the new title, with no check weakened.
+  - Evidence: `w-30-intro-sentence.png` (typing, and done); e2e 57/57.
 
 Earlier the same day, before this log existed:
 - Home wallet stack, live card signs and Next up (e68c433)
