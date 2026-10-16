@@ -11,6 +11,7 @@ import { Money } from "../ui/Money";
 import { Hatch } from "../ui/Hatch";
 import { CardMaterial } from "../ui/CardMaterial";
 import { useReduceMotion } from "../ui/motion";
+import { TextScaleCap } from "../ui/fontScale";
 import { haptic } from "../haptics";
 import { usd } from "../lib/util";
 import { cleanText } from "../lib/sanitize";
@@ -54,6 +55,7 @@ function Back({ pocket, width, height, amount, seller, item, after, until }: {
   const tail = pocket.address.slice(-4).toUpperCase();
   const time = until ? new Date(until * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : null;
   return (
+    <TextScaleCap max={1}>
     <View style={{ width, height: height + 4 }}>
       <View style={{ position: "absolute", left: 0, top: 4, width, height, borderRadius: R, backgroundColor: "#C9C8C3" }} />
       <View style={{ width, height, borderRadius: R, borderCurve: "continuous", overflow: "hidden", backgroundColor: "#FBFAF7" } as object}>
@@ -84,6 +86,7 @@ function Back({ pocket, width, height, amount, seller, item, after, until }: {
         </View>
       </View>
     </View>
+    </TextScaleCap>
   );
 }
 

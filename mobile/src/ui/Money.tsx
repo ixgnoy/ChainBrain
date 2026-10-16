@@ -5,6 +5,7 @@ import React from "react";
 import { Platform, Text, View, type TextStyle } from "react-native";
 import { c, F, type Tone } from "../tokens";
 import { RollingNumber } from "./RollingNumber";
+import { useTextScale } from "./fontScale";
 
 // Figures are set in Clash Display Medium (VaultBank's balances): wide, calm weight, slightly tight; the currency symbol is set
 // at 75 % of the figure. Row and sub figures stay in General Sans so lists read as text.
@@ -24,14 +25,19 @@ export function Money({ value, prefix = "US$", v = "row", color = "ink", countIn
   /** accessible label, defaults to the plain string */ label?: string;
   /** the parent already has a label (a list row): expose nothing of its own */ decorative?: boolean; strike?: boolean;
 }) {
-  const t = V[v];
-  const textStyle: TextStyle = { fontFamily: t.family, fontSize: t.size, letterSpacing: t.ls, color: c[color], fontVariant: ["tabular-nums"], textDecorationLine: strike ? "line-through" : undefined, ...style };
+  // grows with the phone's text size like other figures; the reels need the scaled size up front (their height is fixed)
+  const k = useTextScale(v === "row" || v === "sub" ? "body" : "figure");
+  const base = V[v];
+  const unscaled = (style?.fontSize as number | undefined) ?? base.size; // a caller may set its own size
+  const ratio = (unscaled / base.size) * k;
+  const t = { ...base, size: Math.round(base.size * ratio), line: Math.round(base.line * ratio), ls: base.ls * ratio };
+  const textStyle: TextStyle = { fontFamily: t.family, letterSpacing: t.ls, color: c[color], fontVariant: ["tabular-nums"], textDecorationLine: strike ? "line-through" : undefined, ...style, fontSize: t.size };
   const plain = `${prefix}${value}`;
   // big figures carry the currency at 75 %, sitting on the same baseline
   const small = t.size >= 28 && prefix;
   const roll = small ? (
     <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
-      <Text style={{ ...textStyle, fontSize: Math.round(t.size * 0.75), lineHeight: t.line, letterSpacing: t.ls * 0.6 }}>{prefix}</Text>
+      <Text allowFontScaling={false} style={{ ...textStyle, fontSize: Math.round(t.size * 0.75), lineHeight: t.line, letterSpacing: t.ls * 0.6 }}>{prefix}</Text>
       <RollingNumber value={value} prefix="" style={textStyle} lineHeight={t.line} countIn={countIn} accessibilityLabel={label ?? plain} />
     </View>
   ) : <RollingNumber value={value} prefix={prefix} style={textStyle} lineHeight={t.line} countIn={countIn} accessibilityLabel={label ?? plain} />;

@@ -95,7 +95,7 @@ function PickChip({ label, on, onPress }: { label: string; on?: boolean; onPress
   const txt = useAnimatedStyle(() => ({ color: interpolateColor(sel.value, [0, 1], [c.ink2, c.onAccent]) }));
   return (
     <Press haptics="select" onPress={onPress} scale={0.96} accessibilityRole="button" accessibilityState={{ selected: !!on }} style={{ borderRadius: 9999 }}>
-      <Animated.View style={[{ height: 40, paddingHorizontal: 11, borderRadius: 9999, justifyContent: "center" }, box]}>
+      <Animated.View style={[{ minHeight: 40, paddingHorizontal: 11, borderRadius: 9999, justifyContent: "center" }, box]}>
         <Animated.Text style={[{ fontFamily: F.semi, fontSize: 14, lineHeight: 20 }, txt]}>{label}</Animated.Text>
       </Animated.View>
     </Press>

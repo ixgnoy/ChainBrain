@@ -124,14 +124,14 @@ export function Pill({ label, tone = "accent", icon, onPress, a11y, dot }: { lab
       <T v="cap" w="semi" style={{ color: fg }}>{label}</T>
     </>
   );
-  const box = { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: onPress ? 32 : 28, borderRadius: radius.pill, backgroundColor: bg, alignSelf: "flex-start", borderWidth: tone === "white" ? 1 : 0, borderColor: c.tileStroke } as const;
+  const box = { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, minHeight: onPress ? 32 : 28, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: bg, alignSelf: "flex-start", borderWidth: tone === "white" ? 1 : 0, borderColor: c.tileStroke } as const;
   return onPress ? <Press haptics="select" onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label} style={box}>{body}</Press> : <View style={box}>{body}</View>;
 }
 
 /** Filter chip: white pill, black when selected. */
 export function Chip({ label, on, onPress }: { label: string; on?: boolean; onPress: () => void }) {
   return (
-    <Press haptics="select" onPress={onPress} scale={0.96} accessibilityRole="button" accessibilityState={{ selected: !!on }} style={{ height: 40, paddingHorizontal: 16, borderRadius: radius.pill, justifyContent: "center", backgroundColor: on ? c.ink : c.card, borderWidth: on ? 0 : 1, borderColor: c.tileStroke }}>
+    <Press haptics="select" onPress={onPress} scale={0.96} accessibilityRole="button" accessibilityState={{ selected: !!on }} style={{ minHeight: 40, paddingHorizontal: 16, borderRadius: radius.pill, justifyContent: "center", backgroundColor: on ? c.ink : c.card, borderWidth: on ? 0 : 1, borderColor: c.tileStroke }}>
       <T v="sub" w="semi" style={{ color: on ? c.onAccent : c.ink2 }}>{label}</T>
     </Press>
   );
@@ -150,7 +150,7 @@ export function Button({ label, onPress, kind = "primary", icon, iconRight, disa
   const stroke = kind === "secondary" || kind === "outline";
   return (
     <Press onPress={off ? undefined : onPress} auto={auto} tapRef={tapRef} disabled={off} haptics={kind === "text" ? "select" : "light"} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!off, busy: !!loading }}
-      style={[{ height: small ? 44 : 52, minWidth: 48, paddingHorizontal: small ? 18 : 24, borderRadius: radius.button, borderCurve: "continuous", backgroundColor: bg, borderWidth: stroke ? 1 : 0, borderColor: kind === "outline" ? c.ink : c.tileStroke, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, opacity: disabled ? 0.4 : 1 }, style]}>
+      style={[{ minHeight: small ? 44 : 52, paddingVertical: 8, minWidth: 48, paddingHorizontal: small ? 18 : 24, borderRadius: radius.button, borderCurve: "continuous", backgroundColor: bg, borderWidth: stroke ? 1 : 0, borderColor: kind === "outline" ? c.ink : c.tileStroke, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, opacity: disabled ? 0.4 : 1 }, style]}>
       {icon ? <Icon name={icon} size={18} color={fg} stroke={2} /> : null}
       <T v="label" style={{ color: fg, fontSize: small ? 14 : 15, lineHeight: 20 }}>{loading ? "Please wait…" : label}</T>
       {iconRight ? <Icon name={iconRight} size={18} color={fg} stroke={2} /> : null}
@@ -163,7 +163,7 @@ export function SectionHeader({ title, right, action, onAction, count }: { title
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 28, marginBottom: 12, gap: 12 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
         <T v="section" accessibilityRole="header" numberOfLines={1}>{title}</T>
-        {count != null ? <View style={{ minWidth: 26, height: 24, paddingHorizontal: 8, borderRadius: 12, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}><T v="cap" w="bold">{String(count)}</T></View> : null}
+        {count != null ? <View style={{ minWidth: 26, minHeight: 24, paddingHorizontal: 8, borderRadius: 12, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}><T v="cap" w="bold">{String(count)}</T></View> : null}
       </View>
       {action ? <Press haptics="select" onPress={onAction} hitSlop={10}><T v="sub" w="bold" color="vermillionInk">{action}</T></Press> : right ? <T v="sub" color="mutedOnCanvas">{right}</T> : null}
     </View>

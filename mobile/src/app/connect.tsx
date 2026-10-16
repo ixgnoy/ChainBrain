@@ -90,7 +90,7 @@ export default function Connect() {
       <BackHeader title="Connect an agent" />
       <Screen tabs={false} top={false} contentContainerStyle={{ paddingTop: 4, paddingBottom: insets.bottom + 32 }}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginBottom: 10 }}>
-          <View style={{ height: 28, paddingHorizontal: 11, borderRadius: 14, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 7 }}>
+          <View style={{ minHeight: 28, paddingHorizontal: 11, borderRadius: 14, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 7 }}>
             <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.vermillion }} />
             <T v="tab" w="bold" style={{ letterSpacing: 0.9, textTransform: "uppercase" }}>Pairing</T>
           </View>

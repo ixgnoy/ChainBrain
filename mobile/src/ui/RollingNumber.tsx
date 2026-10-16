@@ -1,7 +1,8 @@
 // Rolling digits for money (Robinhood / Revolut style): every digit is its own 0-9 reel that springs to its value, so
 // only the digits that change move, right-to-left stagger of 20 ms, calm `smooth` spring (no bounce, no colour flash).
 // Separators and the currency never move. Reduced motion: plain text. Idea from rit3zh/expo-morphing-text's digit reel
-// and rn-number-flow (MIT); written fresh for this app.
+// and rn-number-flow (MIT); written fresh for this app. Callers pass an already-scaled size (Money applies the phone's text
+// size), so the digits themselves don't scale a second time.
 import React, { memo, useEffect, useRef, useState } from "react";
 import { Text, View, type StyleProp, type TextStyle } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring } from "react-native-reanimated";
@@ -35,7 +36,7 @@ const Reel = memo(function Reel({ digit, lineHeight, style, delay, reduce, anima
   return (
     <Animated.View style={[{ height: lineHeight, overflow: "hidden" }, box]}>
       <Animated.View style={[{ alignItems: "flex-start" }, a]}>
-        {DIGITS.map((d, i) => <Text key={d} onLayout={widths ? undefined : (e) => measure(i, e.nativeEvent.layout.width)} style={[style, { lineHeight, height: lineHeight }]}>{d}</Text>)}
+        {DIGITS.map((d, i) => <Text key={d} allowFontScaling={false} onLayout={widths ? undefined : (e) => measure(i, e.nativeEvent.layout.width)} style={[style, { lineHeight, height: lineHeight }]}>{d}</Text>)}
       </Animated.View>
     </Animated.View>
   );
@@ -54,12 +55,12 @@ export function RollingNumber({ value, prefix = "", style, lineHeight, countIn =
   // Key reels by position from the right so "9.99" -> "10.00" keeps the cents reels and only adds one on the left.
   return (
     <View accessible accessibilityRole="text" accessibilityLabel={accessibilityLabel ?? `${prefix}${value}`} style={{ flexDirection: "row", alignItems: "flex-end" }}>
-      {prefix ? <Text style={[style, { lineHeight }]}>{prefix}</Text> : null}
+      {prefix ? <Text allowFontScaling={false} style={[style, { lineHeight }]}>{prefix}</Text> : null}
       {chars.map((ch, i) => {
         const fromRight = chars.length - 1 - i;
         const n = ch.charCodeAt(0) - 48;
         if (n >= 0 && n <= 9) return <Reel key={`d${fromRight}`} digit={n} lineHeight={lineHeight} style={style} delay={fromRight * 20} reduce={reduce} animateIn={countIn} />;
-        return <Text key={`s${fromRight}`} style={[style, { lineHeight }]}>{ch}</Text>;
+        return <Text key={`s${fromRight}`} allowFontScaling={false} style={[style, { lineHeight }]}>{ch}</Text>;
       })}
     </View>
   );

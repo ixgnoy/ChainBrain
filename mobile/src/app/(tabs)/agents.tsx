@@ -31,7 +31,7 @@ export default function Agents() {
     <Screen contentContainerStyle={{ paddingBottom: TAB_SPACE + insets.bottom + 32 }}>
       <HomeHeader />
       <PageTitle eyebrow="Agents and their pockets" title="Connected agents"
-        right={<View style={{ height: 28, paddingHorizontal: 11, borderRadius: 14, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 6 }}>
+        right={<View style={{ minHeight: 28, paddingHorizontal: 11, borderRadius: 14, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 6 }}>
           <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.vermillion }} />
           <T v="cap" w="bold">{`${live.length} active`}</T>
         </View>} />

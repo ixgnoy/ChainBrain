@@ -327,7 +327,7 @@ export default function AgentChat() {
           {loose.map((e, k) => <AttackCard key={`loose${e.at}${k}`} e={e} />)}
           {hidden > 0 ? (
             <Press kind="row" haptics="select" onPress={() => setShowAll(true)} accessibilityRole="button" accessibilityLabel={`Show ${hidden} earlier messages`}
-              style={{ alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: c.fill }}>
+              style={{ alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 6, minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: c.fill }}>
               <Icon name="chevronUp" size={14} color={c.ink2} />
               <T v="cap" w="medium" color="ink2">{hidden} earlier {hidden === 1 ? "message" : "messages"}</T>
             </Press>

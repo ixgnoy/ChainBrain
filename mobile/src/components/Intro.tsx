@@ -139,7 +139,7 @@ function WorstArt({ active, reduce }: { active: boolean; reduce: boolean }) {
 function Chip({ t, from, label, ok }: { t: SharedValue<number>; from: number; label: string; ok?: boolean }) {
   const a = useAnimatedStyle(() => ({ opacity: win(t.value, from, from + 0.15), transform: [{ translateY: 6 * (1 - win(t.value, from, from + 0.15)) }] }));
   return (
-    <Animated.View style={[{ flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: ok ? c.greenSoft : c.vermillionSoft }, a]}>
+    <Animated.View style={[{ flexDirection: "row", alignItems: "center", gap: 6, minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: ok ? c.greenSoft : c.vermillionSoft }, a]}>
       <Icon name={ok ? "check" : "ban"} size={15} color={ok ? c.greenInk : c.vermillionInk} stroke={2.4} />
       <T v="sub" w="bold" style={{ color: ok ? c.greenInk : c.vermillionInk }}>{label}</T>
     </Animated.View>
@@ -238,11 +238,11 @@ export function Intro({ onDone }: { onDone: () => void }) {
           <T v="head" accessibilityRole="header" style={{ fontFamily: F.displayBold, fontSize: 21, lineHeight: 26, letterSpacing: -0.3 }}>ChainBrain</T>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <View style={{ height: 28, paddingHorizontal: 10, borderRadius: 14, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View style={{ minHeight: 28, paddingHorizontal: 10, borderRadius: 14, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 6 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.vermillion }} />
             <T v="cap" w="semi">Test network</T>
           </View>
-          <Press kind="button" haptics="light" onPress={finish} hitSlop={10} accessibilityRole="button" accessibilityLabel="Skip" style={{ height: 44, paddingHorizontal: 10, justifyContent: "center" }}>
+          <Press kind="button" haptics="light" onPress={finish} hitSlop={10} accessibilityRole="button" accessibilityLabel="Skip" style={{ minHeight: 44, paddingHorizontal: 10, justifyContent: "center" }}>
             <T v="row" w="bold">Skip</T>
           </Press>
         </View>

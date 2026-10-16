@@ -39,7 +39,7 @@ export function AgentCard({ a, busy }: { a: AgentView; busy?: boolean }) {
             </View>
             <T v="sub" color="muted" numberOfLines={1}>{since}</T>
           </View>
-          <View style={{ height: 24, paddingHorizontal: 10, borderRadius: 12, backgroundColor: a.kind === "builtin" ? c.fill : c.blueSoft, justifyContent: "center" }}>
+          <View style={{ minHeight: 24, paddingHorizontal: 10, borderRadius: 12, backgroundColor: a.kind === "builtin" ? c.fill : c.blueSoft, justifyContent: "center" }}>
             <T v="tab" w="bold" style={{ color: a.kind === "builtin" ? c.ink : c.blueInk, letterSpacing: 0.4 }}>{a.kind === "builtin" ? "Built in" : a.maker}</T>
           </View>
         </View>

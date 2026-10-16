@@ -126,7 +126,7 @@ export function HoldToRevoke({ onComplete, label = "Hold to revoke", disabled, b
             </Svg>
             <Icon name="lock" size={15} color={c.negative} />
           </View>
-          <T v="row" w="semi" color="negative">{busy ? "Revoking…" : armed ? "Tap again to confirm" : label}</T>
+          <T v="row" w="semi" color="negative" allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{busy ? "Revoking…" : armed ? "Tap again to confirm" : label}</T>
         </View>
       </Animated.View>
     </GestureDetector>

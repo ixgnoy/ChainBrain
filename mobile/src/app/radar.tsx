@@ -72,7 +72,7 @@ export default function RadarAlertPage() {
             <Hatch color={c.white} pitch={9} stroke={1.4} opacity={0.12} style={{ left: "62%" }} />
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" }}><Icon name="radar" size={22} color={c.white} stroke={2} /></View>
-              <View style={{ height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: c.white, justifyContent: "center" }}>
+              <View style={{ minHeight: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: c.white, justifyContent: "center" }}>
                 <T v="tab" w="bold" style={{ color: blocked ? c.vermillionInk : c.blueInk, letterSpacing: 0.8, textTransform: "uppercase" }}>{`Risk ${score}/10`}</T>
               </View>
             </View>

@@ -200,7 +200,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
               <View style={{ borderRadius: 20, overflow: "hidden", backgroundColor: c.fill, padding: 16, gap: 10 }} accessible accessibilityLabel={`${who}'s note, not checked by your wallet: ${cleanText(a.text, 400)}`}>
                 <Hatch color={c.line} pitch={7} stroke={1.2} style={{ left: undefined, width: 10 }} />
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 6 }}>
-                  <View style={{ height: 22, paddingHorizontal: 8, borderRadius: 6, backgroundColor: c.ink, justifyContent: "center" }}>
+                  <View style={{ minHeight: 22, paddingHorizontal: 8, borderRadius: 6, backgroundColor: c.ink, justifyContent: "center" }}>
                     <T v="tab" w="bold" style={{ color: c.white, letterSpacing: 0.9, textTransform: "uppercase" }}>{`${who}'s note · not checked`}</T>
                   </View>
                 </View>

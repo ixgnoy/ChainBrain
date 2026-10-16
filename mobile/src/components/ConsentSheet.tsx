@@ -70,7 +70,7 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <AgentAvatar kind={agent} size={52} />
             <View style={{ flex: 1, gap: 4 }}>
-              <View style={{ alignSelf: "flex-start", height: 22, paddingHorizontal: 9, borderRadius: 11, backgroundColor: c.blueSoft, justifyContent: "center" }}>
+              <View style={{ alignSelf: "flex-start", minHeight: 22, paddingHorizontal: 9, borderRadius: 11, backgroundColor: c.blueSoft, justifyContent: "center" }}>
                 <T v="tab" w="bold" style={{ color: c.blueInk, letterSpacing: 0.4 }}>Incoming request</T>
               </View>
               <T v="section" accessibilityRole="header" accessibilityLabel={`${info.name} wants to use a pocket`}>{`${info.name} wants to use\u00a0a\u00a0pocket`}</T>

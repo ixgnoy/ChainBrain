@@ -1,6 +1,7 @@
 import React from "react";
 import { Text as RNText, type TextProps, type TextStyle } from "react-native";
 import { F, c, type Tone } from "../tokens";
+import { GROW, useGrowCap, type Grow } from "./fontScale";
 
 // Type scale after VaultBank: Clash Display (wide grotesk) for what you read first, General Sans for everything else.
 // Letter spacing in RN is in points: em × size.
@@ -32,17 +33,21 @@ const V = {
   mono: { family: F.displaySemi, size: 13, line: 16, ls: 0.65 },
 } as const;
 export type Variant = keyof typeof V;
+/** How far each style grows with the phone's text size (ui/fontScale.ts). */
+const GROWS: Record<Variant, Grow> = { display: "heading", title: "heading", balance: "figure", amount: "figure", section: "heading", head: "heading", row: "body", body: "body", sub: "body", cap: "body", label: "heading", tab: "chrome", mono: "figure" };
 
 const DISPLAY_W = { regular: F.display, medium: F.display, semi: F.displaySemi, bold: F.displaySemi, extra: F.displayBold } as const;
 
 export function T({ v = "body", color = "ink", w, style, ...p }: TextProps & { v?: Variant; color?: Tone; w?: "regular" | "medium" | "semi" | "bold" | "extra" }) {
   const t = V[v];
+  const cap = useGrowCap(GROWS[v]);
   // a weight override on a Clash variant stays in Clash (a heading made bolder is still a heading)
   const display = t.family.startsWith("Clash");
   const family = !w ? t.family : display ? DISPLAY_W[w] : F[w];
   const s: TextStyle = { fontFamily: family, fontSize: t.size, lineHeight: t.line, letterSpacing: t.ls, color: c[color], fontVariant: ["tabular-nums"] };
   if (v === "mono") s.textTransform = "uppercase";
-  return <RNText {...p} style={[s, style]} />;
+  // a region that must not grow (card print) turns scaling off: a multiplier of 1 still lays text out at the system size on iOS
+  return <RNText {...(cap <= 1 ? { allowFontScaling: false } : { maxFontSizeMultiplier: cap })} {...p} style={[s, style]} />;
 }
 
 /** An eyebrow: small uppercase label above a group ("HOLDS POCKET", "AGENT'S NOTE"). */
@@ -56,7 +61,7 @@ export function Figure({ text, size = 16, color = "ink", strike, style, ...p }: 
   const m = /^([+\-−]?)(US\$)(.*)$/.exec(text);
   const base: TextStyle = { fontFamily: F.display, fontSize: size, lineHeight: Math.round(size * 1.25), letterSpacing: -0.01 * size, color: c[color], fontVariant: ["tabular-nums"], textDecorationLine: strike ? "line-through" : "none" };
   return (
-    <RNText numberOfLines={1} accessibilityLabel={text} {...p} style={[base, style]}>
+    <RNText numberOfLines={1} accessibilityLabel={text} maxFontSizeMultiplier={GROW.figure} {...p} style={[base, style]}>
       {m ? <>{m[1]}<RNText style={{ fontSize: Math.round(size * 0.75) }}>{m[2]}</RNText>{m[3]}</> : text}
     </RNText>
   );

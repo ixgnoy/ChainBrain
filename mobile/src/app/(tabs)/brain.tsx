@@ -70,7 +70,7 @@ function MemoryRow({ m, onForget }: { m: MemoryItem; onForget(): void }) {
         <T v="cap" color="faint">{sourceWords(m.source)}</T>
       </View>
       <Press kind="icon" haptics="select" onPress={onForget} accessibilityRole="button" accessibilityLabel={`Forget: ${m.text}`} hitSlop={8}
-        style={{ height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: c.fill, justifyContent: "center" }}>
+        style={{ minHeight: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: c.fill, justifyContent: "center" }}>
         <T v="cap" w="semi" color="ink2">Forget</T>
       </Press>
     </View>
@@ -115,7 +115,7 @@ export default function BrainTab() {
     <Screen>
       <PageTitle title="Brain" sub="What ChainBrain's agent understood, checked and remembers, per pocket" />
       <Press kind="row" haptics="select" disabled={pockets.length < 2} onPress={() => setPickerOpen(true)} accessibilityRole="button" accessibilityLabel={`Pocket: ${active.name}. Change pocket`}
-        style={{ marginTop: 8, marginHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", height: 34, paddingHorizontal: 12, borderRadius: 17, backgroundColor: c.card }}>
+        style={{ marginTop: 8, marginHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", minHeight: 34, paddingHorizontal: 12, borderRadius: 17, backgroundColor: c.card }}>
         <T v="cap" w="semi" color="ink2">{cleanText(active.name, 28)}</T>
         {pockets.length > 1 ? <Icon name="chevronDown" size={14} color={c.muted} /> : null}
       </Press>

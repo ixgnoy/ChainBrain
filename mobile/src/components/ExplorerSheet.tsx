@@ -99,7 +99,7 @@ function Body({ hash, close }: { hash: string; close: () => void }) {
       <SheetScroll contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 18 }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <T v="section" accessibilityRole="header">Transaction</T>
-          <View accessibilityLabel={net} style={{ height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: c.fill, justifyContent: "center" }}><T v="cap" w="medium" color="ink2" style={{ fontSize: 12, lineHeight: 16 }}>{net}</T></View>
+          <View accessibilityLabel={net} style={{ minHeight: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: c.fill, justifyContent: "center" }}><T v="cap" w="medium" color="ink2" style={{ fontSize: 12, lineHeight: 16 }}>{net}</T></View>
         </View>
         {!tx ? (
           <T v="body" color="ink2">This transaction is not in the records this phone holds. {shortHex(hash, 10, 8)}</T>

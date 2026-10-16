@@ -31,7 +31,7 @@ export function WorstCase({ pocket, sellers, off }: { pocket: Pocket; sellers: s
           <T v="head">Worst case</T>
           <T v="cap" color="muted">If this pocket's agent is hijacked</T>
         </View>
-        {blocked ? <View style={{ height: 24, paddingHorizontal: 9, borderRadius: 12, backgroundColor: c.fill, justifyContent: "center" }}><T v="cap" w="bold">{`${blocked} blocked`}</T></View> : null}
+        {blocked ? <View style={{ minHeight: 24, paddingHorizontal: 9, borderRadius: 12, backgroundColor: c.fill, justifyContent: "center" }}><T v="cap" w="bold">{`${blocked} blocked`}</T></View> : null}
       </View>
       <View style={{ borderRadius: radius.tile, backgroundColor: c.fill, padding: 14, gap: 12 }}>
         <T v="body" accessibilityLabel="Worst case" style={{ fontSize: 15, lineHeight: 22 }}>{worstCase(pocket.balance, sellers, off)}</T>

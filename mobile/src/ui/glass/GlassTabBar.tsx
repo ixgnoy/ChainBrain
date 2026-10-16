@@ -156,6 +156,7 @@ export function GlassTabButton({ item, index, isFocused, onPress, ...props }: Ta
       role="tab"
       aria-selected={!!isFocused}
       aria-label={item.label}
+      accessibilityShowsLargeContentViewer accessibilityLargeContentTitle={item.label}
       onPress={(e) => {
         // The gesture detector normally consumes touches; this fires for VoiceOver / keyboard / web clicks.
         if (bar) bar.slide.value = reduce ? index : withSpring(index, SLIDE);
@@ -173,7 +174,9 @@ export function GlassTabButton({ item, index, isFocused, onPress, ...props }: Ta
           </Animated.View>
           {item.badge ? <View style={{ position: "absolute", right: -5, top: -3, width: 10, height: 10, borderRadius: 5, backgroundColor: c.vermillion, borderWidth: 2, borderColor: c.card }} /> : null}
         </Animated.View>
-        <Animated.Text numberOfLines={1} style={[{ fontFamily: F.semi, fontSize: 11, lineHeight: LABEL_H, letterSpacing: 0.1, marginTop: GAP }, label]}>{item.label}</Animated.Text>
+        {/* like iOS tab bars, labels keep their size at large text settings (the bar has fixed room); the button's
+            accessibility label carries the name, and VoiceOver users get the full text */}
+        <Animated.Text numberOfLines={1} allowFontScaling={false} style={[{ fontFamily: F.semi, fontSize: 11, lineHeight: LABEL_H, letterSpacing: 0.1, marginTop: GAP }, label]}>{item.label}</Animated.Text>
       </Animated.View>
     </Pressable>
   );

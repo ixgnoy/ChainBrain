@@ -28,7 +28,7 @@ export function SlidingPills<K extends string>({ items, value, onChange }: { ite
           return (
             <Press key={f.key} haptics="select" scale={0.96} onPress={() => onChange(f.key)} accessibilityRole="button" accessibilityLabel={f.label} accessibilityState={{ selected: on }}
               onLayout={(e) => { const { x: lx, width } = e.nativeEvent.layout; box.current[f.key] = { x: lx, w: width }; if (f.key === value) move(f.key, !seen.value); }}
-              style={{ height: 44, justifyContent: "center" }}>
+              style={{ minHeight: 44, justifyContent: "center" }}>
               <Animated.Text style={{ fontFamily: on ? F.bold : F.medium, fontSize: 15, lineHeight: 20, letterSpacing: -0.15, color: on ? c.ink : c.mutedOnCanvas }}>{f.label}</Animated.Text>
             </Press>
           );

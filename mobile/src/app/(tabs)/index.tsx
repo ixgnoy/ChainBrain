@@ -29,7 +29,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 /** Network chip: a quiet grey pill with a vermillion dot (DESIGN.md chips). */
 export function NetworkChip({ label = "Test network" }: { label?: string }) {
   return (
-    <View accessibilityLabel="Test network, no real money" style={{ height: 30, paddingHorizontal: 12, borderRadius: 15, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 7 }}>
+    <View accessibilityLabel="Test network, no real money" style={{ minHeight: 30, paddingHorizontal: 12, borderRadius: 15, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 7 }}>
       <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.vermillion }} />
       <T v="tab" w="bold" style={{ letterSpacing: 0.9, textTransform: "uppercase" }}>{label}</T>
     </View>
@@ -51,7 +51,7 @@ export function HomeHeader() {
         style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
         <Icon name="bell" size={21} stroke={2} />
         {asks || question ? (
-          <Animated.View entering={FadeIn.duration(motion.base)} exiting={FadeOut.duration(motion.exit)} style={{ position: "absolute", top: -4, right: -4, minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: c.vermillion, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: c.canvas }}>
+          <Animated.View entering={FadeIn.duration(motion.base)} exiting={FadeOut.duration(motion.exit)} style={{ position: "absolute", top: -4, right: -4, minWidth: 20, minHeight: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: c.vermillion, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: c.canvas }}>
             <T v="tab" w="bold" style={{ color: c.white, fontSize: 10, lineHeight: 12 }}>{String(asks || 1)}</T>
           </Animated.View>
         ) : null}

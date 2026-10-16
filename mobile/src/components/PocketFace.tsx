@@ -16,6 +16,7 @@ import { Hatch } from "../ui/Hatch";
 import { AgentAvatar } from "../ui/AgentAvatar";
 import { CardMaterial } from "../ui/CardMaterial";
 import { useTilt } from "../ui/tilt";
+import { TextScaleCap } from "../ui/fontScale";
 import { EASE_OUT, useReduceMotion } from "../ui/motion";
 import { NEVER } from "../lib/shared";
 import { cleanText } from "../lib/sanitize";
@@ -123,6 +124,7 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still }: { 
   const dark = face.ink === "#FFFFFF";
   const pad = 16 * k + 4;
   return (
+    <TextScaleCap max={1}>
     <View style={{ flex: 1, backgroundColor: face.face }}>
       {hatched ? <Hatch color={c.line} pitch={7} stroke={1.5} /> : null}
       {!still ? <CardMaterial width={w} height={h} dark={dark} /> : null}
@@ -130,7 +132,7 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still }: { 
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, paddingHorizontal: pad, paddingTop: pad - 2, height: pad + 26 * k }}>
         <T v="head" numberOfLines={1} style={{ color: ink, flexShrink: 1, fontSize: 17 * Math.max(k, 0.9) }}>{name}</T>
         {state ? (
-          <View accessibilityLabel={state} style={{ height: 24, paddingHorizontal: 9, borderRadius: 12, backgroundColor: c.vermillionSoft, flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <View accessibilityLabel={state} style={{ minHeight: 24, paddingHorizontal: 9, borderRadius: 12, backgroundColor: c.vermillionSoft, flexDirection: "row", alignItems: "center", gap: 5 }}>
             <Icon name="lock" size={12} color={c.vermillionInk} stroke={2.2} />
             <T v="tab" style={{ color: c.vermillionInk, textTransform: "uppercase", letterSpacing: 0.8 }}>{state}</T>
           </View>
@@ -159,5 +161,6 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still }: { 
         <T v="cap" w="semi" style={{ color: sub, marginBottom: 3 }}>{expiryText(pocket.expiresAt)}</T>
       </View>
     </View>
+    </TextScaleCap>
   );
 }

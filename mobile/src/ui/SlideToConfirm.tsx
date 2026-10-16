@@ -159,19 +159,19 @@ export function SlideToConfirm({ label, doneLabel = "Done", onConfirm, onDone, d
         <Animated.View style={[{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: c.ink }, doneBg]} />
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: THUMB + PAD * 2, right: 20, alignItems: "center" }, labelStyle]}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: c.white, textTransform: "uppercase", letterSpacing: 0.4, fontSize: 15 }}>{label}</T>
+            <T v="label" allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: c.white, textTransform: "uppercase", letterSpacing: 0.4, fontSize: 15 }}>{label}</T>
             <Icon name="chevronRight" size={16} color="rgba(255,255,255,0.55)" stroke={2.4} />
           </View>
         </Animated.View>
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: THUMB + PAD * 2 + max * 0.25, right: 16, alignItems: "center" }, armStyle]}>
-          <T v="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ color: c.white, fontSize: 15 }}>{armed ? "Tap again to confirm" : ""}</T>
+          <T v="label" allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ color: c.white, fontSize: 15 }}>{armed ? "Tap again to confirm" : ""}</T>
         </Animated.View>
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 0, right: THUMB + PAD * 2, alignItems: "center" }, pending]}>
-          <T v="label" style={{ color: c.white, fontSize: 15 }}>Signing…</T>
+          <T v="label" allowFontScaling={false} style={{ color: c.white, fontSize: 15 }}>Signing…</T>
         </Animated.View>
         <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 0, right: 0, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8 }, check]}>
           <Icon name="check" size={22} color={c.green} stroke={2.6} />
-          <T v="label" style={{ color: c.white, fontSize: 15 }}>{doneLabel}</T>
+          <T v="label" allowFontScaling={false} style={{ color: c.white, fontSize: 15 }}>{doneLabel}</T>
         </Animated.View>
         <Animated.View style={[{ marginLeft: PAD, width: THUMB, height: THUMB, borderRadius: THUMB / 2, backgroundColor: c.vermillion, alignItems: "center", justifyContent: "center" }, thumb]}>
           {state === "busy" ? (

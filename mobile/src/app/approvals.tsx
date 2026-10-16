@@ -63,7 +63,7 @@ export default function Approvals() {
             <Eyebrow color="ink">{waiting.length ? `Waiting for you (${waiting.length})` : "Nothing waiting"}</Eyebrow>
           </View>
           {oldestLeft != null ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 11, borderRadius: 14, backgroundColor: c.card }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, minHeight: 28, paddingHorizontal: 11, borderRadius: 14, backgroundColor: c.card }}>
               <Icon name="clock" size={14} color={c.vermillionInk} stroke={2.2} />
               <T v="cap" w="bold" style={{ color: c.vermillionInk }}>{`${mmss(oldestLeft)} left`}</T>
             </View>
@@ -146,7 +146,7 @@ function Waiting({ a, now, onOpen }: { a: Approval; now: number; onOpen: () => v
             <T v="cap" color="muted">{`${pay ? "Asked to pay" : "Asked to start a task"} · ${a.createdAt ? ago(a.createdAt, now) : "just now"}`}</T>
           </View>
           {pocket ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, height: 26, paddingHorizontal: 9, borderRadius: 8, backgroundColor: c.blueSoft }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, minHeight: 26, paddingHorizontal: 9, borderRadius: 8, backgroundColor: c.blueSoft }}>
               <Icon name="wallet" size={13} color={c.blueInk} stroke={2} />
               <T v="cap" w="bold" numberOfLines={1} style={{ color: c.blueInk, maxWidth: 110 }}>{cleanText(pocket.name, 20)}</T>
             </View>
