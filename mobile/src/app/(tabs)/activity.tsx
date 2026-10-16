@@ -14,6 +14,7 @@ import { useReduceMotion } from "../../ui/motion";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { ActivityItem, BrandSquare, DayHead, TxRow } from "../../components/ActivityRow";
+import { ActivityPulse } from "../../components/ActivityPulse";
 import { AttackActivityRow, NoteRow, attackInfo, isAttackEvent } from "../../components/AttackCard";
 import { RadarActivityRow } from "../../components/RadarCard";
 import { SentinelActivityRow, isSentinelAlert } from "../../components/SentinelCard";
@@ -83,7 +84,8 @@ export default function Activity() {
   const showNeeds = filter === "all" || filter === "needs";
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} />}>
-      <PageTitle title="Activity" sub={paid ? `${paid} paid · ${money(paidTotal(ledger))} spent by your ${agents.length > 1 ? "agents" : "agent"}` : "What your agents paid and were refused"} />
+      <PageTitle title="Activity" sub={paid ? `All time: ${paid} paid · ${money(paidTotal(ledger))} spent by your ${agents.length > 1 ? "agents" : "agent"}` : "What your agents paid and were refused"} />
+      <ActivityPulse ledger={ledger} />
       {showNeeds && pending.length > 0 ? (
         <Rise dy={10} exit layout style={{ marginTop: 12 }}><ListCard>
           {pending.map((a) => (

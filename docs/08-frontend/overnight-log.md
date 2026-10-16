@@ -5,7 +5,6 @@ Phone first, then the web console. Each slice goes research → implement → va
 ## Backlog
 
 - [ ] Home: a press-lift on stack cards; tune the drop-in and the pull-to-fan on video
-- [ ] Activity screen at Home's level
 - [ ] Approvals inbox and Receipt sheet at Home's level
 - [ ] Settings at Home's level
 - [ ] Compose: highlight understood words in the sentence itself (mirror text), if it aligns on iOS at all text sizes; otherwise improve the chips
@@ -46,6 +45,9 @@ Phone first, then the web console. Each slice goes research → implement → va
   - The info card's title was untrue (ChainBrain holds four pockets). It now reads "An agent sees only the pockets you give it".
   - First attempt: a hand of 168 pt cards. Dropped, because the print is unreadable at that size and the cards sat inside the agent card's button (RN-web flagged the nested buttons).
   - Evidence: `w-26-agents.png`; e2e 57/57.
+
+- [x] **Activity pulse**: 14 columns of small squares, one per payment or refusal (ink: paid on its own; blue: co-signed; vermillion: refused or blocked), with today marked. The header is labelled "All time", so its 30 doesn't read as contradicting the pulse's 14-day counts.
+  - Evidence: `w-27-activity-pulse.png`; phone tests 44 pass. No e2e this slice, because Activity has no e2e-dependent targets and the previous slice ran 57/57.
 
 Earlier the same day, before this log existed:
 - Home wallet stack, live card signs and Next up (e68c433)
