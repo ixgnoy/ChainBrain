@@ -34,13 +34,14 @@ const TOP = 6; // headroom above the furthest card
 
 // memo + narrow store reads: a new event or ask must not redraw the deck (four Skia cards) unless the pockets changed
 export const PocketStack = React.memo(function PocketStack({ pockets, play }: { pockets: Pocket[]; play: boolean }) {
-  const active = useAppSelect((s) => s.active);
+  // the address, not the pocket: the pocket object is rebuilt on every balance change, which redrew the whole deck
+  const activeAddress = useAppSelect((s) => s.active?.address);
   const [w, setW] = useState(0);
   const flight = useFlight();
   const focused = useIsFocused();
   const reduce = useReduceMotion();
   // deck order: the active pocket in front, then the rest in list order (newest first)
-  const [order, setOrder] = useState<string[]>(() => frontFirst(pockets.map((p) => p.address.toLowerCase()), active?.address));
+  const [order, setOrder] = useState<string[]>(() => frontFirst(pockets.map((p) => p.address.toLowerCase()), activeAddress));
   useEffect(() => {
     const ids = pockets.map((p) => p.address.toLowerCase());
     setOrder((o) => { const kept = o.filter((a) => ids.includes(a)); const added = ids.filter((a) => !kept.includes(a)); return [...added, ...kept]; });
@@ -75,7 +76,7 @@ export const PocketStack = React.memo(function PocketStack({ pockets, play }: { 
             const p = byAddr.get(addr);
             if (!p) return null;
             return (
-              <DeckCard key={addr} pocket={p} depth={depth} count={order.length} cw={cw} play={play} focused={focused} reduce={reduce} dragX={dragX}
+              <DeckCard key={addr} pocket={p} pockets={pockets} depth={depth} count={order.length} cw={cw} play={play} focused={focused} reduce={reduce} dragX={dragX}
                 tone={toneFor(pockets, p.address)} hidden={flight?.pocket === addr} onBring={() => bring(addr)} />
             );
           }) : null}
@@ -96,11 +97,10 @@ function frontFirst(ids: string[], front?: string) {
   return f && ids.includes(f) ? [f, ...ids.filter((a) => a !== f)] : ids;
 }
 
-function DeckCard({ pocket, depth, count, cw, play, focused, reduce, dragX, tone, hidden, onBring }: {
-  pocket: Pocket; depth: number; count: number; cw: number; play: boolean; focused: boolean; reduce: boolean; dragX: SharedValue<number>; tone: number; hidden: boolean; onBring: () => void;
+function DeckCard({ pocket, pockets, depth, count, cw, play, focused, reduce, dragX, tone, hidden, onBring }: {
+  pocket: Pocket; /** from Home, which pauses while out of view (a direct store read would redraw the cards under the chat) */ pockets: Pocket[]; depth: number; count: number; cw: number; play: boolean; focused: boolean; reduce: boolean; dragX: SharedValue<number>; tone: number; hidden: boolean; onBring: () => void;
 }) {
   const ref = useRef<View>(null);
-  const pockets = useAppSelect((s) => s.pockets);
   const pos = useSharedValue(depth);
   const lift = useSharedValue(0);
   const prev = useRef(depth);

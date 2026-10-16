@@ -144,7 +144,10 @@ export default function AgentChat() {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
   const { active, turns, sendChat, chatBusy, agentState, events, pending, answer, dev, source, setApprovalOpen, openApproval, setQuestionOpen, sellerName, setAction, ownerTxs, wallet, pockets, setPickerOpen, autoplay, cfg } = useApp();
-  const [text, setText] = useState("");
+  // the typed text lives in the Composer (a keystroke must not redraw the whole conversation); here only whether it is empty
+  const [typing, setTyping] = useState(false);
+  const composer = useRef<ComposerApi | null>(null);
+  const setText = (v: string) => composer.current?.set(v);
   const grow = useGrowCap("body");
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [kb, setKb] = useState(false);
@@ -273,10 +276,8 @@ export default function AgentChat() {
   const dot: DotState = active?.revoked || active?.frozen ? "stopped" : waitingHere ? "waiting" : chatBusy ? "working" : "ready";
   const headStatus = !active ? "Create a pocket first" : active.revoked ? "Stopped · this pocket is off" : active.frozen ? "Frozen by the Sentinel · only you can unfreeze"
     : waitingHere ? "Waiting for you" : chatBusy ? "Working…" : `Ready · ${money(active.balance)} left`;
-  const ready = !!text.trim() && !chatBusy;
   // the stop path is revoking the pocket (confirmed by the hold-to-revoke sheet); without one, send simply hides while the agent works
   const showStop = canStop && chatBusy;
-  const typing = text.trim().length > 0;
   const empty = turns.length === 0 && !sent;
 
   return (
@@ -440,19 +441,38 @@ export default function AgentChat() {
         <View style={{ paddingHorizontal: 16 }}>
           {/* grows with the message (up to ~5 lines, then scrolls inside); the send button stays on the last line */}
           <View style={{ flexDirection: "row", alignItems: "flex-end", paddingLeft: 16, paddingRight: 6, paddingVertical: 3, borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: c.card, borderWidth: 1, borderColor: hairline, minHeight: 56, ...level1 }}>
-            <TextInput
-              maxFontSizeMultiplier={grow} value={text} onChangeText={setText} placeholder={text ? "" : question ? "Answer ChainBrain" : "Ask ChainBrain to buy something"} placeholderTextColor={c.faint}
-              multiline submitBehavior="submit" onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel="Message" editable={!!active}
-              style={[{ flex: 1, color: c.ink, fontFamily: F.medium, fontSize: 16, lineHeight: 22, minHeight: 48, maxHeight: 124, paddingTop: 13, paddingBottom: 13, textAlignVertical: "center" }, Platform.OS === "web" ? ({ outlineStyle: "none", resize: "none" } as object) : null]}
-            />
-            <View style={{ marginBottom: 2 }}>
-              <SendButton ready={ready} stop={showStop} tapRef={sendTap} onPress={() => send(text)}
-                onStop={() => { if (autoplay.running) autoplay.stop(); else if (active) setAction({ mode: "revoke", pocket: active.address }); }}
-                onAutoStop={() => active && setAction({ mode: "revoke", pocket: active.address })} />
-            </View>
+            <Composer api={composer} grow={grow} editable={!!active} question={!!question} busy={chatBusy} showStop={showStop} sendTap={sendTap} onSend={send} onTyping={setTyping}
+              onStop={() => { if (autoplay.running) autoplay.stop(); else if (active) setAction({ mode: "revoke", pocket: active.address }); }}
+              onAutoStop={() => active && setAction({ mode: "revoke", pocket: active.address })} />
           </View>
         </View>
       </Animated.View>
     </View>
+  );
+}
+
+type ComposerApi = { set(v: string): void };
+/** The message field and the send button. It owns the typed text, so a keystroke redraws only this, not the conversation
+ *  above (after a few tasks that was about 2 s per character in Expo Go); the screen hears only when it turns empty or not. */
+function Composer({ api, grow, editable, question, busy, showStop, sendTap, onSend, onTyping, onStop, onAutoStop }: {
+  api: React.MutableRefObject<ComposerApi | null>; grow: number; editable: boolean; question: boolean; busy: boolean; showStop: boolean;
+  sendTap: React.MutableRefObject<PressTap | null>; onSend(v: string): void; onTyping(on: boolean): void; onStop(): void; onAutoStop(): void;
+}) {
+  const [text, setText] = useState("");
+  const typing = text.trim().length > 0;
+  useEffect(() => { onTyping(typing); }, [typing]); // eslint-disable-line react-hooks/exhaustive-deps
+  api.current = { set: setText };
+  const ready = typing && !busy;
+  return (
+    <>
+      <TextInput
+        maxFontSizeMultiplier={grow} value={text} onChangeText={setText} placeholder={text ? "" : question ? "Answer ChainBrain" : "Ask ChainBrain to buy something"} placeholderTextColor={c.faint}
+        multiline submitBehavior="submit" onSubmitEditing={() => onSend(text)} returnKeyType="send" accessibilityLabel="Message" editable={editable}
+        style={[{ flex: 1, color: c.ink, fontFamily: F.medium, fontSize: 16, lineHeight: 22, minHeight: 48, maxHeight: 124, paddingTop: 13, paddingBottom: 13, textAlignVertical: "center" }, Platform.OS === "web" ? ({ outlineStyle: "none", resize: "none" } as object) : null]}
+      />
+      <View style={{ marginBottom: 2 }}>
+        <SendButton ready={ready} stop={showStop} tapRef={sendTap} onPress={() => onSend(text)} onStop={onStop} onAutoStop={onAutoStop} />
+      </View>
+    </>
   );
 }

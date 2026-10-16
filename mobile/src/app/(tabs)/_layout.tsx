@@ -50,7 +50,7 @@ export default function TabsLayout() {
     <TabBarMinimizeProvider>
       <View style={{ flex: 1, backgroundColor: c.canvas }}>
         <Tabs>
-          <TabSlot style={{ height: "100%" }} renderFn={(d, o) => renderTabScreen(d, o, warm)} />
+          <TabSlot style={{ height: "100%" }} renderFn={(d, o) => renderTabScreen(d, o, warm, !focused)} />
           <TabList asChild>
             <GlassTabBar enabled={focused} onIndexSelected={(i) => {
               // read at the moment of the tap: a push that just started has not re-rendered `focused` yet
