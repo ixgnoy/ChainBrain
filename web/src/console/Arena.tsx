@@ -8,14 +8,16 @@ import { useNetwork } from "./useNetwork";
 import { playScene } from "./play";
 import { GateStrip } from "./ChecksPath";
 import { TxHash, PhoneTag, usd } from "./parts";
-import { ARENA_KEYS, CARDS, ESCALATION_TEXT, EXTRACTION_TEXT, INJECTION_TEXT, arenaVerdict, arrivedSince, baseline, boardLine, type ArenaCard, type ArenaKey } from "./arenaRules";
+import { ARENA_KEYS, CARDS, ESCALATION_TEXT, EXTRACTION_TEXT, INJECTION_TEXT, arenaVerdict, arrivedSince, baseline, boardLine, movedSince, ruleShot, type ArenaCard, type ArenaKey, type RuleShot } from "./arenaRules";
 import { Button, Card, PillSelect } from "../seller/ui";
 import { cn } from "../lib/cn";
 
-type Fired = { base: Record<string, number>; pocket?: string; busy: boolean; reply?: string; note?: string; ok?: boolean; text: string; tx?: string };
+type Fired = { base: Record<string, number>; pocket?: string; busy: boolean; reply?: string; note?: string; ok?: boolean; text: string; tx?: string; at: number; doneAt?: number; rules?: RuleShot };
 type Run = () => Promise<{ ok: boolean; text: string; pocket?: string; tx?: string }>;
 const I = { strokeWidth: 1.75 } as const;
-const BAND: Record<string, string> = { idle: "band-idle", running: "band-run", blocked: "band-ok", lost: "band-bad", error: "band-bad" };
+const BAND: Record<string, string> = { idle: "band-idle", running: "band-run", blocked: "band-ok", answered: "band-idle", lost: "band-bad", error: "band-bad" };
+/** How long an answered attack waits for its attempt to arrive before the card settles on what the events show. */
+const SETTLE_MS = 3000;
 const field = "w-full resize-none rounded-[16px] bg-tile px-4 py-3 text-[14px] leading-5 outline-none shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] placeholder:text-faint focus:bg-card focus:ring-2 focus:ring-ink";
 
 function Scoreboard({ attempts }: { attempts: Attempt[] }) {
@@ -43,7 +45,9 @@ function Scoreboard({ attempts }: { attempts: Attempt[] }) {
 }
 
 export function Arena({ aim, setAim, watch }: { aim: string; setAim(a: string): void; watch(pocket: string): void }) {
-  const { attempts, actions, linked, scenes, refresh, listed, nameOf, isPhone } = useNetwork();
+  const { attempts, actions, linked, scenes, refresh, listed, nameOf, isPhone, events, pockets } = useNetwork();
+  const [, settle] = useState(0);
+  const rulesOf = (p?: string) => ruleShot(pockets.find((x) => x.address.toLowerCase() === (p ?? "").toLowerCase()));
   const latest = useRef(attempts);
   latest.current = attempts;
   const [fired, setFired] = useState<Partial<Record<ArenaKey, Fired>>>({});
@@ -52,13 +56,14 @@ export function Arena({ aim, setAim, watch }: { aim: string; setAim(a: string): 
   const scene = (id: string) => scenes.find((s) => s.id === id);
 
   const fire = async (key: ArenaKey, pocket: string | undefined, run: Run, keepReply?: string) => {
-    setFired((f) => ({ ...f, [key]: { base: baseline(latest.current, key), pocket, busy: true, text: "", reply: keepReply } }));
+    setFired((f) => ({ ...f, [key]: { base: baseline(latest.current, key), pocket, busy: true, text: "", reply: keepReply, at: Date.now(), rules: rulesOf(pocket) } }));
     try {
       const r = await run();
-      setFired((f) => (f[key] ? { ...f, [key]: { ...f[key]!, busy: false, ok: r.ok, text: r.text, tx: r.tx, pocket: r.pocket ?? pocket, reply: f[key]!.reply ?? undefined } } : f));
+      setFired((f) => (f[key] ? { ...f, [key]: { ...f[key]!, busy: false, ok: r.ok, text: r.text, tx: r.tx, pocket: r.pocket ?? pocket, reply: f[key]!.reply ?? undefined, doneAt: Date.now() } } : f));
     } catch (e) {
-      setFired((f) => (f[key] ? { ...f, [key]: { ...f[key]!, busy: false, ok: false, text: (e as Error).message } } : f));
+      setFired((f) => (f[key] ? { ...f, [key]: { ...f[key]!, busy: false, ok: false, text: (e as Error).message, doneAt: Date.now() } } : f));
     }
+    setTimeout(() => settle((x) => x + 1), SETTLE_MS + 100);
     refresh();
   };
 
@@ -114,13 +119,16 @@ export function Arena({ aim, setAim, watch }: { aim: string; setAim(a: string): 
           const f = fired[c.key];
           const arrived = f ? arrivedSince(attempts, c.key, f.base, f.pocket) : [];
           const v = f ? arenaVerdict(arrived) : undefined;
-          const state = !f ? "idle" : v?.state === "blocked" ? "blocked" : v?.state === "lost" ? "lost" : f.busy || f.ok !== false ? "running" : "error";
+          // a source that reports no attempt for this attack (a real server has no attack events) settles on what moved, if anything
+          const answered = !!f && !f.busy && f.ok === true && v?.state === "waiting" && !!f.doneAt && Date.now() - f.doneAt >= SETTLE_MS;
+          const moved = answered && !!f.pocket && movedSince(events, f.pocket, f.at - 1000, f.rules, rulesOf(f.pocket));
+          const state = !f ? "idle" : v?.state === "blocked" ? "blocked" : v?.state === "lost" ? "lost" : answered ? "answered" : f.busy || f.ok !== false ? "running" : "error";
           return (
             <Card key={c.key} className="flex flex-col overflow-hidden">
               <div data-testid={`arena-card-${c.key}`} data-state={state} className="flex flex-1 flex-col">
                 <div aria-hidden={false} className={cn("hatch flex h-14 items-center justify-between gap-3 px-5 sm:px-6", BAND[state])}>
                   <span className="eyebrow rounded-full bg-white px-3 py-1.5 text-ink">Attack {cards.indexOf(c) + 1}</span>
-                  <span className={cn("inline-flex h-7 shrink-0 items-center rounded-full px-3 text-[12px] font-extrabold", state === "blocked" ? "bg-green-ink text-on-accent" : state === "lost" ? "bg-vermillion text-on-accent" : state === "running" ? "bg-blue-ink text-on-accent" : state === "error" ? "bg-vermillion-ink text-on-accent" : "bg-white text-muted")}>{state === "blocked" ? "Blocked" : state === "lost" ? "Not stopped" : state === "running" ? "Running" : state === "error" ? "Could not run" : "Ready"}</span>
+                  <span className={cn("inline-flex h-7 shrink-0 items-center rounded-full px-3 text-[12px] font-extrabold", state === "blocked" ? "bg-green-ink text-on-accent" : state === "answered" ? "bg-ink text-on-accent" : state === "lost" ? "bg-vermillion text-on-accent" : state === "running" ? "bg-blue-ink text-on-accent" : state === "error" ? "bg-vermillion-ink text-on-accent" : "bg-white text-muted")}>{state === "blocked" ? "Blocked" : state === "answered" ? (moved ? "Check Live" : "Nothing moved") : state === "lost" ? "Not stopped" : state === "running" ? "Running" : state === "error" ? "Could not run" : "Ready"}</span>
                 </div>
                 <div className="flex flex-1 flex-col p-5 sm:p-6">
                 <h3 className="text-[22px] font-bold leading-7 tracking-[-0.02em]">{c.title}</h3>
@@ -143,7 +151,8 @@ export function Arena({ aim, setAim, watch }: { aim: string; setAim(a: string): 
                 {f && (
                   <div data-testid={`arena-verdict-${c.key}`} data-state={state} role="status" className="tile fade-up mt-4 p-4">
                     {f.reply && <p className="mb-3 border-l-2 border-ink pl-3 text-[14px] leading-5 text-ink2 [overflow-wrap:anywhere]">The agent: “{f.reply.slice(0, 320)}”</p>}
-                    {v?.state === "waiting" && (f.busy ? <p className="flex items-center gap-2 text-[14px] text-ink2"><Loader className="size-4 animate-spin" aria-hidden />Running the attack…</p> : f.ok === false ? <p className="flex items-start gap-2 text-[14px] font-semibold text-vermillion-ink"><ShieldAlert className="mt-0.5 size-4 shrink-0" {...I} aria-hidden />{f.text || "It could not run."}</p> : <p className="text-[14px] text-ink2">{f.text || "Waiting for the agent's answer."}</p>)}
+                    {v?.state === "waiting" && (f.busy ? <p className="flex items-center gap-2 text-[14px] text-ink2"><Loader className="size-4 animate-spin" aria-hidden />Running the attack…</p> : f.ok === false ? <p className="flex items-start gap-2 text-[14px] font-semibold text-vermillion-ink"><ShieldAlert className="mt-0.5 size-4 shrink-0" {...I} aria-hidden />{f.text || "It could not run."}</p> : answered ? <p className="text-[14px] font-semibold text-ink">{moved ? "Something changed on this pocket since you asked. Check it in Live." : `Nothing moved: no payment and no rule change on ${f.pocket ? nameOf(f.pocket) : "this pocket"} since you asked.`}</p>
+                      : <p className="text-[14px] text-ink2">{f.text && f.text !== f.reply ? f.text : f.reply ? "Checking what it did…" : "Waiting for the agent's answer."}</p>)}
                     {v && v.state !== "waiting" && <Result card={c} v={v} />}
                     {v?.state === "blocked" && v.inWords && actions.hijack && (
                       <div className="mt-3 border-t border-line pt-3">
@@ -151,7 +160,7 @@ export function Arena({ aim, setAim, watch }: { aim: string; setAim(a: string): 
                         <Button data-testid="arena-fooled-next" className="mt-2 h-11 px-5 text-[14px]" disabled={f.busy} onClick={() => void hijack(texts.induced.trim() || undefined, f.reply)}>Assume it's fooled</Button>
                       </div>
                     )}
-                    {v && v.state !== "waiting" && f.pocket && <button type="button" onClick={() => watch(f.pocket!)} className="relative mt-3 text-[13px] font-bold text-ink underline decoration-line decoration-2 underline-offset-4 before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:decoration-vermillion">Watch it in Live</button>}
+                    {v && (v.state !== "waiting" || answered) && f.pocket && <button type="button" onClick={() => watch(f.pocket!)} className="relative mt-3 text-[13px] font-bold text-ink underline decoration-line decoration-2 underline-offset-4 before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:decoration-vermillion">Watch it in Live</button>}
                   </div>
                 )}
                 </div>

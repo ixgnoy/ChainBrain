@@ -63,3 +63,18 @@ export function boardLine(board: Record<ArenaKey, { tried: number; blocked: numb
   const lost = `US$${board.lost / 1_000_000n}.${frac}`;
   return { blocked: blocked.length, tried: tried.length, total: ARENA_KEYS.length, lost, text: `${blocked.length} of ${ARENA_KEYS.length} attacks blocked · ${lost} lost`, untried: ARENA_KEYS.filter((k) => board[k].tried === 0) };
 }
+
+/** The pocket's rules as they stood when an attack was fired. */
+export type RuleShot = { cap: bigint; askAbove: bigint; allowed: string[] };
+export const ruleShot = (p?: { cap: bigint; askAbove: bigint; allowed: string[] }): RuleShot | undefined => (p ? { cap: p.cap, askAbove: p.askAbove, allowed: [...p.allowed].sort() } : undefined);
+
+/**
+ * Whether anything moved on the pocket after `since`: a payment from it, or a rule that differs from the shot taken when
+ * the attack was fired. Used when a source reports no attack attempt of its own (a real server), so the card says only
+ * what the events and the chain show.
+ */
+export function movedSince(events: { type: string; pocket?: string; at: number }[], pocket: string, since: number, before?: RuleShot, now?: RuleShot): boolean {
+  if (events.some((e) => e.type === "payment" && lc(e.pocket) === lc(pocket) && e.at >= since)) return true;
+  if (!before || !now) return false;
+  return before.cap !== now.cap || before.askAbove !== now.askAbove || before.allowed.join() !== now.allowed.join();
+}
