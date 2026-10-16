@@ -4,12 +4,17 @@
 // illustrative content of the right shape, generated on this test network, not a live response. The other sellers are
 // fictional on purpose: Harbour Wines (not on any pocket's list), ShadyFeed (a phishing feed), TradeWire (paid by a
 // labelled drainer in the Radar scene) and DataPro (the haggler's seller in scene 11: real providers keep their published
-// per-request prices, and haggle.ts moves in 5-cent steps), so no real company is shown as malicious or as haggling. The real server (server/src/
+// per-request prices, and haggle.ts moves in 5-cent steps), so no real company is shown as malicious or as haggling.
+// One exception, the owner's call for the deal watcher (pocket apps, 17 Oct): Nansen's "smart-money flows" item starts from
+// Nansen's published premium price (US$0.05) and its quote moves by day on this test network (`moves`, quotedPrice below), so
+// a price watch has prices to watch. The movement is generated here, the same for everyone on the same day; every price a
+// screen draws is a quote this seller actually returned on the network. The real server (server/src/
 // sellers.json) keeps its own sellers: on the public test chain it pays the team's addresses, so it must not use real names.
 import type { Hex, SimSeller } from "./types";
 
 /** `floor`: the lowest price the seller accepts when the agent haggles (private to the seller; never sent to the agent). */
-export type CatalogItem = { sku: string; description: string; price: string | null; content: string; floor?: string };
+/** `moves`: the quote changes by day around `price` (quotedPrice). */
+export type CatalogItem = { sku: string; description: string; price: string | null; content: string; floor?: string; moves?: true };
 export type CatalogSeller = Omit<SimSeller, "items"> & { items: CatalogItem[] };
 
 const NEWS = `# Web search: durian exports to China (Exa, 10 results)
@@ -38,6 +43,10 @@ const BALANCES = `# Exporter wallet balances (Nansen, Current Balances)
 - Holdings by token and chain, in USD
 - Stablecoins make up most of the balance`;
 
+const FLOWS = `# Smart-money flows: durian exporters (Nansen, premium)
+- Labelled smart-money wallets added 3 exporter tokens this week; net inflow positive
+- Two fund wallets reduced exposure to the largest exporter after its Q3 report
+- Exchange outflows from exporter wallets up on the week (accumulation signal)`;
 const CREDIT = `# Durian exporter credit report (TradeWire)
 - Payment history and trade references for the exporter`;
 
@@ -81,6 +90,7 @@ export const CATALOG: CatalogSeller[] = [
     items: [
       { sku: "counterparties", description: "Counterparties of the exporter's wallet", price: "0.05", content: COUNTERPARTIES },
       { sku: "wallet-balances", description: "Exporter wallet balances", price: "0.01", content: BALANCES },
+      { sku: "smart-money", description: "Smart-money flows: durian exporters", price: "0.05", content: FLOWS, moves: true },
     ],
   },
   {
@@ -101,7 +111,22 @@ export const CATALOG: CatalogSeller[] = [
   },
 ];
 
-export const sellers = (): SimSeller[] => CATALOG.map(({ items, ...s }) => ({ ...s, items: items.map(({ content: _c, floor, ...i }) => (floor ? { ...i, negotiable: true } : i)) }));
+// A week's shape (Monday first) and a slower drift by week, so day-to-day quotes move like a real market and a watch with a
+// limit below the list price finds a dip most weeks. Hong Kong days; deterministic (no randomness), rounded to US$0.001.
+const WEEK_SHAPE = [1.02, 0.94, 0.86, 0.72, 0.9, 1.08, 1.12];
+const WEEK_DRIFT = [0, 0.08, -0.04, 0.12, 0.02, -0.06];
+/** The price an item quotes at `ms` (USD string). Items that don't move keep their published price. */
+export function quotedPrice(it: Pick<CatalogItem, "price" | "moves">, ms: number): string | null {
+  if (!it.price || !it.moves) return it.price;
+  const day = Math.floor((ms + 8 * 3_600_000) / 86_400_000); // days since 1970 in Hong Kong time; 1970-01-01 was a Thursday
+  const wd = (day + 3) % 7; // 0 = Monday
+  const week = Math.floor((day + 3) / 7);
+  const noise = ((day * 2654435761) >>> 0) % 7 - 3; // -3..3 tenths of a cent, the same for everyone on the same day
+  const usd = Number(it.price) * (WEEK_SHAPE[wd] + WEEK_DRIFT[week % WEEK_DRIFT.length]) + noise / 10_000;
+  return (Math.round(Math.max(0.001, usd) * 1000) / 1000).toFixed(3);
+}
+
+export const sellers = (): SimSeller[] => CATALOG.map(({ items, ...s }) => ({ ...s, items: items.map(({ content: _c, floor, moves: _m, ...i }) => (floor ? { ...i, negotiable: true } : i)) }));
 export const sellerById = (id: string) => CATALOG.find((s) => s.id === id);
 export const sellerByPayTo = (a: string) => CATALOG.find((s) => s.payTo.toLowerCase() === a.toLowerCase());
 export const sellerName = (id: string) => sellerById(id)?.name ?? id;

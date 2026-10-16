@@ -1,10 +1,12 @@
 export * from "./types";
 export * from "./util";
-export { CATALOG, SHADY_PREVIEW, ATTACKER, DRAINER, sellerById, sellerByPayTo, sellerName } from "./catalog";
+export { CATALOG, SHADY_PREVIEW, ATTACKER, DRAINER, quotedPrice, sellerById, sellerByPayTo, sellerName } from "./catalog";
+export * from "./pocketApp";
+export * from "./pocketAppData";
 export * from "./radar";
 export { createWorld, SIM_AGENT, SIM_FACTORY, SIM_SENTINEL, FORCE_SENDER, type World, type WorldOptions } from "./world";
 export * from "./sentinel";
-export { seedOwner, seedOwnerHistory, seedOwnerToday, claudeAsksForPremium, type SeededPocket, type OwnerTxSeed, type Seeded } from "./seed";
+export { seedOwner, seedOwnerHistory, seedOwnerToday, seedApp, SEED_SENTENCES, claudeAsksForPremium, type SeededPocket, type OwnerTxSeed, type Seeded } from "./seed";
 export { AGENTS, CAN, CANNOT, CLAUDE_AGENT, CHATGPT_AGENT, agentInfo, agentByAddress, errand, buy, attempt, firstRun, type AgentId, type AgentInfo, type AgentState, type AgentStatus } from "./agents";
 export { SCENES, type SceneInfo } from "./scenes";
 export { HELLO, FALLBACK, attackOf, type AttackKind } from "./script";

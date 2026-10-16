@@ -16,19 +16,22 @@ async function seeded() {
 
 test("agentIdOf: the pocket's agent key names its agent; a server's own key is the built-in agent", async () => {
   const { pockets } = await seeded();
-  assert.deepEqual(pockets.map((p) => agentIdOf(p)), ["chainbrain", "chainbrain", "claude", "chatgpt", "chainbrain"]); // the last is Premium reports (scene 11)
+  assert.deepEqual(pockets.map((p) => agentIdOf(p)), ["chainbrain", "chainbrain", "claude", "chatgpt", "claude", "chainbrain", "chainbrain"]); // Durian watch (Claude's deal watcher), Data renewals, then Premium reports (scene 11)
   assert.equal(agentIdOf({ agent: "0x1111111111111111111111111111111111111111" }, "0x1111111111111111111111111111111111111111"), "chainbrain");
   assert.equal(agentIdOf({ agent: "0x2222222222222222222222222222222222222222" }), undefined);
 });
 
 test("agentViews: numbers come from the pockets and the ledger", async () => {
-  const { w, events, pockets, ledger } = await seeded();
+  const { w, s, events, pockets, ledger } = await seeded();
   const views = agentViews({ pockets, events, ledger, pending: livePending(events), states: w.agents() });
   const claude = views.find((a) => a.id === "claude")!;
-  assert.equal(claude.pockets.length, 1);
-  assert.equal(claude.balance, 412_000n);
-  assert.equal(claude.spent, 88_000n); // Exa 0.007 + 0.007, TradeWire 0.05, Exa 0.007, CoinGecko 0.01, Exa 0.007
-  assert.equal(claude.payments, 6);
+  assert.equal(claude.pockets.length, 2); // Market news and Durian watch
+  const watch = pockets.find((p) => p.address === s.pockets.find((x) => x.name === "Durian watch")!.address)!;
+  const watchPays = ledger.filter((r) => r.kind === "payment" && r.pocket.toLowerCase() === watch.address.toLowerCase());
+  assert.equal(claude.balance, 412_000n + watch.balance);
+  // Market news: Exa 0.007 + 0.007, TradeWire 0.05, Exa 0.007, CoinGecko 0.01, Exa 0.007; plus the watch's buys (the day's quotes)
+  assert.equal(claude.spent, 88_000n + watchPays.reduce((n, r) => n + (r.amount ?? 0n), 0n));
+  assert.equal(claude.payments, 6 + watchPays.length);
   assert.equal(claude.refusals, 1);
   assert.equal(claude.status, "connected");
   // a real server: only the built-in agent

@@ -7,6 +7,12 @@
 //   Trade quotes    held by ChatGPT (connected 9 days ago), cap US$0.01, never asks
 //   One purchase    held by ChainBrain, created 18 minutes ago for the dead-end scene (8): US$0.005
 //   Premium reports held by ChainBrain, created 5 minutes ago for the haggler (11): DataPro only, cap US$2 (phone only)
+//   Durian watch    held by Claude, a deal watcher (pocket apps): checks Nansen's smart-money flows every morning at 08:00
+//                   and buys at US$0.04 or less; every price it was quoted is on its chart
+//   Data renewals   held by ChainBrain, subscriptions: renews Exa, CoinGecko and Nansen every Monday, max US$0.30 a month
+//
+// Every seeded pocket also has its pocket app (layout, blocks, title), composed by the fixed picker from the sentence below,
+// exactly as a new pocket made from that sentence would be. Routines run on the seeding clock at their scheduled times.
 //
 // Sellers are real x402 data providers at their published prices (Exa US$0.007, CoinGecko US$0.01, Nansen US$0.01 or
 // US$0.05; catalog.ts), plus the demo's fictional TradeWire, Harbour Wines and ShadyFeed.
@@ -19,9 +25,12 @@ import { CHATGPT_AGENT, CLAUDE_AGENT, SIM_AGENT, buy, errand, type AgentId } fro
 import type { Scene } from "./script";
 import type { Hex } from "./types";
 import { NEVER, parseUsd, tonightMs } from "./util";
+import { pickApp, type PocketAppSpec } from "./pocketApp";
+import { parseSentence } from "./speak";
+import { sellers as registry } from "./catalog";
 import type { World } from "./world";
 
-export type SeededPocket = { address: Hex; name: string; style: "research" | "gifts" | "tight" | "custom"; agent?: AgentId };
+export type SeededPocket = { address: Hex; name: string; style: "research" | "gifts" | "tight" | "custom"; agent?: AgentId; /** its pocket app (pocketApp.ts) */ app?: PocketAppSpec };
 export type OwnerTxSeed = { pocket: Hex; kind: "create" | "fund"; hash: Hex; amount?: string; at: number };
 export type Seeded = { pockets: SeededPocket[]; ownerTxs: OwnerTxSeed[] };
 
@@ -30,11 +39,39 @@ const payTo = (...ids: string[]) => CATALOG.filter((s) => ids.includes(s.id)).ma
 const tonight = (now: number) => BigInt(Math.floor(tonightMs(now) / 1000));
 const inDays = (now: number, d: number) => BigInt(Math.floor((now + d * DAY) / 1000));
 
+/** The owner's sentence for each seeded pocket: its pocket app is what the fixed picker composes from it. */
+export const SEED_SENTENCES: Record<string, string> = {
+  "Research data": "US$1 for durian research from Exa, CoinGecko or Nansen, at most US$0.05 each, ask me above US$0.02, until tonight",
+  "Market news": "Let Claude buy market news from Exa, CoinGecko, Nansen and TradeWire for its briefs, at most US$0.05 each, ask me above US$0.02",
+  "Trade quotes": "Let ChatGPT get rates from CoinGecko and news from Exa for shipping quotes, at most US$0.01 each, never ask",
+  "One purchase": "Just once: one Exa search for durian news, at most US$0.005, never ask",
+  "Premium reports": "Get DataPro's premium report, but negotiate the price down first, at most US$2 each, ask me above US$1",
+  "Durian watch": "Let Claude buy Nansen's smart-money flows every morning when the price drops below US$0.04. Max US$0.20 a week.",
+  "Data renewals": "Renew Exa durian news, the CoinGecko USDC price and Nansen's smart-money flows every Monday, max US$0.30 a month.",
+};
+/** A seeded pocket's app, from its sentence (and its own name as the title). */
+export function seedApp(name: string): PocketAppSpec | undefined {
+  const s = SEED_SENTENCES[name];
+  if (!s) return undefined;
+  const c = parseSentence(s, registry());
+  return pickApp(s, { ...c.draft, name }, registry()).spec;
+}
+const withApps = (s: Seeded): Seeded => ({ ...s, pockets: s.pockets.map((p) => ({ ...p, app: p.app ?? seedApp(p.name) })) });
+
+/** Replays routine runs whose time came before `beforeAgo` (oldest first), on the seeding clock. */
+async function runDue(w: World, now: number, beforeAgo: number) {
+  for (let i = 0; i < 400; i++) {
+    const due = w.routines().filter((r) => r.status === "active").map((r) => r.nextAt).sort((a, b) => a - b)[0];
+    if (due == null || due >= now - beforeAgo) return;
+    await w.past(now - due, () => w.tickRoutines());
+  }
+}
+
 /** The whole seed: two weeks back, then today. Main wallet ends at US$54.80. */
 export async function seedOwner(w: World, owner: Hex, o: { startUsdc?: string } = {}): Promise<Seeded> {
   const s = await seedOwnerHistory(w, owner, o);
   const today = await seedOwnerToday(w, owner, s);
-  return withPremium(w, owner, today);
+  return withApps(await withPremium(w, owner, today));
 }
 
 /**
@@ -45,6 +82,7 @@ export async function seedOwner(w: World, owner: Hex, o: { startUsdc?: string } 
 async function withPremium(w: World, owner: Hex, prior: Seeded): Promise<Seeded> {
   const ownerTxs = prior.ownerTxs.slice();
   w.chain.mint(owner, parseUsd("3"), 0n); // on top of the seed's start, so the main wallet ends where it always did
+  await asOwner(w, owner, () => runDue(w, w.now(), 5 * MIN)); // routine runs due before it (later ones run live)
   const premium = await w.past(5 * MIN, async () => {
     const t = w.now();
     const { pocket, tx } = w.chain.createPocket(owner, { agent: SIM_AGENT, cap: parseUsd("2"), askAbove: parseUsd("1"), expiresAt: tonight(t), sellers: payTo("datapro") }, t);
@@ -74,7 +112,9 @@ export async function seedOwnerHistory(w: World, owner: Hex, o: { startUsdc?: st
     ownerTxs.push({ pocket, kind: "fund", hash: f, amount: parseUsd(fund).toString(), at: t + 40_000 });
     return pocket;
   };
-  const at = <T>(msAgo: number, f: () => Promise<T>) => w.past(msAgo, f);
+  const at = async <T>(msAgo: number, f: () => Promise<T>) => { await runDue(w, now, msAgo); return w.past(msAgo, f); };
+  // the pocket-app pockets hold more than the main wallet's history had: minted on top, so it still ends at US$54.80
+  w.chain.mint(owner, parseUsd("1.00"), 0n);
   const chat = (msAgo: number, pocket: Hex, text: string) => at(msAgo, () => w.chat(pocket, text));
   const act = (msAgo: number, id: AgentId, pocket: Hex, plan: Scene) => at(msAgo, () => w.act(id, pocket, plan));
 
@@ -84,10 +124,26 @@ export async function seedOwnerHistory(w: World, owner: Hex, o: { startUsdc?: st
     await chat(14 * DAY - 2 * HOUR - 4 * MIN, research, "Research a durian import deal for me: export news, the USDC price and a check on the exporter's wallet. Under US$0.10, by tonight.");
     await chat(14 * DAY - 2 * HOUR - 6 * MIN, research, "In total. Check the exporter's wallet with Nansen too.");
 
+    // Data renewals: ChainBrain renews three data feeds every Monday at 09:00, at most US$0.30 a month (created two weeks
+    // ago, so two Mondays have passed whatever day it is)
+    const renewals = await at(13 * DAY + 20 * HOUR, async () => {
+      const p = create("Data renewals", SIM_AGENT, "0.30", null, ["exa", "coingecko", "nansen"], inDays(now, 365), "0.60");
+      w.setRoutine(p, seedApp("Data renewals")!.routine!);
+      return p;
+    });
+
     // Claude connects and gets its own pocket: Market news
     await at(12 * DAY + 5 * HOUR, async () => w.connect("claude"));
     const news = await at(12 * DAY + 5 * HOUR - 3 * MIN, async () => create("Market news", CLAUDE_AGENT, "0.05", "0.02", ["exa", "coingecko", "nansen", "tradewire"], inDays(now, 21), "0.5"));
     await act(12 * DAY + 4 * HOUR, "claude", news, errand({ what: "Durian export headlines for today's market brief", maxPrice: "0.01", maxTotal: "0.01", buys: [["exa", "durian-news"]], search: true }));
+
+    // Durian watch: Claude's deal watcher. Nansen only, cap US$0.04 (its price limit, so the contract refuses anything above
+    // it), never asks, US$0.40 in it, ongoing; it checks the price every morning at 08:00 and buys at US$0.04 or less
+    const watch = await at(12 * DAY + 2 * HOUR, async () => {
+      const p = create("Durian watch", CLAUDE_AGENT, "0.04", null, ["nansen"], inDays(now, 365), "0.40");
+      w.setRoutine(p, seedApp("Durian watch")!.routine!);
+      return p;
+    });
 
     await chat(11 * DAY + 3 * HOUR, research, "Search Exa for durian export news. Max US$0.01, by tonight.");
     await act(10 * DAY + 6 * HOUR, "claude", news, errand({ what: "SE Asia fruit trade headlines for the weekly brief", maxPrice: "0.01", maxTotal: "0.01", buys: [["exa", "fruit-news"]] }));
@@ -122,6 +178,8 @@ export async function seedOwnerHistory(w: World, owner: Hex, o: { startUsdc?: st
         { address: research, name: "Research data", style: "research", agent: "chainbrain" },
         { address: news, name: "Market news", style: "custom", agent: "claude" },
         { address: quotes, name: "Trade quotes", style: "custom", agent: "chatgpt" },
+        { address: watch, name: "Durian watch", style: "custom", agent: "claude" },
+        { address: renewals, name: "Data renewals", style: "custom", agent: "chainbrain" },
       ],
       ownerTxs,
     } satisfies Seeded;
@@ -133,16 +191,17 @@ export async function seedOwnerToday(w: World, owner: Hex, prior: Seeded): Promi
   const now = w.now();
   const by = (name: string) => prior.pockets.find((p) => p.name === name)!.address;
   const research = by("Research data"), news = by("Market news"), quotes = by("Trade quotes");
+  const at = async <T>(msAgo: number, f: () => Promise<T>) => { await runDue(w, now, msAgo); return w.past(msAgo, f); };
   return asOwner(w, owner, async () => {
-    await w.past(4 * HOUR + 26 * MIN, () => w.chat(research, "Research a durian import deal for me: export news, the USDC price and a check on the exporter's wallet. Under US$0.10, by tonight."));
-    await w.past(4 * HOUR + 24 * MIN, () => w.chat(research, "In total. Check the exporter's wallet with Nansen too."));
+    await at(4 * HOUR + 26 * MIN, () => w.chat(research, "Research a durian import deal for me: export news, the USDC price and a check on the exporter's wallet. Under US$0.10, by tonight."));
+    await at(4 * HOUR + 24 * MIN, () => w.chat(research, "In total. Check the exporter's wallet with Nansen too."));
     // Claude's task for today, confirmed by the owner this morning: it buys the news search now and asks for Nansen's check later
-    await w.past(2 * HOUR + 10 * MIN, () => w.act("claude", news, errand({ what: "Durian market note with a check on the exporter's wallet", maxPrice: "0.05", maxTotal: "0.10", items: 3, buys: [["exa", "durian-news"]] })));
-    await w.past(70 * MIN, () => w.chat(research, "Buy Harbour Wines' fruit and wine trade report. Max US$0.05, by tonight. Confirmed, go ahead."));
-    await w.past(40 * MIN, () => w.act("chatgpt", quotes, errand({ what: "Fruit trade news for a freight quote", maxPrice: "0.01", maxTotal: "0.01", buys: [["exa", "fruit-news"]] })));
+    await at(2 * HOUR + 10 * MIN, () => w.act("claude", news, errand({ what: "Durian market note with a check on the exporter's wallet", maxPrice: "0.05", maxTotal: "0.10", items: 3, buys: [["exa", "durian-news"]] })));
+    await at(70 * MIN, () => w.chat(research, "Buy Harbour Wines' fruit and wine trade report. Max US$0.05, by tonight. Confirmed, go ahead."));
+    await at(40 * MIN, () => w.act("chatgpt", quotes, errand({ what: "Fruit trade news for a freight quote", maxPrice: "0.01", maxTotal: "0.01", buys: [["exa", "fruit-news"]] })));
 
     // One purchase: the tight pocket for the dead-end scene (US$0.005, cap US$0.005, never ask, Exa only)
-    const tight = await w.past(18 * MIN, async () => {
+    const tight = await at(18 * MIN, async () => {
       const t = w.now();
       const { pocket, tx } = w.chain.createPocket(owner, { agent: SIM_AGENT, cap: parseUsd("0.005"), askAbove: NEVER, expiresAt: BigInt(Math.floor((now + 20 * HOUR) / 1000)), sellers: payTo("exa") }, t);
       ownerTxs.push({ pocket, kind: "create", hash: tx, at: t });

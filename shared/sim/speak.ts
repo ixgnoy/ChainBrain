@@ -12,7 +12,14 @@ export type Draft = {
   askAbove: string;
   budget: string;
   lifetime: Lifetime;
+  /** A routine's allowance ("max US$0.05 a week"): checked by ChainBrain's routine runner before each run, not by the
+   *  contract (Pocket.sol has no period). Absent for a pocket with no routine. */
+  per?: { amount: string; period: Period } | null;
+  /** A price watch's limit ("when the price drops below US$0.04"): also the pocket's per-payment cap, so the contract
+   *  refuses anything above it. */
+  limit?: string | null;
 };
+export type Period = "day" | "week" | "month";
 export type Question = { field: keyof Draft; question: string; options: { label: string; value: string }[] };
 export type Compiled = { draft: Draft; questions: Question[]; by: "claude" | "parser"; disagreements: string[] };
 type Seller = { id: string; name: string };
@@ -35,11 +42,16 @@ export function parseSentence(text: string, sellers: Seller[]): Compiled {
   if (/never ask|don'?t ask|no need to ask|without asking/.test(t)) askAbove = "never";
   else if (/ask (?:me )?(?:every time|for every|each time|always)|always ask/.test(t)) askAbove = "0";
   else askAbove = amountNear(/ask (?:me )?(?:above|over|for anything over|if (?:it'?s )?(?:more|over) than)\s+us?\$\s?\d+(?:\.\d{1,2})?/);
-  const lifetime: Lifetime | undefined = /tonight|today|end of (?:the )?day/.test(t) ? "until-tonight" : /one (?:task|purchase|time)|once|single/.test(t) ? "one-task" : /ongoing|every (?:week|month)|until i (?:stop|revoke)|no end|for a year/.test(t) ? "ongoing" : undefined;
+  // a routine's allowance and a price watch's limit (pocket apps); their amounts are not the ambiguous "in total or each?"
+  const perM = /(?:max(?:imum)?|at most|up to|no more than|budget(?: of)?|spend)?\s*us?\$\s?(\d+(?:\.\d{1,2})?)\s*(?:a|per|each|every)\s+(day|week|month)\b/.exec(t);
+  const per = perM ? { amount: fmt(num(perM[1])), period: perM[2] as Period } : null;
+  const limM = /(?:drops?|falls?|dips?|goes|gets|is)\s+(?:below|under|to)\s+us?\$\s?(\d+(?:\.\d{1,3})?)/.exec(t);
+  const limit = limM && /price|drops?|falls?|dips?|cheap/.test(t) ? fmt(num(limM[1])) : null;
+  const lifetime: Lifetime | undefined = /tonight|today|end of (?:the )?day/.test(t) ? "until-tonight" : /one (?:task|purchase|time)|one[- ]off|once|single/.test(t) ? "one-task" : /ongoing|every (?:week|month|day|morning|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|daily|weekly|monthly|until i (?:stop|revoke)|no end|for a year/.test(t) || per ? "ongoing" : undefined;
 
   // amounts with no "each" or "total" next to them: one amount is ambiguous, so ask (scene 1's "under US$2" question)
   const loose = [...t.matchAll(/us?\$\s?(\d+(?:\.\d{1,2})?)/g)].map((m) => fmt(num(m[1])));
-  const used = new Set([cap, budget, askAbove].filter(Boolean));
+  const used = new Set([cap, budget, askAbove, per?.amount, limit].filter(Boolean));
   const free = loose.filter((x) => !used.has(x));
   let capV = cap, budgetV = budget;
   if (!capV && !budgetV && free.length === 1) {
@@ -47,6 +59,14 @@ export function parseSentence(text: string, sellers: Seller[]): Compiled {
     capV = free[0]; budgetV = free[0]; // until answered: the stricter reading (the pocket holds only that much, each payment at most that much)
   }
   if (!budgetV && capV) budgetV = free.find((x) => num(x) > num(capV!)) ?? capV;
+  if (per) {
+    // a routine pocket holds two periods' worth unless the owner said how much to put in; one payment is at most a period's
+    if (!budgetV) budgetV = fmt(num(per.amount) * 2);
+    if (!capV) capV = per.amount;
+    if (askAbove === undefined) askAbove = "never"; // inside the allowance it runs on its own; above it the runner asks
+  }
+  if (limit) capV = capV && num(capV) < num(limit) ? capV : limit; // the contract refuses any price above the limit
+  if (limit && !budgetV) budgetV = fmt(num(limit) * 5);
   if (!capV && budgetV) capV = budgetV;
   if (!picked.length) questions.push({ field: "sellers", question: "Which sellers may it pay?", options: sellers.map((s) => ({ label: s.name, value: s.id })) });
   if (!lifetime) questions.push({ field: "lifetime", question: "How long should it last?", options: [{ label: "One task", value: "one-task" }, { label: "Until tonight", value: "until-tonight" }, { label: "Ongoing", value: "ongoing" }] });
@@ -57,6 +77,7 @@ export function parseSentence(text: string, sellers: Seller[]): Compiled {
       name: name ? name.replace(/\b\w/g, (x) => x.toUpperCase()).slice(0, 24) : undefined,
       sellers: picked.map((s) => s.id), cap: capV ?? "1.00", budget: budgetV ?? "1.00",
       askAbove: askAbove ?? "0", lifetime: lifetime ?? "one-task",
+      ...(per ? { per } : {}), ...(limit ? { limit } : {}),
     },
     questions, by: "parser", disagreements: [],
   };
@@ -89,9 +110,31 @@ export function stricterDraft(a: Draft, b: Draft): { draft: Draft; disagreements
       budget: pick("budget", fmt(Math.min(num(a.budget), num(b.budget))), "Budget: used the lower reading"),
       askAbove: pick("askAbove", askRank(a.askAbove) <= askRank(b.askAbove) ? a.askAbove : b.askAbove, "Ask-me limit: asks more often"),
       lifetime: pick("lifetime", LIFE_RANK[a.lifetime] <= LIFE_RANK[b.lifetime] ? a.lifetime : b.lifetime, "Lifetime: used the shorter reading"),
+      ...stricterPer(a, b, d),
     },
     disagreements: d,
   };
+}
+
+const PERIOD_DAYS: Record<Period, number> = { day: 1, week: 7, month: 30 };
+/** The allowance and the price limit: where only one reading has one, it is kept (a limit can only narrow); where both do,
+ *  the lower spend rate and the lower limit win. */
+function stricterPer(a: Draft, b: Draft, d: string[]): Pick<Draft, "per" | "limit"> {
+  const out: Pick<Draft, "per" | "limit"> = {};
+  const rate = (p: NonNullable<Draft["per"]>) => num(p.amount) / PERIOD_DAYS[p.period];
+  if (a.per && b.per) {
+    out.per = rate(a.per) < rate(b.per) || (rate(a.per) === rate(b.per) && PERIOD_DAYS[a.per.period] <= PERIOD_DAYS[b.per.period]) ? a.per : b.per;
+    if (JSON.stringify(a.per) !== JSON.stringify(b.per)) d.push("Allowance: used the lower spend rate");
+  } else if (a.per || b.per) { out.per = a.per ?? b.per; d.push("Allowance: kept the reading that has one"); }
+  if (a.limit && b.limit) { out.limit = num(a.limit) <= num(b.limit) ? a.limit : b.limit; if (a.limit !== b.limit) d.push("Price limit: used the lower reading"); }
+  else if (a.limit || b.limit) { out.limit = a.limit ?? b.limit; d.push("Price limit: kept the reading that has one"); }
+  return out;
+}
+
+/** The routine runner's own check (shared/sim/world.ts runRoutine), on draft rules: a run that would take the period past
+ *  its allowance asks the owner (the cheque) instead of paying. */
+export function draftRunCheck(d: Draft, spentThisPeriod: number, usd: number): "OK" | "ASKS_YOU" {
+  return d.per && spentThisPeriod + usd > num(d.per.amount) + 1e-9 ? "ASKS_YOU" : "OK";
 }
 
 // ---------------------------------------------------------------- proof card
@@ -130,13 +173,15 @@ export function proof(d: Draft, sellers: Seller[]): Proof {
     ...(out ? [t(`US$0.30 to ${out.name}`, "SELLER_NOT_ALLOWED", draftCanPay(d, out.id, 0.3))] : []),
     t("US$0.01 to an unknown address", "SELLER_NOT_ALLOWED", draftCanPay(d, "0xattacker", 0.01)),
     t("Any payment after it ends", "POCKET_EXPIRED", draftCanPay(d, first ?? "x", 0.01, { expired: true })),
+    ...(d.per ? [t(`A run past US$${fmt(num(d.per.amount))} this ${d.per.period}`, "ASKS_YOU", draftRunCheck(d, num(d.per.amount), 0.01))] : []),
   ];
   return {
     worstCase: fmt(budget), // the pocket holds the budget and nothing else: the most a fooled agent can ever lose
     lines: [
       allowed.length ? `Pays only ${allowed.join(" and ")}` : "Can't pay anyone yet: pick a seller",
       `At most US$${fmt(cap)} per payment, US$${fmt(budget)} in all`,
-      `Your agent ${askText}`,
+      d.per ? `Up to US$${fmt(num(d.per.amount))} a ${d.per.period} on its own; above that, ChainBrain asks you first` : `Your agent ${askText}`,
+      ...(d.limit ? [`Buys only at US$${fmt(num(d.limit))} or less, refused by the contract above it`] : []),
       `The pocket ${life}`,
     ],
     neverPayable: never,

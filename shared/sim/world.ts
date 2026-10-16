@@ -2,7 +2,8 @@
 // (server/src/wallet/tools.ts, pay.ts, approvals.ts), the agent loop and the dev stack's scripted model
 // (devstack/src/model.ts), on top of the in-memory chain. The apps talk to it through the same calls they use for
 // the real server, so every screen behaves the same in both.
-import { CATALOG, sellerById, sellerByPayTo, sellerName, sellers, ATTACKER, DRAINER } from "./catalog";
+import { CATALOG, quotedPrice, sellerById, sellerByPayTo, sellerName, sellers, ATTACKER, DRAINER } from "./catalog";
+import { available, nextRun, pickApp, validateRoutine, type PocketAppSpec, type Routine, type RoutineSpec } from "./pocketApp";
 import { createMemory, consolidate } from "./memory";
 import { parseSentence, proof } from "./speak";
 import { rules as sentinelRules, ruleSeverity, gate, scriptedAi, stateText, PROBE_REASONS, RANK, type Severity, type Signal, type AiAnswer } from "./sentinel";
@@ -29,7 +30,7 @@ export type WorldOptions = {
 
 /** `list` is the seller's first price; `ask` its current one while the agent haggles (counter_offer); `amount` is what pay settles. */
 type Quote = { quoteId: string; sellerId: string; sku: string; description: string; payTo: Hex; amount: bigint; list: bigint; ask: bigint; rounds: number; agreed?: boolean; paid: boolean; auth?: Authorization; ownerSig?: string };
-type Task = { intent?: Intent; spent: bigint; items: number; quotes: Map<string, Quote>; nextQuote: number; asked?: boolean };
+type Task = { intent?: Intent; spent: bigint; items: number; quotes: Map<string, Quote>; nextQuote: number; asked?: boolean; /** a routine run's payments carry it */ routine?: { id: string; run: number } };
 
 export { SIM_AGENT };
 export const SIM_FACTORY: Hex = "0xfac70e2b9d4c1a3f5e6b7c8d9e0f1a2b3c4d5e6f";
@@ -39,7 +40,7 @@ export const SIM_SENTINEL: Hex = "0x5e471e10000000000000000000000000000c0de5";
 export const FORCE_SENDER: Hex = "0x4f0e1c8d2b7a6953e1f0c2d4b6a8e9f1c3d5e7a9";
 
 /** Bump when the dump's shape changes: an older saved network is then dropped, not misread. */
-const DUMP_VERSION = 2; // 2: outside agents' connection state (agentState)
+const DUMP_VERSION = 3; // 2: outside agents' connection state (agentState); 3: routines (pocket apps)
 
 export function createWorld(opts: WorldOptions = {}) {
   const r: Rng = makeRng(opts.seed ?? 0x5eed);
@@ -116,7 +117,7 @@ export function createWorld(opts: WorldOptions = {}) {
     if (!tasks.has(lower(p))) tasks.set(lower(p), { spent: 0n, items: 0, quotes: new Map(), nextQuote: 1 });
     return tasks.get(lower(p))!;
   };
-  const newTask = (p: string) => { const t = task(p); Object.assign(t, { intent: undefined, spent: 0n, items: 0 }); t.quotes.clear(); };
+  const newTask = (p: string) => { const t = task(p); Object.assign(t, { intent: undefined, spent: 0n, items: 0, routine: undefined }); t.quotes.clear(); };
 
   // red-team box: text injected into a seller's next delivered content (sellers' /admin/inject)
   const injected = new Map<string, string>();
@@ -254,7 +255,7 @@ export function createWorld(opts: WorldOptions = {}) {
         ok: true,
         sellers: list.map((s) => ({
           id: s.id, name: s.name, category: s.category, allowedByPocket: chain.sellerAllowed(pocket, s.payTo),
-          items: s.items.map((i) => ({ sku: i.sku, description: i.description, price: i.price ?? "free", ...(i.floor ? { negotiable: true } : {}) })),
+          items: s.items.map((i) => ({ sku: i.sku, description: i.description, price: quotedPrice(i, now()) ?? "free", ...(i.floor ? { negotiable: true } : {}) })),
         })),
       };
     },
@@ -274,7 +275,7 @@ export function createWorld(opts: WorldOptions = {}) {
       if (!s || !it) return { ok: false, error: "seller answered HTTP 404" };
       if (!it.price) return { ok: true, free: true, ...screenFree(pocket, sellerId, delivered(sellerId, it.content, true)) };
       const t = task(pocket);
-      const amount = parseUsd(it.price);
+      const amount = parseUsd(quotedPrice(it, now())!);
       const q: Quote = { quoteId: `q${t.nextQuote++}`, sellerId, sku, description: it.description, payTo: s.payTo, amount, list: amount, ask: amount, rounds: 0, paid: false };
       t.quotes.set(q.quoteId, q);
       const rule = chain.canPay(pocket, q.payTo, q.amount);
@@ -315,7 +316,7 @@ export function createWorld(opts: WorldOptions = {}) {
         ? { ok: true, deal: true, price: formatUsd(reply.price), list: formatUsd(q.list), saved: formatUsd(q.list - reply.price), needsOwnerApproval: chain.needsOwner(pocket, reply.price) || watch(pocket).hold, note: "Deal agreed: pay (or ask_owner first if needsOwnerApproval) with the same quoteId." }
         : { ok: true, deal: false, counter: formatUsd(reply.price), final, roundsLeft: MAX_ROUNDS - q.rounds, note: final ? "The seller's final price: accept it by offering exactly this price, or walk away." : "Offer again (lower than the counter), accept the counter by offering exactly it, or walk away." };
     },
-    async ask_owner(pocket, { question, quoteId, reason }: { question?: string; quoteId?: string; reason?: string }) {
+    async ask_owner(pocket, { question, quoteId, reason, allowance }: { question?: string; quoteId?: string; reason?: string; /** a routine run past its allowance (runRoutine) */ allowance?: object }) {
       await jitter(200, 400);
       if (question) {
         createApproval({ pocket, kind: "question", text: question });
@@ -336,6 +337,7 @@ export function createWorld(opts: WorldOptions = {}) {
           auth: q.auth, sellerId: q.sellerId, sku: q.sku, description: q.description, amount: formatUsd(q.amount), intent: renderIntent(t.intent!),
           // Radar's score always rides along (the sheet shows "Low risk · 1/10"); the narrative only when there is risk
           radar: { score: risk.score, verdict: risk.verdict, ...(risk.verdict !== "ok" ? { narrative: risk.narrative } : {}) },
+          ...(allowance ? { allowance } : {}),
         },
       });
       const res = await waitApproval(a.id);
@@ -395,7 +397,7 @@ export function createWorld(opts: WorldOptions = {}) {
     if (!s.ok) return fail(s.reason ?? "SETTLEMENT_FAILED");
     t.spent += q.amount; t.items += 1;
     if (q.ownerSig && watch(pocket).hold) sentinelClear(pocket, "cosign");
-    publish({ type: "payment", pocket, sellerId: q.sellerId, sku: q.sku, amount: q.amount, tx: s.tx, nonce: auth.nonce, intentHash: t.intent!.intentHash, cosigned: !!q.ownerSig, ...(q.amount < q.list ? { list: q.list } : {}) });
+    publish({ type: "payment", pocket, sellerId: q.sellerId, sku: q.sku, amount: q.amount, tx: s.tx, nonce: auth.nonce, intentHash: t.intent!.intentHash, cosigned: !!q.ownerSig, ...(q.amount < q.list ? { list: q.list } : {}), ...(t.routine ? { routine: t.routine } : {}) });
     const it = sellerById(q.sellerId)!.items.find((i) => i.sku === q.sku)!;
     return { ok: true, tx: s.tx, paid: formatUsd(q.amount), sellerId: q.sellerId, ...screenFree(pocket, q.sellerId, delivered(q.sellerId, it.content, false)) };
   }
@@ -491,13 +493,96 @@ export function createWorld(opts: WorldOptions = {}) {
   // a revoked pocket can't pay, so nothing it asked for can still be approved: decline its open approvals at once
   chain.onTx((t) => { if (t.kind === "revoke" && t.status === "success") declinePending((a) => same(a.pocket, t.pocket)); });
 
+  // ---- routines (pocket apps): a pocket's standing order as typed fields. A run writes its task from those fields (the owner
+  // confirmed them when they created the pocket), quotes each item, pays what fits this period's allowance and sends anything
+  // past it to the owner as a cheque. Seller content can't change a routine: the runner never takes instructions from it; when
+  // a delivery tries, the run says so and carries on exactly as written.
+  const routines = new Map<string, Routine>();
+  const ROUTINE_WORDS = /\b(?:routine|schedule|every (?:hour|minute)|from now on|switch (?:to|sellers?)|instead of|ignore (?:all|previous|your)|new instructions?|raise (?:the|your) (?:cap|limit|allowance))\b/i;
+  const routinePayments = (pocket: string, id: string) =>
+    recent.filter((e) => e.type === "payment" && same(e.pocket, pocket) && e.routine?.id === id).map((e) => ({ at: e.at, amount: BigInt(e.amount) }));
+  async function runRoutine(pocket: Hex, o: { early?: boolean } = {}) {
+    const rt = routines.get(lower(pocket));
+    if (!rt) return { ok: false, reason: "NO_ROUTINE" };
+    if (rt.status !== "active") return { ok: false, reason: "ROUTINE_PAUSED" };
+    if (busy.has(lower(pocket))) return { ok: false, reason: "BUSY" };
+    // whoever holds the pocket runs it: an outside agent the owner disconnected doesn't
+    const holder = agentState.get(agentIdOf(pocket) as AgentId);
+    const skip = holder && holder.kind === "outside" && holder.status !== "connected" ? "AGENT_DISCONNECTED" : chain.view(pocket).revoked ? "POCKET_REVOKED" : undefined;
+    if (skip) {
+      // a due run that can't happen is skipped, not queued: the schedule moves on and the screen says why
+      if (!o.early && rt.nextAt <= now()) { rt.nextAt = nextRun(rt.cadence, now()); publish({ type: "routine", kind: "skipped", pocket, routineId: rt.id, reason: skip, nextAt: rt.nextAt }); }
+      return { ok: false, reason: skip };
+    }
+    busy.add(lower(pocket));
+    try {
+      const run = rt.runs + 1, scheduledFor = rt.nextAt, early = !!o.early && scheduledFor > now();
+      const allowance = parseUsd(rt.allowance.amount);
+      publish({ type: "routine", kind: "run-start", pocket, routineId: rt.id, run, scheduledFor, early });
+      const v = chain.view(pocket);
+      newTask(pocket);
+      const t = task(pocket);
+      t.routine = { id: rt.id, run };
+      t.intent = {
+        request: "routine", description: `Routine run ${run}`, maxPricePerItem: formatUsd(v.cap),
+        maxTotal: formatUsd(v.cap * BigInt(rt.items.length)), maxItems: rt.items.length,
+        deadline: new Date(now() + 3_600_000).toISOString(), intentHash: r.hex(32), status: "confirmed",
+      };
+      trace(pocket, "thinking", { text: early ? `Running your routine's next run now (it was due ${new Date(scheduledFor).toISOString()}). Its fields are fixed; nothing a seller sends can change them.` : `Your routine's run ${run} is due. Its fields are fixed; nothing a seller sends can change them.`, routine: rt.id });
+      type Out = { sellerId: string; sku: string; outcome: "paid" | "cosigned" | "watching" | "declined" | "refused"; amount?: string; reason?: string; tx?: string };
+      const outs: Out[] = [];
+      for (const it of rt.items) {
+        const q = await runTool(pocket, "get_quote", it);
+        if (!q?.ok || !q.price) { outs.push({ ...it, outcome: "refused", reason: q?.reason ?? "QUOTE_UNKNOWN" }); continue; }
+        const amount = parseUsd(q.price);
+        if (rt.kind === "price-watch") {
+          const limit = parseUsd(rt.limitPrice ?? "0");
+          publish({ type: "quote", pocket, routineId: rt.id, run, sellerId: it.sellerId, sku: it.sku, price: amount, limit, below: amount <= limit });
+          if (amount > limit) { outs.push({ ...it, outcome: "watching", amount: q.price }); continue; }
+        }
+        if (q.allowedByPocket !== "OK") { outs.push({ ...it, outcome: "refused", amount: q.price, reason: q.allowedByPocket.reason }); continue; }
+        const left = available(allowance, routinePayments(pocket, rt.id), rt.allowance.period, now());
+        let cosign = false;
+        if (amount > left.left || q.needsOwnerApproval) {
+          const after = left.spent + amount;
+          const a = await runTool(pocket, "ask_owner", {
+            quoteId: q.quoteId,
+            reason: amount > left.left
+              ? `Run ${run} of your routine: ${sellerName(it.sellerId)} costs US$${q.price}. That takes this ${rt.allowance.period} to US$${formatUsd(after)}, past your US$${formatUsd(allowance)} a ${rt.allowance.period}.`
+              : `Run ${run} of your routine: ${sellerName(it.sellerId)} costs US$${q.price}, above your ask-me limit.`,
+            allowance: { routineId: rt.id, run, period: rt.allowance.period, allowance: formatUsd(allowance), spent: formatUsd(left.spent), after: formatUsd(after) },
+          });
+          if (!a?.ok) { outs.push({ ...it, outcome: "declined", amount: q.price, reason: a?.reason }); continue; }
+          cosign = true;
+        }
+        const p = await runTool(pocket, "pay", { quoteId: q.quoteId });
+        if (!p?.ok) { outs.push({ ...it, outcome: "refused", amount: q.price, reason: p?.reason }); continue; }
+        outs.push({ ...it, outcome: cosign ? "cosigned" : "paid", amount: q.price, tx: p.tx });
+        const body = String(p.content ?? "").replace(/<\/?untrusted_content[^>]*>/g, "");
+        if (ROUTINE_WORDS.test(body)) {
+          const line = body.split("\n").find((l) => ROUTINE_WORDS.test(l)) ?? "";
+          publish({ type: "routine", kind: "ignored", pocket, routineId: rt.id, run, sellerId: it.sellerId, excerpt: line.replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 140) });
+          trace(pocket, "thinking", { text: `${sellerName(it.sellerId)}'s delivery tried to change this routine. A routine is fixed fields, set by you; nothing changed.`, routine: rt.id });
+        }
+      }
+      rt.runs = run; rt.lastRunAt = now();
+      rt.nextAt = nextRun(rt.cadence, early ? scheduledFor : now());
+      const after = available(allowance, routinePayments(pocket, rt.id), rt.allowance.period, now());
+      const paid = outs.filter((x) => x.outcome === "paid" || x.outcome === "cosigned").reduce((n, x) => n + parseUsd(x.amount!), 0n);
+      publish({ type: "routine", kind: "run", pocket, routineId: rt.id, run, scheduledFor, early, outs, paid, spent: after.spent, allowance, period: rt.allowance.period, nextAt: rt.nextAt });
+      const reply = outs.map((x) => x.outcome === "watching" ? `${sellerName(x.sellerId)} quotes US$${x.amount}, above your US$${rt.limitPrice} limit: not buying` : x.outcome === "paid" || x.outcome === "cosigned" ? `paid ${sellerName(x.sellerId)} US$${x.amount}${x.outcome === "cosigned" ? " (co-signed by you)" : ""}` : `${sellerName(x.sellerId)} not paid (${x.reason ?? x.outcome})`).join("; ");
+      trace(pocket, "reply", { text: `Run ${run}: ${reply}.`, routine: rt.id });
+      return { ok: true, run, outs, paid: formatUsd(paid), spent: formatUsd(after.spent), nextAt: rt.nextAt };
+    } finally { busy.delete(lower(pocket)); }
+  }
+
   // ---- public surface: the same calls as the wallet API and the chain
   const config: SimConfig = { agent: SIM_AGENT, factory: SIM_FACTORY, usdc: USDC, sellersUrl: "", sellers: sellers(), abis: { pocket: [], factory: [], erc20: [] } };
 
   /** The whole network, for keeping it across a page reload (mobile/src/lib/builtin.ts); encode with util.encode. */
   const dump = () => ({
     v: DUMP_VERSION, rng: r.state, chain: chain.dump(), recent, lastAt, seq, approvals, tasks, injected, labels: labels.dump(),
-    radarLast, radarWatch, radarAlerts, watches, memory: memory.dump(), autoOwners, agentState,
+    radarLast, radarWatch, radarAlerts, watches, memory: memory.dump(), autoOwners, agentState, routines,
   });
 
   const world = {
@@ -604,6 +689,44 @@ export function createWorld(opts: WorldOptions = {}) {
     forgetMemory: (pocket: string, id: string) => memory.forget(pocket, id),
     /** POST /api/rules/compile: the built-in network reads the sentence with the fixed parser (the server uses two Claude readings). */
     compileRules: (sentence: string) => { const c = parseSentence(sentence, sellers()); return wire({ ...c, proof: proof(c.draft, sellers()) }); },
+    /** POST /api/pocket-app/compose: the rules (Speak your rules), the pocket app spec and the agent, from one sentence. The
+     *  built-in network uses the fixed picker; the server asks Claude and falls back to the same picker. Never creates anything. */
+    composeApp(sentence: string) {
+      const c = parseSentence(sentence, sellers());
+      const { spec, agent } = pickApp(sentence, c.draft, sellers());
+      return wire({ ...c, proof: proof(c.draft, sellers()), spec, agent, specBy: "picker" as const });
+    },
+    // ---- routines
+    /** Store a pocket's routine (validated again here: typed fields only). Starts the schedule from `at`. */
+    setRoutine(pocket: Hex, spec: RoutineSpec, at?: number): Routine {
+      if (!chain.isPocket(pocket)) throw new Error("not a pocket");
+      const v = validateRoutine(spec, sellers());
+      if (!v.ok) throw new Error(`invalid routine: ${v.errors.join("; ")}`);
+      const t0 = at ?? now();
+      const rt: Routine = { ...v.value, id: `rt_${r.hex(6).slice(2)}`, pocket: lower(pocket), createdAt: t0, nextAt: nextRun(v.value.cadence, t0), runs: 0, status: "active" };
+      routines.set(lower(pocket), rt);
+      publish({ type: "routine", kind: "set", pocket, routine: rt, at });
+      return { ...rt };
+    },
+    routine: (pocket: string): Routine | null => { const x = routines.get(lower(pocket)); return x ? wire({ ...x }) : null; },
+    routines: (): Routine[] => [...routines.values()].map((x) => wire({ ...x })),
+    pauseRoutine(pocket: string, paused: boolean) {
+      const rt = routines.get(lower(pocket));
+      if (!rt) return false;
+      rt.status = paused ? "paused" : "active";
+      if (!paused && rt.nextAt <= now()) rt.nextAt = nextRun(rt.cadence, now());
+      publish({ type: "routine", kind: paused ? "paused" : "resumed", pocket, routineId: rt.id });
+      return true;
+    },
+    /** "Run the next one now": the next scheduled run, now, at its real time; the schedule then moves to the slot after it. */
+    runRoutineNow: (pocket: Hex) => runRoutine(pocket, { early: true }),
+    /** Runs every routine whose time has come (the apps call it on a timer; seeding calls it on the seeding clock). */
+    async tickRoutines() {
+      const due = [...routines.values()].filter((x) => x.status === "active" && x.nextAt <= now() && chain.isPocket(x.pocket) && !chain.view(x.pocket as Hex).revoked);
+      const out = [];
+      for (const x of due) out.push(await runRoutine(x.pocket as Hex));
+      return out;
+    },
     /** GET /api/sentinel?pocket= */
     sentinel: (pocket: string) => { const w = watch(pocket); return wire({ status: chain.isPocket(pocket) && chain.view(pocket).frozen ? "freeze" : w.status, hold: w.hold, decisions: w.decisions.slice(-10) }); },
     radar: {
@@ -679,7 +802,7 @@ export function createWorld(opts: WorldOptions = {}) {
       lastAt = d.lastAt; seq = d.seq;
       const fill = <K, V>(m: Map<K, V>, src: Map<K, V>) => { m.clear(); for (const [k, v] of src) m.set(k, v); };
       fill(approvals, d.approvals); fill(tasks, d.tasks); fill(injected, d.injected); fill(radarLast, d.radarLast);
-      fill(radarWatch, d.radarWatch); fill(watches, d.watches); fill(agentState, d.agentState);
+      fill(radarWatch, d.radarWatch); fill(watches, d.watches); fill(agentState, d.agentState); fill(routines, d.routines);
       radarAlerts.splice(0, radarAlerts.length, ...d.radarAlerts);
       labels.load(d.labels); memory.load(d.memory);
       autoOwners.clear(); for (const o of d.autoOwners) autoOwners.add(o);

@@ -135,7 +135,7 @@ test("events have strictly increasing `at` and bigints arrive as strings", async
 test("seed: two weeks of real history across three agents", async () => {
   const w = createWorld({ speed: 0, seed: 1 });
   const s = await seedOwner(w, OWNER);
-  assert.deepEqual(s.pockets.map((p) => [p.name, w.agentOf(p.address)]), [["Research data", "chainbrain"], ["One purchase", "chainbrain"], ["Market news", "claude"], ["Trade quotes", "chatgpt"], ["Premium reports", "chainbrain"]]);
+  assert.deepEqual(s.pockets.map((p) => [p.name, w.agentOf(p.address)]), [["Research data", "chainbrain"], ["One purchase", "chainbrain"], ["Market news", "claude"], ["Trade quotes", "chatgpt"], ["Durian watch", "claude"], ["Data renewals", "chainbrain"], ["Premium reports", "chainbrain"]]);
   const bal = (name: string) => w.chain.view(s.pockets.find((p) => p.name === name)!.address).balance;
   assert.equal(bal("Research data"), parseUsd("1.285"));
   assert.equal(bal("One purchase"), parseUsd("0.005"));
@@ -147,8 +147,9 @@ test("seed: two weeks of real history across three agents", async () => {
   for (let i = 1; i < ev.length; i++) assert.ok(ev[i].at > ev[i - 1].at, "oldest first");
   assert.ok(ev.every((e) => e.at < Date.now()));
   assert.ok(ev[0].at < Date.now() - 13 * 86_400_000, "two weeks back");
-  const pays = ev.filter((e) => e.type === "payment");
-  assert.equal(pays.length, 21);
+  const apps = new Set(s.pockets.filter((p) => p.name === "Durian watch" || p.name === "Data renewals").map((p) => p.address.toLowerCase()));
+  const pays = ev.filter((e) => e.type === "payment" && !apps.has(String(e.pocket).toLowerCase()));
+  assert.equal(pays.length, 21); // the pocket-app pockets' routine runs come on top (routine tests)
   assert.deepEqual([...new Set(pays.map((e) => e.sellerId))].sort(), ["coingecko", "exa", "nansen", "tradewire"]);
   assert.deepEqual([...new Set(pays.map((e) => e.agent))].sort(), ["chainbrain", "chatgpt", "claude"]);
   assert.ok(pays.some((e) => e.agent === "claude" && e.cosigned), "Claude's co-signed TradeWire report");
@@ -156,7 +157,7 @@ test("seed: two weeks of real history across three agents", async () => {
   assert.ok(ev.filter((e) => e.pocket).every((e) => e.agent), "every pocket event names its agent");
   assert.equal(w.approvals().filter((a) => a.status === "pending").length, 0);
   assert.deepEqual(w.agents().map((a) => [a.id, a.status]), [["chainbrain", "connected"], ["claude", "connected"], ["chatgpt", "connected"]]);
-  assert.equal(s.ownerTxs.length, 11); // 9, plus Premium reports created and funded
+  assert.equal(s.ownerTxs.length, 15); // 9, plus Premium reports, Durian watch and Data renewals, each created and funded
   // payments are signed by the pocket's own agent key
   const claudePay = w.txs().filter((t) => t.kind === "payment" && t.status === "success" && same(t.pocket, s.pockets[2].address));
   assert.ok(claudePay.length >= 4);
