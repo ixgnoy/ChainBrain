@@ -1,5 +1,5 @@
 // Runs before the wallet API on Railway: makes the chain usable, idempotently.
-//   1. waits for the node, 2. funds OWNER / FACILITATOR / FORCE through the node gateway's /admin/fund (FUND_URL + FUND_TOKEN),
+//   1. waits for the node, 2. funds OWNER / FACILITATOR / FORCE (and SENTINEL, if set) through the node gateway's /admin/fund (FUND_URL + FUND_TOKEN),
 //   3. on an empty chain deploys MockEHKD + PocketFactory from OWNER and mints HK$10,000 to OWNER.
 // Same keys + fresh chain = the committed addresses in contracts/deployments/20200.json; anything else is an error.
 import "dotenv/config";
@@ -22,7 +22,8 @@ async function main() {
     await new Promise((r) => setTimeout(r, 2000));
   }
   const owner = privateKeyToAccount(process.env.OWNER_PK as Hex);
-  const funded = await fundIfEmpty(pc as any, ["OWNER_PK", "FACILITATOR_PK", "FORCE_PK"].map((k) => privateKeyToAccount(process.env[k] as Hex).address));
+  const senders = ["OWNER_PK", "FACILITATOR_PK", "FORCE_PK", "SENTINEL_PK"].filter((k) => process.env[k]);
+  const funded = await fundIfEmpty(pc as any, senders.map((k) => privateKeyToAccount(process.env[k] as Hex).address));
   if (funded.length) console.log("funded", funded.join(", "));
 
   if ((await pc.getCode({ address: want.Token }))?.length && (await pc.getCode({ address: want.PocketFactory }))?.length) {
