@@ -1,5 +1,6 @@
 import { parseAbiItem } from "viem";
-import { pub, USDC } from "../wallet/chain";
+import { pub } from "../wallet/chain";
+import { cfg } from "../chains";
 import type { Transfer, TransferSource } from "./exposure";
 
 const TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
@@ -34,7 +35,7 @@ async function pull(): Promise<void> {
   while (at <= latest) {
     const to: bigint = at + STEP - 1n < latest ? at + STEP - 1n : latest;
     try {
-      const ls = await pub().getLogs({ address: USDC, event: TRANSFER, fromBlock: at, toBlock: to });
+      const ls = await pub().getLogs({ address: cfg().token, event: TRANSFER, fromBlock: at, toBlock: to });
       for (const l of ls) add({ from: l.args.from!, to: l.args.to!, value: l.args.value!, tx: l.transactionHash!, block: l.blockNumber! });
     } catch {
       gaps++; // a skipped range: screens report themselves partial from now on

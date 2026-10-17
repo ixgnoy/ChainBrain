@@ -87,10 +87,10 @@ Then import `OWNER_PK` into MetaMask as the demo main wallet.
 ## Test
 
 ```bash
-cd contracts && forge test                              # 66: MockEHKD 6, pockets on eHKD 20, on a ms clock 20, on a Base Sepolia fork 20
-cd server && pnpm test && pnpm typecheck                # 76 tests + 6 skipped without keys (needs anvil on PATH and forge build)
+cd contracts && forge test                              # 79: MockEHKD 7, pockets on eHKD 24, on a ms clock 24, on a Base Sepolia fork 24
+cd server && pnpm test && pnpm typecheck                # on the local FISCO node: 82 tests + 6 skipped without keys (needs forge build)
 cd server && SCENE_REPLAY=1 pnpm test:scenes            # scenes 1–8 through the agent loop (drop SCENE_REPLAY to use the real model)
-cd server && pnpm test:base && SCENE_REPLAY=1 pnpm test:scenes:base   # the same on a Base Sepolia fork (anvil on PATH)
+cd server && pnpm test:base && SCENE_REPLAY=1 pnpm test:scenes:base   # the same on a Base Sepolia fork: 80 + 8 skipped (anvil on PATH)
 cd server && CHAIN=fisco pnpm tsx scripts/verify-evidence.ts           # re-fetch every hash in docs/evidence-fisco.json
 cd web && pnpm test && pnpm build                       # 81 tests
 cd mobile && node --import tsx --test ../shared/sim/*.test.ts   # built-in network, scenes 1-11, 40 tests

@@ -106,8 +106,8 @@ What the local FISCO 3.16.4 chain needed (all recorded in the port plan):
 
 | Suite | Command | Result (local) |
 | --- | --- | --- |
-| Contracts | `cd contracts && forge test` | 66 passed: MockEHKD 6, pockets on eHKD 20, on a ms clock 20, Base Sepolia fork 20 |
-| Server (sellers, intent, pay, tools, agent, API, Radar, Sentinel, memory, rules, Pre-flight, haggler) | `cd server && pnpm test` (FISCO) / `pnpm test:base` | 76 passed, 6 skipped (16 Oct; needs `forge build` and anvil) |
+| Contracts | `cd contracts && forge test` | 79 passed: MockEHKD 7, pockets on eHKD 24, on a ms clock 24, Base Sepolia fork 24 (17 Oct) |
+| Server (sellers, intent, pay, tools, agent, API, Radar, Sentinel, memory, rules, Pre-flight, haggler) | `cd server && pnpm test` (FISCO) / `pnpm test:base` | 82 passed, 6 skipped on FISCO; 80 passed, 8 skipped on the Base fork (17 Oct; needs `forge build`, anvil for the fork) |
 | Scenes 1–8 through the agent loop | `cd server && SCENE_REPLAY=1 pnpm test:scenes` | 6 passed (replay); real model needs `ANTHROPIC_API_KEY` |
 | Evidence | `CHAIN=fisco pnpm tsx scripts/verify-evidence.ts` | 17/17 hashes valid |
 | Web | `cd web && pnpm test && pnpm build` | 81 passed (16 Oct) |

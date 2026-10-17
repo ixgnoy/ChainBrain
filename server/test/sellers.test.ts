@@ -51,14 +51,14 @@ it("unknown item is 404", async () => expect((await app.request("/datalite/nope"
 
 it("haggler: DataPro's agent counters halfway down to its private floor, then the deal sets the x402 price (numbers only)", async () => {
   const offer = async (o: string, deal?: string) => (await app.request("/datapro/premium-report/offer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ offer: o, deal }) })).json() as Promise<any>;
-  const a = await offer("0.90");
-  expect(a).toMatchObject({ reply: "counter", price: "1.20", final: false });
-  expect(await offer("1.05", a.deal)).toMatchObject({ reply: "counter", price: "1.10", final: true });
-  expect(await offer("1.10", a.deal)).toMatchObject({ reply: "accept", price: "1.10" });
+  const a = await offer($.hag.o1);
+  expect(a).toMatchObject({ reply: "counter", price: $.hag.c1, final: false });
+  expect(await offer($.hag.o2, a.deal)).toMatchObject({ reply: "counter", price: $.hag.c2, final: true });
+  expect(await offer($.hag.c2, a.deal)).toMatchObject({ reply: "accept", price: $.hag.c2 });
   const amount = async (url: string) => (decodePaymentRequiredHeader((await app.request(url)).headers.get("PAYMENT-REQUIRED")!) as any).accepts[0].amount;
-  expect(await amount(`/datapro/premium-report?deal=${a.deal}`)).toBe("1100000");
-  expect(await amount("/datapro/premium-report")).toBe("1500000"); // no deal: the list price
-  expect(await amount("/datapro/premium-report?deal=made-up")).toBe("1500000");
+  expect(await amount(`/datapro/premium-report?deal=${a.deal}`)).toBe(atom($.hag.c2).toString());
+  expect(await amount("/datapro/premium-report")).toBe(atom($.premium).toString()); // no deal: the list price
+  expect(await amount("/datapro/premium-report?deal=made-up")).toBe(atom($.premium).toString());
   expect((await app.request("/datapro/premium-report/offer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ offer: "1.00", deal: a.deal }) })).status).toBe(409);
   expect((await app.request("/datalite/durian-report/offer", { method: "POST", body: "{}" })).status).toBe(404); // not negotiable
 });

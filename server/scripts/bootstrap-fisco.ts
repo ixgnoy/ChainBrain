@@ -4,7 +4,7 @@
 // Same keys + fresh chain = the committed addresses in contracts/deployments/20200.json; anything else is an error.
 import "dotenv/config";
 import { readFileSync } from "node:fs";
-import { createPublicClient, createWalletClient, http, publicActions, type Address, type Hex } from "viem";
+import { createPublicClient, createWalletClient, http, publicActions, zeroAddress, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { fiscoChain } from "../src/chains";
 import { fundIfEmpty } from "../src/fund";
@@ -36,7 +36,8 @@ async function main() {
   const deploy = async (n: string, args: unknown[]) =>
     (await w.waitForTransactionReceipt({ hash: await w.deployContract({ abi: art(n).abi, bytecode: art(n).bytecode.object, args } as any) })).contractAddress!;
   const token = await deploy("MockEHKD", [owner.address]);
-  const factory = await deploy("PocketFactory", [token]);
+  const guardian = process.env.SENTINEL_PK ? privateKeyToAccount(process.env.SENTINEL_PK as Hex).address : zeroAddress; // the Sentinel, if any
+  const factory = await deploy("PocketFactory", [token, guardian]);
   const mint = await w.writeContract({ address: token, abi: art("MockEHKD").abi, functionName: "mint", args: [owner.address, 10_000_000_000n] } as any);
   if ((await w.waitForTransactionReceipt({ hash: mint })).status !== "success") throw new Error(`mint reverted: ${mint}`);
   if (token.toLowerCase() !== want.Token.toLowerCase() || factory.toLowerCase() !== want.PocketFactory.toLowerCase())

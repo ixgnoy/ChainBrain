@@ -101,6 +101,11 @@ export async function startStack() {
     usdcBalance: (a: Address) => tokenBalance(a), // name kept for the *-fork tests
     setUsdc: fundToken,
     ownerWrite,
+    /** Give an address native balance so it can send (FISCO: fund.sh; fork: anvil_setBalance). */
+    async gas(a: Address) {
+      if (fisco) execFileSync("bash", [new URL("scripts/fisco/fund.sh", repo).pathname, a], { stdio: "pipe" });
+      else await ownerWallet.request({ method: "anvil_setBalance" as any, params: [a, toHex(10n ** 18n)] as any });
+    },
     /** Create through the factory as the owner, then fund it (budget = balance; new pockets start empty). */
     async newPocket(o: { cap: string; askAbove: string | "never"; sellers: string[]; budget: string; expiresIn?: number; agent?: Address }): Promise<Address> {
       const ask = o.askAbove === "never" ? 2n ** 256n - 1n : atomic(o.askAbove);
