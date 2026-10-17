@@ -1,0 +1,7 @@
+# What `railway up` should not upload (on top of .gitignore): the apps and docs are not part of the FISCO services.
+android/
+mobile/
+web/*
+!web/package.json
+docs/
+.claude/

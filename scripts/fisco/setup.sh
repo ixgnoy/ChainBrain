@@ -10,7 +10,7 @@ source "$(dirname "$0")/env.sh"
 mkdir -p "$F" && cd "$F"
 [ -n "$FISCO_ASSET" ] || { echo "no FISCO BCOS build for $(uname -sm)" >&2; exit 1; }
 [ -x fisco-bcos ] || { curl -sfLO "https://github.com/FISCO-BCOS/FISCO-BCOS/releases/download/$FISCO_VERSION/$FISCO_ASSET"; tar xzf "$FISCO_ASSET"; }
-[ -f build_chain.sh ] || curl -sfLo build_chain.sh "https://github.com/FISCO-BCOS/FISCO-BCOS/releases/download/$FISCO_VERSION/build_chain.sh"
+[ -f build_chain.sh ] || curl -sfLo build_chain.sh "https://raw.githubusercontent.com/FISCO-BCOS/FISCO-BCOS/$FISCO_VERSION/tools/BcosAirBuilder/build_chain.sh" # not a release asset
 [ -d console ] || { curl -sfLO "https://github.com/FISCO-BCOS/console/releases/download/$CONSOLE_VERSION/console.tar.gz"; tar xzf console.tar.gz; cp console/conf/config-example.toml console/conf/config.toml; }
 
 build() { # $@ extra build_chain args

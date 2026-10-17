@@ -5,9 +5,12 @@ set -euo pipefail
 export FISCO_HOME="${FISCO_HOME:-/data/fisco}"
 mkdir -p "$FISCO_HOME"
 cp -rn /opt/fisco/. "$FISCO_HOME"/ # binary, build_chain.sh, console baked into the image (setup.sh skips downloads when present)
-if [ ! -d "$FISCO_HOME/nodes" ]; then
+# .ready is written only after a complete setup: a first boot that died halfway is rebuilt, never half-started
+if [ ! -f "$FISCO_HOME/.ready" ]; then
   echo "first boot: building the chain"
+  rm -rf "$FISCO_HOME/nodes"
   bash /app/scripts/fisco/setup.sh
+  touch "$FISCO_HOME/.ready"
 else
   bash "$FISCO_HOME/nodes/127.0.0.1/start_all.sh"
 fi

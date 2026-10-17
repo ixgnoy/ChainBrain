@@ -11,8 +11,10 @@ import { record } from "./evidence";
 import { sellersApp, sellerPayTo } from "../src/sellers";
 import { factoryAbi, factoryAddress, erc20Abi, tokenBalance } from "../src/wallet/chain";
 
-process.env.SELLERS_URL = "http://127.0.0.1:4599";
-const server = serve({ fetch: sellersApp().fetch, port: 4599 });
+// SPIKE_SELLERS_URL: pay deployed sellers (their facilitator settles); otherwise run the sellers in-process on :4599
+const remote = process.env.SPIKE_SELLERS_URL;
+process.env.SELLERS_URL = remote ?? "http://127.0.0.1:4599";
+const server = remote ? undefined : serve({ fetch: sellersApp().fetch, port: 4599 });
 const { fetchQuote, track, settle, prepareApproval, agentAccount } = await import("../src/wallet/pay");
 const { transferTypedData } = await import("../src/wallet/scheme");
 
@@ -48,5 +50,5 @@ const r2 = await settle(pocket, rec, intentHash);
 console.log("owner co-sign →", r2);
 if (r2.ok) record("spike: DataPro above ask-me, owner co-signed", r2.tx, "success", "AuthorizationUsed(address,bytes32)", cfg().token);
 console.log("pocket balance", await tokenBalance(pocket));
-server.close();
+server?.close();
 process.exit(r1.ok && r2.ok ? 0 : 1);
