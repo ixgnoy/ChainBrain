@@ -72,7 +72,7 @@ function describeBase(row: LedgerRow, seller: string, when: string, where?: stri
   if (row.kind === "owner") {
     const k = (row.ownerKind ?? "fund") as keyof typeof OWNER_ICON;
     const rev = k === "revoke";
-    return { title: row.text ?? "Transaction", sub: [row.detail, where, when].filter(Boolean).join(" · "), right: money, rightSub: "On chain", rightTone: "ink", rightSubTone: "muted", avatar: { icon: OWNER_ICON[k] ?? "check", tone: rev ? "negative" : "soft" }, filter: "other" };
+    return { title: row.text ?? "Transaction", sub: [row.detail, where, when].filter(Boolean).join(" · "), right: money, rightTone: "ink", rightSubTone: "muted", avatar: { icon: OWNER_ICON[k] ?? "check", tone: rev ? "negative" : "soft" }, filter: "other" };
   }
   if (row.kind === "intent") {
     const first = (row.text ?? "").split("\n")[0].replace(/^Buy:\s*/i, "");
