@@ -7,7 +7,7 @@ import org.web3j.crypto.Sign
 import org.web3j.utils.Numeric
 import java.math.BigInteger
 
-/** The server's chain, from /api/config (`CHAIN` on the server): FISCO + Mock e-HKD, or Base Sepolia + USDC. */
+/** The server's FISCO BCOS chain and its Mock e-HKD, from /api/config. */
 data class ChainInfo(val key: String, val id: Long, val name: String, val rpc: String, val domainName: String, val domainVersion: String, val currency: String, val txUrl: String, val token: String) {
     companion object {
         /** Set once the config loads; nothing chain-specific renders before that. */
@@ -19,7 +19,7 @@ data class ChainInfo(val key: String, val id: Long, val name: String, val rpc: S
 /** The token's TransferWithAuthorization the wallet tool layer built (from = pocket). */
 data class Authorization(val from: String, val to: String, val value: BigInteger, val validAfter: BigInteger, val validBefore: BigInteger, val nonce: String)
 
-/** EIP-712 digest for the chain's token (Mock e-HKD v1 on 20200, USDC v2 on 84532), identical to viem's hashTypedData(transferTypedData(auth)). */
+/** EIP-712 digest for the Mock e-HKD (version 1, chain 20200), identical to viem's hashTypedData(transferTypedData(auth)). */
 object Eip712 {
     private val DOMAIN_TYPEHASH = keccak("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
     private val TRANSFER_TYPEHASH = keccak("TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)")

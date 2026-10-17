@@ -21,16 +21,7 @@ class LogicTest {
         nonce = "0x" + "11".repeat(32),
     )
 
-    private val fisco = ChainInfo("fisco", 20200, "FISCO BCOS (local)", "http://127.0.0.1:8545", "Mock e-HKD", "1", "HK$", "http://10.0.2.2:8787/api/tx/", "0x0355c0c5Afe2A35369056FBB854903A4aF07781A")
-    private val base = ChainInfo("base-sepolia", 84532, "Base Sepolia", "https://sepolia.base.org", "USDC", "2", "US$", "https://sepolia.basescan.org/tx/", "0x036CbD53842c5426634e7929541eC2318f3dCF7e")
-
-    @Test fun `digest and signature are byte-identical to viem on Base Sepolia (USDC v2)`() {
-        assertEquals("0xb7395702a99b199c320cb5ce804a8ec100a8d9d542b5667d3547f08dd3f74eeb", Numeric.toHexString(Eip712.digest(auth, base)))
-        assertEquals(
-            "0x4e67a78ffe5addd465ad6a2002939d27b50bfa1294fb6e87633018e5e61e87856aa2fac13eccc79d967347075e914d69499cfe800ba5202efdb5bf3db958589d1c",
-            Eip712.sign(auth, key, base),
-        )
-    }
+    private val fisco = ChainInfo("fisco", 20200, "FISCO BCOS (local)", "http://127.0.0.1:8545", "Mock e-HKD", "1", "HK$", "http://10.0.2.2:8787/explorer#/tx/", "0x0355c0c5Afe2A35369056FBB854903A4aF07781A")
 
     @Test fun `digest and signature are byte-identical to viem on FISCO (Mock e-HKD v1, chain 20200)`() {
         assertEquals("0x8740fe0aa2ae6a1abab87db938b3254e5f4935caeee2cdd08487c539ba962d5c", Numeric.toHexString(Eip712.digest(auth, fisco)))
@@ -45,18 +36,16 @@ class LogicTest {
         assertEquals("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", addressOf(key))
         assertEquals(addressOf(key), Eip712.recover(auth, sig, fisco))
         assertNotEquals(addressOf(key), Eip712.recover(auth.copy(value = BigInteger.valueOf(1_900_000)), sig, fisco))
-        assertNotEquals(addressOf(key), Eip712.recover(auth, sig, base)) // a FISCO co-sign is useless on another chain
+        assertNotEquals(addressOf(key), Eip712.recover(auth, sig, fisco.copy(id = 1))) // bound to chain 20200: useless on any other chain
     }
 
-    @Test fun `presets match the spec and the web app (HK$ on FISCO, US$ on Base)`() {
+    @Test fun `presets match the spec and the apps (HK$)`() {
         val payTo = mapOf("datalite" to "0x00000000000000000000000000000000000000d1", "datapro" to "0x00000000000000000000000000000000000000d2")
-        val (research, onePurchase) = Presets.forChain("fisco")
+        val (research, onePurchase) = Presets.all
         val a = Presets.toPocketArgs(research, "0x00000000000000000000000000000000000000aa", payTo)
         assertEquals(listOf(40_000_000L, 15_000_000L, 8_000_000L).map(BigInteger::valueOf), listOf(a.budget, a.cap, a.askAbove))
         val one = Presets.toPocketArgs(onePurchase, a.agent, payTo)
         assertEquals(listOf(BigInteger.valueOf(2_300_000), BigInteger.valueOf(2_300_000), Money.NEVER), listOf(one.budget, one.cap, one.askAbove))
-        val b = Presets.toPocketArgs(Presets.forChain("base-sepolia")[0], a.agent, payTo)
-        assertEquals(listOf(5_000_000L, 2_000_000L, 1_000_000L).map(BigInteger::valueOf), listOf(b.budget, b.cap, b.askAbove))
         assertThrows(IllegalArgumentException::class.java) { Presets.toPocketArgs(research.copy(sellers = listOf("nope")), a.agent, payTo) }
         val noon = ZonedDateTime.of(2026, 10, 14, 12, 0, 0, 0, ZoneId.of("Asia/Hong_Kong"))
         assertEquals(ZonedDateTime.of(2026, 10, 14, 23, 59, 0, 0, ZoneId.of("Asia/Hong_Kong")).toEpochSecond(), Presets.expiryFor(Lifetime.UNTIL_TONIGHT, noon).toLong())
@@ -68,7 +57,7 @@ class LogicTest {
         assertEquals("0.30", Money.format(BigInteger.valueOf(300_000)))
         assertEquals("never", Money.format(Money.NEVER))
         assertEquals("HK$2.30", money(BigInteger.valueOf(2_300_000), fisco))
-        assertEquals("US$0.30", money(BigInteger.valueOf(300_000), base))
+        assertEquals("http://10.0.2.2:8787/explorer#/address/0xab", fisco.txUrl.replace("#/tx/", "#/address/") + "0xab")
         assertThrows(IllegalArgumentException::class.java) { Money.parse("1.2345678") }
         assertEquals("Active", pocketStatus(false, BigInteger.valueOf(100), 50_000))
         assertEquals("Expired", pocketStatus(false, BigInteger.valueOf(100), 200_000))

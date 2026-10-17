@@ -30,8 +30,8 @@ class Api(private val base: String) {
         val s = j.getJSONArray("sellers")
         val c = j.getJSONObject("chain")
         val d = c.getJSONObject("domain")
-        // FISCO tx links go to this API's /api/tx (the server's own URL says localhost, which on a phone is the phone)
-        val txUrl = if (c.getString("key") == "fisco") "$base/api/tx/" else c.getString("txUrl")
+        // tx links go to this API's explorer (the server's own PUBLIC_API_URL may say localhost, which on a phone is the phone)
+        val txUrl = "$base/explorer#/tx/"
         val chain = ChainInfo(c.getString("key"), c.getLong("id"), c.getString("name"), c.getString("rpc"), d.getString("name"), d.getString("version"), c.getString("currency"), txUrl, j.getString("token"))
         ChainInfo.current = chain
         return Config(j.getString("agent"), j.getString("factory"), j.getString("token"), chain,

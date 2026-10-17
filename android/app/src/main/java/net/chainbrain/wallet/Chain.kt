@@ -51,7 +51,7 @@ private fun word(hex: String) = Numeric.toBigInt(hex.ifEmpty { "0x0" })
 private fun addr(hex: String) = org.web3j.crypto.Keys.toChecksumAddress("0x" + Numeric.cleanHexPrefix(hex).takeLast(40))
 private val POCKET_CREATED = Numeric.toHexString(Hash.sha3("PocketCreated(address,address,address)".toByteArray()))
 
-/** The owner's main wallet on this phone: reads pockets and sends owner-signed transactions (EIP-1559 on Base, legacy at gas price 0 on FISCO). */
+/** The owner's main wallet on this phone: reads pockets and sends owner-signed transactions (legacy at gas price 0 on FISCO). */
 class OwnerWallet(private val creds: Credentials, rpcUrl: String, private val cfg: Config) {
     val address: String = creds.address.let { org.web3j.crypto.Keys.toChecksumAddress(it) }
     private val rpc = Rpc(rpcUrl)
@@ -90,12 +90,8 @@ class OwnerWallet(private val creds: Credentials, rpcUrl: String, private val cf
         val nonce = word(rpc.call("eth_getTransactionCount", address, "pending") as String)
         val gas = word(rpc.call("eth_estimateGas", JSONObject().put("from", address).put("to", to).put("data", data)) as String) * BigInteger.valueOf(12) / BigInteger.TEN
         val chainId = cfg.chain.id
-        // FISCO: gas is free (price 0) but the sender needs a non-zero native balance (scripts/fisco/fund.sh); legacy EIP-155 tx.
-        val raw = if (cfg.chain.key == "fisco") RawTransaction.createTransaction(nonce, BigInteger.ZERO, gas, to, BigInteger.ZERO, data) else {
-            val tip = word(rpc.call("eth_maxPriorityFeePerGas") as String).max(BigInteger.valueOf(1_000_000))
-            val base = word((rpc.call("eth_getBlockByNumber", "latest", false) as JSONObject).optString("baseFeePerGas", "0x0"))
-            RawTransaction.createTransaction(chainId, nonce, gas, to, BigInteger.ZERO, data, tip, base * BigInteger.TWO + tip)
-        }
+        // FISCO: gas is free (price 0) but the sender needs a non-zero native balance (the faucet or fund.sh); legacy EIP-155 tx.
+        val raw = RawTransaction.createTransaction(nonce, BigInteger.ZERO, gas, to, BigInteger.ZERO, data)
         val hash = rpc.call("eth_sendRawTransaction", Numeric.toHexString(TransactionEncoder.signMessage(raw, chainId, creds))) as String
         repeat(120) {
             val rec = rpc.call("eth_getTransactionReceipt", hash)

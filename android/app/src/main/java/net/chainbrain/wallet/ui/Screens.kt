@@ -77,7 +77,7 @@ fun SetupScreen(vault: KeyVault, err: String, hasKey: Boolean, onKey: (Credentia
         T("Connection", bold = true)
         if (err.isNotEmpty()) T(err, color = p.danger)
         Field(api, { api = it }, "Wallet API", "http://192.168.1.20:8787")
-        Field(rpc, { rpc = it }, "Chain RPC", "http://10.0.2.2:8545 (FISCO) or https://sepolia.base.org")
+        Field(rpc, { rpc = it }, "Chain RPC", "http://10.0.2.2:8545 (local FISCO) or https://fisco-node-production.up.railway.app")
         Btn("Save and connect", { vault.apiUrl = api; vault.rpcUrl = rpc; onConnection() }, kind = Kind.Ghost)
     }
     if (!hasKey) CbCard {
@@ -135,7 +135,7 @@ fun HomeScreen(cfg: Config, wallet: OwnerWallet, vault: KeyVault, pockets: List<
     }
     CbCard {
         T("New pocket", bold = true)
-        Presets.forChain().forEach { pr ->
+        Presets.all.forEach { pr ->
             Btn("${pr.label}, ${cfg.chain.currency}${pr.budget}", {
                 scope.launch {
                     msg = ""
@@ -157,7 +157,7 @@ fun HomeScreen(cfg: Config, wallet: OwnerWallet, vault: KeyVault, pockets: List<
         if (msg.isNotEmpty()) T(msg, muted = true)
         Field(existing, { existing = it }, "", "Or add an existing pocket address")
         Btn("Add pocket", { onAdd(existing.trim()); existing = "" }, kind = Kind.Ghost, enabled = Regex("^0x[0-9a-fA-F]{40}$").matches(existing.trim()))
-        if (cfg.chain.key != "fisco") T("View main wallet on Basescan", Modifier.clickable { uri.openUri(addressUrl(wallet.address)) }, color = p.accent)
+        T("View main wallet in the explorer", Modifier.clickable { uri.openUri(addressUrl(wallet.address)) }, color = p.accent)
     }
     CbCard {
         T("Connection", bold = true)

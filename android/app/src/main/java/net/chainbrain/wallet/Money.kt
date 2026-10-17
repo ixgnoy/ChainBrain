@@ -2,7 +2,7 @@ package net.chainbrain.wallet
 
 import java.math.BigInteger
 
-// Same rules as mobile/src/lib/shared.ts: USDC and Mock e-HKD have 6 decimals; "never" = max uint256.
+// Same rules as mobile/src/lib/shared.ts: Mock e-HKD has 6 decimals; "never" = max uint256.
 object Money {
     val NEVER: BigInteger = BigInteger.TWO.pow(256) - BigInteger.ONE
     private val UNIT = BigInteger.valueOf(1_000_000)
@@ -21,11 +21,11 @@ object Money {
 }
 
 fun shortAddr(a: String?): String = if (a.isNullOrEmpty()) "" else "${a.take(6)}…${a.takeLast(4)}"
-/** HK$2.30 on FISCO (Mock e-HKD), US$0.30 on Base Sepolia (USDC). */
+/** "HK$2.30" from atomic eHKD units. */
 fun money(n: BigInteger, c: ChainInfo = ChainInfo.get()) = if (n == Money.NEVER) "never" else "${c.currency}${Money.format(n)}"
-/** Base: basescan. FISCO has no explorer: the wallet API's receipt endpoint. */
+/** FISCO has no public explorer: links open the wallet API's own (/explorer). */
 fun txUrl(hash: String) = ChainInfo.get().txUrl + hash
-fun addressUrl(a: String) = "https://sepolia.basescan.org/address/$a"
+fun addressUrl(a: String) = ChainInfo.get().txUrl.replace("#/tx/", "#/address/") + a
 
 val REASONS = mapOf(
     "SELLER_NOT_ALLOWED" to "Seller not in this pocket's allowlist",
