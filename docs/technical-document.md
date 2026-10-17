@@ -98,6 +98,9 @@ What the local FISCO 3.16.4 chain needed (all recorded in the port plan):
 4. Contracts see `block.timestamp` in **milliseconds** (the RPC header says seconds). `contracts/src/Clock.sol` normalises it (`nowSec()`), so pocket expiry and EIP-3009 windows stay in seconds; it is a no-op on Ethereum chains, and 20 pocket tests run on a millisecond clock.
 5. A sender's transactions are not ordered by nonce inside a block, so deploys use `forge --slow` and every client waits for each receipt.
 6. FISCO reports any account it tracks (native balance, nonce) with pseudo-code `[PRECOMPILED],…,/usr/<address>`, so a funded EOA has a non-zero code size. OpenZeppelin's `SignatureChecker` then takes the ERC-1271 path and rejects the EOA's own EIP-3009 signature (reproduced on the local chain). `MockEHKD` checks ECDSA by the signer first and asks ERC-1271 only otherwise; pockets still go through ERC-1271. The explorer treats that pseudo-code as an account, not a contract.
+7. No `eth_feeHistory`, but blocks carry `baseFeePerGas: 0x0`, so wallets (MetaMask, ethers, forge without `--legacy`) take the EIP-1559 path and fail. The hosted node's gateway (`deploy/fisco-node/gateway.mjs`) answers `eth_feeHistory` with the chain's real history: all zeros. With it, an EIP-1559 (type 2) transaction from `cast` succeeds against the public RPC.
+8. `transactionIndex` comes back as the hex of its ASCII text (`"0x307830"` for `"0x0"`), which overflows client number parsers. The gateway repairs it in responses.
+9. The FISCO console's own transactions (balance credits to precompile `0x1011`) carry FISCO's 128-bit random nonce and chain id 0, so Ethereum clients cannot parse a full block that contains one (viem `getBlock({ includeTransactions: true })`). Wallets only read their own transactions, so they are unaffected; the explorer reads raw blocks.
 
 ## 8. Test summary
 

@@ -82,6 +82,8 @@ Every claim below points to a test that runs today.
 | Mock e-HKD (FISCO demo) | Labelled a mock in the apps and docs; only on a local chain | Its owner can mint without limit: it demonstrates the flow, not a money supply |
 | FISCO millisecond clock | `Clock.nowSec()` normalises `block.timestamp`; tested on a ms clock | A chain whose seconds clock ever exceeded 1e11 would be misread (year 5138) |
 | FISCO chain governance | Local single node; the console account is the governor and funds senders | A one-node chain has no fault tolerance; a consortium deployment would need several nodes and real governance |
+| Hosted demo chain (Railway) | Public RPC; native balance only via the token-protected gateway `/admin/fund` (private network, `FUND_TOKEN`); governor key stays on the node's volume | Anyone the faucet funds can send transactions; the sellers' `/admin/inject` red-team hook is public by design |
+| Faucet | One claim per address per day, 10 per IP per hour, mints serialized | Limits are in memory and reset on restart; acceptable for a mock token, not for anything of value |
 
 **Day-1 gate.** The pocket path passed on a Base Sepolia fork with real USDC v2.2 and x402's facilitator code. The live public-facilitator run is recorded in `docs/evidence.md`. If the hosted facilitator refuses, `FACILITATOR=local` runs the same verification code, and the on-chain guarantee is unchanged.
 

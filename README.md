@@ -64,6 +64,18 @@ bash scripts/fisco/fund.sh 0xYOUR_APP_KEY   # any other address that will send t
 
 Later sessions: `bash scripts/fisco/start.sh` / `stop.sh`. Gas is free on this chain, but its web3 RPC refuses senders whose native balance is 0, hence `fund.sh`. To send eHKD to an app key, transfer from OWNER (for example MetaMask on OWNER, or `cast send` with `--legacy --gas-price 0`). In MetaMask, the web app adds the chain itself (`wallet_addEthereumChain`, RPC `http://127.0.0.1:8545`). The facilitator always runs in-process on FISCO.
 
+### Hosted FISCO chain (Railway)
+
+| Service | URL | What |
+| --- | --- | --- |
+| `fisco-node` | https://fisco-node-production.up.railway.app | JSON-RPC (chain id 20200), `/health`. Chain data on a volume. |
+| `fisco-api` | https://fisco-api-production-85c5.up.railway.app | Wallet API, **explorer** at `/explorer`, **faucet** at `/faucet` |
+| `fisco-sellers` | https://fisco-sellers-production.up.railway.app | x402 test sellers with x402's facilitator in-process |
+
+**MetaMask:** open the faucet page and press "Use MetaMask" (it adds the network), or add it by hand: RPC `https://fisco-node-production.up.railway.app`, chain id `20200`, symbol `FISCO`, explorer `https://fisco-api-production-85c5.up.railway.app/explorer`. Then claim HK$100 eHKD on the faucet; it also credits the native balance the chain requires before an address can send (gas is free). "Add eHKD to MetaMask" registers the token.
+
+Redeploy: `RAILWAY_TOKEN=<project token> railway up --service fisco-node|fisco-api|fisco-sellers` from the repo root (`deploy/fisco-node`, `deploy/server`; `.railwayignore` keeps the apps out of the upload). On an empty volume the node builds the chain and `fisco-api` deploys the contracts at the committed addresses.
+
 ### Base Sepolia (`CHAIN=base-sepolia`)
 
 **Fund the wallets** on Base Sepolia:
