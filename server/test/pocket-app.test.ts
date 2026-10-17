@@ -11,9 +11,9 @@ vi.mock("../src/wallet/directory", async () => {
   return { directory: async () => s() };
 });
 
-const sentence = "Every morning, get me durian export news from Exa and the USDC price from CoinGecko. Max US$0.05 a week.";
+const sentence = "Every morning, get me durian export news from Exa and the ETH price from CoinGecko. Max HK$0.40 a week.";
 const toolReply = (name: string, input: object) => ({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "t", name, input }] }) as any;
-const rules = { name: "Durian brief", sellers: ["exa", "coingecko"], cap: "0.05", budget: "0.10", askAbove: "never", lifetime: "ongoing", questions: [] };
+const rules = { name: "Durian brief", sellers: ["exa", "coingecko"], cap: "0.40", budget: "0.80", askAbove: "never", lifetime: "ongoing", questions: [] };
 const post = async (api: any) => (await api.request("/api/pocket-app/compose", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sentence }) })).json();
 
 beforeAll(() => { useDevKeys(); process.env.FACTORY_ADDRESS = "0x0000000000000000000000000000000000000001"; });
@@ -34,17 +34,17 @@ it("Claude's spec is used when it validates, and its routine can only get strict
       v: 1, catalogue: "chainbrain.pocket.v1", layout: "research", title: "Morning durian brief",
       blocks: [{ type: "shelf" }, { type: "next-run" }, { type: "budget" }, { type: "guard" }],
       // wider than the sentence: a bigger allowance, more often, an extra item; the merge keeps the picker's stricter reading
-      routine: { kind: "schedule", cadence: { every: "day", hour: 8, minute: 0 }, items: [{ sellerId: "exa", sku: "durian-news" }, { sellerId: "coingecko", sku: "usdc-price" }, { sellerId: "nansen", sku: "smart-money" }], allowance: { amount: "5.00", period: "week" } },
+      routine: { kind: "schedule", cadence: { every: "day", hour: 8, minute: 0 }, items: [{ sellerId: "exa", sku: "durian-news" }, { sellerId: "coingecko", sku: "eth-price" }, { sellerId: "nansen", sku: "smart-money" }], allowance: { amount: "40.00", period: "week" } },
     }),
   });
   const r = await post(api);
   expect(r.specBy).toBe("claude");
   expect(r.spec.title).toBe("Morning durian brief");
   expect(r.spec.blocks.map((b: any) => b.type)).toEqual(["shelf", "next-run", "budget", "guard"]);
-  expect(r.spec.routine.allowance).toEqual({ amount: "0.05", period: "week" });
+  expect(r.spec.routine.allowance).toEqual({ amount: "0.40", period: "week" });
   expect(r.spec.routine.items.map((i: any) => i.sellerId)).toEqual(["exa", "coingecko"]);
-  expect(r.draft.per).toEqual({ amount: "0.05", period: "week" }); // the allowance survives the model's rules reading
-  expect(r.proof.lines.some((l: string) => /US\$0\.05 a week/.test(l))).toBe(true);
+  expect(r.draft.per).toEqual({ amount: "0.40", period: "week" }); // the allowance survives the model's rules reading
+  expect(r.proof.lines.some((l: string) => /HK\$0\.40 a week/.test(l))).toBe(true);
 });
 
 it("a spec that fails validation (seller text, a link, a style) falls back to the fixed picker", async () => {

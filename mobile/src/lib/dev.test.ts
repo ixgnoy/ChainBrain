@@ -6,7 +6,7 @@ import { detectDev, isHttpUrl, setApiUrl, setDev, setSource, rpcUrl, explorerEna
 const res = (status: number, body?: unknown) => async () => ({ ok: status >= 200 && status < 300, status, json: async () => { if (body === undefined) throw new Error("not json"); return body; }, text: async () => "" });
 
 test("dev stack detected from GET /dev/health", async () => {
-  const d = await detectDev("http://x:8787/", res(200, { mode: "local-fork", chainId: 84532, rpcPath: "/dev/rpc", owner: "0x1" }));
+  const d = await detectDev("http://x:8787/", res(200, { mode: "local-fork", chainId: 20200, rpcPath: "/dev/rpc", owner: "0x1" }));
   assert.equal(d?.mode, "local-fork");
   assert.equal(d?.rpcPath, "/dev/rpc");
 });
@@ -18,14 +18,14 @@ test("real server (404), garbage, wrong mode and network errors mean no dev mode
   assert.equal(await detectDev("http://x", async () => { throw new Error("down"); }), null);
 });
 
-test("RPC and explorer follow dev mode; real path keeps EXPO_PUBLIC_RPC_URL and BaseScan", () => {
-  assert.equal(txUrl("0xab"), undefined, "the built-in network (default) never links to BaseScan");
+test("RPC and explorer follow dev mode; a real server links to its own explorer once its config is in", () => {
+  assert.equal(txUrl("0xab"), undefined, "the built-in network (default) never links to an explorer");
   setSource("server");
   setApiUrl("http://192.168.1.5:8787/");
   assert.equal(rpcUrl(), ENV_RPC);
   assert.equal(explorerEnabled(), true);
-  assert.match(txUrl("0xab")!, /sepolia\.basescan\.org\/tx\/0xab$/);
-  setDev({ mode: "local-fork", chainId: 84532, rpcPath: "/dev/rpc" });
+  assert.equal(txUrl("0xab"), undefined, "no link before /api/config names the explorer");
+  setDev({ mode: "local-fork", chainId: 20200, rpcPath: "/dev/rpc" });
   assert.equal(rpcUrl(), "http://192.168.1.5:8787/dev/rpc");
   assert.equal(explorerEnabled(), false);
   assert.equal(txUrl("0xab"), undefined);

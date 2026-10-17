@@ -84,7 +84,7 @@ export function headlineOf(rows: TraceRow[], injections: { at: number; seller: s
     if (r.label === "forced transfer") best = { at: r.at, kind: r.verdict === "Reverted" ? "ok" : "refused", text: r.verdict === "Reverted" ? "Reverted: the pocket refused the forced transfer and the balance did not move" : "The forced transfer was not refused" };
     else if (code) best = { at: r.at, kind: "refused", text: `Refused: ${REASONS[code] ?? "the wallet said no"}`, code };
     else if (r.verdict === "Paid") {
-      // "Paid Exa US$0.007": the seller's name and the amount, not the item code
+      // "Paid Exa HK$0.056": the seller's name and the amount, not the item code
       const e = r.event as any;
       let amount = "";
       try { amount = e.type === "payment" ? ` ${curSign()}${(Number(BigInt(e.amount)) / 1e6).toFixed(2)}` : ""; } catch { /* no amount */ }

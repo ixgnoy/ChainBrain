@@ -25,7 +25,7 @@ import { biometricKind, confirmOwner } from "../lib/biometric";
 import * as api from "../lib/api";
 import { cleanText } from "../lib/sanitize";
 import { expiryFor } from "../lib/presets";
-import { NEVER, parseUsd } from "../lib/shared";
+import { NEVER, parseHkd } from "../lib/shared";
 import { haptic } from "../haptics";
 import { PocketFace, cardHeight, toneFor } from "../components/PocketFace";
 import { SellerMark } from "../ui/SellerMark";
@@ -45,10 +45,10 @@ import { curSign } from "../lib/runtime";
 
 type Composed = Awaited<ReturnType<typeof api.composeApp>>;
 const EXAMPLES: { icon: IconName; label: string; text: string; layout: Layout; agent: string }[] = [
-  { icon: "file", label: "Morning brief", layout: "research", agent: "chainbrain", text: "Every morning, get me durian export news from Exa and the USDC price from CoinGecko. Max US$0.05 a week." },
-  { icon: "chart", label: "Claude watches a price", layout: "deal", agent: "claude", text: "Let Claude buy Nansen's smart-money flows every morning when the price drops below US$0.04. Max US$0.20 a week." },
-  { icon: "refresh", label: "ChatGPT renews feeds", layout: "subscriptions", agent: "chatgpt", text: "Have ChatGPT renew Exa durian news and the CoinGecko USDC price every Monday, max US$0.10 a month." },
-  { icon: "target", label: "Haggle a report", layout: "haggle", agent: "chainbrain", text: "Get DataPro's premium report, but negotiate the price down first, at most US$2 each, ask me above US$1, one-off." },
+  { icon: "file", label: "Morning brief", layout: "research", agent: "chainbrain", text: "Every morning, get me durian export news from Exa and the ETH price from CoinGecko. Max HK$0.40 a week." },
+  { icon: "chart", label: "Claude watches a price", layout: "deal", agent: "claude", text: "Let Claude buy Nansen's smart-money flows every morning when the price drops below HK$0.32. Max HK$1.60 a week." },
+  { icon: "refresh", label: "ChatGPT renews feeds", layout: "subscriptions", agent: "chatgpt", text: "Have ChatGPT renew Exa durian news and the CoinGecko ETH price every Monday, max HK$0.80 a month." },
+  { icon: "target", label: "Haggle a report", layout: "haggle", agent: "chainbrain", text: "Get DataPro's premium report, but negotiate the price down first, at most HK$16 each, ask me above HK$8 one-off." },
 ];
 const ZERO = "0x0000000000000000000000000000000000000000" as Address;
 
@@ -75,8 +75,8 @@ export default function Compose() {
   const spec = res?.spec;
   // fixed once composed: the new pocket itself must not turn it into "… · 17 Oct"
   const title = useMemo(() => (spec ? uniqueName(spec.title, pockets.map((x) => x.name)).slice(0, 28) : ""), [spec]); // eslint-disable-line react-hooks/exhaustive-deps
-  const budget = draft ? parseUsd(draft.budget) : 0n;
-  const short = balances ? balances.usdc < budget : false;
+  const budget = draft ? parseHkd(draft.budget) : 0n;
+  const short = balances ? balances.ehkd < budget : false;
   const [signer, setSigner] = useState<string | null>(null);
   useEffect(() => { void biometricKind().then(setSigner); }, []);
 
@@ -117,8 +117,8 @@ export default function Compose() {
       if (outside) connectAgent(agent.id);
       const payTo = Object.fromEntries(cfg.sellers.map((s) => [s.id, s.payTo]));
       const m = await wallet.createPocket({
-        agent: (outside ? agent.address : cfg.agent) as Address, cap: parseUsd(draft.cap),
-        askAbove: draft.askAbove === "never" ? NEVER : parseUsd(draft.askAbove), expiresAt: expiryFor(draft.lifetime),
+        agent: (outside ? agent.address : cfg.agent) as Address, cap: parseHkd(draft.cap),
+        askAbove: draft.askAbove === "never" ? NEVER : parseHkd(draft.askAbove), expiresAt: expiryFor(draft.lifetime),
         sellers: draft.sellers.map((s) => payTo[s] as Address),
       });
       recordTx({ kind: "create", pocket: m.pocket, hash: m.tx });
@@ -151,8 +151,8 @@ export default function Compose() {
 
   // the live preview: the pocket as it will be, before it exists (no address yet: the card says Draft)
   const preview: Pocket | null = spec && draft ? {
-    address: made?.pocket ?? ZERO, owner: (wallet?.address ?? ZERO) as Address, agent: agent.address as Address, cap: parseUsd(draft.cap),
-    askAbove: draft.askAbove === "never" ? NEVER : parseUsd(draft.askAbove), expiresAt: expiryFor(draft.lifetime), revoked: false,
+    address: made?.pocket ?? ZERO, owner: (wallet?.address ?? ZERO) as Address, agent: agent.address as Address, cap: parseHkd(draft.cap),
+    askAbove: draft.askAbove === "never" ? NEVER : parseHkd(draft.askAbove), expiresAt: expiryFor(draft.lifetime), revoked: false,
     balance: budget, allowed: draft.sellers, name: title, style: "custom", owned: true, agentId: agent.id, app: spec,
   } as Pocket : null;
   const ctx: AppCtx | null = spec && draft && preview ? {

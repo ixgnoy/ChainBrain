@@ -19,7 +19,7 @@ import { isAddress, type Address } from "viem";
 import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { haptic } from "../../haptics";
-import { money, shortAddr, usd } from "../../lib/util";
+import { money, shortAddr, hkd } from "../../lib/util";
 
 /** Flat section header: 13/600 muted, 24 above, 8 below. */
 const Group = ({ title }: { title: string }) => <T v="cap" w="semi" color="muted" accessibilityRole="header" style={{ paddingHorizontal: 24, marginTop: 24, marginBottom: 8 }}>{title}</T>;
@@ -56,7 +56,7 @@ export default function Settings() {
     try {
       const r = await api.ping(url || ENV_API);
       const d = await detectDev(url || ENV_API);
-      setTest({ state: "ok", text: `Connected in ${r.ms} ms. ${d ? "This is the local test network." : "This is the test network (Base Sepolia)."}` });
+      setTest({ state: "ok", text: `Connected in ${r.ms} ms. ${d ? "This is the local test network." : "This is the FISCO BCOS chain."}` });
       haptic.success();
     } catch {
       setTest({ state: "fail", text: "Could not reach it. Your phone and laptop need the same Wi-Fi, and the address must be your laptop's, not localhost." });
@@ -80,13 +80,13 @@ export default function Settings() {
     setEditing(false); setTest({ state: "idle" });
     if (custom) await setSource("builtin");
   };
-  const network = conn === "online" ? (dev ? "Connected · local test network" : "Connected · test network (Base Sepolia)") : conn === "offline" ? connError || "Not reachable" : "Connecting…";
+  const network = conn === "online" ? (dev ? "Connected · local test network" : "Connected · FISCO BCOS") : conn === "offline" ? connError || "Not reachable" : "Connecting…";
 
   return (
     <Screen innerRef={scroller}>
       <PageTitle title="Settings" sub={pending.length ? `${pending.length} request${pending.length > 1 ? "s" : ""} waiting for you` : undefined} />
 
-      <WalletFace address={wallet?.address} usdc={balances?.usdc} copied={copied}
+      <WalletFace address={wallet?.address} ehkd={balances?.ehkd} copied={copied}
         onCopy={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }} />
       <Group title="Wallet" />
       <ListCard>
@@ -162,13 +162,13 @@ export default function Settings() {
 
 /** The main wallet as a card of its own: the same proportions as the pockets, but its own face (white, a heavy ink hatch
  *  along its edge, ChainBrain's mark), because it is the one no agent ever holds. Tap to copy the address. */
-function WalletFace({ address, usdc, copied, onCopy }: { address?: string; usdc?: bigint; copied: boolean; onCopy(): void }) {
+function WalletFace({ address, ehkd, copied, onCopy }: { address?: string; ehkd?: bigint; copied: boolean; onCopy(): void }) {
   const { width } = useWindowDimensions();
   const w = Math.min(width, 480) - 32;
   const h = Math.round(w / 1.586);
   return (
     <Press kind="row" haptics="none" onPress={onCopy} accessibilityRole="button"
-      accessibilityLabel={`Main wallet${usdc != null ? `, ${money(usdc)}` : ""}. Only your key can move this money; no agent holds it. ${copied ? "Address copied" : "Copies the address"}`}
+      accessibilityLabel={`Main wallet${ehkd != null ? `, ${money(ehkd)}` : ""}. Only your key can move this money; no agent holds it. ${copied ? "Address copied" : "Copies the address"}`}
       style={{ marginHorizontal: 16, marginTop: 12, marginBottom: 4 }}>
       <View style={{ width: w, height: h, borderRadius: 18, backgroundColor: c.card, overflow: "hidden", borderCurve: "continuous", ...level3, shadowOpacity: 0.1 } as object}>
         <View style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: w * 0.32, overflow: "hidden" }}><Hatch color={c.ink} pitch={7} stroke={2} opacity={0.9} /></View>
@@ -179,7 +179,7 @@ function WalletFace({ address, usdc, copied, onCopy }: { address?: string; usdc?
           </View>
           <View>
             <T v="cap" w="semi" color="muted">Only your key moves it</T>
-            {usdc != null ? <Money v="amount" value={usd(usdc)} /> : <T v="row" color="muted">Loading…</T>}
+            {ehkd != null ? <Money v="amount" value={hkd(ehkd)} /> : <T v="row" color="muted">Loading…</T>}
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <T v="mono" style={{ fontSize: 17, lineHeight: 22, textTransform: "none" }}>{address ? `0x…${address.slice(-4).toLowerCase()}` : "—"}</T>

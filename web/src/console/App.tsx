@@ -9,7 +9,7 @@ import { PocketAppView } from "./PocketApp";
 import { Explorer } from "./Explorer";
 import { Evidence } from "./Evidence";
 import SellerView from "../seller/SellerView";
-import { PhoneTag, TestnetChip, usd } from "./parts";
+import { PhoneTag, TestnetChip, hkd } from "./parts";
 import { Stepper } from "./Stepper";
 import { Kbd } from "./kit";
 import { eventPocket, samePocket } from "../lib/events";
@@ -60,8 +60,8 @@ function PocketPicker({ value, onChange }: { value?: string; onChange(a: string)
   const shownPockets = listed([value]);
   return (
     <PillSelect label="Pocket" value={cur?.address ?? ""} onChange={onChange}
-      shown={cur ? <>{nameOf(cur.address)}{isPhone(cur.address) && <PhoneTag />}<span className="num ml-2 font-medium text-ink2">{usd(cur.balance)}</span></> : "Choose a pocket"}>
-      {shownPockets.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {usd(p.balance)}</option>)}
+      shown={cur ? <>{nameOf(cur.address)}{isPhone(cur.address) && <PhoneTag />}<span className="num ml-2 font-medium text-ink2">{hkd(cur.balance)}</span></> : "Choose a pocket"}>
+      {shownPockets.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {hkd(p.balance)}</option>)}
     </PillSelect>
   );
 }

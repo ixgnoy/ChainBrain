@@ -25,8 +25,8 @@ import { worstCase } from "../lib/plain";
 import { cleanText } from "../lib/sanitize";
 import { presetsFor, toPocketArgs, expiryFor, type Lifetime, type PresetValues } from "../lib/presets";
 import { styleForPreset } from "../lib/pocketNames";
-import { parseUsd } from "../lib/shared";
-import { money2, usd } from "../lib/util";
+import { parseHkd } from "../lib/shared";
+import { money2, hkd } from "../lib/util";
 import { haptic } from "../haptics";
 import { curSign } from "../lib/runtime";
 
@@ -113,7 +113,7 @@ const Title = ({ h, sub }: { h: string; sub: string }) => {
   const big = useLargeText();
   return (
   // the last two words stay together, so a wide Clash title never leaves one word alone on its second line
-  <View style={{ gap: 6 }}><T v="section" accessibilityRole="header" accessibilityLabel={h} style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>{h.replace(/ (\S+)$/, "\u00a0$1")}</T><T v="body" color="ink2" numberOfLines={big ? 6 : 3}>{sub}</T></View>
+  <View style={{ gap: 6 }}><T v="section" accessibilityRole="header" accessibilityLabel={h} style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.4 }}>{h.replace(/ (\S+)$/, "\u00a0HK$8")}</T><T v="body" color="ink2" numberOfLines={big ? 6 : 3}>{sub}</T></View>
   );
 };
 
@@ -210,7 +210,7 @@ export default function Create() {
     if (p.askAbove === "never") setAskMode("never"); else if (p.askAbove === "0") setAskMode("always"); else { setAskMode("above"); setAsk(Number(p.askAbove)); }
   };
   const capMax = Math.max(0.05, Math.min(funds, 5));
-  // one-cent steps at any budget: the sellers charge per request (US$0.007 to US$0.05), so a cap or ask-me limit below
+  // one-cent steps at any budget: the sellers charge per request (HK$0.056 to HK$0.40), so a cap or ask-me limit below
   // five cents must stay reachable when the budget is over a dollar
   const tick = 0.01;
   const capV = Math.min(cap, capMax);
@@ -310,7 +310,7 @@ export default function Create() {
           <BigNumber value={money2(funds)} />
           <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>{fundPresets(small).map((v) => <PickChip key={v} on={funds === v} label={`${curSign()}${money2(v)}`} onPress={() => setFunds(v)} />)}</View>
           <Slider min={0.05} max={10} step={0.05} value={funds} onChange={setFunds} />
-          {balances && <T v="cap" color="muted" style={{ textAlign: "center" }}>Main wallet: {curSign()}{usd(balances.usdc)}{balances.usdc < parseUsd(money2(funds)) ? ". Not enough for this budget." : ""}</T>}
+          {balances && <T v="cap" color="muted" style={{ textAlign: "center" }}>Main wallet: {curSign()}{hkd(balances.ehkd)}{balances.ehkd < parseHkd(money2(funds)) ? ". Not enough for this budget." : ""}</T>}
         </View>);
       case 2: return (
         <View style={{ gap: 16 }}>
@@ -353,7 +353,7 @@ export default function Create() {
           <View style={{ backgroundColor: c.accentSoft, borderRadius: radius.tile, borderCurve: "continuous", padding: 16, gap: 4 }} accessibilityLiveRegion="polite">
             <T v="cap" w="semi" color="accent">Most the agent can lose</T>
             <Money v="balance" value={values.budget} color="ink" />
-            <T v="sub" color="ink2">{worstCase(parseUsd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
+            <T v="sub" color="ink2">{worstCase(parseHkd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
           </View>
           <EditableSummary onEdit={stage === "idle" && !progress.current.pocket ? edit : undefined} rows={[[0, "Name", values.label], [1, "Money in", `${curSign()}${values.budget}`], [2, "Sellers", sellers.map((s) => cleanText(cfg?.sellers.find((x) => x.id === s)?.name ?? s, 24)).join(", ")], [3, "Per payment", `up to ${curSign()}${values.cap}`], [4, "Asks you", askLabel], [5, "Ends", new Date(Number(expiryFor(life)) * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })]]} />
           {stage !== "idle" || progress.current.pocket || done.current.createTx ? (
@@ -379,7 +379,7 @@ export default function Create() {
   const worstNote = step > 0 && step < STEPS.length - 1 ? (
     <View accessibilityLiveRegion="polite" style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", padding: 12, marginBottom: big ? 0 : 6, borderRadius: 16, backgroundColor: c.accentSoft }}>
       <Icon name="shield" size={16} color={c.accent} />
-      <T v="cap" color="ink2" style={{ flex: 1 }}>{worstCase(parseUsd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
+      <T v="cap" color="ink2" style={{ flex: 1 }}>{worstCase(parseHkd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
     </View>
   ) : null;
 

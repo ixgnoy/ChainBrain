@@ -3,18 +3,13 @@
 // modules Expo Go doesn't ship. Upgrade path: a development build with Reown AppKit.
 import { createPublicClient, createWalletClient, defineChain, http, parseEventLogs, type Address, type Chain, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
 import { getChain, isBuiltin, rpcUrl } from "./runtime";
 import { builtin } from "./builtin";
 import { loadConfig, transferTypedData, type Authorization, type Seller } from "./shared";
 
-/** The server's chain as viem sees it. FISCO: gas is free, but the RPC wants a legacy tx with gasPrice 0. */
-const viemChain = (): Chain => {
-  const c = getChain();
-  if (!c || c.key !== "fisco") return baseSepolia;
-  return defineChain({ id: c.id, name: c.name, nativeCurrency: { name: "FISCO", symbol: "FISCO", decimals: 18 }, rpcUrls: { default: { http: [c.rpc] } } });
-};
-const feeOverrides = () => (getChain()?.key === "fisco" ? { gasPrice: 0n, type: "legacy" as const } : {});
+/** The FISCO chain as viem sees it. Gas is free, but the RPC wants a legacy tx with gasPrice 0. */
+const viemChain = (): Chain => defineChain({ id: getChain()?.id ?? 20200, name: getChain()?.name ?? "FISCO BCOS", nativeCurrency: { name: "FISCO", symbol: "FISCO", decimals: 18 }, rpcUrls: { default: { http: [rpcUrl()] } } });
+const feeOverrides = () => ({ gasPrice: 0n, type: "legacy" as const });
 export const pub = () => createPublicClient({ chain: viemChain(), transport: http(rpcUrl()) });
 
 export type PocketView = { address: Address; owner: Address; agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean; balance: bigint; allowed: string[]; /** stopped by the Sentinel (or the owner); only the owner unfreezes */ frozen?: boolean };
@@ -41,11 +36,11 @@ export function ownerWallet(pk: Hex) {
     async balances() {
       if (isBuiltin()) return builtin().balances(me);
       const c = await loadConfig();
-      const [usdc, eth] = await Promise.all([
-        pub().readContract({ address: c.usdc, abi: c.abis.erc20, functionName: "balanceOf", args: [account.address] }) as Promise<bigint>,
+      const [ehkd, eth] = await Promise.all([
+        pub().readContract({ address: c.token, abi: c.abis.erc20, functionName: "balanceOf", args: [account.address] }) as Promise<bigint>,
         pub().getBalance({ address: account.address }),
       ]);
-      return { usdc, eth };
+      return { ehkd, eth };
     },
     async createPocket(a: { agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; sellers: Address[] }) {
       if (isBuiltin()) return sim((w) => w.chain.createPocket(me, a)) as Promise<{ pocket: Address; tx: Hex }>;
@@ -54,7 +49,7 @@ export function ownerWallet(pk: Hex) {
       const [ev] = parseEventLogs({ abi: c.abis.factory, logs: receipt.logs, eventName: "PocketCreated" }) as any[];
       return { pocket: ev.args.pocket as Address, tx: hash };
     },
-    fund: async (p: Address, amount: bigint) => isBuiltin() ? simTx((w) => w.chain.transfer(me, p, amount)) : write((await loadConfig()).usdc, (await loadConfig()).abis.erc20, "transfer", [p, amount]),
+    fund: async (p: Address, amount: bigint) => isBuiltin() ? simTx((w) => w.chain.transfer(me, p, amount)) : write((await loadConfig()).token, (await loadConfig()).abis.erc20, "transfer", [p, amount]),
     revoke: (p: Address) => isBuiltin() ? simTx((w) => w.chain.revoke(me, p)) : pocketWrite(p, "revoke"),
     /** Pocket.unfreeze: only the owner's key can lift a Sentinel freeze. */
     unfreeze: (p: Address) => isBuiltin() ? simTx((w) => w.chain.unfreeze(me, p)) : pocketWrite(p, "unfreeze"),
@@ -63,7 +58,7 @@ export function ownerWallet(pk: Hex) {
     /** Owner-signed rule edits: per-payment cap and ask-me threshold (NEVER = never ask, 0 = ask every time). */
     setCap: (p: Address, cap: bigint) => isBuiltin() ? simTx((w) => w.chain.setCap(me, p, cap)) : pocketWrite(p, "setCap", [cap]),
     setAskAbove: (p: Address, x: bigint) => isBuiltin() ? simTx((w) => w.chain.setAskAbove(me, p, x)) : pocketWrite(p, "setAskAbove", [x]),
-    /** Co-sign the exact USDC transfer the wallet tool layer built (payments above the ask-me threshold). */
+    /** Co-sign the exact eHKD transfer the wallet tool layer built (payments above the ask-me threshold). */
     signTransfer: (auth: Authorization) => account.signTypedData(transferTypedData(auth)),
   };
 }
@@ -79,7 +74,7 @@ export async function readPocket(address: Address): Promise<PocketView> {
   const r = (functionName: string, args: unknown[] = []) => pub().readContract({ address, abi: c.abis.pocket, functionName, args }) as Promise<any>;
   const [owner, agent, cap, askAbove, expiresAt, revoked, balance, flags, frozen] = await Promise.all([
     r("owner"), r("agent"), r("perPaymentCap"), r("askAbove"), r("expiresAt"), r("revoked"),
-    pub().readContract({ address: c.usdc, abi: c.abis.erc20, functionName: "balanceOf", args: [address] }) as Promise<bigint>,
+    pub().readContract({ address: c.token, abi: c.abis.erc20, functionName: "balanceOf", args: [address] }) as Promise<bigint>,
     Promise.all(sellers.map((s) => r("sellerAllowed", [s.payTo]))),
     r("frozen").catch(() => false), // pockets from an older factory have no freeze
   ]);

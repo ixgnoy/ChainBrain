@@ -3,11 +3,11 @@
 // Pages: #explorer (blocks and latest transactions), #explorer/tx/0x…, #explorer/block/n, #explorer/address/0x….
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Search, ShieldCheck } from "lucide-react";
-import { blocksFrom, explainTx, txsOfAddress, usdText, type ExplorerInput, type Field } from "@sim/explorer";
+import { blocksFrom, explainTx, txsOfAddress, hkdText, type ExplorerInput, type Field } from "@sim/explorer";
 import { useNetwork } from "./useNetwork";
 import { txLabel } from "./network";
 import { AttemptHeadline, ChecksPath, CodePill } from "./ChecksPath";
-import { Verdict, pocketStatus, usd, NEVER } from "./parts";
+import { Verdict, pocketStatus, hkd, NEVER } from "./parts";
 import { explorerHref, searchTarget, type ExplorerRoute } from "./route";
 import { ago } from "./liveRules";
 import { KpiStrip, EmptyState, chip } from "./kit";
@@ -29,10 +29,10 @@ const toInput = (t: ChainTx): ExplorerInput => ({
 function useWho() {
   const { cfg, pockets, nameOf } = useNetwork();
   return useMemo(() => {
-    const kindOf = (a?: string): { name?: string; kind: "pocket" | "seller" | "owner" | "agent" | "usdc" | "factory" | "other" } => {
+    const kindOf = (a?: string): { name?: string; kind: "pocket" | "seller" | "owner" | "agent" | "ehkd" | "factory" | "other" } => {
       const l = lc(a);
       if (!l) return { kind: "other" };
-      if (l === lc(cfg.usdc)) return { name: tokenSymbol(), kind: "usdc" };
+      if (l === lc(cfg.token)) return { name: tokenSymbol(), kind: "ehkd" };
       if (l === lc(cfg.factory)) return { name: "PocketFactory", kind: "factory" };
       if (pockets.some((p) => lc(p.address) === l)) return { name: nameOf(a!), kind: "pocket" };
       const s = cfg.sellers.find((x) => lc(x.payTo) === l);
@@ -53,7 +53,7 @@ function useChain() {
     return net.allTxs.filter((t) => (seen.has(lc(t.hash)) ? false : (seen.add(lc(t.hash)), true))).map(toInput);
   }, [net.allTxs]);
   const chainTx = useMemo(() => new Map(net.allTxs.map((t) => [lc(t.hash), t])), [net.allTxs]);
-  const ctx = useMemo(() => ({ usdc: net.cfg.usdc, factory: net.cfg.factory, nameOf: who.nameOf }), [net.cfg, who]);
+  const ctx = useMemo(() => ({ ehkd: net.cfg.token, factory: net.cfg.factory, nameOf: who.nameOf }), [net.cfg, who]);
   return { net, who, inputs, chainTx, ctx };
 }
 
@@ -96,7 +96,7 @@ function Rows({ rows }: { rows: [string, ReactNode][] }) {
 
 function FieldValue({ f }: { f: Field }) {
   if (f.kind === "address") return <Addr address={f.value} />;
-  if (f.kind === "amount") { const t = usdText(f.value); return <span className="num">{t ? `${curSign()}${t}` : f.value}</span>; }
+  if (f.kind === "amount") { const t = hkdText(f.value); return <span className="num">{t ? `${curSign()}${t}` : f.value}</span>; }
   return <span className="num break-all">{f.value}</span>;
 }
 
@@ -117,7 +117,7 @@ function TxLine({ t }: { t: ChainTx }) {
         {cp && <> {t.kind === "payment" ? "to" : t.kind === "fund" ? "from" : "with"} <a href={explorerHref.address(cp)} className="relative z-10 font-semibold text-ink underline decoration-line decoration-2 underline-offset-2 hover:decoration-vermillion">{who.nameOf(cp) ?? shortAddr(cp)}</a></>}
         {t.block > 0n && <> · block {String(t.block)}</>}
       </span>
-      <span className="tl-amount pointer-events-none relative num text-[16px] font-extrabold leading-5 tracking-[-0.02em]">{t.amount != null && t.amount > 0n ? usd(t.amount) : ""}</span>
+      <span className="tl-amount pointer-events-none relative num text-[16px] font-extrabold leading-5 tracking-[-0.02em]">{t.amount != null && t.amount > 0n ? hkd(t.amount) : ""}</span>
       <span className="tl-hash pointer-events-none relative num break-all text-[12px] leading-4 text-muted sm:text-right">{t.hash.slice(0, 10)}…{t.hash.slice(-6)}{t.at ? ` · ${ago(t.at)}` : ""}</span>
     </div>
   );
@@ -305,17 +305,17 @@ function AddressPage({ address, watch }: { address: string; watch?(pocket: strin
   const { net, who, inputs, chainTx } = useChain();
   const k = who.kindOf(address);
   const pocket = net.pockets.find((p) => lc(p.address) === lc(address));
-  // every transfer in or out of a pocket is a call to the USDC contract, and every pocket comes from the factory: their pages list those
+  // every transfer in or out of a pocket is a call to the eHKD contract, and every pocket comes from the factory: their pages list those
   const newest = (x: ExplorerInput, y: ExplorerInput) => (y.at ?? 0) - (x.at ?? 0) || Number(BigInt(y.block ?? 0) - BigInt(x.block ?? 0)); // chain logs carry no time
   // an agent key signs its pockets' payments but never submits them, so the chain's logs do not name it: list those payments
   const held = k.kind === "agent" ? new Set(net.pockets.filter((p) => lc(p.agent) === lc(address)).map((p) => lc(p.address))) : undefined;
-  const via = k.kind === "usdc" ? ["fund", "payment", "return", "out"] : k.kind === "factory" ? ["create"] : undefined;
+  const via = k.kind === "ehkd" ? ["fund", "payment", "return", "out"] : k.kind === "factory" ? ["create"] : undefined;
   const list = via ? inputs.filter((t) => via.includes(t.kind)).sort(newest)
     : held ? [...new Map([...txsOfAddress(address, inputs), ...inputs.filter((t) => (t.kind === "payment" || t.kind === "out") && held.has(lc(t.pocket)))].map((t) => [lc(t.hash), t])).values()].sort(newest)
     : txsOfAddress(address, inputs);
   const names = new Map(net.cfg.sellers.map((s) => [s.id, s.name]));
   const received = k.kind === "seller" ? net.allTxs.filter((t) => t.kind === "payment" && lc(t.counterparty) === lc(address) && t.status !== "reverted").reduce((n, t) => n + (t.amount ?? 0n), 0n) : undefined;
-  const KIND: Record<string, string> = { pocket: "Pocket contract", seller: "Seller", owner: "Owner", agent: "Agent key", usdc: `${tokenSymbol()} token contract`, factory: "Pocket factory", other: "Address" };
+  const KIND: Record<string, string> = { pocket: "Pocket contract", seller: "Seller", owner: "Owner", agent: "Agent key", ehkd: `${tokenSymbol()} token contract`, factory: "Pocket factory", other: "Address" };
   const st = pocket ? pocketStatus(pocket) : undefined;
   return (
     <div data-testid="explorer-address" data-kind={k.kind} className="fade-up">
@@ -327,9 +327,9 @@ function AddressPage({ address, watch }: { address: string; watch?(pocket: strin
       {pocket && (
         <Card className="px-5 sm:px-6">
           <Rows rows={[
-            ["Balance", <span key="b" className="figure text-[24px]">{usd(pocket.balance)}</span>],
-            ["Cap per payment", <span key="c" className="num">{usd(pocket.cap)}</span>],
-            ["Asks the owner above", <span key="a" className="num">{pocket.askAbove === NEVER ? "Never asks" : pocket.askAbove === 0n ? "Every time" : usd(pocket.askAbove)}</span>],
+            ["Balance", <span key="b" className="figure text-[24px]">{hkd(pocket.balance)}</span>],
+            ["Cap per payment", <span key="c" className="num">{hkd(pocket.cap)}</span>],
+            ["Asks the owner above", <span key="a" className="num">{pocket.askAbove === NEVER ? "Never asks" : pocket.askAbove === 0n ? "Every time" : hkd(pocket.askAbove)}</span>],
             ["Ends", <span key="e" className="num">{new Date(pocket.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>],
             ["Allowed sellers", pocket.allowed.map((i) => names.get(i) ?? i).join(", ") || "None"],
             ["Owner", <Addr key="o" address={pocket.owner} />],
@@ -337,7 +337,7 @@ function AddressPage({ address, watch }: { address: string; watch?(pocket: strin
           ]} />
         </Card>
       )}
-      {received != null && <Card className="px-5 sm:px-6"><Rows rows={[["Received from agents", <span key="r" className="figure text-[24px]">{usd(received)}</span>]]} /></Card>}
+      {received != null && <Card className="px-5 sm:px-6"><Rows rows={[["Received from agents", <span key="r" className="figure text-[24px]">{hkd(received)}</span>]]} /></Card>}
       {watch && pocket && <div className="mt-4"><Button className="h-11 px-5 text-[14px]" onClick={() => watch(pocket.address)}>Watch it in Live</Button></div>}
       <Section title={`Transactions (${list.length})`}>
         <Card className="divide-y divide-line overflow-hidden">{list.length ? list.map((t) => { const c = chainTx.get(lc(t.hash)); return c ? <TxLine key={t.hash} t={c} /> : null; }) : <EmptyState title="No transactions">Nothing on this network involves this address yet.</EmptyState>}</Card>

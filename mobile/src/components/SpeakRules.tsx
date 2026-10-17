@@ -25,7 +25,7 @@ export function exampleFor(sellers: { id: string; name: string; category?: strin
   const research = sellers.filter((s) => s.category === "Research data" && !HOSTILE.includes(s.id)).map((s) => s.name);
   const names = research.length ? research.slice(0, 3) : sellers.slice(0, 2).map((s) => s.name);
   const from = names.length ? ` from ${names.length > 1 ? `${names.slice(0, -1).join(", ")} or ${names.at(-1)}` : names[0]}` : "";
-  return `US$1 for durian research${from}, at most US$0.05 each, ask me above US$0.02, until tonight`;
+  return `HK$8 for durian research${from}, at most HK$0.40 each, ask me above HK$0.16, until tonight`;
 }
 
 export function SpeakRules({ onUse }: { onUse(d: Draft): void }) {

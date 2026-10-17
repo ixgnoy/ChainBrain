@@ -4,7 +4,7 @@ import { cfg } from "../chains";
 import type { Transfer, TransferSource } from "./exposure";
 
 const TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
-// sepolia.base.org answers eth_getLogs for at most 200 blocks per call
+// public RPCs often cap eth_getLogs at a few hundred blocks per call
 const STEP = BigInt(process.env.RADAR_LOG_STEP ?? 200);
 // ponytail: back-fill only this many recent blocks at start (~1 h on Base); a hosted indexer would give full history.
 const BACKFILL = BigInt(process.env.RADAR_BACKFILL_BLOCKS ?? 1_800);

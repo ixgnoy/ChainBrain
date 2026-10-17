@@ -27,10 +27,10 @@ const EVERY: { key: string; label: string; c: Pick<Cadence, "every" | "weekday" 
 const HOURS = [7, 8, 9, 18];
 const PERIODS: Period[] = ["day", "week", "month"];
 const hm = (ms: number) => new Date(ms).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-/** Allowance steps: a cent at a time under US$0.10, five cents to US$1, then 25 cents. */
+/** Allowance steps: 8 cents at a time under HK$0.80, 40 cents to HK$8, then HK$2. */
 const step = (x: number, dir: 1 | -1) => {
-  const s = x < 0.1 || (dir === -1 && x <= 0.1) ? 0.01 : x < 1 || (dir === -1 && x <= 1) ? 0.05 : 0.25;
-  return Math.max(0.01, Math.min(50, Math.round((x + dir * s) * 100) / 100));
+  const s = x < 0.8 || (dir === -1 && x <= 0.8) ? 0.08 : x < 8 || (dir === -1 && x <= 8) ? 0.4 : 2;
+  return Math.max(0.08, Math.min(400, Math.round((x + dir * s) * 100) / 100));
 };
 
 export function EditRoutineSheet({ routine, agentId, visible, onClose, onSaved }: { routine: Routine; agentId?: string; visible: boolean; onClose(): void; onSaved?(): void }) {

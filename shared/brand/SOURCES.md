@@ -16,4 +16,4 @@ Use rules followed: CoinGecko's attribution guide (no modification, no implied p
 in its own colours, not distorted), Nansen's brand page.
 
 The sellers appear only on ChainBrain's built-in test network (no real money); their prices are each provider's published
-x402 price (Exa search US$0.007, CoinGecko US$0.01, Nansen premium endpoints US$0.05).
+x402 price (Exa search US$0.007, CoinGecko US$0.01, Nansen premium endpoints US$0.05; the built-in network shows them in HK$ at 8 HKD per USD).

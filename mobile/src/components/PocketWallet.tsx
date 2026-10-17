@@ -17,7 +17,7 @@ import { Press } from "../ui/kit";
 import { useReduceMotion } from "../ui/motion";
 import { startFlight, useFlight } from "../ui/cardFlight";
 import { useAppSelect } from "../store";
-import { usd } from "../lib/util";
+import { hkd } from "../lib/util";
 import { cleanText } from "../lib/sanitize";
 import type { Pocket } from "../store";
 import type { Glyph } from "../../../shared/sim/pocketAppData";
@@ -130,7 +130,7 @@ function WalletCard({ pocket, pockets, index, count, cw, strip, play, reduce, sc
           <Press kind="row" haptics="light" onPress={open}
             onPressIn={() => { if (!reduce) lift.value = withTiming(1, { duration: 120 }); }}
             onPressOut={() => { lift.value = reduce ? 0 : withSpring(0, motion.spring.deck); }}
-            accessibilityRole="button" accessibilityLabel={`${name} pocket, ${usd(pocket.balance)} ${tokenSymbol()}${pocket.revoked ? ", revoked" : ""}`} accessibilityHint="Opens the pocket">
+            accessibilityRole="button" accessibilityLabel={`${name} pocket, ${hkd(pocket.balance)} ${tokenSymbol()}${pocket.revoked ? ", revoked" : ""}`} accessibilityHint="Opens the pocket">
             <PocketFace pocket={pocket} width={cw} tone={tone} shadow focused={focused} tilt={front} glyph={glyph} peek={!front} />
           </Press>
         </View>

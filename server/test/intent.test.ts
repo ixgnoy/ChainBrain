@@ -5,7 +5,7 @@ import { wrapUntrusted, scanRequests } from "../src/wallet/scan";
 import { $ } from "./helpers/amounts";
 
 const input = {
-  request: "a market report on durian exports, under US$2, by tonight", description: "Market report on durian exports to China",
+  request: "a market report on durian exports, under HK$15, by tonight", description: "Market report on durian exports to China",
   maxPricePerItem: "2.00", maxTotal: "2.50", maxItems: 3, deadline: "2026-10-17T23:59:00+08:00",
 };
 const intent = { ...input, intentHash: "0x01", status: "confirmed" } as any;

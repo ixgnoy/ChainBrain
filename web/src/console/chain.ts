@@ -1,5 +1,5 @@
 // Reads the network straight from the chain: every pocket the factory created, its live rules, and its on-chain history
-// (create, fund, payments, return, revoke, rule changes). Read-only; works against /dev/rpc or a public Base Sepolia RPC.
+// (create, fund, payments, return, revoke, rule changes). Read-only; works against /dev/rpc or the FISCO node's RPC.
 import { createPublicClient, http, parseAbiItem, type Address, type Hex, type PublicClient } from "viem";
 import type { Config } from "../shared";
 
@@ -55,7 +55,7 @@ export async function loadPockets(client: PublicClient, cfg: Config, fromBlock: 
       const [owner, agent, cap, askAbove, expiresAt, revoked, frozen, balance, ...allowedFlags] = await Promise.all([
         read(address, "owner"), read(address, "agent"), read(address, "perPaymentCap"), read(address, "askAbove"), read(address, "expiresAt"), read(address, "revoked"),
         read(address, "frozen").catch(() => false), // pockets from an older factory have no freeze
-        client.readContract({ address: cfg.usdc, abi: cfg.abis.erc20, functionName: "balanceOf", args: [address] } as any) as Promise<bigint>,
+        client.readContract({ address: cfg.token, abi: cfg.abis.erc20, functionName: "balanceOf", args: [address] } as any) as Promise<bigint>,
         ...cfg.sellers.map((s) => read(address, "sellerAllowed", [s.payTo])),
       ]);
       const log = created.get(address.toLowerCase());
@@ -72,8 +72,8 @@ export async function loadHistory(client: PublicClient, cfg: Config, pockets: Po
   const owners = new Map(pockets.map((p) => [p.address.toLowerCase(), p.owner.toLowerCase()]));
   const sellers = new Set(cfg.sellers.map((s) => s.payTo.toLowerCase()));
   const [incoming, outgoing, revokes, rules, freezes, unfreezes] = await Promise.all([
-    client.getLogs({ address: cfg.usdc, event: TRANSFER, args: { to: list }, fromBlock }),
-    client.getLogs({ address: cfg.usdc, event: TRANSFER, args: { from: list }, fromBlock }),
+    client.getLogs({ address: cfg.token, event: TRANSFER, args: { to: list }, fromBlock }),
+    client.getLogs({ address: cfg.token, event: TRANSFER, args: { from: list }, fromBlock }),
     client.getLogs({ address: list, event: REVOKED, fromBlock }),
     client.getLogs({ address: list, event: RULES, fromBlock }),
     client.getLogs({ address: list, event: FROZEN, fromBlock }),

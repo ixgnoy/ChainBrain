@@ -89,7 +89,7 @@ function useArtSellers(): string[] {
 function ContractArt({ active, reduce }: { active: boolean; reduce: boolean }) {
   const t = usePlay(active, reduce, 1500, 200);
   const sellers = useArtSellers();
-  const RULES: [string, string][] = [["Allowed sellers", sellers.join(", ") || "Two you chose"], ["Per payment", "up to US$0.05"], ["Ask me above", "US$0.02"]];
+  const RULES: [string, string][] = [["Allowed sellers", sellers.join(", ") || "Two you chose"], ["Per payment", "up to HK$0.40"], ["Ask me above", "HK$0.16"]];
   const shackle = useAnimatedStyle(() => ({ transform: [{ translateY: -7 * (1 - win(t.value, 0.05, 0.3)) }] }));
   const key = useAnimatedStyle(() => ({ opacity: win(t.value, 0.8, 1) }));
   return (
@@ -131,7 +131,7 @@ function WorstArt({ active, reduce }: { active: boolean; reduce: boolean }) {
       <View style={{ gap: 10 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <T v="cap" w="medium" color="muted">Everything you own</T>
-          <Animated.View style={label}><T v="cap" w="bold" color="vermillionInk">Pocket · US$5.00</T></Animated.View>
+          <Animated.View style={label}><T v="cap" w="bold" color="vermillionInk">Pocket · HK$40.00</T></Animated.View>
         </View>
         <View style={{ height: 26, borderRadius: 13, backgroundColor: c.card, overflow: "hidden" }}>
           <Hatch color={c.line} pitch={7} stroke={1.5} />
@@ -166,8 +166,8 @@ function SentenceArt({ active, reduce, w }: { active: boolean; reduce: boolean; 
   const names = useArtSellers();
   const { pockets } = useApp();
   const builtin = names[0] === BUILTIN_SELLERS[0];
-  const sentence = builtin ? "Let Claude buy Nansen's smart-money flows every morning when the price drops below US$0.04."
-    : `Every morning, get me ${names[0] ?? "the news"}${names[1] ? ` and ${names[1]}` : ""}. Max US$0.05 a week.`;
+  const sentence = builtin ? "Let Claude buy Nansen's smart-money flows every morning when the price drops below HK$0.32."
+    : `Every morning, get me ${names[0] ?? "the news"}${names[1] ? ` and ${names[1]}` : ""}. Max HK$0.40 a week.`;
   const [n, setN] = useState(reduce ? sentence.length : 0);
   useEffect(() => {
     if (!active) { setN(reduce ? sentence.length : 0); return; }

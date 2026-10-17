@@ -12,7 +12,7 @@ export async function detectDev(api: string, f: Fetch = fetch): Promise<DevInfo 
     if (!r.ok) return null;
     const j = await r.json();
     if (j?.mode !== "local-fork" || typeof j.rpcPath !== "string" || typeof j.owner !== "string") return null;
-    return { mode: "local-fork", chainId: Number(j.chainId) || 84532, rpcPath: j.rpcPath, startedAt: Number(j.startedAt) || 0, owner: j.owner as Address };
+    return { mode: "local-fork", chainId: Number(j.chainId) || 20200, rpcPath: j.rpcPath, startedAt: Number(j.startedAt) || 0, owner: j.owner as Address };
   } catch {
     return null;
   }

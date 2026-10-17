@@ -3,10 +3,10 @@
 import type { Address } from "viem";
 
 export const ENV_API: string = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8787";
-export const ENV_RPC: string = process.env.EXPO_PUBLIC_RPC_URL || "https://sepolia.base.org";
+export const ENV_RPC: string = process.env.EXPO_PUBLIC_RPC_URL || "https://fisco-node-production.up.railway.app";
 
-/** The server's chain, from /api/config (FISCO BCOS + Mock e-HKD, or Base Sepolia + USDC). Unset = Base Sepolia. */
-export type ChainProfile = { key: "fisco" | "base-sepolia"; id: number; name: string; rpc: string; domain: { name: string; version: string }; currency: string; txUrl: string; token: Address };
+/** The server's FISCO chain, from /api/config: its RPC, explorer link and the Mock e-HKD's signing domain. */
+export type ChainProfile = { key: "fisco"; id: number; name: string; rpc: string; domain: { name: string; version: string }; currency: string; txUrl: string; token: Address };
 let chain: ChainProfile | null = null;
 
 export type DevInfo = { mode: "local-fork"; chainId: number; rpcPath: string; owner?: Address; startedAt?: number };
@@ -26,13 +26,12 @@ export const getApi = () => api;
 export const getDev = () => dev;
 export const getSource = () => source;
 export const isBuiltin = () => source === "builtin";
-/** The live server's chain; null on the built-in network (which models Base Sepolia and USDC). */
+/** The live server's chain; null on the built-in network. */
 export const getChain = () => (source === "server" ? chain : null);
 export function setChain(c: ChainProfile | null) { chain = c; emit(); }
-/** "HK$" on FISCO, "US$" on Base and the built-in network. */
-export const curSign = () => getChain()?.currency ?? "US$";
-/** "eHKD" or "USDC". */
-export const tokenSymbol = () => (getChain()?.key === "fisco" ? "eHKD" : "USDC");
+/** Money is Mock e-HKD everywhere: HK$ amounts, the eHKD token. */
+export const curSign = () => "HK$";
+export const tokenSymbol = () => "eHKD";
 export function setSource(s: Source) { source = s; dev = null; emit(); }
 export const subscribeRuntime = (f: () => void) => { subs.add(f); return () => { subs.delete(f); }; };
 export function setApiUrl(u: string) { api = normalizeUrl(u) || ENV_API; dev = null; emit(); }
@@ -40,11 +39,11 @@ export function setDev(d: DevInfo | null) { dev = d; emit(); }
 
 /** RPC for chain reads and owner transactions: the dev stack's proxy in dev mode, EXPO_PUBLIC_RPC_URL otherwise. */
 export const rpcUrl = () => (dev ? `${api}${dev.rpcPath}` : process.env.EXPO_PUBLIC_RPC_URL || getChain()?.rpc || ENV_RPC);
-/** Fork and built-in hashes do not exist on Base Sepolia, so explorer links are on only against a real server. */
+/** Built-in and dev-stack hashes are not on the FISCO chain, so explorer links are on only against a real server. */
 export const explorerEnabled = () => !dev && source === "server";
 // FISCO has no public explorer: the server hosts a read-only one (txUrl prefix from /api/config, ".../explorer#/tx/").
-export const txUrl = (h: string) => (!explorerEnabled() ? undefined : chain ? `${chain.txUrl}${h}` : `https://sepolia.basescan.org/tx/${h}`);
-export const addressUrl = (a: string) => (!explorerEnabled() ? undefined : chain ? `${chain.txUrl.replace(/tx\/$/, "address/")}${a}` : `https://sepolia.basescan.org/address/${a}`);
+export const txUrl = (h: string) => (explorerEnabled() && chain ? `${chain.txUrl}${h}` : undefined);
+export const addressUrl = (a: string) => (explorerEnabled() && chain ? `${chain.txUrl.replace(/tx\/$/, "address/")}${a}` : undefined);
 
 type FetchLike = (url: string, init?: any) => Promise<{ ok: boolean; status: number; json(): Promise<any>; text(): Promise<string> }>;
 
@@ -62,6 +61,6 @@ export async function detectDev(base: string, f: FetchLike = (globalThis.fetch a
     if (!r.ok) return null;
     const j = await r.json();
     if (!j || j.mode !== "local-fork") return null;
-    return { mode: "local-fork", chainId: Number(j.chainId) || 84532, rpcPath: typeof j.rpcPath === "string" && j.rpcPath.startsWith("/") ? j.rpcPath : "/dev/rpc", owner: j.owner, startedAt: j.startedAt };
+    return { mode: "local-fork", chainId: Number(j.chainId) || 20200, rpcPath: typeof j.rpcPath === "string" && j.rpcPath.startsWith("/") ? j.rpcPath : "/dev/rpc", owner: j.owner, startedAt: j.startedAt };
   } catch { return null; }
 }

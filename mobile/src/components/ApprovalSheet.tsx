@@ -1,7 +1,7 @@
 // Owner approvals. A payment above the ask-me threshold is drawn as a cheque (components/Cheque.tsx): who asks and why you
 // are asked (the rule that triggered it) with the countdown, then the pocket's card turning over to the cheque (pay, to, for,
 // what is left after), the wallet's other checks (Radar's seller check, the paying pocket), the agent's own note set apart as
-// unchecked words, and the details. Slide to co-sign, then Face ID: the phone signs the exact USDC
+// unchecked words, and the details. Slide to co-sign, then Face ID: the phone signs the exact eHKD
 // TransferWithAuthorization the wallet built (POST /api/approvals/:id {approved, signature}). Intent: confirm the
 // fixed-template task card.
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -29,8 +29,8 @@ import { toneFor } from "./PocketFace";
 import { biometricKind, confirmOwner, type OwnerCheck } from "../lib/biometric";
 import { askNotifyPermission, notifyPermission, type NotifyPermission } from "../lib/notify";
 import { NEVER } from "../lib/shared";
-import { parseUsd } from "../lib/shared";
-import { contractTail, usd, shortAddr } from "../lib/util";
+import { parseHkd } from "../lib/shared";
+import { contractTail, hkd, shortAddr } from "../lib/util";
 import { IntentCard, parseIntent } from "./IntentCard";
 import { SheetSuccess } from "./SheetSuccess";
 import { notify as toast } from "../lib/toast";
@@ -53,8 +53,8 @@ export function describeApprovalError(code: string): string {
   }
 }
 /** Below this, a co-sign is one press plus Face ID; at or above it, slide first. */
-const QUICK_MAX = 5_000_000n; // US$5.00 in USDC units
-const safeUsd = (s: unknown) => { try { return typeof s === "string" ? usd(parseUsd(s)) : null; } catch { return null; } };
+const QUICK_MAX = 40_000_000n; // HK$40.00 in eHKD units
+const safeHkd = (s: unknown) => { try { return typeof s === "string" ? hkd(parseHkd(s)) : null; } catch { return null; } };
 
 export function ApprovalSheet() {
   const { pending, approvalOpen, setApprovalOpen, approvalFocus } = useApp();
@@ -99,10 +99,10 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const risky = !!radar && radar.verdict !== "ok";
   const owned = pocket ? pocket.owned : true;
   const seller = cleanText(sellerName(a.data?.sellerId), 60);
-  const amount = safeUsd(a.data?.amount);
+  const amount = safeHkd(a.data?.amount);
   const limitText = !pocket || pocket.askAbove === NEVER ? "Above your ask-me limit"
     : pocket.askAbove === 0n ? "This pocket asks about every payment"
-    : `Above your ${curSign()}${usd(pocket.askAbove)} ask-me limit`;
+    : `Above your ${curSign()}${hkd(pocket.askAbove)} ask-me limit`;
   const item = cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment";
 
   const [cardW, setCardW] = useState(0);
@@ -112,7 +112,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const [notify, setNotify] = useState<NotifyPermission>("unsupported");
   useEffect(() => { void notifyPermission().then(setNotify); }, []);
   const outside = (a.agent ?? "chainbrain") !== "chainbrain";
-  const amountUnits = (() => { try { return typeof a.data?.amount === "string" ? parseUsd(a.data.amount) : null; } catch { return null; } })();
+  const amountUnits = (() => { try { return typeof a.data?.amount === "string" ? parseHkd(a.data.amount) : null; } catch { return null; } })();
   // why the wallet asks (server/src/wallet/tools.ts): over the ask-me limit, a Sentinel hold (until the owner co-signs), or
   // Radar wanting a review of the seller; the last two can ask about a payment under the limit
   const overLimit = !pocket || amountUnits == null || pocket.askAbove === 0n || (pocket.askAbove !== NEVER && amountUnits > pocket.askAbove);
@@ -127,9 +127,9 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const why = allowance ? `Run ${allowance.run} would pass this ${allowance.period}'s ${curSign()}${allowance.allowance}` : overLimit ? limitText : held ? "The Sentinel wants your OK on this payment" : risky ? "Radar wants your OK on this seller" : limitText;
   const whyCode = !overLimit && held ? "SENTINEL_HOLD" : risky ? "COUNTERPARTY_REVIEW" : "NEEDS_OWNER_APPROVAL";
 
-  // "Claude pays Nansen US$0.05 from Market news. US$0.362 stays in the pocket."
+  // "Claude pays Nansen HK$0.40 from Market news. HK$2.896 stays in the pocket."
   const left = pocket && amountUnits != null && pocket.balance >= amountUnits ? pocket.balance - amountUnits : null;
-  const moneyLine = `${who} pays ${seller} ${curSign()}${amount ?? "?"}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}.${left != null ? ` ${curSign()}${usd(left)} stays in the pocket.` : ""}`;
+  const moneyLine = `${who} pays ${seller} ${curSign()}${amount ?? "?"}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}.${left != null ? ` ${curSign()}${hkd(left)} stays in the pocket.` : ""}`;
   const until = auth ? new Date(Number(auth.validBefore) * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : null;
 
   // small payments: Face ID alone signs (it is the deliberate act); large ones keep the slide first, then Face ID. Without

@@ -1,6 +1,6 @@
 // Money as rolling digits, with a text twin for the web build and screen readers. RollingNumber splits an amount into reels
 // (each reel holds 0-9), so on web the DOM text would read "0123456789..."; a visually hidden text node carries the exact
-// string ("Main wallet US$20.00" stays findable by e2e and by assistive tech). Native: RollingNumber's own label is used.
+// string ("Main wallet HK$160.00" stays findable by e2e and by assistive tech). Native: RollingNumber's own label is used.
 import React from "react";
 import { Platform, Text, View, type TextStyle } from "react-native";
 import { c, F, type Tone } from "../tokens";

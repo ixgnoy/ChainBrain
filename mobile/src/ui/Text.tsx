@@ -56,7 +56,7 @@ export function Eyebrow({ color = "muted", style, ...p }: TextProps & { color?: 
   return <T v="cap" w="semi" color={color} style={style} {...p} />;
 }
 
-/** A static figure in Clash Display Medium ("-US$0.30", "+US$5.00", "4/10"), VaultBank's list amounts: the currency is set at
+/** A static figure in Clash Display Medium ("-HK$2.40", "+HK$40.00", "4/10"), VaultBank's list amounts: the currency is set at
  *  75 % on the same baseline, like `Money`. For amounts that roll, use `Money`. */
 export function Figure({ text, size = 16, color = "ink", strike, style, ...p }: TextProps & { text: string; size?: number; color?: Tone; strike?: boolean }) {
   const m = /^([+\-−]?)(US\$)(.*)$/.exec(text);

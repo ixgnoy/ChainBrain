@@ -13,7 +13,7 @@ export const FIXED_QUESTIONS = ["What did the owner ask for that is still open?"
 const hash8 = (s: string) => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(16).padStart(8, "0"); };
 export const ownerEvidence = (text: string): Evidence => ({ id: `m:${hash8(text)}`, who: "owner", text: text.slice(0, 500) });
 const eid = (e: SimEvent) => `e:${e.at}`;
-const hkd = (v: unknown) => { try { return `HK$${formatHkd(BigInt(String(v ?? 0)))}`; } catch { return "US$?"; } };
+const hkd = (v: unknown) => { try { return `HK$${formatHkd(BigInt(String(v ?? 0)))}`; } catch { return "HK$?"; } };
 const itemOf = (sellerId: string, sku: string) => sellerById(sellerId)?.items.find((i) => i.sku === sku)?.description ?? sku;
 const SELLERS = /\b(exa|coingecko|nansen|tradewire|harbour wines|shadyfeed)\b/i;
 

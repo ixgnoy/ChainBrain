@@ -3,7 +3,7 @@
 import { samePocket, approvalStates, reasonsOf, type WalletEvent } from "./events";
 import { untrustedOf } from "./trace";
 import { cleanText } from "./sanitize";
-import { usd, pseudonym } from "./format";
+import { hkd, pseudonym } from "./format";
 import type { LedgerRow } from "./ledger";
 
 export type Filters = { pocket: string; seller: string; verdict: "all" | "paid" | "refused"; reason?: string; cosigned?: boolean };
@@ -54,7 +54,7 @@ export function securityEvents(events: WalletEvent[], opts: { redactOwnerText?: 
     if (e.type === "disclosure") {
       const asked = (Array.isArray(e.asked) ? e.asked : []).map((d: string) => cleanText(d, 30)).join(", ");
       push({ severity: "medium", category: "disclosure", title: "Data request refused", detail: `${cleanText(e.sellerId, 30)} asked for ${asked || "extra data"} beyond the purchase.`, sellerId: e.sellerId, reasons: reasonsOf(e).filter((c) => c === "DISCLOSURE_REFUSED") });
-      if (e.signRequest || reasonsOf(e).includes("SIGNATURE_TYPE_NOT_ALLOWED")) push({ severity: "high", category: "signature", title: "Signature request refused", detail: `${cleanText(e.sellerId, 30)} asked the agent to sign something that is not an in-rule USDC payment.`, sellerId: e.sellerId, reasons: ["SIGNATURE_TYPE_NOT_ALLOWED"] });
+      if (e.signRequest || reasonsOf(e).includes("SIGNATURE_TYPE_NOT_ALLOWED")) push({ severity: "high", category: "signature", title: "Signature request refused", detail: `${cleanText(e.sellerId, 30)} asked the agent to sign something that is not an in-rule eHKD payment.`, sellerId: e.sellerId, reasons: ["SIGNATURE_TYPE_NOT_ALLOWED"] });
     }
     if (e.type === "refusal") {
       const r = typeof e.reason === "string" ? e.reason : "";
@@ -75,7 +75,7 @@ export type ConventionItem = { id: string; item: string; feature: string; status
 // additions are labelled as such. Filing with PCAC is a licensed institution's duty and is not claimed here.
 export const CONVENTION: ConventionItem[] = [
   { id: "auth", item: "Define the authorisation boundary", feature: "The pocket contract holds the owner's rules on-chain: seller allowlist, per-payment cap and expiry. The agent cannot widen them.", status: "aligned", evidence: { label: "Out-of-allowlist payments refused", filter: { verdict: "refused", reason: "SELLER_NOT_ALLOWED" } } },
-  { id: "sign", item: "Authorisation signed by the user", feature: "The owner signs every pocket they create, and co-signs the exact USDC transfer for any payment above the ask-me amount.", status: "aligned", evidence: { label: "Payments co-signed by the owner", filter: { cosigned: true } } },
+  { id: "sign", item: "Authorisation signed by the user", feature: "The owner signs every pocket they create, and co-signs the exact eHKD transfer for any payment above the ask-me amount.", status: "aligned", evidence: { label: "Payments co-signed by the owner", filter: { cosigned: true } } },
   { id: "intent", item: "Verify the user's payment intent", feature: "Each task starts with an intent card built from a fixed template; the owner confirms it and every payment is checked against it.", status: "aligned", evidence: { label: "Payments inside a confirmed task", filter: { verdict: "paid" } } },
   { id: "review", item: "Prudent review of large payments", feature: "A payment above the ask-me amount waits for the owner's approval.", status: "aligned", evidence: { label: "Owner-approved payments", filter: { cosigned: true } } },
   { id: "kill", item: "Shut-off channel", feature: "Revoke stops all agent payments at the contract; Return funds sends the balance back to the owner.", status: "ours", evidence: { label: "Payments refused after revoke", filter: { verdict: "refused", reason: "POCKET_REVOKED" } } },
@@ -84,12 +84,12 @@ export const CONVENTION: ConventionItem[] = [
 export const CONVENTION_FOOTNOTE = "The industry self-regulatory convention (PCAC 《智能体支付应用自律公约》, issued 24 Aug 2026) is known to us from press reports. This is our self-assessment, not legal advice and not a statement of compliance.";
 
 // ------------------------------------------------------------------ export
-export type ExportRow = { time: string; pocket: string; sellerId: string; sku: string; amountUsdc: string; outcome: string; source: string; reasons: string[]; cosigned: string; tx: string; intentHash: string; task: string };
+export type ExportRow = { time: string; pocket: string; sellerId: string; sku: string; amountEhkd: string; outcome: string; source: string; reasons: string[]; cosigned: string; tx: string; intentHash: string; task: string };
 
 export function exportRows(rows: LedgerRow[], opts: { regulator?: boolean } = {}): ExportRow[] {
   return rows.map((r) => ({
     time: new Date(r.at).toISOString(), pocket: opts.regulator ? pseudonym(r.pocket) : r.pocket, sellerId: r.sellerId, sku: r.sku,
-    amountUsdc: r.amount != null ? usd(r.amount) : "", outcome: r.outcome, source: r.source, reasons: r.reasons,
+    amountEhkd: r.amount != null ? hkd(r.amount) : "", outcome: r.outcome, source: r.source, reasons: r.reasons,
     cosigned: r.outcome === "paid" ? String(!!r.cosigned) : "", tx: r.tx ?? "", intentHash: r.intentHash ?? "",
     task: opts.regulator ? "" : cleanText(r.task ?? "", 300).replace(/\n/g, " / "),
   }));
@@ -99,7 +99,7 @@ export function exportJson(rows: ExportRow[], meta: { network: string; asOf: num
   return JSON.stringify({ kind: "chainbrain-agent-payments-ledger", network: meta.network, asOf: meta.asOf ? new Date(meta.asOf).toISOString() : null, view: meta.regulator ? "regulator (pseudonymised, read-only)" : "bank risk", rows }, null, 2);
 }
 
-const CSV_COLS: (keyof ExportRow)[] = ["time", "pocket", "sellerId", "sku", "amountUsdc", "outcome", "source", "reasons", "cosigned", "tx", "intentHash", "task"];
+const CSV_COLS: (keyof ExportRow)[] = ["time", "pocket", "sellerId", "sku", "amountEhkd", "outcome", "source", "reasons", "cosigned", "tx", "intentHash", "task"];
 /** CSV with quoting and spreadsheet-formula neutralisation: seller-controlled cells starting with = + - @ get a leading apostrophe. */
 export function exportCsv(rows: ExportRow[], note?: string): string {
   const cell = (v: unknown) => {

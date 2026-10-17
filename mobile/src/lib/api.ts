@@ -67,14 +67,14 @@ export async function devScenes(): Promise<Scene[]> {
   return Array.isArray(j) ? j.filter((s) => s && typeof s.text === "string") : [];
 }
 
-/** Test money: 1 ETH + 20 USDC on the dev stack's fork, or the FISCO server's faucet (native balance + Mock e-HKD, once a day). */
-export async function devFund(address: string): Promise<{ eth: string; usdc: string }> {
+/** Test money: 1 ETH + 20 eHKD on the dev stack's fork, or the FISCO server's faucet (native balance + Mock e-HKD, once a day). */
+export async function devFund(address: string): Promise<{ eth: string; ehkd: string }> {
   if (isBuiltin()) return builtin().fundTestMoney(address as Address);
   if (getChain()?.key === "fisco") {
     const r = await fetchTimeout(`${getApi()}/api/faucet`, { method: "POST", headers: json, body: JSON.stringify({ address }) }, 30000);
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error === "ALREADY_CLAIMED" ? "Already claimed today" : j.error ?? `HTTP ${r.status}`);
-    return { eth: j.nativeFunded ? "native" : "0", usdc: String(j.minted) };
+    return { eth: j.nativeFunded ? "native" : "0", ehkd: String(j.minted) };
   }
   const r = await fetchTimeout(`${getApi()}/dev/fund`, { method: "POST", headers: json, body: JSON.stringify({ address }) }, 15000);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);

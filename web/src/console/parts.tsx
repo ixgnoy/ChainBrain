@@ -1,7 +1,7 @@
 // Small console pieces shared by every page.
 import { useNetwork, pocketTag } from "./network";
 import { explorerHref } from "./route";
-import { REASONS, formatUsd, shortAddr } from "../shared";
+import { REASONS, formatHkd, shortAddr } from "../shared";
 import type { ChipKind } from "../lib/trace";
 import type { PocketState } from "./chain";
 import { cn } from "../lib/cn";
@@ -9,7 +9,7 @@ import { agentByAddress } from "@sim/agents";
 import { CLAUDE_SPARK, OPENAI_BLOSSOM, SELLER_MARKS, isLayered, type Mark } from "../../../shared/brand/marks";
 import { curSign } from "../shared";
 
-export const usd = (n?: bigint) => (n == null ? "–" : `${curSign()}${formatUsd(n)}`);
+export const hkd = (n?: bigint) => (n == null ? "–" : `${curSign()}${formatHkd(n)}`);
 export const NEVER = 2n ** 256n - 1n;
 export { pocketTag };
 export const clock = (ms: number) => new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -55,7 +55,7 @@ export function PhoneTag() {
 
 export function TestnetChip() {
   const { dev, builtin } = useNetwork();
-  const text = builtin || dev ? "Test network" : "Testnet · Base Sepolia";
+  const text = builtin || dev ? "Test network" : "FISCO BCOS";
   // "no real money" joins the label when the header has room (Clash and General Sans run wider than the old face)
   return <span title={`${text} · no real money`} className="inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-ink/[0.07] px-3.5 text-[12px] font-semibold text-ink2"><span className="size-2 shrink-0 rounded-full bg-vermillion" aria-hidden />{text}<span className="hidden xl:inline"> · no real money</span></span>;
 }

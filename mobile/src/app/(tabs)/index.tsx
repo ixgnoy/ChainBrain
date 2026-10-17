@@ -31,7 +31,7 @@ import { useIntroDone } from "../../ui/intro";
 import { ActivityRow } from "../../components/ActivityRow";
 import { cleanText } from "../../lib/sanitize";
 import { visibleRows } from "../../lib/plain";
-import { usd, money } from "../../lib/util";
+import { hkd, money } from "../../lib/util";
 import { Rise as RiseIn } from "../../ui/Rise";
 import { GLASS_TAB_SPACE as TAB_SPACE } from "../../ui/glass/GlassTabBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -218,15 +218,15 @@ function Home({ ready }: { ready: boolean }) {
           <Card pad={18} style={{ marginHorizontal: 16, flexDirection: big ? "column" : "row", alignItems: big ? "flex-start" : "flex-end", gap: 12 }}>
             <View style={{ flex: 1 }}>
               <T v="cap" w="semi" color="muted">In agent pockets</T>
-              <View style={{ marginTop: 4 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
+              <View style={{ marginTop: 4 }}><Money v="balance" value={hkd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
               <Allocation pockets={live} all={pockets} total={sumAll} />
             </View>
-            <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ alignItems: big ? "flex-start" : "flex-end", paddingBottom: 4 }}>
+            <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.ehkd)}` : "Main wallet"} style={{ alignItems: big ? "flex-start" : "flex-end", paddingBottom: 4 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
                 <Icon name="vault" size={13} color={c.muted} stroke={2} />
                 <T v="cap" color="muted">Main wallet</T>
               </View>
-              {balances ? <Money v="row" value={usd(balances.usdc)} /> : <T v="row" color="muted">{loading ? "Loading…" : "—"}</T>}
+              {balances ? <Money v="row" value={hkd(balances.ehkd)} /> : <T v="row" color="muted">{loading ? "Loading…" : "—"}</T>}
             </View>
           </Card>
         </Animated.View>

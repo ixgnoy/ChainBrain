@@ -16,7 +16,7 @@ import { Hatch } from "../../ui/Hatch";
 import { Reveal } from "../../ui/Reveal";
 import { AgentCard } from "../../components/AgentCard";
 import { HomeHeader } from "./index";
-import { usd } from "../../lib/util";
+import { hkd } from "../../lib/util";
 import { GLASS_TAB_SPACE as TAB_SPACE } from "../../ui/glass/GlassTabBar";
 
 export default function Agents() {
@@ -57,7 +57,7 @@ export default function Agents() {
         <T v="head">{`${agents.length} ${agents.length === 1 ? "agent" : "agents"}`}</T>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <T v="cap" color="mutedOnCanvas">In agent pockets</T>
-          <Money v="row" value={usd(inPockets)} decorative />
+          <Money v="row" value={hkd(inPockets)} decorative />
         </View>
       </View>
 

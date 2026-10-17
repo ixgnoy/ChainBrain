@@ -33,7 +33,7 @@ import { txError } from "../../components/ActionSheet";
 import { cleanText } from "../../lib/sanitize";
 import { sameAddr, sentinelEvents, type LedgerRow } from "../../lib/events";
 import { visibleRows } from "../../lib/plain";
-import { contractTail, money, usd } from "../../lib/util";
+import { contractTail, money, hkd } from "../../lib/util";
 import { NEVER } from "../../lib/shared";
 import { haptic } from "../../haptics";
 import { agentInfo } from "../../../../shared/sim/agents";
@@ -175,7 +175,7 @@ export default function PocketDetail() {
           </Rise>
         ) : null}
         {/* the same card as Home's deck; it takes over from the flying card the moment that lands */}
-        <Animated.View style={[{ alignItems: "center", opacity: flight?.pocket === pocket.address.toLowerCase() ? 0 : 1 }, flight?.pocket === pocket.address.toLowerCase() ? null : settle]} accessibilityLabel={`${cleanText(pocket.name, 30)} card, ${usd(pocket.balance)} USDC`} accessible>
+        <Animated.View style={[{ alignItems: "center", opacity: flight?.pocket === pocket.address.toLowerCase() ? 0 : 1 }, flight?.pocket === pocket.address.toLowerCase() ? null : settle]} accessibilityLabel={`${cleanText(pocket.name, 30)} card, ${hkd(pocket.balance)} eHKD`} accessible>
           {W ? <PocketFace pocket={pocket} width={W} tone={toneFor(pockets, pocket.address)} buzz shadow tilt /> : <View style={{ height: 200 }} />}
         </Animated.View>
 

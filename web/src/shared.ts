@@ -1,15 +1,15 @@
 // Small pure copies of server/src/wallet/{money,scheme,reasons}.ts (duplicated on purpose: cheaper than a shared package).
 import type { Address, Hex } from "viem";
 
-export const USDC: Address = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+export const EHKD: Address = "0x0355c0c5Afe2A35369056FBB854903A4aF07781A";
 export const NEVER = 2n ** 256n - 1n;
 
-export function parseUsd(s: string): bigint {
+export function parseHkd(s: string): bigint {
   const m = /^(\d+)(?:\.(\d{1,6}))?$/.exec(String(s).trim());
   if (!m) throw new Error(`bad USD amount: ${s}`);
   return BigInt(m[1]) * 1_000_000n + BigInt((m[2] ?? "").padEnd(6, "0") || "0");
 }
-export function formatUsd(n: bigint): string {
+export function formatHkd(n: bigint): string {
   if (n === NEVER) return "never";
   const frac = (n % 1_000_000n).toString().padStart(6, "0").replace(/0+$/, "").padEnd(2, "0");
   return `${n / 1_000_000n}.${frac}`;
@@ -17,7 +17,7 @@ export function formatUsd(n: bigint): string {
 
 export type Authorization = { from: Address; to: Address; value: string; validAfter: string; validBefore: string; nonce: Hex };
 export const transferTypedData = (a: Authorization) => ({
-  domain: { name: "USDC", version: "2", chainId: 84532, verifyingContract: USDC },
+  domain: { name: "Mock e-HKD", version: "1", chainId: 20200, verifyingContract: EHKD },
   types: {
     TransferWithAuthorization: [
       { name: "from", type: "address" }, { name: "to", type: "address" }, { name: "value", type: "uint256" },
@@ -46,7 +46,7 @@ export const REASONS: Record<string, string> = {
   QUOTE_ALREADY_PAID: "This quote is already paid",
   QUOTE_UNKNOWN: "No such quote",
   DISCLOSURE_REFUSED: "The seller asked for data beyond the purchase; refused",
-  SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule USDC payments",
+  SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule eHKD payments",
   SETTLEMENT_FAILED: "Settlement failed",
   NOT_THIS_AGENT: "This pocket belongs to a different agent key",
   COUNTERPARTY_HIGH_RISK: "Radar traced this seller's funds to a high-risk source",
@@ -72,21 +72,21 @@ export const reasonLayer = (code: string): string =>
   : code === "NOT_THIS_AGENT" ? "Agent key" : code === "SETTLEMENT_FAILED" ? "Settlement" : "Wallet";
 
 export const shortAddr = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
-/** The live server's chain, from /api/config (set by LiveNetwork). Unset = Base Sepolia, which the built-in network models. */
-export type ChainInfo = { key: "fisco" | "base-sepolia"; id: number; name: string; rpc: string; currency: string; txUrl: string };
+/** The live server's FISCO chain, from /api/config (set by LiveNetwork): its RPC and explorer. */
+export type ChainInfo = { key: "fisco"; id: number; name: string; rpc: string; currency: string; txUrl: string };
 let chain: ChainInfo | null = null;
 export const setChainInfo = (c: ChainInfo | null) => { chain = c; };
 export const chainInfo = () => chain;
-/** "HK$" on a FISCO server (Mock e-HKD), "US$" on Base Sepolia and the built-in network. */
-export const curSign = () => chain?.currency ?? "US$";
-export const tokenSymbol = () => (chain?.key === "fisco" ? "eHKD" : "USDC");
-export const chainLabel = () => (chain?.key === "fisco" ? "FISCO BCOS" : "Base Sepolia");
+/** Money is Mock e-HKD everywhere: HK$ amounts, the eHKD token, on FISCO BCOS. */
+export const curSign = () => "HK$";
+export const tokenSymbol = () => "eHKD";
+export const chainLabel = () => "FISCO BCOS";
 // FISCO has no public explorer: the wallet server hosts a read-only one (txUrl prefix ".../explorer#/tx/")
-export const txUrl = (h: string) => `${chain?.txUrl ?? "https://sepolia.basescan.org/tx/"}${h}`;
-export const addrUrl = (a: string) => `${(chain?.txUrl ?? "https://sepolia.basescan.org/tx/").replace(/tx\/$/, "address/")}${a}`;
+export const txUrl = (h: string) => `${chain?.txUrl ?? "/explorer#/tx/"}${h}`;
+export const addrUrl = (a: string) => `${(chain?.txUrl ?? "/explorer#/tx/").replace(/tx\/$/, "address/")}${a}`;
 
 export type Seller = { id: string; name: string; category: string; payTo: Address; items: { sku: string; description: string; price: string | null }[] };
-export type Config = { agent: Address; factory: Address; usdc: Address; chain?: ChainInfo; sellersUrl: string; sellers: Seller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
+export type Config = { agent: Address; factory: Address; token: Address; chain?: ChainInfo; sellersUrl: string; sellers: Seller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
 
 const cfgs = new Map<string, Promise<Config>>();
 /** Cached per server after the first success. A failure (server down, 500 plain text) is not cached, so a retry can succeed. */

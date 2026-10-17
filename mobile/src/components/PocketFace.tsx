@@ -20,7 +20,7 @@ import { TextScaleCap } from "../ui/fontScale";
 import { EASE_OUT, useReduceMotion } from "../ui/motion";
 import { NEVER } from "../lib/shared";
 import { cleanText } from "../lib/sanitize";
-import { contractTail, money, usd } from "../lib/util";
+import { contractTail, money, hkd } from "../lib/util";
 import { agentInfo } from "../../../shared/sim/agents";
 import type { Layout } from "../../../shared/sim/pocketApp";
 import { FACE, LAYOUT_NAME } from "./app/theme";
@@ -177,7 +177,7 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draf
       {/* the balance and the rules */}
       <View style={{ paddingHorizontal: pad, marginTop: 10 * k }}>
         <T v="tab" style={{ color: sub, textTransform: "uppercase", letterSpacing: 0.9 }}>{state ? "Left in the pocket" : "Available"}</T>
-        <Money v={k >= 0.9 ? "amount" : "section"} value={usd(pocket.balance)} color={state ? "muted" : dark ? "white" : "ink"} label={`${name} balance`} decorative />
+        <Money v={k >= 0.9 ? "amount" : "section"} value={hkd(pocket.balance)} color={state ? "muted" : dark ? "white" : "ink"} label={`${name} balance`} decorative />
       </View>
       <View style={{ flex: 1 }} />
       {/* bottom: the short pocket number, big, and the expiry */}

@@ -19,13 +19,12 @@ import { Icon } from "../ui/Icon";
 import { haptic } from "../haptics";
 import { autoplayRunning } from "../lib/autoplayTargets";
 import { cleanText } from "../lib/sanitize";
-import { parseUsd } from "../lib/shared";
-import { contractTail, usd, money } from "../lib/util";
+import { parseHkd } from "../lib/shared";
+import { contractTail, hkd, money } from "../lib/util";
 import { c } from "../tokens";
 import { SheetSuccess } from "./SheetSuccess";
 import { ErrorNote } from "./ErrorNote";
 import { curSign } from "../lib/runtime";
-import { getChain } from "../lib/runtime";
 
 type Mode = "fund" | "return" | "revoke";
 const COPY: Record<Mode, { title: string; hint: string }> = {
@@ -33,11 +32,11 @@ const COPY: Record<Mode, { title: string; hint: string }> = {
   return: { title: "Return funds", hint: "Send everything left in the pocket back to your main wallet. The pocket stays active." },
   revoke: { title: "Revoke this pocket", hint: "Two transactions, both signed here." },
 };
-const AMOUNTS = ["0.50", "1.00", "2.00", "5.00"];
+const AMOUNTS = ["4.00", "8.00", "16.00", "40.00"];
 
 export const txError = (e: unknown) => {
   const m = String((e as Error)?.message ?? e);
-  if (/insufficient funds|exceeds the balance|gas/i.test(m)) return getChain()?.key === "fisco" ? "Your main wallet needs a little native balance and enough eHKD. The faucet page on the wallet server (/faucet) adds both." : "Your main wallet needs a little ETH for fees and enough USDC. On the test network, Settings can add test funds.";
+  if (/insufficient funds|exceeds the balance|gas/i.test(m)) return "Your main wallet needs a little native balance and enough eHKD. Settings, Get test funds (the wallet server's faucet) adds both.";
   if (/reverted/i.test(m)) return "The transaction reverted on chain. Nothing changed.";
   if (/User rejected|denied/i.test(m)) return "Cancelled.";
   return "That did not go through. Check the connection and try again.";
@@ -60,7 +59,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
   const scoped = !!initial; // opened from a pocket: about that pocket only
   const [done, setDone] = useState<{ title: string; hash: string; txs?: { label?: string; hash: string }[] } | null>(null);
   const [sel, setSel] = useState<string | undefined>(initial);
-  const [amount, setAmount] = useState("1.00");
+  const [amount, setAmount] = useState("8.00");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const formH = useRef(0);
@@ -92,7 +91,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
   // fund and return stay open on success so the owner reads the transaction hash; revoke closes and the pocket page shows it
   const doFund = async () => {
     try {
-      const v = parseUsd(amount); const r = await wallet!.fund(chosen!.address, v);
+      const v = parseHkd(amount); const r = await wallet!.fund(chosen!.address, v);
       recordTx({ kind: "fund", pocket: chosen!.address, hash: r.hash, amount: v.toString() });
       setDone({ title: `Moved ${curSign()}${amount} to ${cleanText(chosen!.name, 30)}`, hash: r.hash }); await refreshPockets();
     } catch (e) { fail(e); }
@@ -134,7 +133,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
         <View style={{ gap: 4 }}>
           <T v="section">{COPY[mode].title}</T>
           <T v="body" color="ink2">{mode === "revoke" && chosen && chosen.balance === 0n ? "One transaction, signed here." : COPY[mode].hint}</T>
-          {mode === "fund" && balances ? <T v="sub" color="muted">Main wallet: {money(balances.usdc)}</T> : null}
+          {mode === "fund" && balances ? <T v="sub" color="muted">Main wallet: {money(balances.ehkd)}</T> : null}
         </View>
         {scoped && chosen ? <OnePocket p={chosen} tone={toneFor(pockets, chosen.address)} /> : null}
         {mode === "revoke" && chosen ? <RevokeOutcome p={chosen} /> : null}

@@ -115,7 +115,7 @@ const defs: Record<string, Tool> = {
   },
 
   counter_offer: {
-    description: "Haggle: offer a lower price on a quote whose item is marked negotiable, before asking the owner or paying. Send only {quoteId, price} (US$, e.g. \"0.90\"); the seller's agent answers with a price: accept or counter (final = its last word). Offer exactly its counter to accept it. Enforced by the wallet: each offer below the seller's current price, never above its first quote or the intent's max per item, at most 3 offers. Anchor on what comparable items cost elsewhere, meet the seller partway, take a final counter that fits the task, and never haggle a quote the owner already approved.",
+    description: "Haggle: offer a lower price on a quote whose item is marked negotiable, before asking the owner or paying. Send only {quoteId, price} (HK$, e.g. \"7.00\"); the seller's agent answers with a price: accept or counter (final = its last word). Offer exactly its counter to accept it. Enforced by the wallet: each offer below the seller's current price, never above its first quote or the intent's max per item, at most 3 offers. Anchor on what comparable items cost elsewhere, meet the seller partway, take a final counter that fits the task, and never haggle a quote the owner already approved.",
     schema: z.object({ quoteId: z.string(), price: z.string() }),
     async run(ctx, { quoteId, price }) {
       const s = state(ctx.pocket);

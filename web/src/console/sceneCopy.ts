@@ -14,8 +14,8 @@ export const SCENE_COPY: Record<string, SceneCopy> = {
   "7": { doing: "Revoke the pocket right after the first payment.", seeing: "The second payment is refused because the agent was stopped.", outcome: "Stopped", tone: "accent" },
   "8": { doing: "Ask for a lookup in a pocket too small to afford it.", seeing: "No allowed shop fits, nothing is paid and the agent suggests raising the limit.", outcome: "Nothing paid", tone: "neutral" },
   "9": { doing: "Ask for TradeWire's report right after a drainer wallet pays it.", seeing: "Radar traces TradeWire's funds to the drainer, so the agent does not pay it and buys from a clean seller instead.", outcome: "Radar blocked", tone: "accent" },
-  "11": { doing: "Ask for DataPro's premium report, but have the agent negotiate first.", seeing: "The agent and DataPro's agent trade prices only, 1.50 down to 1.10; you co-sign the deal and the pocket pays exactly that.", outcome: "US$0.40 saved", tone: "accent" },
-  "12": { doing: "Say one sentence: every morning, news and the USDC price, at most US$0.05 a week.", seeing: "The pocket app builds itself; its routine runs twice inside the week's allowance, ignores a seller's attempt to rewrite it, and the third run asks you with a cheque.", outcome: "US$0.051 of US$0.05, co-signed", tone: "accent" },
+  "11": { doing: "Ask for DataPro's premium report, but have the agent negotiate first.", seeing: "The agent and DataPro's agent trade prices only, 12.00 down to 8.80; you co-sign the deal and the pocket pays exactly that.", outcome: "HK$3.20 saved", tone: "accent" },
+  "12": { doing: "Say one sentence: every morning, news and the ETH price, at most HK$0.40 a week.", seeing: "The pocket app builds itself; its routine runs twice inside the week's allowance, ignores a seller's attempt to rewrite it, and the third run asks you with a cheque.", outcome: "HK$0.408 of HK$0.40, co-signed", tone: "accent" },
   "10": { doing: "Assume the agent is fooled into retrying a shop that is not allowed.", seeing: "The pocket refuses every try; after the third the Sentinel freezes the pocket on-chain, so nothing more is paid.", outcome: "Frozen", tone: "accent" },
 };
 

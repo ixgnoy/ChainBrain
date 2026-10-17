@@ -13,7 +13,7 @@ import { Money } from "../ui/Money";
 import { Hatch, HatchBar } from "../ui/Hatch";
 import { AgentAvatar } from "../ui/AgentAvatar";
 import { activityLine, ago, type AgentView } from "../lib/agents";
-import { usd } from "../lib/util";
+import { hkd } from "../lib/util";
 import { cleanText } from "../lib/sanitize";
 import { useApp, type Pocket } from "../store";
 import { PocketFace, toneFor } from "./PocketFace";
@@ -57,9 +57,9 @@ export function AgentCard({ a, busy }: { a: AgentView; busy?: boolean }) {
 
         {total > 0n ? (
           <View style={{ gap: 6 }}>
-            <HatchBar value={Number(a.spent) / Number(total)} tone={c.ink} height={10} label={`${a.name} has spent ${usd(a.spent)} of ${usd(total)}`} />
+            <HatchBar value={Number(a.spent) / Number(total)} tone={c.ink} height={10} label={`${a.name} has spent ${hkd(a.spent)} of ${hkd(total)}`} />
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <T v="cap" color="muted">{`US$${usd(a.spent)} spent · ${a.payments} paid${a.refusals ? ` · ${a.refusals} refused` : ""}`}</T>
+              <T v="cap" color="muted">{`HK$${hkd(a.spent)} spent · ${a.payments} paid${a.refusals ? ` · ${a.refusals} refused` : ""}`}</T>
               <T v="cap" w="bold">{`${Math.round((Number(a.spent) / Number(total)) * 100)}% used`}</T>
             </View>
           </View>
@@ -104,7 +104,7 @@ function HandCard({ p, i, w, top, tone }: { p: Pocket; i: number; w: number; top
   };
   return (
     <View ref={ref} collapsable={false} style={{ position: "absolute", left: 0, top, zIndex: i + 1 }}>
-      <Press kind="row" haptics="light" onPress={open} accessibilityRole="button" accessibilityLabel={`${cleanText(p.name, 30)} pocket, ${usd(p.balance)} ${tokenSymbol()}${p.revoked ? ", revoked" : ""}. Opens the pocket`}>
+      <Press kind="row" haptics="light" onPress={open} accessibilityRole="button" accessibilityLabel={`${cleanText(p.name, 30)} pocket, ${hkd(p.balance)} ${tokenSymbol()}${p.revoked ? ", revoked" : ""}. Opens the pocket`}>
         <PocketFace pocket={p} width={w} tone={tone} still peek />
       </Press>
     </View>

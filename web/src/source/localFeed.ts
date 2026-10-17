@@ -4,7 +4,7 @@ import { createWorld, SCENES, type SimTx, type World, type WorldOptions } from "
 import { createAutopilot, OWNERS, type Autopilot } from "@sim/autopilot";
 import type { Address, Hex } from "viem";
 import type { PocketState, ChainTx } from "../console/chain";
-import { formatUsd, type Config } from "../shared";
+import { formatHkd, type Config } from "../shared";
 import type { WalletEvent } from "../lib/events";
 import type { NetworkFeed, FeedSnapshot } from "./feed";
 import { createLinkedFeed } from "./linkedFeed";
@@ -27,7 +27,7 @@ const scrub = (e: WalletEvent): WalletEvent => {
 // The network's owners label their pockets like anyone would; the chain itself has no names.
 const OTHER: Record<string, string> = { [OWNERS.research.toLowerCase()]: "Lab research", [OWNERS.trading.toLowerCase()]: "Trading desk", [OWNERS.small.toLowerCase()]: "Side project" };
 function nameOf(owner: string, cap: bigint, presenter: string): string | undefined {
-  if (owner.toLowerCase() === presenter.toLowerCase()) return cap <= 200_000n ? "One purchase" : "Research data";
+  if (owner.toLowerCase() === presenter.toLowerCase()) return cap <= 1_500_000n ? "One purchase" : "Research data";
   return OTHER[owner.toLowerCase()];
 }
 
@@ -56,7 +56,7 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
       },
       async forceTransfer(pocket) {
         const j = await world.forceTransfer(pocket as Hex);
-        const left = formatUsd(BigInt(j.balanceAfter));
+        const left = formatHkd(BigInt(j.balanceAfter));
         return { ok: j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds ${curSign()}${left}.` : "The transfer was NOT refused." };
       },
       async runScene(id) { return autopilot.runScene(id); },
@@ -73,7 +73,7 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
         autopilot.hold();
         try {
           const j = await world.hijack(pocket as Hex, text);
-          const left = formatUsd(BigInt(j.balanceAfter));
+          const left = formatHkd(BigInt(j.balanceAfter));
           return { ok: j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds ${curSign()}${left}.` : "The transfer was NOT refused." };
         } catch (e) { return { ok: false, text: (e as Error).message }; } finally { autopilot.release(); }
       },

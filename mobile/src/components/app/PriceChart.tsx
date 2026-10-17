@@ -16,7 +16,7 @@ import Svg, { Circle, Defs, Line, Path, Pattern, Rect } from "react-native-svg";
 import { c, motion } from "../../tokens";
 import { T } from "../../ui/Text";
 import { useDrawIn } from "../../ui/Hatch";
-import { usd } from "../../lib/util";
+import { hkd } from "../../lib/util";
 import { curSign } from "../../lib/runtime";
 
 const H = 168, TOP = 18, BOTTOM = 14, RIGHT = 74;
@@ -73,7 +73,7 @@ export function PriceChart({ quotes, buys, limit, play = true }: { quotes: Pt[];
       .onFinalize(() => { if (cur.value !== -1) { cur.value = -1; scheduleOnRN(pick, null); } });
   }, [xs.join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const a11y = quotes.length
-    ? `Quoted prices: ${quotes.map((q) => `${new Date(q.at).toLocaleDateString("en-GB", { weekday: "short", day: "numeric" })} ${curSign()}${usd(q.price)}`).join(", ")}${limit != null ? `. Your limit ${curSign()}${usd(limit)}` : ""}. ${buys.length} bought.`
+    ? `Quoted prices: ${quotes.map((q) => `${new Date(q.at).toLocaleDateString("en-GB", { weekday: "short", day: "numeric" })} ${curSign()}${hkd(q.price)}`).join(", ")}${limit != null ? `. Your limit ${curSign()}${hkd(limit)}` : ""}. ${buys.length} bought.`
     : "No quotes yet";
   return (
     <GestureDetector gesture={scrub}>
@@ -108,18 +108,18 @@ export function PriceChart({ quotes, buys, limit, play = true }: { quotes: Pt[];
           {/* the limit's price pill at the right edge, and today's price pill */}
           {plot.ly != null && limit != null ? (
             <View pointerEvents="none" style={{ position: "absolute", left: plot.plotW + 6, top: plot.ly - 12, height: 24, borderRadius: 7, paddingHorizontal: 7, backgroundColor: c.blueInk, justifyContent: "center" }}>
-              <T v="cap" w="bold" numberOfLines={1} style={{ color: c.white, fontSize: 11 }}>{`≤ ${usd(limit)}`}</T>
+              <T v="cap" w="bold" numberOfLines={1} style={{ color: c.white, fontSize: 11 }}>{`≤ ${hkd(limit)}`}</T>
             </View>
           ) : null}
           {last ? (
             <View pointerEvents="none" style={{ position: "absolute", left: plot.plotW + 6, top: Math.min(Math.max(plot.pts.at(-1)![1] - 12, 0), H - 24), height: 24, borderRadius: 7, paddingHorizontal: 7, backgroundColor: c.vermillion, justifyContent: "center", opacity: plot.ly != null && Math.abs(plot.pts.at(-1)![1] - plot.ly) < 26 ? 0 : 1 }}>
-              <T v="cap" w="bold" numberOfLines={1} style={{ color: c.white, fontSize: 11 }}>{usd(last.price)}</T>
+              <T v="cap" w="bold" numberOfLines={1} style={{ color: c.white, fontSize: 11 }}>{hkd(last.price)}</T>
             </View>
           ) : null}
           {at != null ? (
             <View pointerEvents="none" style={{ position: "absolute", top: -6, left: Math.min(Math.max(plot.pts[at][0] - 78, 0), Math.max(plot.plotW - 156, 0)), width: 156, minHeight: 30, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4, backgroundColor: c.ink, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
               <T v="cap" style={{ color: "rgba(255,255,255,0.72)" }} numberOfLines={1}>{new Date(quotes[at].at).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</T>
-              <T v="cap" w="bold" style={{ color: limit != null && quotes[at].price <= limit ? c.blue : c.white, fontVariant: ["tabular-nums"] }}>{`${curSign()}${usd(quotes[at].price)}`}</T>
+              <T v="cap" w="bold" style={{ color: limit != null && quotes[at].price <= limit ? c.blue : c.white, fontVariant: ["tabular-nums"] }}>{`${curSign()}${hkd(quotes[at].price)}`}</T>
             </View>
           ) : null}
           <View style={{ flexDirection: "row", justifyContent: "space-between", width: plot.plotW, marginTop: 6 }}>
@@ -134,4 +134,4 @@ export function PriceChart({ quotes, buys, limit, play = true }: { quotes: Pt[];
 }
 
 const scrubText = (q: Pt, limit?: bigint) =>
-  `${new Date(q.at).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" })}, ${curSign()}${usd(q.price)}${limit != null ? (q.price <= limit ? ", in the buy zone" : ", above your limit") : ""}`;
+  `${new Date(q.at).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" })}, ${curSign()}${hkd(q.price)}${limit != null ? (q.price <= limit ? ", in the buy zone" : ", above your limit") : ""}`;

@@ -2,7 +2,7 @@ import { it, expect, vi } from "vitest";
 import { detectDev } from "./dev";
 
 const OWNER = "0xf39Fd6e51aad88F6F4ce6aB8827279cfFFb92266";
-const health = { mode: "local-fork", chainId: 84532, rpcPath: "/dev/rpc", startedAt: 1, owner: OWNER };
+const health = { mode: "local-fork", chainId: 20200, rpcPath: "/dev/rpc", startedAt: 1, owner: OWNER };
 const json = (body: unknown, status = 200) => Promise.resolve(new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } }));
 
 it("detects the dev stack from GET /dev/health", async () => {

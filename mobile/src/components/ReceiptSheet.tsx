@@ -11,7 +11,7 @@ import { T } from "../ui/Text";
 import { cleanText } from "../lib/sanitize";
 import { chainFor, toolResultOf, type LedgerRow, type WalletEvent } from "../lib/events";
 import { plainAsks, plainReason } from "../lib/plain";
-import { usd, stamp, shortHex } from "../lib/util";
+import { hkd, stamp, shortHex } from "../lib/util";
 import { TxLink } from "./TxLink";
 import { Icon } from "../ui/Icon";
 import { SellerMark, hasSellerMark } from "../ui/SellerMark";
@@ -99,7 +99,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
   if (row.description) facts.push(["Item", cleanText(row.description, 80)]);
   if (row.kind !== "payment" || !pocket) facts.push(["Pocket", pocket ? cleanText(pocket.name, 40) : "n/a"]); // a payment shows its pocket as the card
   facts.push(["When", stamp(row.at)]);
-  const tech: [string, string][] = [["Network", dev ? "Local test network" : source === "builtin" ? "Test network" : "Base Sepolia (test network)"]];
+  const tech: [string, string][] = [["Network", dev ? "Local test network" : source === "builtin" ? "Test network" : "FISCO BCOS (chain 20200)"]];
     if (row.detail && row.kind !== "forced") tech.push(["Detail", cleanText(row.detail, 200)]);
   if (row.sku) tech.push(["Item code", cleanText(row.sku, 60)]);
   if (row.intentHash) tech.push(["Task id", shortHex(row.intentHash)]);
@@ -120,7 +120,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
           ) : null}
           <Reveal {...R(0)}>
             {noMoney ? <T v="amount" color={bad ? "negative" : "ink"} style={{ textAlign: "center" }}>{headline ?? "No payment made"}</T> : (
-              <Money v="balance" value={usd(row.amount)} countIn color={bad ? "muted" : "ink"} strike={bad} />
+              <Money v="balance" value={hkd(row.amount)} countIn color={bad ? "muted" : "ink"} strike={bad} />
             )}
           </Reveal>
           <Reveal {...R(1)}><View style={{ alignSelf: "center" }}><Pill label={status} tone={bad ? "negative" : row.outcome === "pending" ? "warning" : "accent"} /></View></Reveal>

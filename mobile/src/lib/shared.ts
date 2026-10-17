@@ -3,14 +3,14 @@ import type { Address, Hex } from "viem";
 import { getApi, fetchTimeout, isBuiltin, setChain, type ChainProfile } from "./runtime";
 import { builtin } from "./builtin";
 
-export const USDC: Address = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+export const EHKD: Address = "0x0355c0c5Afe2A35369056FBB854903A4aF07781A";
 export const NEVER = 2n ** 256n - 1n;
-export function parseUsd(s: string): bigint {
+export function parseHkd(s: string): bigint {
   const m = /^(\d+)(?:\.(\d{1,6}))?$/.exec(String(s).trim());
   if (!m) throw new Error(`bad USD amount: ${s}`);
   return BigInt(m[1]) * 1_000_000n + BigInt((m[2] ?? "").padEnd(6, "0") || "0");
 }
-export function formatUsd(n: bigint): string {
+export function formatHkd(n: bigint): string {
   if (n === NEVER) return "never";
   const frac = (n % 1_000_000n).toString().padStart(6, "0").replace(/0+$/, "").padEnd(2, "0");
   return `${n / 1_000_000n}.${frac}`;
@@ -37,7 +37,7 @@ export const REASONS: Record<string, string> = {
   QUOTE_ALREADY_PAID: "This quote is already paid",
   QUOTE_UNKNOWN: "No such quote",
   DISCLOSURE_REFUSED: "The seller asked for data beyond the purchase; refused and shown to the owner",
-  SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule USDC payments it built itself",
+  SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule eHKD payments it built itself",
   SETTLEMENT_FAILED: "Settlement failed",
   NOT_THIS_AGENT: "This pocket belongs to a different agent key",
   COUNTERPARTY_HIGH_RISK: "Radar traced this seller's funds to a high-risk source; choose another seller",
@@ -50,7 +50,7 @@ export const reasonText = (code: string) => REASONS[code] ?? code;
 export const shortAddr = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
 
 export type Seller = { id: string; name: string; category: string; payTo: Address; items: { sku: string; /** a few words, for rows (built-in network) */ short?: string; description: string; price: string | null }[] };
-export type Config = { agent: Address; factory: Address; usdc: Address; chain?: Omit<ChainProfile, "token">; sellersUrl: string; sellers: Seller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
+export type Config = { agent: Address; factory: Address; token: Address; chain?: Omit<ChainProfile, "token">; sellersUrl: string; sellers: Seller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
 
 const cache = new Map<string, Promise<Config>>();
 export const resetConfig = () => cache.clear();
@@ -62,7 +62,7 @@ export function loadConfig(): Promise<Config> {
     p = fetchTimeout(`${base}/api/config`, {}, 10000).then((r) => {
       if (!r.ok) throw new Error(`wallet API ${r.status}`);
       return r.json() as Promise<Config>;
-    }).then((c) => { setChain(c.chain ? { ...c.chain, token: c.usdc } : null); return c; });
+    }).then((c) => { setChain(c.chain ? { ...c.chain, token: c.token } : null); return c; });
     p.catch(() => cache.delete(base));
     cache.set(base, p);
   }

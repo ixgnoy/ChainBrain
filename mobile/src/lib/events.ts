@@ -6,7 +6,7 @@
 //  - a payment approval has event type "approval"; "payment" is a settled x402 payment
 //  - every tool call emits tool_call, tool and tool_result: ignore `tool`; the final reply is emitted as `thinking` and `reply`
 //  - quote-time refusals live only in get_quote tool results, refusal events only appear when `pay` was attempted
-import { parseUsd, type Authorization } from "./shared";
+import { parseHkd, type Authorization } from "./shared";
 import { curSign } from "./runtime";
 
 export type WalletEvent = { type: string; pocket?: string; at: number; [k: string]: any };
@@ -106,7 +106,7 @@ export function reasonsOf(r: any): string[] {
 }
 export const toolResultOf = (e: WalletEvent): any => { const r = e.result; if (typeof r === "string") { try { return JSON.parse(r); } catch { return { text: r }; } } return r; };
 
-const decimalToAtomic = (s: unknown): bigint | undefined => { try { return typeof s === "string" ? parseUsd(s) : undefined; } catch { return undefined; } };
+const decimalToAtomic = (s: unknown): bigint | undefined => { try { return typeof s === "string" ? parseHkd(s) : undefined; } catch { return undefined; } };
 const atomic = (s: unknown): bigint | undefined => { try { return typeof s === "string" || typeof s === "number" ? BigInt(s) : undefined; } catch { return undefined; } };
 
 export function summarizeTool(tool: string | undefined, r: any): string {
@@ -184,7 +184,7 @@ export function ledgerFrom(events: WalletEvent[], pocket?: string): LedgerRow[] 
     } else if (e.type === "refusal") {
       rows.push({ ...base, kind: "refusal", outcome: "refused", sellerId: e.sellerId, sku: e.sku, amount: atomic(e.amount), reasons: e.reason ? [e.reason] : [], detail: typeof e.detail === "string" ? e.detail : undefined });
     } else if (e.type === "forced") {
-      // someone submitted a transfer straight to USDC with the agent's signature (scene 5's backstop): the pocket decides on-chain
+      // someone submitted a transfer straight to eHKD with the agent's signature (scene 5's backstop): the pocket decides on-chain
       rows.push({ ...base, kind: "forced", outcome: e.reverted ? "refused" : "paid", amount: atomic(e.amount), tx: e.tx, reasons: e.reverted ? ["REVERTED"] : [], detail: typeof e.to === "string" ? e.to : undefined });
     } else if (e.type === "disclosure") {
       rows.push({ ...base, kind: "disclosure", outcome: "refused", sellerId: e.sellerId, asked: Array.isArray(e.asked) ? e.asked : [], signRequest: !!e.signRequest, reasons: Array.isArray(e.refused) ? e.refused : [] });

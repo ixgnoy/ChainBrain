@@ -18,7 +18,7 @@ import { agentInfo } from "../../shared/sim/agents";
 import { router } from "expo-router";
 import { notify } from "./lib/toast";
 import { haptic } from "./haptics";
-import { sameView, usd } from "./lib/util";
+import { sameView, hkd } from "./lib/util";
 import { loadMeta, saveMeta, type PocketMeta } from "./lib/pocketNames";
 import { isTightCap } from "./lib/presets";
 import * as api from "./lib/api";
@@ -51,7 +51,7 @@ type Ctx = {
   keyState: "loading" | "none" | "ready"; wallet: OwnerWallet | null; importKey(pk: string): Promise<void>; newKey(): Promise<void>;
   /** Where data comes from: the network built into the app (default) or the wallet server at `apiUrl`. */
   source: Source; setSource(s: Source): Promise<void>;
-  balances: { usdc: bigint; eth: bigint } | null;
+  balances: { ehkd: bigint; eth: bigint } | null;
   // pockets
   pockets: Pocket[]; pocketsLoaded: boolean; active?: Pocket; setActive(a: string): void;
   addPocket(a: Address, meta?: PocketMeta, o?: { activate?: boolean }): Promise<void>; refreshPockets(): Promise<void>; findPocket(a?: string): Pocket | undefined;
@@ -259,7 +259,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       Promise.all(list.map((a) => readPocket(a).catch(() => null))),
     ]);
     // keep the same objects when nothing changed: a new object re-renders every screen (and Hermes in dev is slow)
-    if (bal) setBalances((old) => (old && old.usdc === bal.usdc && old.eth === bal.eth ? old : bal));
+    if (bal) setBalances((old) => (old && old.ehkd === bal.ehkd && old.eth === bal.eth ? old : bal));
     setViews((old) => {
       let changed = false;
       const next = { ...old };
@@ -276,7 +276,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // dev stack (or a FISCO server's faucet) and an empty phone key: ask for test money once per launch
   const autoFunded = useRef<string>("");
   useEffect(() => {
-    if (!(dev || getChain()?.key === "fisco") || !wallet || !balances || balances.usdc > 0n || autoFunded.current === wallet.address) return;
+    if (!(dev || getChain()?.key === "fisco") || !wallet || !balances || balances.ehkd > 0n || autoFunded.current === wallet.address) return;
     autoFunded.current = wallet.address;
     api.devFund(wallet.address).then(() => refreshPockets()).catch(() => { autoFunded.current = ""; });
   }, [dev, wallet, balances, refreshPockets]);
@@ -374,7 +374,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (forcedSeen.current.has(String(e.tx))) continue;
       forcedSeen.current.add(String(e.tx));
       const name = meta[String(e.pocket).toLowerCase()]?.name ?? "your pocket";
-      if (e.reverted) { let a = 0n; try { a = BigInt(e.amount ?? 0); } catch { /* shown without an amount */ } notify(a > 0n ? `Blocked a ${curSign()}${usd(a)} transfer` : `Blocked a transfer out of ${name}`); haptic.warning(); }
+      if (e.reverted) { let a = 0n; try { a = BigInt(e.amount ?? 0); } catch { /* shown without an amount */ } notify(a > 0n ? `Blocked a ${curSign()}${hkd(a)} transfer` : `Blocked a transfer out of ${name}`); haptic.warning(); }
     }
   }, [myEvents, events.length, meta]);
   const pending = useMemo(() => livePending(myEvents, { pendingIds }).filter((a) => !answered.has(a.id)), [myEvents, pendingIds, answered]);
@@ -441,7 +441,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return r;
   }, []);
 
-  /** Co-sign the exact USDC TransferWithAuthorization the wallet tool layer built, then POST it. */
+  /** Co-sign the exact eHKD TransferWithAuthorization the wallet tool layer built, then POST it. */
   const signApprove = useCallback(async (a: Approval): Promise<api.ApprovalAnswer> => {
     if (!wallet) return { ok: false, error: "NO_KEY" };
     const auth = authOf(a);

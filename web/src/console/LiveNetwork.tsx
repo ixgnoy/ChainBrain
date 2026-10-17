@@ -1,7 +1,7 @@
 // The network as a real server shows it: config, the event stream (every pocket) and the chain (pockets, rules,
 // on-chain history). Read-only. The dev stack adds /dev routes (local fork, forced transfer, scene list).
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { formatUsd, loadConfig, setChainInfo, txUrl, curSign, type Config } from "../shared";
+import { formatHkd, loadConfig, setChainInfo, txUrl, curSign, type Config } from "../shared";
 import { detectDev } from "../dev";
 import { EventsProvider, useEvents } from "../useEvents";
 import { setSource } from "../source/source";
@@ -71,7 +71,7 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
   useEffect(() => {
     if (!cfg) return;
     let alive = true;
-    const client = clientFor(dev ? `${url}/dev/rpc` : ENV_RPC ?? cfg.chain?.rpc ?? "https://sepolia.base.org");
+    const client = clientFor(dev ? `${url}/dev/rpc` : ENV_RPC ?? cfg.chain?.rpc ?? "https://fisco-node-production.up.railway.app");
     (async () => {
       try {
         fromRef.current ??= await scanFrom(client, dev);
@@ -106,7 +106,7 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
           const j = await r.json();
           if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
           setTick((x) => x + 1);
-          return { ok: !!j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds ${curSign()}${formatUsd(BigInt(j.balanceAfter))}.` : "The transfer was NOT refused." };
+          return { ok: !!j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds ${curSign()}${formatHkd(BigInt(j.balanceAfter))}.` : "The transfer was NOT refused." };
         } catch (e) { return { ok: false, text: `Could not run it: ${(e as Error).message}` }; }
       };
     }

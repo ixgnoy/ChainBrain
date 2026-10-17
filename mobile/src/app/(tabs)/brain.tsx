@@ -17,7 +17,7 @@ import { Rise } from "../../ui/Rise";
 import { useLargeText } from "../../ui/fontScale";
 import { haptic } from "../../haptics";
 import { cleanText } from "../../lib/sanitize";
-import { money, usd } from "../../lib/util";
+import { money, hkd } from "../../lib/util";
 import { plainReason } from "../../lib/plain";
 import { isExpired } from "../../components/PocketCard";
 import { brainOf, MEMORY_KIND, sourceWords, type MemoryItem, type MemorySnapshot } from "../../lib/brain";
@@ -103,7 +103,7 @@ function Ring({ share, size = 56 }: { share: number; size?: number }) {
 
 /** A remembered item you can remove. A purchase reads as the seller's logo, what was bought and the price. */
 function MemoryChip({ m, onForget, idOf }: { m: MemoryItem; onForget(): void; idOf(name: string): string | undefined }) {
-  // shared/sim/reflect.ts writes: Bought "<item>" from <seller> for US$<amount>[, co-signed by the owner]
+  // shared/sim/reflect.ts writes: Bought "<item>" from <seller> for HK$<amount>[, co-signed by the owner]
   const buy = /^Bought "(.+)" from (.+) for (US\$[\d.]+)(, co-signed by the owner)?$/.exec(m.text);
   const big = useLargeText();
   return (
@@ -194,7 +194,7 @@ export default function BrainTab() {
           <Eyebrow>Worst case right now</Eyebrow>
           {/* the exact balance: proof() rounds to cents, and a pocket can hold fractions of a cent. A revoked, frozen or ended
               pocket refuses every payment (Pocket.canPay), so its worst case is nothing, as WorstCase says on the pocket page */}
-          <Money v="balance" value={usd(off ? 0n : active.balance)} label={`Worst case right now ${money(off ? 0n : active.balance)}`} />
+          <Money v="balance" value={hkd(off ? 0n : active.balance)} label={`Worst case right now ${money(off ? 0n : active.balance)}`} />
           <T v="sub" color="muted">{off ? `Nothing can be paid: the pocket is ${active.revoked ? "revoked" : active.frozen ? "frozen" : "ended"}. Enforced by your pocket contract.` : "Even if your agent is fooled. Enforced by your pocket contract."}</T>
           <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 14 }} accessible accessibilityLabel={`Can pay ${allowed.map((x) => x.name).join(", ")}. Anyone else is refused`}>
             {allowed.map((x) => (
@@ -241,7 +241,7 @@ export default function BrainTab() {
         <Panel title="Routine" pill={routine.status === "paused" ? "Paused" : `${runs.length} ${runs.length === 1 ? "run" : "runs"} on its own`} pillTone={routine.status === "paused" ? "fill" : "green"} delay={40}>
           <T v="sub" color="ink2">{`${cadenceText(routine.cadence)}, it buys the same ${routine.items.length === 1 ? "item" : `${routine.items.length} items`} from the sellers you named. It never decides to buy something new: the schedule, the items and the allowance are fixed fields you signed.`}</T>
           <View style={{ flexDirection: "row", gap: 8 }}>
-            <Counter icon="gauge" n={Math.round((Number(rb.spent) / Math.max(Number(rb.limit), 1)) * 100)} label={`% of ${curSign()}${usd(rb.limit)} a ${routine.allowance.period} used`} a11y={`percent of this ${routine.allowance.period}'s allowance used: ${money(rb.spent)} of ${money(rb.limit)}`} />
+            <Counter icon="gauge" n={Math.round((Number(rb.spent) / Math.max(Number(rb.limit), 1)) * 100)} label={`% of ${curSign()}${hkd(rb.limit)} a ${routine.allowance.period} used`} a11y={`percent of this ${routine.allowance.period}'s allowance used: ${money(rb.spent)} of ${money(rb.limit)}`} />
             <Counter icon="shieldCheck" n={ignored} label={ignored === 1 ? "seller text ignored" : "seller texts ignored"} a11y="times a seller's text tried to change the routine; nothing changed" />
           </View>
           {routine.status === "active" ? <T v="cap" color="muted">{`Next ${new Date(routine.nextAt).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" })}. Past the allowance it stops and asks you to co-sign.`}</T> : null}

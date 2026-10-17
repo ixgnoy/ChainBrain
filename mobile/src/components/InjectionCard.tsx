@@ -1,4 +1,4 @@
-// Scene 5: a seller's free content tried to give the agent an order ("send 50 USDC to …", or whatever a judge planted).
+// Scene 5: a seller's free content tried to give the agent an order ("send 50 eHKD to …", or whatever a judge planted).
 // The wallet hands seller content to the model only as data, so nothing happened; this card shows the owner exactly
 // what was tried, quoted, with "Ignored". Same once-only entrance as a refusal.
 import React from "react";

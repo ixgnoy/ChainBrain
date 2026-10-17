@@ -7,7 +7,7 @@ import { T } from "../ui/Text";
 import { c } from "../tokens";
 import { cleanText } from "../lib/sanitize";
 import { NEVER } from "../lib/shared";
-import { usd, money, dateLabel, shortAddr } from "../lib/util";
+import { hkd, money, dateLabel, shortAddr } from "../lib/util";
 import { useApp } from "../store";
 import type { Pocket } from "../store";
 import { tokenSymbol } from "../lib/runtime";
@@ -53,14 +53,14 @@ export function PocketRow({ pocket, onPress, last, lit }: { pocket: Pocket; onPr
   return (
     <ListRow
       last={last} onPress={onPress} lit={lit}
-      a11y={`${cleanText(pocket.name, 30)} pocket, ${usd(pocket.balance)} ${tokenSymbol()}`}
+      a11y={`${cleanText(pocket.name, 30)} pocket, ${hkd(pocket.balance)} ${tokenSymbol()}`}
       avatar={<Avatar label={pocket.name} tone={pocket.revoked || isExpired(pocket) ? "fill" : "soft"} />}
       title={cleanText(pocket.name, 30)} sub={pocketLine(pocket)}
-      extra={spent > 0n ? <View accessibilityLabel={`${usd(spent)} of ${usd(total)} used`} style={{ height: 4, borderRadius: 2, backgroundColor: c.fill, marginTop: 6, overflow: "hidden" }}><View style={{ width: `${share * 100}%`, height: 4, borderRadius: 2, backgroundColor: c.accent }} /></View> : undefined}
+      extra={spent > 0n ? <View accessibilityLabel={`${hkd(spent)} of ${hkd(total)} used`} style={{ height: 4, borderRadius: 2, backgroundColor: c.fill, marginTop: 6, overflow: "hidden" }}><View style={{ width: `${share * 100}%`, height: 4, borderRadius: 2, backgroundColor: c.accent }} /></View> : undefined}
     >
       {/* the balance rolls when it changes while the row is on screen; the state shows only when it is not Active (noise otherwise) */}
       <View style={{ alignItems: "flex-end", gap: 2 }}>
-        <Money value={usd(pocket.balance)} v="row" decorative />
+        <Money value={hkd(pocket.balance)} v="row" decorative />
         {state !== "Active" ? <T v="sub" color={STATE_TONE[state]}>{state}</T> : null}
       </View>
     </ListRow>

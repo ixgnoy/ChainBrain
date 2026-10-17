@@ -4,8 +4,8 @@
 // `result` is an object, not a JSON string.
 import { reasonsOf, reasonsOfResult, type WalletEvent } from "./events";
 import { cleanText } from "./sanitize";
-import { usd, shortHex } from "./format";
-import { parseUsd } from "../shared";
+import { hkd, shortHex } from "./format";
+import { parseHkd } from "../shared";
 import { curSign } from "../shared";
 
 export type ChipKind = "ok" | "refused" | "stepup" | "revoked" | "info" | "neutral";
@@ -19,8 +19,8 @@ export type TraceRow = {
 const ASK: Record<string, string> = { owner_full_name: "the owner's full name", owner_email: "the owner's email", wallet_history: "the wallet history", other_pockets: "the owner's other pockets", owner_phone: "the owner's phone number" };
 const plainAsk = (x: string) => ASK[x] ?? x.replace(/^owner_/, "the owner's ").replace(/_/g, " ");
 
-const atomicUsd = (x: unknown) => { try { return `${curSign()}${usd(BigInt(x as string))}`; } catch { return ""; } };
-const priceUsd = (p: unknown) => { try { return typeof p === "string" ? `${curSign()}${usd(parseUsd(p))}` : ""; } catch { return ""; } };
+const atomicHkd = (x: unknown) => { try { return `${curSign()}${hkd(BigInt(x as string))}`; } catch { return ""; } };
+const priceHkd = (p: unknown) => { try { return typeof p === "string" ? `${curSign()}${hkd(parseHkd(p))}` : ""; } catch { return ""; } };
 
 /** One-line summary of a tool args object (strings are cleaned, long ones cut). */
 export function argSummary(args: unknown): string {
@@ -52,7 +52,7 @@ export function resultSummary(tool: string | undefined, r: any): string {
     case "draft_intent": return r.ok ? "task confirmed by owner" : "task not confirmed";
     case "get_quote": {
       if (r.free) return reasons.length ? "free content, parts refused" : "free content read";
-      const p = priceUsd(r.price);
+      const p = priceHkd(r.price);
       const gate = r.allowedByPocket && r.allowedByPocket !== "OK" ? "blocked by pocket" : r.needsOwnerApproval ? "needs your approval" : "within rules";
       return r.ok ? `${cleanText(r.sellerId, 24)}/${cleanText(r.sku, 32)} ${p} · ${gate}` : cleanText(r.error, 80) || "no quote";
     }
@@ -107,15 +107,15 @@ export function traceRows(events: WalletEvent[]): TraceRow[] {
       return;
     }
     if (e.type === "payment") {
-      rows.push({ ...base, kind: "ok", verdict: "Paid", actor: "Chain", label: "payment", title: `${e.sellerId}/${e.sku}  ${atomicUsd(e.amount)}${e.cosigned ? " · co-signed by you" : ""}`, reasons: [], tx: e.tx });
+      rows.push({ ...base, kind: "ok", verdict: "Paid", actor: "Chain", label: "payment", title: `${e.sellerId}/${e.sku}  ${atomicHkd(e.amount)}${e.cosigned ? " · co-signed by you" : ""}`, reasons: [], tx: e.tx });
     } else if (e.type === "refusal") {
-      rows.push({ ...base, kind: "refused", verdict: "Refused", actor: "Policy", label: "refusal", title: `${e.sellerId}/${e.sku}  ${atomicUsd(e.amount)}`, reasons: reasonsOf(e) });
+      rows.push({ ...base, kind: "refused", verdict: "Refused", actor: "Policy", label: "refusal", title: `${e.sellerId}/${e.sku}  ${atomicHkd(e.amount)}`, reasons: reasonsOf(e) });
     } else if (e.type === "disclosure") {
       const asked = [...(Array.isArray(e.asked) ? e.asked : []).slice(0, 6).map((x: string) => plainAsk(cleanText(x, 30))), e.signRequest ? "an approval signature" : ""].filter(Boolean).join(", ");
       rows.push({ ...base, kind: "refused", verdict: "Refused", actor: "Policy", label: "disclosure", title: `${cleanText(e.sellerId, 30)} asked for ${asked || "extra data"}`, reasons: reasonsOf(e) });
     } else if (e.type === "forced") {
       // dev stack /dev/force-transfer: a third party submits a transfer the (compromised) agent key really signed
-      rows.push({ ...base, kind: e.reverted ? "ok" : "refused", verdict: e.reverted ? "Reverted" : "Settled", actor: "Chain", label: "forced transfer", title: `Forced ${atomicUsd(e.amount)} to ${shortHex(cleanText(e.to, 42), 6, 4)} · ${e.reverted ? "the pocket refused it on-chain, balance unchanged" : "NOT refused"}`, reasons: [], tx: e.tx });
+      rows.push({ ...base, kind: e.reverted ? "ok" : "refused", verdict: e.reverted ? "Reverted" : "Settled", actor: "Chain", label: "forced transfer", title: `Forced ${atomicHkd(e.amount)} to ${shortHex(cleanText(e.to, 42), 6, 4)} · ${e.reverted ? "the pocket refused it on-chain, balance unchanged" : "NOT refused"}`, reasons: [], tx: e.tx });
     } else if (e.type === "intent" || e.type === "approval" || e.type === "question") {
       rows.push({ ...base, ...approvalRow(e), actor: "Owner", reasons: [] });
     }
@@ -140,7 +140,7 @@ export function stepLines(rows: TraceRow[]): { text: string; kind: ChipKind }[] 
 }
 
 /** Instruction-like text detection for seller content in tool results (never rendered as HTML). */
-export const INJECTION_RE = /(ignore|disregard)[^.]{0,60}(previous|above|prior|instruction)|\bsend\s+\d[\d,.]*\s*(usdc|usd|eth)|private key|system prompt|transfer\s+\d|note for ai assistants|ai assistants?:/i;
+export const INJECTION_RE = /(ignore|disregard)[^.]{0,60}(previous|above|prior|instruction)|\bsend\s+\d[\d,.]*\s*(ehkd|hkd|eth)|private key|system prompt|transfer\s+\d|note for ai assistants|ai assistants?:/i;
 export function untrustedOf(e: WalletEvent): { source?: string; text: string; injection: boolean } | null {
   if (e.type !== "trace" || e.phase !== "tool_result") return null;
   const content = e.result?.content;

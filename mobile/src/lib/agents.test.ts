@@ -28,9 +28,9 @@ test("agentViews: numbers come from the pockets and the ledger", async () => {
   assert.equal(claude.pockets.length, 2); // Market news and Durian watch
   const watch = pockets.find((p) => p.address === s.pockets.find((x) => x.name === "Durian watch")!.address)!;
   const watchPays = ledger.filter((r) => r.kind === "payment" && r.pocket.toLowerCase() === watch.address.toLowerCase());
-  assert.equal(claude.balance, 412_000n + watch.balance);
+  assert.equal(claude.balance, 3_296_000n + watch.balance);
   // Market news: Exa 0.007 + 0.007, TradeWire 0.05, Exa 0.007, CoinGecko 0.01, Exa 0.007; plus the watch's buys (the day's quotes)
-  assert.equal(claude.spent, 88_000n + watchPays.reduce((n, r) => n + (r.amount ?? 0n), 0n));
+  assert.equal(claude.spent, 704_000n + watchPays.reduce((n, r) => n + (r.amount ?? 0n), 0n));
   assert.equal(claude.payments, 6 + watchPays.length);
   assert.equal(claude.refusals, 1);
   assert.equal(claude.status, "connected");

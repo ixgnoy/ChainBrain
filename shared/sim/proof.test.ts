@@ -192,7 +192,7 @@ test("explorer: a payment has eHKD AuthorizationUsed + Transfer logs; a revert h
   const blocks = blocksFrom(all);
   assert.ok(BigInt(blocks[0].number) >= BigInt(blocks.at(-1)!.number));
   assert.equal(txsOfAddress(pocket, all).length, all.filter((t) => t.pocket === pocket).length);
-  assert.equal(networkLabel({ builtin: false, chainName: "Base Sepolia" }), "Base Sepolia");
+  assert.equal(networkLabel({ builtin: false, chainName: "FISCO BCOS" }), "FISCO BCOS");
 });
 
 test("scenes 9 and 10 from the Judges tab: Radar blocks TradeWire and the agent re-plans; the Sentinel freezes the pocket; both are evidence", async () => {

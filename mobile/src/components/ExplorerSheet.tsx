@@ -86,7 +86,7 @@ function Body({ hash, close }: { hash: string; close: () => void }) {
       if (own) t = { hash, kind: own.kind === "cap" || own.kind === "ask" || own.kind === "seller" || own.kind === "unfreeze" ? "rules" : own.kind, pocket: own.pocket, at: own.at, amount: own.amount, status: "success", from: wallet?.address, counterparty: own.kind === "return" ? wallet?.address : undefined, label: own.kind === "unfreeze" ? "unfrozen" : own.note };
       else if (row) t = { hash, kind: row.kind === "forced" ? "out" : "payment", pocket: row.pocket, at: row.at, amount: row.amount, status: row.outcome === "refused" ? "reverted" : "success", counterparty: cfg.sellers.find((s) => s.id === row.sellerId)?.payTo, reason: row.reasons[0], args: row.cosigned ? { cosigned: "true" } : undefined };
     }
-    return t ? explainTx(t, { usdc: cfg.usdc, factory: cfg.factory, nameOf }, all) : null;
+    return t ? explainTx(t, { ehkd: cfg.token, factory: cfg.factory, nameOf }, all) : null;
   }, [hash, cfg, isBuiltin, ledger, ownerTxs, pockets]); // eslint-disable-line react-hooks/exhaustive-deps
   const attempt = useMemo(() => attemptsFrom(events, { sellerName: (id) => sellerName(id) }).find((a) => a.tx === hash || a.txs?.includes(hash)), [events, hash, sellerName]);
   const net = networkLabel({ builtin: isBuiltin, dev: !!dev });
