@@ -90,17 +90,17 @@ export default function Settings() {
         onCopy={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }} />
       <Group title="Wallet" />
       <ListCard>
-        {dev || !custom ? <ListRow a11y="Get test funds" onPress={getFunds} icon="plus" title="Get test funds" sub={funds.text ?? "Adds test money to your wallet"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
-        <ListRow a11y="Add an existing pocket" onPress={() => setAdding(!adding)} icon="layers" title="Add an existing pocket" sub="Track a pocket by its address"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
-        <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} icon="key" title="Import a key" sub="Use a test key you already have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
+        {dev || !custom ? <ListRow a11y="Get test funds" onPress={getFunds} icon="plus" title="Get test funds" sub={funds.text ?? "Test money, for this network"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
+        <ListRow a11y="Add an existing pocket" onPress={() => setAdding(!adding)} icon="layers" title="Add an existing pocket" sub="By its address"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
+        <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} icon="key" title="Import a key" sub="A test key you have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         {/* a browser tab keeps the built-in network across reloads (lib/builtin.ts); this is the way back to a fresh one */}
         {source === "builtin" && Platform.OS === "web" ? (
           <ListRow a11y="Start the built-in network over" icon="refresh" title={startOver ? "Tap again to start over" : "Start over"}
-            sub={startOver ? "Pockets, chat and memory go back to the beginning" : "Reloading keeps your pockets and chat; this starts fresh"} rightTone="negative"
+            sub={startOver ? "Tap again: back to day one" : "Back to day one"} rightTone="negative"
             onPress={() => { if (!startOver) { setStartOver(true); setTimeout(() => setStartOver(false), 4000); return; } forgetSaved(); globalThis.location?.reload(); }} />
         ) : null}
       </ListCard>
-      <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 8 }}>Test network only. This wallet holds test money: do not put real money on it.</T>
+      <T v="cap" color="muted" style={{ paddingHorizontal: 24, paddingTop: 8 }}>Test network: test money only.</T>
       {adding ? (
         <Animated.View entering={FadeInDown.duration(motion.base)} exiting={FadeOut.duration(motion.exit)}>
           <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
@@ -126,10 +126,10 @@ export default function Settings() {
 
       <Group title="About" />
       <ListCard>
-        <ListRow a11y="How ChainBrain works, shows the intro again" icon="info" title="How ChainBrain works" sub="The three ideas behind pockets, in under a minute" onPress={replayIntro}>
+        <ListRow a11y="How ChainBrain works, shows the intro again" icon="info" title="How ChainBrain works" sub="The intro, in under a minute" onPress={replayIntro}>
           <Icon name="chevronRight" size={18} color={c.muted} />
         </ListRow>
-        <ListRow a11y="About and compliance" icon="globe" title="About and compliance" sub="ChainBrain · your agent spends only from the pockets you fund" onPress={() => setAbout(!about)}>
+        <ListRow a11y="About and compliance" icon="globe" title="About and compliance" sub="ChainBrain · pockets, not your wallet" onPress={() => setAbout(!about)}>
           <View style={{ transform: [{ rotate: about ? "90deg" : "0deg" }] }}><Icon name="chevronRight" size={18} color={c.muted} /></View>
         </ListRow>
       </ListCard>
