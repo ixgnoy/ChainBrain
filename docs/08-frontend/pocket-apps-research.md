@@ -274,3 +274,4 @@ The owner asked for the pocket app to visibly build itself in the front end, lik
   - a reorder appears only if the spec's order differs from the layout default (as a Claude-composed spec can).
 
   The validation pass checks every block. Nothing is invented. A test proves that replaying all the ops gives the spec's blocks in its order, including a reordered spec.
+- **Loop 9b, a real "change of mind".** The research said visible revisions make a build read as a designer at work, but staged edits would be fake. Instead, the canvas opens with a short reading phase: the sentence lights up word by word, and the blueprint card takes the fixed reader's guess for each prefix. "Let Claude buy Nansen's…" reads as a research desk (black); at "drops below" it changes its mind to a deal watcher (blue). The panel logs both. `readingSteps` in `shared/sim/specStream.ts` is tested: the reading ends where the picker did.

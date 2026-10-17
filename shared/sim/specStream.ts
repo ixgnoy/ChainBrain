@@ -3,7 +3,7 @@
 // replays exactly these, one by one, at a pace people can follow: every line it shows is a real field of the real spec
 // (or the agent the sentence named), and every change on the canvas is one of these lines landing. Nothing is added.
 // No imports beyond the shared sim files.
-import { BLOCK_TYPES, CATALOGUE_ID, DEFAULT_BLOCKS, type Block, type PocketAppSpec } from "./pocketApp";
+import { BLOCK_TYPES, CATALOGUE_ID, DEFAULT_BLOCKS, pickLayout, type Block, type Layout, type PocketAppSpec } from "./pocketApp";
 
 export type Beat = "catalogue" | "layout" | "title" | "agent" | "routine" | "block" | "move" | "validate";
 export type PatchOp = { beat: Beat; op: "add" | "move" | "test"; path: string; value?: unknown; from?: string; /** the block's index, for block and move beats */ index?: number };
@@ -61,4 +61,19 @@ export function blocksAfter(ops: PatchOp[], n: number): string[] {
     if (o.beat === "move") { const f = Number(o.from!.split("/").pop()); const [t] = cur.splice(f, 1); cur.splice(o.index!, 0, t); }
   }
   return cur;
+}
+
+/** How the fixed reader's guess at the app type moves while it reads the sentence word by word: one entry where reading
+ *  starts and one wherever the guess changes (e.g. research → deal at "drops below"). The canvas shows these as the
+ *  blueprint changing its mind; they are the real reader run on each prefix, nothing staged. */
+export function readingSteps(sentence: string): { upto: number; layout: Layout }[] {
+  const out: { upto: number; layout: Layout }[] = [];
+  const re = /\S+/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(sentence))) {
+    const upto = m.index + m[0].length;
+    const l = pickLayout(sentence.slice(0, upto));
+    if (!out.length || out.at(-1)!.layout !== l) out.push({ upto, layout: l });
+  }
+  return out;
 }

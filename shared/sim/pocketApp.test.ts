@@ -296,4 +296,11 @@ test("spec stream: the canvas replays the spec's real decisions and ends on the 
   const ops2 = specOps(shuffled, agent);
   assert.ok(ops2.some((o) => o.beat === "move"));
   assert.equal(blocksAfter(ops2, ops2.length).join(), shuffled.blocks.map((b) => b.type).join());
+  // the reader changes its mind as it reads: research first, deal once "drops below" is read
+  const { readingSteps } = await import("./specStream");
+  const s = "Let Claude buy Nansen's smart-money flows every morning when the price drops below US$0.04. Max US$0.20 a week.";
+  const r = readingSteps(s);
+  assert.deepEqual(r.map((x) => x.layout), ["research", "deal"]);
+  assert.ok(s.slice(0, r[1].upto).endsWith("drops below"));
+  assert.equal(r.at(-1)!.layout, spec.layout, "the reading ends where the picker did");
 });

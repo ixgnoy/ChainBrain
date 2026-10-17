@@ -24,16 +24,18 @@ import { BLOCK_NAME } from "./BuildStage";
 import { useCoverDock } from "../AskDock";
 import { agentName } from "./theme";
 import type { Pocket } from "../../store";
-import type { Block, PocketAppSpec } from "../../../../shared/sim/pocketApp";
-import { blocksAfter, opLine, specOps } from "../../../../shared/sim/specStream";
+import type { Block, Layout, PocketAppSpec } from "../../../../shared/sim/pocketApp";
+import { blocksAfter, opLine, readingSteps, specOps } from "../../../../shared/sim/specStream";
+import { FACE, LAYOUT_NAME } from "./theme";
 
 const IN_W = 390; // the canvas draws the app at a phone's width, then scales it into the frame
 const CARD_W = IN_W - 32;
 const MONO = Platform.select({ ios: "Menlo", android: "monospace", default: "ui-monospace, Menlo, monospace" });
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-type View2 = { face: boolean; title: number; agent: boolean; header: boolean; step: number; filled: number; checked: number; done: boolean };
-const START: View2 = { face: false, title: 0, agent: false, header: false, step: 0, filled: 0, checked: 0, done: false };
+type View2 = { face: boolean; title: number; agent: boolean; header: boolean; step: number; filled: number; checked: number; done: boolean;
+  /** reading: how much of the sentence has been read, and what the reader guesses so far */ read: number; guess: Layout | null };
+const START: View2 = { face: false, title: 0, agent: false, header: false, step: 0, filled: 0, checked: 0, done: false, read: 0, guess: null };
 
 export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onClose, sign }: {
   spec: PocketAppSpec; agentId: string; /** who decided the spec */ by: "claude" | "picker"; sentence: string;
@@ -99,7 +101,25 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
     const w = (ms: number) => sleep(ms * pace);
     setV(START); setLines([]); pos.current = {}; scroll.value = 0;
     (async () => {
-      await w(450);
+      await w(300);
+      // reading: the sentence lights up word by word; the blueprint takes the reader's guess, and changes it when a word
+      // changes the reading (the real fixed reader on each prefix)
+      const steps = readingSteps(sentence);
+      const words = [...sentence.matchAll(/\S+/g)].map((m) => (m.index ?? 0) + m[0].length);
+      let si = 0;
+      for (const end of words) {
+        if (!alive()) return;
+        setV((x) => ({ ...x, read: end }));
+        while (si < steps.length && steps[si].upto <= end) {
+          const g = steps[si].layout, changed = si > 0;
+          setV((x) => ({ ...x, guess: g }));
+          setLines((l) => [...l, changed ? `// reading… now a ${LAYOUT_NAME[g].toLowerCase()} (changed its mind)` : `// reading… looks like a ${LAYOUT_NAME[g].toLowerCase()}`]);
+          if (si) { haptic.select(); await w(520); }
+          si++;
+        }
+        await sleep(reduce ? 0 : 55);
+      }
+      await w(250);
       let placed = 0, filled = 0;
       for (let i = 0; i < ops.length && alive(); i++) {
         const o = ops[i];
@@ -154,7 +174,7 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
 
   const skip = () => {
     setLines(ops.map(opLine));
-    setV({ face: true, title: spec.title.length, agent: true, header: true, step: ops.length, filled: blockOps.length, checked: blockOps.length, done: true });
+    setV({ face: true, title: spec.title.length, agent: true, header: true, step: ops.length, filled: blockOps.length, checked: blockOps.length, done: true, read: sentence.length, guess: spec.layout });
     token.current++; // the running script stops at its next step
     seen.value = 0; scroll.value = 0;
   };
@@ -166,7 +186,7 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
   const indexOf = (t: string) => blockOps.findIndex(({ o }) => (o.value as Block).type === t);
   const shown: Pocket = {
     ...pocket, name: spec.title.slice(0, v.title) || " ", agentId: v.agent ? pocket.agentId : undefined,
-    app: v.face ? pocket.app : undefined,
+    app: v.face ? pocket.app : v.guess && pocket.app ? { ...pocket.app, layout: v.guess } : undefined,
   } as Pocket;
   const byLine = by === "claude" ? "Composed by Claude" : "Picked by ChainBrain";
 
@@ -183,7 +203,7 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
           <T v="head" numberOfLines={1}>{v.done ? "Your pocket app" : "Designing your pocket app"}</T>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             {!v.done ? <Pulse /> : <Icon name="check" size={12} color={c.greenInk} stroke={2.6} />}
-            <T v="cap" color="muted">{v.done ? `${spec.blocks.length} blocks · ${byLine}` : `${who} is placing blocks`}</T>
+            <T v="cap" color="muted">{v.done ? `${spec.blocks.length} blocks · ${byLine}` : !v.face ? "Reading your sentence" : `${who} is placing blocks`}</T>
           </View>
         </View>
         <Press kind="round" haptics="select" onPress={v.done ? () => setRun((r) => r + 1) : skip} accessibilityRole="button" accessibilityLabel={v.done ? "Replay the build" : "Skip to the finished app"}
@@ -194,7 +214,10 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
       {/* the sentence it is building from */}
       <View style={{ marginHorizontal: 24, marginTop: 10, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, backgroundColor: c.card, flexDirection: "row", gap: 8 }}>
         <Icon name="chat" size={14} color={c.muted} stroke={2} />
-        <T v="cap" color="ink2" numberOfLines={2} style={{ flex: 1 }}>{`“${sentence}”`}</T>
+        <T v="cap" numberOfLines={2} style={{ flex: 1, color: c.faint }}>
+          <T v="cap" w={v.read && v.read < sentence.length ? "semi" : undefined} style={{ color: c.ink }}>{`“${sentence.slice(0, v.read || sentence.length)}`}</T>
+          {v.read && v.read < sentence.length ? sentence.slice(v.read) : ""}”
+        </T>
       </View>
 
       {/* the canvas */}
@@ -206,8 +229,8 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
                 <View style={{ paddingTop: 16, paddingBottom: 24, gap: 12 }}>
                   {/* the card: a blueprint until the layout is chosen */}
                   <View style={{ alignItems: "center" }}>
-                    <View style={{ opacity: v.face ? 1 : 0.45 }}>
-                      <PocketFace pocket={shown} width={CARD_W} tone={v.face ? tone : 3} still draft />
+                    <View style={{ opacity: v.face ? 1 : v.guess ? 0.6 : 0.45 }}>
+                      <PocketFace pocket={shown} width={CARD_W} tone={v.face ? tone : v.guess ? FACE[v.guess] : 3} still draft />
                     </View>
                     {!v.face ? <View pointerEvents="none" style={{ position: "absolute", top: 0, width: CARD_W, height: cardHeight(CARD_W), borderRadius: 18, borderWidth: 3, borderStyle: "dashed", borderColor: c.ink2 }} /> : null}
                   </View>
@@ -254,11 +277,11 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
           <T v="cap" w="bold" style={{ color: c.white, fontFamily: MONO }}>{"{ } spec"}</T>
           <T v="cap" style={{ color: "rgba(255,255,255,0.55)", flex: 1 }} numberOfLines={1}>{`${byLine} · from 13 fixed blocks · replayed`}</T>
-          <T v="cap" style={{ color: "rgba(255,255,255,0.55)", fontVariant: ["tabular-nums"] }}>{`${Math.min(lines.length, ops.length)}/${ops.length}`}</T>
+          <T v="cap" style={{ color: "rgba(255,255,255,0.55)", fontVariant: ["tabular-nums"] }}>{`${Math.min(lines.filter((l) => !l.startsWith("//")).length, ops.length)}/${ops.length}`}</T>
         </View>
         <ScrollView ref={panel} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
           {lines.map((l, k) => (
-            <T key={k} v="cap" numberOfLines={2} style={{ fontFamily: MONO, fontSize: 11, lineHeight: 15, color: k === lines.length - 1 && !v.done ? "#FFB49E" : "rgba(255,255,255,0.62)" }}>
+            <T key={k} v="cap" numberOfLines={2} style={{ fontFamily: MONO, fontSize: 11, lineHeight: 15, color: k === lines.length - 1 && !v.done ? "#FFB49E" : l.startsWith("//") ? "#9DCAFF" : "rgba(255,255,255,0.62)" }}>
               {l}{k === lines.length - 1 && !v.done ? "▍" : ""}
             </T>
           ))}
