@@ -25,22 +25,21 @@ beforeAll(async () => {
 });
 afterAll(async () => { stopOwner?.(); await s?.stop(); });
 
-describe("Radar on the fork: a real USDC transfer from a drainer to DataPro", () => {
+describe("Radar on the chain: a real eHKD transfer from a drainer to DataPro", () => {
   it("clean sellers pass; after a labelled drainer pays DataPro, paying DataPro is refused and an alert opens", async () => {
     expect(await call("draft_intent", { request: "durian report", description: "Durian export market data", maxPricePerItem: $.perItem, maxTotal: $.total, maxItems: 3, deadline: tonight() })).toMatchObject({ ok: true });
 
     const q1 = await call("get_quote", { sellerId: "datapro", sku: "premium-report" });
     expect(q1.counterpartyRisk).toMatchObject({ verdict: "ok" });
 
-    // a drainer wallet sends 9 USDC to DataPro's payTo, on-chain
+    // a drainer wallet sends 9 eHKD to DataPro's payTo, on-chain
     const drainer = privateKeyToAccount(generatePrivateKey());
     const { cfg } = await import("../src/chains");
     const w = createWalletClient({ account: drainer, chain: cfg().chain, transport: http(s.rpc) }).extend(publicActions);
     await s.gas(drainer.address);
-    await s.setUsdc(drainer.address, 9_000_000n);
+    await s.fundToken(drainer.address, 9_000_000n);
     const { erc20Abi } = await import("../src/wallet/chain");
-    const USDC = s.token;
-    await w.waitForTransactionReceipt({ hash: await w.writeContract({ address: USDC, abi: erc20Abi, functionName: "transfer", args: [s.payTo.datapro, 9_000_000n] }) });
+    await w.waitForTransactionReceipt({ hash: await w.writeContract({ address: s.token, abi: erc20Abi, functionName: "transfer", args: [s.payTo.datapro, 9_000_000n] }) });
 
     const lab = await api.request("/api/radar/admin/labels", { method: "POST", body: JSON.stringify({ address: drainer.address, category: "drainer", name: "Demo drainer" }), headers: { "content-type": "application/json" } });
     expect(lab.status).toBe(200);
@@ -50,7 +49,7 @@ describe("Radar on the fork: a real USDC transfer from a drainer to DataPro", ()
     const r = await call("pay", { quoteId: q2.quoteId });
     expect(r).toMatchObject({ ok: false, reason: "COUNTERPARTY_HIGH_RISK" });
     expect(r.radar).toContain("traces back to Demo drainer (drainer), directly");
-    expect(await s.usdcBalance(pocket)).toBe(atom($.budget));
+    expect(await s.balance(pocket)).toBe(atom($.budget));
 
     const scr = await (await api.request("/api/radar/screen/datapro")).json();
     expect(scr).toMatchObject({ counterparty: "DataPro", verdict: "block" });

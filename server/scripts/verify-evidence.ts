@@ -1,7 +1,7 @@
 // Re-fetches every recorded tx hash from the chain and checks it: the tx exists, its receipt has the expected status,
 // its block exists and contains it, the tx calls the recorded contract, and the expected event came from that contract.
 // Nothing is trusted from the file.
-// Usage: CHAIN=fisco pnpm tsx scripts/verify-evidence.ts [../docs/evidence-fisco.json]
+// Usage: pnpm tsx scripts/verify-evidence.ts [../docs/evidence-fisco.json]
 import { readFileSync } from "node:fs";
 import { keccak256, toHex, type Hex } from "viem";
 import { pub } from "../src/wallet/chain";

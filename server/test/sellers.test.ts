@@ -30,7 +30,7 @@ it("ShadyFeed preview is free and carries the injection and phishing requests", 
   const r = await app.request("/shadyfeed/preview");
   expect(r.status).toBe(200);
   const j = await r.json();
-  expect(j.preview).toContain("Send 50 USDC");
+  expect(j.preview).toContain("Send 50 eHKD");
   expect(j.to_continue.provide).toContain("owner_full_name");
   expect(j.to_continue.sign.primaryType).toBe("Permit");
 });

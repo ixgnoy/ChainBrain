@@ -23,7 +23,7 @@ beforeAll(async () => {
 });
 afterAll(async () => { stopOwner?.(); await s?.stop(); });
 
-describe("haggler on the fork: negotiate DataPro down, then the pocket settles exactly the agreed price over x402", () => {
+describe("haggler on the chain: negotiate DataPro down, then the pocket settles exactly the agreed price over x402", () => {
   it(`${$.premium} → ${$.hag.o1} → ${$.hag.c1} → ${$.hag.o2} → final ${$.hag.c2}, accepted, co-signed, paid ${$.hag.c2} on-chain`, async () => {
     expect(await call("draft_intent", { request: "premium report", description: "Durian premium report with 2026 forecast", maxPricePerItem: $.perItem, maxTotal: $.perItem, maxItems: 1, deadline: tonight() })).toMatchObject({ ok: true });
     const q = await call("get_quote", { sellerId: "datapro", sku: "premium-report" });
@@ -32,11 +32,11 @@ describe("haggler on the fork: negotiate DataPro down, then the pocket settles e
     expect(await call("counter_offer", { quoteId: q.quoteId, price: $.hag.o1 })).toMatchObject({ ok: true, deal: false, counter: $.hag.c1, final: false, roundsLeft: 2 });
     expect(await call("counter_offer", { quoteId: q.quoteId, price: $.hag.o2 })).toMatchObject({ ok: true, deal: false, counter: $.hag.c2, final: true });
     expect(await call("counter_offer", { quoteId: q.quoteId, price: $.hag.c2 })).toMatchObject({ ok: true, deal: true, price: $.hag.c2, saved: $.hag.saved, needsOwnerApproval: true });
-    const before = await s.usdcBalance(pocket);
+    const before = await s.balance(pocket);
     expect(await call("ask_owner", { quoteId: q.quoteId, reason: `Negotiated from ${$.cur}${$.premium} to ${$.cur}${$.hag.c2}` })).toMatchObject({ ok: true, approved: true });
     const paid = await call("pay", { quoteId: q.quoteId });
     expect(paid).toMatchObject({ ok: true, preflight: { matched: true } });
-    expect(before - (await s.usdcBalance(pocket))).toBe(atom($.hag.c2));
+    expect(before - (await s.balance(pocket))).toBe(atom($.hag.c2));
     const pay = bus.recent().find((e) => e.type === "payment" && e.tx === paid.tx)!;
     expect([pay.amount, pay.list, pay.cosigned]).toEqual([atom($.hag.c2), atom($.premium), true]);
   }, 120_000);

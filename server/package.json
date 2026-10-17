@@ -7,8 +7,6 @@
     "sellers": "tsx watch src/sellers.ts",
     "test": "vitest run",
     "test:scenes": "SCENES=1 vitest run test/scenes.test.ts",
-    "test:base": "CHAIN=base-sepolia vitest run",
-    "test:scenes:base": "CHAIN=base-sepolia SCENES=1 vitest run test/scenes.test.ts",
     "typecheck": "tsc --noEmit",
     "wallets": "tsx scripts/create-wallets.ts",
     "spike": "tsx scripts/spike.ts",

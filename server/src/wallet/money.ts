@@ -1,4 +1,4 @@
-/** USDC and Mock e-HKD both have 6 decimals. Amounts are bigint atomic units everywhere; strings only at the edges. */
+/** Mock e-HKD has 6 decimals. Amounts are bigint atomic units everywhere; strings only at the edges. */
 export function parseAmount(s: string): bigint {
   const m = /^(\d+)(?:\.(\d{1,6}))?$/.exec(String(s).trim());
   if (!m) throw new Error(`bad amount: ${s}`);

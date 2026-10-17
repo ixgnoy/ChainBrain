@@ -1,10 +1,10 @@
-// Creates every demo key once and appends it to server/.env (never overwrites). Prints addresses to fund.
+// Creates every demo key once and appends it to server/.env (never overwrites). Prints the addresses.
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { existsSync, appendFileSync, readFileSync } from "node:fs";
 
 const names = ["OWNER", "AGENT", "FORCE", "FACILITATOR", "SELLER_DATALITE", "SELLER_DATAPRO", "SELLER_HARBOUR_WINES", "SELLER_SHADYFEED"];
-// FISCO: scripts/fisco/deploy.sh funds OWNER, FORCE, FACILITATOR (native balance) and mints OWNER 10,000 eHKD.
-const fund: Record<string, string> = { OWNER: "Base: ETH + 20 USDC", FORCE: "Base: ETH", FACILITATOR: "Base: ETH (only if FACILITATOR=local)" };
+// scripts/fisco/deploy.sh then funds OWNER, FORCE, FACILITATOR (native balance) and mints OWNER HK$10,000 eHKD.
+const fund: Record<string, string> = { OWNER: "native + eHKD (deploy.sh)", FORCE: "native (deploy.sh)", FACILITATOR: "native (deploy.sh)" };
 const file = new URL("../.env", import.meta.url);
 if (!existsSync(file)) appendFileSync(file, readFileSync(new URL("../.env.example", import.meta.url), "utf8").replace(/^(\w+_PK)=$/gm, ""));
 const existing = readFileSync(file, "utf8");

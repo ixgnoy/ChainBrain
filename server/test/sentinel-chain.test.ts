@@ -26,7 +26,7 @@ beforeAll(async () => {
 });
 afterAll(async () => { sent?.stop(); stopOwner?.(); await s?.stop(); });
 
-describe("Sentinel on the fork: the guardian key freezes the pocket for real", () => {
+describe("Sentinel on the chain: the guardian key freezes the pocket for real", () => {
   it("three payments outside the rules in a minute -> on-chain freeze; even DataLite is refused; owner unfreezes; DataLite pays", async () => {
     expect(await call("draft_intent", { request: "wine report", description: "Fruit and wine trade report", maxPricePerItem: $.one, maxTotal: $.two, maxItems: 2, deadline: tonight() })).toMatchObject({ ok: true });
     for (let k = 0; k < 3; k++) {
@@ -45,7 +45,7 @@ describe("Sentinel on the fork: the guardian key freezes the pocket for real", (
     const q = await call("get_quote", { sellerId: "datalite", sku: "durian-report" });
     expect(q.allowedByPocket).toMatchObject({ reason: "POCKET_FROZEN" });
     expect(await call("pay", { quoteId: q.quoteId })).toMatchObject({ ok: false, reason: "POCKET_FROZEN" });
-    expect(await s.usdcBalance(pocket)).toBe(atom($.budget));
+    expect(await s.balance(pocket)).toBe(atom($.budget));
 
     await s.ownerWrite(pocket, "unfreeze");
     const { sentinel } = await import("../src/sentinel");

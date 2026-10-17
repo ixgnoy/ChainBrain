@@ -1,4 +1,4 @@
-// Day-1 gate on the live chain (CHAIN=fisco | base-sepolia): create + fund the research pocket from OWNER, then pay twice.
+// Day-1 gate on the live chain (FISCO): create + fund the research pocket from OWNER, then pay twice.
 //   1) DataLite durian report with the agent key alone       → must settle
 //   2) DataPro premium report above ask-me, owner co-signs   → must settle
 // Prints tx hashes for the evidence file. Requires: factory deployed, OWNER funded (gas + token).

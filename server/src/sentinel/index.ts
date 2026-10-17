@@ -25,7 +25,7 @@ export async function freezeOnChain(pocket: Address, reason: string): Promise<He
 export type SentinelDeps = {
   decide?: Decide;
   freeze?: (pocket: Address, reason: string) => Promise<Hex>;
-  /** USDC that left the pocket with no payment event (the transfer index); omitted = not checked. */
+  /** eHKD that left the pocket with no payment event (the transfer index); omitted = not checked. */
   ghosts?: (pocket: Address, paidTx: Set<string>) => Promise<{ tx: string; to: string; amount: bigint }[]>;
   /** Pocket.frozen on-chain (tests pass a fake). */
   isFrozen?: (pocket: Address) => Promise<boolean>;

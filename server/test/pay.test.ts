@@ -21,16 +21,16 @@ async function quote(sellerId: string, sku: string) {
   return M.track(pocket, q.quote);
 }
 
-describe(`settle (${process.env.CHAIN ?? "fisco"}: x402 facilitator code)`, () => {
+describe("settle (x402 facilitator code)", () => {
   it("scene 2: pays DataLite with the agent key alone", async () => {
-    const sellerBefore = await s.balance(s.payTo.datalite); // anvil dev addresses may hold real testnet USDC
+    const sellerBefore = await s.balance(s.payTo.datalite); // the seller keys are reused across runs on the local chain
     const r = await M.settle(pocket, await quote("datalite", "durian-report"), intentHash);
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.tx).toMatch(/^0x[0-9a-f]{64}$/);
     // the apps' tx link: the wallet API re-reads the receipt from the chain
     const api = (await import("../src/index")).apiApp();
     const rc = await (await api.request(`/api/tx/${(r as any).tx}`)).json();
-    expect(rc).toMatchObject({ chain: process.env.CHAIN, status: "success", hash: (r as any).tx });
+    expect(rc).toMatchObject({ chain: "fisco", status: "success", hash: (r as any).tx });
     expect((await api.request("/api/tx/0x1234")).status).toBe(400);
     expect(await s.balance(pocket)).toBe(atom($.budget) - atom($.durian));
     expect(await s.balance(s.payTo.datalite)).toBe(sellerBefore + atom($.durian));

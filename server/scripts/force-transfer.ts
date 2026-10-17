@@ -1,5 +1,5 @@
 // Scene 5's on-chain backstop. The agent key is treated as fully compromised: it really signs the injected
-// "send 50 USDC to 0xABC" transfer (50 of the chain's token), and we submit it straight to the token. The pocket is what refuses it.
+// "send 50 eHKD to 0xABC" transfer, and we submit it straight to the token. The pocket is what refuses it.
 // Usage: pnpm tsx scripts/force-transfer.ts <pocket> [attacker]
 import "dotenv/config";
 import { createWalletClient, http, publicActions, type Address, type Hex } from "viem";

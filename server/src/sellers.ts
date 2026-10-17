@@ -54,11 +54,11 @@ export function sellersApp() {
   // The haggler: a seller's agent takes offers on items with a private floor (sellers.json "floor"). It answers with a
   // price only, using the same concession rule as the built-in network (shared/sim/haggle.ts). An agreed deal is one
   // use: the item's x402 price is the deal's price when the request carries ?deal=<id>, and the list price otherwise.
-  // Prices as an explicit asset amount, so the same code serves USDC on Base and Mock e-HKD on FISCO.
-  const { network, token, domain, priceKey, currency } = cfg();
+  // Prices in HK$, sent as an explicit asset amount of the Mock e-HKD (x402's "$" prices mean USDC).
+  const { network, token, domain, currency } = cfg();
   const deals = new Map<string, { item: string; ask: bigint; agreed?: bigint; used?: boolean }>();
   for (const s of sellers) for (const it of s.items) if ("floor" in it && it.floor && it.price) {
-    const item = `${s.id}/${it.sku}`, floor = (it.floor as Record<string, string>)[priceKey];
+    const item = `${s.id}/${it.sku}`, floor = it.floor;
     app.post(`/${item}/offer`, async (c) => {
       const b = await c.req.json().catch(() => ({}));
       const offer = Number(b.offer);
@@ -67,7 +67,7 @@ export function sellersApp() {
       if (b.deal && (!d || d.item !== item)) return c.json({ error: "unknown deal" }, 404);
       if (d?.agreed !== undefined) return c.json({ error: "deal already agreed" }, 409);
       const id = d ? String(b.deal) : randomUUID();
-      const cur = d ?? { item, ask: parseAmount(it.price[priceKey]) };
+      const cur = d ?? { item, ask: parseAmount(it.price) };
       const r = sellerReply(cur.ask, parseAmount(offer.toFixed(2)), parseAmount(floor));
       cur.ask = r.price;
       if (r.kind === "accept") cur.agreed = r.price;
@@ -83,7 +83,7 @@ export function sellersApp() {
 
   const routes: Record<string, unknown> = {};
   for (const s of sellers) for (const it of s.items) if (it.price) {
-    const item = `${s.id}/${it.sku}`, list = parseAmount(it.price[priceKey]);
+    const item = `${s.id}/${it.sku}`, list = parseAmount(it.price);
     const asset = (v: bigint) => ({ amount: v.toString(), asset: token, extra: domain });
     const price = "floor" in it && it.floor ? (ctx: { adapter: { getUrl(): string } }) => asset(dealOf(ctx.adapter.getUrl(), item)?.d.agreed ?? list) : asset(list);
     routes[`GET /${item}`] = { accepts: [{ scheme: "exact", price, network, payTo: payTo[s.id] }], description: it.description };

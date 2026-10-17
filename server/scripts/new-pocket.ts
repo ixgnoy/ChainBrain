@@ -1,7 +1,7 @@
 // Create and fund a pocket from OWNER without the app (CLI scenes, rehearsals).
-// Usage: pnpm tsx scripts/new-pocket.ts research|tight   (amounts per chain in src/chains.ts presets)
-//   research = FISCO HK$40, cap 15, ask above 8 | Base US$5, cap 2, ask above 1; DataLite + DataPro, until tonight
-//   tight    = FISCO HK$1.50 | Base US$0.20, cap = budget, never ask, DataLite only (scene 8)
+// Usage: pnpm tsx scripts/new-pocket.ts research|tight   (amounts in src/chains.ts presets)
+//   research = HK$40, cap 15, ask above 8; DataLite + DataPro, until tonight
+//   tight    = HK$1.50, cap = budget, never ask, DataLite only (scene 8)
 import "dotenv/config";
 import { createWalletClient, http, publicActions, parseEventLogs, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";

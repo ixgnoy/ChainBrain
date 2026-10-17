@@ -23,7 +23,7 @@ beforeAll(async () => {
 });
 afterAll(async () => { stopOwner?.(); await s?.stop(); });
 
-describe("pre-flight on the fork: predict each payment with eth_call, then check", () => {
+describe("pre-flight on the chain: predict each payment with eth_call, then check", () => {
   it("predicts pays / SELLER_NOT_ALLOWED / NEEDS_OWNER_APPROVAL / co-signed pays, and every prediction matches", async () => {
     expect(await call("draft_intent", { request: "reports", description: "Durian and wine reports", maxPricePerItem: $.perItem, maxTotal: $.total, maxItems: 4, deadline: tonight() })).toMatchObject({ ok: true });
     const pay = async (sellerId: string, sku: string) => call("pay", { quoteId: (await call("get_quote", { sellerId, sku })).quoteId });

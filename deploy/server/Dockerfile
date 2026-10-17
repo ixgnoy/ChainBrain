@@ -16,5 +16,5 @@ COPY server/ server/
 COPY contracts/deployments contracts/deployments
 COPY --from=contracts /c/out contracts/out
 COPY deploy/server deploy/server
-ENV CHAIN=fisco FACILITATOR=local NODE_ENV=production
+ENV NODE_ENV=production
 CMD ["bash", "/app/deploy/server/start.sh"]

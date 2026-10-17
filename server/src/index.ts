@@ -56,7 +56,7 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
   });
   app.get("/api/config", async (c) =>
     c.json({
-      agent: agentAccount().address, factory: factoryAddress(), token: cfg().token, usdc: cfg().token /* name the apps on main read */, chain: chainInfo(), sellersUrl: process.env.SELLERS_URL ?? "http://localhost:4021",
+      agent: agentAccount().address, factory: factoryAddress(), token: cfg().token, chain: chainInfo(), sellersUrl: process.env.SELLERS_URL ?? "http://localhost:4021",
       sellers: await directory(), abis: { pocket: pocketAbi, factory: factoryAbi, erc20: erc20Abi },
     }));
   // FISCO has no public explorer: the apps link here for a receipt.
@@ -127,7 +127,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT ?? 8787);
   serve({ fetch: apiApp().fetch, port });
   startMonitor();
-  // ghost transfers: USDC that left a pocket (seen by Radar's transfer index) with no payment event, not back to the owner
+  // ghost transfers: eHKD that left a pocket (seen by Radar's transfer index) with no payment event, not back to the owner
   startSentinel({
     ghosts: async (p, paid) => {
       const owner = (await pocket(p).info()).owner.toLowerCase();

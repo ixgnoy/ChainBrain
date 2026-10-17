@@ -1,33 +1,19 @@
-import { spawn, execFileSync, type ChildProcess } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { createWalletClient, createPublicClient, http, publicActions, parseEventLogs, keccak256, encodeAbiParameters, toHex, type Address, type Hex } from "viem";
+import { createWalletClient, createPublicClient, http, publicActions, parseEventLogs, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { serve } from "@hono/node-server";
 import { useDevKeys, DEV_KEYS } from "./env";
 
-const ANVIL_PORT = 8546;
 const SELLERS_PORT = 4521;
-const USDC_BALANCE_SLOT = 9n; // FiatTokenV2_2 balanceAndBlacklistStates mapping (verified on Base Sepolia, 14 Oct)
 const repo = new URL("../../../", import.meta.url);
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const rpcUp = (rpc: string) =>
   fetch(rpc, { method: "POST", headers: { "content-type": "application/json" }, body: '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}' }).then((r) => r.ok).catch(() => false);
 
-/** CHAIN=base-sepolia: anvil fork of Base Sepolia (real USDC v2.2). Otherwise the running local FISCO node. */
+/** The running local FISCO node (scripts/fisco/setup.sh, then start.sh). */
 async function startChain(): Promise<{ rpc: string; stop: () => void }> {
-  if (process.env.CHAIN === "base-sepolia") {
-    const anvil: ChildProcess = spawn("anvil", ["--fork-url", process.env.FORK_URL ?? "https://sepolia.base.org", "--port", String(ANVIL_PORT), "--chain-id", "84532", "--silent"], { stdio: "ignore" });
-    const rpc = `http://127.0.0.1:${ANVIL_PORT}`;
-    for (let i = 0; !(await rpcUp(rpc)); i++) {
-      if (i > 100) throw new Error("anvil did not start (is Foundry installed and on PATH?)");
-      await sleep(200);
-    }
-    process.env.BASE_SEPOLIA_RPC = rpc;
-    return { rpc, stop: () => anvil.kill() };
-  }
-  if (process.env.CHAIN && process.env.CHAIN !== "fisco") throw new Error(`unknown CHAIN ${process.env.CHAIN} (fisco | base-sepolia)`);
-  process.env.CHAIN = "fisco";
   const rpc = process.env.FISCO_RPC ?? "http://127.0.0.1:8545";
   if (!(await rpcUp(rpc))) throw new Error(`no FISCO node at ${rpc}: run scripts/fisco/setup.sh (first time) or scripts/fisco/start.sh`);
   // FISCO's web3 RPC refuses senders with zero native balance: fund the dev senders once per chain.
@@ -46,13 +32,13 @@ async function startChain(): Promise<{ rpc: string; stop: () => void }> {
 }
 
 /**
- * A local copy of the whole stack: the chain (Base fork or local FISCO), a fresh factory (and fresh Mock e-HKD on
- * FISCO), x402's facilitator code in-process, and the test sellers. Uses anvil's public dev keys.
+ * A local copy of the whole stack on the local FISCO node: a fresh Mock e-HKD and factory, x402's facilitator code
+ * in-process, and the test sellers. Uses well-known public dev keys.
  */
 export async function startStack() {
   useDevKeys();
   const chainProc = await startChain();
-  Object.assign(process.env, { FACILITATOR: "local", SELLERS_URL: `http://127.0.0.1:${SELLERS_PORT}` });
+  Object.assign(process.env, { SELLERS_URL: `http://127.0.0.1:${SELLERS_PORT}` });
 
   const { cfg } = await import("../../src/chains");
   const { factoryArtifact, factoryAbi, pocketAbi, tokenBalance } = await import("../../src/wallet/chain");
@@ -62,15 +48,13 @@ export async function startStack() {
   const deploy = async (abi: any, bytecode: Hex, args: unknown[]) =>
     (await ownerWallet.waitForTransactionReceipt({ hash: await ownerWallet.deployContract({ abi, bytecode, args } as any) })).contractAddress!;
 
-  const fisco = cfg().key === "fisco";
-  if (fisco) {
+  {
     const t = JSON.parse(readFileSync(new URL("contracts/out/MockEHKD.sol/MockEHKD.json", repo), "utf8"));
     process.env.TOKEN_ADDRESS = await deploy(t.abi, t.bytecode.object, [owner.address]);
   }
   const token = cfg().token;
-  // the Sentinel's freeze-only guardian key (anvil dev key #8); on FISCO startChain funded it
+  // the Sentinel's freeze-only guardian key (startChain funded it)
   const sentinel = privateKeyToAccount(DEV_KEYS.SENTINEL_PK);
-  if (!fisco) await ownerWallet.request({ method: "anvil_setBalance" as any, params: [sentinel.address, toHex(10n ** 18n)] as any });
   process.env.FACTORY_ADDRESS = await deploy(factoryAbi, factoryArtifact.bytecode.object as Hex, [token, sentinel.address]);
   const factory = process.env.FACTORY_ADDRESS as Address;
 
@@ -79,15 +63,10 @@ export async function startStack() {
   const payTo = sellerPayTo();
   const atomic = (s: string) => BigInt(Math.round(Number(s) * 1e6));
 
-  /** Fund a new address: FISCO mints `amount` to it (adds); the fork writes its USDC balance slot (sets to `amount`). Same result for fresh pockets. */
+  /** Mint `amount` eHKD to an address (OWNER is the Mock e-HKD's issuer). */
   async function fundToken(addr: Address, amount: bigint) {
-    if (fisco) {
-      const mintAbi = [{ type: "function", name: "mint", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [] }] as const;
-      await ownerWallet.waitForTransactionReceipt({ hash: await ownerWallet.writeContract({ address: token, abi: mintAbi, functionName: "mint", args: [addr, amount] }) });
-      return;
-    }
-    const slot = keccak256(encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [addr, USDC_BALANCE_SLOT]));
-    await ownerWallet.request({ method: "anvil_setStorageAt" as any, params: [token, slot, toHex(amount, { size: 32 })] as any });
+    const mintAbi = [{ type: "function", name: "mint", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [] }] as const;
+    await ownerWallet.waitForTransactionReceipt({ hash: await ownerWallet.writeContract({ address: token, abi: mintAbi, functionName: "mint", args: [addr, amount] }) });
   }
 
   async function ownerWrite(address: Address, functionName: string, args: unknown[] = []) {
@@ -98,13 +77,11 @@ export async function startStack() {
   return {
     rpc: chainProc.rpc, factory, token, payTo, owner, agent,
     balance: (a: Address) => tokenBalance(a),
-    usdcBalance: (a: Address) => tokenBalance(a), // name kept for the *-fork tests
-    setUsdc: fundToken,
+    fundToken,
     ownerWrite,
-    /** Give an address native balance so it can send (FISCO: fund.sh; fork: anvil_setBalance). */
+    /** Give an address native balance so it can send (FISCO refuses senders with none). */
     async gas(a: Address) {
-      if (fisco) execFileSync("bash", [new URL("scripts/fisco/fund.sh", repo).pathname, a], { stdio: "pipe" });
-      else await ownerWallet.request({ method: "anvil_setBalance" as any, params: [a, toHex(10n ** 18n)] as any });
+      execFileSync("bash", [new URL("scripts/fisco/fund.sh", repo).pathname, a], { stdio: "pipe" });
     },
     /** Create through the factory as the owner, then fund it (budget = balance; new pockets start empty). */
     async newPocket(o: { cap: string; askAbove: string | "never"; sellers: string[]; budget: string; expiresIn?: number; agent?: Address }): Promise<Address> {

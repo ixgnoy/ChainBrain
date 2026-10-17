@@ -11,7 +11,7 @@ const BACKFILL = BigInt(process.env.RADAR_BACKFILL_BLOCKS ?? 1_800);
 const MAX_TRANSFERS = 200_000;
 
 /**
- * Radar's own index of USDC transfers, so tracing never depends on an RPC's log-range limit.
+ * Radar's own index of eHKD transfers, so tracing never depends on an RPC's log-range limit.
  * Back-fills recent blocks once, then each read first pulls any new blocks (one in-flight sync at a time).
  */
 const byTo = new Map<string, Transfer[]>();

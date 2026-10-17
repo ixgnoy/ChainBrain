@@ -7,7 +7,7 @@ import { fundIfEmpty } from "./fund";
 import { parseAmount, formatAmount } from "./wallet/money";
 
 /**
- * Mock e-HKD faucet (CHAIN=fisco only): credits native balance so the address can send (gas is free, the RPC needs > 0),
+ * Mock e-HKD faucet: credits native balance so the address can send (gas is free, the RPC needs > 0),
  * then OWNER mints FAUCET_AMOUNT eHKD to it. Mock token on a demo chain: the limits keep it from being drained by a loop,
  * nothing more.
  */
