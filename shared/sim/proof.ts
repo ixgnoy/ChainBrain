@@ -123,7 +123,7 @@ export function scorecard(f: Facts): ScoreGroup[] {
   return GROUPS.map((g) => ({ id: g.id, title: g.title, weight: g.weight, items: g.items.map(([id, label]) => ({ id, label, done: !!f[id], fact: f[id] })) }));
 }
 
-// ------------------------------------------------------------------ evidence rows (docs/evidence.md, plus expected vs actual)
+// ------------------------------------------------------------------ evidence rows (docs/evidence-fisco.md, plus expected vs actual)
 
 export type EvidenceRow = {
   scene: string; title: string; expected: string; actual: string;
@@ -175,7 +175,7 @@ export function evidenceRows(f: Facts, txs: ProofTx[] = []): EvidenceRow[] {
   });
 }
 
-/** Markdown with docs/evidence.md's columns, plus Expected and Actual. `link` makes a hash a link (public chain only). */
+/** Markdown with the evidence file's columns, plus Expected and Actual. `link` makes a hash an explorer link (a real server only). */
 export function evidenceMarkdown(rows: EvidenceRow[], o: { network: string; link?: (hash: string) => string | undefined; at?: Date }): string {
   // seller-controlled text (an injected sentence) can land in "actual": keep it inert in Markdown
   const cell = (s: string) => s.replace(/[\r\n]+/g, " ").replace(/([\\`*_[\]<>|])/g, "\\$1");
