@@ -1,12 +1,13 @@
 // Re-fetches every recorded tx hash from the chain and checks it: the tx exists, its receipt has the expected status,
-// its block exists and contains it, and (when given) the expected event was emitted. Nothing is trusted from the file.
+// its block exists and contains it, the tx calls the recorded contract, and the expected event came from that contract.
+// Nothing is trusted from the file.
 // Usage: CHAIN=fisco pnpm tsx scripts/verify-evidence.ts [../docs/evidence-fisco.json]
 import { readFileSync } from "node:fs";
 import { keccak256, toHex, type Hex } from "viem";
 import { pub } from "../src/wallet/chain";
 import { cfg } from "../src/chains";
 
-type Entry = { label: string; tx: Hex; expect: "success" | "reverted"; event?: string };
+type Entry = { label: string; tx: Hex; expect: "success" | "reverted"; event?: string; contract?: Hex };
 const file = process.argv[2] ?? new URL("../../docs/evidence-fisco.json", import.meta.url).pathname;
 const ev = JSON.parse(readFileSync(file, "utf8")) as { chain: string; chainId: number; entries: Entry[] };
 
@@ -26,9 +27,12 @@ for (const e of ev.entries) {
     const block = await c.getBlock({ blockNumber: rc.blockNumber }).catch(() => undefined);
     if (!block) problems.push(`block ${rc.blockNumber} not found`);
     else if (!block.transactions.some((h) => (typeof h === "string" ? h : (h as any).hash).toLowerCase() === e.tx.toLowerCase())) problems.push(`block ${rc.blockNumber} does not list the tx`);
+    // the tx must call the recorded contract, and the event must be emitted by it (not by some other contract)
+    const target = (e.contract ?? tx?.to)?.toLowerCase();
+    if (e.contract && tx?.to?.toLowerCase() !== target) problems.push(`tx calls ${tx?.to}, expected ${e.contract}`);
     if (e.event) {
       const topic = keccak256(toHex(e.event));
-      if (!rc.logs.some((l) => l.topics[0] === topic)) problems.push(`no ${e.event} event`);
+      if (!rc.logs.some((l) => l.topics[0] === topic && l.address.toLowerCase() === target)) problems.push(`no ${e.event} event from ${target}`);
     }
   }
   if (problems.length) bad++;

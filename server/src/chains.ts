@@ -2,9 +2,14 @@ import { defineChain, type Address, type Chain } from "viem";
 import { baseSepolia } from "viem/chains";
 import { readFileSync, existsSync } from "node:fs";
 
+// Read once per chain id: cfg() runs on every request. A redeploy needs a server restart (or TOKEN_ADDRESS / FACTORY_ADDRESS).
+const deployed = new Map<number, Record<string, Address>>();
 const deployments = (id: number) => {
-  const f = new URL(`../../contracts/deployments/${id}.json`, import.meta.url);
-  return existsSync(f) ? JSON.parse(readFileSync(f, "utf8")) : {};
+  if (!deployed.has(id)) {
+    const f = new URL(`../../contracts/deployments/${id}.json`, import.meta.url);
+    deployed.set(id, existsSync(f) ? JSON.parse(readFileSync(f, "utf8")) : {});
+  }
+  return deployed.get(id)!;
 };
 
 export const fiscoChain = defineChain({
@@ -27,9 +32,11 @@ export function cfg(): ChainCfg {
     txUrl: (h) => `https://sepolia.basescan.org/tx/${h}`,
   };
   if (process.env.CHAIN && process.env.CHAIN !== "fisco") throw new Error(`unknown CHAIN ${process.env.CHAIN}`);
+  const token = (process.env.TOKEN_ADDRESS || deployments(20200).Token) as Address | undefined;
+  if (!token) throw new Error("No Mock e-HKD token for CHAIN=fisco: run scripts/fisco/deploy.sh or set TOKEN_ADDRESS");
   return {
     key: "fisco", chain: fiscoChain, rpc: process.env.FISCO_RPC ?? "http://127.0.0.1:8545", network: "eip155:20200",
-    token: (process.env.TOKEN_ADDRESS || deployments(20200).Token) as Address, domain: { name: "Mock e-HKD", version: "1" },
+    token, domain: { name: "Mock e-HKD", version: "1" },
     currency: "HK$", priceKey: "hkd",
     txUrl: (h) => `${process.env.PUBLIC_API_URL ?? "http://localhost:8787"}/api/tx/${h}`,
   };

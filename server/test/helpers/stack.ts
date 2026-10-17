@@ -26,6 +26,7 @@ async function startChain(): Promise<{ rpc: string; stop: () => void }> {
     process.env.BASE_SEPOLIA_RPC = rpc;
     return { rpc, stop: () => anvil.kill() };
   }
+  if (process.env.CHAIN && process.env.CHAIN !== "fisco") throw new Error(`unknown CHAIN ${process.env.CHAIN} (fisco | base-sepolia)`);
   process.env.CHAIN = "fisco";
   const rpc = process.env.FISCO_RPC ?? "http://127.0.0.1:8545";
   if (!(await rpcUp(rpc))) throw new Error(`no FISCO node at ${rpc}: run scripts/fisco/setup.sh (first time) or scripts/fisco/start.sh`);
@@ -34,7 +35,13 @@ async function startChain(): Promise<{ rpc: string; stop: () => void }> {
   const senders = [DEV_KEYS.OWNER_PK, DEV_KEYS.FACILITATOR_PK, DEV_KEYS.FORCE_PK, DEV_KEYS.SENTINEL_PK].map((k) => privateKeyToAccount(k).address);
   const unfunded = [];
   for (const a of senders) if ((await pc.getBalance({ address: a })) === 0n) unfunded.push(a);
-  if (unfunded.length) execFileSync("bash", [new URL("scripts/fisco/fund.sh", repo).pathname, ...unfunded], { stdio: "ignore" });
+  if (unfunded.length) {
+    try {
+      execFileSync("bash", [new URL("scripts/fisco/fund.sh", repo).pathname, ...unfunded], { encoding: "utf8", stdio: "pipe" });
+    } catch (e: any) {
+      throw new Error(`fund.sh failed for ${unfunded.join(", ")}: ${(e.stdout ?? "") + (e.stderr ?? "")}`.trim());
+    }
+  }
   return { rpc, stop: () => {} };
 }
 
@@ -72,7 +79,7 @@ export async function startStack() {
   const payTo = sellerPayTo();
   const atomic = (s: string) => BigInt(Math.round(Number(s) * 1e6));
 
-  /** Give `addr` exactly `amount` more tokens: anvil storage write on the fork, owner mint on FISCO. */
+  /** Fund a new address: FISCO mints `amount` to it (adds); the fork writes its USDC balance slot (sets to `amount`). Same result for fresh pockets. */
   async function fundToken(addr: Address, amount: bigint) {
     if (fisco) {
       const mintAbi = [{ type: "function", name: "mint", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [] }] as const;

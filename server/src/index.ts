@@ -29,7 +29,9 @@ type Msg = Anthropic.Beta.Messages.BetaMessageParam;
 /** What the apps need to sign and link: never keys. */
 export const chainInfo = () => {
   const c = cfg();
-  return { key: c.key, id: c.chain.id, name: c.chain.name, rpc: c.rpc, network: c.network, domain: c.domain, currency: c.currency, txUrl: c.txUrl("") };
+  // The server's own RPC URL can carry a provider API key: the apps get PUBLIC_RPC_URL or the chain's public default.
+  const rpc = process.env.PUBLIC_RPC_URL || c.chain.rpcUrls.default.http[0];
+  return { key: c.key, id: c.chain.id, name: c.chain.name, rpc, network: c.network, domain: c.domain, currency: c.currency, txUrl: c.txUrl("") };
 };
 
 /** Wallet tool layer + agent API for the app. The LLM only ever reaches the tools; keys stay in this process. */

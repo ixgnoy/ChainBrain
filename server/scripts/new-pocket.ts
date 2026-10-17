@@ -30,7 +30,7 @@ const create = await w.writeContract({
 const [ev] = parseEventLogs({ abi: factoryAbi, logs: (await w.waitForTransactionReceipt({ hash: create })).logs, eventName: "PocketCreated" }) as any[];
 const fund = await w.writeContract({ address: cfg().token, abi: erc20Abi, functionName: "transfer", args: [ev.args.pocket, p.budget] });
 await w.waitForTransactionReceipt({ hash: fund });
-record(`new-pocket ${kind}: create`, create, "success", "PocketCreated(address,address,address)");
-record(`new-pocket ${kind}: fund`, fund, "success", "Transfer(address,address,uint256)");
+record(`new-pocket ${kind}: create`, create, "success", "PocketCreated(address,address,address)", factoryAddress());
+record(`new-pocket ${kind}: fund`, fund, "success", "Transfer(address,address,uint256)", cfg().token);
 console.log(`create ${cfg().txUrl(create)}\nfund   ${cfg().txUrl(fund)}`);
 console.log(`POCKET=${ev.args.pocket} balance=${await tokenBalance(ev.args.pocket)}`);

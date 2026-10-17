@@ -18,6 +18,7 @@ let runTurn: typeof import("../src/agent/loop").runTurn;
 let bus: typeof import("../src/wallet/events").bus;
 let api: ReturnType<typeof import("../src/index").apiApp>;
 let stopOwner: () => void = () => {};
+let stopRecording: () => void = () => {};
 
 type Out = { tool: string; input: object } | { text: string };
 type Step = (last: any) => Out | Promise<Out>;
@@ -47,14 +48,13 @@ beforeAll(async () => {
   ({ bus } = await import("../src/wallet/events"));
   api = (await import("../src/index")).apiApp();
   stopOwner = autoOwner({ api, sign: s.ownerSignTransfer });
-});
-afterAll(async () => {
-  stopOwner();
-  // EVIDENCE_FILE: every settled payment of these scenes, re-checked on-chain by scripts/verify-evidence.ts
+  // EVIDENCE_FILE: every settled payment of these scenes, recorded as it happens, re-checked on-chain by scripts/verify-evidence.ts
   const { record } = await import("../scripts/evidence");
-  for (const e of bus.recent()) if (e.type === "payment") record(`scene payment: ${e.sellerId} ${e.sku}${e.cosigned ? " (owner co-signed)" : ""}`, e.tx as string, "success", "AuthorizationUsed(address,bytes32)");
-  await s?.stop();
+  stopRecording = bus.subscribe((e) => {
+    if (e.type === "payment") record(`scene payment: ${e.sellerId} ${e.sku}${e.cosigned ? " (owner co-signed)" : ""}`, e.tx as string, "success", "AuthorizationUsed(address,bytes32)", s.token);
+  });
 });
+afterAll(async () => { stopRecording(); stopOwner(); await s?.stop(); });
 
 describe.skipIf(!process.env.SCENES)(`scenes (${REAL ? "real model" : "replay model"})`, () => {
   it("scenes 1–3: one question, confirmed intent, DataLite paid, DataPro paid with the owner's co-sign", async () => {

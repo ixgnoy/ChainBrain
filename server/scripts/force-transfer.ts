@@ -25,6 +25,6 @@ const hash = await sender.writeContract({
   gas: 200_000n, // explicit gas skips estimateGas, so the revert lands on-chain as evidence
 });
 const rc = await sender.waitForTransactionReceipt({ hash });
-record("scene 5 backstop: compromised agent key forces the injected transfer straight to the token", hash, "reverted");
+record("scene 5 backstop: compromised agent key forces the injected transfer straight to the token", hash, "reverted", undefined, cfg().token);
 console.log(rc.status === "reverted" ? `REVERTED (expected) ${hash}` : `!!! SUCCEEDED ${hash}`);
 process.exit(rc.status === "reverted" ? 0 : 1);
