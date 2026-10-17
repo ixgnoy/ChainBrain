@@ -1,5 +1,5 @@
 // Port of server/src/wallet/intent.ts: the fixed intent template and the deterministic quote-vs-intent check.
-import { formatUsd, parseUsd } from "./util";
+import { formatHkd, parseHkd } from "./util";
 import type { Hex } from "./types";
 
 export type IntentInput = { request: string; description: string; maxPricePerItem: string; maxTotal: string; maxItems: number; deadline: string };
@@ -9,7 +9,7 @@ export function renderIntent(i: IntentInput): string {
   const d = new Date(Date.parse(i.deadline) + 8 * 3600_000).toISOString().replace("T", " ").slice(0, 16);
   return [
     `Buy: ${i.description.replace(/\s+/g, " ").trim()}`, // one line: a line break in the agent's words must not start a fake "Price:" row
-    `Price: at most US$${formatUsd(parseUsd(i.maxPricePerItem))} each, US$${formatUsd(parseUsd(i.maxTotal))} in total, up to ${i.maxItems} item${i.maxItems === 1 ? "" : "s"}`,
+    `Price: at most HK$${formatHkd(parseHkd(i.maxPricePerItem))} each, HK$${formatHkd(parseHkd(i.maxTotal))} in total, up to ${i.maxItems} item${i.maxItems === 1 ? "" : "s"}`,
     `Deadline: ${d} HKT`,
   ].join("\n");
 }
@@ -17,8 +17,8 @@ export function renderIntent(i: IntentInput): string {
 export function checkAgainstIntent(i: Intent | undefined, s: { spent: bigint; items: number }, amount: bigint, now = Date.now() / 1000): string | undefined {
   if (!i || i.status !== "confirmed") return "INTENT_NOT_CONFIRMED";
   if (now >= Date.parse(i.deadline) / 1000) return "INTENT_EXPIRED";
-  if (amount > parseUsd(i.maxPricePerItem)) return "PRICE_ABOVE_INTENT";
-  if (s.spent + amount > parseUsd(i.maxTotal)) return "INTENT_TOTAL_REACHED";
+  if (amount > parseHkd(i.maxPricePerItem)) return "PRICE_ABOVE_INTENT";
+  if (s.spent + amount > parseHkd(i.maxTotal)) return "INTENT_TOTAL_REACHED";
   if (s.items >= i.maxItems) return "INTENT_ITEMS_REACHED";
   return undefined;
 }
@@ -42,7 +42,7 @@ export const REASONS: Record<string, string> = {
   QUOTE_ALREADY_PAID: "This quote is already paid",
   QUOTE_UNKNOWN: "No such quote",
   DISCLOSURE_REFUSED: "The seller asked for data beyond the purchase; refused and shown to the owner",
-  SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule USDC payments it built itself",
+  SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule eHKD payments it built itself",
   SETTLEMENT_FAILED: "Settlement failed",
   NOT_THIS_AGENT: "This pocket belongs to a different agent key",
   COUNTERPARTY_HIGH_RISK: "Radar traced this seller's funds to a high-risk source (e.g. a drainer or sanctioned address); choose another seller",

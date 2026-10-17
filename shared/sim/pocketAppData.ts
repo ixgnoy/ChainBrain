@@ -1,6 +1,6 @@
 // What each pocket-app block shows, derived from the event stream only (the same events the phone and the console already
 // read). A spec never carries a number: every figure on a pocket app comes from here, so the phone and the console agree and
-// nothing is typed in. Amounts arrive as decimal strings (wire format) and leave as bigints in USDC units (6 decimals).
+// nothing is typed in. Amounts arrive as decimal strings (wire format) and leave as bigints in eHKD units (6 decimals).
 // No imports beyond the shared sim files: Metro, Vite and Node tests load it.
 import { available, nextRuns, periodWindow, type PocketAppSpec, type Period, type Routine, type RoutineItem } from "./pocketApp";
 

@@ -1,6 +1,6 @@
 // The in-app explorer's view of a transaction, a block and an address. Pure. The built-in network's hashes are not on
 // any public chain, so both apps show them here instead of a block explorer; the event logs are the ones the real
-// contracts emit (PocketFactory.PocketCreated, USDC Transfer and AuthorizationUsed, Pocket.Revoked and RulesChanged).
+// contracts emit (PocketFactory.PocketCreated, eHKD Transfer and AuthorizationUsed, Pocket.Revoked and RulesChanged).
 
 /** A transaction as either app holds it (shared/sim SimTx, web ChainTx). */
 export type ExplorerInput = {
@@ -15,7 +15,7 @@ export type ExplorerLog = { index: number; contract: string; contractName: strin
 export type ExplorerTx = {
   hash: string; status: "success" | "reverted"; block?: string; position?: number; at?: number;
   from?: string; to?: string; toName: string; value?: string; method: string; args: Field[]; logs: ExplorerLog[];
-  /** The on-chain error a reverted tx carries ("NOT_OWNER", or USDC's "FiatTokenV2: invalid signature"). */
+  /** The on-chain error a reverted tx carries ("NOT_OWNER", or eHKD's "EHKD: invalid signature"). */
   revert?: string;
   /** For a refused pocket payment: the pocket rule that failed (Pocket.canPay), which isValidSignature only reports as INVALID. */
   rule?: string;
@@ -23,10 +23,10 @@ export type ExplorerTx = {
   reason?: string;
   pocket?: string; summary: string; kind: string;
 };
-export type ExplorerCtx = { usdc: string; factory: string; nameOf?: (address: string) => string | undefined };
+export type ExplorerCtx = { ehkd: string; factory: string; nameOf?: (address: string) => string | undefined };
 
 const lc = (a?: string) => (a ?? "").toLowerCase();
-export const usdText = (v?: bigint | string): string | undefined => {
+export const hkdText = (v?: bigint | string): string | undefined => {
   if (v == null || v === "") return undefined;
   let n: bigint;
   try { n = BigInt(String(v)); } catch { return undefined; }
@@ -37,19 +37,19 @@ const METHOD_OF: Record<string, string> = { create: "createPocket", fund: "trans
 
 /** Plain-words summary, in the voice of the rest of the app. */
 function summarize(t: ExplorerInput, name: (a?: string) => string): string {
-  const amt = usdText(t.amount);
+  const amt = hkdText(t.amount);
   if (t.status === "reverted") {
     if (t.reason === "NOT_OWNER") return `A key that is not the owner's tried to change ${name(t.pocket)}'s rules. The pocket reverted it (NOT_OWNER).`;
-    return `A transfer of US$${amt ?? "?"} out of ${name(t.pocket)} to ${name(t.counterparty)} was refused by the pocket contract${t.reason && t.reason !== "REVERTED" ? `: its rule check says ${t.reason}` : ""}. No money moved.`;
+    return `A transfer of HK$${amt ?? "?"} out of ${name(t.pocket)} to ${name(t.counterparty)} was refused by the pocket contract${t.reason && t.reason !== "REVERTED" ? `: its rule check says ${t.reason}` : ""}. No money moved.`;
   }
   switch (t.kind) {
     case "create": return `${name(t.from)} created ${name(t.pocket)} with its own budget and rules.`;
-    case "fund": return `${name(t.from)} moved US$${amt} into ${name(t.pocket)}.`;
-    case "payment": return `${name(t.pocket)} paid ${name(t.counterparty)} US$${amt}${t.args?.cosigned === "true" ? ", co-signed by the owner" : ""}.`;
-    case "return": return `${name(t.pocket)} returned US$${amt} to its owner.`;
+    case "fund": return `${name(t.from)} moved HK$${amt} into ${name(t.pocket)}.`;
+    case "payment": return `${name(t.pocket)} paid ${name(t.counterparty)} HK$${amt}${t.args?.cosigned === "true" ? ", co-signed by the owner" : ""}.`;
+    case "return": return `${name(t.pocket)} returned HK$${amt} to its owner.`;
     case "revoke": return `The owner stopped ${name(t.pocket)}. The agent can no longer spend from it.`;
     case "rules": return `The owner changed ${name(t.pocket)}'s rules${t.label ? ` (${t.label.toLowerCase()})` : ""}.`;
-    default: return `${name(t.from)} sent US$${amt ?? "?"} to ${name(t.counterparty)}.`;
+    default: return `${name(t.from)} sent HK$${amt ?? "?"} to ${name(t.counterparty)}.`;
   }
 }
 
@@ -57,14 +57,14 @@ export function explainTx(t: ExplorerInput, ctx: ExplorerCtx, all: ExplorerInput
   const status = t.status ?? "success";
   const name = (a?: string) => {
     if (!a) return "someone";
-    if (lc(a) === lc(ctx.usdc)) return "USDC";
+    if (lc(a) === lc(ctx.ehkd)) return "eHKD";
     if (lc(a) === lc(ctx.factory)) return "PocketFactory";
     return ctx.nameOf?.(a) ?? `${a.slice(0, 6)}…${a.slice(-4)}`;
   };
   const method = t.method ?? METHOD_OF[t.kind] ?? t.kind;
   // the contract the transaction called
-  const to = t.kind === "create" ? ctx.factory : method === "transfer" || method === "transferWithAuthorization" ? ctx.usdc : t.pocket;
-  const toName = lc(to) === lc(ctx.usdc) ? "USDC (FiatTokenV2_2)" : lc(to) === lc(ctx.factory) ? "PocketFactory" : `Pocket${t.pocket && ctx.nameOf?.(t.pocket) ? ` · ${ctx.nameOf(t.pocket)}` : ""}`;
+  const to = t.kind === "create" ? ctx.factory : method === "transfer" || method === "transferWithAuthorization" ? ctx.ehkd : t.pocket;
+  const toName = lc(to) === lc(ctx.ehkd) ? "eHKD (MockEHKD)" : lc(to) === lc(ctx.factory) ? "PocketFactory" : `Pocket${t.pocket && ctx.nameOf?.(t.pocket) ? ` · ${ctx.nameOf(t.pocket)}` : ""}`;
   const a = t.args ?? {};
   const args: Field[] = Object.entries(a).filter(([k]) => k !== "cosigned").map(([k, v]) => ({
     name: k, value: v,
@@ -74,13 +74,13 @@ export function explainTx(t: ExplorerInput, ctx: ExplorerCtx, all: ExplorerInput
   const log = (contract: string, contractName: string, event: string, fields: Field[]) => logs.push({ index: logs.length, contract, contractName, event, fields });
   if (status === "success") {
     if (t.kind === "create") log(ctx.factory, "PocketFactory", "PocketCreated", [{ name: "pocket", value: t.pocket ?? "", kind: "address" }, { name: "owner", value: t.from ?? "", kind: "address" }, ...(a.agent ? [{ name: "agent", value: a.agent, kind: "address" as const }] : [])]);
-    if (t.kind === "fund") log(ctx.usdc, "USDC", "Transfer", [{ name: "from", value: t.from ?? "", kind: "address" }, { name: "to", value: t.pocket ?? "", kind: "address" }, { name: "value", value: String(t.amount ?? ""), kind: "amount" }]);
+    if (t.kind === "fund") log(ctx.ehkd, "eHKD", "Transfer", [{ name: "from", value: t.from ?? "", kind: "address" }, { name: "to", value: t.pocket ?? "", kind: "address" }, { name: "value", value: String(t.amount ?? ""), kind: "amount" }]);
     if (t.kind === "payment") {
-      log(ctx.usdc, "USDC", "AuthorizationUsed", [{ name: "authorizer", value: t.pocket ?? "", kind: "address" }, ...(t.nonce ? [{ name: "nonce", value: t.nonce, kind: "hash" as const }] : [])]);
-      log(ctx.usdc, "USDC", "Transfer", [{ name: "from", value: t.pocket ?? "", kind: "address" }, { name: "to", value: t.counterparty ?? "", kind: "address" }, { name: "value", value: String(t.amount ?? ""), kind: "amount" }]);
+      log(ctx.ehkd, "eHKD", "AuthorizationUsed", [{ name: "authorizer", value: t.pocket ?? "", kind: "address" }, ...(t.nonce ? [{ name: "nonce", value: t.nonce, kind: "hash" as const }] : [])]);
+      log(ctx.ehkd, "eHKD", "Transfer", [{ name: "from", value: t.pocket ?? "", kind: "address" }, { name: "to", value: t.counterparty ?? "", kind: "address" }, { name: "value", value: String(t.amount ?? ""), kind: "amount" }]);
     }
-    if (t.kind === "return") log(ctx.usdc, "USDC", "Transfer", [{ name: "from", value: t.pocket ?? "", kind: "address" }, { name: "to", value: t.counterparty ?? "", kind: "address" }, { name: "value", value: String(t.amount ?? ""), kind: "amount" }]);
-    if (t.kind === "out") log(ctx.usdc, "USDC", "Transfer", [{ name: "from", value: t.from ?? "", kind: "address" }, { name: "to", value: t.counterparty ?? "", kind: "address" }, { name: "value", value: String(t.amount ?? ""), kind: "amount" }]);
+    if (t.kind === "return") log(ctx.ehkd, "eHKD", "Transfer", [{ name: "from", value: t.pocket ?? "", kind: "address" }, { name: "to", value: t.counterparty ?? "", kind: "address" }, { name: "value", value: String(t.amount ?? ""), kind: "amount" }]);
+    if (t.kind === "out") log(ctx.ehkd, "eHKD", "Transfer", [{ name: "from", value: t.from ?? "", kind: "address" }, { name: "to", value: t.counterparty ?? "", kind: "address" }, { name: "value", value: String(t.amount ?? ""), kind: "amount" }]);
     if (t.kind === "revoke") log(t.pocket ?? "", "Pocket", "Revoked", []);
     if (t.kind === "rules") log(t.pocket ?? "", "Pocket", "RulesChanged", []);
   }
@@ -88,7 +88,7 @@ export function explainTx(t: ExplorerInput, ctx: ExplorerCtx, all: ExplorerInput
   const sameBlock = blockStr ? all.filter((x) => String(x.block) === blockStr) : [];
   return {
     hash: t.hash, status, block: blockStr, position: sameBlock.length ? Math.max(0, sameBlock.findIndex((x) => lc(x.hash) === lc(t.hash))) : undefined, at: t.at,
-    from: t.from, to, toName, value: t.kind === "payment" || t.kind === "fund" || t.kind === "return" || t.kind === "out" ? usdText(t.amount) : undefined,
+    from: t.from, to, toName, value: t.kind === "payment" || t.kind === "fund" || t.kind === "return" || t.kind === "out" ? hkdText(t.amount) : undefined,
     method, args, logs, ...revertOf(t, method, status), pocket: t.pocket, kind: t.kind,
     summary: summarize({ ...t, status }, name),
   };
@@ -99,7 +99,7 @@ function revertOf(t: ExplorerInput, method: string, status: string): { revert?: 
   if (status !== "reverted") return {};
   if (method === "transferWithAuthorization") {
     const rule = t.reason && t.reason !== "REVERTED" ? t.reason : undefined;
-    return { revert: "FiatTokenV2: invalid signature", rule, reason: rule ?? "FiatTokenV2: invalid signature" };
+    return { revert: "EHKD: invalid signature", rule, reason: rule ?? "EHKD: invalid signature" };
   }
   const revert = t.reason ?? "execution reverted";
   return { revert, reason: revert };
@@ -126,4 +126,4 @@ export function txsOfAddress(address: string, txs: ExplorerInput[]): ExplorerInp
 }
 
 /** "Test network" for the built-in chain and a local fork; the chain's own name only for a public chain. */
-export const networkLabel = (o: { builtin: boolean; dev?: boolean; chainName?: string }) => (o.builtin || o.dev ? "Test network" : o.chainName ?? "Base Sepolia");
+export const networkLabel = (o: { builtin: boolean; dev?: boolean; chainName?: string }) => (o.builtin || o.dev ? "Test network" : o.chainName ?? "FISCO BCOS");

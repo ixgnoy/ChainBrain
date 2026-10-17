@@ -1,5 +1,5 @@
 // A small in-memory chain with the exact rules of contracts/src/Pocket.sol and PocketFactory.sol: canPay's check order,
-// needsOwner, onlyOwner, and USDC balances. Every state change is a transaction with a hash, a block and a log row,
+// needsOwner, onlyOwner, and eHKD balances. Every state change is a transaction with a hash, a block and a log row,
 // which is what the apps show as evidence.
 import { CATALOG } from "./catalog";
 import type { Hex, SimPocketView, SimTx, SimTxKind } from "./types";
@@ -17,17 +17,17 @@ const EPOCH = Date.UTC(2026, 9, 1);
 export const blockAt = (ms: number) => 32_000_000n + BigInt(Math.max(0, Math.floor((ms - EPOCH) / 2000)));
 
 export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigint }) {
-  const usdc = new Map<string, bigint>();
+  const ehkd = new Map<string, bigint>();
   const eth = new Map<string, bigint>();
   const pockets = new Map<string, PocketRec>();
   const txs: SimTx[] = [];
-  /** Every USDC movement, as Transfer logs would show it (Radar traces these). */
+  /** Every eHKD movement, as Transfer logs would show it (Radar traces these). */
   const moves: { from: Hex; to: Hex; value: bigint; tx: Hex; block: bigint }[] = [];
   let block = o.startBlock ?? 0n;
   const listeners = new Set<(t: SimTx) => void>();
 
-  const bal = (a: string) => usdc.get(lower(a)) ?? 0n;
-  const setBal = (a: string, v: bigint) => usdc.set(lower(a), v);
+  const bal = (a: string) => ehkd.get(lower(a)) ?? 0n;
+  const setBal = (a: string, v: bigint) => ehkd.set(lower(a), v);
   const get = (p: string) => {
     const r = pockets.get(lower(p));
     if (!r) throw new ChainError(`not a pocket: ${p}`);
@@ -86,9 +86,9 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
     transfers: () => moves.slice(),
     onTx(f: (t: SimTx) => void) { listeners.add(f); return () => void listeners.delete(f); },
     /** Everything on the chain, for saving the built-in network (util.encode keeps the bigints, Maps and Sets). */
-    dump: () => ({ usdc, eth, pockets, txs, moves, block }),
-    load(d: { usdc: Map<string, bigint>; eth: Map<string, bigint>; pockets: Map<string, PocketRec>; txs: SimTx[]; moves: typeof moves; block: bigint }) {
-      for (const [m, src] of [[usdc, d.usdc], [eth, d.eth], [pockets, d.pockets]] as const) { m.clear(); for (const [k, v] of src) (m as Map<string, unknown>).set(k, v); }
+    dump: () => ({ ehkd, eth, pockets, txs, moves, block }),
+    load(d: { ehkd: Map<string, bigint>; eth: Map<string, bigint>; pockets: Map<string, PocketRec>; txs: SimTx[]; moves: typeof moves; block: bigint }) {
+      for (const [m, src] of [[ehkd, d.ehkd], [eth, d.eth], [pockets, d.pockets]] as const) { m.clear(); for (const [k, v] of src) (m as Map<string, unknown>).set(k, v); }
       txs.splice(0, txs.length, ...d.txs);
       moves.splice(0, moves.length, ...d.moves);
       block = d.block;
@@ -106,7 +106,7 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
       });
       return { pocket: address, tx: tx.hash };
     },
-    /** USDC.transfer from an owner's main wallet (funding a pocket, or any transfer). */
+    /** eHKD.transfer from an owner's main wallet (funding a pocket, or any transfer). */
     transfer(from: Hex, to: Hex, amount: bigint, at?: number) {
       if (bal(from) < amount) throw new ChainError("transaction reverted: ERC20: transfer amount exceeds balance");
       setBal(from, bal(from) - amount);
@@ -171,7 +171,7 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
     },
 
     /**
-     * USDC.transferWithAuthorization from the pocket, as the facilitator submits it: the pocket's ERC-1271 check runs
+     * eHKD.transferWithAuthorization from the pocket, as the facilitator submits it: the pocket's ERC-1271 check runs
      * canPay and, above the ask-me limit, needs the owner's signature too. A failed check reverts on-chain.
      */
     settle(pocket: Hex, to: Hex, amount: bigint, o2: { submitter: Hex; ownerSigned: boolean; at?: number }): { tx: Hex; ok: boolean; reason?: string } {

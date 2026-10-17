@@ -40,8 +40,8 @@ export function factsFrom(events: Ev[], txs: ProofTx[], o: ProofOptions = {}): F
   }
   for (const e of ev.filter((x) => x.type === "payment")) {
     set("onchainPayment", { at: e.at, pocket: e.pocket, txs: [e.tx], detail: "Paid an allowed seller inside the rules" });
-    if (!e.cosigned) set("paidInRules", { at: e.at, pocket: e.pocket, txs: [e.tx], detail: `Paid ${o.sellerName?.(e.sellerId) ?? e.sellerId} US$${micro(e.amount)} with the agent key alone (under the ask-me limit)` });
-    if (e.cosigned) set("cosigned", { at: e.at, pocket: e.pocket, txs: [e.tx], detail: `Paid ${o.sellerName?.(e.sellerId) ?? e.sellerId} US$${micro(e.amount)}: above the ask-me limit, so the owner signed this exact transfer` });
+    if (!e.cosigned) set("paidInRules", { at: e.at, pocket: e.pocket, txs: [e.tx], detail: `Paid ${o.sellerName?.(e.sellerId) ?? e.sellerId} HK$${micro(e.amount)} with the agent key alone (under the ask-me limit)` });
+    if (e.cosigned) set("cosigned", { at: e.at, pocket: e.pocket, txs: [e.tx], detail: `Paid ${o.sellerName?.(e.sellerId) ?? e.sellerId} HK$${micro(e.amount)}: above the ask-me limit, so the owner signed this exact transfer` });
   }
 
   // Interaction: one clarifying question; refused then re-planned; safe stop, then the one-tap fix
@@ -132,10 +132,10 @@ export type EvidenceRow = {
 
 type RowSpec = { scene: string; title: string; expected: string; proves: string; facts: FactId[]; txKinds?: string[] };
 const ROWS: RowSpec[] = [
-  { scene: "1", title: "Create pocket and task", expected: "Pocket created and funded by the owner's key; one clarifying question", proves: "Owner-signed create + USDC transfer from the main wallet; the agent asks instead of guessing", facts: ["pocketCreated", "clarifyingQuestion"] },
-  { scene: "2", title: "Plan and buy", expected: "Exa US$0.007 paid with no prompt", proves: "In-rule payment, agent key only", facts: ["paidInRules"] },
-  { scene: "3", title: "Ask the owner", expected: "Nansen US$0.05 paid with the owner's co-signature", proves: "Owner co-sign above the ask-me limit (ERC-1271)", facts: ["cosigned"] },
-  { scene: "4", title: "Refused, then re-plan", expected: "Harbour Wines refused SELLER_NOT_ALLOWED; Exa US$0.007 paid", proves: "The contract's allowlist, and error correction", facts: ["refusedReplanned"] },
+  { scene: "1", title: "Create pocket and task", expected: "Pocket created and funded by the owner's key; one clarifying question", proves: "Owner-signed create + eHKD transfer from the main wallet; the agent asks instead of guessing", facts: ["pocketCreated", "clarifyingQuestion"] },
+  { scene: "2", title: "Plan and buy", expected: "Exa HK$0.056 paid with no prompt", proves: "In-rule payment, agent key only", facts: ["paidInRules"] },
+  { scene: "3", title: "Ask the owner", expected: "Nansen HK$0.40 paid with the owner's co-signature", proves: "Owner co-sign above the ask-me limit (ERC-1271)", facts: ["cosigned"] },
+  { scene: "4", title: "Refused, then re-plan", expected: "Harbour Wines refused SELLER_NOT_ALLOWED; Exa HK$0.056 paid", proves: "The contract's allowlist, and error correction", facts: ["refusedReplanned"] },
   { scene: "5", title: "Prompt injection", expected: "ShadyFeed's hidden order ignored; forced transfer reverts on-chain", proves: "Injected text is data; even a fooled agent key cannot move money", facts: ["injectionIgnored", "forcedReverted"] },
   { scene: "6", title: "Data extraction", expected: "DISCLOSURE_REFUSED, SIGNATURE_TYPE_NOT_ALLOWED; nothing paid", proves: "No personal data, no foreign signatures", facts: ["dataRefused"] },
   { scene: "7", title: "Kill switch", expected: "Revoked mid-task; next payment refused POCKET_REVOKED; funds returned", proves: "Owner-only stop and withdrawal", facts: ["killSwitch"] },

@@ -26,7 +26,7 @@ export type RoutineSpec = {
   cadence: Cadence;
   /** What each run buys (seller-registry ids; names and descriptions are read from the registry when shown). */
   items: RoutineItem[];
-  /** At most this much per period; a run that would pass it asks the owner (the cheque). USD string, e.g. "0.05". */
+  /** At most this much per period; a run that would pass it asks the owner (the cheque). USD string, e.g. "0.40". */
   allowance: { amount: string; period: Period };
   /** Price watch: buy only at or below this (also the pocket's per-payment cap, so the contract enforces it). */
   limitPrice?: string | null;
@@ -80,7 +80,7 @@ export type Registry = { id: string; name: string; items: { sku: string; price: 
 export type Checked<T> = { ok: true; value: T } | { ok: false; errors: string[] };
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === "object" && !Array.isArray(x);
 const USD = /^\d{1,4}(?:\.\d{1,6})?$/;
-const usdNum = (s: string) => Number.parseFloat(s);
+const hkdNum = (s: string) => Number.parseFloat(s);
 
 /** A label from the owner's sentence (or a model's reading of it): letters, digits and plain punctuation only, 28 characters
  *  at most. Anything that could be a link, an address, an amount or markup is refused rather than cleaned. */
@@ -123,9 +123,9 @@ export function validateRoutine(raw: unknown, registry: Registry, layout?: Layou
   }
   if (kind === "price-watch" && Array.isArray(items) && items.length !== 1) e.push("routine.items: a price watch buys one item");
   const a = raw.allowance;
-  if (!isObj(a) || typeof a.amount !== "string" || !USD.test(a.amount) || usdNum(a.amount) <= 0 || !PERIODS.includes(a.period as Period)) e.push("routine.allowance");
+  if (!isObj(a) || typeof a.amount !== "string" || !USD.test(a.amount) || hkdNum(a.amount) <= 0 || !PERIODS.includes(a.period as Period)) e.push("routine.allowance");
   if (kind === "price-watch") {
-    if (typeof raw.limitPrice !== "string" || !USD.test(raw.limitPrice) || usdNum(raw.limitPrice) <= 0) e.push("routine.limitPrice: a price watch needs its limit");
+    if (typeof raw.limitPrice !== "string" || !USD.test(raw.limitPrice) || hkdNum(raw.limitPrice) <= 0) e.push("routine.limitPrice: a price watch needs its limit");
   } else if (raw.limitPrice != null) e.push("routine.limitPrice: only a price watch has one");
   if (e.length) return { ok: false, errors: e };
   const cc = c as Record<string, number | string>;
@@ -204,7 +204,7 @@ export function catalogPrompt(registry: Registry): string {
     const ps = Object.entries(d.params).map(([k, p]) => `${k}: ${p.kind === "enum" ? p.values.join(" | ") : `${p.min}-${p.max}`}`).join(", ");
     return `- ${t}${d.hero ? " (hero)" : ""}: ${d.description} Layouts: ${d.layouts.join(", ")}.${d.routine ? " Needs a routine." : ""}${ps ? ` Params: ${ps}.` : ""}`;
   }).join("\n");
-  const items = registry.flatMap((s) => s.items.filter((i) => i.price !== null).map((i) => `${s.id}/${i.sku} (US$${i.price})`)).join(", ");
+  const items = registry.flatMap((s) => s.items.filter((i) => i.price !== null).map((i) => `${s.id}/${i.sku} (HK$${i.price})`)).join(", ");
   return [
     `Compose a pocket app spec (${CATALOGUE_ID}) for the owner's sentence. Use only these blocks:`,
     blocks,
@@ -231,7 +231,7 @@ export function periodWindow(period: Period, ms: number): { start: number; end: 
   return { start: Date.UTC(p.y, p.m, 1) - TZ, end: Date.UTC(p.y, p.m + 1, 1) - TZ };
 }
 
-/** What is left of the allowance this period (ERC20PeriodTransferEnforcer: no carry-over), in USDC units (6 decimals). */
+/** What is left of the allowance this period (ERC20PeriodTransferEnforcer: no carry-over), in eHKD units (6 decimals). */
 export function available(allowance: bigint, payments: { at: number; amount: bigint }[], period: Period, now: number): { spent: bigint; left: bigint; window: { start: number; end: number } } {
   const w = periodWindow(period, now);
   const spent = payments.filter((p) => p.at >= w.start && p.at < w.end).reduce((n, p) => n + p.amount, 0n);
@@ -276,7 +276,7 @@ export type AgentChoice = "chainbrain" | "claude" | "chatgpt";
 const SKU_WORDS: { sellerId: string; sku: string; re: RegExp }[] = [
   { sellerId: "exa", sku: "fruit-news", re: /fruit trade|se asia/ },
   { sellerId: "exa", sku: "durian-news", re: /news|headline|search|exa/ },
-  { sellerId: "coingecko", sku: "usdc-price", re: /usdc|price|rate|coingecko/ },
+  { sellerId: "coingecko", sku: "eth-price", re: /ehkd|price|rate|coingecko/ },
   { sellerId: "nansen", sku: "smart-money", re: /smart.?money|flows?/ },
   { sellerId: "nansen", sku: "counterparties", re: /counterpart|exporter'?s wallet|wallet check/ },
   { sellerId: "nansen", sku: "wallet-balances", re: /balances?/ },
@@ -335,9 +335,9 @@ export function pickTitle(sentence: string, layout: Layout, name?: string): stri
   const fromName = cleanLabel(name);
   if (fromName) return fromName;
   const t = sentence.toLowerCase();
-  const topic = /\b(durian|fruit|usdc|market|exporter|wine)\b/.exec(t)?.[1];
+  const topic = /\b(durian|fruit|ehkd|market|exporter|wine)\b/.exec(t)?.[1];
   const base = layout === "research" ? "brief" : layout === "deal" ? "watch" : layout === "subscriptions" ? "subscriptions" : "deal";
-  const word = topic ? topic.replace(/^\w/, (x) => x.toUpperCase()).replace("Usdc", "USDC") : layout === "research" ? "Research" : layout === "deal" ? "Price" : layout === "subscriptions" ? "Data" : "One-off";
+  const word = topic ? topic.replace(/^\w/, (x) => x.toUpperCase()).replace("Ehkd", "eHKD") : layout === "research" ? "Research" : layout === "deal" ? "Price" : layout === "subscriptions" ? "Data" : "One-off";
   return cleanLabel(`${word} ${base}`) ?? "Pocket";
 }
 
@@ -365,13 +365,13 @@ export function pickApp(sentence: string, rules: { sellers: string[]; per?: { am
 export function stricterRoutine(a: RoutineSpec, b: RoutineSpec): { routine: RoutineSpec; disagreements: string[] } {
   const d: string[] = [];
   const days: Record<Period, number> = { day: 1, week: 7, month: 30 };
-  const rate = (r: RoutineSpec) => usdNum(r.allowance.amount) / days[r.allowance.period];
+  const rate = (r: RoutineSpec) => hkdNum(r.allowance.amount) / days[r.allowance.period];
   const allowance = rate(a) < rate(b) || (rate(a) === rate(b) && days[a.allowance.period] <= days[b.allowance.period]) ? a.allowance : b.allowance;
   if (JSON.stringify(a.allowance) !== JSON.stringify(b.allowance)) d.push("Allowance: used the lower spend rate");
   const items = a.items.filter((x) => b.items.some((y) => y.sellerId === x.sellerId && y.sku === x.sku));
   if (items.length !== a.items.length || items.length !== b.items.length) d.push("Items: kept only those both readings chose");
   let limitPrice = a.limitPrice ?? null;
-  if (a.limitPrice && b.limitPrice) { limitPrice = usdNum(a.limitPrice) <= usdNum(b.limitPrice) ? a.limitPrice : b.limitPrice; if (a.limitPrice !== b.limitPrice) d.push("Price limit: used the lower reading"); }
+  if (a.limitPrice && b.limitPrice) { limitPrice = hkdNum(a.limitPrice) <= hkdNum(b.limitPrice) ? a.limitPrice : b.limitPrice; if (a.limitPrice !== b.limitPrice) d.push("Price limit: used the lower reading"); }
   const per = (c: Cadence) => (c.every === "day" ? 1 : c.every === "weekday" ? 1.4 : c.every === "week" ? 7 : 30);
   const cadence = per(a.cadence) >= per(b.cadence) ? a.cadence : b.cadence; // runs less often
   if (JSON.stringify(a.cadence) !== JSON.stringify(b.cadence)) d.push("Schedule: used the one that runs less often");

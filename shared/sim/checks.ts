@@ -1,7 +1,7 @@
 // The path every payment (and every attack) travels, as the apps draw it: agent → wallet tools → pocket contract →
 // seller. Pure: it reads the wallet event stream (the real server's or the built-in network's, they are the same shape)
 // and says, for each attempt, which checks it passed and which one stopped it. The order of the contract checks is
-// Pocket.sol's own (isValidSignature: exact USDC transfer signed by the agent key, then canPay, then the owner's
+// Pocket.sol's own (isValidSignature: exact eHKD transfer signed by the agent key, then canPay, then the owner's
 // co-signature above the ask-me limit), so the reason code alone tells which gate refused.
 import { REASONS } from "./intent";
 
@@ -16,7 +16,7 @@ export type Gate = { id: GateId; layer: Layer; title: string; state: GateState; 
 export type AttemptKind = "payment" | "refusal" | "precheck" | "forced" | "hijack" | "escalation" | "extraction" | "induced" | "disclosure" | "injection";
 export type Attempt = {
   id: string; at: number; pocket?: string; kind: AttemptKind;
-  /** "Exa · US$0.007", "0x0000…ABC0 · US$50.00". */
+  /** "Exa · HK$0.056", "0x0000…ABC0 · HK$400.00". */
   title: string;
   /** One plain sentence for the big screen. */
   headline: string;
@@ -33,15 +33,15 @@ export type Attempt = {
 export const GATES: Record<GateId, { layer: Layer; title: string; plain: string }> = {
   agent: { layer: "agent", title: "Agent", plain: "The AI decides what to try. It can be fooled; nothing below depends on it." },
   intent: { layer: "tools", title: "Task you confirmed", plain: "The wallet tools only sign a payment that fits the task the owner confirmed: price per item, total, item count, deadline." },
-  privacy: { layer: "tools", title: "Nothing to leak", plain: "No tool returns the owner's key, main wallet, other pockets or the agent's instructions, and the wallet signs only USDC payments it built." },
-  signature: { layer: "contract", title: "Signature check (ERC-1271)", plain: "The pocket approves only an exact USDC transfer out of itself, signed by the agent's key." },
+  privacy: { layer: "tools", title: "Nothing to leak", plain: "No tool returns the owner's key, main wallet, other pockets or the agent's instructions, and the wallet signs only eHKD payments it built." },
+  signature: { layer: "contract", title: "Signature check (ERC-1271)", plain: "The pocket approves only an exact eHKD transfer out of itself, signed by the agent's key." },
   owner: { layer: "contract", title: "Owner-only rules", plain: "Cap, sellers, ask-me limit and expiry change only in a transaction from the owner's key." },
   active: { layer: "contract", title: "Pocket active", plain: "A revoked, frozen or expired pocket pays no one." },
   seller: { layer: "contract", title: "Allowed seller", plain: "Money can only go to sellers on the pocket's list." },
   cap: { layer: "contract", title: "Per-payment cap", plain: "No single payment above the cap." },
   budget: { layer: "contract", title: "Pocket balance", plain: "The worst case is what is in the pocket; the main wallet is out of reach." },
   cosign: { layer: "contract", title: "Ask-me limit", plain: "Above the ask-me limit the owner's own signature on this exact transfer is required." },
-  paid: { layer: "seller", title: "Seller paid", plain: "USDC arrives at the seller, with a transaction hash." },
+  paid: { layer: "seller", title: "Seller paid", plain: "eHKD arrives at the seller, with a transaction hash." },
 };
 
 /** The payment path, in order. */
@@ -66,7 +66,7 @@ export function gateOf(code?: string): GateId {
   }
 }
 
-const usdOf = (v: unknown): string | undefined => {
+const hkdOf = (v: unknown): string | undefined => {
   if (v == null || v === "") return undefined;
   try {
     const n = BigInt(String(v));
@@ -122,19 +122,19 @@ export function attemptsFrom(events: Ev[], o: AttemptOptions = {}): Attempt[] {
     const id = String(e.id ?? `${e.type}:${e.at}:${e.tx ?? e.sellerId ?? e.tool ?? ""}`);
     const base = { id, at: e.at, pocket: e.pocket };
     if (e.type === "payment") {
-      const amount = usdOf(e.amount);
+      const amount = hkdOf(e.amount);
       out.push({
-        ...base, kind: "payment", sellerId: e.sellerId, amount, tx: e.tx, title: `${name(e.sellerId)} · US$${amount}`,
-        headline: e.cosigned ? `Paid ${name(e.sellerId)} US$${amount} with your co-signature.` : `Paid ${name(e.sellerId)} US$${amount}, inside every rule.`,
+        ...base, kind: "payment", sellerId: e.sellerId, amount, tx: e.tx, title: `${name(e.sellerId)} · HK$${amount}`,
+        headline: e.cosigned ? `Paid ${name(e.sellerId)} HK$${amount} with your co-signature.` : `Paid ${name(e.sellerId)} HK$${amount}, inside every rule.`,
         gates: walk(PAY_PATH, undefined, undefined, { cosign: e.cosigned ? { state: "pass", note: "Co-signed by the owner" } : { state: "skip", note: "Under the ask-me limit" } }),
         verdict: "paid", aiFooled: false,
       });
     } else if (e.type === "refusal") {
       const gate = gateOf(e.reason);
-      const amount = usdOf(e.amount);
+      const amount = hkdOf(e.amount);
       out.push({
-        ...base, kind: "refusal", sellerId: e.sellerId, amount, code: e.reason, stoppedAt: gate, title: `${name(e.sellerId)}${amount ? ` · US$${amount}` : ""}`,
-        headline: `${GATES[gate].title} stopped ${name(e.sellerId)}${amount ? ` US$${amount}` : ""}: ${(REASONS[e.reason] ?? e.reason ?? "refused").replace(/\.$/, "")}.`,
+        ...base, kind: "refusal", sellerId: e.sellerId, amount, code: e.reason, stoppedAt: gate, title: `${name(e.sellerId)}${amount ? ` · HK$${amount}` : ""}`,
+        headline: `${GATES[gate].title} stopped ${name(e.sellerId)}${amount ? ` HK$${amount}` : ""}: ${(REASONS[e.reason] ?? e.reason ?? "refused").replace(/\.$/, "")}.`,
         gates: walk(PAY_PATH, gate, e.reason), verdict: "blocked", aiFooled: false,
       });
     } else if (toolEv(e, "get_quote") && e.result?.ok && !e.result.free) {
@@ -150,8 +150,8 @@ export function attemptsFrom(events: Ev[], o: AttemptOptions = {}): Attempt[] {
       const gates = walk(PAY_PATH, gate, code);
       if (pocketCode && intentCode) Object.assign(gates.find((g) => g.id === "intent")!, { state: "stop", code: intentCode });
       out.push({
-        ...base, kind: "precheck", sellerId: r.sellerId, amount: r.price, code, stoppedAt: gate, title: `${name(r.sellerId)} · US$${r.price}`,
-        headline: `Checked before paying: ${name(r.sellerId)} US$${r.price} fails ${GATES[gate].title.toLowerCase()} (${code}). Nothing was signed.`,
+        ...base, kind: "precheck", sellerId: r.sellerId, amount: r.price, code, stoppedAt: gate, title: `${name(r.sellerId)} · HK$${r.price}`,
+        headline: `Checked before paying: ${name(r.sellerId)} HK$${r.price} fails ${GATES[gate].title.toLowerCase()} (${code}). Nothing was signed.`,
         gates, verdict: "blocked", aiFooled: false,
       });
     } else if (toolEv(e, "get_quote")) {
@@ -177,17 +177,17 @@ export function attemptsFrom(events: Ev[], o: AttemptOptions = {}): Attempt[] {
       const via = e.via === "agent";
       const code = e.reason ?? (e.reverted ? "REVERTED" : undefined);
       const gate = e.reverted ? (e.reason ? gateOf(code) : "signature") : undefined;
-      const amount = usdOf(e.amount);
+      const amount = hkdOf(e.amount);
       const kept = e.balanceBefore == null || e.balanceAfter == null || String(e.balanceBefore) === String(e.balanceAfter);
       out.push({
         ...base, kind: via ? "hijack" : "forced", attack: "induced", to: e.to, amount, tx: e.tx, code, stoppedAt: gate,
-        title: `${short(e.to)} · US$${amount}`,
+        title: `${short(e.to)} · HK$${amount}`,
         headline: !e.reverted ? "The transfer was NOT refused."
           : via ? `The AI was fooled. The pocket was not: the transfer reverted on-chain${kept ? " and no money moved" : ""}.`
           : `Assume the agent's key is stolen: its signed transfer reverted on-chain${kept ? " and no money moved" : ""}.`,
         gates: walk(PAY_PATH, gate, code, {
           agent: via ? { state: "fooled", note: "Believed the message and signed" } : { state: "skip", note: "Key used directly, no AI" },
-          intent: { state: "skip", note: "Bypassed: sent straight to USDC" },
+          intent: { state: "skip", note: "Bypassed: sent straight to eHKD" },
           ...(e.reverted ? {} : { paid: { state: "pass" } }),
         }),
         verdict: e.reverted ? "blocked" : "paid", aiFooled: via,
