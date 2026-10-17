@@ -9,7 +9,7 @@ import { EASE_OUT, useReduceMotion } from "./motion";
 import { SETTLE_MS, useSettled } from "./Reveal";
 
 /** Layout spring for neighbours that move when something is inserted or resized (the "smooth" token). */
-export const SHIFT = LinearTransition.springify().duration(motion.spring.smooth.duration).dampingRatio(motion.spring.smooth.dampingRatio);
+export const SHIFT = LinearTransition.duration(motion.base);
 
 export type RiseProps = {
   children?: React.ReactNode; style?: StyleProp<ViewStyle>;

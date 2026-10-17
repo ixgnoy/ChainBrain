@@ -330,7 +330,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Rules you signed").waitFor();
     await sleep(1200);
     const t = await body();
-    check("deal watcher: Claude runs it, checks every day, buys at the limit or less", /Claude/.test(t) && /Deal watcher/.test(t) && /buys at US\$0\.04 or less/.test(t));
+    check("deal watcher: Claude runs it, checks every day, buys at the limit or less", /Claude/.test(t) && /Deal watcher/.test(t) && /Daily 08:00/.test(t) && /Buys ≤ US\$0\.04/.test(t));
     check("its chart is the seller's real quotes, with the limit and the buys", (await page.getByLabel(/^Quoted prices: /).count()) === 1 && /Your limit/.test(t) && /\d+ bought/.test(t) && /\d+ quotes/.test(t));
     check("Will never: contract and ChainBrain, said apart", /Will never/i.test(t) && /CONTRACT/.test(t) && /CHAINBRAIN/.test(t));
     await shot("13-deal-watcher");

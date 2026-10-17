@@ -13,10 +13,9 @@ import { Screen } from "../../ui/Screen";
 import { BackHeader, BACK_HEADER_H } from "../../ui/BackHeader";
 import { Avatar, Button, Card, ListCard, ListRow, Press, SectionHeader, Toggle } from "../../ui/kit";
 import { RoundButton } from "../../ui/RollAction";
-import { WorstCase } from "../../components/WorstCase";
 import { Reveal as Rise } from "../../ui/Reveal";
 import { AnimatedList } from "../../ui/AnimatedList";
-import { Icon } from "../../ui/Icon";
+import { Icon, type IconName } from "../../ui/Icon";
 import { T } from "../../ui/Text";
 import { AgentAvatar } from "../../ui/AgentAvatar";
 import { SellerMark, hasSellerMark } from "../../ui/SellerMark";
@@ -44,25 +43,33 @@ import * as api from "../../lib/api";
 
 /** A rule chip: white pill with a muted label and a bold value; editable ones open the rule sheet. */
 /** A rule as VaultBank's category tile: a coloured dot, the figure big, what it means under it; a pencil when you can edit it. */
-function RuleTile({ dot, label, value, onPress, a11y }: { dot: string; label: string; value: string; onPress?: () => void; a11y: string }) {
+function RuleTile({ icon, label, value, onPress, a11y }: { icon: IconName; label: string; value: string; onPress?: () => void; a11y: string }) {
   const body = (
     <>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: dot }} />
-        {onPress ? <Icon name="edit" size={14} color={c.muted} stroke={1.8} /> : null}
+        <Icon name={icon} size={15} color={c.ink2} stroke={2} />
+        {onPress ? <Icon name="edit" size={13} color={c.muted} stroke={1.8} /> : null}
       </View>
-      <T v="head" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: 19, lineHeight: 24, marginTop: 6 }}>{value}</T>
-      <T v="cap" color="muted" numberOfLines={2}>{label}</T>
+      <T v="head" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: 18, lineHeight: 23, marginTop: 6 }}>{value}</T>
+      <T v="cap" color="muted" numberOfLines={1}>{label}</T>
     </>
   );
-  const style = { flex: 1, padding: 12, borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: c.card, borderWidth: 1, borderColor: c.tileStroke } as const;
+  const style = { flex: 1, padding: 12, borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: c.tile } as const;
   return onPress
     ? <Press haptics="select" scale={0.96} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y} style={style}>{body}</Press>
     : <View accessible accessibilityLabel={a11y} style={style}>{body}</View>;
 }
 
+/** "23:59" today, "17 Oct" this year, "Oct '27" later: fits a rule tile. */
+const shortEnd = (at: bigint | number) => {
+  const d = new Date(Number(at) * 1000), now = new Date();
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  if (d.getFullYear() === now.getFullYear()) return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return `${d.toLocaleDateString("en-GB", { month: "short" })} '${String(d.getFullYear() % 100).padStart(2, "0")}`;
+};
+
 /** History rows shown before "Show all": the newest first. */
-const HISTORY = 6;
+const HISTORY = 4;
 
 export default function PocketDetail() {
   const insets = useSafeAreaInsets();
@@ -102,6 +109,7 @@ export default function PocketDetail() {
   const routine = useMemo(() => (id ? api.routineOf(id) : null), [id, events.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const [runErr, setRunErr] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   if (!pocket) {
     return (
@@ -244,15 +252,57 @@ export default function PocketDetail() {
             {/* the pocket's own app: the blocks its spec names, every figure from the ledger */}
             <View style={{ marginTop: 16 }}><PocketApp ctx={ctx} /></View>
 
-            {/* the owner zone: fixed, never chosen by the AI */}
-            <SectionHeader title="Rules you signed" right="Your key" />
-            <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: PAGE_MARGIN }}>
-              <RuleTile dot={c.ink} label="Cap per payment" value={money(pocket.cap)} a11y={`Edit cap: Cap ${money(pocket.cap)}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "cap" }) : undefined} />
-              <RuleTile dot={c.vermillion} label="Asks you above" value={ask} a11y={`Edit ask-me limit: Ask above ${ask}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "ask" }) : undefined} />
-              <RuleTile dot={c.blue} label={expired ? "Ended" : pocket.frozen ? "Frozen by the Sentinel" : "Ends"} value={untilText(pocket.expiresAt).replace(/^until /, "")} a11y={pocket.frozen ? "Frozen by the Sentinel" : untilText(pocket.expiresAt)} />
-            </View>
-            <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 12 }}>
-              <WorstCase pocket={pocket} sellers={sellerNames} off={off} />
+            {/* the owner zone: fixed, never chosen by the AI. One card: the rules as tiles (tap to edit), who it may pay as
+                marks, the worst case as one figure; open it for the seller switches */}
+            <Card pad={16} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 24, gap: 12 }}>
+              <Press kind="row" haptics="select" onPress={() => setRulesOpen((o) => !o)} accessibilityRole="button" accessibilityState={{ expanded: rulesOpen }} accessibilityLabel={`Rules you signed. ${rulesOpen ? "Hide" : "Show"} sellers`}
+                style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 }}>
+                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}><Icon name="key" size={16} color={c.white} stroke={2} /></View>
+                <T v="head" style={{ flex: 1 }}>Rules you signed</T>
+                <Icon name={rulesOpen ? "chevronUp" : "chevronDown"} size={18} color={c.muted} stroke={2} />
+              </Press>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <RuleTile icon="gauge" label="Per payment" value={money(pocket.cap)} a11y={`Edit cap: Cap ${money(pocket.cap)}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "cap" }) : undefined} />
+                <RuleTile icon="bell" label="Asks above" value={ask} a11y={`Edit ask-me limit: Ask above ${ask}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "ask" }) : undefined} />
+                <RuleTile icon="clock" label={expired ? "Ended" : pocket.frozen ? "Frozen" : "Ends"} value={shortEnd(pocket.expiresAt)} a11y={pocket.frozen ? "Frozen by the Sentinel" : untilText(pocket.expiresAt)} />
+              </View>
+              <Press kind="row" haptics="select" onPress={() => setRulesOpen((o) => !o)} accessibilityRole="button" accessibilityLabel={`Allowed sellers: ${sellerNames.join(", ")}. Anyone else is refused`}
+                style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 }}>
+                <View style={{ flexDirection: "row" }}>
+                  {pocket.allowed.slice(0, 4).map((id, i) => <View key={id} style={{ marginLeft: i ? -8 : 0, borderRadius: 10, borderWidth: 2, borderColor: c.card }}>{hasSellerMark(id) ? <SellerMark id={id} size={28} radius={8} /> : <Avatar label={cleanText(sellerName(id), 2)} size={28} tone="soft" />}</View>)}
+                </View>
+                <T v="sub" w="semi" style={{ flex: 1 }}>Allowed sellers</T>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 26, paddingHorizontal: 9, borderRadius: 13, backgroundColor: c.vermillionSoft }}>
+                  <Icon name="ban" size={12} color={c.vermillionInk} stroke={2.4} />
+                  <T v="cap" w="semi" style={{ color: c.vermillionInk }}>Others</T>
+                </View>
+              </Press>
+              {/* the worst case, as one figure against nothing from the main wallet */}
+              <View accessible accessibilityLabel={`Worst case ${money(off ? 0n : pocket.balance)} if the agent is fooled. Main wallet exposure US$0.00`} style={{ flexDirection: "row", gap: 8 }}>
+                <View style={{ flex: 1, borderRadius: radius.tile, backgroundColor: c.vermillionSoft, padding: 12, gap: 2 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Icon name="shieldCheck" size={14} color={c.vermillionInk} stroke={2.2} /><T v="cap" w="semi" style={{ color: c.vermillionInk }}>Worst case</T></View>
+                  <T v="head" style={{ color: c.vermillionInk, fontVariant: ["tabular-nums"] }}>{money(off ? 0n : pocket.balance)}</T>
+                </View>
+                <View style={{ flex: 1, borderRadius: radius.tile, backgroundColor: c.tile, padding: 12, gap: 2 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Icon name="vault" size={14} color={c.ink2} stroke={2.2} /><T v="cap" w="semi" color="ink2">Main wallet</T></View>
+                  <T v="head" style={{ fontVariant: ["tabular-nums"] }}>US$0.00</T>
+                </View>
+              </View>
+              {rulesOpen ? (
+                <View style={{ gap: 2, marginTop: 4 }}>
+                  {(cfg?.sellers ?? []).map((s) => {
+                    const on = pocket.allowed.includes(s.id);
+                    return (
+                      <View key={s.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52 }}>
+                        <View style={{ opacity: on ? 1 : 0.45 }}>{hasSellerMark(s.id) ? <SellerMark id={s.id} size={36} radius={10} /> : <Avatar label={s.name} tone={on ? "soft" : "fill"} size={36} />}</View>
+                        <T v="row" style={{ flex: 1, color: on ? c.ink : c.muted }} numberOfLines={1}>{cleanText(s.name, 40)}</T>
+                        <Toggle on={on} disabled={!owned || !!busy || off} onChange={() => void toggle(s.name, on, s.payTo)} a11y={`Allow ${s.name}`} />
+                      </View>
+                    );
+                  })}
+                  {busy ? <T v="cap" color="muted">{`${busy}…`}</T> : null}
+                </View>
+              ) : null}
             </Card>
           </>
         ) : (
@@ -260,19 +310,6 @@ export default function PocketDetail() {
             <AuditTrail rows={mine} name={(s) => cleanText(sellerName(s), 24)} onExport={exportLog} />
           </Rise>
         )}
-
-        <SectionHeader title="Allowed sellers" right={`${pocket.allowed.length} of ${(cfg?.sellers ?? []).length}`} />
-        <ListCard>
-          {(cfg?.sellers ?? []).map((s) => {
-            const on = pocket.allowed.includes(s.id);
-            return (
-              <ListRow key={s.id} avatar={hasSellerMark(s.id) ? <View style={{ opacity: on ? 1 : 0.45 }}><SellerMark id={s.id} size={44} radius={12} /></View> : <Avatar label={s.name} tone={on ? "soft" : "fill"} size={44} />} title={cleanText(s.name, 40)} sub={on ? cleanText(s.category, 30) : "Not on this pocket's list"}>
-                <Toggle on={on} disabled={!owned || !!busy || off} onChange={() => void toggle(s.name, on, s.payTo)} a11y={`Allow ${s.name}`} />
-              </ListRow>
-            );
-          })}
-        </ListCard>
-        <T v="cap" color="mutedOnCanvas" style={{ paddingHorizontal: 20, paddingTop: 8 }}>{busy ? `${busy}: waiting for the chain…` : editable ? "Changing a seller or a rule is signed by your key on this phone." : " "}</T>
 
         <SectionHeader title="History" />
         {rows.length === 0 ? <Card style={{ marginHorizontal: PAGE_MARGIN }}><T v="sub" color="ink2">Nothing from this pocket yet. Creating, adding money, payments and refusals show up here, each with its transaction.</T></Card>

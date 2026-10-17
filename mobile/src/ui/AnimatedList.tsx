@@ -17,8 +17,8 @@ export function AnimatedList({ children, initial = "none", style }: { children: 
   const fresh = kids.filter((k) => !seen.has(String(k.key))).length;
   const first = known.current === null || fresh > 3;
   useEffect(() => { known.current = new Set(kids.map((k) => String(k.key))); });
-  const rise = (delay: number) => (reduce ? FadeIn.duration(180) : FadeInDown.delay(delay).springify(motion.spring.smooth.duration).dampingRatio(motion.spring.smooth.dampingRatio).withInitialValues({ opacity: 0, transform: [{ translateY: 10 }] }));
-  const layout = reduce ? undefined : LinearTransition.springify(motion.spring.smooth.duration).dampingRatio(1);
+  const rise = (delay: number) => (reduce ? FadeIn.duration(180) : FadeInDown.delay(delay).duration(motion.base));
+  const layout = reduce ? undefined : LinearTransition.duration(motion.base);
   return (
     <Animated.View layout={layout} style={[{ marginHorizontal: 20, backgroundColor: c.card, borderRadius: radius.card, overflow: "hidden" }, style]}>
       {kids.map((k, i) => {

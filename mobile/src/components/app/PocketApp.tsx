@@ -9,7 +9,7 @@ import { c, motion, radius } from "../../tokens";
 import { Button, Card, Press } from "../../ui/kit";
 import { T } from "../../ui/Text";
 import { Money } from "../../ui/Money";
-import { Icon } from "../../ui/Icon";
+import { Icon, type IconName } from "../../ui/Icon";
 import { Hatch, HatchBar } from "../../ui/Hatch";
 import { AgentAvatar } from "../../ui/AgentAvatar";
 import { SellerMark, hasSellerMark } from "../../ui/SellerMark";
@@ -132,21 +132,36 @@ export function AppHeader({ ctx, onOpen }: { ctx: AppCtx; /** opens the agent's 
       ? `Checks ${cadenceText(rs.cadence).replace(/^Every /, "every ").toLowerCase()} · buys at US$${rs.limitPrice} or less`
       : `${cadenceText(rs.cadence)} · on its own inside US$${rs.allowance.amount} a ${rs.allowance.period}`
     : spec.layout === "haggle" ? "Negotiates first, pays only what you allow" : "Buys when you ask, inside the pocket's rules";
+  const hm2 = (cd: { hour: number; minute: number }) => `${String(cd.hour).padStart(2, "0")}:${String(cd.minute).padStart(2, "0")}`;
+  const when = rs ? (rs.cadence.every === "day" ? "Daily" : rs.cadence.every === "weekday" ? "Weekdays" : rs.cadence.every === "week" ? ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][rs.cadence.weekday ?? 1] : `${rs.cadence.dayOfMonth ?? 1}${(rs.cadence.dayOfMonth ?? 1) === 1 ? "st" : "th"}`) + ` ${hm2(rs.cadence)}` : null;
+  // the header's facts as chips: when it runs, the price it buys at, what it may spend on its own
+  const chips: [IconName, string][] = rs
+    ? [["clock", when!], ...(rs.kind === "price-watch" ? [["target", `Buys ≤ US$${rs.limitPrice}`] as [IconName, string]] : []), ["gauge", `US$${rs.allowance.amount}/${rs.allowance.period === "week" ? "wk" : rs.allowance.period === "month" ? "mo" : "day"}`]]
+    : spec.layout === "haggle" ? [["target", "Negotiates first"]] : [["bolt", "When you ask"]];
   const Box = (onOpen ? Press : View) as React.ComponentType<any>;
   return (
     <Box {...(onOpen ? { kind: "row", haptics: "light", onPress: onOpen, accessibilityRole: "button" } : { accessible: true })} accessibilityLabel={`${who} runs this ${LAYOUT_NAME[spec.layout].toLowerCase()}. ${line}.${state ? ` ${state}.` : ""}`}
       style={{ marginHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 4, minHeight: 48 }}>
-      <AgentAvatar kind={ctx.agentId ?? "chainbrain"} size={40} />
-      <View style={{ flex: 1, gap: 1 }}>
-        <T v="head" numberOfLines={1}>{who}</T>
-        <T v="cap" color="mutedOnCanvas" numberOfLines={3}>{`${LAYOUT_NAME[spec.layout]} · ${line}`}</T>
-      </View>
-      {state ? (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: c.card }}>
-          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: state === "Paused" ? c.faint : state === "Running" ? c.vermillion : c.green }} />
-          <T v="cap" w="semi">{state}</T>
+      <View style={{ flex: 1, gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <AgentAvatar kind={ctx.agentId ?? "chainbrain"} size={32} />
+          <T v="head" numberOfLines={1} style={{ flex: 1 }}>{`${who} · ${LAYOUT_NAME[spec.layout]}`}</T>
+          {state ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: c.card }}>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: state === "Paused" ? c.faint : state === "Running" ? c.vermillion : c.green }} />
+              <T v="cap" w="semi">{state}</T>
+            </View>
+          ) : null}
         </View>
-      ) : null}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+          {chips.map(([ic, t]) => (
+            <View key={t} style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 26, paddingHorizontal: 9, borderRadius: 13, backgroundColor: c.card }}>
+              <Icon name={ic} size={12} color={c.ink2} stroke={2.2} />
+              <T v="cap" w="semi" numberOfLines={1}>{t}</T>
+            </View>
+          ))}
+        </View>
+      </View>
       {onOpen ? <Icon name="chevronRight" size={18} color={c.mutedOnCanvas} /> : null}
     </Box>
   );
@@ -362,11 +377,7 @@ function Budget({ ctx }: { ctx: AppCtx }) {
           </>
         ) : null}
       </View>
-      <T v="cap" color="muted">
-        {over ? `US$${usd(spent - limit)} over, co-signed by you on its cheque. Until it resets, every payment asks you first.`
-          : b.kind === "period" || preview ? `Above US$${usd(limit)} a ${period}, ${agentName(ctx.agentId)} stops and sends you a cheque to sign. Checked before every payment of every run.`
-            : `The contract holds the pocket to its balance: the most it can ever spend.`}
-      </T>
+      {over ? <T v="cap" color="vermillionInk">{`US$${usd(spent - limit)} over, co-signed by you on its cheque`}</T> : null}
     </BlockCard>
   );
 }
@@ -403,7 +414,6 @@ function NextRun({ ctx }: { ctx: AppCtx }) {
           </View>
         ))}
       </View>
-      <T v="cap" color="muted">{cadenceText(rs.cadence)}{rs.kind === "price-watch" ? ` · buys at US$${rs.limitPrice} or less` : ""}</T>
       {ctx.running ? <WorkingLine on label={`Run ${ctx.running.run} is running…`} /> : null}
       {!ctx.preview && rt && ctx.onRunNow ? (
         <View style={{ gap: 4 }}>
@@ -633,25 +643,26 @@ function Savings({ ctx }: { ctx: AppCtx }) {
 function Guard({ ctx }: { ctx: AppCtx }) {
   const rs = ctx.spec.routine!;
   const names = ctx.rules.sellers.map((id) => ctx.sellerName(id));
-  const rows: [string, "Contract" | "ChainBrain"][] = [
-    [`Pay anyone but ${names.join(", ") || "its sellers"}`, "Contract"],
-    [`Pay more than US$${usd(ctx.rules.cap)} at once`, "Contract"],
-    [`Spend past US$${rs.allowance.amount} a ${rs.allowance.period} without your cheque`, "ChainBrain"],
-    ["Change its own schedule, sellers or limits, whatever a seller says", "ChainBrain"],
-    ["Pay anything after you revoke the pocket", "Contract"],
+  const rows: [IconName, string, "Contract" | "ChainBrain"][] = [
+    ["ban", "Pay anyone else", "Contract"],
+    ["gauge", `Pay over US$${usd(ctx.rules.cap)} at once`, "Contract"],
+    ["bell", `Exceed US$${rs.allowance.amount}/${rs.allowance.period === "week" ? "wk" : rs.allowance.period === "month" ? "mo" : "day"} alone`, "ChainBrain"],
+    ["shield", "Take orders from a seller", "ChainBrain"],
+    ["lock", "Pay after you revoke", "Contract"],
   ];
   return (
     <BlockCard label="Will never">
-      {rows.map(([t, by], i) => (
-        <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Icon name="ban" size={17} color={c.vermillionInk} stroke={2} />
-          <T v="sub" style={{ flex: 1 }}>{t}</T>
-          <View style={{ paddingHorizontal: 7, height: 20, borderRadius: 5, justifyContent: "center", backgroundColor: by === "Contract" ? c.ink : c.blueSoft }}>
+      {/* each line says who enforces it: the contract on-chain (ink), or the routine's fixed fields (blue) */}
+      {rows.map(([ic, t, by], i) => (
+        <View key={i} accessible accessibilityLabel={`Will never ${t}. Enforced by ${by === "Contract" ? "the pocket contract, on-chain" : "ChainBrain, before every payment"}`} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: c.vermillionSoft, alignItems: "center", justifyContent: "center" }}><Icon name={ic} size={14} color={c.vermillionInk} stroke={2.2} /></View>
+          <T v="sub" w="medium" style={{ flex: 1 }} numberOfLines={1}>{t}</T>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 7, height: 22, borderRadius: 6, backgroundColor: by === "Contract" ? c.ink : c.blueSoft }}>
+            <Icon name={by === "Contract" ? "lock" : "brain"} size={11} color={by === "Contract" ? c.white : c.blueInk} stroke={2.4} />
             <T v="tab" w="bold" style={{ color: by === "Contract" ? c.white : c.blueInk, letterSpacing: 0.4 }}>{by.toUpperCase()}</T>
           </View>
         </View>
       ))}
-      <T v="cap" color="muted">Contract: Pocket.sol refuses it on-chain. ChainBrain: the routine's fixed fields, checked before every payment.</T>
     </BlockCard>
   );
 }
