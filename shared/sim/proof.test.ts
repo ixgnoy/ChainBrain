@@ -208,7 +208,7 @@ test("scenes 9 and 10 from the Judges tab: Radar blocks TradeWire and the agent 
   assert.match(f.sentinelFrozen!.detail, /froze the pocket on-chain .*POCKET_FROZEN/);
   assert.equal(w.txs().find((t) => t.hash === f.sentinelFrozen!.txs[0])?.label, "Frozen by the Sentinel");
   const rows = evidenceRows(f, w.txs());
-  assert.deepEqual(rows.map((r) => r.scene), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "A"]);
+  assert.deepEqual(rows.map((r) => r.scene), ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "A"]);
   assert.deepEqual(rows.filter((r) => r.status === "pass").map((r) => r.scene).filter((s) => s === "9" || s === "10"), ["9", "10"]);
   const security = scorecard(f).find((g) => g.id === "security")!.items;
   assert.ok(security.find((i) => i.id === "radarBlocked")!.done && security.find((i) => i.id === "sentinelFrozen")!.done);
