@@ -501,10 +501,10 @@ function WhatNext({ ctx, rs }: { ctx: AppCtx; rs: NonNullable<PocketAppSpec["rou
     { key: "buys", title: `${who} ${watch ? "checks" : "buys"} ${rs.items.length === 1 ? short(ctx.itemName(rs.items[0].sellerId, rs.items[0].sku)) : `${rs.items.length} items`}`, sub: sellers.map((s) => ctx.sellerName(s)).join(" · "),
       lead: <View style={{ flexDirection: "row" }}>{sellers.slice(0, 3).map((s, k) => <View key={s} style={{ marginLeft: k ? -8 : 0, borderRadius: 9, borderWidth: 2, borderColor: c.card }}><Mark id={s} size={24} /></View>)}</View> },
     watch
-      ? { key: "pays", title: `Buys only at US$${rs.limitPrice} or less`, sub: "Above that, it only logs the price" }
-      : { key: "pays", title: `Pays US$${total.toFixed(3).replace(/0$/, "")}`, sub: "The sellers' listed prices" },
-    { key: "lands", title: lands, sub: "Each with its receipt and transaction" },
-    { key: "asks", title: `Past US$${rs.allowance.amount} a ${rs.allowance.period}, ${who} asks you`, sub: "Your Face ID co-signs, or it doesn't pay" },
+      ? { key: "pays", title: `Buys only at US$${rs.limitPrice} or less`, sub: "" }
+      : { key: "pays", title: `Pays US$${total.toFixed(3).replace(/0$/, "")}`, sub: "" },
+    { key: "lands", title: lands, sub: "" },
+    { key: "asks", title: `Past US$${rs.allowance.amount} a ${rs.allowance.period}, ${who} asks you`, sub: "" },
   ];
   return (
     <View accessibilityRole="list" accessibilityLabel="What happens next">
@@ -520,7 +520,7 @@ function WhatNext({ ctx, rs }: { ctx: AppCtx; rs: NonNullable<PocketAppSpec["rou
           <View style={{ flex: 1, paddingBottom: i < steps.length - 1 ? 14 : 0, flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
             <View style={{ flex: 1, gap: 1 }}>
               <T v="row" w={i === 0 ? "bold" : undefined}>{s.title}</T>
-              <T v="cap" color="muted">{s.sub}</T>
+              {s.sub ? <T v="cap" color="muted">{s.sub}</T> : null}
             </View>
             {s.lead}
           </View>
@@ -689,7 +689,8 @@ function BlockView({ block, ctx }: { block: Block; ctx: AppCtx }) {
 }
 
 export function PocketApp({ ctx, assemble = "page" }: { ctx: AppCtx; assemble?: "build" | "page" | "none" }) {
-  const blocks = useMemo(() => ctx.spec.blocks, [ctx.spec]);
+  // a preview (New pocket app) leaves out what its proof card and "What happens next" already say: the sellers and the next run
+  const blocks = useMemo(() => (ctx.preview ? ctx.spec.blocks.filter((b) => b.type !== "sources" && b.type !== "next-run") : ctx.spec.blocks), [ctx.spec, ctx.preview]);
   // the payoff: a payment that settles while the app is open gets one success tap (the shelf, the meter and the run row
   // show it; the tap says it happened even when the change is below the fold)
   const paid = ctx.address && !ctx.preview ? purchasesOf(ctx.events, ctx.address).length : 0;

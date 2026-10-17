@@ -233,7 +233,7 @@ export default function Compose() {
             <PocketApp ctx={ctx} assemble="build" />
             <Stage i={spec.blocks.length + 3}>
               <T v="cap" color="mutedOnCanvas" style={{ paddingHorizontal: 20, textAlign: "center" }}>
-                {`${res.specBy === "claude" ? "Composed by Claude" : "Composed by ChainBrain's fixed picker"} from ${BLOCK_TYPES.length} fixed blocks. The AI picks blocks, never writes the screen; every figure on it comes from the pocket's own payments.`}
+                {`${res.specBy === "claude" ? "Picked by Claude" : "Picked by ChainBrain"} from ${BLOCK_TYPES.length} fixed blocks · every figure from payments`}
               </T>
             </Stage>
 
@@ -268,7 +268,7 @@ export default function Compose() {
                   <>
                     <SlideToConfirm label={`Slide to create · US$${draft?.budget ?? ""}`} doneLabel="Created" auto="compose.create" disabled={!draft?.sellers.length || short || !wallet} onConfirm={create} />
                     <T v="cap" color="mutedOnCanvas" style={{ textAlign: "center" }}>
-                      {short ? "Not enough in your main wallet for this budget." : !draft?.sellers.length ? "Name at least one seller in the sentence." : `Then ${signer ?? "your key"} signs two transactions: create the pocket${outside ? ` with ${agent.name}'s key` : ""}, and move US$${draft?.budget} into it.`}
+                      {short ? "Not enough in your main wallet for this budget." : !draft?.sellers.length ? "Name at least one seller in the sentence." : `${signer ?? "Your key"} signs 2 transactions: create, then fund US$${draft?.budget}`}
                     </T>
                   </>
                 )}
