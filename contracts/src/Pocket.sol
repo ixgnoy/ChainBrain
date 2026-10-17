@@ -9,8 +9,8 @@ interface IDomain {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
-/// A pocket: an isolated USDC balance that approves x402 (EIP-3009) transfers only inside the owner's rules.
-/// It never sends transactions itself; USDC v2.2 asks it "is this signature valid?" at settlement.
+/// A pocket: an isolated Mock e-HKD balance that approves x402 (EIP-3009) transfers only inside the owner's rules.
+/// It never sends transactions itself; the token asks it "is this signature valid?" at settlement (ERC-1271).
 /// ponytail: budget is the balance itself (isValidSignature is view, so a spend counter is impossible); fund = set budget.
 contract Pocket {
     bytes4 internal constant MAGIC = 0x1626ba7e;
@@ -19,7 +19,7 @@ contract Pocket {
         "TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
     );
 
-    address public immutable usdc;
+    address public immutable token;
     address public immutable owner;
     address public immutable agent;
     /// ChainBrain's Sentinel key. It can only freeze (stop all payments); only the owner can unfreeze. address(0) = none.
@@ -43,9 +43,9 @@ contract Pocket {
     }
 
     constructor(
-        address usdc_, address owner_, address agent_, address guardian_, uint256 cap, uint256 askAbove_, uint64 expiresAt_, address[] memory sellers
+        address token_, address owner_, address agent_, address guardian_, uint256 cap, uint256 askAbove_, uint64 expiresAt_, address[] memory sellers
     ) {
-        usdc = usdc_;
+        token = token_;
         owner = owner_;
         agent = agent_;
         guardian = guardian_;
@@ -62,7 +62,7 @@ contract Pocket {
         if (Clock.nowSec() >= expiresAt) return "POCKET_EXPIRED";
         if (!sellerAllowed[to]) return "SELLER_NOT_ALLOWED";
         if (value > perPaymentCap) return "OVER_CAP";
-        if (value > IERC20(usdc).balanceOf(address(this))) return "OVER_BUDGET";
+        if (value > IERC20(token).balanceOf(address(this))) return "OVER_BUDGET";
         return "OK";
     }
 
@@ -71,13 +71,13 @@ contract Pocket {
     }
 
     /// Signature = abi.encode(to, value, validAfter, validBefore, nonce, agentSig, ownerSig).
-    /// The pocket rebuilds the USDC digest from those fields, so it only ever approves an in-rule USDC transfer
+    /// The pocket rebuilds the token's digest from those fields, so it only ever approves an in-rule token transfer
     /// out of itself: permits, Permit2 and any other message hash fail the first check.
     function isValidSignature(bytes32 hash, bytes calldata signature) external view returns (bytes4) {
         (address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce, bytes memory agentSig, bytes memory ownerSig) =
             abi.decode(signature, (address, uint256, uint256, uint256, bytes32, bytes, bytes));
         bytes32 digest = keccak256(abi.encodePacked(
-            "\x19\x01", IDomain(usdc).DOMAIN_SEPARATOR(),
+            "\x19\x01", IDomain(token).DOMAIN_SEPARATOR(),
             keccak256(abi.encode(TRANSFER_TYPEHASH, address(this), to, value, validAfter, validBefore, nonce))
         ));
         if (digest != hash) return INVALID;
@@ -113,7 +113,7 @@ contract Pocket {
     }
 
     function returnFunds() external onlyOwner {
-        require(IERC20(usdc).transfer(owner, IERC20(usdc).balanceOf(address(this))), "TRANSFER_FAILED");
+        require(IERC20(token).transfer(owner, IERC20(token).balanceOf(address(this))), "TRANSFER_FAILED");
     }
 
     function setSeller(address seller, bool ok) external onlyOwner {

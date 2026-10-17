@@ -10,7 +10,7 @@ import {Clock} from "./Clock.sol";
 
 /// MOCK e-HKD for the ChainBrain demo on a local FISCO BCOS chain. Not the HKMA e-HKD, not money.
 /// A plain ERC-20 (6 decimals) plus EIP-3009 transferWithAuthorization, including the bytes-signature overload
-/// that USDC v2.2 added: for a contract payer it asks the payer (ERC-1271), so pockets work exactly as on Base.
+/// (from EIP-3009 as extended for smart-contract payers): for a contract payer it asks the payer (ERC-1271), which is how a pocket approves its payments.
 contract MockEHKD is ERC20, EIP712, Ownable {
     bytes32 public constant TRANSFER_WITH_AUTHORIZATION_TYPEHASH = keccak256(
         "TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
