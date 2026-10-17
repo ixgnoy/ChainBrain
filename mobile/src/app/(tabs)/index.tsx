@@ -17,7 +17,8 @@ import { Reveal as Rise, PopIn } from "../../ui/Reveal";
 import { useReduceMotion } from "../../ui/motion";
 import { useLargeText } from "../../ui/fontScale";
 import { T } from "../../ui/Text";
-import { Icon } from "../../ui/Icon";
+import { Icon, type IconName } from "../../ui/Icon";
+import type { TargetName } from "../../lib/autoplayTargets";
 import { PocketWallet, stripFor } from "../../components/PocketWallet";
 import { NextUp, nextRuns } from "../../components/NextUp";
 import { pageCardWidth, PAGE_MARGIN } from "../../components/CardFlight";
@@ -25,7 +26,7 @@ import { cardHeight, faceOf, toneFor } from "../../components/PocketFace";
 import type { Pocket } from "../../store";
 import * as api from "../../lib/api";
 import { glyphKey, glyphOf, weekDigest, type Glyph } from "../../../../shared/sim/pocketAppData";
-import { WeekDigest } from "../../components/WeekDigest";
+import { WeekBought } from "../../components/WeekDigest";
 import { SpendChart } from "../../components/SpendChart";
 import { useIntroDone } from "../../ui/intro";
 import { ActivityRow } from "../../components/ActivityRow";
@@ -105,6 +106,19 @@ const Allocation = React.memo(function Allocation({ pockets, all, total }: { poc
     </View>
   );
 });
+
+/** One quick action: a round button with a short word under it (the row replaces three big tiles). */
+function QuickAction({ icon, label, onPress, tone = "white", a11y, auto }: { icon: IconName; label: string; onPress: () => void; tone?: "white" | "ink" | "blue"; a11y?: string; auto?: TargetName }) {
+  const bg = { white: c.card, ink: c.ink, blue: c.blue }[tone];
+  return (
+    <Press kind="round" haptics="medium" auto={auto} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label} style={{ alignItems: "center", gap: 6, minWidth: 84, paddingVertical: 4 }}>
+      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: bg, alignItems: "center", justifyContent: "center", borderWidth: tone === "white" ? 1 : 0, borderColor: c.tileStroke }}>
+        <Icon name={icon} size={22} color={tone === "ink" ? c.white : c.ink} stroke={2} />
+      </View>
+      <T v="cap" w="semi" numberOfLines={1}>{label}</T>
+    </Press>
+  );
+}
 
 /** No pockets yet: a calm, intentional empty state. */
 function EmptyPockets() {
@@ -248,12 +262,12 @@ function Home({ ready }: { ready: boolean }) {
           (taller than the placeholder) arrives */}
       {loading ? null : <>
       <Rise play={play} index={1}>
-        <View style={{ flexDirection: "row", gap: 10, marginHorizontal: 16, marginTop: 4 }}>
-          <Tile icon="arrowIn" label="Move money" a11y="Move money from your main wallet to a pocket" onPress={() => setAction({ mode: "fund" })} />
-          <Tile icon="squarePlus" label="New pocket" auto="home.newPocket" onPress={() => router.push("/compose")} />
+        <View style={{ flexDirection: "row", justifyContent: "space-around", marginHorizontal: 16, marginTop: 4 }}>
+          <QuickAction icon="arrowIn" label="Move money" a11y="Move money from your main wallet to a pocket" onPress={() => setAction({ mode: "fund" })} />
+          <QuickAction icon="plus" label="New pocket" auto="home.newPocket" tone="ink" onPress={() => router.push("/compose")} />
           {canConnect
-            ? <Tile icon="link" label="Connect" tone="blue" a11y="Connect an agent" auto="home.connect" onPress={() => router.push("/connect")} />
-            : <Tile icon="chat" label="Ask agent" tone="blue" onPress={() => router.navigate("/agent")} />}
+            ? <QuickAction icon="link" label="Connect" tone="blue" a11y="Connect an agent" auto="home.connect" onPress={() => router.push("/connect")} />
+            : <QuickAction icon="chat" label="Ask agent" tone="blue" onPress={() => router.navigate("/agent")} />}
         </View>
       </Rise>
 
@@ -269,21 +283,10 @@ function Home({ ready }: { ready: boolean }) {
         </Rise>
       ) : null}
 
-      <Rise play={play} index={3} style={{ marginTop: 20 }}>
-        <WeekDigest d={digest} itemName={itemName} sellerName={sellerLabel} />
-      </Rise>
-
-      <Rise play={play} index={3} style={{ marginTop: 12 }}>
-        <SpendChart ledger={ledger} agentOf={spendAgent} play={ready} />
-      </Rise>
-
-      <Rise play={play} index={4}>
-        <SectionHeader title="Recent activity" action={ledger.length ? "View all" : undefined} onAction={() => router.navigate("/activity")} />
-        {recent.length === 0 ? (
-          <Card style={{ marginHorizontal: 16 }}><T v="sub" color="ink2">Nothing yet. Ask your agent to buy something and it shows up here.</T></Card>
-        ) : (
-          <ListCard>{recent.map((r) => <ActivityRow key={r.key} row={r} showPocket onPress={() => setReceipt(r)} />)}</ListCard>
-        )}
+      <Rise play={play} index={3} style={{ marginTop: 24 }}>
+        {/* one "This week": the curve says when, the covers say what, three icons say how it went */}
+        <SpendChart ledger={ledger} agentOf={spendAgent} play={ready} title="This week" fixed
+          footer={<WeekBought d={digest} itemName={itemName} sellerName={sellerLabel} />} />
       </Rise>
       </>}
     </Screen>

@@ -16,6 +16,54 @@ import { money, usd } from "../lib/util";
 import type { Digest } from "../../../shared/sim/pocketAppData";
 
 
+/** Inside Home's "This week" card, under the curve: the covers, then three counts as icons and numbers. */
+export const WeekBought = React.memo(function WeekBought({ d, itemName, sellerName }: { d: Digest; itemName(sellerId: string, sku: string): string; sellerName(id: string): string }) {
+  if (!d.bought && !d.stopped) return null;
+  const shown = d.items.slice(0, 6);
+  return (
+    <View style={{ gap: 14, marginTop: 14 }} accessible accessibilityLabel={`This week your agents bought ${d.bought} things. ${d.cosigned} co-signed by you. ${d.stopped} stopped`}>
+      {shown.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} directionalLockEnabled style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+          {shown.map((x, i) => <Cover key={`${x.sellerId}/${x.sku}`} x={x} first={i === 0} itemName={itemName} sellerName={sellerName} />)}
+        </ScrollView>
+      ) : null}
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <Stat icon="receipt" n={d.bought} label="bought" tone="ink" />
+        <Stat icon="faceId" n={d.cosigned} label="co-signed" tone="blue" />
+        <Stat icon="shieldCheck" n={d.stopped} label="stopped" tone="vermillion" />
+      </View>
+    </View>
+  );
+});
+function Cover({ x, first, itemName, sellerName }: { x: Digest["items"][number]; first: boolean; itemName(sellerId: string, sku: string): string; sellerName(id: string): string }) {
+  return (
+    <View style={{ width: 104, borderRadius: radius.tile, backgroundColor: first ? c.ink : c.tile, overflow: "hidden" }}>
+      <View style={{ height: 48, padding: 9, justifyContent: "flex-end", overflow: "hidden" }}>
+        <Hatch color={first ? "#FFFFFF" : c.line} pitch={7} stroke={1.3} opacity={first ? 0.16 : 0.9} />
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          {hasSellerMark(x.sellerId) ? <SellerMark id={x.sellerId} size={26} radius={7} /> : <View style={{ width: 26, height: 26, borderRadius: 7, backgroundColor: c.fill, alignItems: "center", justifyContent: "center" }}><T v="cap" w="bold">{cleanText(sellerName(x.sellerId), 1)}</T></View>}
+          {x.count > 1 ? <View style={{ minWidth: 26, height: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: first ? c.vermillion : c.ink, alignItems: "center", justifyContent: "center" }}><T v="cap" w="bold" style={{ color: c.white, fontSize: 11 }}>{`×${x.count}`}</T></View> : null}
+        </View>
+      </View>
+      <T v="cap" w="semi" numberOfLines={2} style={{ color: first ? c.white : c.ink, paddingHorizontal: 9, paddingTop: 6, paddingBottom: 9, minHeight: 44 }}>{cleanText(itemName(x.sellerId, x.sku), 40)}</T>
+    </View>
+  );
+}
+/** A count as a number and an icon, its word small under it. */
+function Stat({ icon, n, label, tone }: { icon: IconName; n: number; label: string; tone: "ink" | "blue" | "vermillion" }) {
+  const bg = { ink: c.fill, blue: c.blueSoft, vermillion: c.vermillionSoft }[tone];
+  const fg = { ink: c.ink, blue: c.blueInk, vermillion: c.vermillionInk }[tone];
+  return (
+    <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 10, paddingHorizontal: 12, borderRadius: radius.tile, backgroundColor: bg }}>
+      <Icon name={icon} size={16} color={fg} stroke={2} />
+      <View style={{ flexShrink: 1 }}>
+        <T v="head" style={{ color: fg, fontVariant: ["tabular-nums"], lineHeight: 20 }}>{String(n)}</T>
+        <T v="tab" numberOfLines={1} style={{ color: fg }}>{label}</T>
+      </View>
+    </View>
+  );
+}
+
 export const WeekDigest = React.memo(function WeekDigest({ d, itemName, sellerName }: { d: Digest; itemName(sellerId: string, sku: string): string; sellerName(id: string): string }) {
   const big = useLargeText();
   if (!d.bought && !d.stopped) return null;

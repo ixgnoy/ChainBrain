@@ -32,7 +32,8 @@ function smooth(pts: [number, number][], floor: number) {
   return d;
 }
 
-function SpendChartView({ ledger, agentOf, play = true }: { ledger: LedgerRow[]; agentOf: (pocket: string) => AgentId | undefined; play?: boolean }) {
+function SpendChartView({ ledger, agentOf, play = true, title, footer, fixed }: { ledger: LedgerRow[]; agentOf: (pocket: string) => AgentId | undefined; play?: boolean;
+  /** Home's "This week": one title, and what the week bought under the curve; no 7 / 14 toggle */ title?: string; footer?: React.ReactNode; fixed?: boolean }) {
   const [range, setRange] = useState<"7" | "14">("7");
   const days = Number(range);
   const [w, setW] = useState(0);
@@ -59,7 +60,7 @@ function SpendChartView({ ledger, agentOf, play = true }: { ledger: LedgerRow[];
 
   const up = wow.delta != null && wow.delta > 0;
   const pct = wow.delta != null && range === "7" ? `${up ? "+" : wow.delta < 0 ? "−" : ""}${Math.abs(Math.round(wow.delta * 100))}% vs last week` : null;
-  const label = range === "7" ? "Weekly spending by your agents" : "Spending by your agents, 14 days";
+  const label = title ?? (range === "7" ? "Weekly spending by your agents" : "Spending by your agents, 14 days");
   // the stem tooltip on today: the week-over-week change, or today's own figure when there is no last week to compare
   const stem = plot ? (pct ?? `Today US$${usd(series[plot.today].total)}`) : null;
   const STEM_W = 168;
@@ -69,7 +70,7 @@ function SpendChartView({ ledger, agentOf, play = true }: { ledger: LedgerRow[];
     <Card pad={20} style={{ marginHorizontal: 16, gap: 4 }}>
       <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
         <View style={{ gap: 2, flexShrink: 1 }}>
-          <T v="sub" color="ink2">{label}</T>
+          {title ? <T v="head" accessibilityRole="header">{label}</T> : <T v="sub" color="ink2">{label}</T>}
           <Money v="section" value={usd(total)} label={`${label} ${usd(total)} US dollars`} />
         </View>
       </View>
@@ -115,9 +116,12 @@ function SpendChartView({ ledger, agentOf, play = true }: { ledger: LedgerRow[];
           </>
         ) : null}
       </View>
-      <View style={{ marginHorizontal: -16, marginTop: 2 }}>
-        <SlidingPills items={[{ key: "7", label: "7 days" }, { key: "14", label: "14 days" }]} value={range} onChange={setRange} />
-      </View>
+      {fixed ? null : (
+        <View style={{ marginHorizontal: -16, marginTop: 2 }}>
+          <SlidingPills items={[{ key: "7", label: "7 days" }, { key: "14", label: "14 days" }]} value={range} onChange={setRange} />
+        </View>
+      )}
+      {footer}
     </Card>
   );
 }
