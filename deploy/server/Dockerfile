@@ -13,6 +13,7 @@ COPY server/package.json server/
 COPY web/package.json web/
 RUN pnpm install --frozen-lockfile --filter chainbrain-server
 COPY server/ server/
+COPY shared/ shared/
 COPY contracts/deployments contracts/deployments
 COPY --from=contracts /c/out contracts/out
 COPY deploy/server deploy/server
