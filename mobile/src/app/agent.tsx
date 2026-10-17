@@ -71,7 +71,7 @@ function MemoryLine({ e }: { e: WalletEvent }) {
   const add = applied.filter((a) => a.op === "add").length, drop = applied.filter((a) => a.op === "delete").length;
   const what = [add ? `${add} new` : "", drop ? `${drop} dropped` : ""].filter(Boolean).join(", ") || "checked";
   return (
-    <Press kind="row" haptics="select" onPress={() => router.navigate("/brain")} accessibilityRole="button" accessibilityLabel={`Memory updated to version ${e.version}, ${what}. Open the Brain tab`}
+    <Press kind="row" haptics="select" onPress={() => router.push("/brain")} accessibilityRole="button" accessibilityLabel={`Memory updated to version ${e.version}, ${what}. Opens what it remembers`}
       style={{ flexDirection: "row", alignItems: "center", gap: 8, minHeight: 32, alignSelf: "flex-start" }}>
       <Icon name="brain" size={16} color={c.vermillion} />
       <T v="cap" color="muted">Memory updated · v{String(e.version)} · {what}</T>

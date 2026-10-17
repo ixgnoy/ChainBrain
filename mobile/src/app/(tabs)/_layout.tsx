@@ -12,12 +12,12 @@ import { renderTabScreen } from "../../ui/glass/TabTransition";
 const ITEMS: (GlassTabItem & { href: string })[] = [
   { name: "index", href: "/", label: "Home", icon: "home" },
   { name: "agents", href: "/agents", label: "Agents", icon: "bot" },
-  { name: "brain", href: "/brain", label: "Brain", icon: "brain" },
-  { name: "activity", href: "/activity", label: "Activity", icon: "activity" },
+  { name: "live", href: "/live", label: "Live", icon: "activity" },
+  { name: "activity", href: "/activity", label: "Activity", icon: "receipt" },
   { name: "settings", href: "/settings", label: "Settings", icon: "settings" },
 ];
 
-/** Mount the tabs not yet opened, one at a time while the app is idle, so a first visit to Brain or Activity shows at once
+/** Mount the tabs not yet opened, one at a time while the app is idle, so a first visit to Live or Activity shows at once
  *  instead of building the whole screen under the finger. Out of view it stays paused (no store re-renders). */
 function useWarmTabs() {
   const [warm, setWarm] = useState<ReadonlySet<string>>(() => new Set());

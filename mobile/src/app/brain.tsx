@@ -3,35 +3,36 @@
 // the same event stream as the chat, so it is the same on the built-in network and a real server.
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { useApp } from "../../store";
-import { c } from "../../tokens";
-import { Screen, PageTitle } from "../../ui/Screen";
-import { Card, Details, Press } from "../../ui/kit";
-import { Money } from "../../ui/Money";
-import { SellerMark, hasSellerMark } from "../../ui/SellerMark";
-import { initials } from "../../components/ActivityRow";
+import { useApp } from "../store";
+import { c } from "../tokens";
+import { Screen, PageTitle } from "../ui/Screen";
+import { BackHeader } from "../ui/BackHeader";
+import { Card, Details, Press } from "../ui/kit";
+import { Money } from "../ui/Money";
+import { SellerMark, hasSellerMark } from "../ui/SellerMark";
+import { initials } from "../components/ActivityRow";
 import Svg, { Circle } from "react-native-svg";
-import { Eyebrow, Figure, T } from "../../ui/Text";
-import { Icon, type IconName } from "../../ui/Icon";
-import { Rise } from "../../ui/Rise";
-import { useLargeText } from "../../ui/fontScale";
-import { haptic } from "../../haptics";
-import { cleanText } from "../../lib/sanitize";
-import { money, usd } from "../../lib/util";
-import { plainReason } from "../../lib/plain";
-import { isExpired } from "../../components/PocketCard";
-import { brainOf, MEMORY_KIND, sourceWords, type MemoryItem, type MemorySnapshot } from "../../lib/brain";
-import { aiName, preflightBy, sameAddr } from "../../lib/events";
-import { UnfreezeButton } from "../../components/SentinelCard";
-import { NEVER } from "../../lib/shared";
-import * as api from "../../lib/api";
-import { parseIntent } from "../../components/IntentCard";
-import { injectionsOf } from "../../components/InjectionCard";
-import { ScoreBar } from "../../components/RadarCard";
-import { PocketFace, toneFor } from "../../components/PocketFace";
-import { stripFor } from "../../components/PocketWallet";
-import { cadenceText } from "../../../../shared/sim/pocketApp";
-import { budgetOf, runsOf } from "../../../../shared/sim/pocketAppData";
+import { Eyebrow, Figure, T } from "../ui/Text";
+import { Icon, type IconName } from "../ui/Icon";
+import { Rise } from "../ui/Rise";
+import { useLargeText } from "../ui/fontScale";
+import { haptic } from "../haptics";
+import { cleanText } from "../lib/sanitize";
+import { money, usd } from "../lib/util";
+import { plainReason } from "../lib/plain";
+import { isExpired } from "../components/PocketCard";
+import { brainOf, MEMORY_KIND, sourceWords, type MemoryItem, type MemorySnapshot } from "../lib/brain";
+import { aiName, preflightBy, sameAddr } from "../lib/events";
+import { UnfreezeButton } from "../components/SentinelCard";
+import { NEVER } from "../lib/shared";
+import * as api from "../lib/api";
+import { parseIntent } from "../components/IntentCard";
+import { injectionsOf } from "../components/InjectionCard";
+import { ScoreBar } from "../components/RadarCard";
+import { PocketFace, toneFor } from "../components/PocketFace";
+import { stripFor } from "../components/PocketWallet";
+import { cadenceText } from "../../../shared/sim/pocketApp";
+import { budgetOf, runsOf } from "../../../shared/sim/pocketAppData";
 
 const cap1 = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
@@ -176,8 +177,9 @@ export default function BrainTab() {
   const sentinelNow = active.frozen ? "Froze the pocket" : b.sentinel.at(-1)?.kind === "hold" ? "Waiting for you" : b.sentinel.some((v) => v.kind !== "clear") ? "Watching" : "All clear";
 
   return (
-    <Screen>
-      <PageTitle title="Brain" sub="What your agent understood, checked and remembers" />
+    <View style={{ flex: 1, backgroundColor: c.canvas }}>
+      <BackHeader title="Brain" />
+      <Screen tabs={false} top={false}>
       {/* the pocket this brain is about, as its own card strip (the same as Home's stack): tap to choose another */}
       <Press kind="row" haptics="select" disabled={pockets.length < 2} onPress={() => setPickerOpen(true)} accessibilityRole="button" accessibilityLabel={`Pocket: ${active.name}. Change pocket`}
         style={{ marginTop: 8, marginHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -291,5 +293,6 @@ export default function BrainTab() {
       </Panel>
       <View style={{ height: 24 }} />
     </Screen>
+    </View>
   );
 }

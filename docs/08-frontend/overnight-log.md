@@ -28,6 +28,16 @@ The owner said the look is good but the UX isn't (memory: ux-round-2-decisions, 
   - Words: 123 → 65 above the fold, 173 → 101 for the whole screen.
   - E2E: Home checks now expand See all and look for the job lines and the agent per pocket (in row labels). Same facts, not weakened.
   - Evidence: `w-53-wallet-home.png`.
+- [x] **Live tab replaces Brain in the tab bar** (Home · Agents · Live · Activity · Settings).
+  - A pinned "Now" line: the agent's mark with a pulse, and one sentence (waiting for you, running a routine, working, or "Watching 7 pockets · next: Durian watch Sun 08:00").
+  - Requests waiting for you sit on top.
+  - One stream of decision cards, newest first: paid, co-signed, refused (amount struck through), a seller's text that tried to give orders (quoted, struck through, "not obeyed"), a chat attack, a Sentinel freeze (a black card), a price check that waited. Filtered by agent chips.
+  - Tap a card for the pocket, the rule and the tx, with "Open its receipt".
+  - New refusals while you watch give a warning tick.
+  - `lib/live.ts` is tested: one card per payment, none invented, unique keys, newest first.
+  - Brain is now a pushed screen (still reached from the chat's memory note).
+  - Auto-play ends on Live.
+  - Evidence: `w-54-live.png`; phone tests 47; e2e 57/57.
 
 ## Calm pass (17 Oct, night 2)
 

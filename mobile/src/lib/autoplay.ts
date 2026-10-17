@@ -29,7 +29,7 @@ export type HostState = {
   routineRuns?: number;
 };
 export type AutoplayHost = {
-  navigate(path: "/" | "/agent" | "/brain"): void;
+  navigate(path: "/" | "/agent" | "/brain" | "/live"): void;
   state(): HostState;
   subscribe(f: () => void): () => void;
   /** Scene 5's on-chain backstop on this phone's network: the agent key signs the injected transfer; the pocket reverts it. */
@@ -280,13 +280,13 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await until("routine run 3", (s) => (s.routineRuns ?? 0) >= runs0 + 3, 40_000);
     await wait(3400);
 
-    // ---- close on the Brain tab for the pocket made in scene 1 ("Research data · <date>"): what the AI understood,
+    // ---- close on the Live tab (what every agent did, newest first); was the Brain tab for the pocket made in scene 1 ("Research data · <date>"): what the AI understood,
     // blocked, screened, froze and remembers, all in one place
     await must("picker.open");
     await wait(900);
     await must("picker.pocket", "Research data ·");
     await wait(1400);
-    host.navigate("/brain");
+    host.navigate("/live");
     await wait(5000);
   }
 
