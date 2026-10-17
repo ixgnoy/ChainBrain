@@ -22,6 +22,7 @@ import { cleanText } from "../../lib/sanitize";
 import { describeRow, visibleRows } from "../../lib/plain";
 import { dayLabel, money } from "../../lib/util";
 import { paidTotal, radarAlerts, sentinelEvents, type LedgerRow, type RadarAlert, type SentinelView, type WalletEvent } from "../../lib/events";
+import { curSign } from "../../lib/runtime";
 
 type Filter = "all" | "paid" | "refused" | "needs";
 const PAGE = 25;
@@ -92,7 +93,7 @@ export default function Activity() {
             <TxRow key={a.id} a11y={a.kind === "question" ? "Your agent has a question" : "Needs your OK"} onPress={() => (a.kind === "question" ? setQuestionOpen(true) : openApproval(a.id))}
               square={a.agent && a.agent !== "chainbrain" ? <AgentAvatar kind={a.agent} size={44} /> : <BrandSquare icon="clock" tone="blue" />}
               title={a.kind === "question" ? "Your agent has a question" : a.kind === "payment" ? cleanText(sellerName(a.data?.sellerId), 30) : "Confirm a task"}
-              sub={a.kind === "payment" ? "Waiting for your OK" : cleanText(a.text.split("\n")[0], 60)} right={a.kind === "payment" ? `US$${cleanText(a.data?.amount, 10)}` : undefined} rightSub="Needs you" rightSubTone="blueInk" />
+              sub={a.kind === "payment" ? "Waiting for your OK" : cleanText(a.text.split("\n")[0], 60)} right={a.kind === "payment" ? `${curSign()}${cleanText(a.data?.amount, 10)}` : undefined} rightSub="Needs you" rightSubTone="blueInk" />
           ))}
         </ListCard></Rise>
       ) : null}

@@ -10,6 +10,7 @@ import { Icon } from "../ui/Icon";
 import { HatchBar } from "../ui/Hatch";
 import { worstCase } from "../lib/plain";
 import { money, sameAddr } from "../lib/util";
+import { curSign } from "../lib/runtime";
 
 export function WorstCase({ pocket, sellers, off }: { pocket: Pocket; sellers: string[]; off: boolean }) {
   const { ledger } = useApp();
@@ -37,7 +38,7 @@ export function WorstCase({ pocket, sellers, off }: { pocket: Pocket; sellers: s
         <T v="body" accessibilityLabel="Worst case" style={{ fontSize: 15, lineHeight: 22 }}>{worstCase(pocket.balance, sellers, off)}</T>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           <T v="sub" color="ink2">Main wallet exposure</T>
-          <T v="head">US$0.00</T>
+          <T v="head">{curSign()}0.00</T>
         </View>
       </View>
       {!off ? (
@@ -47,7 +48,7 @@ export function WorstCase({ pocket, sellers, off }: { pocket: Pocket; sellers: s
             <T v="cap" w="bold">{`Left: ${money(pocket.balance)}`}</T>
           </View>
           <HatchBar value={used} tone={c.vermillion} height={18} label={`${money(spent)} spent of ${money(funded)}`} />
-          <T v="cap" color="muted">{`${Math.round(used * 100)}% of ${money(funded)} spent${blocked ? " · US$0.00 lost to refused attempts" : ""}`}</T>
+          <T v="cap" color="muted">{`${Math.round(used * 100)}% of ${money(funded)} spent${blocked ? " · ${curSign()}0.00 lost to refused attempts" : ""}`}</T>
         </View>
       ) : null}
     </View>

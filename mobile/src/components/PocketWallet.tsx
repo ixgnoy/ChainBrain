@@ -23,6 +23,7 @@ import type { Pocket } from "../store";
 import type { Glyph } from "../../../shared/sim/pocketAppData";
 import { PocketFace, cardHeight, toneFor, type Tone } from "./PocketFace";
 import { PAGE_MARGIN, pageCardWidth } from "./CardFlight";
+import { tokenSymbol } from "../lib/runtime";
 
 /** How much of each card shows above the next: its name row and a sliver of its stripe. */
 export const stripFor = (cw: number) => { const k = Math.min(1, cw / 340); return Math.round(16 * k + 4 + 26 * k + 8 * k + 3); }; // 3 pt of stripe: a dark rule between cards, above the agent's pill
@@ -129,7 +130,7 @@ function WalletCard({ pocket, pockets, index, count, cw, strip, play, reduce, sc
           <Press kind="row" haptics="light" onPress={open}
             onPressIn={() => { if (!reduce) lift.value = withTiming(1, { duration: 120 }); }}
             onPressOut={() => { lift.value = reduce ? 0 : withSpring(0, motion.spring.deck); }}
-            accessibilityRole="button" accessibilityLabel={`${name} pocket, ${usd(pocket.balance)} USDC${pocket.revoked ? ", revoked" : ""}`} accessibilityHint="Opens the pocket">
+            accessibilityRole="button" accessibilityLabel={`${name} pocket, ${usd(pocket.balance)} ${tokenSymbol()}${pocket.revoked ? ", revoked" : ""}`} accessibilityHint="Opens the pocket">
             <PocketFace pocket={pocket} width={cw} tone={tone} shadow focused={focused} tilt={front} glyph={glyph} peek={!front} />
           </Press>
         </View>

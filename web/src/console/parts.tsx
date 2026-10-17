@@ -7,8 +7,9 @@ import type { PocketState } from "./chain";
 import { cn } from "../lib/cn";
 import { agentByAddress } from "@sim/agents";
 import { CLAUDE_SPARK, OPENAI_BLOSSOM, SELLER_MARKS, isLayered, type Mark } from "../../../shared/brand/marks";
+import { curSign } from "../shared";
 
-export const usd = (n?: bigint) => (n == null ? "–" : `US$${formatUsd(n)}`);
+export const usd = (n?: bigint) => (n == null ? "–" : `${curSign()}${formatUsd(n)}`);
 export const NEVER = 2n ** 256n - 1n;
 export { pocketTag };
 export const clock = (ms: number) => new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });

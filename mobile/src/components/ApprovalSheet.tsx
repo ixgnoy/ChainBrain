@@ -35,6 +35,7 @@ import { IntentCard, parseIntent } from "./IntentCard";
 import { SheetSuccess } from "./SheetSuccess";
 import { notify as toast } from "../lib/toast";
 import { ErrorNote } from "./ErrorNote";
+import { curSign } from "../lib/runtime";
 
 export function describeApprovalError(code: string): string {
   switch (code) {
@@ -101,7 +102,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const amount = safeUsd(a.data?.amount);
   const limitText = !pocket || pocket.askAbove === NEVER ? "Above your ask-me limit"
     : pocket.askAbove === 0n ? "This pocket asks about every payment"
-    : `Above your US$${usd(pocket.askAbove)} ask-me limit`;
+    : `Above your ${curSign()}${usd(pocket.askAbove)} ask-me limit`;
   const item = cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment";
 
   const [cardW, setCardW] = useState(0);
@@ -123,12 +124,12 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   }, [events, pocket]);
   // a routine run past its period allowance (shared/sim/world.ts runRoutine): the runner asks, not the contract
   const allowance = a.data?.allowance as { period: string; allowance: string; spent: string; after: string; run: number } | undefined;
-  const why = allowance ? `Run ${allowance.run} would pass this ${allowance.period}'s US$${allowance.allowance}` : overLimit ? limitText : held ? "The Sentinel wants your OK on this payment" : risky ? "Radar wants your OK on this seller" : limitText;
+  const why = allowance ? `Run ${allowance.run} would pass this ${allowance.period}'s ${curSign()}${allowance.allowance}` : overLimit ? limitText : held ? "The Sentinel wants your OK on this payment" : risky ? "Radar wants your OK on this seller" : limitText;
   const whyCode = !overLimit && held ? "SENTINEL_HOLD" : risky ? "COUNTERPARTY_REVIEW" : "NEEDS_OWNER_APPROVAL";
 
   // "Claude pays Nansen US$0.05 from Market news. US$0.362 stays in the pocket."
   const left = pocket && amountUnits != null && pocket.balance >= amountUnits ? pocket.balance - amountUnits : null;
-  const moneyLine = `${who} pays ${seller} US$${amount ?? "?"}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}.${left != null ? ` US$${usd(left)} stays in the pocket.` : ""}`;
+  const moneyLine = `${who} pays ${seller} ${curSign()}${amount ?? "?"}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}.${left != null ? ` ${curSign()}${usd(left)} stays in the pocket.` : ""}`;
   const until = auth ? new Date(Number(auth.validBefore) * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : null;
 
   // small payments: Face ID alone signs (it is the deliberate act); large ones keep the slide first, then Face ID. Without
@@ -139,7 +140,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const approve = async () => {
     setError(null);
     // the slide says "I mean it"; Face ID says "it's me"
-    const me = await confirmOwner(`Co-sign US$${amount ?? ""} to ${seller}`);
+    const me = await confirmOwner(`Co-sign ${curSign()}${amount ?? ""} to ${seller}`);
     if (me === "cancel") { setError(`Nothing was signed: ${bio ?? "Face ID"} didn't confirm it's you.`); throw new Error("BIOMETRIC"); }
     hold(true);
     const r = await signApprove(a);
@@ -173,7 +174,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
     if (row) setReceipt(row); else router.navigate("/activity");
   };
   if (phase === "success") {
-    return <SheetSuccess minHeight={formH.current} title={`Paid US$${amount ?? "?"}`} sub={`To ${seller}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}`} action={{ label: "View receipt", onPress: viewReceipt }} />;
+    return <SheetSuccess minHeight={formH.current} title={`Paid ${curSign()}${amount ?? "?"}`} sub={`To ${seller}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}`} action={{ label: "View receipt", onPress: viewReceipt }} />;
   }
   return (
     <Animated.View style={{ flexShrink: 1 }} onLayout={(e) => { formH.current = e.nativeEvent.layout.height; }}>
@@ -200,7 +201,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
                 <ChequeCard pocket={pocket} tone={toneFor(pockets, pocket.address)} width={cardW} amount={amountUnits} seller={seller} sellerId={a.data?.sellerId} item={item} until={auth ? Number(auth.validBefore) : undefined} />
               ) : !pocket ? (
                 <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                  <T v="balance" accessibilityLabel={`US$${amount ?? "unknown"}`}>US${amount ?? "?"}</T>
+                  <T v="balance" accessibilityLabel={`${curSign()}${amount ?? "unknown"}`}>{curSign()}{amount ?? "?"}</T>
                   <T v="section" color="ink2" numberOfLines={1}>to {seller}</T>
                 </View>
               ) : null}
@@ -271,10 +272,10 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
               {quick ? (
                 // one press, Face ID confirms it is you, then the phone signs exactly this payment (Face ID gates the app's use of
                 // the key; the key itself is not locked behind it)
-                <Button label={`Approve US$${amount ?? ""} with ${bio}`} icon={bio === "Face ID" ? "faceId" : bio === "your passcode" ? "lock" : "fingerprint"} auto="approval.slide" loading={signing} disabled={busy || expired}
+                <Button label={`Approve ${curSign()}${amount ?? ""} with ${bio}`} icon={bio === "Face ID" ? "faceId" : bio === "your passcode" ? "lock" : "fingerprint"} auto="approval.slide" loading={signing} disabled={busy || expired}
                   onPress={async () => { setSigning(true); try { await approve(); setPhase("success"); } catch { /* the error note says why */ } finally { setSigning(false); } }} />
               ) : (
-                <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label={`Slide to approve US$${amount ?? ""}`} doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
+                <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label={`Slide to approve ${curSign()}${amount ?? ""}`} doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
               )}
               <Button label="Decline" kind="text" onPress={decline} loading={busy} />
               <T v="cap" color="muted" style={{ textAlign: "center" }}>{bio
@@ -305,10 +306,10 @@ function AllowanceStrip({ period, allowance, spent, after, amount }: { period: s
   const scale = Math.max(af, lim) || 1;
   return (
     <View style={{ gap: 10, padding: 14, borderRadius: 16, backgroundColor: c.fill }} accessible
-      accessibilityLabel={`This ${period}: US$${spent} spent, plus this US$${amount}, makes US$${after}, past your US$${allowance} a ${period}`}>
+      accessibilityLabel={`This ${period}: ${curSign()}${spent} spent, plus this ${curSign()}${amount}, makes ${curSign()}${after}, past your ${curSign()}${allowance} a ${period}`}>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>{`This ${period}`}</T>
-        <T v="cap" w="bold">{`US$${after} of US$${allowance}`}</T>
+        <T v="cap" w="bold">{`${curSign()}${after} of ${curSign()}${allowance}`}</T>
       </View>
       <View style={{ height: 14, borderRadius: 5, backgroundColor: c.card, flexDirection: "row", overflow: "hidden" }}>
         <View style={{ width: `${(sp / scale) * 100}%`, backgroundColor: c.ink }} />
@@ -317,7 +318,7 @@ function AllowanceStrip({ period, allowance, spent, after, amount }: { period: s
       <View style={{ position: "absolute", left: 14 + 0, right: 14, top: 38, height: 22 }} pointerEvents="none">
         <View style={{ position: "absolute", left: `${(lim / scale) * 100}%`, width: 2, height: 22, marginLeft: -1, backgroundColor: c.ink }} />
       </View>
-      <T v="cap" color="ink2">{`US$${spent} spent + US$${amount} now. Your routine runs on its own up to US$${allowance} a ${period}; this one needs you.`}</T>
+      <T v="cap" color="ink2">{`${curSign()}${spent} spent + ${curSign()}${amount} now. Your routine runs on its own up to ${curSign()}${allowance} a ${period}; this one needs you.`}</T>
     </View>
   );
 }

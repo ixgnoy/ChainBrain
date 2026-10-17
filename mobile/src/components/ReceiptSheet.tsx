@@ -20,6 +20,7 @@ import { PocketFace, toneFor } from "./PocketFace";
 import { stripFor } from "./PocketWallet";
 import { agentInfo } from "../../../shared/sim/agents";
 import { useWindowDimensions } from "react-native";
+import { curSign } from "../lib/runtime";
 
 /** The rules Pocket.sol checked before this payment settled: a settled payment passed every one (it could not have
  *  settled otherwise), so these are facts of the payment, not decoration. The ask-me rule says who let it through. */
@@ -103,7 +104,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
   if (row.sku) tech.push(["Item code", cleanText(row.sku, 60)]);
   if (row.intentHash) tech.push(["Task id", shortHex(row.intentHash)]);
   if (chain?.task) tech.push(["Task you confirmed", cleanText(chain.task, 300)]);
-  if (chain?.quote?.price) tech.push(["Quoted price", `US$${cleanText(chain.quote.price, 12)}`]);
+  if (chain?.quote?.price) tech.push(["Quoted price", `${curSign()}${cleanText(chain.quote.price, 12)}`]);
   return (
     <View>
       <ScrollView style={{ maxHeight: 640 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 8, gap: 20 }} showsVerticalScrollIndicator={false}>

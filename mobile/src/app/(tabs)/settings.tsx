@@ -4,7 +4,7 @@ import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
 import * as Clipboard from "expo-clipboard";
 import { useApp } from "../../store";
 import * as api from "../../lib/api";
-import { ENV_API, detectDev, getApi, isHttpUrl, normalizeUrl } from "../../lib/runtime";
+import { ENV_API, detectDev, getApi, getChain, isHttpUrl, normalizeUrl } from "../../lib/runtime";
 import { onRelay, relayLinked } from "../../lib/relay";
 import { forgetSaved } from "../../lib/builtin";
 import { isPrivateKey } from "../../lib/keystore";
@@ -90,7 +90,7 @@ export default function Settings() {
         onCopy={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }} />
       <Group title="Wallet" />
       <ListCard>
-        {dev || !custom ? <ListRow a11y="Get test funds" onPress={getFunds} icon="plus" title="Get test funds" sub={funds.text ?? "Adds test money to your wallet"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
+        {dev || !custom || getChain()?.key === "fisco" ? <ListRow a11y="Get test funds" onPress={getFunds} icon="plus" title="Get test funds" sub={funds.text ?? "Adds test money to your wallet"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
         <ListRow a11y="Add an existing pocket" onPress={() => setAdding(!adding)} icon="layers" title="Add an existing pocket" sub="Track a pocket by its address"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} icon="key" title="Import a key" sub="Use a test key you already have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         {/* a browser tab keeps the built-in network across reloads (lib/builtin.ts); this is the way back to a fresh one */}

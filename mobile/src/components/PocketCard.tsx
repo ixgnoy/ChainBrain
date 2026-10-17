@@ -10,6 +10,7 @@ import { NEVER } from "../lib/shared";
 import { usd, money, dateLabel, shortAddr } from "../lib/util";
 import { useApp } from "../store";
 import type { Pocket } from "../store";
+import { tokenSymbol } from "../lib/runtime";
 
 export const isExpired = (p: { revoked: boolean; expiresAt: bigint | number }) => !p.revoked && Number(p.expiresAt) * 1000 < Date.now();
 
@@ -52,7 +53,7 @@ export function PocketRow({ pocket, onPress, last, lit }: { pocket: Pocket; onPr
   return (
     <ListRow
       last={last} onPress={onPress} lit={lit}
-      a11y={`${cleanText(pocket.name, 30)} pocket, ${usd(pocket.balance)} USDC`}
+      a11y={`${cleanText(pocket.name, 30)} pocket, ${usd(pocket.balance)} ${tokenSymbol()}`}
       avatar={<Avatar label={pocket.name} tone={pocket.revoked || isExpired(pocket) ? "fill" : "soft"} />}
       title={cleanText(pocket.name, 30)} sub={pocketLine(pocket)}
       extra={spent > 0n ? <View accessibilityLabel={`${usd(spent)} of ${usd(total)} used`} style={{ height: 4, borderRadius: 2, backgroundColor: c.fill, marginTop: 6, overflow: "hidden" }}><View style={{ width: `${share * 100}%`, height: 4, borderRadius: 2, backgroundColor: c.accent }} /></View> : undefined}

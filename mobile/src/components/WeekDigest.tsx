@@ -14,6 +14,7 @@ import { useLargeText } from "../ui/fontScale";
 import { cleanText } from "../lib/sanitize";
 import { money, usd } from "../lib/util";
 import type { Digest } from "../../../shared/sim/pocketAppData";
+import { curSign } from "../lib/runtime";
 
 
 export const WeekDigest = React.memo(function WeekDigest({ d, itemName, sellerName }: { d: Digest; itemName(sellerId: string, sku: string): string; sellerName(id: string): string }) {
@@ -55,7 +56,7 @@ export const WeekDigest = React.memo(function WeekDigest({ d, itemName, sellerNa
           </ScrollView>
         ) : null}
         <View style={{ flexDirection: "row", flexWrap: big ? "wrap" : "nowrap", gap: 8, paddingHorizontal: 18 }}>
-          <Count big={big} icon="receipt" n={d.bought} label="bought" sub={`US$${usd(d.spent)}`} tone="ink" />
+          <Count big={big} icon="receipt" n={d.bought} label="bought" sub={`${curSign()}${usd(d.spent)}`} tone="ink" />
           <Count big={big} icon="faceId" n={d.cosigned} label="co-signed by you" tone="blue" />
           <Count big={big} icon="shieldCheck" n={d.stopped} label="stopped" tone="vermillion" />
         </View>

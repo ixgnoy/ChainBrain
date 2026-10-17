@@ -3,6 +3,7 @@
 // linked phone's clock differs from this laptop's.
 import type { Attempt } from "@sim/checks";
 import { ESCALATION_TEXT } from "@sim/autopilot";
+import { curSign } from "../shared";
 
 export type ArenaKey = "induced" | "extraction" | "escalation" | "injection";
 export const ARENA_KEYS: ArenaKey[] = ["induced", "extraction", "escalation", "injection"];
@@ -60,7 +61,7 @@ export function boardLine(board: Record<ArenaKey, { tried: number; blocked: numb
   const tried = ARENA_KEYS.filter((k) => board[k].tried > 0);
   const blocked = tried.filter((k) => board[k].blocked === board[k].tried);
   const frac = (board.lost % 1_000_000n).toString().padStart(6, "0").slice(0, 2);
-  const lost = `US$${board.lost / 1_000_000n}.${frac}`;
+  const lost = `${curSign()}${board.lost / 1_000_000n}.${frac}`;
   return { blocked: blocked.length, tried: tried.length, total: ARENA_KEYS.length, lost, text: `${blocked.length} of ${ARENA_KEYS.length} attacks blocked · ${lost} lost`, untried: ARENA_KEYS.filter((k) => board[k].tried === 0) };
 }
 

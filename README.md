@@ -74,6 +74,8 @@ Later sessions: `bash scripts/fisco/start.sh` / `stop.sh`. Gas is free on this c
 
 **MetaMask:** open the faucet page and press "Use MetaMask" (it adds the network), or add it by hand: RPC `https://fisco-node-production.up.railway.app`, chain id `20200`, symbol `FISCO`, explorer `https://fisco-api-production-85c5.up.railway.app/explorer`. Then claim HK$100 eHKD on the faucet; it also credits the native balance the chain requires before an address can send (gas is free). "Add eHKD to MetaMask" registers the token.
 
+**Apps on this chain:** web and Expo read the chain from the server's `/api/config`. When the server is on FISCO they show HK$ and eHKD, link to the server's explorer, and use its RPC. On the phone, the owner's transactions go out as legacy transactions with gas price 0, co-signatures use the Mock e-HKD EIP-712 domain, and "Get test funds" calls the faucet. Web: `?server=https://fisco-api-production-85c5.up.railway.app`. Expo: set Settings' server, or `EXPO_PUBLIC_API_URL`. The built-in network stays in US$.
+
 Redeploy: `RAILWAY_TOKEN=<project token> railway up --service fisco-node|fisco-api|fisco-sellers` from the repo root (`deploy/fisco-node`, `deploy/server`; `.railwayignore` keeps the apps out of the upload). On an empty volume the node builds the chain and `fisco-api` deploys the contracts at the committed addresses.
 
 ### Base Sepolia (`CHAIN=base-sepolia`)

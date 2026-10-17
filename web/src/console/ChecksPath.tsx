@@ -7,6 +7,7 @@ import type { Attempt, Gate, GateState } from "@sim/checks";
 import { LAYER_TAG, attemptWord, collapsiblePrefix, gateWord, groupGates, headlineParts, idlePath, sequenceLength, tokenTone } from "./checksView";
 import { clock } from "./parts";
 import { cn } from "../lib/cn";
+import { curSign } from "../shared";
 
 const STEP_MS = 150;
 
@@ -160,7 +161,7 @@ export function AttemptHeadline({ a, show = true, big }: { a: Attempt; show?: bo
       <div className="min-w-0 flex-1">
         <p className={cn("font-bold tracking-[-0.01em] leading-6 [overflow-wrap:anywhere]", big ? "text-[20px] leading-7" : "text-[16px]")}>{main}</p>
         {sub && <p className={cn("mt-0.5 text-ink2 [overflow-wrap:anywhere]", big ? "text-[16px] leading-6" : "text-[14px] leading-5")}>{sub}</p>}
-        {kept && <p data-testid="checks-kept" className={cn("mt-1 font-bold text-green-ink", big ? "text-[16px] leading-6" : "text-[14px] leading-5")}>US${a.amount} would have left the pocket. US$0.00 did.</p>}
+        {kept && <p data-testid="checks-kept" className={cn("mt-1 font-bold text-green-ink", big ? "text-[16px] leading-6" : "text-[14px] leading-5")}>{curSign()}{a.amount} would have left the pocket. {curSign()}0.00 did.</p>}
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1.5">
         <span className={cn("inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-bold", VERDICT_TONE[word])}>{word}</span>

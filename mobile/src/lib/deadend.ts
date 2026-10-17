@@ -2,6 +2,7 @@
 // it was refused (from the get_quote results and refusal events), with a one-tap fix. No React Native imports.
 import { ledgerFrom, sameAddr, type WalletEvent } from "./events";
 import { plainReason } from "./plain";
+import { curSign } from "./runtime";
 
 export type Tried = { sellerId: string; sku?: string; price?: bigint; reasons: string[] };
 export type DeadEnd = {
@@ -45,6 +46,6 @@ export const whyText = (t: Tried) => (t.reasons.length ? t.reasons.map(plainReas
 export function retryText(task: string, max: string): string {
   const t = task.trim();
   const limit = /\b(max(?:imum)?|under|up to|at most)\s+US\$\s?\d+(?:\.\d+)?/i;
-  if (limit.test(t)) return t.replace(limit, (_m, w: string) => `${w} US$${max}`);
-  return `${t.replace(/[.\s]+$/, "")}. Max US$${max}, by tonight.`;
+  if (limit.test(t)) return t.replace(limit, (_m, w: string) => `${w} ${curSign()}${max}`);
+  return `${t.replace(/[.\s]+$/, "")}. Max ${curSign()}${max}, by tonight.`;
 }

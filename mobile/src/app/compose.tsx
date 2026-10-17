@@ -41,6 +41,7 @@ import { uniqueName } from "./create";
 import { answer, proof, type Draft } from "../../../shared/sim/speak";
 import { AGENTS, CAN, CANNOT } from "../../../shared/sim/agents";
 import { BLOCK_TYPES, type Layout } from "../../../shared/sim/pocketApp";
+import { curSign } from "../lib/runtime";
 
 type Composed = Awaited<ReturnType<typeof api.composeApp>>;
 const EXAMPLES: { icon: IconName; label: string; text: string; layout: Layout; agent: string }[] = [
@@ -128,7 +129,7 @@ export default function Compose() {
       if (spec.routine) api.setRoutine(m.pocket, spec.routine);
       await refreshPockets();
       if (!outside) setActive(m.pocket);
-      setNotice({ title: `${title} created and funded`, pocket: m.pocket, txs: [{ label: "Create pocket", hash: m.tx }, { label: `Add US$${draft.budget}`, hash: f.hash }] });
+      setNotice({ title: `${title} created and funded`, pocket: m.pocket, txs: [{ label: "Create pocket", hash: m.tx }, { label: `Add ${curSign()}${draft.budget}`, hash: f.hash }] });
       setMade({ pocket: m.pocket });
       setTimeout(() => open(m.pocket), 2200);
     } catch (e) { setErr(txError(e)); throw e; }
@@ -266,9 +267,9 @@ export default function Compose() {
                   </Card>
                 ) : (
                   <>
-                    <SlideToConfirm label={`Slide to create · US$${draft?.budget ?? ""}`} doneLabel="Created" auto="compose.create" disabled={!draft?.sellers.length || short || !wallet} onConfirm={create} />
+                    <SlideToConfirm label={`Slide to create · ${curSign()}${draft?.budget ?? ""}`} doneLabel="Created" auto="compose.create" disabled={!draft?.sellers.length || short || !wallet} onConfirm={create} />
                     <T v="cap" color="mutedOnCanvas" style={{ textAlign: "center" }}>
-                      {short ? "Not enough in your main wallet for this budget." : !draft?.sellers.length ? "Name at least one seller in the sentence." : `Then ${signer ?? "your key"} signs two transactions: create the pocket${outside ? ` with ${agent.name}'s key` : ""}, and move US$${draft?.budget} into it.`}
+                      {short ? "Not enough in your main wallet for this budget." : !draft?.sellers.length ? "Name at least one seller in the sentence." : `Then ${signer ?? "your key"} signs two transactions: create the pocket${outside ? ` with ${agent.name}'s key` : ""}, and move ${curSign()}${draft?.budget} into it.`}
                     </T>
                   </>
                 )}
@@ -338,18 +339,18 @@ function ProofCard({ worst, lines, tests, never, by, sellers, cap, per, limit, s
     <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, gap: 14 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
         <View style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}><Icon name="shieldCheck" size={24} color={c.white} stroke={1.8} /></View>
-        <View style={{ flex: 1 }} accessible accessibilityLabel={`Worst case, even if the agent is fooled: US$${worst}`}>
+        <View style={{ flex: 1 }} accessible accessibilityLabel={`Worst case, even if the agent is fooled: ${curSign()}${worst}`}>
           <T v="cap" color="muted">Worst case, even if the agent is fooled</T>
-          <T v="amount">{`US$${worst}`}</T>
+          <T v="amount">{`${curSign()}${worst}`}</T>
         </View>
       </View>
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Fact a11y={`Pays only ${sellers.length} seller${sellers.length === 1 ? "" : "s"}`} label={sellers.length === 1 ? `${cleanText(sellerLabel(sellers[0]), 14)} only` : `only these ${sellers.length}`}>
           <View style={{ flexDirection: "row" }}>{sellers.slice(0, 3).map((id, k) => <View key={id} style={{ marginLeft: k ? -8 : 0, borderRadius: 9, borderWidth: 2, borderColor: c.tile }}><SellerMark id={id} size={24} radius={7} /></View>)}</View>
         </Fact>
-        <Fact a11y={`At most US$${cap} per payment`} label={limit ? "price limit" : "per payment"}><T v="head" numberOfLines={1} adjustsFontSizeToFit>{`US$${limit ?? cap}`}</T></Fact>
-        <Fact a11y={per ? `Up to US$${per.amount} a ${per.period} on its own` : "Asks before paying above its limit"} label={per ? `a ${per.period}, on its own` : "then it asks"}>
-          <T v="head" numberOfLines={1} adjustsFontSizeToFit>{per ? `US$${per.amount}` : "You"}</T>
+        <Fact a11y={`At most ${curSign()}${cap} per payment`} label={limit ? "price limit" : "per payment"}><T v="head" numberOfLines={1} adjustsFontSizeToFit>{`${curSign()}${limit ?? cap}`}</T></Fact>
+        <Fact a11y={per ? `Up to ${curSign()}${per.amount} a ${per.period} on its own` : "Asks before paying above its limit"} label={per ? `a ${per.period}, on its own` : "then it asks"}>
+          <T v="head" numberOfLines={1} adjustsFontSizeToFit>{per ? `${curSign()}${per.amount}` : "You"}</T>
         </Fact>
       </View>
       <Press haptics="select" onPress={() => setOpen((o) => !o)} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${tests.length} payments tried against these rules: ${pays} pays, ${refused} refused${asks ? `, ${asks} asks you` : ""}`}

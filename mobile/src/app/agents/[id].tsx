@@ -24,6 +24,7 @@ import { money, usd } from "../../lib/util";
 import { cleanText } from "../../lib/sanitize";
 import type { Pocket } from "../../store";
 import { PocketFace, toneFor } from "../../components/PocketFace";
+import { curSign } from "../../lib/runtime";
 
 const ICON: Record<AgentStep["kind"], "search" | "file" | "hourglass" | "checks" | "circleCheck" | "ban" | "link" | "unlink"> = {
   search: "search", quote: "file", ask: "hourglass", task: "checks", paid: "circleCheck", refused: "ban", connected: "link", disconnected: "unlink",
@@ -68,7 +69,7 @@ export default function AgentDetail() {
         <Reveal index={1}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 22, marginBottom: 10 }}>
             <Eyebrow color="mutedOnCanvas">{held.length === 1 ? "Assigned pocket" : `${held.length} pockets`}</Eyebrow>
-            {held.length ? <T v="cap" color="mutedOnCanvas">{`US$${usd(a.balance)} left in total`}</T> : null}
+            {held.length ? <T v="cap" color="mutedOnCanvas">{`${curSign()}${usd(a.balance)} left in total`}</T> : null}
           </View>
           <View style={{ gap: 12 }}>
             {held.map((p) => <HeldPocket key={p.address} p={p} />)}
@@ -83,7 +84,7 @@ export default function AgentDetail() {
                 <T v="head">Spent today</T>
                 <T v="head" style={{ color: c.vermillionInk }} accessibilityLabel="share of its money spent today">{`${startOfDayBalance > 0n ? Math.round((Number(a.spentToday) / Number(startOfDayBalance)) * 100) : 0}%`}</T>
               </View>
-              <T v="sub" color="muted">{`US$${usd(a.spentToday)} spent today · US$${usd(a.balance)} left in its ${held.length === 1 ? "pocket" : "pockets"}`}</T>
+              <T v="sub" color="muted">{`${curSign()}${usd(a.spentToday)} spent today · ${curSign()}${usd(a.balance)} left in its ${held.length === 1 ? "pocket" : "pockets"}`}</T>
               <HatchBar value={startOfDayBalance > 0n ? Number(a.spentToday) / Number(startOfDayBalance) : 0} tone={c.vermillion} height={16} label="Spent today" />
             </Card>
           </Reveal>
@@ -155,7 +156,7 @@ function StepRow({ s, last, onPress }: { s: AgentStep; last: boolean; onPress?: 
       <View style={{ flex: 1, gap: 3 }}>
         <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
           <T v="row" w="bold" style={{ flexShrink: 1 }}>{s.title}</T>
-          {s.amount != null ? <T v="row" w="bold" color={s.kind === "refused" ? "muted" : "ink"}>{`${s.kind === "paid" ? "−" : ""}US$${usd(s.amount)}`}</T> : null}
+          {s.amount != null ? <T v="row" w="bold" color={s.kind === "refused" ? "muted" : "ink"}>{`${s.kind === "paid" ? "−" : ""}${curSign()}${usd(s.amount)}`}</T> : null}
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <View style={{ alignSelf: "flex-start" }}><StatusPill label={s.status.label} tone={s.status.tone === "ink" ? "ink" : s.status.tone} /></View>

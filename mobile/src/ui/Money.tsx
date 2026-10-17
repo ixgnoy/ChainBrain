@@ -6,6 +6,7 @@ import { Platform, Text, View, type TextStyle } from "react-native";
 import { c, F, type Tone } from "../tokens";
 import { RollingNumber } from "./RollingNumber";
 import { useTextScale } from "./fontScale";
+import { curSign } from "../lib/runtime";
 
 // Figures are set in Clash Display Medium (VaultBank's balances): wide, calm weight, slightly tight; the currency symbol is set
 // at 75 % of the figure. Row and sub figures stay in General Sans so lists read as text.
@@ -20,7 +21,7 @@ const V = {
 export type MoneyVariant = keyof typeof V;
 const web = Platform.OS === "web";
 
-export function Money({ value, prefix = "US$", v = "row", color = "ink", countIn, style, label, decorative, strike }: {
+export function Money({ value, prefix = curSign(), v = "row", color = "ink", countIn, style, label, decorative, strike }: {
   value: string; prefix?: string; v?: MoneyVariant; color?: Tone; countIn?: boolean; style?: TextStyle;
   /** accessible label, defaults to the plain string */ label?: string;
   /** the parent already has a label (a list row): expose nothing of its own */ decorative?: boolean; strike?: boolean;

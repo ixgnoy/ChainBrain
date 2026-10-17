@@ -5,8 +5,9 @@ import { ChevronDown, Inbox, X } from "lucide-react";
 import { EmptyState } from "../console/kit";
 import { cn } from "../lib/cn";
 import { formatUsd } from "../shared";
+import { curSign } from "../shared";
 
-export const money = (n?: bigint) => (n == null ? "–" : `US$${formatUsd(n)}`);
+export const money = (n?: bigint) => (n == null ? "–" : `${curSign()}${formatUsd(n)}`);
 /** Rounded to whole cents, for derived figures such as averages. */
 export const moneyCents = (n: bigint) => money(((n + 5_000n) / 10_000n) * 10_000n);
 export const when = (ms: number) => {
@@ -154,5 +155,6 @@ export function PillSelect({ label, value, onChange, children, shown, className,
 
 /** Splits a "US$12.34" string so the currency symbol can sit at 75% inside a `.figure`. The text content stays identical. */
 export function Fig({ text }: { text: string }) {
-  return text.startsWith("US$") ? <><span className="cur">US$</span>{text.slice(3)}</> : <>{text}</>;
+  const c = curSign();
+  return text.startsWith(c) ? <><span className="cur">{c}</span>{text.slice(c.length)}</> : <>{text}</>;
 }

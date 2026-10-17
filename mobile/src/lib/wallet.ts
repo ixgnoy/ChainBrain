@@ -1,24 +1,31 @@
 // The owner's main wallet on the phone: a non-custodial key held on the device (see keystore.ts), signing with viem.
 // ponytail: in-app key instead of WalletConnect → MetaMask mobile; WalletConnect needs a Reown project ID and native
 // modules Expo Go doesn't ship. Upgrade path: a development build with Reown AppKit.
-import { createPublicClient, createWalletClient, http, parseEventLogs, type Address, type Hex } from "viem";
+import { createPublicClient, createWalletClient, defineChain, http, parseEventLogs, type Address, type Chain, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
-import { isBuiltin, rpcUrl } from "./runtime";
+import { getChain, isBuiltin, rpcUrl } from "./runtime";
 import { builtin } from "./builtin";
 import { loadConfig, transferTypedData, type Authorization, type Seller } from "./shared";
 
-export const pub = () => createPublicClient({ chain: baseSepolia, transport: http(rpcUrl()) });
+/** The server's chain as viem sees it. FISCO: gas is free, but the RPC wants a legacy tx with gasPrice 0. */
+const viemChain = (): Chain => {
+  const c = getChain();
+  if (!c || c.key !== "fisco") return baseSepolia;
+  return defineChain({ id: c.id, name: c.name, nativeCurrency: { name: "FISCO", symbol: "FISCO", decimals: 18 }, rpcUrls: { default: { http: [c.rpc] } } });
+};
+const feeOverrides = () => (getChain()?.key === "fisco" ? { gasPrice: 0n, type: "legacy" as const } : {});
+export const pub = () => createPublicClient({ chain: viemChain(), transport: http(rpcUrl()) });
 
 export type PocketView = { address: Address; owner: Address; agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean; balance: bigint; allowed: string[]; /** stopped by the Sentinel (or the owner); only the owner unfreezes */ frozen?: boolean };
 
 export function ownerWallet(pk: Hex) {
   const account = privateKeyToAccount(pk);
   // built per call: the RPC URL changes when the API URL is overridden or dev mode is detected
-  const wallet = () => createWalletClient({ account, chain: baseSepolia, transport: http(rpcUrl()) });
+  const wallet = () => createWalletClient({ account, chain: viemChain(), transport: http(rpcUrl()) });
 
   async function write(address: Address, abi: any[], functionName: string, args: unknown[] = []) {
-    const hash = await wallet().writeContract({ address, abi, functionName, args, account, chain: baseSepolia });
+    const hash = await wallet().writeContract({ address, abi, functionName, args, account, chain: viemChain(), ...feeOverrides() } as any);
     const receipt = await pub().waitForTransactionReceipt({ hash });
     if (receipt.status !== "success") throw new Error(`transaction reverted: ${hash}`);
     return { hash, receipt };

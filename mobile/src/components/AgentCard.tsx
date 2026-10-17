@@ -19,6 +19,7 @@ import { useApp, type Pocket } from "../store";
 import { PocketFace, toneFor } from "./PocketFace";
 import { stackOrder, stripFor } from "./PocketWallet";
 import { startFlight } from "../ui/cardFlight";
+import { tokenSymbol } from "../lib/runtime";
 
 const DOT = { live: c.green, idle: c.faint, off: c.faint, wait: c.blue } as const;
 
@@ -103,7 +104,7 @@ function HandCard({ p, i, w, top, tone }: { p: Pocket; i: number; w: number; top
   };
   return (
     <View ref={ref} collapsable={false} style={{ position: "absolute", left: 0, top, zIndex: i + 1 }}>
-      <Press kind="row" haptics="light" onPress={open} accessibilityRole="button" accessibilityLabel={`${cleanText(p.name, 30)} pocket, ${usd(p.balance)} USDC${p.revoked ? ", revoked" : ""}. Opens the pocket`}>
+      <Press kind="row" haptics="light" onPress={open} accessibilityRole="button" accessibilityLabel={`${cleanText(p.name, 30)} pocket, ${usd(p.balance)} ${tokenSymbol()}${p.revoked ? ", revoked" : ""}. Opens the pocket`}>
         <PocketFace pocket={p} width={w} tone={tone} still peek />
       </Press>
     </View>

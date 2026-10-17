@@ -9,6 +9,7 @@ import { useNetwork } from "./network";
 import { AgentTag, SellerLogo, usd } from "./parts";
 import { Card } from "../seller/ui";
 import { cn } from "../lib/cn";
+import { curSign } from "../shared";
 
 const DAY = 86_400_000;
 const BACK = 4, AHEAD = 3; // days shown before and after now
@@ -85,13 +86,13 @@ export function RoutineTimeline({ open }: { open(addr: string): void }) {
                     {runs.map((r) => {
                       const asked = r.asked;
                       const paid = r.paid > 0n;
-                      const label = `Run ${r.run}, ${when(r.at)}: ${asked ? "asked the owner" : paid ? `paid US$${usd(r.paid)}` : "nothing paid"}${r.ignored.length ? `; ${r.ignored.length} seller text ignored` : ""}${r.early ? "; ran early" : ""}`;
+                      const label = `Run ${r.run}, ${when(r.at)}: ${asked ? "asked the owner" : paid ? `paid ${curSign()}${usd(r.paid)}` : "nothing paid"}${r.ignored.length ? `; ${r.ignored.length} seller text ignored` : ""}${r.early ? "; ran early" : ""}`;
                       return (
                         <li key={r.run} tabIndex={0} aria-label={label} className="group/dot pointer-events-auto absolute top-1/2 grid size-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ink" style={{ left: x(r.at) }}>
                           <span className={cn("block size-3.5 rounded-full ring-2 ring-card transition-transform group-hover/dot:scale-125", asked ? "bg-vermillion" : paid ? "bg-ink" : "bg-card shadow-[inset_0_0_0_2px_var(--color-ink)]", r.ignored.length && "outline outline-2 outline-offset-2 outline-green")} />
                           <Hover below={row === 0} edge={edge(r.at)} seller={seller} title={`Run ${r.run} · ${when(r.at)}`}
                             sellers={[...new Set(r.outs.filter((o) => o.outcome === "paid" || o.outcome === "cosigned").map((o) => String(o.sellerId)))]}
-                            lines={[asked ? `Asked its owner: ${r.outs.some((o) => o.outcome === "cosigned") ? "co-signed" : "declined"}` : paid ? `Paid US$${usd(r.paid)} on its own` : r.outs.some((o) => o.outcome === "watching") ? "Checked the price: above the limit, so no buy" : "Nothing to pay",
+                            lines={[asked ? `Asked its owner: ${r.outs.some((o) => o.outcome === "cosigned") ? "co-signed" : "declined"}` : paid ? `Paid ${curSign()}${usd(r.paid)} on its own` : r.outs.some((o) => o.outcome === "watching") ? "Checked the price: above the limit, so no buy" : "Nothing to pay",
                               ...(r.ignored.length ? [`${r.ignored.length} seller text ignored: the routine didn't change`] : []), ...(r.early ? ["Ran early, by its owner"] : [])]} />
                         </li>
                       );
@@ -101,7 +102,7 @@ export function RoutineTimeline({ open }: { open(addr: string): void }) {
                         <span className="block size-3.5 rounded-full border-2 border-dashed border-muted bg-card transition-transform group-hover/dot:scale-125" />
                         <Hover below={row === 0} edge={edge(t)} seller={seller} title={i === 0 ? `Next run · ${when(t)}` : `Scheduled · ${when(t)}`}
                           sellers={[...new Set(rt.items.map((it) => it.sellerId))]}
-                          lines={[rt.kind === "price-watch" ? `Buys only at US$${rt.limitPrice} or less` : `${rt.items.length} ${rt.items.length === 1 ? "item" : "items"} from the sellers named`, `Inside US$${rt.allowance.amount} a ${rt.allowance.period}, or it asks its owner`]} />
+                          lines={[rt.kind === "price-watch" ? `Buys only at ${curSign()}${rt.limitPrice} or less` : `${rt.items.length} ${rt.items.length === 1 ? "item" : "items"} from the sellers named`, `Inside ${curSign()}${rt.allowance.amount} a ${rt.allowance.period}, or it asks its owner`]} />
                       </li>
                     ))}
                     {running && (

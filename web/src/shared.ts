@@ -72,11 +72,21 @@ export const reasonLayer = (code: string): string =>
   : code === "NOT_THIS_AGENT" ? "Agent key" : code === "SETTLEMENT_FAILED" ? "Settlement" : "Wallet";
 
 export const shortAddr = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
-export const txUrl = (h: string) => `https://sepolia.basescan.org/tx/${h}`;
-export const addrUrl = (a: string) => `https://sepolia.basescan.org/address/${a}`;
+/** The live server's chain, from /api/config (set by LiveNetwork). Unset = Base Sepolia, which the built-in network models. */
+export type ChainInfo = { key: "fisco" | "base-sepolia"; id: number; name: string; rpc: string; currency: string; txUrl: string };
+let chain: ChainInfo | null = null;
+export const setChainInfo = (c: ChainInfo | null) => { chain = c; };
+export const chainInfo = () => chain;
+/** "HK$" on a FISCO server (Mock e-HKD), "US$" on Base Sepolia and the built-in network. */
+export const curSign = () => chain?.currency ?? "US$";
+export const tokenSymbol = () => (chain?.key === "fisco" ? "eHKD" : "USDC");
+export const chainLabel = () => (chain?.key === "fisco" ? "FISCO BCOS" : "Base Sepolia");
+// FISCO has no public explorer: the wallet server hosts a read-only one (txUrl prefix ".../explorer#/tx/")
+export const txUrl = (h: string) => `${chain?.txUrl ?? "https://sepolia.basescan.org/tx/"}${h}`;
+export const addrUrl = (a: string) => `${(chain?.txUrl ?? "https://sepolia.basescan.org/tx/").replace(/tx\/$/, "address/")}${a}`;
 
 export type Seller = { id: string; name: string; category: string; payTo: Address; items: { sku: string; description: string; price: string | null }[] };
-export type Config = { agent: Address; factory: Address; usdc: Address; sellersUrl: string; sellers: Seller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
+export type Config = { agent: Address; factory: Address; usdc: Address; chain?: ChainInfo; sellersUrl: string; sellers: Seller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
 
 const cfgs = new Map<string, Promise<Config>>();
 /** Cached per server after the first success. A failure (server down, 500 plain text) is not cached, so a retry can succeed. */

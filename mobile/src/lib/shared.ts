@@ -1,6 +1,6 @@
 // Pure helpers shared with web/src/shared.ts (copied on purpose: cheaper than a shared package). No React Native imports here.
 import type { Address, Hex } from "viem";
-import { getApi, fetchTimeout, isBuiltin } from "./runtime";
+import { getApi, fetchTimeout, isBuiltin, setChain, type ChainProfile } from "./runtime";
 import { builtin } from "./builtin";
 
 export const USDC: Address = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
@@ -50,7 +50,7 @@ export const reasonText = (code: string) => REASONS[code] ?? code;
 export const shortAddr = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
 
 export type Seller = { id: string; name: string; category: string; payTo: Address; items: { sku: string; /** a few words, for rows (built-in network) */ short?: string; description: string; price: string | null }[] };
-export type Config = { agent: Address; factory: Address; usdc: Address; sellersUrl: string; sellers: Seller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
+export type Config = { agent: Address; factory: Address; usdc: Address; chain?: Omit<ChainProfile, "token">; sellersUrl: string; sellers: Seller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
 
 const cache = new Map<string, Promise<Config>>();
 export const resetConfig = () => cache.clear();
@@ -62,7 +62,7 @@ export function loadConfig(): Promise<Config> {
     p = fetchTimeout(`${base}/api/config`, {}, 10000).then((r) => {
       if (!r.ok) throw new Error(`wallet API ${r.status}`);
       return r.json() as Promise<Config>;
-    });
+    }).then((c) => { setChain(c.chain ? { ...c.chain, token: c.usdc } : null); return c; });
     p.catch(() => cache.delete(base));
     cache.set(base, p);
   }

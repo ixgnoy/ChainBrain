@@ -8,6 +8,7 @@ import { formatUsd, type Config } from "../shared";
 import type { WalletEvent } from "../lib/events";
 import type { NetworkFeed, FeedSnapshot } from "./feed";
 import { createLinkedFeed } from "./linkedFeed";
+import { curSign } from "../shared";
 
 const toTx = (t: SimTx): ChainTx => ({ hash: t.hash as Hex, block: t.block, logIndex: t.logIndex, pocket: t.pocket as Address, kind: t.kind, amount: t.amount, counterparty: t.counterparty as Address | undefined, at: t.at, from: t.from as Address, status: t.status, method: t.method, reason: t.reason, args: t.args, label: t.label });
 
@@ -56,7 +57,7 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
       async forceTransfer(pocket) {
         const j = await world.forceTransfer(pocket as Hex);
         const left = formatUsd(BigInt(j.balanceAfter));
-        return { ok: j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds US$${left}.` : "The transfer was NOT refused." };
+        return { ok: j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds ${curSign()}${left}.` : "The transfer was NOT refused." };
       },
       async runScene(id) { return autopilot.runScene(id); },
       // a judge's own attack: the story waits while it runs (like runScene), and a turn already in flight on that pocket finishes first
@@ -73,7 +74,7 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
         try {
           const j = await world.hijack(pocket as Hex, text);
           const left = formatUsd(BigInt(j.balanceAfter));
-          return { ok: j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds US$${left}.` : "The transfer was NOT refused." };
+          return { ok: j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds ${curSign()}${left}.` : "The transfer was NOT refused." };
         } catch (e) { return { ok: false, text: (e as Error).message }; } finally { autopilot.release(); }
       },
     },

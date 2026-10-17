@@ -25,6 +25,7 @@ import { cleanText } from "../lib/sanitize";
 import { authOf, type Approval } from "../lib/events";
 import { useAutoplayTarget } from "../lib/autoplayTargets";
 import { agentInfo } from "../../../shared/sim/agents";
+import { curSign } from "../lib/runtime";
 
 /** Height of the dock plus its gap: what a screen adds to its bottom padding while the dock shows. */
 export const DOCK_SPACE = 72;
@@ -86,7 +87,7 @@ export function AskDock() {
   const compact = where !== "tabs" || folded.has(first.id);
   const agent = agentInfo(first.agent ?? "");
   const who = agent?.name ?? "An agent";
-  const amount = first.data?.amount ? `US$${cleanText(String(first.data.amount), 10)}` : null;
+  const amount = first.data?.amount ? `${curSign()}${cleanText(String(first.data.amount), 10)}` : null;
   const title = first.kind === "payment" ? `${who} asks ${amount ?? "to pay"}` : `${who} has a task for you`;
   const sub = first.kind === "payment" ? `To ${cleanText(sellerName(first.data?.sellerId), 24)} · needs your co-sign` : cleanText(first.text ?? "Confirm it before it starts", 48);
   // tabs: just above the expanded tab bar (GlassTabBar: bar height + its bottom margin); chat: above the composer

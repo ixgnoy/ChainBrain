@@ -25,6 +25,7 @@ import { agentInfo } from "../../../shared/sim/agents";
 import { parseIntent } from "../components/IntentCard";
 import { describeApprovalError } from "../components/ApprovalSheet";
 import { haptic } from "../haptics";
+import { curSign } from "../lib/runtime";
 
 const amountOf = (a: Approval) => { try { return parseUsd(String(a.data?.amount ?? "0")); } catch { return 0n; } };
 const leftOf = (a: Approval, now: number) => {
@@ -132,7 +133,7 @@ function Waiting({ a, now, onOpen }: { a: Approval; now: number; onOpen: () => v
   const pay = a.kind === "payment";
   const seller = cleanText(sellerName(a.data?.sellerId), 40);
   const left = leftOf(a, now);
-  const limit = pocket ? (pocket.askAbove === NEVER ? "Above the ask-me limit" : pocket.askAbove === 0n ? "Asks about every payment" : `Ask limit US$${usd(pocket.askAbove)} exceeded`) : "Above the ask-me limit";
+  const limit = pocket ? (pocket.askAbove === NEVER ? "Above the ask-me limit" : pocket.askAbove === 0n ? "Asks about every payment" : `Ask limit ${curSign()}${usd(pocket.askAbove)} exceeded`) : "Above the ask-me limit";
   const task = !pay ? parseIntent(a.text) : [];
   const decline = async () => { setBusy(true); setErr(null); const r = await answer(a, false); setBusy(false); if (!r.ok && r.error !== "NOT_PENDING") setErr(describeApprovalError(r.error)); else haptic.light(); };
   return (
@@ -217,7 +218,7 @@ function Decision({ a, at, last }: { a: Approval; at: number; last: boolean }) {
         <T v="cap" color="muted">{`${ok ? "Approved by you" : a.status === "timeout" ? "Expired without your signature" : "Declined"} · ${when}`}</T>
       </View>
       <View style={{ alignItems: "flex-end", gap: 4 }}>
-        <T v="row" w="bold" color={ok ? "ink" : "muted"} style={{ textDecorationLine: ok ? "none" : "line-through" }}>{`US$${usd(amountOf(a))}`}</T>
+        <T v="row" w="bold" color={ok ? "ink" : "muted"} style={{ textDecorationLine: ok ? "none" : "line-through" }}>{`${curSign()}${usd(amountOf(a))}`}</T>
         <StatusPill label={label} tone={ok ? "green" : "fill"} />
       </View>
     </View>

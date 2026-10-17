@@ -16,6 +16,7 @@ import * as api from "../lib/api";
 import { cadenceText, nextRun, type Cadence, type Period, type Routine } from "../../../shared/sim/pocketApp";
 import { useCoverDock } from "./AskDock";
 import { agentName } from "./app/theme";
+import { curSign } from "../lib/runtime";
 
 const EVERY: { key: string; label: string; c: Pick<Cadence, "every" | "weekday" | "dayOfMonth"> }[] = [
   { key: "day", label: "Every day", c: { every: "day", weekday: null, dayOfMonth: null } },
@@ -57,7 +58,7 @@ function Body({ routine, agentId, onClose, onSaved }: { routine: Routine; agentI
   const save = async () => {
     setErr(null); setBusy(true);
     // a looser allowance is signed with Face ID (or the passcode); a stricter one or a new time can only lower the risk
-    if (looser && (await confirmOwner(`Let ${who} spend up to US$${amount.toFixed(2)} a ${period} on its own`)) === "cancel") { setBusy(false); return; }
+    if (looser && (await confirmOwner(`Let ${who} spend up to ${curSign()}${amount.toFixed(2)} a ${period} on its own`)) === "cancel") { setBusy(false); return; }
     try {
       api.editRoutine(routine.pocket, { cadence, allowance: { amount: amount.toFixed(2), period } });
       haptic.success(); onSaved?.(); onClose();
@@ -84,10 +85,10 @@ function Body({ routine, agentId, onClose, onSaved }: { routine: Routine; agentI
         <T v="head">On its own, up to</T>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           <Stepper icon="arrowDown" label="Less" onPress={() => setAmount((x) => step(x, -1))} disabled={amount <= 0.01} />
-          <View style={{ flex: 1, alignItems: "center" }} accessible accessibilityLabel={`US$${amount.toFixed(2)} a ${period}`} accessibilityRole="adjustable"
+          <View style={{ flex: 1, alignItems: "center" }} accessible accessibilityLabel={`${curSign()}${amount.toFixed(2)} a ${period}`} accessibilityRole="adjustable"
             accessibilityActions={[{ name: "increment" }, { name: "decrement" }]} onAccessibilityAction={(e) => setAmount((x) => step(x, e.nativeEvent.actionName === "increment" ? 1 : -1))}>
-            <T v="balance" style={{ fontVariant: ["tabular-nums"] }}>{`US$${amount.toFixed(2)}`}</T>
-            {amount !== was ? <T v="cap" color={amount > was ? "vermillionInk" : "muted"}>{`was US$${was.toFixed(2)}`}</T> : <T v="cap" color="muted">{" "}</T>}
+            <T v="balance" style={{ fontVariant: ["tabular-nums"] }}>{`${curSign()}${amount.toFixed(2)}`}</T>
+            {amount !== was ? <T v="cap" color={amount > was ? "vermillionInk" : "muted"}>{`was ${curSign()}${was.toFixed(2)}`}</T> : <T v="cap" color="muted">{" "}</T>}
           </View>
           <Stepper icon="arrowUp" label="More" onPress={() => setAmount((x) => step(x, 1))} />
         </View>
@@ -102,7 +103,7 @@ function Body({ routine, agentId, onClose, onSaved }: { routine: Routine; agentI
         </View>
         <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
           <Icon name="bell" size={16} color={c.vermillionInk} stroke={2} />
-          <T v="sub" style={{ flex: 1 }}>{`Past US$${amount.toFixed(2)} a ${period}, ${who} stops and asks you`}</T>
+          <T v="sub" style={{ flex: 1 }}>{`Past ${curSign()}${amount.toFixed(2)} a ${period}, ${who} stops and asks you`}</T>
         </View>
         <T v="cap" color="muted">This period's spend so far still counts: changing the routine doesn't reset it.</T>
       </View>

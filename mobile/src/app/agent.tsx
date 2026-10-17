@@ -37,6 +37,7 @@ import { isTightCap } from "../lib/presets";
 import { plainAsks } from "../lib/plain";
 import { haptic } from "../haptics";
 import { useGrowCap } from "../ui/fontScale";
+import { curSign } from "../lib/runtime";
 
 type ChipItem = { label: string; text: string };
 // a server without /dev/scenes: tasks that name no seller (real provider names belong to the built-in network only)
@@ -114,10 +115,10 @@ function AgentCardBlock({ children }: { children: React.ReactNode }) {
 export function lastStepText(events: WalletEvent[], sellerName: (id?: string) => string): string | null {
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
-    if (e.type === "payment") return `Paid ${cleanText(sellerName(e.sellerId), 30)} US$${usd(BigInt(e.amount ?? 0))}`;
+    if (e.type === "payment") return `Paid ${cleanText(sellerName(e.sellerId), 30)} ${curSign()}${usd(BigInt(e.amount ?? 0))}`;
     if (e.type === "trace" && e.phase === "tool_result" && e.tool === "pay") {
       const p = events.slice(0, i + 2).reverse().find((x) => x.type === "payment");
-      if (p) return `Paid ${cleanText(sellerName(p.sellerId), 30)} US$${usd(BigInt(p.amount ?? 0))}`;
+      if (p) return `Paid ${cleanText(sellerName(p.sellerId), 30)} ${curSign()}${usd(BigInt(p.amount ?? 0))}`;
     }
     if (e.type === "trace" && e.phase === "tool_result" && e.tool) {
       const sum = summarizeTool(e.tool, toolResultOf(e));
@@ -400,7 +401,7 @@ export default function AgentChat() {
             <StoppedCard codes={["POCKET_REVOKED"]} last={stopped} tx={stopTx?.hash} canReturn={active.owned && active.balance > 0n} onReturn={() => setAction({ mode: "return", pocket: active.address })} />
           ) : null}
           {pay && (
-            <EventCard tone="waiting" title="Waiting for your OK" body={`${cleanText(sellerName(pay.data?.sellerId), 40)} · US$${cleanText(pay.data?.amount, 10)}`}>
+            <EventCard tone="waiting" title="Waiting for your OK" body={`${cleanText(sellerName(pay.data?.sellerId), 40)} · ${curSign()}${cleanText(pay.data?.amount, 10)}`}>
               <Button label="Review and approve" small onPress={() => openApproval(pay.id)} />
             </EventCard>
           )}

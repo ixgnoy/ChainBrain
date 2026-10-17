@@ -32,6 +32,7 @@ import { PocketFace, toneFor } from "../../components/PocketFace";
 import { stripFor } from "../../components/PocketWallet";
 import { cadenceText } from "../../../../shared/sim/pocketApp";
 import { budgetOf, runsOf } from "../../../../shared/sim/pocketAppData";
+import { curSign } from "../../lib/runtime";
 
 const cap1 = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
@@ -240,7 +241,7 @@ export default function BrainTab() {
         <Panel title="Routine" pill={routine.status === "paused" ? "Paused" : `${runs.length} ${runs.length === 1 ? "run" : "runs"} on its own`} pillTone={routine.status === "paused" ? "fill" : "green"} delay={40}>
           <T v="sub" color="ink2">{`${cadenceText(routine.cadence)}, it buys the same ${routine.items.length === 1 ? "item" : `${routine.items.length} items`} from the sellers you named. It never decides to buy something new: the schedule, the items and the allowance are fixed fields you signed.`}</T>
           <View style={{ flexDirection: "row", gap: 8 }}>
-            <Counter icon="gauge" n={Math.round((Number(rb.spent) / Math.max(Number(rb.limit), 1)) * 100)} label={`% of US$${usd(rb.limit)} a ${routine.allowance.period} used`} a11y={`percent of this ${routine.allowance.period}'s allowance used: ${money(rb.spent)} of ${money(rb.limit)}`} />
+            <Counter icon="gauge" n={Math.round((Number(rb.spent) / Math.max(Number(rb.limit), 1)) * 100)} label={`% of ${curSign()}${usd(rb.limit)} a ${routine.allowance.period} used`} a11y={`percent of this ${routine.allowance.period}'s allowance used: ${money(rb.spent)} of ${money(rb.limit)}`} />
             <Counter icon="shieldCheck" n={ignored} label={ignored === 1 ? "seller text ignored" : "seller texts ignored"} a11y="times a seller's text tried to change the routine; nothing changed" />
           </View>
           {routine.status === "active" ? <T v="cap" color="muted">{`Next ${new Date(routine.nextAt).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" })}. Past the allowance it stops and asks you to co-sign.`}</T> : null}

@@ -3,10 +3,11 @@ import { ArrowDownLeft, Ban, Tag, Copy, Check } from "lucide-react";
 import { useSeller } from "./useSeller";
 import { buyerTag, type SaleRow } from "./data";
 import { Avatar, Button, Card, DetailSheet, Empty, Fig, Pill, Row, Section, SubTitle, money, moneyCents, tabPill, when } from "./ui";
-import { REASONS, shortAddr } from "../shared";
+import { REASONS, shortAddr, tokenSymbol, chainLabel } from "../shared";
 import { cleanText } from "../lib/sanitize";
 import { cn } from "../lib/cn";
 import { Disclosure, KpiStrip } from "../console/kit";
+import { curSign } from "../shared";
 
 export type Page = "overview" | "sales" | "catalogue";
 const ICON = { strokeWidth: 1.75 };
@@ -43,7 +44,7 @@ function SaleDetail({ r, onClose }: { r?: SaleRow; onClose(): void }) {
           <div className="flex flex-col items-center py-6 text-center">
             <Avatar tone={r.outcome === "paid" ? "accent" : "negative"} size={64}>{r.outcome === "paid" ? <ArrowDownLeft className="size-7" {...ICON} /> : <Ban className="size-7" {...ICON} />}</Avatar>
             <div className={cn("figure mt-4 text-[44px] leading-[48px]", r.outcome === "refused" && "text-faint")}>{r.amount == null ? title(r) : <>{r.outcome === "paid" ? "+" : ""}<Fig text={money(r.amount)} /></>}</div>
-            <div className="mt-3"><Pill tone={r.outcome === "paid" ? "accent" : "negative"}>{r.outcome === "paid" ? "Paid in USDC" : "Not paid"}</Pill></div>
+            <div className="mt-3"><Pill tone={r.outcome === "paid" ? "accent" : "negative"}>{r.outcome === "paid" ? `Paid in ${tokenSymbol()}` : "Not paid"}</Pill></div>
             {r.why && <p className="mx-auto mt-4 max-w-[34ch] text-[15px] text-ink2">{r.why}</p>}
           </div>
           <Card className="bg-tile">
@@ -101,7 +102,7 @@ export function Overview({ go }: { go(p: Page): void }) {
       <Card className="hatch hatch-soft relative mt-10 overflow-hidden bg-blue-soft p-1.5 [--hatch:rgba(18,73,119,0.22)]">
        <div className="rounded-[20px] bg-card p-6">
         <div className="eyebrow text-blue-ink">How agent payments work</div>
-        <p className="mt-2 max-w-[60ch] text-[16px] leading-6 text-ink">Buyers' AI agents pay you in USDC from a pocket their owner funded. Each pocket has its own rules, so some attempts are refused before any money moves, and you see why here.</p>
+        <p className="mt-2 max-w-[60ch] text-[16px] leading-6 text-ink">Buyers' AI agents pay you in {tokenSymbol()} from a pocket their owner funded. Each pocket has its own rules, so some attempts are refused before any money moves, and you see why here.</p>
        </div>
       </Card>
     </div>
@@ -143,12 +144,12 @@ export function Catalogue() {
       <SubTitle title="Catalogue" sub="What buyer agents can buy from you, and the price they see." />
       <Card className="divide-y divide-line">
         {seller.items.map((i) => (
-          <Row key={i.sku} avatar={<Avatar tone="warning"><Tag className="size-5" {...ICON} /></Avatar>} title={cleanText(i.description, 90)} sub={i.sku} amount={i.price ? `US$${i.price}` : "Free"} amountClass={i.price ? undefined : "text-muted"} />
+          <Row key={i.sku} avatar={<Avatar tone="warning"><Tag className="size-5" {...ICON} /></Avatar>} title={cleanText(i.description, 90)} sub={i.sku} amount={i.price ? `${curSign()}${i.price}` : "Free"} amountClass={i.price ? undefined : "text-muted"} />
         ))}
       </Card>
       <Section title="Payouts">
         <Card>
-          <Row avatar={<Avatar tone="accent">$</Avatar>} title="USDC on Base" sub={`Paid to ${shortAddr(seller.payTo)}`}
+          <Row avatar={<Avatar tone="accent">$</Avatar>} title={`${tokenSymbol()} on ${chainLabel()}`} sub={`Paid to ${shortAddr(seller.payTo)}`}
             amount={<button type="button" onClick={copy} className="inline-flex items-center gap-1.5 text-[15px] font-bold text-ink hover:underline">{copied ? <Check className="size-4" /> : <Copy className="size-4" {...ICON} />}{copied ? "Copied" : "Copy address"}</button>} />
         </Card>
       </Section>

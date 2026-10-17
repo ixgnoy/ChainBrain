@@ -15,6 +15,7 @@ import { useDrawIn } from "../ui/Hatch";
 import { dailySpend, weekOverWeek, type AgentId } from "../lib/agents";
 import type { LedgerRow } from "../lib/events";
 import { usd } from "../lib/util";
+import { curSign } from "../lib/runtime";
 
 const H = 150, TOP = 46, BOTTOM = 6;
 const DAY = ["S", "M", "T", "W", "T", "F", "S"];
@@ -61,7 +62,7 @@ function SpendChartView({ ledger, agentOf, play = true }: { ledger: LedgerRow[];
   const pct = wow.delta != null && range === "7" ? `${up ? "+" : wow.delta < 0 ? "−" : ""}${Math.abs(Math.round(wow.delta * 100))}% vs last week` : null;
   const label = range === "7" ? "Weekly spending by your agents" : "Spending by your agents, 14 days";
   // the stem tooltip on today: the week-over-week change, or today's own figure when there is no last week to compare
-  const stem = plot ? (pct ?? `Today US$${usd(series[plot.today].total)}`) : null;
+  const stem = plot ? (pct ?? `Today ${curSign()}${usd(series[plot.today].total)}`) : null;
   const STEM_W = 168;
   // the peak's black tag only when it is not today and has room beside the stem
   const tag = plot && plot.peak >= 0 && plot.peak !== plot.today && Math.abs(plot.pts[plot.peak][0] - plot.pts[plot.today][0]) > STEM_W / 2 + 40;
@@ -73,7 +74,7 @@ function SpendChartView({ ledger, agentOf, play = true }: { ledger: LedgerRow[];
           <Money v="section" value={usd(total)} label={`${label} ${usd(total)} US dollars`} />
         </View>
       </View>
-      <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: H + 28, marginTop: 8 }} accessible accessibilityLabel={series.map((d) => `${new Date(d.day).toLocaleDateString("en-GB", { weekday: "short" })} US$${usd(d.total)}`).join(", ")}>
+      <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: H + 28, marginTop: 8 }} accessible accessibilityLabel={series.map((d) => `${new Date(d.day).toLocaleDateString("en-GB", { weekday: "short" })} ${curSign()}${usd(d.total)}`).join(", ")}>
         {plot ? (
           <>
             <Svg width={w} height={H}>
@@ -94,7 +95,7 @@ function SpendChartView({ ledger, agentOf, play = true }: { ledger: LedgerRow[];
             {tag ? (
               <View pointerEvents="none" style={{ position: "absolute", top: Math.max(plot.pts[plot.peak][1] - 34, 0), left: Math.min(Math.max(plot.pts[plot.peak][0] - 34, 0), w - 68), width: 68, alignItems: "center" }}>
                 <View style={{ backgroundColor: c.ink, borderRadius: 7, paddingHorizontal: 8, height: 24, justifyContent: "center", borderWidth: 1, borderColor: c.white }}>
-                  <T v="cap" w="bold" style={{ color: c.white }}>{`US$${usd(series[plot.peak].total)}`}</T>
+                  <T v="cap" w="bold" style={{ color: c.white }}>{`${curSign()}${usd(series[plot.peak].total)}`}</T>
                 </View>
               </View>
             ) : null}

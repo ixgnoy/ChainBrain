@@ -13,8 +13,9 @@ import { ago } from "./liveRules";
 import { KpiStrip, EmptyState, chip } from "./kit";
 import type { ChainTx } from "./chain";
 import { Button, Card, PageTitle, Pill, Section } from "../seller/ui";
-import { REASONS, shortAddr } from "../shared";
+import { REASONS, shortAddr, tokenSymbol } from "../shared";
 import { cn } from "../lib/cn";
+import { curSign } from "../shared";
 
 const lc = (a?: string) => (a ?? "").toLowerCase();
 const when = (at?: number) => (at ? new Date(at).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : undefined);
@@ -31,7 +32,7 @@ function useWho() {
     const kindOf = (a?: string): { name?: string; kind: "pocket" | "seller" | "owner" | "agent" | "usdc" | "factory" | "other" } => {
       const l = lc(a);
       if (!l) return { kind: "other" };
-      if (l === lc(cfg.usdc)) return { name: "USDC", kind: "usdc" };
+      if (l === lc(cfg.usdc)) return { name: tokenSymbol(), kind: "usdc" };
       if (l === lc(cfg.factory)) return { name: "PocketFactory", kind: "factory" };
       if (pockets.some((p) => lc(p.address) === l)) return { name: nameOf(a!), kind: "pocket" };
       const s = cfg.sellers.find((x) => lc(x.payTo) === l);
@@ -95,7 +96,7 @@ function Rows({ rows }: { rows: [string, ReactNode][] }) {
 
 function FieldValue({ f }: { f: Field }) {
   if (f.kind === "address") return <Addr address={f.value} />;
-  if (f.kind === "amount") { const t = usdText(f.value); return <span className="num">{t ? `US$${t}` : f.value}</span>; }
+  if (f.kind === "amount") { const t = usdText(f.value); return <span className="num">{t ? `${curSign()}${t}` : f.value}</span>; }
   return <span className="num break-all">{f.value}</span>;
 }
 
@@ -207,7 +208,7 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
       <Crumbs here="Transaction" />
       <header className="mb-6">
         <div className="flex flex-wrap items-center gap-3"><h1 className="title-serif text-[32px] leading-10 sm:text-[40px] sm:leading-[46px]">Transaction</h1><StatusPill status={x.status} /></div>
-        {x.value && <p data-testid="tx-amount" className="mt-3 flex flex-wrap items-center gap-3"><span className="figure text-[40px] leading-[44px]"><span className="cur">US$</span>{x.value}</span>{x.status === "reverted" ? <Pill tone="warning">Did not move</Pill> : <Pill tone="neutral">Moved</Pill>}</p>}
+        {x.value && <p data-testid="tx-amount" className="mt-3 flex flex-wrap items-center gap-3"><span className="figure text-[40px] leading-[44px]"><span className="cur">{curSign()}</span>{x.value}</span>{x.status === "reverted" ? <Pill tone="warning">Did not move</Pill> : <Pill tone="neutral">Moved</Pill>}</p>}
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1"><span className="num break-all text-[13px] text-ink2" data-testid="tx-hash-full">{hash}</span><CopyButton text={hash} /></div>
       </header>
       <Card className="p-5 sm:p-6">
@@ -238,7 +239,7 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
             ["Time", x.at ? <span key="t">{when(x.at)} <span className="font-normal text-muted">· {ago(x.at)}</span></span> : undefined],
             ["From", x.from ? <Addr key="f" address={x.from} full /> : undefined],
             ["To (contract)", x.to ? <span key="to" className="inline-flex min-w-0 flex-wrap items-baseline gap-x-2"><span className="font-medium">{x.toName}</span><a href={explorerHref.address(x.to)} className="num break-all text-ink underline decoration-line decoration-2 underline-offset-4 hover:decoration-vermillion">{x.to}</a>{toKind?.kind === "pocket" && <span className="sr-only">pocket</span>}</span> : undefined],
-            ["Value", x.value ? <span key="v" className="num">US${x.value}</span> : undefined],
+            ["Value", x.value ? <span key="v" className="num">{curSign()}{x.value}</span> : undefined],
             ["Method", <span key="m" className="num rounded-full bg-tile px-2.5 py-1 text-[13px] font-bold shadow-[inset_0_0_0_1px_var(--color-tile-stroke)]">{x.method}</span>],
             ["Pocket", x.pocket ? <Addr key="pk" address={x.pocket} /> : undefined],
             ["Network", <span key="n">{net.chainName}{net.builtin || net.dev ? <span className="font-normal text-muted"> · no real money</span> : null}</span>],
@@ -314,7 +315,7 @@ function AddressPage({ address, watch }: { address: string; watch?(pocket: strin
     : txsOfAddress(address, inputs);
   const names = new Map(net.cfg.sellers.map((s) => [s.id, s.name]));
   const received = k.kind === "seller" ? net.allTxs.filter((t) => t.kind === "payment" && lc(t.counterparty) === lc(address) && t.status !== "reverted").reduce((n, t) => n + (t.amount ?? 0n), 0n) : undefined;
-  const KIND: Record<string, string> = { pocket: "Pocket contract", seller: "Seller", owner: "Owner", agent: "Agent key", usdc: "USDC token contract", factory: "Pocket factory", other: "Address" };
+  const KIND: Record<string, string> = { pocket: "Pocket contract", seller: "Seller", owner: "Owner", agent: "Agent key", usdc: `${tokenSymbol()} token contract`, factory: "Pocket factory", other: "Address" };
   const st = pocket ? pocketStatus(pocket) : undefined;
   return (
     <div data-testid="explorer-address" data-kind={k.kind} className="fade-up">

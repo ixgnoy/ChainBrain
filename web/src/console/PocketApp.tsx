@@ -15,6 +15,7 @@ import {
   appFromEvents, budgetOf, haggleOf, monthBySeller, priceChanges, priceSeries, purchasesOf, renewalsOf, routineFromEvents, runsOf, savingsOf, sourcesOf, upcoming,
 } from "@sim/pocketAppData";
 import type { PocketState } from "./chain";
+import { curSign } from "../shared";
 
 const I = { strokeWidth: 1.75 } as const;
 const LAYOUT_NAME: Record<Layout, string> = { research: "Research desk", deal: "Deal watcher", subscriptions: "Subscriptions", haggle: "Haggler" };
@@ -170,7 +171,7 @@ function PriceHero({ c, block, i }: { c: Ctx; block: Block; i: number }) {
               </g>
             </g>
           )}
-          {plot.ly != null && limit != null && <g><rect x={W - R + 8} y={plot.ly - 12} width="58" height="24" rx="7" fill="#124977" /><text x={W - R + 37} y={plot.ly + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">≤ {usd(limit).replace("US$", "")}</text></g>}
+          {plot.ly != null && limit != null && <g><rect x={W - R + 8} y={plot.ly - 12} width="58" height="24" rx="7" fill="#124977" /><text x={W - R + 37} y={plot.ly + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">≤ {usd(limit).replace(curSign(), "")}</text></g>}
         </svg>
       ) : <EmptyHatch text={limit != null ? `Every quote lands here. It buys at ${usd(limit)} or less.` : "Every quote lands here."} />}
       {plot && <div className="mt-1 flex justify-between pr-[11%] text-[12px]"><span className="text-muted">{day(s.quotes[0].at)}</span><span className="font-bold">{day(s.quotes.at(-1)!.at)}</span></div>}
@@ -252,7 +253,7 @@ function NextRun({ c, i }: { c: Ctx; i: number }) {
           </div>
         ))}
       </div>
-      <p className="mt-3 text-[12px] text-muted">{cadenceText(rs.cadence)}{rs.kind === "price-watch" ? ` · buys at US$${rs.limitPrice} or less` : ""}</p>
+      <p className="mt-3 text-[12px] text-muted">{cadenceText(rs.cadence)}{rs.kind === "price-watch" ? ` · buys at ${curSign()}${rs.limitPrice} or less` : ""}</p>
     </Block>
   );
 }
@@ -268,7 +269,7 @@ function Runs({ c, block, i }: { c: Ctx; block: Block; i: number }) {
           <li key={r.run} className="grid gap-2">
             <div className="flex items-center gap-3">
               <span className={cn("grid size-10 place-items-center rounded-xl font-display text-[17px] font-semibold", r.asked ? "bg-vermillion-soft text-vermillion-ink" : "bg-fill")}>{r.run}</span>
-              <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold">{paid.length ? `Paid ${usd(r.paid)}` : watching ? `Watched · US$${watching.amount}` : "Nothing paid"}</span><span className="block text-[12px] text-muted">{day(r.at)} {hm(r.at)}{r.early ? " · ran early" : ""}{r.asked ? " · asked the owner" : ""}</span></span>
+              <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold">{paid.length ? `Paid ${usd(r.paid)}` : watching ? `Watched · ${curSign()}${watching.amount}` : "Nothing paid"}</span><span className="block text-[12px] text-muted">{day(r.at)} {hm(r.at)}{r.early ? " · ran early" : ""}{r.asked ? " · asked the owner" : ""}</span></span>
               <span className="flex -space-x-2">{paid.slice(0, 3).map((o, k) => <SellerLogo key={k} id={o.sellerId} name={c.seller(o.sellerId)} className="size-6 rounded-[8px] ring-2 ring-card" />)}</span>
             </div>
             {r.ignored.map((x, k) => <div key={k} className="flex gap-2.5 rounded-xl bg-tile p-3 text-[12px]"><ShieldCheck className="size-4 shrink-0 text-green-ink" {...I} aria-hidden /><span><b>{c.seller(x.sellerId)} tried to change this routine. Nothing changed.</b>{x.excerpt && <span className="block text-muted">“{cleanText(x.excerpt, 110)}”</span>}</span></div>)}
@@ -290,8 +291,8 @@ function WhatNext({ c }: { c: Ctx }) {
     [`First ${watch ? "check" : "run"} ${day(at)} · ${hm(at)}`, cadenceText(rs.cadence)],
     [`${c.agent} ${watch ? "checks" : "buys"} ${rs.items.length === 1 ? c.item(rs.items[0].sellerId, rs.items[0].sku) : `${rs.items.length} items`}`, sellers.map((x) => c.seller(x)).join(" · "),
       <span className="flex -space-x-2">{sellers.slice(0, 3).map((x) => <SellerLogo key={x} id={x} name={c.seller(x)} className="size-6 rounded-[8px] ring-2 ring-card" />)}</span>],
-    watch ? [`Buys only at US$${rs.limitPrice} or less`, "Above that, it only logs the price"] : [`Pays US$${total.toFixed(3).replace(/0$/, "")}`, "The sellers' listed prices"],
-    [`Past US$${rs.allowance.amount} a ${rs.allowance.period}, ${c.agent} asks its owner`, "A co-signature, or it doesn't pay"],
+    watch ? [`Buys only at ${curSign()}${rs.limitPrice} or less`, "Above that, it only logs the price"] : [`Pays ${curSign()}${total.toFixed(3).replace(/0$/, "")}`, "The sellers' listed prices"],
+    [`Past ${curSign()}${rs.allowance.amount} a ${rs.allowance.period}, ${c.agent} asks its owner`, "A co-signature, or it doesn't pay"],
   ];
   return (
     <ol aria-label="What happens next" className="grid">
@@ -357,7 +358,7 @@ function Guard({ c, i }: { c: Ctx; i: number }) {
   const rows: [string, "Contract" | "ChainBrain"][] = [
     [`Pay anyone but ${c.p.allowed.map((id) => c.seller(id)).join(", ")}`, "Contract"],
     [`Pay more than ${usd(c.p.cap)} at once`, "Contract"],
-    [`Spend past US$${rs.allowance.amount} a ${rs.allowance.period} without the owner's cheque`, "ChainBrain"],
+    [`Spend past ${curSign()}${rs.allowance.amount} a ${rs.allowance.period} without the owner's cheque`, "ChainBrain"],
     ["Change its own schedule, sellers or limits, whatever a seller says", "ChainBrain"],
     ["Pay anything after the owner revokes the pocket", "Contract"],
   ];
@@ -406,7 +407,7 @@ export function PocketAppView({ address, back, watch }: { address: string; back(
   };
   const rs = app.routine;
   const line = rs
-    ? rs.kind === "price-watch" ? `Checks ${cadenceText(rs.cadence).replace(/^Every /, "every ").toLowerCase()} · buys at US$${rs.limitPrice} or less` : `${cadenceText(rs.cadence)} · on its own inside US$${rs.allowance.amount} a ${rs.allowance.period}`
+    ? rs.kind === "price-watch" ? `Checks ${cadenceText(rs.cadence).replace(/^Every /, "every ").toLowerCase()} · buys at ${curSign()}${rs.limitPrice} or less` : `${cadenceText(rs.cadence)} · on its own inside ${curSign()}${rs.allowance.amount} a ${rs.allowance.period}`
     : app.layout === "haggle" ? "Negotiates first, pays only what the owner allows" : "Buys when asked, inside the pocket's rules";
   return (
     <div className="fade-up">

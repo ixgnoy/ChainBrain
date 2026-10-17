@@ -26,6 +26,7 @@ import { cadenceText, nextRuns, param, type Block, type PocketAppSpec, type Rout
 import {
   budgetOf, haggleOf, monthBySeller, priceChanges, priceSeries, purchasesOf, renewalsOf, runsOf, savingsOf, sourcesOf, upcoming,
 } from "../../../../shared/sim/pocketAppData";
+import { curSign } from "../../lib/runtime";
 
 type Ev = { type: string; pocket?: string; at: number; [k: string]: any };
 export type AppCtx = {
@@ -129,8 +130,8 @@ export function AppHeader({ ctx, onOpen }: { ctx: AppCtx; /** opens the agent's 
   const state = ctx.preview ? null : ctx.running ? "Running" : r?.status === "paused" ? "Paused" : rs ? "Active" : null;
   const line = rs
     ? rs.kind === "price-watch"
-      ? `Checks ${cadenceText(rs.cadence).replace(/^Every /, "every ").toLowerCase()} · buys at US$${rs.limitPrice} or less`
-      : `${cadenceText(rs.cadence)} · on its own inside US$${rs.allowance.amount} a ${rs.allowance.period}`
+      ? `Checks ${cadenceText(rs.cadence).replace(/^Every /, "every ").toLowerCase()} · buys at ${curSign()}${rs.limitPrice} or less`
+      : `${cadenceText(rs.cadence)} · on its own inside ${curSign()}${rs.allowance.amount} a ${rs.allowance.period}`
     : spec.layout === "haggle" ? "Negotiates first, pays only what you allow" : "Buys when you ask, inside the pocket's rules";
   const Box = (onOpen ? Press : View) as React.ComponentType<any>;
   return (
@@ -159,7 +160,7 @@ function Shelf({ ctx }: { ctx: AppCtx }) {
   const list = [...all].reverse();
   const total = all.reduce((n, p) => n + p.amount, 0n);
   return (
-    <BlockCard label="Library" right={all.length ? `US$${usd(total)} in all` : undefined} flush>
+    <BlockCard label="Library" right={all.length ? `${curSign()}${usd(total)} in all` : undefined} flush>
       <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, paddingHorizontal: 18 }}>
         <T v="balance" style={{ fontSize: 44, lineHeight: 50 }}>{String(all.length)}</T>
         <T v="sub" color="ink2">{all.length === 1 ? "report bought" : "reports bought"}</T>
@@ -182,7 +183,7 @@ function Cover({ x, i, ctx }: { x: ReturnType<typeof purchasesOf>[number]; i: nu
   return (
     // keyed by the purchase: a new report slides in at the front and the rest glide along the shelf
     <Animated.View style={a} layout={reduce ? undefined : LinearTransition.duration(240)}>
-      <Press kind="row" haptics="light" onPress={() => ctx.onReceipt?.(x.tx)} accessibilityRole="button" accessibilityLabel={`${name} from ${ctx.sellerName(x.sellerId)}, US$${usd(x.amount)}, ${day(x.at)}, receipt`}
+      <Press kind="row" haptics="light" onPress={() => ctx.onReceipt?.(x.tx)} accessibilityRole="button" accessibilityLabel={`${name} from ${ctx.sellerName(x.sellerId)}, ${curSign()}${usd(x.amount)}, ${day(x.at)}, receipt`}
         style={{ width: 136, minHeight: 176, borderRadius: radius.tile, backgroundColor: i === 0 ? c.ink : c.tile, overflow: "hidden" }}>
         <View style={{ height: 72, alignItems: "flex-start", justifyContent: "flex-end", padding: 12, overflow: "hidden" }}>
           <Hatch color={i === 0 ? "#FFFFFF" : c.line} pitch={7} stroke={1.3} opacity={i === 0 ? 0.16 : 0.9} />
@@ -192,7 +193,7 @@ function Cover({ x, i, ctx }: { x: ReturnType<typeof purchasesOf>[number]; i: nu
           <T v="sub" w="semi" numberOfLines={3} style={{ color: i === 0 ? c.white : c.ink, lineHeight: 18 }}>{short(name)}</T>
           <View>
             <T v="cap" numberOfLines={1} style={{ color: i === 0 ? "rgba(255,255,255,0.64)" : c.muted }}>{`${day(x.at)}${x.run ? ` · run ${x.run}` : ""}`}</T>
-            <T v="head" style={{ color: i === 0 ? c.white : c.ink, fontVariant: ["tabular-nums"] }}>{`US$${usd(x.amount)}`}</T>
+            <T v="head" style={{ color: i === 0 ? c.white : c.ink, fontVariant: ["tabular-nums"] }}>{`${curSign()}${usd(x.amount)}`}</T>
           </View>
         </View>
       </Press>
@@ -210,7 +211,7 @@ function PriceHero({ ctx, block }: { ctx: AppCtx; block: Block }) {
     <BlockCard label={item ? `${ctx.sellerName(item.sellerId)} · quoted prices` : "Quoted prices"} right={`${days} days`}>
       <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
         <View style={{ gap: 2 }}>
-          <Money v="amount" value={last ? usd(last.price) : "—"} prefix={last ? "US$" : ""} label={last ? `Last quote US$${usd(last.price)}` : "No quote yet"} />
+          <Money v="amount" value={last ? usd(last.price) : "—"} prefix={last ? curSign() : ""} label={last ? `Last quote ${curSign()}${usd(last.price)}` : "No quote yet"} />
           <T v="cap" color="muted">{last ? `Last quote · ${day(last.at)} ${hm(last.at)}` : item ? cleanText(ctx.itemName(item.sellerId, item.sku), 60) : "No quotes yet"}</T>
         </View>
         {s && s.quotes.length > 1 ? (
@@ -221,7 +222,7 @@ function PriceHero({ ctx, block }: { ctx: AppCtx; block: Block }) {
       </View>
       {s && s.quotes.length ? (
         <PriceChart quotes={s.quotes} buys={s.buys} limit={limit} />
-      ) : <Empty icon="chart" text={limit != null ? `Every quote lands here. It buys at US$${usd(limit)} or less.` : "Every quote lands here."} />}
+      ) : <Empty icon="chart" text={limit != null ? `Every quote lands here. It buys at ${curSign()}${usd(limit)} or less.` : "Every quote lands here."} />}
       {s && s.quotes.length ? (
         <View style={{ flexDirection: "row", gap: 16, flexWrap: "wrap" }}>
           <Legend swatch={<View style={{ width: 14, height: 0, borderTopWidth: 2, borderColor: c.blueInk, borderStyle: "dashed" }} />} text="Your limit" />
@@ -243,9 +244,9 @@ function MonthSpend({ ctx }: { ctx: AppCtx }) {
   const next = ctx.routine?.status === "active" ? ctx.routine.nextAt : null;
   return (
     <BlockCard label={`Spent in ${month}`} right={next ? `Renews ${day(next)}` : undefined}>
-      <Money v="amount" value={usd(m.total)} label={`US$${usd(m.total)} spent in ${month}`} />
+      <Money v="amount" value={usd(m.total)} label={`${curSign()}${usd(m.total)} spent in ${month}`} />
       <View style={{ height: 22, borderRadius: 7, overflow: "hidden", flexDirection: "row", backgroundColor: c.fill }}
-        accessible accessibilityLabel={m.rows.map((r) => `${ctx.sellerName(r.sellerId)} US$${usd(r.amount)}`).join(", ") || "Nothing spent this month"}>
+        accessible accessibilityLabel={m.rows.map((r) => `${ctx.sellerName(r.sellerId)} ${curSign()}${usd(r.amount)}`).join(", ") || "Nothing spent this month"}>
         {m.rows.length ? m.rows.map((r, k) => (
           <View key={r.sellerId} style={{ flex: Number(r.amount), backgroundColor: SEG[k % SEG.length], borderRightWidth: k < m.rows.length - 1 ? 2 : 0, borderColor: c.card }} />
         )) : <Hatch color={c.line} pitch={6} stroke={1.4} />}
@@ -275,7 +276,7 @@ function Ladder({ ctx }: { ctx: AppCtx }) {
     return (
       <BlockCard label="The deal" right={item?.it ? short(item.it.short ?? item.it.description) : undefined}>
         {item?.it && list ? (
-          <View style={{ gap: 8 }} accessible accessibilityLabel={`${ctx.sellerName(item.id)} lists it at US$${item.it.price}. ${agentName(ctx.agentId)} offers less, up to three rounds, and pays at most US$${usd(ctx.rules.cap)}.`}>
+          <View style={{ gap: 8 }} accessible accessibilityLabel={`${ctx.sellerName(item.id)} lists it at ${curSign()}${item.it.price}. ${agentName(ctx.agentId)} offers less, up to three rounds, and pays at most ${curSign()}${usd(ctx.rules.cap)}.`}>
             <LadderRow i={0} label={`${ctx.sellerName(item.id)} lists it at`} price={BigInt(Math.round(list * 1e6))} frac={1} who="seller" />
             {[1, 2, 3].map((r) => (
               <View key={r} style={{ gap: 4 }}>
@@ -302,7 +303,7 @@ function Ladder({ ctx }: { ctx: AppCtx }) {
   const max = Number(h.list) || 1;
   return (
     <BlockCard label="The deal" right={cleanText(ctx.itemName(h.sellerId, h.sku), 40)}>
-      <View style={{ gap: 8 }} accessible accessibilityLabel={rows.map((r) => `${r.label} US$${usd(r.price)}`).join(", ")}>
+      <View style={{ gap: 8 }} accessible accessibilityLabel={rows.map((r) => `${r.label} ${curSign()}${usd(r.price)}`).join(", ")}>
         {rows.map((r, i) => <LadderRow key={i} i={i} label={r.label} price={r.price} frac={Number(r.price) / max} who={r.who} />)}
       </View>
     </BlockCard>
@@ -318,7 +319,7 @@ function LadderRow({ i, label, price, frac, who }: { i: number; label: string; p
     <View style={{ gap: 4 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <T v="cap" w={who === "paid" ? "bold" : "medium"} color={who === "paid" ? "ink" : "ink2"}>{label}</T>
-        <T v="cap" w="bold" style={{ fontVariant: ["tabular-nums"] }}>{`US$${usd(price)}`}</T>
+        <T v="cap" w="bold" style={{ fontVariant: ["tabular-nums"] }}>{`${curSign()}${usd(price)}`}</T>
       </View>
       <View style={{ height: 14, borderRadius: 5, backgroundColor: c.tile, overflow: "hidden" }}>
         <Animated.View style={[{ height: "100%", borderRadius: 5, backgroundColor: bg, overflow: "hidden" }, grow]}>
@@ -345,8 +346,8 @@ function Budget({ ctx }: { ctx: AppCtx }) {
     <BlockCard label={b.kind === "period" || preview ? `This ${period}` : "Budget"} right={b.kind === "period" ? resets : undefined}>
       {/* bottom-aligned, not baseline: a baseline row shifts the money reels by a whole column (ui/RollingNumber.tsx) */}
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6, flexWrap: "wrap" }}>
-        <Money v="section" value={usd(preview ? limit : b.kind === "balance" ? b.left : spent)} label={preview ? `US$${usd(limit)} a ${period}` : b.kind === "balance" ? `US$${usd(b.left)} left` : `US$${usd(spent)} spent`} />
-        <T v="sub" color="ink2">{preview ? `to spend on its own each ${period}` : b.kind === "balance" ? `left of US$${usd(limit)} put in` : `of US$${usd(limit)} a ${period}`}</T>
+        <Money v="section" value={usd(preview ? limit : b.kind === "balance" ? b.left : spent)} label={preview ? `${curSign()}${usd(limit)} a ${period}` : b.kind === "balance" ? `${curSign()}${usd(b.left)} left` : `${curSign()}${usd(spent)} spent`} />
+        <T v="sub" color="ink2">{preview ? `to spend on its own each ${period}` : b.kind === "balance" ? `left of ${curSign()}${usd(limit)} put in` : `of ${curSign()}${usd(limit)} a ${period}`}</T>
       </View>
       <View accessibilityRole="progressbar" accessibilityLabel={b.kind === "balance" && !preview ? "Budget used" : `Spent this ${period}`} accessibilityValue={{ min: 0, max: 100, now: Math.round((Number(spent) / Math.max(Number(limit), 1)) * 100) }} style={{ paddingTop: 18 }}>
         <View style={{ height: 18, borderRadius: 6, backgroundColor: c.fill, overflow: "hidden" }}>
@@ -357,14 +358,14 @@ function Budget({ ctx }: { ctx: AppCtx }) {
           <>
             <View pointerEvents="none" style={{ position: "absolute", top: 12, bottom: -6, left: `${tick * 100}%`, width: 2, marginLeft: -1, backgroundColor: c.ink }} />
             <View pointerEvents="none" style={{ position: "absolute", top: -2, left: `${Math.min(tick * 100, 100)}%`, transform: [{ translateX: tick > 0.75 ? -64 : -4 }] }}>
-              <T v="cap" w="bold" numberOfLines={1}>{`US$${usd(limit)}`}</T>
+              <T v="cap" w="bold" numberOfLines={1}>{`${curSign()}${usd(limit)}`}</T>
             </View>
           </>
         ) : null}
       </View>
       <T v="cap" color="muted">
-        {over ? `US$${usd(spent - limit)} over, co-signed by you on its cheque. Until it resets, every payment asks you first.`
-          : b.kind === "period" || preview ? `Above US$${usd(limit)} a ${period}, ${agentName(ctx.agentId)} stops and sends you a cheque to sign. Checked before every payment of every run.`
+        {over ? `${curSign()}${usd(spent - limit)} over, co-signed by you on its cheque. Until it resets, every payment asks you first.`
+          : b.kind === "period" || preview ? `Above ${curSign()}${usd(limit)} a ${period}, ${agentName(ctx.agentId)} stops and sends you a cheque to sign. Checked before every payment of every run.`
             : `The contract holds the pocket to its balance: the most it can ever spend.`}
       </T>
     </BlockCard>
@@ -403,7 +404,7 @@ function NextRun({ ctx }: { ctx: AppCtx }) {
           </View>
         ))}
       </View>
-      <T v="cap" color="muted">{cadenceText(rs.cadence)}{rs.kind === "price-watch" ? ` · buys at US$${rs.limitPrice} or less` : ""}</T>
+      <T v="cap" color="muted">{cadenceText(rs.cadence)}{rs.kind === "price-watch" ? ` · buys at ${curSign()}${rs.limitPrice} or less` : ""}</T>
       {ctx.running ? <WorkingLine on label={`Run ${ctx.running.run} is running…`} /> : null}
       {!ctx.preview && rt && ctx.onRunNow ? (
         <View style={{ gap: 4 }}>
@@ -443,7 +444,7 @@ function Runs({ ctx, block }: { ctx: AppCtx; block: Block }) {
       {runs.length ? runs.map((r) => {
         const paid = r.outs.filter((o) => o.outcome === "paid" || o.outcome === "cosigned");
         const watching = r.outs.find((o) => o.outcome === "watching");
-        const title = paid.length ? `Paid US$${usd(r.paid)}` : watching ? `Watched · US$${watching.amount}` : r.outs.some((o) => o.outcome === "declined") ? "You declined" : "Nothing paid";
+        const title = paid.length ? `Paid ${curSign()}${usd(r.paid)}` : watching ? `Watched · ${curSign()}${watching.amount}` : r.outs.some((o) => o.outcome === "declined") ? "You declined" : "Nothing paid";
         return (
           <Animated.View key={r.run} style={{ gap: 8 }} entering={reduce || seen.current!.has(r.run) ? undefined : FadeInDown.duration(260)} layout={reduce ? undefined : LinearTransition.duration(240)}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }} accessible accessibilityLabel={`Run ${r.run}, ${title}, ${day(r.at)}${r.asked ? ", asked you" : ""}`}>
@@ -491,10 +492,10 @@ function WhatNext({ ctx, rs }: { ctx: AppCtx; rs: NonNullable<PocketAppSpec["rou
     { key: "buys", title: `${who} ${watch ? "checks" : "buys"} ${rs.items.length === 1 ? short(ctx.itemName(rs.items[0].sellerId, rs.items[0].sku)) : `${rs.items.length} items`}`, sub: sellers.map((s) => ctx.sellerName(s)).join(" · "),
       lead: <View style={{ flexDirection: "row" }}>{sellers.slice(0, 3).map((s, k) => <View key={s} style={{ marginLeft: k ? -8 : 0, borderRadius: 9, borderWidth: 2, borderColor: c.card }}><Mark id={s} size={24} /></View>)}</View> },
     watch
-      ? { key: "pays", title: `Buys only at US$${rs.limitPrice} or less`, sub: "Above that, it only logs the price" }
-      : { key: "pays", title: `Pays US$${total.toFixed(3).replace(/0$/, "")}`, sub: "The sellers' listed prices" },
+      ? { key: "pays", title: `Buys only at ${curSign()}${rs.limitPrice} or less`, sub: "Above that, it only logs the price" }
+      : { key: "pays", title: `Pays ${curSign()}${total.toFixed(3).replace(/0$/, "")}`, sub: "The sellers' listed prices" },
     { key: "lands", title: lands, sub: "Each with its receipt and transaction" },
-    { key: "asks", title: `Past US$${rs.allowance.amount} a ${rs.allowance.period}, ${who} asks you`, sub: "Your Face ID co-signs, or it doesn't pay" },
+    { key: "asks", title: `Past ${curSign()}${rs.allowance.amount} a ${rs.allowance.period}, ${who} asks you`, sub: "Your Face ID co-signs, or it doesn't pay" },
   ];
   return (
     <View accessibilityRole="list" accessibilityLabel="What happens next">
@@ -525,7 +526,7 @@ function Library({ ctx, block }: { ctx: AppCtx; block: Block }) {
   return (
     <BlockCard label={ctx.spec.layout === "deal" ? "Bought below your limit" : "Bought"}>
       {list.length ? list.map((p, i) => (
-        <Press key={i} kind="row" haptics="light" onPress={() => ctx.onReceipt?.(p.tx)} accessibilityRole="button" accessibilityLabel={`${ctx.itemName(p.sellerId, p.sku)}, US$${usd(p.amount)}, ${day(p.at)}, receipt`}
+        <Press key={i} kind="row" haptics="light" onPress={() => ctx.onReceipt?.(p.tx)} accessibilityRole="button" accessibilityLabel={`${ctx.itemName(p.sellerId, p.sku)}, ${curSign()}${usd(p.amount)}, ${day(p.at)}, receipt`}
           style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48 }}>
           <Mark id={p.sellerId} size={36} />
           <View style={{ flex: 1, gap: 1 }}>
@@ -592,11 +593,11 @@ function PriceChanges({ ctx }: { ctx: AppCtx }) {
       {ch.length ? ch.map((x, i) => {
         const up = x.to > x.from;
         return (
-          <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 12 }} accessible accessibilityLabel={`${ctx.sellerName(x.sellerId)} ${up ? "rose" : "fell"} from US$${usd(x.from)} to US$${usd(x.to)}, ${pct(x.pct)}`}>
+          <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 12 }} accessible accessibilityLabel={`${ctx.sellerName(x.sellerId)} ${up ? "rose" : "fell"} from ${curSign()}${usd(x.from)} to ${curSign()}${usd(x.to)}, ${pct(x.pct)}`}>
             <Mark id={x.sellerId} size={36} />
             <View style={{ flex: 1, gap: 1 }}>
               <T v="row" numberOfLines={1}>{short(ctx.itemName(x.sellerId, x.sku))}</T>
-              <T v="cap" color="muted" numberOfLines={1}>{`US$${usd(x.from)} → US$${usd(x.to)} · ${day(x.at)}`}</T>
+              <T v="cap" color="muted" numberOfLines={1}>{`${curSign()}${usd(x.from)} → ${curSign()}${usd(x.to)} · ${day(x.at)}`}</T>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 3, height: 26, paddingHorizontal: 8, borderRadius: 13, backgroundColor: up ? c.vermillionSoft : c.greenSoft }}>
               <Icon name={up ? "arrowUp" : "arrowDown"} size={13} color={up ? c.vermillionInk : c.greenInk} stroke={2.4} />
@@ -618,13 +619,13 @@ function Savings({ ctx }: { ctx: AppCtx }) {
   return (
     <BlockCard label="Saved" right={`${s.count} deal${s.count === 1 ? "" : "s"}`}>
       <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8 }}>
-        <Money v="amount" value={usd(s.saved)} color="positive" label={`Saved US$${usd(s.saved)}`} />
+        <Money v="amount" value={usd(s.saved)} color="positive" label={`Saved ${curSign()}${usd(s.saved)}`} />
         <T v="sub" color="ink2">{`${Math.round((1 - frac) * 100)}% off the first price`}</T>
       </View>
       <View style={{ gap: 6 }}>
         <View style={{ height: 12, borderRadius: 4, overflow: "hidden", backgroundColor: c.fill }}><Hatch color={c.ink} pitch={6} stroke={1.2} opacity={0.5} /></View>
         <View style={{ height: 12, width: `${frac * 100}%`, borderRadius: 4, backgroundColor: c.ink }} />
-        <T v="cap" color="muted">{`${s.count === 1 ? "First price" : "First prices"} US$${usd(s.list)} · paid US$${usd(s.paid)}`}</T>
+        <T v="cap" color="muted">{`${s.count === 1 ? "First price" : "First prices"} ${curSign()}${usd(s.list)} · paid ${curSign()}${usd(s.paid)}`}</T>
       </View>
     </BlockCard>
   );
@@ -635,8 +636,8 @@ function Guard({ ctx }: { ctx: AppCtx }) {
   const names = ctx.rules.sellers.map((id) => ctx.sellerName(id));
   const rows: [string, "Contract" | "ChainBrain"][] = [
     [`Pay anyone but ${names.join(", ") || "its sellers"}`, "Contract"],
-    [`Pay more than US$${usd(ctx.rules.cap)} at once`, "Contract"],
-    [`Spend past US$${rs.allowance.amount} a ${rs.allowance.period} without your cheque`, "ChainBrain"],
+    [`Pay more than ${curSign()}${usd(ctx.rules.cap)} at once`, "Contract"],
+    [`Spend past ${curSign()}${rs.allowance.amount} a ${rs.allowance.period} without your cheque`, "ChainBrain"],
     ["Change its own schedule, sellers or limits, whatever a seller says", "ChainBrain"],
     ["Pay anything after you revoke the pocket", "Contract"],
   ];

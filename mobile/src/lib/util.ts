@@ -1,4 +1,5 @@
 import { formatUsd, NEVER } from "./shared";
+import { curSign } from "./runtime";
 import type { PocketView } from "./wallet";
 
 /** USDC from atomic units, at least 2 decimals. */
@@ -28,8 +29,8 @@ export const timeLabel = (at: number) => new Date(at).toLocaleTimeString("en-GB"
 export const dateLabel = (unixSec: number) => new Date(unixSec * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 export const money2 = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
 
-/** "US$3.20" from atomic USDC. */
-export const money = (n: bigint | undefined | null) => `US$${usd(n)}`;
+/** "US$3.20" (or "HK$3.20" on FISCO) from atomic token units. */
+export const money = (n: bigint | undefined | null) => `${curSign()}${usd(n)}`;
 /** "14 Oct, 1:32 PM". */
 export const stamp = (at: number) => {
   const d = new Date(at);

@@ -7,6 +7,7 @@
 //  - every tool call emits tool_call, tool and tool_result: ignore `tool`; the final reply is emitted as `thinking` and `reply`
 //  - quote-time refusals live only in get_quote tool results, refusal events only appear when `pay` was attempted
 import { parseUsd, type Authorization } from "./shared";
+import { curSign } from "./runtime";
 
 export type WalletEvent = { type: string; pocket?: string; at: number; [k: string]: any };
 
@@ -112,16 +113,16 @@ export function summarizeTool(tool: string | undefined, r: any): string {
   if (!r || typeof r !== "object") return "";
   if (r.ok === false) return reasonsOf(r)[0] ?? r.error ?? "failed";
   switch (tool) {
-    case "get_pocket": return r.revoked ? "revoked" : `balance US$${r.balance}`;
+    case "get_pocket": return r.revoked ? "revoked" : `balance ${curSign()}${r.balance}`;
     case "search_sellers": return `${Array.isArray(r.sellers) ? r.sellers.length : 0} sellers`;
     case "draft_intent": return r.status === "confirmed" ? "task confirmed" : "waiting";
     case "get_quote": {
       const bad = reasonsOf(r)[0];
       const risk = r.counterpartyRisk && typeof r.counterpartyRisk === "object" ? `, Radar ${r.counterpartyRisk.score}/10` : "";
-      return r.free ? (r.refused?.length ? "free, data request refused" : "free") : `US$${r.price}${bad ? `, ${bad}` : r.needsOwnerApproval ? ", needs you" : ""}${risk}`;
+      return r.free ? (r.refused?.length ? "free, data request refused" : "free") : `${curSign()}${r.price}${bad ? `, ${bad}` : r.needsOwnerApproval ? ", needs you" : ""}${risk}`;
     }
     case "ask_owner": return r.approved ? "approved" : r.status === "asked" ? "asked you" : "";
-    case "pay": return r.paid ? `paid US$${r.paid}${r.preflight ? (r.preflight.matched ? " · as predicted" : " · prediction missed") : ""}` : "";
+    case "pay": return r.paid ? `paid ${curSign()}${r.paid}${r.preflight ? (r.preflight.matched ? " · as predicted" : " · prediction missed") : ""}` : "";
     default: return "";
   }
 }

@@ -17,6 +17,7 @@ import { money, usd } from "../lib/util";
 import { txError } from "./ActionSheet";
 import { SheetSuccess } from "./SheetSuccess";
 import { ErrorNote } from "./ErrorNote";
+import { curSign } from "../lib/runtime";
 
 export function RulesSheet() {
   const { rules, setRules } = useApp();
@@ -98,7 +99,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
         ) : null}
         {!never ? (
           <View>
-            <Field label={isCap ? "Cap in US$" : "Ask above, in US$"} value={text} onChangeText={(t) => setText(t.replace(/[^0-9.]/g, "").slice(0, 12))} keyboardType="decimal-pad" inputMode="decimal" placeholder="0.00" accessibilityLabel={isCap ? "Cap in US$" : "Ask above in US$"} />
+            <Field label={isCap ? `Cap in ${curSign()}` : `Ask above, in ${curSign()}`} value={text} onChangeText={(t) => setText(t.replace(/[^0-9.]/g, "").slice(0, 12))} keyboardType="decimal-pad" inputMode="decimal" placeholder="0.00" accessibilityLabel={isCap ? "Cap in US$" : "Ask above in US$"} />
             {!isCap ? <T v="cap" color="muted" style={{ marginTop: 6 }}>Use 0 to be asked about every payment.</T> : null}
           </View>
         ) : <T v="sub" color="warning">With "Never ask" the agent spends freely up to the cap. The pocket balance is still its whole budget.</T>}
