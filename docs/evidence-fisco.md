@@ -10,22 +10,22 @@ Produced by: `scripts/fisco/deploy.sh`, `pnpm spike`, `scripts/new-pocket.ts res
 
 | What | Tx | Block | Expected | Contract called | Event checked | Verified |
 |---|---|---|---|---|---|---|
-| deploy: MockEHKD | `0x82824aeefe1b85f2106948e53224dae3f437a4385df17905efbeca4293698f4b` | 5 | success | (creation) |  | ok |
+| deploy: MockEHKD | `0x4d853a1cb0395e4b7c10ca3576471bbe1d16ced14f5f58e36f3ac842698a1692` | 5 | success | (creation) |  | ok |
 | deploy: PocketFactory | `0x19788f92ce22c973d78ed47c424dd8ea5da8311b228ee559416f212643d2661d` | 6 | success | (creation) |  | ok |
 | deploy: MockEHKD.mint(address,uint256) | `0x7447c15d653459b30da3603a1f42eaee63441347dab859ec9ee3e023169f8510` | 7 | success | `0x0355…781a` | Transfer(address,address,uint256) | ok |
-| spike: create research pocket | `0xc6b56d2f2e35cc3f1ac1d29e8d5fe89289f6588c07d84c7485f8b4068d816552` | 279 | success | `0x03aB…097A` | PocketCreated(address,address,address) | ok |
-| spike: fund research pocket | `0x68945e66545686297007fdb05469eb833cef7e055c3755909036d3c79b50c294` | 280 | success | `0x0355…781A` | Transfer(address,address,uint256) | ok |
-| spike: DataLite paid by the agent key alone (x402, EIP-3009 + ERC-1271) | `0x9eb83e098b1c3e3847081037372e57023a00028d8d786dde8ed9cbcb1bdc0cc9` | 281 | success | `0x0355…781A` | AuthorizationUsed(address,bytes32) | ok |
-| spike: DataPro above ask-me, owner co-signed | `0x7820d31083e416b5f75da3b28060b1362ed0e1f8174efffc993b106810ec9639` | 282 | success | `0x0355…781A` | AuthorizationUsed(address,bytes32) | ok |
-| new-pocket research: create | `0x641898b7587a231a03589660aab7d4ad81f362446f0f868f503a76c90b1034ac` | 283 | success | `0x03aB…097A` | PocketCreated(address,address,address) | ok |
-| new-pocket research: fund | `0x5774cf33d2152c3cdbb117d1186959f296eb3ff67ce44916a2e0481fe057c8ca` | 284 | success | `0x0355…781A` | Transfer(address,address,uint256) | ok |
-| new-pocket tight: create | `0xbdb0c4d88942917559f6e7e60ca4fb8e187bab5375f522119988b3fa55750d4d` | 285 | success | `0x03aB…097A` | PocketCreated(address,address,address) | ok |
-| new-pocket tight: fund | `0xa6a7dd36c53cc4873b8790750b1b692d32fb330dd1f880f24c3c5812dad525cd` | 286 | success | `0x0355…781A` | Transfer(address,address,uint256) | ok |
-| scene payment: datalite durian-report | `0x4c139bfabc5002a807b22aee59765c7a858d9b16588e119756dc0ef795c20547` | 291 | success | `0xaca8…6B4D` | AuthorizationUsed(address,bytes32) | ok |
-| scene payment: datapro premium-report (owner co-signed) | `0x5a0c1d2e6100becb1982ce89fb8c9635e35bb0276f1df4c27d195f7c8d0e866c` | 292 | success | `0xaca8…6B4D` | AuthorizationUsed(address,bytes32) | ok |
-| scene payment: datalite fruit-trade-report | `0x5f7d5f786f624b8631286b6652eedd7e05e538ffc41eb91212bcc48fa7c056dc` | 295 | success | `0xaca8…6B4D` | AuthorizationUsed(address,bytes32) | ok |
-| scene payment: datalite durian-report | `0x1bf51680d9a0ab3212654ddd1ae9f1b65bec5153b1aba3dd8d399bec6a56e7d5` | 298 | success | `0xaca8…6B4D` | AuthorizationUsed(address,bytes32) | ok |
-| scene 5 backstop: compromised agent key forces the injected transfer straight to the token | `0x712bde9b4537427636ec7a3a1320c3e6f8a2ada3cb2afc474e027dae5102c470` | 299 | reverted | `0xaca8…6B4D` |  | ok |
-| scene payment: datalite durian-report | `0xfdbdb2678a55f8fb34a02b90c76c01da05c45058123377c27aabc840f5a0b493` | 304 | success | `0xaca8…6B4D` | AuthorizationUsed(address,bytes32) | ok |
+| spike: create research pocket | `0x5815b9b1e1c5a3dd17637e4e758168d5bf1597865067896feb2970765912a206` | 31 | success | `0x03aB…097A` | PocketCreated(address,address,address) | ok |
+| spike: fund research pocket | `0x84d74efed56af8e0a90592193948906f77ee85c1f7796eb1333d59e7c5cbb2ca` | 32 | success | `0x0355…781A` | Transfer(address,address,uint256) | ok |
+| spike: DataLite paid by the agent key alone (x402, EIP-3009 + ERC-1271) | `0x441912edbb0810f8d5e1b0c916be6fbc3e5c9524249e592ea8be998ad01dfb40` | 33 | success | `0x0355…781A` | AuthorizationUsed(address,bytes32) | ok |
+| spike: DataPro above ask-me, owner co-signed | `0x813dcca1d88c6974a44bda79ecfb16c7db188490de0169eb411753eedd5e4538` | 34 | success | `0x0355…781A` | AuthorizationUsed(address,bytes32) | ok |
+| new-pocket research: create | `0x97b0456a7e9dcfef318578e32f1e8f7224d83dbcc52280fd77d686e6b60142fe` | 35 | success | `0x03aB…097A` | PocketCreated(address,address,address) | ok |
+| new-pocket research: fund | `0xcda66ce3f744f286cedba507cb443f799b87c02285900cc168ca38e8d1175a64` | 36 | success | `0x0355…781A` | Transfer(address,address,uint256) | ok |
+| new-pocket tight: create | `0x46aee1032f4415b4332410a89ba3aa407aeb2f78025e01bc77acab8f212f1f9f` | 37 | success | `0x03aB…097A` | PocketCreated(address,address,address) | ok |
+| new-pocket tight: fund | `0xe54093094916ffa18a99fbfa7619eb5e1d5582ce1ad4ae07fcbd0e9ac00146a5` | 38 | success | `0x0355…781A` | Transfer(address,address,uint256) | ok |
+| scene payment: datalite durian-report | `0x1fbf9744d6728eedc9b1763c6e4b5132afdd1e204d52a1956fc60adabd355132` | 43 | success | `0x0DCd…CD82` | AuthorizationUsed(address,bytes32) | ok |
+| scene payment: datapro premium-report (owner co-signed) | `0x50f4c40bcc160d30368cb0764faf21580eb836c8350bd5dc71ff52a10132dfe8` | 44 | success | `0x0DCd…CD82` | AuthorizationUsed(address,bytes32) | ok |
+| scene payment: datalite fruit-trade-report | `0x19ba48ed197a35ee4208ec920e83a5ac952bf0f266b14ff4fe043e9a36ffbbcc` | 47 | success | `0x0DCd…CD82` | AuthorizationUsed(address,bytes32) | ok |
+| scene payment: datalite durian-report | `0xa4900dc45a951e9f2a188c99822e99d390c4ac2bf355903aa819f2afdd621321` | 50 | success | `0x0DCd…CD82` | AuthorizationUsed(address,bytes32) | ok |
+| scene 5 backstop: compromised agent key forces the injected transfer straight to the token | `0xd5e3f8f6329bb6e4b1096f8d6e2686cfac8bd7342af315e21582ce327a119a38` | 51 | reverted | `0x0DCd…CD82` |  | ok |
+| scene payment: datalite durian-report | `0xf851d3da16bd4f25d34c61334e1d1a918173088b28edd0e40dc86c5b3bb8ac82` | 56 | success | `0x0DCd…CD82` | AuthorizationUsed(address,bytes32) | ok |
 
 Verifier result: **17/17 hashes valid on fisco (chain id 20200)**. Negative checks (exit 1 each): a fake hash, a reverted tx claimed as success, a wrong event, a payment claimed to call the factory, and an event not emitted by the called contract.

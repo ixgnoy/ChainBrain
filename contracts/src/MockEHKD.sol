@@ -5,6 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Clock} from "./Clock.sol";
 
 /// MOCK e-HKD for the ChainBrain demo on a local FISCO BCOS chain. Not the HKMA e-HKD, not money.
@@ -57,16 +58,25 @@ contract MockEHKD is ERC20, EIP712, Ownable {
         bytes32 digest = _hashTypedDataV4(
             keccak256(abi.encode(TRANSFER_WITH_AUTHORIZATION_TYPEHASH, from, to, value, validAfter, validBefore, nonce))
         );
-        require(SignatureChecker.isValidSignatureNow(from, digest, signature), "EHKD: invalid signature");
+        require(_validSignature(from, digest, signature), "EHKD: invalid signature");
         _usedAuthorizations[from][nonce] = true;
         emit AuthorizationUsed(from, nonce);
         _transfer(from, to, value);
     }
 
+    /// ECDSA by `signer` itself first, then ERC-1271. Not OpenZeppelin's code-length switch: FISCO BCOS gives funded EOAs
+    /// pseudo-code ("[PRECOMPILED],…"), which would send an EOA down the ERC-1271 path and reject its own signature.
+    /// A pocket's envelope is not a 65-byte signature, so pockets still go through ERC-1271.
+    function _validSignature(address signer, bytes32 digest, bytes memory signature) internal view returns (bool) {
+        (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(digest, signature);
+        if (err == ECDSA.RecoverError.NoError && recovered == signer) return true;
+        return signer.code.length > 0 && SignatureChecker.isValidERC1271SignatureNow(signer, digest, signature);
+    }
+
     function cancelAuthorization(address authorizer, bytes32 nonce, bytes memory signature) external {
         require(!_usedAuthorizations[authorizer][nonce], "EHKD: authorization is used or canceled");
         bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(CANCEL_AUTHORIZATION_TYPEHASH, authorizer, nonce)));
-        require(SignatureChecker.isValidSignatureNow(authorizer, digest, signature), "EHKD: invalid signature");
+        require(_validSignature(authorizer, digest, signature), "EHKD: invalid signature");
         _usedAuthorizations[authorizer][nonce] = true;
         emit AuthorizationCanceled(authorizer, nonce);
     }

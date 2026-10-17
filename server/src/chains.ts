@@ -20,7 +20,7 @@ export const fiscoChain = defineChain({
 export type ChainCfg = {
   key: "fisco" | "base-sepolia"; chain: Chain; rpc: string; network: `eip155:${number}`;
   token: Address; domain: { name: string; version: string }; currency: "HK$" | "US$"; priceKey: "hkd" | "usd";
-  /** FISCO has no public explorer: link to the wallet API's receipt endpoint. */
+  /** FISCO has no public explorer: link to the wallet API's own explorer page (/explorer). */
   txUrl: (hash: string) => string;
 };
 
@@ -38,7 +38,7 @@ export function cfg(): ChainCfg {
     key: "fisco", chain: fiscoChain, rpc: process.env.FISCO_RPC ?? "http://127.0.0.1:8545", network: "eip155:20200",
     token, domain: { name: "Mock e-HKD", version: "1" },
     currency: "HK$", priceKey: "hkd",
-    txUrl: (h) => `${process.env.PUBLIC_API_URL ?? "http://localhost:8787"}/api/tx/${h}`,
+    txUrl: (h) => `${process.env.PUBLIC_API_URL ?? "http://localhost:8787"}/explorer#/tx/${h}`,
   };
 }
 

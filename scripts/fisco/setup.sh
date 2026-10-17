@@ -8,14 +8,15 @@
 set -euo pipefail
 source "$(dirname "$0")/env.sh"
 mkdir -p "$F" && cd "$F"
-[ -x fisco-bcos ] || { curl -sfLO "https://github.com/FISCO-BCOS/FISCO-BCOS/releases/download/$FISCO_VERSION/fisco-bcos-macOS-arm.tar.gz"; tar xzf fisco-bcos-macOS-arm.tar.gz; }
+[ -n "$FISCO_ASSET" ] || { echo "no FISCO BCOS build for $(uname -sm)" >&2; exit 1; }
+[ -x fisco-bcos ] || { curl -sfLO "https://github.com/FISCO-BCOS/FISCO-BCOS/releases/download/$FISCO_VERSION/$FISCO_ASSET"; tar xzf "$FISCO_ASSET"; }
 [ -f build_chain.sh ] || curl -sfLo build_chain.sh "https://github.com/FISCO-BCOS/FISCO-BCOS/releases/download/$FISCO_VERSION/build_chain.sh"
 [ -d console ] || { curl -sfLO "https://github.com/FISCO-BCOS/console/releases/download/$CONSOLE_VERSION/console.tar.gz"; tar xzf console.tar.gz; cp console/conf/config-example.toml console/conf/config.toml; }
 
 build() { # $@ extra build_chain args
   [ -d nodes ] && { bash "$NODES/stop_all.sh" >/dev/null 2>&1 || true; rm -rf nodes; }
   bash build_chain.sh -l 127.0.0.1:1 -p 30300,20200 -e ./fisco-bcos -o nodes "$@" >/dev/null
-  sed -i '' '/\[web3_rpc\]/,/listen_port/{s/enable=false/enable=true/;s/listen_ip=0.0.0.0/listen_ip=127.0.0.1/;}' "$NODES/node0/config.ini"
+  sed -i.orig '/\[web3_rpc\]/,/listen_port/{s/enable=false/enable=true/;s/listen_ip=0.0.0.0/listen_ip=127.0.0.1/;}' "$NODES/node0/config.ini" # GNU + BSD sed
   printf '\n[features]\n    feature_balance=1\n    feature_balance_precompiled=1\n' >> "$NODES/node0/config.genesis"
   cp "$NODES"/sdk/* console/conf/
   bash "$NODES/start_all.sh" >/dev/null

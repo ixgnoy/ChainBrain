@@ -65,6 +65,23 @@ contract MockEHKDTest is Test {
         assertEq(t.balanceOf(bob), 3.3e6);
     }
 
+    /// FISCO BCOS reports accounts it tracks (native balance, nonce) with pseudo-code "[PRECOMPILED],…", so EXTCODESIZE of a
+    /// funded EOA is not 0. An ECDSA signature from the EOA itself must still be accepted (found on the local chain, 17 Oct).
+    function test_eoa_with_fisco_account_pseudo_code_still_signs() public {
+        vm.etch(alice, bytes("[PRECOMPILED],0000000000000000000000000000000000010004,/usr/alice"));
+        assertGt(alice.code.length, 0);
+        uint256 before = block.timestamp + 60;
+        bytes32 d = _digest(alice, bob, 1e6, before, bytes32(uint256(5)));
+        t.transferWithAuthorization(alice, bob, 1e6, 0, before, bytes32(uint256(5)), _sig(alicePk, d));
+        assertEq(t.balanceOf(bob), 1e6);
+        // and a signature by anyone else for that account is still refused
+        (, uint256 malloryPk) = makeAddrAndKey("mallory");
+        bytes32 d2 = _digest(alice, bob, 1e6, before, bytes32(uint256(6)));
+        bytes memory forged = _sig(malloryPk, d2);
+        vm.expectRevert(bytes("EHKD: invalid signature"));
+        t.transferWithAuthorization(alice, bob, 1e6, 0, before, bytes32(uint256(6)), forged);
+    }
+
     function test_replay_wrong_signer_and_expiry_revert() public {
         uint256 before = block.timestamp + 60;
         bytes32 d = _digest(alice, bob, 1e6, before, bytes32(uint256(7)));

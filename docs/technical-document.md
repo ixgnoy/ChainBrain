@@ -97,6 +97,7 @@ What the local FISCO 3.16.4 chain needed (all recorded in the port plan):
 3. No `eth_feeHistory`: forge uses `--legacy --with-gas-price 0`; the Kotlin app sends legacy zero-price transactions on FISCO.
 4. Contracts see `block.timestamp` in **milliseconds** (the RPC header says seconds). `contracts/src/Clock.sol` normalises it (`nowSec()`), so pocket expiry and EIP-3009 windows stay in seconds; it is a no-op on Ethereum chains, and 20 pocket tests run on a millisecond clock.
 5. A sender's transactions are not ordered by nonce inside a block, so deploys use `forge --slow` and every client waits for each receipt.
+6. FISCO reports any account it tracks (native balance, nonce) with pseudo-code `[PRECOMPILED],…,/usr/<address>`, so a funded EOA has a non-zero code size. OpenZeppelin's `SignatureChecker` then takes the ERC-1271 path and rejects the EOA's own EIP-3009 signature (reproduced on the local chain). `MockEHKD` checks ECDSA by the signer first and asks ERC-1271 only otherwise; pockets still go through ERC-1271. The explorer treats that pseudo-code as an account, not a contract.
 
 ## 8. Test summary
 
