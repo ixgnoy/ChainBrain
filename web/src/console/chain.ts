@@ -32,15 +32,9 @@ const UNFROZEN = parseAbiItem("event Unfrozen()");
 
 export const clientFor = (rpcUrl: string): PublicClient => createPublicClient({ transport: http(rpcUrl, { batch: true }) });
 
-/** First block to scan: the fork point on the dev stack (no upstream history), otherwise a recent window. */
-export async function scanFrom(client: PublicClient, dev: boolean, window = 20_000n): Promise<bigint> {
-  if (dev) {
-    try {
-      const info = (await client.request({ method: "anvil_nodeInfo" as any })) as any;
-      const fork = info?.forkConfig?.forkBlockNumber;
-      if (fork != null) return BigInt(fork) + 1n;
-    } catch { /* not anvil: fall through */ }
-  }
+/** First block to scan: a recent window (the dev stack's fresh factory has no older pockets anyway). */
+// ponytail: fixed window; scan from the factory's deploy block if the chain outgrows it
+export async function scanFrom(client: PublicClient, _dev: boolean, window = 20_000n): Promise<bigint> {
   const latest = await client.getBlockNumber();
   return latest > window ? latest - window : 0n;
 }

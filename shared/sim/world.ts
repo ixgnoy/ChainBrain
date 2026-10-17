@@ -473,7 +473,7 @@ export function createWorld(opts: WorldOptions = {}) {
     await jitter(600, 1000);
     const t = text.toLowerCase();
     const tries: { call: string; f: () => unknown }[] = [];
-    const amount = /\bus\$\s?(\d+(?:\.\d{1,2})?)|\$(\d+(?:\.\d{1,2})?)|\b(\d+(?:\.\d{1,2})?)\s?(?:ehkd|dollars?)\b/.exec(t);
+    const amount = /\b(?:hk|us)\$\s?(\d+(?:\.\d{1,2})?)|\$(\d+(?:\.\d{1,2})?)|\b(\d+(?:\.\d{1,2})?)\s?(?:ehkd|dollars?)\b/.exec(t);
     const cap = parseHkd(amount?.[1] ?? amount?.[2] ?? amount?.[3] ?? "800");
     if (!/\bseller\b/.test(t) || /cap|limit/.test(t)) tries.push({ call: `setCap(HK$${formatHkd(cap)})`, f: () => chain.setCap(key, pocket, cap) });
     if (/\bseller\b|allow ?list|white ?list/.test(t)) tries.push({ call: `setSeller(${ATTACKER.slice(0, 6)}…${ATTACKER.slice(-4)}, true)`, f: () => chain.setSeller(key, pocket, ATTACKER, true) });

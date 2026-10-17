@@ -73,7 +73,7 @@ Stop the dev stack, run the team's real server (`cd server && cp .env.example .e
 
 | Route | What it does |
 | --- | --- |
-| `GET /dev/health` | `{ mode: "local-fork", chainId: 84532, rpcPath: "/dev/rpc", startedAt, owner }` (owner = anvil account 0) |
+| `GET /dev/health` | `{ mode: "local-chain", chainId: 84532, rpcPath: "/dev/rpc", startedAt, owner }` (owner = anvil account 0) |
 | `POST /dev/rpc` | JSON-RPC proxy to anvil (single or batch), CORS `*`. Account 0 is unlocked: `eth_accounts`, `eth_sendTransaction`, `eth_signTypedData_v4` work for it. Typed data for `eth_signTypedData_v4` must include the `EIP712Domain` type in `types` |
 | `POST /dev/fund` `{address}` | Adds 1 ETH and 20 USDC to that address (on top of whatever the fork already has) |
 | `GET /dev/scenes` | The demo sentences the scripted agent understands, with titles, recommended preset and notes |

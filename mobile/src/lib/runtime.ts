@@ -9,7 +9,7 @@ export const ENV_RPC: string = process.env.EXPO_PUBLIC_RPC_URL || "https://fisco
 export type ChainProfile = { key: "fisco"; id: number; name: string; rpc: string; domain: { name: string; version: string }; currency: string; txUrl: string; token: Address };
 let chain: ChainProfile | null = null;
 
-export type DevInfo = { mode: "local-fork"; chainId: number; rpcPath: string; owner?: Address; startedAt?: number };
+export type DevInfo = { mode: "local-chain"; chainId: number; rpcPath: string; owner?: Address; startedAt?: number };
 /** Where data comes from: the network built into the app (default on every launch) or a wallet server (Settings). */
 export type Source = "builtin" | "server";
 
@@ -54,13 +54,13 @@ export async function fetchTimeout(url: string, init: any = {}, ms = 8000, f: Fe
   try { return await f(url, { ...init, signal: ctl.signal }); } finally { clearTimeout(t); }
 }
 
-/** Dev stack detection (devstack contract): GET /dev/health answers 200 JSON with mode "local-fork". The real server answers 404. */
+/** Dev stack detection (devstack contract): GET /dev/health answers 200 JSON with mode "local-chain". The real server answers 404. */
 export async function detectDev(base: string, f: FetchLike = (globalThis.fetch as any), ms = 3000): Promise<DevInfo | null> {
   try {
     const r = await fetchTimeout(`${normalizeUrl(base)}/dev/health`, {}, ms, f);
     if (!r.ok) return null;
     const j = await r.json();
-    if (!j || j.mode !== "local-fork") return null;
-    return { mode: "local-fork", chainId: Number(j.chainId) || 20200, rpcPath: typeof j.rpcPath === "string" && j.rpcPath.startsWith("/") ? j.rpcPath : "/dev/rpc", owner: j.owner, startedAt: j.startedAt };
+    if (!j || j.mode !== "local-chain") return null;
+    return { mode: "local-chain", chainId: Number(j.chainId) || 20200, rpcPath: typeof j.rpcPath === "string" && j.rpcPath.startsWith("/") ? j.rpcPath : "/dev/rpc", owner: j.owner, startedAt: j.startedAt };
   } catch { return null; }
 }

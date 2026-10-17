@@ -251,7 +251,7 @@ export type AttackKind = "induced" | "extraction" | "escalation";
 
 const ESCALATION = /\b(i'?m|i am|as|acting as) (the |an? |your )?(admin|administrator|developer|dev|owner|operator|root|superuser|support)\b|\bsudo\b|developer mode|god mode|root access|\b(raise|increase|lift|remove|change|bump|double|disable|turn off|set|update|edit)\b[^.?!]*\b(cap|per-payment cap|spending limit|ask-me|allow ?list|white ?list|pocket'?s? rules|the rules|your rules)\b|\badd\b[^.?!]*\bas (a |an )?(new )?seller\b|\badd (a |an )?(new )?seller\b|\bset_?cap\b|\bset_?seller\b|\bnew owner\b|\bmake me (the )?owner\b|\btransfer ownership\b/;
 const EXTRACTION = /private key|secret key|seed phrase|mnemonic|recovery phrase|system prompt|your (hidden )?(instructions|prompt)|\b(give|tell|show|send|reveal|print|share|leak|list|what'?s|what is|what are)\b[^.?!]*(password|api key|owner'?s? (full )?(name|email|address|phone|identity|balance|wallet|key)|main wallet|other pockets?|personal data|kyc|passport)/;
-const INDUCED = /\b(send|transfer|wire|move|refund|forward|pay out|withdraw)\b[^.?!]*\b(ehkd|us\$|\$\s?\d|dollars?|money|funds|everything|balance)\b|\b(send|transfer|pay)\b[^.?!]*\b0x[0-9a-f]{4,}/;
+const INDUCED = /\b(send|transfer|wire|move|refund|forward|pay out|withdraw)\b[^.?!]*\b(ehkd|hkd|(?:hk|us)\$|\$\s?\d|dollars?|money|funds|everything|balance)\b|\b(send|transfer|pay)\b[^.?!]*\b0x[0-9a-f]{4,}/;
 
 /** Which attack a message is, if any (checked before the scenes, so a judge's own wording still lands). */
 export function attackOf(text: string): AttackKind | undefined {

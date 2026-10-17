@@ -1,18 +1,16 @@
-import { spawn, type ChildProcess } from "node:child_process";
 import { networkInterfaces } from "node:os";
-import { homedir } from "node:os";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
-import { createWalletClient, http, publicActions, keccak256, encodeAbiParameters, hexToString, toHex, type Address, type Hex } from "viem";
+import { createPublicClient, createWalletClient, defineChain, http, publicActions, hexToString, toHex, type Address, type Hex, type PublicClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
 import { askedFor, attackOf, scriptedModel } from "./model";
 import { SCENES } from "./scenes";
 import { relayApp } from "./relay";
 
-// Anvil's well-known dev keys (public; never use outside a local fork). Same as server/test/helpers/env.ts.
+// Well-known public dev keys (Foundry's default accounts): local test chains only. Same as server/test/helpers/env.ts.
 export const DEV_KEYS = {
   OWNER_PK: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
   AGENT_PK: "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
@@ -25,15 +23,14 @@ export const DEV_KEYS = {
   SENTINEL_PK: "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97",
 } as const;
 
-const USDC: Address = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
 const ATTACKER: Address = "0x000000000000000000000000000000000000ABC0";
-const USDC_BALANCE_SLOT = 9n; // FiatTokenV2_2 balanceAndBlacklistStates mapping (as in server/test/helpers/fork.ts)
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const server = (rel: string) => new URL(`../../server/src/${rel}`, import.meta.url).href;
 
 export type DevStackOptions = {
-  apiPort?: number; sellersPort?: number; anvilPort?: number;
-  forkUrl?: string; revokeWindowMs?: number; ownerUsdc?: number; log?: (s: string) => void;
+  apiPort?: number; sellersPort?: number;
+  /** the FISCO node's RPC (default FISCO_RPC or the local node from scripts/fisco) */
+  rpc?: string; revokeWindowMs?: number; ownerEhkd?: number; log?: (s: string) => void;
 };
 
 export function lanIp(): string | undefined {
@@ -49,62 +46,48 @@ async function rpcCall(rpc: string, method: string, params: unknown[] = []) {
   return j.result;
 }
 
-/** Start anvil forking Base Sepolia; retries with backoff when the public RPC rate-limits or hiccups. */
-async function startAnvil(port: number, forkUrl: string, log: (s: string) => void): Promise<ChildProcess> {
-  const rpc = `http://127.0.0.1:${port}`;
-  const env = { ...process.env, PATH: `${process.env.PATH}:${homedir()}/.foundry/bin` };
-  let lastErr = "";
-  for (let attempt = 1; attempt <= 5; attempt++) {
-    const child = spawn("anvil", ["--fork-url", forkUrl, "--host", "127.0.0.1", "--port", String(port), "--chain-id", "84532", "--silent"], { stdio: ["ignore", "ignore", "pipe"], env });
-    let stderr = "";
-    let exited = false;
-    child.stderr?.on("data", (d) => (stderr += d));
-    child.on("exit", () => (exited = true));
-    child.on("error", (e) => { stderr += String(e); exited = true; });
-    for (let i = 0; i < 150 && !exited; i++) {
-      const ok = await rpcCall(rpc, "eth_chainId").then(() => true, () => false);
-      if (ok) return child;
-      await sleep(200);
-    }
-    lastErr = stderr.trim().split("\n").slice(-3).join(" | ");
-    child.kill();
-    if (/ENOENT/.test(lastErr)) throw new Error("anvil not found: install Foundry (curl -L https://foundry.paradigm.xyz | bash, then foundryup)");
-    if (/in use/i.test(lastErr)) throw new Error(`port ${port} is already in use (is another dev stack running?)`);
-    log(`anvil attempt ${attempt} failed (${lastErr || "timeout"}); retrying`);
-    await sleep(1000 * attempt);
-  }
-  throw new Error(`anvil could not fork ${forkUrl}: ${lastErr}`);
-}
+const fisco = (rpc: string) => defineChain({ id: 20200, name: "FISCO BCOS", nativeCurrency: { name: "FISCO", symbol: "FISCO", decimals: 18 }, rpcUrls: { default: { http: [rpc] } } });
+const artifact = (name: string) => JSON.parse(readFileSync(new URL(`../../contracts/out/${name}.sol/${name}.json`, import.meta.url), "utf8"));
+const mintAbi = [{ type: "function", name: "mint", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [] }] as const;
 
-/** Boots anvil (fork), the factory, the real sellers and the real wallet API with a scripted model. */
+/**
+ * Boots the stack on the FISCO node (default: the local one from scripts/fisco): a fresh Mock e-HKD and factory per run,
+ * the real sellers and the real wallet API with a scripted model. Gas is free on FISCO; senders need a native balance,
+ * credited the way the server does it (server/src/fund.ts: fund.sh locally, or the node gateway with FUND_URL).
+ */
 export async function startDevStack(o: DevStackOptions = {}) {
-  const apiPort = o.apiPort ?? 8787, sellersPort = o.sellersPort ?? 4021, anvilPort = o.anvilPort ?? 8546;
+  const apiPort = o.apiPort ?? 8787, sellersPort = o.sellersPort ?? 4021;
   const log = o.log ?? (() => {});
   const startedAt = Date.now();
-  const rpc = `http://127.0.0.1:${anvilPort}`;
-  const anvil = await startAnvil(anvilPort, o.forkUrl ?? process.env.FORK_URL ?? "https://sepolia.base.org", log);
+  const rpc = o.rpc ?? process.env.FISCO_RPC ?? "http://127.0.0.1:8545";
+  const id = await rpcCall(rpc, "eth_chainId").catch(() => null);
+  if (id !== "0x4ee8") throw new Error(`no FISCO node (chain 20200) at ${rpc}: run scripts/fisco/setup.sh (first time) or scripts/fisco/start.sh`);
+  const chain = fisco(rpc);
+  const pc = createPublicClient({ chain, transport: http(rpc) }) as PublicClient;
 
   const lan = lanIp();
-  Object.assign(process.env, DEV_KEYS, {
-    CHAIN: "base-sepolia", BASE_SEPOLIA_RPC: rpc, FACILITATOR: "local", SELLERS_URL: `http://${lan ?? "localhost"}:${sellersPort}`,
-  });
+  Object.assign(process.env, DEV_KEYS, { FISCO_RPC: rpc, SELLERS_URL: `http://${lan ?? "localhost"}:${sellersPort}` });
 
-  const { factoryArtifact, factoryAbi } = await import(server("wallet/chain.ts"));
   const owner = privateKeyToAccount(DEV_KEYS.OWNER_PK);
-  const wallet = createWalletClient({ account: owner, chain: baseSepolia, transport: http(rpc) }).extend(publicActions);
-  // every pocket gets the Sentinel's freeze-only guardian key (gas for its freeze transactions)
+  const { fundIfEmpty } = await import(server("fund.ts"));
+  // every key that sends: owner, facilitator, the forced-transfer submitter, the Sentinel's guardian, the agent (escalation scene)
   const guardian = privateKeyToAccount(DEV_KEYS.SENTINEL_PK).address;
-  await rpcCall(rpc, "anvil_setBalance", [guardian, toHex(10n ** 18n)]);
-  const deployHash = await wallet.deployContract({ abi: factoryAbi, bytecode: factoryArtifact.bytecode.object as Hex, args: [USDC, guardian] });
-  const factory = (await wallet.waitForTransactionReceipt({ hash: deployHash })).contractAddress!;
-  process.env.FACTORY_ADDRESS = factory;
-
-  const setUsdc = async (addr: Address, amount: bigint) => {
-    const slot = keccak256(encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [addr, USDC_BALANCE_SLOT]));
-    await rpcCall(rpc, "anvil_setStorageAt", [USDC, slot, toHex(amount, { size: 32 })]);
+  await fundIfEmpty(pc, [DEV_KEYS.OWNER_PK, DEV_KEYS.FACILITATOR_PK, DEV_KEYS.FORCE_PK, DEV_KEYS.SENTINEL_PK, DEV_KEYS.AGENT_PK].map((k) => privateKeyToAccount(k).address));
+  const wallet = createWalletClient({ account: owner, chain, transport: http(rpc) }).extend(publicActions);
+  const deploy = async (name: string, args: unknown[]) => {
+    const a = artifact(name);
+    return (await wallet.waitForTransactionReceipt({ hash: await wallet.deployContract({ abi: a.abi, bytecode: a.bytecode.object, args } as any) })).contractAddress!;
   };
-  const usdcOf = async (addr: Address): Promise<bigint> => BigInt(await rpcCall(rpc, "eth_call", [{ to: USDC, data: `0x70a08231${addr.slice(2).toLowerCase().padStart(64, "0")}` }, "latest"]));
-  await setUsdc(owner.address, BigInt(Math.round((o.ownerUsdc ?? 1000) * 1e6)));
+  // one at a time: FISCO does not order a sender's transactions by nonce within a block
+  const token = await deploy("MockEHKD", [owner.address]);
+  const factory = await deploy("PocketFactory", [token, guardian]);
+  Object.assign(process.env, { TOKEN_ADDRESS: token, FACTORY_ADDRESS: factory });
+
+  const mint = async (addr: Address, amount: bigint) => {
+    await wallet.waitForTransactionReceipt({ hash: await wallet.writeContract({ address: token, abi: mintAbi, functionName: "mint", args: [addr, amount] }) });
+  };
+  const ehkdOf = async (addr: Address): Promise<bigint> => BigInt(await rpcCall(rpc, "eth_call", [{ to: token, data: `0x70a08231${addr.slice(2).toLowerCase().padStart(64, "0")}` }, "latest"]));
+  await mint(owner.address, BigInt(Math.round((o.ownerEhkd ?? 8000) * 1e6)));
 
   const { sellersApp } = await import(server("sellers.ts"));
   const { apiApp } = await import(server("index.ts"));
@@ -116,7 +99,7 @@ export async function startDevStack(o: DevStackOptions = {}) {
   // Same origin as the real API: /dev/* is handled here, every other path goes straight to the real Hono app.
   const root = new Hono();
   root.use("/dev/*", cors({ origin: "*" }));
-  root.get("/dev/health", (c) => c.json({ mode: "local-fork", chainId: 84532, rpcPath: "/dev/rpc", startedAt, owner: owner.address }));
+  root.get("/dev/health", (c) => c.json({ mode: "local-chain", chainId: 20200, rpcPath: "/dev/rpc", startedAt, owner: owner.address }));
   root.post("/dev/rpc", async (c) => {
     const r = await fetch(rpc, { method: "POST", headers: { "content-type": "application/json" }, body: await c.req.text() });
     return c.body(await r.text(), r.status as any, { "content-type": "application/json" });
@@ -125,15 +108,14 @@ export async function startDevStack(o: DevStackOptions = {}) {
     const { address } = (await c.req.json().catch(() => ({}))) as { address?: string };
     if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address)) return c.json({ error: "BAD_ADDRESS" }, 400);
     const a = address as Address;
-    const eth = BigInt(await rpcCall(rpc, "eth_getBalance", [a, "latest"]));
-    await rpcCall(rpc, "anvil_setBalance", [a, toHex(eth + 10n ** 18n)]);
-    await setUsdc(a, (await usdcOf(a)) + 20_000_000n);
-    return c.json({ address, eth: "1", usdc: "20" });
+    const native = (await fundIfEmpty(pc, [a])).length > 0;
+    await mint(a, 160_000_000n);
+    return c.json({ address, native, ehkd: "160" });
   });
   root.get("/dev/scenes", (c) => c.json(SCENES));
   const { bus } = await import(server("wallet/events.ts"));
   const agentKey = privateKeyToAccount(DEV_KEYS.AGENT_PK);
-  const agentWallet = createWalletClient({ account: agentKey, chain: baseSepolia, transport: http(rpc) }).extend(publicActions);
+  const agentWallet = createWalletClient({ account: agentKey, chain, transport: http(rpc) }).extend(publicActions);
   /** Pocket.canPay(to, value): the code the pocket itself gives for a transfer ("OK" when it is inside the rules). */
   const canPay = async (pocket: Address, to: Address, value: bigint): Promise<string> => {
     try {
@@ -149,15 +131,15 @@ export async function startDevStack(o: DevStackOptions = {}) {
     if (attack === "extraction") { bus.publish({ ...base, reason: "DISCLOSURE_REFUSED", asked: askedFor(text), revealed: [] }); return; }
     if (attack === "induced") { bus.publish({ ...base, reason: "NOT_A_PURCHASE" }); return; }
     const t = text.toLowerCase();
-    const m = /\bus\$\s?(\d+(?:\.\d{1,2})?)|\$(\d+(?:\.\d{1,2})?)|\b(\d+(?:\.\d{1,2})?)\s?(?:usdc|dollars?)\b/.exec(t);
-    const usd = m?.[1] ?? m?.[2] ?? m?.[3] ?? "100";
-    const cap = BigInt(Math.round(Number(usd) * 1e6));
+    const m = /\b(?:hk|us)\$\s?(\d+(?:\.\d{1,2})?)|\$(\d+(?:\.\d{1,2})?)|\b(\d+(?:\.\d{1,2})?)\s?(?:ehkd|dollars?)\b/.exec(t);
+    const hkd = m?.[1] ?? m?.[2] ?? m?.[3] ?? "800";
+    const cap = BigInt(Math.round(Number(hkd) * 1e6));
     const abi = [
       { type: "function", name: "setCap", stateMutability: "nonpayable", inputs: [{ type: "uint256" }], outputs: [] },
       { type: "function", name: "setSeller", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "bool" }], outputs: [] },
     ] as const;
     const tries: { call: string; fn: "setCap" | "setSeller"; args: readonly unknown[] }[] = [];
-    if (!/\bseller\b/.test(t) || /cap|limit/.test(t)) tries.push({ call: `setCap(US$${usd})`, fn: "setCap", args: [cap] });
+    if (!/\bseller\b/.test(t) || /cap|limit/.test(t)) tries.push({ call: `setCap(HK$${hkd})`, fn: "setCap", args: [cap] });
     if (/\bseller\b|allow ?list|white ?list/.test(t)) tries.push({ call: `setSeller(${ATTACKER.slice(0, 6)}…${ATTACKER.slice(-4)}, true)`, fn: "setSeller", args: [ATTACKER, true] });
     const txs: { call: string; tx?: string; reverted: boolean }[] = [];
     for (const x of tries) {
@@ -177,28 +159,28 @@ export async function startDevStack(o: DevStackOptions = {}) {
     if (attack && res.ok) await publishAttack(body.pocket as Address, attack, body.text as string).catch((e) => log(`attack event: ${(e as Error).message}`));
     return res;
   });
-  // Scene 5's on-chain backstop, from the browser: the agent key really signs "send 50 USDC to 0xABC" and a third party
-  // submits it straight to USDC; the pocket refuses and the tx reverts on-chain. Published as a `forced` event, so the
+  // Scene 5's on-chain backstop, from the browser: the agent key really signs "send 50 eHKD to 0xABC" and a third party
+  // submits it straight to the token; the pocket refuses and the tx reverts on-chain. Published as a `forced` event, so the
   // apps can show the reverted hash (the real server has no such route).
   root.post("/dev/force-transfer", async (c) => {
     const { pocket, attacker = ATTACKER } = (await c.req.json().catch(() => ({}))) as { pocket?: string; attacker?: string };
     if (!pocket || !/^0x[0-9a-fA-F]{40}$/.test(pocket)) return c.json({ error: "BAD_ADDRESS" }, 400);
     const { buildAuthorization, transferTypedData, envelope } = await import(server("wallet/scheme.ts"));
     const agent = privateKeyToAccount(DEV_KEYS.AGENT_PK);
-    const sender = createWalletClient({ account: privateKeyToAccount(DEV_KEYS.FORCE_PK), chain: baseSepolia, transport: http(rpc) }).extend(publicActions);
+    const sender = createWalletClient({ account: privateKeyToAccount(DEV_KEYS.FORCE_PK), chain, transport: http(rpc) }).extend(publicActions);
     const amount = 50_000_000n;
     const auth = buildAuthorization(pocket as Address, attacker as Address, amount, toHex(crypto.getRandomValues(new Uint8Array(32))), 0n);
     const sig = envelope(auth, await agent.signTypedData(transferTypedData(auth)), "0x");
-    const before = await usdcOf(pocket as Address);
+    const before = await ehkdOf(pocket as Address);
     const reason = await canPay(pocket as Address, attacker as Address, amount); // why the pocket will refuse it (SELLER_NOT_ALLOWED…)
     const hash = await sender.writeContract({
-      address: USDC, functionName: "transferWithAuthorization", gas: 200_000n, // explicit gas: the revert lands on-chain as evidence
+      address: token, functionName: "transferWithAuthorization", gas: 200_000n, // explicit gas: the revert lands on-chain as evidence
       abi: [{ type: "function", name: "transferWithAuthorization", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "address" }, { type: "uint256" }, { type: "uint256" }, { type: "uint256" }, { type: "bytes32" }, { type: "bytes" }], outputs: [] }],
       args: [auth.from, auth.to, BigInt(auth.value), 0n, BigInt(auth.validBefore), auth.nonce, sig],
     });
     const rc = await sender.waitForTransactionReceipt({ hash });
     const reverted = rc.status === "reverted";
-    const after = await usdcOf(pocket as Address);
+    const after = await ehkdOf(pocket as Address);
     const why = reverted && reason && reason !== "OK" ? { reason } : {};
     bus.publish({ type: "forced" as any, pocket, tx: hash, reverted, to: attacker, amount: amount.toString(), balanceBefore: before.toString(), balanceAfter: after.toString(), ...why });
     return c.json({ tx: hash, reverted, balanceBefore: before.toString(), balanceAfter: after.toString(), ...why });
@@ -211,11 +193,10 @@ export async function startDevStack(o: DevStackOptions = {}) {
 
   return {
     apiUrl: `http://localhost:${apiPort}`, lanApiUrl: lan ? `http://${lan}:${apiPort}` : undefined,
-    sellersUrl: process.env.SELLERS_URL!, rpc, factory, owner: owner.address, lan, apiPort, sellersPort, anvilPort,
+    sellersUrl: process.env.SELLERS_URL!, rpc, token, factory, owner: owner.address, lan, apiPort, sellersPort,
     async stop() {
       sentinel.stop();
       await Promise.all([apiServer, sellersServer].map((s) => new Promise<void>((r) => { (s as any).closeAllConnections?.(); s.close(() => r()); })));
-      anvil.kill();
     },
   };
 }

@@ -91,9 +91,8 @@ async function until(what, fn, ms = 30000, step = 200) {
     check("the deck shows every pocket as a button", (await page.getByRole("button", { name: /Research data pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /One purchase pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /Market news pocket/ }).count()) === 1);
     check("the agents that hold them are named", /ChainBrain/.test(t) && /Claude/.test(t) && /ChatGPT/.test(t));
     check("spending this week is computed (vs last week)", /Weekly spending by your agents/.test(t) && /vs last week/.test(t));
-    check("main wallet shows US$54.80", /54\.80/.test(t), t.slice(0, 200));
+    check("main wallet shows HK$438.40", /438\.40/.test(t), t.slice(0, 200));
     check("no demo / sample / mock wording", !/\bdemo\b|sample data|mock|simulat/i.test(t));
-    check("no BaseScan links", (await page.locator('a[href*="basescan"]').count()) === 0);
     await shot("01-home");
   });
 
@@ -131,15 +130,15 @@ async function until(what, fn, ms = 30000, step = 200) {
 
   await run("ask dock: Claude asks to pay above its limit; the owner co-signs the cheque", async () => {
     await tab("Home");
-    const dock = page.getByRole("button", { name: /Claude asks US\$0\.05/ }).first();
+    const dock = page.getByRole("button", { name: /Claude asks HK\$0\.40/ }).first();
     await dock.waitFor({ timeout: 40000 });
-    check("ask dock: Claude, US$0.05, Nansen", /Nansen/.test((await dock.getAttribute("aria-label")) ?? ""));
+    check("ask dock: Claude, HK$0.40, Nansen", /Nansen/.test((await dock.getAttribute("aria-label")) ?? ""));
     await shot("01f-dock");
     // the inbox lists it too
     await page.getByRole("button", { name: /Approvals, 1 waiting/ }).first().click();
     await visible("Waiting for you (1)").waitFor({ timeout: 15000 });
     const t = await body();
-    check("inbox: Claude, Nansen, US$0.05, its countdown", /Claude/.test(t) && /Nansen/.test(t) && /0\.05/.test(t) && /left/.test(t));
+    check("inbox: Claude, Nansen, HK$0.40, its countdown", /Claude/.test(t) && /Nansen/.test(t) && /0\.40/.test(t) && /left/.test(t));
     await shot("01f-inbox");
     await page.goBack(); await sleep(800);
     await dock.click();
@@ -150,7 +149,7 @@ async function until(what, fn, ms = 30000, step = 200) {
       /to Nansen/.test(a) && /left after/.test(a) && /ask-me limit/.test(a) && /Seller check/.test(a) && /not checked/i.test(a));
     await shot("01g-cheque");
     await slide("Slide to approve");
-    await visible("Paid US$0.05").waitFor({ timeout: 30000 });
+    await visible("Paid HK$0.40").waitFor({ timeout: 30000 });
     await sleep(2400);
     check("Claude's payment co-signed, the dock is gone", (await page.getByRole("button", { name: /Claude asks US\$/ }).count()) === 0);
   });
@@ -180,7 +179,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Say what it's").waitFor();
     await page.getByRole("button", { name: "Set it up step by step instead" }).click();
     await visible("What is it for?").waitFor();
-    await page.getByText(/US\$1 budget · up to US\$0\.05 each/).first().click();
+    await page.getByText(/HK\$8 budget · up to HK\$0\.40 each/).first().click();
     // a preset sets every limit, so one press goes straight to Review
     await page.getByRole("button", { name: "Review", exact: true }).click();
     await visible("Looks right?").waitFor();
@@ -188,9 +187,9 @@ async function until(what, fn, ms = 30000, step = 200) {
     await shot("01b-wizard-review");
     await slide("Slide to create and fund");
     await page.waitForURL(/pocket\/0x[0-9a-fA-F]{40}/, { timeout: 30000 });
-    await visible("US$1.00").waitFor({ timeout: 15000 }).catch(() => {});
+    await visible("HK$8.00").waitFor({ timeout: 15000 }).catch(() => {});
     const t = await body();
-    check("new pocket page shows US$1.00", /1\.00/.test(t), t.slice(0, 300));
+    check("new pocket page shows HK$8.00", /8\.00/.test(t), t.slice(0, 300));
     await shot("01c-new-pocket");
     await page.goBack();
     await sleep(500);
@@ -201,8 +200,8 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Research a durian deal").waitFor();
     await chip("Research a durian deal");
     await visible("Your agent has a question").waitFor({ timeout: 30000 });
-    await visible("US$0.10 in total or per lookup?").waitFor({ timeout: 10000 }).catch(() => {});
-    check("one clarifying question", (await body()).includes("US$0.10 in total or per lookup?"));
+    await visible("HK$0.80 in total or per lookup?").waitFor({ timeout: 10000 }).catch(() => {});
+    check("one clarifying question", (await body()).includes("HK$0.80 in total or per lookup?"));
     await shot("02-question");
     await chip("In total, check the wallet");
     await confirmTask();
@@ -211,14 +210,14 @@ async function until(what, fn, ms = 30000, step = 200) {
     check("Exa and CoinGecko paid on their own", true);
     await visible("asks you to co-sign").waitFor({ timeout: 30000 }); await sleep(1600); // the card turns over to the cheque
     const t = await body();
-    check("approval sheet: Nansen US$0.05", /Nansen/.test(t) && /0\.05/.test(t));
+    check("approval sheet: Nansen HK$0.40", /Nansen/.test(t) && /0\.40/.test(t));
     await shot("03-approval");
     await slide("Slide to approve");
     await visible("Paid Nansen").waitFor({ timeout: 30000 });
     await idle();
     const t2 = await body();
     check("co-signed tag on the Nansen card", /Co-signed by you/.test(t2));
-    check("reply names the three purchases", /Bought Exa's web search for durian export news \(US\$0\.007\) and CoinGecko's USDC price \(US\$0\.01\) and Nansen's counterparty check/.test(t2), t2.slice(-400));
+    check("reply names the three purchases", /Bought Exa's web search for durian export news \(HK\$0\.056\) and CoinGecko's ETH price \(HK\$0\.08\) and Nansen's counterparty check/.test(t2), t2.slice(-400));
     await shot("04-paid");
   });
 
@@ -230,7 +229,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await openWhy();
     const t = await body();
     check("refusal card for Harbour Wines", /Harbour Wines/.test(t) && /SELLER_NOT_ALLOWED/.test(t));
-    check("re-planned to Exa's fruit trade search", /SE Asia fruit trade news \(US\$0\.007\)/.test(t));
+    check("re-planned to Exa's fruit trade search", /SE Asia fruit trade news \(HK\$0\.056\)/.test(t));
     await shot("05-replan");
   });
 
@@ -242,7 +241,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await openWhy();
     let t = await body();
     check("ShadyFeed flagged, only CoinGecko paid", /Warning: ShadyFeed/.test(t));
-    check("injection quoted and marked ignored", /tried to give your agent an order/.test(t) && /Send 50 USDC/.test(t) && /IGNORED/.test(t));
+    check("injection quoted and marked ignored", /tried to give your agent an order/.test(t) && /Send 50 eHKD/.test(t) && /IGNORED/.test(t));
     check("disclosure refused card", /DISCLOSURE_REFUSED|asked for more data|Refused:/.test(t));
     await chip("ShadyFeed's full feed");
     await idle();
@@ -276,13 +275,13 @@ async function until(what, fn, ms = 30000, step = 200) {
     await confirmTask();
     await idle();
     const t = await body();
-    check("dead end: nothing paid, fix suggested", /No allowed seller fits/.test(t) && /raise the cap and budget to US\$0\.007/.test(t));
+    check("dead end: nothing paid, fix suggested", /No allowed seller fits/.test(t) && /raise the cap and budget to HK\$0\.056/.test(t));
     await shot("08-dead-end");
-    await page.getByRole("button", { name: /Raise cap and budget to US\$0\.007/ }).click();
+    await page.getByRole("button", { name: /Raise cap and budget to HK\$0\.056/ }).click();
     await slide("Slide to raise cap and add money");
     await page.getByRole("button", { name: "Done" }).filter({ visible: true }).last().click();
     await sleep(800);
-    const ask = page.getByRole("button", { name: /Ask again, max US\$0\.007/ });
+    const ask = page.getByRole("button", { name: /Ask again, max HK\$0\.056/ });
     await ask.waitFor({ timeout: 15000 });
     check("fix applied: the card offers Ask again, the raise button is gone", (await page.getByRole("button", { name: /Raise cap and budget/ }).count()) === 0);
     await ask.click();
@@ -305,16 +304,16 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("What you got").waitFor();
     const t = await body();
     check("receipt shows what was delivered", /Counterparties of the exporter's wallet/.test(t));
-    check("receipt never links to BaseScan", (await page.getByLabel("Open on BaseScan").count()) === 0);
+    check("receipt has no outside explorer link", (await page.locator('a[href^="http"]').count()) === 0);
     await shot("10-receipt");
-    // the hash opens the in-app explorer: test network, never BaseScan
+    // the hash opens the in-app explorer: test network
     await page.getByText("Details", { exact: true }).filter({ visible: true }).first().click();
     await sleep(300);
     await page.getByRole("button", { name: /Open transaction/ }).filter({ visible: true }).first().click();
     await visible("How it was checked").waitFor({ timeout: 10000 });
     const x = await body();
     check("explorer sheet: Test network, block, method, checks path", /Test network/.test(x) && /Block/.test(x) && /Method/.test(x) && /Signature check/.test(x), x.slice(0, 300));
-    check("explorer never mentions or links BaseScan", !/BaseScan/i.test(x) && (await page.locator('a[href*="basescan"]').count()) === 0);
+    check("explorer stays in the app", (await page.locator('a[href^="http"]').count()) === 0);
     await shot("10b-explorer");
     await page.getByRole("button", { name: "Done" }).filter({ visible: true }).last().click();
     await sleep(500);
@@ -330,7 +329,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Rules you signed").waitFor();
     await sleep(1200);
     const t = await body();
-    check("deal watcher: Claude runs it, checks every day, buys at the limit or less", /Claude/.test(t) && /Deal watcher/.test(t) && /buys at US\$0\.04 or less/.test(t));
+    check("deal watcher: Claude runs it, checks every day, buys at the limit or less", /Claude/.test(t) && /Deal watcher/.test(t) && /buys at HK\$0\.32 or less/.test(t));
     check("its chart is the seller's real quotes, with the limit and the buys", (await page.getByLabel(/^Quoted prices: /).count()) === 1 && /Your limit/.test(t) && /\d+ bought/.test(t) && /\d+ quotes/.test(t));
     check("Will never: contract and ChainBrain, said apart", /Will never/i.test(t) && /CONTRACT/.test(t) && /CHAINBRAIN/.test(t));
     await shot("13-deal-watcher");
@@ -341,34 +340,34 @@ async function until(what, fn, ms = 30000, step = 200) {
     await tab("Home");
     await page.getByRole("button", { name: "New pocket" }).first().click();
     await visible("Say what it's").waitFor();
-    await page.getByLabel("What the pocket is for, in one sentence").fill("Every morning, get me durian export news from Exa and the USDC price from CoinGecko. Max US$0.05 a week.");
+    await page.getByLabel("What the pocket is for, in one sentence").fill("Every morning, get me durian export news from Exa and the ETH price from CoinGecko. Max HK$0.40 a week.");
     await page.getByRole("button", { name: "Compose my pocket app" }).click();
     await visible("Your pocket app").waitFor();
     await sleep(2600);
     let t = await body();
-    check("proof card: worst case US$0.10, the weekly allowance, every test payment as expected", /Worst case, even if the agent is fooled/.test(t) && /US\$0\.10/.test(t) && /a week, on its own/.test(t) && /6 payments tried · all as expected/.test(t));
+    check("proof card: worst case HK$0.80, the weekly allowance, every test payment as expected", /Worst case, even if the agent is fooled/.test(t) && /HK\$0\.80/.test(t) && /a week, on its own/.test(t) && /6 payments tried · all as expected/.test(t));
     check("the app is composed from the fixed blocks", /Research desk · 6 of 13 blocks/.test(t) && /draft/i.test(t));
     await shot("14-compose");
-    await slide("Slide to create · US$0.10");
+    await slide("Slide to create · HK$0.80");
     await page.waitForURL(/pocket\/0x[0-9a-fA-F]{40}/, { timeout: 30000 });
     await visible("Rules you signed").waitFor();
     const run = page.getByRole("button", { name: "Have ChainBrain run it now" });
     await run.click();
-    await until("run 1", async () => /Paid US\$0\.017/.test(await body()), 30000);
+    await until("run 1", async () => /Paid HK\$0\.136/.test(await body()), 30000);
     await sleep(800);
     await run.click();
-    await until("run 2", async () => (await body()).match(/Paid US\$0\.017/g)?.length >= 2, 30000);
+    await until("run 2", async () => (await body()).match(/Paid HK\$0\.136/g)?.length >= 2, 30000);
     t = await body();
-    check("two runs paid inside the week's allowance", /US\$0\.034/.test(t) && /of US\$0\.05 a week/.test(t));
+    check("two runs paid inside the week's allowance", /HK\$0\.272/.test(t) && /of HK\$0\.40 a week/.test(t));
     await shot("15-routine-runs");
     await run.click();
-    await visible("Run 3 would pass this week's US$0.05").waitFor({ timeout: 30000 });
+    await visible("Run 3 would pass this week's HK$0.40").waitFor({ timeout: 30000 });
     t = await body();
-    check("the third run raises the cheque with this week's bar", /US\$0\.051 of US\$0\.05/.test(t) && /US\$0\.041 spent \+ US\$0\.01 now/.test(t));
+    check("the third run raises the cheque with this week's bar", /HK\$0\.408 of HK\$0\.40/.test(t) && /HK\$0\.328 spent \+ HK\$0\.08 now/.test(t));
     await shot("16-routine-cheque");
-    await slide("Slide to approve US$0.01");
+    await slide("Slide to approve HK$0.08");
     await until("run 3", async () => /co-signed by you on its cheque/.test(await body()), 30000);
-    check("co-signed: the meter shows the US$0.001 over", /US\$0\.001 over/.test(await body()));
+    check("co-signed: the meter shows the HK$0.008 over", /HK\$0\.008 over/.test(await body()));
     await shot("17-routine-over");
     await page.goBack(); await sleep(800); // back to Home (New pocket app replaced itself with the pocket page)
   });

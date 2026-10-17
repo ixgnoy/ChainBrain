@@ -1,5 +1,5 @@
 // The ChainBrain explorer: every hash and address in the console opens here. Built-in and local-fork hashes are not on any
-// public chain, so they are never linked to BaseScan or dressed up as it; a public-chain server gets an extra BaseScan link.
+// FISCO chain the server reports, so they never get an explorer link; a real server links to its own /explorer.
 // Pages: #explorer (blocks and latest transactions), #explorer/tx/0x…, #explorer/block/n, #explorer/address/0x….
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Search, ShieldCheck } from "lucide-react";
