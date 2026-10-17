@@ -6,7 +6,7 @@
 // Nothing here is written by the AI: the spec only names blocks, every figure is computed.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Keyboard, ScrollView, View, useWindowDimensions } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Address } from "viem";
@@ -57,7 +57,10 @@ const cap1 = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 export default function Compose() {
   const insets = useSafeAreaInsets();
   const { wallet, cfg, pockets, addPocket, recordTx, refreshPockets, balances, setActive, connectAgent, setNotice } = useApp();
-  const [text, setText] = useState("");
+  // opened from an agent's card ("Give Claude a pocket"): the sentence starts by naming that agent, so the reader picks it
+  const { agent: forAgent } = useLocalSearchParams<{ agent?: string }>();
+  const preset = AGENTS.find((a) => a.id === forAgent && a.kind === "outside");
+  const [text, setText] = useState(preset ? `Let ${preset.name} ` : "");
   const [res, setRes] = useState<(Composed & { asked: Set<string> }) | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [reading, setReading] = useState(false);
@@ -222,7 +225,7 @@ export default function Compose() {
           <Understood text={text} sellers={sellers} />
           {/* the four kinds of app, as small cards in their job's face with the agent that would hold them: tap one to try it */}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {EXAMPLES.map((e) => {
+            {EXAMPLES.filter((e) => !forAgent || e.agent === forAgent || (forAgent === "chainbrain" && e.agent === "chainbrain")).map((e) => {
               const f = deck[FACE[e.layout]];
               const hatched = "hatch" in f && f.hatch;
               return (

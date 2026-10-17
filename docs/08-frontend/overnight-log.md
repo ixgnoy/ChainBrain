@@ -38,6 +38,10 @@ The owner said the look is good but the UX isn't (memory: ux-round-2-decisions, 
   - Brain is now a pushed screen (still reached from the chat's memory note).
   - Auto-play ends on Live.
   - Evidence: `w-54-live.png`; phone tests 47; e2e 57/57.
+- [x] **Give an agent a pocket**.
+  - Every agent card has "Give Claude a pocket" (or ChatGPT, or ChainBrain). It opens New pocket app with the sentence started as "Let Claude …", so the reader picks that agent from the owner's own words, and with that agent's examples only.
+  - Manage became an icon button. The stats line has its own row, so nothing truncates.
+  - Evidence: `w-55-give-a-pocket.png`; e2e 57/57.
 
 ## Calm pass (17 Oct, night 2)
 
