@@ -83,13 +83,15 @@ async function until(what, fn, ms = 30000, step = 200) {
   });
 
   await run("launch: straight to a lived-in Home, nothing says demo", async () => {
-    await visible("Agent pockets").waitFor({ timeout: 60000 });
+    await visible("Main wallet").waitFor({ timeout: 60000 });
     await visible("Research data").waitFor();
+    // Home shows four pockets under the wallet, then "See all"
+    await page.getByRole("button", { name: /See all \d+ pockets/ }).click(); await sleep(500);
     const t = await body();
     check("four seeded pockets", /Research data/.test(t) && /One purchase/.test(t) && /Market news/.test(t) && /Trade quotes/.test(t));
-    check("pockets are cards (cap, ask-me limit, expiry)", /Cap US\$/.test(t) && /asks above|never asks|asks every time/.test(t) && /Exp\. \d\d\/\d\d|Ends \d\d:\d\d/.test(t));
+    check("each pocket says what it does, under the wallet that funds it", /out in \d+ pockets/.test(t) && /Haggles DataPro down first/.test(t) && /Buys .+ at ≤ US\$0\.04/.test(t) && /When asked · /.test(t));
     check("the deck shows every pocket as a button", (await page.getByRole("button", { name: /Research data pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /One purchase pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /Market news pocket/ }).count()) === 1);
-    check("the agents that hold them are named", /ChainBrain/.test(t) && /Claude/.test(t) && /ChatGPT/.test(t));
+    check("the agents that hold them are named", (await page.getByRole("button", { name: /ChainBrain pocket:/ }).count()) > 0 && (await page.getByRole("button", { name: /Claude pocket:/ }).count()) > 0 && (await page.getByRole("button", { name: /ChatGPT pocket:/ }).count()) > 0);
     check("spending this week is computed (vs last week)", /This week/.test(t) && /vs last week/.test(t) && /bought/.test(t));
     check("main wallet shows US$54.80", /54\.80/.test(t), t.slice(0, 200));
     check("no demo / sample / mock wording", !/\bdemo\b|sample data|mock|simulat/i.test(t));
@@ -109,7 +111,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     check("it is a research desk app: who runs it, its library, then the rules you signed", /ChainBrain/.test(t) && /Research desk/.test(t) && /reports bought/.test(t) && /Rules you signed/.test(t));
     await shot("01a-pocket-page");
     await page.goBack();
-    await visible("Agent pockets").waitFor();
+    await visible("Main wallet").waitFor();
     await sleep(500);
   });
 

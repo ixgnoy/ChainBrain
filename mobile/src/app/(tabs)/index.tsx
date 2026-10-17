@@ -25,7 +25,8 @@ import { pageCardWidth, PAGE_MARGIN } from "../../components/CardFlight";
 import { cardHeight, faceOf, toneFor } from "../../components/PocketFace";
 import type { Pocket } from "../../store";
 import * as api from "../../lib/api";
-import { glyphKey, glyphOf, weekDigest, type Glyph } from "../../../../shared/sim/pocketAppData";
+import { budgetOf, glyphKey, glyphOf, weekDigest, type Glyph } from "../../../../shared/sim/pocketAppData";
+import { PocketRows, WalletHero } from "../../components/WalletHome";
 import { WeekBought } from "../../components/WeekDigest";
 import { SpendChart } from "../../components/SpendChart";
 import { useIntroDone } from "../../ui/intro";
@@ -192,6 +193,23 @@ function Home({ ready }: { ready: boolean }) {
   const liveRoutines = useMemo(() => pockets.filter((p) => !p.revoked).map((p) => routines.get(p.address.toLowerCase())).filter((r): r is NonNullable<typeof r> => !!r), [pockets, routines]);
   const anyActive = liveRoutines.some((r) => r.status === "active");
   const pauseAll = (pause: boolean) => { haptic.medium(); for (const r of liveRoutines) if ((r.status === "active") === pause) api.pauseRoutine(r.pocket, pause); };
+  // the rows: live pockets, the one an agent touched last first; revoked ones at the end
+  const rowOrder = useMemo(() => {
+    const last = new Map<string, number>();
+    for (const e of events) if (e.pocket) last.set(String(e.pocket).toLowerCase(), e.at);
+    const t = (p: Pocket) => last.get(p.address.toLowerCase()) ?? 0;
+    return [...pockets].sort((a, b) => Number(a.revoked) - Number(b.revoked) || t(b) - t(a));
+  }, [pockets, moneyN]); // eslint-disable-line react-hooks/exhaustive-deps
+  // what each pocket has spent of what it was given (its period allowance when it has a routine)
+  const spentShare = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const p of pockets) {
+      const a = p.address.toLowerCase();
+      const b = budgetOf(events, p.address, { routine: routines.get(a) ?? null, balance: p.balance, now: Date.now() });
+      out[a] = b.limit > 0n ? Number(b.spent) / Number(b.limit) : 0;
+    }
+    return out;
+  }, [pockets, routines, moneyN]); // eslint-disable-line react-hooks/exhaustive-deps
   const upcoming = useMemo(() => nextRuns(pockets, (a) => routines.get(a.toLowerCase()) ?? null, events, cfg?.sellers ?? [], now), [pockets, routines, events, cfg, now]);
   const reduce = useReduceMotion();
   const big = useLargeText();
@@ -227,21 +245,7 @@ function Home({ ready }: { ready: boolean }) {
       <HomeHeader />
       <Rise play={play} index={0}>
         <Animated.View style={pulseStyle}>
-          {/* one line; at the largest text sizes the main wallet moves under the total, or the two run into each other */}
-          <Card pad={18} style={{ marginHorizontal: 16, flexDirection: big ? "column" : "row", alignItems: big ? "flex-start" : "flex-end", gap: 12 }}>
-            <View style={{ flex: 1 }}>
-              <T v="cap" w="semi" color="muted">In agent pockets</T>
-              <View style={{ marginTop: 4 }}><Money v="balance" value={usd(sumAll)} countIn={play} label={`Agent pockets total ${money(sumAll)}`} /></View>
-              <Allocation pockets={live} all={pockets} total={sumAll} />
-            </View>
-            <View accessible accessibilityLabel={balances ? `Main wallet ${money(balances.usdc)}` : "Main wallet"} style={{ alignItems: big ? "flex-start" : "flex-end", paddingBottom: 4 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                <Icon name="vault" size={13} color={c.muted} stroke={2} />
-                <T v="cap" color="muted">Main wallet</T>
-              </View>
-              {balances ? <Money v="row" value={usd(balances.usdc)} /> : <T v="row" color="muted">{loading ? "Loading…" : "—"}</T>}
-            </View>
-          </Card>
+          <WalletHero usdc={balances?.usdc} out={sumAll} pockets={live} all={pockets} />
         </Animated.View>
       </Rise>
 
@@ -254,7 +258,7 @@ function Home({ ready }: { ready: boolean }) {
         ) : pockets.length === 0 ? (
           <EmptyPockets />
         ) : (
-          <PocketWallet pockets={pockets} play={play} scrollY={scrollY} glyphs={glyphs} />
+          <PocketRows pockets={rowOrder} all={pockets} routines={routines} glyphs={glyphs} spent={spentShare} sellerName={sellerLabel} itemName={itemName} negotiable={(id) => !!cfg?.sellers.find((x) => x.id === id)?.items.some((i) => (i as { negotiable?: boolean }).negotiable)} />
         )}
       </View>
 

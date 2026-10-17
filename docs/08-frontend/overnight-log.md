@@ -12,6 +12,23 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: the Evidence and Sellers pages
 
+## UX round 2 (18 Oct)
+
+The owner said the look is good but the UX isn't (memory: ux-round-2-decisions, live-canvas-decisions).
+
+- [x] **Live canvas at Compose** (a4a97d6, 1b02654): write → watch → sign.
+  - The app designs itself from the real spec, replayed as JSON Patch ops, with the agent's mark as a cursor and skeletons that fill in.
+  - A reading phase shows the reader change its mind (research → deal at "drops below").
+  - Then a paced on-chain build after the slide.
+  - Verified on iOS (prod bundle, Face ID simulated) and e2e 57/57.
+- [x] **Haggler face to wheat; deal watcher gauge** (207587f). No card is vermillion any more.
+- [x] **Home: the main wallet is the hero, with pockets under it on a rail.**
+  - Each row: a mini card in its job's face with the job icon and the agent's mark, the name, one honest job line ("Buys Smart-money flows at ≤ US$0.04", "Haggles DataPro down first", "When asked · Exa & CoinGecko"), a spend bar, the balance and its live sign.
+  - Four rows, then See all. Tapping a row flies its mini card into the pocket page.
+  - Words: 123 → 65 above the fold, 173 → 101 for the whole screen.
+  - E2E: Home checks now expand See all and look for the job lines and the agent per pocket (in row labels). Same facts, not weakened.
+  - Evidence: `w-53-wallet-home.png`.
+
 ## Calm pass (17 Oct, night 2)
 
 The owner said the app looked nice but "a little bit too packed and too much text". The answers (memory: calm-pass-decisions) were:
