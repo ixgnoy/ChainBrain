@@ -7,23 +7,13 @@ import { readFileSync } from "node:fs";
 import { createPublicClient, createWalletClient, http, publicActions, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { fiscoChain } from "../src/chains";
+import { fundIfEmpty } from "../src/fund";
 
 const rpc = process.env.FISCO_RPC ?? "http://127.0.0.1:8545";
 const root = new URL("../../contracts/", import.meta.url);
 const art = (n: string) => JSON.parse(readFileSync(new URL(`out/${n}.sol/${n}.json`, root), "utf8"));
 const want = JSON.parse(readFileSync(new URL("deployments/20200.json", root), "utf8")) as { Token: Address; PocketFactory: Address };
 const pc = createPublicClient({ chain: fiscoChain, transport: http(rpc) });
-
-export async function fundIfEmpty(addresses: Address[]) {
-  const empty: Address[] = [];
-  for (const a of addresses) if ((await pc.getBalance({ address: a })) === 0n) empty.push(a);
-  if (!empty.length) return [];
-  const r = await fetch(`${process.env.FUND_URL}/admin/fund`, {
-    method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${process.env.FUND_TOKEN}` }, body: JSON.stringify({ addresses: empty }),
-  });
-  if (!r.ok) throw new Error(`fund failed (${r.status}): ${await r.text()}`);
-  return empty;
-}
 
 async function main() {
   for (let i = 0; ; i++) {
@@ -32,7 +22,7 @@ async function main() {
     await new Promise((r) => setTimeout(r, 2000));
   }
   const owner = privateKeyToAccount(process.env.OWNER_PK as Hex);
-  const funded = await fundIfEmpty(["OWNER_PK", "FACILITATOR_PK", "FORCE_PK"].map((k) => privateKeyToAccount(process.env[k] as Hex).address));
+  const funded = await fundIfEmpty(pc as any, ["OWNER_PK", "FACILITATOR_PK", "FORCE_PK"].map((k) => privateKeyToAccount(process.env[k] as Hex).address));
   if (funded.length) console.log("funded", funded.join(", "));
 
   if ((await pc.getCode({ address: want.Token }))?.length && (await pc.getCode({ address: want.PocketFactory }))?.length) {

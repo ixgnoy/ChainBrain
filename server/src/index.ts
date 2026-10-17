@@ -24,6 +24,7 @@ import { trimHistory } from "./brain/window";
 import { composeApp } from "./pocketApp/compose";
 import { compileRules, type RulesModel } from "./rules/compile";
 import { explorerRoutes } from "./explorer";
+import { faucetRoutes } from "./faucet";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
 
@@ -67,6 +68,7 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
     return c.body(toJson({ chain: cfg().key, chainId: cfg().chain.id, hash, status: rc.status, blockNumber: rc.blockNumber, from: rc.from, to: rc.to, logs: rc.logs.length }), 200, { "content-type": "application/json" });
   });
   app.route("/", explorerRoutes()); // /explorer page + /api/explorer/* (read-only)
+  app.route("/", faucetRoutes()); // /faucet page + POST /api/faucet (Mock e-HKD, FISCO only)
   app.get("/api/pending", (c) => c.json(approvals.pending(c.req.query("pocket") ?? "")));
 
   app.post("/api/approvals/:id", async (c) => {

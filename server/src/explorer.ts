@@ -111,6 +111,8 @@ export function explorerRoutes() {
   });
 
   app.get("/explorer", (c) => c.html(PAGE));
+  // MetaMask builds explorer links as <explorer>/tx/<hash> and <explorer>/address/<addr>
+  app.get("/explorer/:kind{tx|address|block}/:id", (c) => c.redirect(`/explorer#/${c.req.param("kind")}/${encodeURIComponent(c.req.param("id"))}`));
   return app;
 }
 
