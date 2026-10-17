@@ -187,65 +187,6 @@ export default function BrainTab() {
         {pockets.length > 1 ? <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}><Icon name="chevronDown" size={18} color={c.ink} stroke={2.2} /></View> : null}
       </Press>
 
-      {/* the rules: the worst case big, who it can pay as logos, the limits as tiles */}
-      <Rise dy={8} style={{ marginTop: 14, marginHorizontal: 16 }}>
-        <Card pad={18}>
-          <Eyebrow>Worst case right now</Eyebrow>
-          {/* the exact balance: proof() rounds to cents, and a pocket can hold fractions of a cent. A revoked, frozen or ended
-              pocket refuses every payment (Pocket.canPay), so its worst case is nothing, as WorstCase says on the pocket page */}
-          <Money v="balance" value={usd(off ? 0n : active.balance)} label={`Worst case right now ${money(off ? 0n : active.balance)}`} />
-          <T v="sub" color="muted">{off ? `Nothing can be paid: the pocket is ${active.revoked ? "revoked" : active.frozen ? "frozen" : "ended"}. Enforced by your pocket contract.` : "Even if your agent is fooled. Enforced by your pocket contract."}</T>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 14 }} accessible accessibilityLabel={`Can pay ${allowed.map((x) => x.name).join(", ")}. Anyone else is refused`}>
-            {allowed.map((x) => (
-              <View key={x.id} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 4, paddingRight: 10, minHeight: 34, borderRadius: 17, backgroundColor: c.fill }}>
-                <Face id={x.id} name={x.name} size={26} />
-                <T v="cap" w="semi">{cleanText(x.name, 20)}</T>
-              </View>
-            ))}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, minHeight: 34, borderRadius: 17, backgroundColor: c.vermillionSoft }}>
-              <Icon name="ban" size={15} color={c.vermillionInk} stroke={2} />
-              <T v="cap" w="semi" style={{ color: c.vermillionInk }}>Anyone else</T>
-            </View>
-          </View>
-          <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
-            {[[money(active.cap), "per payment"], [active.askAbove === NEVER || active.askAbove > active.cap ? "Never" : active.askAbove === 0n ? "Always" : money(active.askAbove), "asks you above"]].map(([v, l]) => (
-              <View key={l} style={{ flex: 1, padding: 12, borderRadius: 14, backgroundColor: c.fill, gap: 2 }} accessible accessibilityLabel={`${v} ${l}`}>
-                <T v="head" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{v}</T>
-                <T v="cap" color="muted">{l}</T>
-              </View>
-            ))}
-          </View>
-        </Card>
-      </Rise>
-
-      {/* spending: one bar split by seller, with each seller's logo and amount */}
-      <Panel title="Spent from this pocket" pill={spendTotal ? money(spendTotal) : "Nothing yet"} delay={30}>
-        {spend.length ? <>
-          <View style={{ flexDirection: "row", height: 14, borderRadius: 7, overflow: "hidden", gap: 2 }} accessible accessibilityLabel={spend.map(([id, v]) => `${sellerName(id)} ${money(v)}`).join(", ")}>
-            {spend.map(([id, v], i) => <View key={id} style={{ flex: Number(v), backgroundColor: SEG[i % SEG.length] }} />)}
-          </View>
-          {spend.map(([id, v], i) => (
-            <View key={id} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: SEG[i % SEG.length] }} />
-              <Face id={id} name={sellerName(id)} size={28} />
-              <T v="row" style={{ flex: 1 }} numberOfLines={1}>{cleanText(sellerName(id), 24)}</T>
-              <Figure text={money(v)} size={15} />
-            </View>
-          ))}
-        </> : null}
-      </Panel>
-
-      {/* what it understood: the confirmed task as chips, its one question as a bubble */}
-      {routine && rb ? (
-        <Panel title="Routine" pill={routine.status === "paused" ? "Paused" : `${runs.length} ${runs.length === 1 ? "run" : "runs"} on its own`} pillTone={routine.status === "paused" ? "fill" : "green"} delay={40}>
-          <T v="sub" color="ink2">{`${cadenceText(routine.cadence)}, it buys the same ${routine.items.length === 1 ? "item" : `${routine.items.length} items`} from the sellers you named. It never decides to buy something new: the schedule, the items and the allowance are fixed fields you signed.`}</T>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <Counter icon="gauge" n={Math.round((Number(rb.spent) / Math.max(Number(rb.limit), 1)) * 100)} label={`% of US$${usd(rb.limit)} a ${routine.allowance.period} used`} a11y={`percent of this ${routine.allowance.period}'s allowance used: ${money(rb.spent)} of ${money(rb.limit)}`} />
-            <Counter icon="shieldCheck" n={ignored} label={ignored === 1 ? "seller text ignored" : "seller texts ignored"} a11y="times a seller's text tried to change the routine; nothing changed" />
-          </View>
-          {routine.status === "active" ? <T v="cap" color="muted">{`Next ${new Date(routine.nextAt).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" })}. Past the allowance it stops and asks you to co-sign.`}</T> : null}
-        </Panel>
-      ) : null}
       <Panel title="Understood" pill={b.task ? (b.task.status === "approved" ? "Confirmed" : b.task.status === "pending" ? "Waiting for you" : "Declined") : "No task yet"} pillTone={b.task?.status === "approved" ? "green" : b.task?.status === "pending" ? "blue" : "fill"} delay={50}>
         {task.length ? <>
           {task.filter((r) => r.k === "Buy" || !r.k).slice(0, 1).map((r, i) => <T key={i} v="row">{cap1(r.v)}</T>)}
@@ -288,62 +229,42 @@ export default function BrainTab() {
         ))}
       </Panel>
 
-      {/* what it resisted: four counters */}
-      <Panel title="Stopped" pill={b.resisted.total ? "No money moved" : "Nothing yet"} pillTone={b.resisted.total ? "green" : "fill"} delay={90}>
+      {/* what guarded it: what it refused, the Sentinel and Pre-flight, and each seller's Radar score, in one card */}
+      <Panel title="Guarded" pill={b.resisted.total ? `${b.resisted.total} stopped · no money moved` : "Nothing tried yet"} pillTone={b.resisted.total ? "green" : "fill"} delay={70}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-          <Counter icon="shield" n={b.resisted.injections} label="Hidden orders" a11y="hidden orders in seller pages ignored" />
-          <Counter icon="lock" n={b.resisted.dataRequests} label="Data asks" a11y="requests for your data or a signature refused" />
-          <Counter icon="alert" n={b.resisted.attacks} label="Chat attacks" a11y="chat attacks refused" />
+          <Counter icon="shield" n={b.resisted.injections} label="Orders" a11y="hidden orders in seller pages ignored" />
+          <Counter icon="lock" n={b.resisted.dataRequests} label="Data" a11y="requests for your data or a signature refused" />
+          <Counter icon="alert" n={b.resisted.attacks} label="Attacks" a11y="chat attacks refused" />
           <Counter icon="ban" n={b.resisted.forcedBlocked} label="Forced" a11y="forced transfers refused on-chain" />
         </View>
-      </Panel>
-
-      {/* Radar: each seller's logo and its money score */}
-      <Panel title="Radar" pill={b.radar.length ? (blocked ? `${blocked} risky` : "All clean") : "No sellers checked yet"} pillTone={blocked ? "vermillion" : b.radar.length ? "green" : "fill"} delay={110}>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <View accessible accessibilityLabel={b.preflight.length ? `Pre-flight predicted ${pfOk} of ${b.preflight.length} attempts` : "Pre-flight: no payments yet"} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 14, backgroundColor: c.fill }}>
+            <Ring share={b.preflight.length ? pfOk / b.preflight.length : 0} size={36} />
+            <View><T v="head">{b.preflight.length ? `${pfOk}/${b.preflight.length}` : "–"}</T><T v="tab" color="muted">Pre-flight</T></View>
+          </View>
+          <View accessible accessibilityLabel={`Sentinel: ${sentinelNow}`} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 14, backgroundColor: active.frozen ? c.vermillionSoft : c.greenSoft }}>
+            <Icon name={active.frozen ? "freeze" : "eye"} size={20} color={active.frozen ? c.vermillionInk : c.greenInk} />
+            <View style={{ flexShrink: 1 }}><T v="head" numberOfLines={1} style={{ color: active.frozen ? c.vermillionInk : c.greenInk }}>{sentinelNow}</T><T v="tab" color="muted">Sentinel</T></View>
+          </View>
+        </View>
+        {active.frozen ? <UnfreezeButton pocket={active.address} /> : null}
         {b.radar.map((r) => (
-          <View key={r.key} style={{ flexDirection: "row", alignItems: "center", gap: 10 }} accessible accessibilityLabel={`${r.counterparty}: risk ${r.score} of 10, ${r.verdict === "ok" ? "clean" : r.verdict === "review" ? "needs your OK" : "blocked"}`}>
-            <Face id={r.sellerId} name={r.counterparty} size={32} />
-            <View style={{ flex: 1, gap: 5 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <T v="sub" w="semi" numberOfLines={1}>{cleanText(r.counterparty, 24)}</T>
-                <T v="cap" w="semi" style={{ color: r.verdict === "ok" ? c.greenInk : r.verdict === "review" ? c.blueInk : c.vermillionInk }}>{r.verdict === "ok" ? (r.partial ? "Clean so far" : "Clean") : r.verdict === "review" ? "Ask you" : "Blocked"}</T>
-              </View>
-              <ScoreBar score={r.score} verdict={r.verdict} />
-            </View>
+          <View key={r.key} style={{ flexDirection: "row", alignItems: "center", gap: 10 }} accessible accessibilityLabel={`Radar, ${r.counterparty}: risk ${r.score} of 10, ${r.verdict === "ok" ? "clean" : r.verdict === "review" ? "needs your OK" : "blocked"}`}>
+            <Face id={r.sellerId} name={r.counterparty} size={28} />
+            <View style={{ flex: 1 }}><ScoreBar score={r.score} verdict={r.verdict} /></View>
+            <T v="cap" w="semi" style={{ width: 64, textAlign: "right", color: r.verdict === "ok" ? c.greenInk : r.verdict === "review" ? c.blueInk : c.vermillionInk }}>{r.verdict === "ok" ? "Clean" : r.verdict === "review" ? "Ask you" : "Blocked"}</T>
           </View>
         ))}
-      </Panel>
-
-      {/* pre-flight and Sentinel, side by side as two status tiles */}
-      <Rise dy={10} delay={130} style={{ flexDirection: "row", gap: 12, marginTop: 12, marginHorizontal: 16 }}>
-        <Card pad={16} style={{ flex: 1, gap: 8 }}>
-          <View accessible accessibilityLabel={b.preflight.length ? `Pre-flight predicted ${pfOk} of ${b.preflight.length} attempts, paid or refused` : "Pre-flight: no payments yet"} style={{ gap: 8 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <Ring share={b.preflight.length ? pfOk / b.preflight.length : 0} size={44} />
-              <T v="head">{b.preflight.length ? `${pfOk}/${b.preflight.length}` : "–"}</T>
-            </View>
-            <T v="cap" color="muted">attempts predicted before sending, paid or refused</T>
-          </View>
-        </Card>
-        <Card pad={16} style={{ flex: 1, gap: 8 }}>
-          <View accessible accessibilityLabel={`Sentinel: ${sentinelNow}`} style={{ gap: 8 }}>
-            <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: active.frozen ? c.vermillionSoft : c.greenSoft, alignItems: "center", justifyContent: "center" }}>
-              <Icon name={active.frozen ? "freeze" : "eye"} size={22} color={active.frozen ? c.vermillionInk : c.greenInk} />
-            </View>
-            <T v="head" numberOfLines={1}>{sentinelNow}</T>
-            <T v="cap" color="muted">Sentinel, watching this pocket</T>
-          </View>
-        </Card>
-      </Rise>
-      {active.frozen ? <View style={{ marginHorizontal: 16, marginTop: 10 }}><UnfreezeButton pocket={active.address} /></View> : null}
-      <View style={{ marginHorizontal: 16, marginTop: 6 }}>
+        <View>
         <Details compact title="How Pre-flight and the Sentinel decide" rows={[
           ["Pre-flight", b.preflight.length ? `Checked with ${preflightBy(b.preflight.at(-1)?.predicted.by)} before any money moved` : "Predicts each payment before sending it"],
           ["Sentinel rules", "3 payments outside your rules in a minute, money leaving with no payment, a refusal right after a seller page gave orders"],
           ["Sentinel AI", (() => { const by = b.sentinel.filter((v) => v.ai).at(-1)?.ai?.by; return by ? aiName(by) : "Not asked yet: it is asked only when a rule fires"; })()],
           ["Its power", "Freeze only, with its own key. It can't move money or change your rules"],
         ]} />
-      </View>
+        </View>
+
+      </Panel>
 
       {/* memory: what it keeps, as chips you can remove */}
       <Panel title="Remembers" pill={memState === "none" ? "Not on this server" : mem?.version ? `Version ${mem.version}` : "Nothing yet"} delay={150}>
