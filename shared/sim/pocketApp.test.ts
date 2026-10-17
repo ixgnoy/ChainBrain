@@ -244,12 +244,13 @@ test("week digest: this week's buys by item, co-signs and what was stopped, from
   const w = createWorld({ speed: 0, seed: 1 });
   await seedOwner(w, OWNER);
   const ev = w.events(0);
-  const d = weekDigest(ev, w.now());
+  const now = w.now(); // one reading: the world's clock moves, and the window ends just after `now`
+  const d = weekDigest(ev, now);
   const pays = ev.filter((e) => e.type === "payment" && e.at >= d.window.start && e.at < d.window.end);
   assert.equal(d.bought, pays.length);
   assert.equal(d.items.reduce((n, x) => n + x.count, 0), pays.length, "every payment is in one item group");
   assert.equal(d.spent, d.items.reduce((n, x) => n + x.amount, 0n));
-  assert.ok(d.window.start <= w.now() && w.now() < d.window.end);
+  assert.ok(d.window.start <= now && now < d.window.end);
   for (let i = 1; i < d.items.length; i++) assert.ok(d.items[i - 1].count >= d.items[i].count, "most bought first");
 });
 
