@@ -8,6 +8,7 @@ import { Pockets, Judges } from "./pages";
 import { PocketAppView } from "./PocketApp";
 import { Explorer } from "./Explorer";
 import { Evidence } from "./Evidence";
+import { Faucet } from "./Faucet";
 import SellerView from "../seller/SellerView";
 import { PhoneTag, TestnetChip, hkd } from "./parts";
 import { Stepper } from "./Stepper";
@@ -19,8 +20,8 @@ import { PageTitle, PillSelect } from "../seller/ui";
 import { cn } from "../lib/cn";
 import { parseExplorer, splitHash, type ExplorerRoute } from "./route";
 
-type Tab = "live" | "pockets" | "sellers" | "explorer" | "evidence" | "judges";
-const TABS: [Tab, string][] = [["live", "Live"], ["pockets", "Pockets"], ["sellers", "Sellers"], ["explorer", "Explorer"], ["evidence", "Evidence"], ["judges", "Judges"]];
+type Tab = "live" | "pockets" | "sellers" | "explorer" | "evidence" | "judges" | "faucet";
+const TABS: [Tab, string][] = [["live", "Live"], ["pockets", "Pockets"], ["sellers", "Sellers"], ["explorer", "Explorer"], ["evidence", "Evidence"], ["judges", "Judges"], ["faucet", "Faucet"]];
 const ADDR = /^0x[0-9a-fA-F]{40}$/;
 type Route = { tab: Tab; pocket?: string; present: boolean; explorer: ExplorerRoute };
 const HOME: ExplorerRoute = { kind: "home" };
@@ -140,6 +141,7 @@ function Shell() {
         {!present && tab === "sellers" && <div className="mx-auto max-w-[1040px]"><PageTitle title="Sellers" sub="The other side of every payment: what each shop sees when an agent buys or gets refused." /><SellerView /></div>}
         {!present && tab === "explorer" && <Explorer route={route.explorer} watch={watchLive} />}
         {!present && tab === "evidence" && <div className="mx-auto max-w-[1180px]"><Evidence /></div>}
+        {!present && tab === "faucet" && <div className="mx-auto max-w-[720px]"><Faucet /></div>}
         {!present && tab === "judges" && <div className="mx-auto max-w-[1040px]"><Judges pocket={pocket} open={watchLive} /></div>}
         {!present && <div className="mt-12 text-center xl:hidden"><TestnetChip /></div>}
       </main>
