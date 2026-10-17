@@ -198,7 +198,12 @@ function Home({ ready }: { ready: boolean }) {
     const last = new Map<string, number>();
     for (const e of events) if (e.pocket) last.set(String(e.pocket).toLowerCase(), e.at);
     const t = (p: Pocket) => last.get(p.address.toLowerCase()) ?? 0;
-    return [...pockets].sort((a, b) => Number(a.revoked) - Number(b.revoked) || t(b) - t(a));
+    const byRecent = [...pockets].sort((a, b) => Number(a.revoked) - Number(b.revoked) || t(b) - t(a));
+    // the first rows show one pocket of each job (deal watcher, research desk, subscriptions, haggler), so the four kinds
+    // are seen at a glance; then everything else, most recent first
+    const first: Pocket[] = [];
+    for (const p of byRecent) if (!p.revoked && !first.some((x) => (x.app?.layout ?? "research") === (p.app?.layout ?? "research"))) first.push(p);
+    return [...first, ...byRecent.filter((p) => !first.includes(p))];
   }, [pockets, moneyN]); // eslint-disable-line react-hooks/exhaustive-deps
   // what each pocket has spent of what it was given (its period allowance when it has a routine)
   const spentShare = useMemo(() => {

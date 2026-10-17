@@ -42,6 +42,12 @@ The owner said the look is good but the UX isn't (memory: ux-round-2-decisions, 
   - Every agent card has "Give Claude a pocket" (or ChatGPT, or ChainBrain). It opens New pocket app with the sentence started as "Let Claude …", so the reader picks that agent from the owner's own words, and with that agent's examples only.
   - Manage became an icon button. The stats line has its own row, so nothing truncates.
   - Evidence: `w-55-give-a-pocket.png`; e2e 57/57.
+- [x] **Critique fixes after the iOS pass**:
+  - Home's first four rows show one pocket of each job (deal watcher, research desk, subscriptions, haggler), so the four kinds are seen at a glance; the rest follow under See all.
+  - "One purchase · One purchase · Exa" became "Buys once from Exa", and "Mons" became "Mondays".
+  - Live shows 12 cards, then "Earlier". A plain payment's sub-line is its pocket's name, not the repeated "Inside the pocket's rules". Live was 383 words.
+  - Words now: Home 65 above the fold, Live 91, Settings 82, Agents 116 (mostly the pocket strips' names and balances).
+  - Evidence: `ios-53-wallet-home.png`; e2e 57/57. The e2e taps See all before looking for Research data.
 
 ## Calm pass (17 Oct, night 2)
 

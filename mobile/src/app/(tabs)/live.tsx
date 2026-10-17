@@ -38,13 +38,15 @@ export default function Live() {
   const { events, pockets, pending, sellerName, chatBusy, findPocket, ledger, setReceipt, openApproval } = useApp();
   const [agent, setAgent] = useState<string>("all");
   const [open, setOpen] = useState<string | null>(null);
+  const [more, setMore] = useState(12);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(t); }, []);
   const agentOf = (p?: string) => findPocket(p ?? "")?.agentId ?? "chainbrain";
   const decisionN = useMemo(() => events.filter((e) => ["payment", "refusal", "forced", "routine", "attack", "quote", "sentinel", "trace"].includes(e.type)).length, [events]);
   const cards = useMemo(() => liveCards(events, { agentOf, sellerName: (id) => cleanText(sellerName(id), 24), now }), [decisionN]); // eslint-disable-line react-hooks/exhaustive-deps
   const agents = useMemo(() => ["all", ...new Set(cards.map((x) => x.agent ?? "chainbrain"))], [cards]);
-  const shown = (agent === "all" ? cards : cards.filter((x) => (x.agent ?? "chainbrain") === agent)).slice(0, 40);
+  const filtered = agent === "all" ? cards : cards.filter((x) => (x.agent ?? "chainbrain") === agent);
+  const shown = filtered.slice(0, more);
   const asks = pending.filter((a) => a.kind !== "question");
   // the now line
   const routines = pockets.filter((p) => !p.revoked).map((p) => ({ p, rt: api.routineOf(p.address) })).filter((x) => x.rt && x.rt.status === "active");
@@ -102,6 +104,11 @@ export default function Live() {
       {/* the stream */}
       <View style={{ marginTop: 14, gap: 8, paddingHorizontal: 16 }}>
         {shown.map((x) => <Card key={x.key} x={x} now={now} open={open === x.key} onToggle={() => setOpen(open === x.key ? null : x.key)} onReceipt={() => receipt(x)} pocketName={cleanText(findPocket(x.pocket ?? "")?.name ?? "", 24)} />)}
+        {filtered.length > shown.length ? (
+          <Press haptics="select" onPress={() => setMore((n) => n + 12)} accessibilityRole="button" accessibilityLabel="Show earlier decisions" style={{ alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 16 }}>
+            <T v="sub" w="semi" color="ink2">{`Earlier · ${filtered.length - shown.length}`}</T>
+          </Press>
+        ) : null}
         {!shown.length ? <T v="sub" color="mutedOnCanvas" style={{ textAlign: "center", paddingVertical: 32 }}>Nothing yet. When an agent pays, waits or is refused, it shows up here.</T> : null}
       </View>
     </Screen>
@@ -150,7 +157,7 @@ function Card({ x, now, open, onToggle, onReceipt, pocketName }: { x: LiveCard; 
               <Icon name={L.icon} size={13} color={L.tone === c.white ? c.vermillion : L.tone} stroke={2.4} />
               <T v="row" w="bold" numberOfLines={1} style={{ flexShrink: 1, color: ink }}>{x.title}</T>
             </View>
-            <T v="cap" numberOfLines={open ? 3 : 1} style={{ color: sub }}>{x.why}</T>
+            <T v="cap" numberOfLines={open ? 3 : 1} style={{ color: sub }}>{x.kind === "paid" && pocketName ? pocketName : x.why}</T>
           </View>
           <View style={{ alignItems: "flex-end", gap: 2 }}>
             {x.amount ? <T v="row" w="bold" style={{ color: x.kind === "refused" || x.kind === "watched" ? sub : ink, fontVariant: ["tabular-nums"], textDecorationLine: x.kind === "refused" ? "line-through" : "none" }}>{x.amount}</T> : null}

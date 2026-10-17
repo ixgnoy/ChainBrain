@@ -27,7 +27,7 @@ import type { Routine } from "../../../shared/sim/pocketApp";
 import type { Glyph } from "../../../shared/sim/pocketAppData";
 
 export const JOB_ICON: Record<string, IconName> = { research: "file", deal: "target", subscriptions: "refresh", haggle: "arrowDown" };
-const WD = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WD = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const hm = (h: number, m: number) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 
 /** One line of what a pocket does, from its own spec and rules (never invented). */
@@ -38,7 +38,7 @@ export function jobLine(p: Pocket, rt: Routine | null | undefined, sellerName: (
   if (!app) return names ? `When asked · ${names}` : "When asked";
   const r = rt ?? app.routine;
   if (app.layout === "deal" && r?.items[0]) return `Buys ${itemName(r.items[0].sellerId, r.items[0].sku)} at ≤ US$${r.limitPrice}`;
-  if (app.layout === "haggle") return p.allowed.some(negotiable) ? `Haggles ${p.allowed.filter(negotiable).map(sellerName)[0]} down first` : `One purchase · ${names}`;
+  if (app.layout === "haggle") return p.allowed.some(negotiable) ? `Haggles ${p.allowed.filter(negotiable).map(sellerName)[0]} down first` : `Buys once from ${names}`;
   if (r) {
     const when = r.cadence.every === "day" ? "Daily" : r.cadence.every === "weekday" ? "Weekdays" : r.cadence.every === "week" ? `${WD[r.cadence.weekday ?? 1]}s` : `The ${r.cadence.dayOfMonth ?? 1}st`;
     return app.layout === "subscriptions" ? `Renews ${r.items.length} feeds · ${when} ${hm(r.cadence.hour, r.cadence.minute)}` : `${when} ${hm(r.cadence.hour, r.cadence.minute)} · ${names}`;

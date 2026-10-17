@@ -84,9 +84,9 @@ async function until(what, fn, ms = 30000, step = 200) {
 
   await run("launch: straight to a lived-in Home, nothing says demo", async () => {
     await visible("Main wallet").waitFor({ timeout: 60000 });
-    await visible("Research data").waitFor();
-    // Home shows four pockets under the wallet, then "See all"
+    // Home shows four pockets under the wallet (one of each job), then "See all"
     await page.getByRole("button", { name: /See all \d+ pockets/ }).click(); await sleep(500);
+    await visible("Research data").waitFor();
     const t = await body();
     check("four seeded pockets", /Research data/.test(t) && /One purchase/.test(t) && /Market news/.test(t) && /Trade quotes/.test(t));
     check("each pocket says what it does, under the wallet that funds it", /out in \d+ pockets/.test(t) && /Haggles DataPro down first/.test(t) && /Buys .+ at ≤ US\$0\.04/.test(t) && /When asked · /.test(t));
