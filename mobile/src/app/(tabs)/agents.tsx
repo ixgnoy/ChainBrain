@@ -36,20 +36,9 @@ export default function Agents() {
           <T v="cap" w="bold">{`${live.length} active`}</T>
         </View>} />
 
-      <Reveal index={0}>
-        <Card pad={16} style={{ marginHorizontal: 16, marginTop: 8, flexDirection: "row", gap: 12, alignItems: "center", overflow: "hidden" }}>
-          <Hatch color={c.line} pitch={8} stroke={1.2} style={{ left: "70%" }} />
-          <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c.fill, alignItems: "center", justifyContent: "center" }}><Icon name="lock" size={19} stroke={2} /></View>
-          <View style={{ flex: 1, gap: 2 }}>
-            <T v="row" w="bold">An agent sees only the pockets you give it</T>
-            <T v="sub" color="muted">Never your main wallet, never another agent's pocket. Each pocket is granted on its own.</T>
-          </View>
-        </Card>
-      </Reveal>
-
       {outside ? (
         <Reveal index={1}>
-          <Button label="Connect an agent" kind="vermillion" icon="plus" onPress={() => router.push("/connect")} style={{ marginHorizontal: 16, marginTop: 14 }} />
+          <Button label="Connect an agent" kind="vermillion" icon="plus" onPress={() => router.push("/connect")} style={{ marginHorizontal: 16, marginTop: 8 }} />
         </Reveal>
       ) : null}
 
@@ -71,11 +60,6 @@ export default function Agents() {
         </Card>
       ) : null}
 
-      <T v="head" style={{ paddingHorizontal: 16, marginTop: 28, marginBottom: 10 }}>Today</T>
-      <View style={{ flexDirection: "row", gap: 10, marginHorizontal: 16 }}>
-        <Tile icon="receipt" label={`${today} requests`} a11y={`${today} agent requests today, open Activity`} onPress={() => router.navigate("/activity")} />
-        <Tile icon="inbox" label={asks ? `${asks} waiting` : "Approvals"} tone={asks ? "blue" : "white"} a11y={asks ? `${asks} approvals waiting` : "Approvals"} onPress={() => router.push("/approvals")} />
-      </View>
     </Screen>
   );
 }

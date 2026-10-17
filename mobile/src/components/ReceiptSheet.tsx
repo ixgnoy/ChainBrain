@@ -4,7 +4,7 @@ import { ScrollView, View } from "react-native";
 import { c } from "../tokens";
 import { useApp } from "../store";
 import { Sheet } from "../ui/Sheet";
-import { Button, Details, Pill } from "../ui/kit";
+import { Button, Details, Pill, Press } from "../ui/kit";
 import { Money } from "../ui/Money";
 import { Reveal } from "../ui/Reveal";
 import { T } from "../ui/Text";
@@ -24,21 +24,25 @@ import { useWindowDimensions } from "react-native";
 /** The rules Pocket.sol checked before this payment settled: a settled payment passed every one (it could not have
  *  settled otherwise), so these are facts of the payment, not decoration. The ask-me rule says who let it through. */
 function Checks({ cosigned }: { cosigned?: boolean }) {
+  const [open, setOpen] = React.useState(false);
   const items: [string, boolean][] = [["Agent's signature", false], ["Pocket active", false], ["Allowed seller", false], ["Under the cap", false], ["Within the balance", false], [cosigned ? "You co-signed" : "Under ask-me", !!cosigned]];
   return (
-    <View accessible accessibilityLabel={`The pocket contract checked six rules and the payment passed them all${cosigned ? ", with your co-signature" : ""}`} style={{ gap: 10 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View style={{ gap: 10 }}>
+      <Press kind="row" haptics="select" onPress={() => setOpen((o) => !o)} accessibilityRole="button" accessibilityState={{ expanded: open }}
+        accessibilityLabel={`The pocket contract checked six rules and the payment passed them all${cosigned ? ", with your co-signature" : ""}`}
+        style={{ alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 8, minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: c.greenSoft }}>
         <Icon name="shieldCheck" size={16} color={c.greenInk} stroke={2.2} />
-        <T v="sub" w="semi">Passed every check in the pocket contract</T>
-      </View>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+        <T v="sub" w="semi" style={{ color: c.greenInk }}>6 contract checks passed</T>
+        <Icon name={open ? "chevronUp" : "chevronDown"} size={14} color={c.greenInk} stroke={2.2} />
+      </Press>
+      {open ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
         {items.map(([k, blue]) => (
           <View key={k} style={{ flexDirection: "row", alignItems: "center", gap: 5, minHeight: 28, paddingLeft: 6, paddingRight: 10, borderRadius: 14, backgroundColor: blue ? c.blueSoft : c.greenSoft }}>
             <Icon name={blue ? "faceId" : "check"} size={13} color={blue ? c.blueInk : c.greenInk} stroke={2.6} />
             <T v="cap" w="semi" style={{ color: blue ? c.blueInk : c.greenInk }}>{k}</T>
           </View>
         ))}
-      </View>
+      </View> : null}
     </View>
   );
 }
@@ -94,7 +98,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
   );
   const facts: [string, string][] = [];
   if (row.kind === "forced") facts.push(["To", row.detail ? shortHex(row.detail) : "Unknown address"]);
-  else if (row.kind !== "intent" && row.kind !== "owner") facts.push(["Seller", seller]);
+  else if (row.kind !== "intent" && row.kind !== "owner" && !(row.kind === "payment" && row.sellerId && hasSellerMark(row.sellerId))) facts.push(["Seller", seller]); // a payment shows its seller as the mark
   if (row.description) facts.push(["Item", cleanText(row.description, 80)]);
   if (row.kind !== "payment" || !pocket) facts.push(["Pocket", pocket ? cleanText(pocket.name, 40) : "n/a"]); // a payment shows its pocket as the card
   facts.push(["When", stamp(row.at)]);

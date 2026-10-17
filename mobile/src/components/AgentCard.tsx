@@ -54,22 +54,13 @@ export function AgentCard({ a, busy }: { a: AgentView; busy?: boolean }) {
           </View>
         )}
 
-        {total > 0n ? (
-          <View style={{ gap: 6 }}>
-            <HatchBar value={Number(a.spent) / Number(total)} tone={c.ink} height={10} label={`${a.name} has spent ${usd(a.spent)} of ${usd(total)}`} />
-            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <T v="cap" color="muted">{`US$${usd(a.spent)} spent · ${a.payments} paid${a.refusals ? ` · ${a.refusals} refused` : ""}`}</T>
-              <T v="cap" w="bold">{`${Math.round((Number(a.spent) / Number(total)) * 100)}% used`}</T>
-            </View>
-          </View>
-        ) : null}
       </Press>
       {/* the pockets and the footer sit outside the card's press (no button inside a button) */}
       {held.length ? <View style={{ paddingHorizontal: 16, marginTop: -2, marginBottom: 14 }}><Hand pockets={held} /></View> : null}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, paddingHorizontal: 16, paddingBottom: 16 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: DOT[line.tone] }} />
-            <T v="sub" w="semi" numberOfLines={1} style={{ flexShrink: 1 }}>{line.text}</T>
+            <T v="sub" w="semi" numberOfLines={1} style={{ flexShrink: 1 }}>{total > 0n && (line.tone === "idle" || line.tone === "off") ? `${a.payments} paid · US$${usd(a.spent)} · ${line.text.replace(/^Last active /, "")}` : line.text}</T>
           </View>
           {off ? <Button label="Reconnect" small kind="secondary" icon="link" onPress={() => connectAgent(a.id)} />
             : a.kind === "builtin" ? <Button label="Chat" small iconRight="arrowUpRight" onPress={() => router.navigate("/agent")} />
