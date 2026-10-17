@@ -184,18 +184,15 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingTop: 4 }}>
               <AgentAvatar kind={agent?.id ?? "chainbrain"} size={44} badge={c.vermillion} />
               <View style={{ flex: 1, gap: 2 }}>
-                <T v="section" accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{allowance ? `${who} asks you` : `${who} asks you to co-sign`}</T>
+                <T v="head" accessibilityRole="header" numberOfLines={2} style={{ fontSize: 18, lineHeight: 23 }}>{allowance ? `${who} asks you` : `${who} asks you to co-sign`}</T>
                 <T v="sub" style={{ color: c.vermillionInk }}>{why}</T>
               </View>
               {auth && !expired ? <Countdown a={a} size={46} onLight /> : null}
             </View>
-            {/* the money in one sentence, then what happens if the owner does nothing (a real deadline, said calmly) */}
-            <View accessible style={{ gap: 4, marginTop: -6 }}>
-              <T v="body">{moneyLine}</T>
-              <T v="sub" color="muted">{expired ? "Expired. Nothing was paid; the agent can ask again." : until ? `If you don't answer by ${until}, nothing is paid and ${who} can ask again.` : `If you don't answer, nothing is paid.`}</T>
-            </View>
+            {/* the cheque below says the money, the seller, what is left and the deadline; only an expired ask needs words */}
+            {expired ? <T v="sub" color="muted" style={{ marginTop: -6 }}>Expired. Nothing was paid; the agent can ask again.</T> : null}
             {queue > 1 ? <T v="cap" color="muted" style={{ marginTop: -12 }}>{`${queue - 1} more waiting after this one`}</T> : null}
-            <View onLayout={(e) => setCardW(Math.round(e.nativeEvent.layout.width))}>
+            <View accessible accessibilityLabel={`${moneyLine}${until ? ` If you don't answer by ${until}, nothing is paid.` : ""}`} onLayout={(e) => setCardW(Math.round(e.nativeEvent.layout.width))}>
               {pocket && cardW ? (
                 <ChequeCard pocket={pocket} tone={toneFor(pockets, pocket.address)} width={cardW} amount={amountUnits} seller={seller} sellerId={a.data?.sellerId} item={item} until={auth ? Number(auth.validBefore) : undefined} />
               ) : !pocket ? (
