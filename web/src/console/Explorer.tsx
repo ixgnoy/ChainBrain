@@ -267,7 +267,7 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
       </Section>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        {net.explorer && <a href={net.explorer(hash)} target="_blank" rel="noreferrer noopener" className="pressable inline-flex h-11 items-center gap-2 rounded-[14px] bg-card px-5 text-[14px] font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile">View on BaseScan<ExternalLink className="size-4" strokeWidth={1.75} aria-hidden /></a>}
+        {net.explorer && <a href={net.explorer(hash)} target="_blank" rel="noreferrer noopener" className="pressable inline-flex h-11 items-center gap-2 rounded-[14px] bg-card px-5 text-[14px] font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile">Open in the explorer<ExternalLink className="size-4" strokeWidth={1.75} aria-hidden /></a>}
         {watch && t?.pocket && <Button className="h-11 px-5 text-[14px]" onClick={() => watch(t.pocket)}>Watch it in Live</Button>}
       </div>
     </div>

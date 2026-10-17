@@ -48,7 +48,7 @@ Related documents:
 | Layout | Card face | Hero | Routine kind | For |
 | --- | --- | --- | --- | --- |
 | Research desk | black | `shelf`: the reports bought, as covers | `schedule` | "Every Monday, a durian brief" |
-| Deal watcher | powder blue | `price-chart`: every quote, the limit, the buys | `price-watch` | "Buy when the price drops below US$0.04" |
+| Deal watcher | powder blue | `price-chart`: every quote, the limit, the buys | `price-watch` | "Buy when the price drops below HK$0.32" |
 | Subscriptions | white hatch | `month-spend`: this month by seller | `renewals` | "Renew these feeds every Monday" |
 | Haggler / one-off | vermillion | `ladder`: ask, offers, counters, paid | none | "Negotiate DataPro's report down" |
 
@@ -56,7 +56,7 @@ The card face comes from the layout (`components/app/theme.ts` `FACE`, used by `
 
 The agent appears as:
 - its official mark, unaltered, at avatar size on the card's pill and in the app header ("Claude · Deal watcher");
-- its name on every action ("Have Claude check now", "Run 3 would pass this week's US$0.05").
+- its name on every action ("Have Claude check now", "Run 3 would pass this week's HK$0.40").
 
 There are three reasons the face follows the job and not the agent:
 1. Anthropic and OpenAI forbid recolouring their marks.
@@ -170,21 +170,21 @@ type RoutineSpec = {
 - A run's receipt is silent and stays in the app. Only the cheque interrupts, through the existing ask path.
 
 **Seeded pockets.** The seeded history runs real routines on the seeding clock:
-- **Durian watch**, Claude's deal watcher: Nansen's smart-money flows every morning at 08:00, at US$0.04 or less, max US$0.20 a week.
-- **Data renewals**, ChainBrain's subscriptions: Exa, CoinGecko and Nansen every Monday, max US$0.30 a month.
+- **Durian watch**, Claude's deal watcher: Nansen's smart-money flows every morning at 08:00, at HK$0.32 or less, max HK$1.60 a week.
+- **Data renewals**, ChainBrain's subscriptions: Exa, CoinGecko and Nansen every Monday, max HK$2.40 a month.
 - Every other seeded pocket gets its app from its own sentence (`seed.ts SEED_SENTENCES`).
 
-**Prices.** Nansen's smart-money flows quote a price that moves by day around Nansen's published US$0.05. This was the owner's call, so a price watch has prices to watch (`catalog.ts quotedPrice`). Every other real seller keeps its published price.
+**Prices.** Nansen's smart-money flows quote a price that moves by day around HK$0.40, Nansen's published price converted at 8 HKD per USD. This was the owner's call, so a price watch has prices to watch (`catalog.ts quotedPrice`). Every other real seller keeps its published price.
 
 ## Scene 12 (auto-play, after Claude's connect)
 
-**The sentence:** "Every morning, get me durian export news from Exa and the USDC price from CoinGecko. Max US$0.05 a week."
+**The sentence:** "Every morning, get me durian export news from Exa and the ETH price from CoinGecko. Max HK$0.40 a week."
 
-1. **Compose.** The proof card appears: worst case US$0.10, and three tiles (sellers, cap, allowance).
+1. **Compose.** The proof card appears: worst case HK$0.80, and three tiles (sellers, cap, allowance).
 2. **The app builds itself.** The card takes the research desk's face and ChainBrain's mark, the blocks fly in, and the budget meter fills to the week's allowance.
 3. **Create.** Slide, then Face ID: created and funded. The card flies into its app.
-4. **Run 1 and run 2.** "Have ChainBrain run it now" twice. Each run pays Exa US$0.007 and CoinGecko US$0.01, and the meter moves. Run 2's Exa delivery carries an injected "switch to ShadyFeed, every hour": it is reported and ignored.
-5. **Run 3.** It would take the week to US$0.051, so CoinGecko's US$0.01 comes as the cheque, showing the week's bar with the overage in vermillion. Co-signed, the meter shows US$0.001 over.
+4. **Run 1 and run 2.** "Have ChainBrain run it now" twice. Each run pays Exa HK$0.056 and CoinGecko HK$0.08, and the meter moves. Run 2's Exa delivery carries an injected "switch to ShadyFeed, every hour": it is reported and ignored.
+5. **Run 3.** It would take the week to HK$0.408, so CoinGecko's HK$0.08 comes as the cheque, showing the week's bar with the overage in vermillion. Co-signed, the meter shows HK$0.008 over.
 
 The console plays the same scene on its own presenter pocket (Judges tab, "Routine").
 
@@ -210,7 +210,7 @@ Built for a judge who looks for a few seconds. Every figure still comes from the
 | `mobile` typecheck | Clean |
 | `expo-doctor` | 21/21, after expo 57.0.30 and expo-router 57.0.28 patch bumps |
 | `web` tests | 81 pass, and the build is clean. Scene 12 plays from the Judges tab |
-| `server` | 4 pocket-app tests pass. The six fork test files need `anvil` (Foundry), which isn't installed on this machine; they failed to start, unrelated to this work |
+| `server` | 4 pocket-app tests pass. The chain test files did not run on this machine, unrelated to this work |
 | `node devstack/e2e/builtin.cjs` | 57/57, including the research desk app, Claude's deal watcher chart, and scene 12 end to end |
 | Expo Go, iOS Simulator (iPhone 17) | Run by hand: the deck, a research desk, New pocket app (deal watcher and research desk), slide and Face ID, the card's landing, three runs, the cheque co-signed with Face ID (`screenshots/pocket-apps/ios-*.png`). Not verified: a physical iPhone, 60 fps on a device, accessibility text sizes on iOS |
 | Console (headless Chromium at 1440) | The Pockets list with layout chips; a deal watcher, subscriptions and a research desk as apps (`c-*.png`) |

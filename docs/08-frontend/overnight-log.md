@@ -43,18 +43,18 @@ Each screen is scored 1–5 on first-glance wow / hierarchy / visuals over text 
   - the scroll box clipped cards.
   - Evidence: `c-routines-hover.png`; web tests 81 pass, build clean.
 - [x] **Digest on Home ("Your agents got you")**: last 7 days of buys as covers (seller mark, item, ×count, spent), plus bought / co-signed / stopped counts.
-  - Decision: it uses the weekly chart's window (7 calendar days including today), not Monday to now. The first version showed US$0.31 beside the chart's US$0.317, and two different "weekly" numbers next to each other would confuse a judge.
+  - Decision: it uses the weekly chart's window (7 calendar days including today), not Monday to now. The first version showed HK$2.48 beside the chart's HK$2.536, and two different "weekly" numbers next to each other would confuse a judge.
   - Evidence: `w-23-digest.png`; sim tests 56 pass (a new digest test); e2e 57/57.
 
 - [x] **Edit the routine, and Pause all**.
   - Pocket page: next to Pause there is now Edit. It opens a sheet with:
     - cadence chips (every day, weekdays, Mondays, the 1st) and time chips;
-    - an allowance stepper (a cent under US$0.10, five cents to US$1, 25 cents above) with day/week/month;
+    - an allowance stepper (HK$0.08 steps under HK$0.80, HK$0.40 steps to HK$8, HK$2 steps above) with day/week/month;
     - a preview of the next run and where the agent stops and asks.
   - Home: Next up has "Pause all" / "Resume all". With everything paused, a quiet card says nothing runs or pays.
-  - Bug avoided: `setRoutine` mints a new routine id, and the allowance meter counts payments by id, so "editing" through it would have reset this week's spend. The new `world.editRoutine` keeps the id, runs and spend. It is published as a `routine:edited` event, kept from trimming, and applied by `routineFromEvents`. A test proves it: after an edit to a smaller allowance, US$0.034 already spent leaves US$0.006, and the next run asks.
+  - Bug avoided: `setRoutine` mints a new routine id, and the allowance meter counts payments by id, so "editing" through it would have reset this week's spend. The new `world.editRoutine` keeps the id, runs and spend. It is published as a `routine:edited` event, kept from trimming, and applied by `routineFromEvents`. A test proves it: after an edit to a smaller allowance, HK$0.272 already spent leaves HK$0.048, and the next run asks.
   - Decision: only a looser allowance (more money, or a longer period) is signed with Face ID. A stricter one, a new time, or a pause can only lower risk, so they save at once.
-  - Evidence: `w-24-edit-routine.png`, `w-25-pause-all.png`; sim tests 57 pass; e2e 57/57. A headless run checked that a stricter edit saved (US$0.15 a week) and that Pause all and Resume all both worked.
+  - Evidence: `w-24-edit-routine.png`, `w-25-pause-all.png`; sim tests 57 pass; e2e 57/57. A headless run checked that a stricter edit saved (HK$1.20 a week) and that Pause all and Resume all both worked.
 
 - [x] **Agents screen** (critique score 3 before). Each agent's pockets are now a small wallet of the same strips Home uses (name and balance, faces interleaved), and each strip opens its pocket with the card flight. The tracked eyebrows on the screen are sentence case.
   - The info card's title was untrue (ChainBrain holds four pockets). It now reads "An agent sees only the pockets you give it".
@@ -95,7 +95,7 @@ Each screen is scored 1–5 on first-glance wow / hierarchy / visuals over text 
   Refusals and other receipts are unchanged. Evidence: `w-31-receipt.png`.
 - [x] **AX5 pass (iOS, accessibility-extra-extra-extra-large)**. Three problems found and fixed:
   - Home's total ran into the main wallet; the hero now stacks at large sizes;
-  - a Next up tile broke "US$0.067" across two lines; the marks and the price now stack;
+  - a Next up tile broke "HK$0.536" across two lines; the marks and the price now stack;
   - the digest's counts truncated ("co-signed…"); they now go full width.
 
   The card print is capped at 1×, so the stack holds. Evidence: `ios-30-ax5-home.png`, `ios-31-ax5-nextup-digest.png`. The simulator's text size was set back to the default afterwards.

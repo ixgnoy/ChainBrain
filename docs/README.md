@@ -1,15 +1,15 @@
 # ChainBrain docs: master index
-Last updated: 2026-10-16
+Last updated: 2026-10-17
 
 > **Status (14 Oct, v2):** the team's [Prelim Product Spec v2](02-product/product-design.md) (consumer wallet) is the source of truth. The research docs (03 to 06) were written on 13 Oct against the old seller-trust spec. Each carries a status banner saying what still applies. Where a master doc and a team doc disagree, the team doc wins.
 
 ## In one minute
 
 - **What this repo is:** the shared workspace for team 链AI脑 (ChainBrain), entering the 2026 Shenzhen International FinTech Competition (WeBank FinTechathon), International AI Track, Topic F (Agent Wallet). Deadline: 24:00, 20 Oct 2026 (UTC+8); the spec says 23:59; our submit target is noon on 20 Oct.
-- **The idea (v2):** a consumer wallet. Give your AI a pocket, not your wallet. The owner opens pockets; each holds its own USDC and rules, and a pocket contract checks every payment the agent makes over x402. See [one-page summary](00-start-here/one-page-summary.md).
-- **Status (14 Oct):** contracts, wallet tool layer, agent, web app, Expo phone app and native Android app are built and tested locally. Live on-chain hashes, deck, video and submission are still to do ([status and plan](00-start-here/status-and-plan.md), [evidence](evidence.md)).
+- **The idea (v2):** a consumer wallet. Give your AI a pocket, not your wallet. The owner opens pockets; each holds its own Mock e-HKD (eHKD) and rules on FISCO BCOS, and a pocket contract checks every payment the agent makes over x402. See [one-page summary](00-start-here/one-page-summary.md).
+- **Status (17 Oct):** contracts, wallet tool layer, agent, web app, Expo phone app and native Android app are built and tested on FISCO BCOS with Mock e-HKD, locally and on Railway. On-chain hashes are in [evidence](evidence-fisco.md). Deck, video and submission are still to do ([status and plan](00-start-here/status-and-plan.md)).
 - **Research score:** a simulated judge panel scored the OLD design about 73/100 ([judge simulation](06-pitch/judge-simulation.md)). Not re-scored for v2.
-- **Things to do first:** email the organisers (do testnet hashes count? how is the package sent?), check eligibility, fund the demo wallets and run the live gate, then collect hashes ([status and plan](00-start-here/status-and-plan.md)).
+- **Things to do first:** email the organisers (do hashes from our own FISCO chain count? how is the package sent?), check eligibility, then deck, video and package ([status and plan](00-start-here/status-and-plan.md)).
 - **How to read the research:** most docs open with "In one minute", have detail below, and end with "What this means for winning", "Open questions" and "Sources".
 - **Downloads** (papers, cloned repos) live in `reference/`, which is gitignored and untrusted. Never run code from it.
 
@@ -22,8 +22,7 @@ Last updated: 2026-10-16
 | [ai-brain.md](ai-brain.md) | The AI brain: ten features (understands, plans, adapts, resists, Radar, Sentinel, memory, Speak your rules, Pre-flight, haggler), the AI-only-tightens rule, guards, models, where each shows on the phone |
 | [technical-document.md](technical-document.md) | Architecture, pocket check, tool layer signing rule, x402 notes, owner keys, test summary |
 | [security-self-assessment.md](security-self-assessment.md) | Permission tiers, what a pocket stops and does not stop, the four named attacks with test names, residual risks |
-| [evidence.md](evidence.md) | One on-chain transaction per scene; all rows "pending live run" |
-| [Prelim wallet plan](superpowers/plans/2026-10-14-chainbrain-prelim-wallet.md) | The verified implementation plan: spec validation, gotchas, price sheet, tasks 1-10, open questions |
+| [evidence-fisco.md](evidence-fisco.md) | On-chain transactions on the local FISCO chain (`evidence-fisco.json`; hosted chain in `evidence-fisco-railway.json`), re-checked by `server/scripts/verify-evidence.ts` |
 | [hackathon-overview.md](01-competition/hackathon-overview.md), [hackathon-rules.md](01-competition/hackathon-rules.md) | Official competition material |
 
 ## Start here: reading order by role
@@ -31,8 +30,8 @@ Last updated: 2026-10-16
 | Role | Read in this order (about time) |
 | --- | --- |
 | **Everyone** | 0. [README](../README.md) and [spec v2](02-product/product-design.md) (10 min). 1. [one-page summary](00-start-here/one-page-summary.md) (5 min). 2. [status and plan](00-start-here/status-and-plan.md) (10 min). 3. [roles and workplan](00-start-here/roles-and-workplan.md) (5 min; fill in owners). 4. [open questions](00-start-here/open-questions.md) (10 min). 5. [how to win](06-pitch/how-to-win.md) (10 min) |
-| **Builders** (contracts, tool layer, agent, apps) | [technical document](technical-document.md), then the [plan](superpowers/plans/2026-10-14-chainbrain-prelim-wallet.md), then [x402 + pocket feasibility](04-build/x402-pocket-feasibility.md), then [stack and repos](04-build/stack-and-repos.md), then [identity, reputation, FISCO](04-build/identity-reputation-fisco.md), then [Topic F tasks and mainnet plan](04-build/topic-f-tasks-and-mainnet-plan.md), [agent model choice](04-build/agent-model-choice.md), [licences and reuse](04-build/licences-and-reuse.md), then [recommended changes](02-product/recommended-changes.md) (with v2 dispositions) |
-| **Pitch and docs** (deck, video, evidence) | [evidence](evidence.md), [how to win](06-pitch/how-to-win.md), [how judges score](06-pitch/how-judges-score.md), [judge simulation](06-pitch/judge-simulation.md), [demo script](06-pitch/demo-script.md), [submission checklist](06-pitch/submission-checklist.md), [Topic F rivals](03-research/topic-f-rivals.md), [competitors](03-research/competitors-industry.md), [market and regulation](03-research/market-regulation-webank.md), [rules](01-competition/hackathon-rules.md) |
+| **Builders** (contracts, tool layer, agent, apps) | [technical document](technical-document.md), then [x402 + pocket feasibility](04-build/x402-pocket-feasibility.md), then [stack and repos](04-build/stack-and-repos.md), then [identity, reputation, FISCO](04-build/identity-reputation-fisco.md), then [Topic F tasks and mainnet plan](04-build/topic-f-tasks-and-mainnet-plan.md), [agent model choice](04-build/agent-model-choice.md), [licences and reuse](04-build/licences-and-reuse.md), then [recommended changes](02-product/recommended-changes.md) (with v2 dispositions) |
+| **Pitch and docs** (deck, video, evidence) | [evidence](evidence-fisco.md), [how to win](06-pitch/how-to-win.md), [how judges score](06-pitch/how-judges-score.md), [judge simulation](06-pitch/judge-simulation.md), [demo script](06-pitch/demo-script.md), [submission checklist](06-pitch/submission-checklist.md), [Topic F rivals](03-research/topic-f-rivals.md), [competitors](03-research/competitors-industry.md), [market and regulation](03-research/market-regulation-webank.md), [rules](01-competition/hackathon-rules.md) |
 | **Frontend** (phone, console) | [frontend README](08-frontend/README.md), then the [design system](08-frontend/design-system.md) and [motion](08-frontend/motion.md), then [mobile](08-frontend/mobile.md) or [web](08-frontend/web.md) |
 | **Security** | [security self-assessment](security-self-assessment.md), then [threat model and red team](05-security/threat-model-and-red-team.md), then [evidence and red-team harness](05-security/evidence-and-redteam-harness.md), then [papers and standards](03-research/papers-and-standards.md), then the pocket section of [feasibility](04-build/x402-pocket-feasibility.md) |
 
@@ -41,8 +40,8 @@ Last updated: 2026-10-16
 | Path | What it is |
 | --- | --- |
 | `README.md` | This index |
-| `technical-document.md`, `security-self-assessment.md`, `evidence.md` | Team's submission docs (listed above) |
-| `superpowers/plans/`, `superpowers/specs/` | Implementation plans and design specs (the prelim wallet plan is listed above) |
+| `technical-document.md`, `security-self-assessment.md`, `evidence-fisco.md` | Team's submission docs (listed above) |
+| `superpowers/plans/`, `superpowers/specs/` | Implementation plans and design specs (history: written before the FISCO-only port) |
 | **00-start-here/** | Short docs for a new teammate |
 | [one-page-summary.md](00-start-here/one-page-summary.md) | ChainBrain (v2) on one page: problem, pocket, 8 scenes, real vs simulated |
 | [status-and-plan.md](00-start-here/status-and-plan.md) | Countdown, built vs pending, day plan 14-20 Oct, top risks |
@@ -61,11 +60,11 @@ Last updated: 2026-10-16
 | [papers-and-standards.md](03-research/papers-and-standards.md) | 28 new papers and 16 standards; "cite these" list |
 | [topic-f-rivals.md](03-research/topic-f-rivals.md) | Public Topic F rivals (Leash, sucsage, edxzh), head-to-head, cheap adds, positioning lines |
 | **04-build/** | How to build it |
-| [x402-pocket-feasibility.md](04-build/x402-pocket-feasibility.md) | The spike: recipe, fallback ladder, checklist (passed on a fork; live run pending) |
-| [metamask-expo-go.md](04-build/metamask-expo-go.md) | MetaMask on the phone via Reown AppKit in Expo Go: findings, gotchas, verified integration code (live phone run pending) |
+| [x402-pocket-feasibility.md](04-build/x402-pocket-feasibility.md) | The spike: x402 payments from a pocket on FISCO BCOS with Mock e-HKD (passed; hashes in evidence) |
+| [metamask-expo-go.md](04-build/metamask-expo-go.md) | MetaMask on the phone via Reown AppKit in Expo Go: findings, gotchas, verified integration code on the FISCO chain (chain id 20200) |
 | [stack-and-repos.md](04-build/stack-and-repos.md) | Tools, pinned versions, cloned repos |
-| [identity-reputation-fisco.md](04-build/identity-reputation-fisco.md) | ERC-8004, credentials, KYA, FISCO BCOS (planned): finals roadmap |
-| [topic-f-tasks-and-mainnet-plan.md](04-build/topic-f-tasks-and-mainnet-plan.md) | Likely judge tasks, 28-task test set, Base mainnet insurance plan, 30-minute facilitator test |
+| [identity-reputation-fisco.md](04-build/identity-reputation-fisco.md) | ERC-8004, credentials, KYA, FISCO BCOS (now our chain): finals roadmap |
+| [topic-f-tasks-and-mainnet-plan.md](04-build/topic-f-tasks-and-mainnet-plan.md) | Likely judge tasks, 28-task test set, hosted FISCO chain as the live fallback |
 | [agent-model-choice.md](04-build/agent-model-choice.md) | Which model for build week and the Shenzhen defence; prices; checker design; budget |
 | [licences-and-reuse.md](04-build/licences-and-reuse.md) | Licence tables, copy-code traps, API terms, safe-default rules, notices outline |
 | **05-security/** | |

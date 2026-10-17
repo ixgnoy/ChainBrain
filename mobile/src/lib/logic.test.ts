@@ -10,7 +10,7 @@ import { PRESETS, toPocketArgs, isTightCap } from "./presets";
 import { ownerWallet, pocketStatus } from "./wallet";
 import { approvalsFrom } from "./events";
 
-const PK = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // anvil dev key 0 (public)
+const PK = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // Foundry dev key 0 (public)
 const auth: Authorization = {
   from: "0x00000000000000000000000000000000000000aa", to: "0x00000000000000000000000000000000000000bb",
   value: "1500000", validAfter: "0", validBefore: "1900000000", nonce: `0x${"11".repeat(32)}`,

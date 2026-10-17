@@ -27,12 +27,12 @@ The biggest problems are not visual:
 | # | Fix | Severity | Effort | Why |
 | --- | --- | --- | --- | --- |
 | 1 | Make text scale: drop fixed line heights and fixed control heights, cap scaling with `maxFontSizeMultiplier` where a layout can't grow | Critical | M | At the "accessibility large" text size, text is clipped almost everywhere: balances cut in half, tile and tab labels gone, button labels unreadable. Dynamic Type support is an Apple HIG expectation, and owners with low vision are exactly who needs a clear money app. |
-| 2 | Add a plain "Approve US$1.50" button beside every slide, and a "Revoke" button beside every hold, both opening Face ID | Critical | S | WCAG 2.5.7 (AA) needs a single-pointer alternative to dragging. VoiceOver already gets an activate action, but a sighted user who can't drag (tremor, one hand, Switch Control) cannot approve or revoke. [P: W3C 2.5.7] |
+| 2 | Add a plain "Approve HK$12.00" button beside every slide, and a "Revoke" button beside every hold, both opening Face ID | Critical | S | WCAG 2.5.7 (AA) needs a single-pointer alternative to dragging. VoiceOver already gets an activate action, but a sighted user who can't drag (tremor, one hand, Switch Control) cannot approve or revoke. [P: W3C 2.5.7] |
 | 3 | Show the ask dock on every screen, not only on the tabs | High | S | It renders in the tab layout only, so on the chat, a pocket page, an agent's page or Connect, Claude's request is invisible while its 10 minutes run. Those are exactly the screens where an owner is busy with agents. |
 | 4 | Intro: first launch only, user-paced (or a pause control), re-open from Settings | High | S | It shows on every launch and advances every 2.2 s. Each page has about 30 words, roughly 8 s of reading. NN/g found tutorial readers did no better than skippers, and auto-advancing content hides what people try to read. WCAG 2.2.2 needs pause, stop or hide. [N: NN/g tutorials, auto-forwarding; P: WCAG 2.2.2] |
 | 5 | One money action with an honest name: "Fund" next to the main wallet reads as "deposit", but it moves money from the main wallet into a pocket, the same as "Add money" | High | S | Two labels for one action, and one of them says the opposite of what happens. Call it "Move to a pocket", keep one entry point, and show which agent holds each pocket in the picker. |
 | 6 | Revoke from a pocket page revokes that pocket only | High | S | The revoke sheet opened from Research data lists all four pockets with a radio list, so an irreversible action is one mis-tap away from the wrong pocket. NN/g: name the item and the consequence in the confirmation. [N: NN/g confirmation dialogs] |
-| 7 | Lead the cheque with one money sentence and the expiry outcome | Medium | S | "Claude pays DataPro US$1.50 from Market news. US$3.40 stays in the pocket." Then: "If you don't answer by 01:47, nothing is paid and Claude can ask again." That is the transaction-preview pattern, and it makes the deadline calm and real rather than a pressure timer. [P: WCAG 2.2.1; V: wallet simulation previews; P: Mathur et al. on timers] |
+| 7 | Lead the cheque with one money sentence and the expiry outcome | Medium | S | "Claude pays DataPro HK$12.00 from Market news. HK$27.20 stays in the pocket." Then: "If you don't answer by 01:47, nothing is paid and Claude can ask again." That is the transaction-preview pattern, and it makes the deadline calm and real rather than a pressure timer. [P: WCAG 2.2.1; V: wallet simulation previews; P: Mathur et al. on timers] |
 | 8 | Make Face ID the signature, not a second confirmation | Medium | M | Today the slide is intent and Face ID follows. Have Face ID sign the exact payload (amount, payee, pocket, nonce) and say so ("Face ID signs exactly this payment"). Then a tap on Approve plus Face ID is enough for in-limit amounts, and the slide stays for the largest ones. [P: arXiv 2609.21081 Loopjacking; N: friction matched to stakes] |
 | 9 | Presets in the wizard jump to Review | Medium | S | Picking "Research data" still walks all seven steps. The one-sentence path already jumps to Review with every value editable; presets should too (two taps to a pocket). |
 | 10 | Header targets to 44 pt; the dock must not sit on the front card at rest | Low | S | The bell and avatar are 42 pt (Apple's minimum is 44) and the 7/14-day tabs are 40 pt tall. On Home's first screen the dock covers the deck's front card. |
@@ -51,9 +51,9 @@ The biggest problems are not visual:
 - **The dock is missing on pushed screens (High).** It renders only in the tab layout. Render it at the root, above everything except sheets.
 - **It covers the deck's front card on Home's first screen (Low).** Either add bottom space to the deck while the dock shows, or let the dock shrink to a pill with the mark and ring after a few seconds, expanding on scroll-up.
 - **A warning haptic for every request (Low).** Routine co-sign requests feel like an alarm. Use a light notification tick, and keep the warning haptic for Radar or Sentinel events.
-- **No sentence that says the outcome (Medium).** Add "Claude pays … US$3.40 stays" at the top, and the expiry outcome next to the ring (fix 7).
+- **No sentence that says the outcome (Medium).** Add "Claude pays … HK$27.20 stays" at the top, and the expiry outcome next to the ring (fix 7).
 - **The countdown ring is vermillion.** The research says a real, contract-enforced deadline is legitimate, but urgency styling should stay calm and the consequence should be safe and stated. Keep the ring and use ink for most of the window, vermillion only for the last minute.
-- **Double confirmation (Medium).** See fix 8. Also give the Face ID prompt a specific reason ("Approve US$1.50 to DataPro from Market news"), already done, and on cancel say "Nothing was signed", already done.
+- **Double confirmation (Medium).** See fix 8. Also give the Face ID prompt a specific reason ("Approve HK$12.00 to DataPro from Market news"), already done, and on cancel say "Nothing was signed", already done.
 - **Decline gives no outcome.** After Decline, confirm with a short toast ("Declined. Claude won't pay DataPro."), and let the agent's chat show that the owner declined.
 - **After approving, the next request isn't offered.** When "+2" wait, open the next cheque, or show "2 more waiting" with a button, so the owner can clear the queue in one sitting.
 - **Notifications (needs a development build).** The opt-in inside the cheque is contextual, which is good. Ask earlier as well, at Connect: "We'll tell you when Claude needs your OK." On iOS, a pending co-sign is a fit for a Time Sensitive notification and a Live Activity with the countdown. Show "Approval needed", not the amount or payee, on the Lock Screen. Expo Go can't do Live Activities. [P: USENIX Security 2021 on permission rationale; P: Apple HIG, snippet level]
@@ -74,15 +74,15 @@ The biggest problems are not visual:
 
 ### 4. Creating a pocket
 
-- **Strong:** the one-sentence path, the live worst-case line ("If the agent is hijacked, the most it can lose is US$5.00, only to DataLite and DataPro"), and the Review step with "Slide to create and fund".
+- **Strong:** the one-sentence path, the live worst-case line ("If the agent is hijacked, the most it can lose is HK$40.00, only to DataLite and DataPro"), and the Review step with "Slide to create and fund".
 - **Seven steps when a preset is chosen (Medium).** Jump to Review with every row editable, as the sentence path does.
 - **Two equal black buttons on step 1 ("Build my pocket" and "Continue").** Make the sentence path's button secondary until text is typed, so the screen has one primary action.
 - **Closing loses the draft without a word.** Fine on step 1. From step 3 on, ask "Discard this pocket?".
 
 ### 5. A pocket, and revoking it
 
-- **Strong:** the rule tiles (cap, ask-me limit, end), the worst case with main-wallet exposure of US$0.00, and the revoked state (banner, what came back, "Agent locked out").
-- **The revoke sheet lists every pocket (High).** From a pocket page, show only that pocket and its consequence: "Stops Claude for good. US$4.90 returns to your main wallet. Payments already made stay made."
+- **Strong:** the rule tiles (cap, ask-me limit, end), the worst case with main-wallet exposure of HK$0.00, and the revoked state (banner, what came back, "Agent locked out").
+- **The revoke sheet lists every pocket (High).** From a pocket page, show only that pocket and its consequence: "Stops Claude for good. HK$39.20 returns to your main wallet. Payments already made stay made."
 - **Revoke sits beside Return funds at the same weight.** The hold protects against a slip, but give Revoke a little distance, and add the plain button from fix 2.
 - **No undo.** Revoke is final on the contract, so a confirmation is right here. NN/g reserves the extra friction for exactly this case. Keep the hold for the slide-path users. [N: NN/g confirmation dialogs]
 

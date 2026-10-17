@@ -2,6 +2,8 @@
 
 Explored 14-15 Oct 2026 in a scratch copy of the Task 8 mobile app (Expo SDK 57, React Native 0.86). Outcome: **likely to work in Expo Go**; the only step not proven is the live handoff to MetaMask mobile on a real phone, which needs a Reown project ID. Phone testing (Expo Go and the Android Studio development build) is with another agent.
 
+The app as shipped still uses the on-device key (`mobile/src/lib/wallet.ts`); this page is the upgrade path. It was first written for an older test chain and is now updated for the FISCO BCOS chain (chain id 20200) and the Mock e-HKD token (eHKD).
+
 ## Why the owner wallet matters
 
 A pocket is a contract the owner owns; we never hold the owner's money. Every owner action is signed by the owner's main wallet:
@@ -9,9 +11,11 @@ A pocket is a contract the owner owns; we never hold the owner's money. Every ow
 | Action | Wallet request | Gas |
 | --- | --- | --- |
 | Create pocket | `eth_sendTransaction` (factory `create`) | yes |
-| Fund pocket (USDC from main wallet to pocket) | `eth_sendTransaction` (USDC `transfer`) | yes |
-| Approve a payment above ask-me | `eth_signTypedData_v4` (USDC `TransferWithAuthorization`) | no |
+| Fund pocket (eHKD from main wallet to pocket) | `eth_sendTransaction` (eHKD `transfer`) | yes |
+| Approve a payment above ask-me | `eth_signTypedData_v4` (eHKD `TransferWithAuthorization`) | no |
 | Edit rules, revoke, return funds | `eth_sendTransaction` | yes |
+
+On FISCO the gas price is 0, so "gas" here means an on-chain transaction: the owner pays nothing, but the address needs a non-zero native balance (the server faucet gives one). Transactions are legacy type with gas price 0.
 
 On the web these are MetaMask browser prompts. On the phone, WalletConnect (Reown AppKit) turns the same requests into MetaMask mobile prompts. Without it, the phone uses a key held on the device.
 
@@ -34,7 +38,7 @@ On the web these are MetaMask browser prompts. On the phone, WalletConnect (Reow
 3. **`expo-linking` added a duplicate `expo-constants`;** `expo-doctor` flags it. Fix: `npm dedupe`.
 4. **Use `npx expo install`, not `npm install`,** for async-storage: npm's latest is 3.x, Expo Go ships 2.2.0.
 5. **Expo Go redirect:** `metadata.redirect.native` uses `Linking.createURL("/")` (`exp://<lan-ip>:8081` in Expo Go, `chainbrain://` in a development build). MetaMask may not jump back to Expo Go automatically; switching back by hand is expected.
-6. **Wrong chain:** the wallet is switched to Base Sepolia (`wallet_switchEthereumChain`, then `wallet_addEthereumChain` on 4902) before anything is signed or sent; a refused switch fails with `WRONG_CHAIN` and nothing is signed.
+6. **Wrong chain:** the wallet is switched to FISCO BCOS, chain id 20200 (`wallet_switchEthereumChain`, then `wallet_addEthereumChain` on 4902, with the RPC and explorer read from the server's `/api/config`) before anything is signed or sent; a refused switch fails with `WRONG_CHAIN` and nothing is signed.
 
 ## Integration recipe
 
@@ -82,9 +86,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
 import { createAppKit, type Storage } from "@reown/appkit-react-native";
 import { EthersAdapter } from "@reown/appkit-ethers-react-native";
-import { baseSepolia } from "viem/chains";
+import { defineChain } from "viem";
+import { RPC } from "./shared";
 
 export const REOWN_PROJECT_ID = process.env.EXPO_PUBLIC_REOWN_PROJECT_ID ?? "";
+
+/** FISCO BCOS as AppKit and viem see it. RPC comes from the server's /api/config. */
+export const fisco = defineChain({ id: 20200, name: "FISCO BCOS", nativeCurrency: { name: "FISCO", symbol: "FISCO", decimals: 18 }, rpcUrls: { default: { http: [RPC] } } });
 
 const parse = <T,>(v: string | null): T | undefined => (v === null ? undefined : (JSON.parse(v) as T));
 
@@ -100,8 +108,8 @@ export const asyncStorage: Storage = {
 export const appKit = REOWN_PROJECT_ID
   ? createAppKit({
       projectId: REOWN_PROJECT_ID,
-      networks: [baseSepolia],
-      defaultNetwork: baseSepolia,
+      networks: [fisco],
+      defaultNetwork: fisco,
       adapters: [new EthersAdapter()],
       storage: asyncStorage,
       metadata: {
@@ -124,29 +132,31 @@ export const appKit = REOWN_PROJECT_ID
 //   { pk }                 non-custodial key held on this device (fallback when no Reown project ID / for rehearsals)
 import { createPublicClient, createWalletClient, custom, http, parseEventLogs, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
-import { RPC, loadConfig, transferTypedData, type Authorization, type Seller } from "./shared";
+import { API, RPC, loadConfig, transferTypedData, type Authorization, type Seller } from "./shared";
+import { fisco } from "./appkit";
 
-export const pub = () => createPublicClient({ chain: baseSepolia, transport: http(RPC) });
+export const pub = () => createPublicClient({ chain: fisco, transport: http(RPC) });
+/** Gas is free on FISCO, but the RPC wants a legacy tx with gas price 0. */
+const fees = { gasPrice: 0n, type: "legacy" as const };
 
 /** What AppKit's useProvider() returns for eip155 (EIP-1193 request, with an optional CAIP chain id). */
 export type WalletProvider = { request<T = unknown>(args: { method: string; params?: unknown }, chain?: string): Promise<T> };
 export type WalletSource = { pk: Hex } | { provider: WalletProvider; address: Address };
 
-const BASE_SEPOLIA_HEX = "0x14a34";
-const CAIP = "eip155:84532";
+const FISCO_HEX = "0x4ee8"; // 20200
+const CAIP = "eip155:20200";
 
-/** Make sure the connected wallet is on Base Sepolia before it signs or sends anything. */
+/** Make sure the connected wallet is on the FISCO chain before it signs or sends anything. */
 export async function ensureChain(p: WalletProvider) {
-  if ((await p.request<string>({ method: "eth_chainId" }, CAIP)) === BASE_SEPOLIA_HEX) return;
+  if ((await p.request<string>({ method: "eth_chainId" }, CAIP)) === FISCO_HEX) return;
   try {
-    await p.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BASE_SEPOLIA_HEX }] }, CAIP);
+    await p.request({ method: "wallet_switchEthereumChain", params: [{ chainId: FISCO_HEX }] }, CAIP);
   } catch (e: any) {
-    if (e?.code !== 4902) throw new Error("WRONG_CHAIN: switch your wallet to Base Sepolia");
+    if (e?.code !== 4902) throw new Error("WRONG_CHAIN: switch your wallet to FISCO BCOS (chain 20200)");
     await p.request({
       method: "wallet_addEthereumChain",
-      params: [{ chainId: BASE_SEPOLIA_HEX, chainName: "Base Sepolia", nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 }, rpcUrls: ["https://sepolia.base.org"], blockExplorerUrls: ["https://sepolia.basescan.org"] }],
-    }, CAIP).catch(() => { throw new Error("WRONG_CHAIN: switch your wallet to Base Sepolia"); });
+      params: [{ chainId: FISCO_HEX, chainName: "FISCO BCOS", nativeCurrency: { name: "FISCO", symbol: "FISCO", decimals: 18 }, rpcUrls: [RPC], blockExplorerUrls: [`${API}/explorer`] }],
+    }, CAIP).catch(() => { throw new Error("WRONG_CHAIN: switch your wallet to FISCO BCOS (chain 20200)"); });
   }
 }
 
@@ -157,13 +167,13 @@ export function ownerWallet(src: WalletSource) {
   const account = local ? privateKeyToAccount(src.pk) : src.address;
   const address: Address = local ? privateKeyToAccount(src.pk).address : src.address;
   const transport = local ? http(RPC) : custom({ request: ({ method, params }) => src.provider.request({ method, params }, CAIP) });
-  const w = createWalletClient({ account, chain: baseSepolia, transport });
+  const w = createWalletClient({ account, chain: fisco, transport });
   const ready = async () => { if (!local) await ensureChain(src.provider); };
 
   /** Sends the tx (a native MetaMask prompt for the provider source) and returns its hash. */
   async function send(address: Address, abi: any[], functionName: string, args: unknown[] = []) {
     await ready();
-    return w.writeContract({ address, abi, functionName, args, account, chain: baseSepolia });
+    return w.writeContract({ address, abi, functionName, args, account, chain: fisco, ...fees } as any);
   }
   async function write(address: Address, abi: any[], functionName: string, args: unknown[] = []) {
     const hash = await send(address, abi, functionName, args);
@@ -179,11 +189,11 @@ export function ownerWallet(src: WalletSource) {
     send,
     async balances() {
       const c = await loadConfig();
-      const [usdc, eth] = await Promise.all([
-        pub().readContract({ address: c.usdc, abi: c.abis.erc20, functionName: "balanceOf", args: [address] }) as Promise<bigint>,
+      const [ehkd, eth] = await Promise.all([
+        pub().readContract({ address: c.token, abi: c.abis.erc20, functionName: "balanceOf", args: [address] }) as Promise<bigint>,
         pub().getBalance({ address }),
       ]);
-      return { usdc, eth };
+      return { ehkd, eth };
     },
     async createPocket(a: { agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; sellers: Address[] }) {
       const c = await loadConfig();
@@ -191,11 +201,11 @@ export function ownerWallet(src: WalletSource) {
       const [ev] = parseEventLogs({ abi: c.abis.factory, logs: receipt.logs, eventName: "PocketCreated" }) as any[];
       return { pocket: ev.args.pocket as Address, tx: hash };
     },
-    fund: async (p: Address, amount: bigint) => { const c = await loadConfig(); return write(c.usdc, c.abis.erc20, "transfer", [p, amount]); },
+    fund: async (p: Address, amount: bigint) => { const c = await loadConfig(); return write(c.token, c.abis.erc20, "transfer", [p, amount]); },
     revoke: (p: Address) => pocketWrite(p, "revoke"),
     returnFunds: (p: Address) => pocketWrite(p, "returnFunds"),
     setSeller: (p: Address, s: Address, ok: boolean) => pocketWrite(p, "setSeller", [s, ok]),
-    /** Co-sign the exact USDC transfer the wallet tool layer built (payments above the ask-me threshold). */
+    /** Co-sign the exact eHKD transfer the wallet tool layer built (payments above the ask-me threshold). */
     signTransfer: async (auth: Authorization): Promise<Hex> => {
       await ready();
       return w.signTypedData({ account, ...transferTypedData(auth) });
@@ -210,7 +220,7 @@ export async function readPocket(address: Address): Promise<PocketView> {
   const r = (functionName: string, args: unknown[] = []) => pub().readContract({ address, abi: c.abis.pocket, functionName, args }) as Promise<any>;
   const [owner, agent, cap, askAbove, expiresAt, revoked, balance, flags] = await Promise.all([
     r("owner"), r("agent"), r("perPaymentCap"), r("askAbove"), r("expiresAt"), r("revoked"),
-    pub().readContract({ address: c.usdc, abi: c.abis.erc20, functionName: "balanceOf", args: [address] }) as Promise<bigint>,
+    pub().readContract({ address: c.token, abi: c.abis.erc20, functionName: "balanceOf", args: [address] }) as Promise<bigint>,
     Promise.all(sellers.map((s) => r("sellerAllowed", [s.payTo]))),
   ]);
   return { address, owner, agent, cap, askAbove, expiresAt, revoked, balance, allowed: sellers.filter((_, i) => flags[i]).map((s) => s.id) };
@@ -342,17 +352,17 @@ import { ensureChain, type WalletProvider } from "./wallet";
 
 function mockWallet(o: { chainId?: string; onSign?: () => Promise<`0x${string}`>; switchFails?: boolean } = {}) {
   const calls: { method: string; params: any; chain?: string }[] = [];
-  let chainId = o.chainId ?? "0x14a34";
+  let chainId = o.chainId ?? "0x4ee8";
   const provider: WalletProvider = {
     async request({ method, params }: { method: string; params?: any }, chain?: string): Promise<any> {
       calls.push({ method, params, chain });
       if (method === "eth_chainId") return chainId;
-      if (method === "wallet_switchEthereumChain") { if (o.switchFails) throw Object.assign(new Error("rejected"), { code: 4001 }); chainId = "0x14a34"; return null; }
+      if (method === "wallet_switchEthereumChain") { if (o.switchFails) throw Object.assign(new Error("rejected"), { code: 4001 }); chainId = "0x4ee8"; return null; }
       if (method === "eth_signTypedData_v4") return o.onSign!();
       if (method === "eth_sendTransaction") return `0x${"ab".repeat(32)}`;
       if (method === "eth_estimateGas") return "0x5208";
       if (method === "eth_getTransactionCount") return "0x0";
-      if (method === "eth_gasPrice" || method === "eth_maxPriorityFeePerGas") return "0x1";
+      if (method === "eth_gasPrice" || method === "eth_maxPriorityFeePerGas") return "0x0";
       if (method === "eth_getBlockByNumber") return { baseFeePerGas: "0x1", number: "0x1" };
       throw new Error(`unexpected ${method}`);
     },
@@ -360,7 +370,7 @@ function mockWallet(o: { chainId?: string; onSign?: () => Promise<`0x${string}`>
   return { provider, calls };
 }
 
-test("MetaMask path: the co-sign is requested from the wallet as eth_signTypedData_v4 for Base Sepolia", async () => {
+test("MetaMask path: the co-sign is requested from the wallet as eth_signTypedData_v4 for FISCO (chain 20200)", async () => {
   const owner = privateKeyToAccount(PK);
   const { provider, calls } = mockWallet({ onSign: () => owner.signTypedData(transferTypedData(auth)) });
   const w = ownerWallet({ provider, address: owner.address });
@@ -369,9 +379,9 @@ test("MetaMask path: the co-sign is requested from the wallet as eth_signTypedDa
   assert.equal(req.params[0].toLowerCase(), owner.address.toLowerCase());
   const td = JSON.parse(req.params[1]);
   assert.equal(td.primaryType, "TransferWithAuthorization");
-  assert.equal(td.domain.chainId, 84532);
+  assert.equal(td.domain.chainId, 20200);
   assert.equal(td.message.value, "1500000");
-  assert.ok(calls.every((c) => c.chain === "eip155:84532"));
+  assert.ok(calls.every((c) => c.chain === "eip155:20200"));
   assert.equal(await recoverTypedDataAddress({ ...transferTypedData(auth), signature: sig }), owner.address);
 });
 
@@ -403,7 +413,7 @@ test("MetaMask path: wrong chain is switched first; a refused switch is WRONG_CH
 ## To finish on a device
 
 1. Create a free project at https://dashboard.reown.com and copy the project ID.
-2. Expo Go: `EXPO_PUBLIC_REOWN_PROJECT_ID=<id> EXPO_PUBLIC_API_URL=http://<lan-ip>:8787 npx expo start`, scan the QR, tap **Connect MetaMask**, approve in MetaMask mobile (on Base Sepolia), switch back to Expo Go if it doesn't return by itself.
-3. Expected: Create pocket, Fund, the approval sheet's **Approve and sign**, Revoke and Return funds each open a MetaMask prompt.
+2. Expo Go: `EXPO_PUBLIC_REOWN_PROJECT_ID=<id> EXPO_PUBLIC_API_URL=http://<lan-ip>:8787 npx expo start`, scan the QR, tap **Connect MetaMask**, approve in MetaMask mobile (MetaMask adds the FISCO network, chain id 20200, symbol FISCO, on first use), switch back to Expo Go if it doesn't return by itself.
+3. Before the first owner tx, tap **Get test funds** (the server faucet: native balance plus HK$100 eHKD). Expected: Create pocket, Fund, the approval sheet's **Approve and sign**, Revoke and Return funds each open a MetaMask prompt.
 4. If Expo Go fails: same code as a development build, `npx expo run:android` with the phone on USB debugging (Android Studio, Android SDK, JDK 17). No code changes.
 

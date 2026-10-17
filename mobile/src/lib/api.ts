@@ -67,7 +67,7 @@ export async function devScenes(): Promise<Scene[]> {
   return Array.isArray(j) ? j.filter((s) => s && typeof s.text === "string") : [];
 }
 
-/** Test money: 1 ETH + 20 eHKD on the dev stack's fork, or the FISCO server's faucet (native balance + Mock e-HKD, once a day). */
+/** Test money: the dev stack's /dev/fund, or the server's faucet (native balance + Mock e-HKD, once a day). */
 export async function devFund(address: string): Promise<{ eth: string; ehkd: string }> {
   if (isBuiltin()) return builtin().fundTestMoney(address as Address);
   if (getChain()?.key === "fisco") {

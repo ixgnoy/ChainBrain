@@ -9,8 +9,8 @@ import { haptic } from "../haptics";
 import { shortHex } from "../lib/util";
 import { useApp } from "../store";
 
-/** A transaction hash. Tapping it opens the in-app ChainBrain explorer sheet (never BaseScan: that is a button inside the sheet,
- *  and only against a real public-chain server); the small copy button beside it copies the full hash. */
+/** A transaction hash. Tapping it opens the in-app ChainBrain explorer sheet (never the server explorer: that is a button inside the sheet,
+ *  and only against a real real server); the small copy button beside it copies the full hash. */
 export function TxLink({ tx, inline }: { tx: string; /** already inside the explorer: copy only */ inline?: boolean }) {
   const { setExplorerTx } = useApp();
   const [copied, setCopied] = React.useState(false);

@@ -27,11 +27,11 @@ Kept: the palette (vermillion `#F04E23`, powder blue `#9DCAFF`, ink `#111215`, g
 
 Why: current practice for agent payments is one approval per spend that shows what, why and how much before anything moves, with limits enforced by rules the agent can't change (Stripe agent wallets, Google AP2 mandates). Pocket.sol already enforces the rules; the UI has to make the ask unmissable without blocking the rest of the app.
 
-1. **Ask dock.** When an outside agent (Claude, ChatGPT) asks to co-sign, a slim black bar slides up and docks above the tab bar on every tab: agent mark, "US$1.50 · DataPro", a vermillion countdown ring for the 10-minute expiry. More than one ask stacks as "+2" on the right. It never covers content (screens get bottom inset while it is shown), it hides on the pushed screens that have their own bottom action (create wizard, sheets).
+1. **Ask dock.** When an outside agent (Claude, ChatGPT) asks to co-sign, a slim black bar slides up and docks above the tab bar on every tab: agent mark, "HK$12.00 · DataPro", a vermillion countdown ring for the 10-minute expiry. More than one ask stacks as "+2" on the right. It never covers content (screens get bottom inset while it is shown), it hides on the pushed screens that have their own bottom action (create wizard, sheets).
 2. **Unfold.** Tapping the dock morphs it (shared-element style: the bar grows into the card) into the cheque: the pocket card Claude would pay from, flipped. Its back reads, in order:
-   - **Pay** US$1.50 **to** DataPro, for "Durian exports premium report".
-   - **Why you're asked:** "Above your US$0.50 ask-me limit" (the rule that triggered the co-sign, from the contract).
-   - **After this:** "US$3.40 left in Market news".
+   - **Pay** HK$12.00 **to** DataPro, for "Durian exports premium report".
+   - **Why you're asked:** "Above your HK$4.00 ask-me limit" (the rule that triggered the co-sign, from the contract).
+   - **After this:** "HK$27.20 left in Market news".
    - **Seller check:** Radar's score, as now.
    - **Claude's note:** last, in its own box, marked "Not checked by ChainBrain".
 3. **Sign.** Slide to approve, then Face ID (expo-local-authentication; device passcode fallback; skipped with a short note when the device has no biometrics, such as the web build). The card flips back to its face, the amount leaves the balance (rolling digits) and the card drops into the deck. Decline is a plain text button under the slider; expired asks show "Expired, nothing was paid".

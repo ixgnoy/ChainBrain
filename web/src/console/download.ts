@@ -9,5 +9,5 @@ export function downloadText(name: string, mime: string, text: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Explorer links (BaseScan, or the FISCO server's own explorer) exist only for a real chain; the built-in network and a local fork have none. */
+/** Explorer links (the FISCO server's own explorer) exist only for a real chain; the built-in network and a local fork have none. */
 export const baseScanLink = (net: { builtin: boolean; dev: boolean }) => (net.builtin || net.dev ? undefined : txUrl);

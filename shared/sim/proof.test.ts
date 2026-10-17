@@ -162,7 +162,7 @@ test("the whole story (scenes 1, 4-8 plus the forced transfer) ticks the scoreca
   const md = evidenceMarkdown(rows, { network: networkLabel({ builtin: true }), at: new Date(0) });
   assert.match(md, /Network: Test network\./);
   assert.match(md, /\| Scene \| Expected \| Actual \| Tx \| What it proves \|/);
-  assert.doesNotMatch(md, /basescan|Base Sepolia/i);
+  assert.doesNotMatch(md, /https?:\/\//); // no explorer link without a real server
   const csv = evidenceCsv(rows, { network: "Test network" });
   assert.match(evidenceCsv([{ ...rows[0], actual: "=HYPERLINK(1)" }], { network: "x" }), /"'=HYPERLINK\(1\)"/);
   assert.match(evidenceMarkdown([{ ...rows[0], actual: "a|b <img> [x](y)" }], { network: "x" }), /a\\\|b \\<img\\> \\\[x\\\]\(y\)/);

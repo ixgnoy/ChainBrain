@@ -1,4 +1,4 @@
-// Dev stack support (local anvil fork, scripted model). Detected by GET /dev/health; absent on the real server.
+// Dev stack support (fresh contracts on a FISCO node, scripted model). Detected by GET /dev/health; absent on the real server.
 import type { Address } from "viem";
 
 export type DevInfo = { mode: "local-chain"; chainId: number; rpcPath: string; startedAt: number; owner: Address };

@@ -38,7 +38,7 @@ This log records what was read before each slice and the decision each finding c
 | Kim et al., [Fostering Appropriate Reliance on LLMs](https://arxiv.org/abs/2502.08554) (2025) | Explanations raised reliance on wrong answers too. Sources and visible inconsistencies lowered it. | **Changed:** the routine's cheque shows checkable facts (this week's spend, the allowance, this item's price), not prose |
 | Vasconcelos et al., [Explanations can reduce overreliance](https://arxiv.org/abs/2212.06823) (2023) | Explanations help only when they make verifying cheaper. | The budget meter puts spent, allowance and this run on one bar |
 | Turan, [Oversight Has a Capacity](https://arxiv.org/abs/2606.08919) (Jun 2026, preprint) | With fatigue modelled, more oversight can make a system less safe. | A routine asks at most once per run. The cheque offers "raise the weekly limit" as the lasting fix rather than asking again |
-| Feng et al., [Levels of Autonomy for AI Agents](https://arxiv.org/abs/2506.12469) (2025) | Five levels, defined by the user's role. | The routine header reads "Runs on its own inside US$X a week · asks you above it" (observer inside the limit, approver above it) |
+| Feng et al., [Levels of Autonomy for AI Agents](https://arxiv.org/abs/2506.12469) (2025) | Five levels, defined by the user's role. | The routine header reads "Runs on its own inside HK$X a week · asks you above it" (observer inside the limit, approver above it) |
 | Bilal et al., [From Information to Delegation](https://arxiv.org/abs/2608.02100) (Aug 2026) | Delegating financial execution to AI is still rare. | Tight defaults: two periods of funding at most, and Pause and Revoke always on screen |
 | Chan et al., [Visibility into AI Agents](https://arxiv.org/abs/2401.13138) (2024) | Agent identifiers plus activity logs. | Every run receipt names the agent and the routine run number |
 | Xiong et al., [Biased average position estimates in line and bar graphs](https://arxiv.org/abs/1908.00073) (2019) | Position judgements on bars and lines are biased. | **Changed:** the limit is a marked tick or line with its exact amount, never bar length alone. The deal chart draws the owner's limit as a labelled line |
@@ -79,7 +79,7 @@ The ctx7 library ids were `/websites/swmansion_react-native-reanimated` and `/wc
 
 ### UI/UX Pro Max (skill database, 17 Oct)
 
-- **Charts.** "Performance vs target" points to a bullet chart with a marker line, with the number and target as text beside it. Trend over time points to a line chart with a visible data-table fallback. → The budget meter is a bullet bar with a labelled limit tick. The price chart gives screen readers its quotes as a list ("09:00 Tue, US$0.046 …").
+- **Charts.** "Performance vs target" points to a bullet chart with a marker line, with the number and target as text beside it. Trend over time points to a line chart with a visible data-table fallback. → The budget meter is a bullet bar with a labelled limit tick. The price chart gives screen readers its quotes as a list ("09:00 Tue, HK$0.368 …").
 - **Suggestion not taken.** The product search suggested "glassmorphism plus dark mode" for fintech. Our design system forbids both and takes precedence.
 
 ## Loop 2: what validation turned up (17 Oct 2026)
@@ -88,7 +88,7 @@ The first browser run at 390 pt and the first full e2e pass turned up four thing
 
 | Found | Source | Decision |
 | --- | --- | --- |
-| Amounts showed as "US$9.9" in the compose preview | CSS Align 3: a clipped (`overflow:hidden`) box takes its baseline from its bottom edge ([css-align-3 §9.1](https://www.w3.org/TR/css-align-3/)). Browsers disagree on the exact edge ([Firefox bug 1036404](https://bugzilla.mozilla.org/show_bug.cgi?id=1036404)). | A row holding money reels is bottom-aligned, never `baseline`. The comment in `PocketApp.tsx` says why |
+| Amounts showed as "HK$9.9" in the compose preview | CSS Align 3: a clipped (`overflow:hidden`) box takes its baseline from its bottom edge ([css-align-3 §9.1](https://www.w3.org/TR/css-align-3/)). Browsers disagree on the exact edge ([Firefox bug 1036404](https://bugzilla.mozilla.org/show_bug.cgi?id=1036404)). | A row holding money reels is bottom-aligned, never `baseline`. The comment in `PocketApp.tsx` says why |
 | Entrances switched their style to `undefined` once settled | Reanimated: removing an animated style "doesn't unset values that were applied" ([useAnimatedStyle](https://docs.swmansion.com/react-native-reanimated/docs/core/useAnimatedStyle)). `FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS` changes what happens on detach ([feature flags](https://docs.swmansion.com/react-native-reanimated/docs/guides/feature-flags)). | A settled block takes a plain style at its resting values, as the app's `Reveal` already does |
 | A scale in the entrance made the money reels measure their digits too small (web) | Reproduced in the preview | Entrances use translate and opacity only. Both are cheap ([performance guide](https://docs.swmansion.com/react-native-reanimated/docs/guides/performance)) |
 | Shelf covers scroll sideways inside the vertical page | `directionalLockEnabled` is iOS-only and off by default. `nestedScrollEnabled` is Android-only ([ScrollView](https://reactnative.dev/docs/scrollview)) | The covers strip sets `directionalLockEnabled` |
@@ -132,8 +132,8 @@ Verified on the Simulator:
 - New pocket app composing a deal watcher and a research desk;
 - the slide to create, then Face ID (simulated match);
 - the card landing in its app;
-- three runs, the third raising the cheque ("Run 3 would pass this week's US$0.05", the week's bar), co-signed with Face ID;
-- the meter at US$0.051 with US$0.001 over.
+- three runs, the third raising the cheque ("Run 3 would pass this week's HK$0.40", the week's bar), co-signed with Face ID;
+- the meter at HK$0.408 with HK$0.008 over.
 
 Screenshots: `screenshots/pocket-apps/ios-*.png`.
 

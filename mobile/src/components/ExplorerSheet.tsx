@@ -1,6 +1,6 @@
 // The in-app ChainBrain explorer: every transaction hash on the phone opens here. On the built-in network (and a local fork) the
 // hash exists on no public chain, so it is explained here and never linked out; the chain is labelled "Test network". Only a real
-// public-chain server (explorerEnabled) also offers "View on BaseScan". Payments, refusals and attacks show the checks path they
+// real server (explorerEnabled) also offers "Open in the explorer". Payments, refusals and attacks show the checks path they
 // travelled (shared/sim attemptsFrom), the gate that stopped them, and the reason codes under "Why".
 import React, { useMemo, useRef } from "react";
 import { Linking, View } from "react-native";
@@ -148,7 +148,7 @@ function Body({ hash, close }: { hash: string; close: () => void }) {
           <T v="cap" color="muted">Hash</T>
           <TxLink tx={hash} inline />
         </View>
-        {explorerEnabled() && url ? <Button label="View on BaseScan" kind="outline" small onPress={() => Linking.openURL(url)} /> : null}
+        {explorerEnabled() && url ? <Button label="Open in the explorer" kind="outline" small onPress={() => Linking.openURL(url)} /> : null}
       </SheetScroll>
       <View style={{ paddingHorizontal: 20, paddingTop: 10 }}><Button label="Done" kind="secondary" onPress={close} /></View>
     </View>

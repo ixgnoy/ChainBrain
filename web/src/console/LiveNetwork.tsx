@@ -1,5 +1,5 @@
 // The network as a real server shows it: config, the event stream (every pocket) and the chain (pockets, rules,
-// on-chain history). Read-only. The dev stack adds /dev routes (local fork, forced transfer, scene list).
+// on-chain history). Read-only. The dev stack adds /dev routes (chain proxy, forced transfer, scene list).
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { formatHkd, loadConfig, setChainInfo, txUrl, curSign, type Config } from "../shared";
 import { detectDev } from "../dev";
@@ -52,7 +52,7 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
       if (!alive) return;
       const d = await detectDev(url);
       if (!alive) return;
-      setChainInfo(d ? null : c.chain ?? null); // HK$, eHKD and the server's explorer on FISCO; the dev fork is Base
+      setChainInfo(d ? null : c.chain ?? null); // the server's RPC and explorer; dev-stack hashes get no explorer link
       setDev(!!d); setCfg(c); setFailed(false);
       if (d) fetch(`${url}/dev/scenes`).then((r) => r.json()).then((s) => alive && Array.isArray(s) && setScenes(s)).catch(() => {});
     }).catch(() => { if (!alive) return; setFailed(true); timer = setTimeout(attempt, 5000); });

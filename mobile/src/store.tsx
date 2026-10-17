@@ -535,7 +535,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const newKey = useCallback(async () => { setPk(await createKey()); }, []);
   const setSource = useCallback(async (s: Source) => {
     resetConfig(); setCfg(null); setConn("connecting"); setPocketsLoaded(false); setBalances(null); setViews({}); setAnswered(new Set()); setTurnsBy({});
-    // nothing from the other network may linger on screen (a stale notice could link its hash to BaseScan)
+    // nothing from the other network may linger on screen (a stale notice could link its hash to the server explorer)
     setNotice(null); setReceipt(null); setAction(null); setRules(null); setApprovalOpen(false); setQuestionOpen(false); setPickerOpen(false); forcedSeen.current = null;
     setExplorerTx(null); autoplayRef.current?.stop();
     setRuntimeSource(s);

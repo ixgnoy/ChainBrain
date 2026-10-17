@@ -2,8 +2,8 @@
 Last updated: 2026-10-14
 
 > **Status (14 Oct, v2):** Built vs pending, as of 14 Oct.
-> - **Done as drafts:** technical document ([docs/technical-document.md](../technical-document.md)), security self-assessment ([docs/security-self-assessment.md](../security-self-assessment.md)), README ([README.md](../../README.md)), source code (built and tested locally), evidence skeleton ([docs/evidence.md](../evidence.md)).
-> - **Pending, needs the live run:** execution evidence (every row in docs/evidence.md is "pending": Base Sepolia tx hashes, funded wallets, live facilitator, MetaMask signing, Expo on a real phone, real-model scene run).
+> - **Done as drafts:** technical document ([docs/technical-document.md](../technical-document.md)), security self-assessment ([docs/security-self-assessment.md](../security-self-assessment.md)), README ([README.md](../../README.md)), source code (built and tested locally), execution evidence on FISCO BCOS ([docs/evidence-fisco.md](../evidence-fisco.md), local chain, plus `docs/evidence-fisco-railway.json` for the hosted node; check both with `cd server && pnpm tsx scripts/verify-evidence.ts`).
+> - **Pending:** Expo on a real phone against the hosted server, and a real-model scene run for the evidence.
 > - **Human-only, not started:** deck, demo video (5 min or less), team eligibility check (overseas university and at least 60% non-Chinese nationals), team form, and sending the package by email to the address in the rules, by Tue 20 Oct 12:00 UTC+8 (our own deadline).
 > The scene source is now spec v2 scenes 1-8, not 1-9 ([README](../../README.md) "Demo scenes"). Sections below that mention seller guards, `npm run evidence` or `npm run redteam` come from the old design; check names against the README.
 
@@ -29,7 +29,7 @@ Template files are in `reference/prior-research/official/templates/` (local, rea
 | 3 | Demo video | Required | `demo-video-guide-en.docx` (a guide, not a file to fill in for submission) | MP4, 16:9, 1080p preferred, English subtitles | No longer than 5 minutes | `InternationalAI-ChainBrain-DemoVideo.mp4` (template suggests `Track-TeamName-DemoVideo`) | | |
 | 4 | Source code | Optional | `source-code-readme-template-en.md` | Git repository link + README in the template; also a ZIP of the tagged commit | None found [VERIFY] | repo `chainbrain`, tag `submission-2026-10-20` (proposal) | | |
 | 5 | Security self-assessment | Optional (the spec calls it required) | `international-security-self-assessment-en.docx` | DOCX + PDF copy | None found | `InternationalAI-ChainBrain-SecuritySelfAssessment.docx` | | |
-| 6 | Execution evidence | Optional | `international-execution-evidence-en.docx` | DOCX + PDF copy; plus `evidence.json` and `evidence.md` from the harness | None found | `InternationalAI-ChainBrain-ExecutionEvidence.docx` | | |
+| 6 | Execution evidence | Optional | `international-execution-evidence-en.docx` | DOCX + PDF copy; plus `evidence-fisco.json` and `evidence-fisco.md` from the harness | None found | `InternationalAI-ChainBrain-ExecutionEvidence.docx` | | |
 
 Notes:
 - The folder also holds `ai-technical-document.docx` and `ai-security-self-assessment.docx`. Their text is Chinese ("人工智能赛道｜技术文档模板", "适用于国内人工智能赛道", i.e. for the domestic AI track). Do not use them; use the `-en` International files.
@@ -50,7 +50,7 @@ Header fields: team name, competition track (International AI Track, Topic F Age
 | 01 Project Overview: problem, target users, selected topic | Real problem, Topic F fit | [one-page summary](../00-start-here/one-page-summary.md); spec "Problem and users" ([spec](../02-product/product-design.md)); open with the merchant-readiness gap ([market](../03-research/market-regulation-webank.md)) |
 | 01 Core value and innovation | Narrow, defensible novelty | The narrow claim in [recommended changes](../02-product/recommended-changes.md) #5; accurate competitor table ([competitors](../03-research/competitors-industry.md), [prior art](../03-research/prior-art-hackathons-github.md)) |
 | 02 System Architecture: diagram, component responsibilities | Clear boundaries, what runs where | Spec "System architecture", "Seller guards", "Request flow"; [stack and repos](../04-build/stack-and-repos.md); redraw one diagram after the spike so it matches what was built |
-| 02 Models, tools, data sources, external services | Honest list incl. LLM, facilitator, RPC, faucet | Model choice ([open questions](../00-start-here/open-questions.md)); facilitator and USDC details ([feasibility](../04-build/x402-pocket-feasibility.md)); licences (rec. 26) |
+| 02 Models, tools, data sources, external services | Honest list incl. LLM, facilitator, RPC, faucet | Model choice ([open questions](../00-start-here/open-questions.md)); facilitator and Mock e-HKD details ([feasibility](../04-build/x402-pocket-feasibility.md)); licences (rec. 26) |
 | 03 Agent Design: intent understanding, planning, tool use, state management | Real model decisions, not if-else | Spec "Agent intelligence"; trace panel; reason-code schema (rec. 11, 25) |
 | 03 Core algorithms and evaluation approach | Numbers | Pocket validator rules; guard order; the evidence and red-team harness ([design](../05-security/evidence-and-redteam-harness.md)) with the result tables |
 | 04 Security Design: tiered permissions, confirmation of sensitive actions | Tiers, step-up, revoke | Spec "Permission tiers"; [threat model](../05-security/threat-model-and-red-team.md) |
@@ -100,8 +100,8 @@ Licence care (rules item 6 requires lawful use of third-party code and open-sour
 | Template section | Our content |
 | --- | --- |
 | 01 Evidence Summary: topic and scenario; what the evidence demonstrates | Topic F; one paragraph per core scene group; say "refusals and reverts are expected results" |
-| 02 Logs or Transactions: hashes for Topic F; timestamp, action, result, screenshot or link | The table generated by `npm run evidence` (`evidence.md`), pasted unedited |
-| 03 Reproduction Guide: steps for judges | Section "Judge quick path" in the [harness design](../05-security/evidence-and-redteam-harness.md): `npm run verify` (read-only, no keys) and `npm run evidence` (needs a funded testnet key) |
+| 02 Logs or Transactions: hashes for Topic F; timestamp, action, result, screenshot or link | The table in `docs/evidence-fisco.md`, pasted unedited |
+| 03 Reproduction Guide: steps for judges | Section "Judge quick path" in the [harness design](../05-security/evidence-and-redteam-harness.md): `npm run verify` (read-only, no keys) and `npm run evidence` (needs a funded key on the FISCO chain) |
 
 ## 3. Team information and registration data
 
@@ -129,15 +129,15 @@ T-0 is 24:00 on Tue 20 Oct. Our working deadline is T-12h (12:00 on 20 Oct). Dat
 | Sat 17 | T-3d | `npm run redteam` first full run (20 x each). Collect hashes for scenes 1-9. Outsider attack session. Video storyboard | First red-team numbers |
 | Sun 18 | T-2d | Feature freeze at night. Draft video recorded. Full evidence run on the frozen build. Deck v1 | Freeze |
 | Mon 19 | T-1d | Final docs from the generated tables. Re-run `redteam` and `evidence` on the final commit; paste results. Secret scan of repo, docs, video. Fresh-clone test of README. Rotate keys. Export PDFs. **Night: assemble the full package and, if allowed, submit v1** | Package complete |
-| Tue 20, 09:00-12:00 | T-15h to T-12h | Final video check on another device, final naming check, final read of every file, upload and send. Cheap mainnet insurance run only if the organisers' answer on testnet is unclear (do it on 19 Oct, not here) | **Submitted by 12:00** |
+| Tue 20, 09:00-12:00 | T-15h to T-12h | Final video check on another device, final naming check, final read of every file, upload and send. No new chain runs on the day | **Submitted by 12:00** |
 | Tue 20, 12:00-24:00 | T-12h to T-0 | Buffer only: confirm the receipt, fix a broken link, re-send if needed. No new content | Receipt saved |
 | Wed 21 | T+1d | Compliance screening by the organisers; answer any email within hours | |
-| 22-23 Oct | | Online review. Keep the testnet funded and the facilitator quota monitored ([threat model](../05-security/threat-model-and-red-team.md) G9); keep any live demo link up | |
+| 22-23 Oct | | Online review. Keep the hosted FISCO node and wallet API up and funded ([threat model](../05-security/threat-model-and-red-team.md) G9); keep any live demo link up | |
 
 ## 5. Final checks before sending
 
 - [ ] All six deliverables present, English, template headings kept, team name, track and date filled on every document.
-- [ ] Every number in the docs is copied from `evidence.md` or `report.md` of the final commit, with the commit hash printed beside it.
+- [ ] Every number in the docs is copied from `evidence-fisco.md` or `report.md` of the final commit, with the commit hash printed beside it.
 - [ ] Every hash link opens on the explorer and shows the expected status (success, or failed for the intentional reverts).
 - [ ] Video: under 5:00 by the player's clock, 1080p, subtitles, readable hashes, no secrets or personal data, no copyrighted music.
 - [ ] Deck: 10-minute rehearsal timed; no Chinese placeholder text left.

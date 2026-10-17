@@ -16,7 +16,7 @@ Combined on 14 Oct 2026 on branch `feat/integrate` (local, not pushed). It is th
 | --- | --- | --- |
 | `web/` | Network console: the whole system for the laptop demo and judges (live agent trace beside the active pocket and the sellers' side, all pockets, every tx hash, red-team box, forced-transfer test). No login | [web.md](web.md) |
 | `mobile/` | The owner's app for Expo Go: pockets, ask the agent, approvals, activity, settings. No setup screen; opens on the built-in network (works offline) | [mobile.md](mobile.md) |
-| `devstack/` | The team's real server and real contracts on a local fork of Base Sepolia, with a scripted agent instead of Claude. No API key, no faucet, no real money | [devstack/README.md](../../devstack/README.md) |
+| `devstack/` | The team's real server and real contracts on the FISCO BCOS node (a fresh Mock e-HKD and factory per run), with a scripted agent instead of Claude. No API key, no internet, no real money | [devstack/README.md](../../devstack/README.md) |
 
 | `shared/sim/` | The built-in network both apps open on: wallet API, tool layer, scripted agent and Pocket.sol rules in-app, seeded owner, scenes 1-8 offline | (code, `shared/sim/world.test.ts`) |
 
@@ -28,7 +28,7 @@ The team's `web/` and `mobile/` were built against the v2 spec and the real serv
 
 ## Built-in network (default)
 
-Both apps open on a built-in network on every launch. `shared/sim` runs the wallet API, the tool layer, the scripted agent and the Pocket.sol rules in the app, on a virtual chain, seeded with two weeks of real activity by three agents: Research data and One purchase (ChainBrain's agent), Market news (Claude) and Trade quotes (ChatGPT), main wallet US$54.80. Claude and ChatGPT are connected agents in the simulator (`shared/sim/agents.ts`) that use the same wallet tools and rules; on a real server only the built-in agent exists until an MCP server ships. Scenes 1-10 work with no server and no internet. It is meant for demos and offline use; its hashes are not on a public chain, so the apps show in-app receipts and sheets for them and never link BaseScan.
+Both apps open on a built-in network on every launch. `shared/sim` runs the wallet API, the tool layer, the scripted agent and the Pocket.sol rules in the app, on a virtual chain, seeded with two weeks of real activity by three agents: Research data and One purchase (ChainBrain's agent), Market news (Claude) and Trade quotes (ChatGPT), main wallet HK$438.40. Claude and ChatGPT are connected agents in the simulator (`shared/sim/agents.ts`) that use the same wallet tools and rules; on a real server only the built-in agent exists until an MCP server ships. Scenes 1-10 work with no server and no internet. It is meant for demos and offline use; its hashes are not on a public chain, so the apps show in-app receipts and sheets for them and never link out to an explorer.
 
 **Use a real server instead:**
 
@@ -37,7 +37,7 @@ Both apps open on a built-in network on every launch. `shared/sim` runs the wall
 | Phone | Settings, Advanced, **Custom server** switch: enter the URL, Test, Connect. Remembered (`cb.source` in SecureStore). Switch off to return |
 | Web | Gear button, Settings, **Custom server**. Or the hidden `?server=<url>` (`?server=builtin` goes back). Remembered (localStorage `cb.source`, `cb.apiUrl`) |
 
-Explorer (BaseScan) links appear only when connected to a real server on the public chain.
+Links out to an explorer appear only when connected to a real server: they open that server's own read-only explorer at `/explorer` (FISCO has no public explorer).
 
 ## Link the phone and the console on one laptop
 
@@ -55,10 +55,10 @@ The console then shows the phone's pockets first, by name, follows them, and hol
 
 ## Run it on a laptop with the dev stack (no keys needed)
 
-Once: Node 24, pnpm, Foundry (`curl -L https://foundry.paradigm.xyz | bash`, then `foundryup`). From the repo root: `git submodule update --init`, `pnpm i`, `cd contracts && forge build`, `cd mobile && npm ci`.
+Once: Node 24, pnpm, Foundry (`curl -L https://foundry.paradigm.xyz | bash`, then `foundryup`). From the repo root: `git submodule update --init`, `pnpm i`, `cd contracts && forge build`, `cd mobile && npm ci`, and the local FISCO node (`scripts/fisco/setup.sh` the first time, `scripts/fisco/start.sh` after).
 
 ```bash
-pnpm --dir devstack start        # wallet API :8787, sellers :4021, local chain; prints the LAN URL for the phone
+pnpm --dir devstack start        # wallet API :8787, sellers :4021, on the FISCO node; prints the LAN URL for the phone
 pnpm --dir web dev               # http://localhost:5173 network console, no login
 pnpm --dir devstack seed         # optional: real agent purchases for the dashboard to show
 ```
@@ -77,14 +77,14 @@ Type the sentences from the [devstack scene table](../../devstack/README.md#demo
 
 ## Dev mode vs the real server
 
-Once a server is chosen (Custom server), both apps ask `GET /dev/health`. On the dev stack they show a **LOCAL FORK** badge, turn BaseScan links into plain hashes (fork hashes don't exist on Base Sepolia), and use `/dev/rpc` for the chain. On the team's real server that route is missing, so the badge disappears, BaseScan links work, the web uses MetaMask and the phone uses its own key on Base Sepolia. Nothing else changes.
+Once a server is chosen (Custom server), both apps ask `GET /dev/health`. On the dev stack they show the "Test network" chip, keep every hash in the in-app explorer (each run deploys fresh contracts, so no outside explorer knows them), and use `/dev/rpc` for the chain. On the team's real server that route is missing, so the chip reads "FISCO BCOS", hashes also link to the server's `/explorer`, and the phone signs with its own key on chain 20200 (legacy transactions, gas price 0). Nothing else changes.
 
 ## Checks (Neo-Kinetic round, 16 Oct 2026: phone `npm test` 34/34, typecheck clean, iOS export builds; built-in e2e 45/45; sim 32/32; web 76/76, build and lint clean; dev-stack e2e not re-run. The table below is the 15 Oct run.)
 
 | Suite | Result |
 | --- | --- |
 | Built-in network, `node devstack/e2e/builtin.cjs --url http://localhost:8091` (phone on the built-in network: intro, card stack, explorer sheet, scenes 1-8, no server needed) | 34/34 |
-| End-to-end, `node devstack/e2e/e2e.cjs` (phone: intro, wizard, scenes 1-3 and 7, approvals, receipt, revoke; console: trace with reason codes, pockets, Explorer tx page, sellers, plant + forced transfer, built-in mode with checks path, attack arena (escalation `NOT_OWNER`, fooled transfer `SELLER_NOT_ALLOWED`, US$0.00 lost), explorer revert page, Evidence export, 390 px on every tab) | 55/55 on a fresh stack |
+| End-to-end, `node devstack/e2e/e2e.cjs` (phone: intro, wizard, scenes 1-3 and 7, approvals, receipt, revoke; console: trace with reason codes, pockets, Explorer tx page, sellers, plant + forced transfer, built-in mode with checks path, attack arena (escalation `NOT_OWNER`, fooled transfer `SELLER_NOT_ALLOWED`, HK$0.00 lost), explorer revert page, Evidence export, 390 px on every tab) | 55/55 on a fresh stack |
 | Built-in network logic, `cd mobile && node --import tsx --test ../shared/sim/*.test.ts` (world, scenes, attacks, checks path, proof facts, evidence export, explorer) | 18/18 |
 | Web, `pnpm --dir web test`, `build`, `lint` | 76/76, clean |
 | Phone, `npm test`, `npx tsc --noEmit`, `npx expo export --platform web` and `ios` | 25/25 (incl. the co-sign payload and a full auto-play run), clean, both exports build |
@@ -95,7 +95,7 @@ Before the end-to-end test: build `web/dist` and the phone web export (`cd mobil
 ## Not verified
 
 - **The phone app has not been run on a physical phone or inside Expo Go.** It was tested as a web export and the iOS bundle builds. Haptics and native gestures have not been seen on a device.
-- MetaMask on the real Base Sepolia, and the phone's key on the real Base Sepolia, were not run here (no funded wallets, no deployed factory yet). Those paths are the team's code, unchanged in behaviour.
+- The phone's key against the hosted FISCO server on Railway was not part of this run. That path is the team's code; "Get test funds" there uses the server faucet (`POST /api/faucet`).
 - The agent in the dev stack is scripted. The real Claude agent needs `ANTHROPIC_API_KEY` and the team's server setup.
 
 ## Known gaps

@@ -1,5 +1,5 @@
 // Runtime connection state shared by the pure logic modules (no React Native imports, so Node tests can load it).
-// The API URL can be overridden at run time (Settings); dev mode (local anvil fork) is detected from GET /dev/health.
+// The API URL can be overridden at run time (Settings); dev mode (the dev stack on a FISCO node) is detected from GET /dev/health.
 import type { Address } from "viem";
 
 export const ENV_API: string = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8787";
