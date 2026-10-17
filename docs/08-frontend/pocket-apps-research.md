@@ -244,3 +244,11 @@ Not verified:
 - **Eyebrows.** The labels over cards are now sentence case and untracked, a pattern Linear and Apple's own apps also use for in-card labels (loop 3 started this for the pocket-app blocks).
 - **Intro.** A new page 2 shows the product's one idea working: a sentence types itself and the real reader's chips appear. Mid-sentence the app type reads "Research desk"; at "drops below" it changes to "Deal watcher". Then the owner's own deal-watcher card drops in. Nothing on the page is staged: it is the same reader as New pocket app and a pocket from the store.
 - **Judges scoreboard.** The scoreboard said "0 of 4 attacks blocked" before anything was tried. A first glance reads that as failure, so it now says "4 attacks to try".
+
+## Loop 8: the calm pass (17 Oct 2026, night 2)
+
+- **Measure first.** A headless count of visible words per screen showed Home and Agents at 120 or more above the fold. The cause was repeated facts (a pocket's cap appeared up to five times on its page), captions under every block, and seven or more sections per screen.
+- **Progressive disclosure** (UI/UX Pro Max, ux domain; NN/g's "Progressive Disclosure"): show the few things most people need, and put the rest one tap away. The pocket's rules became one collapsed card. Its tiles are still one tap to edit, and the seller switches open from it. https://www.nngroup.com/articles/progressive-disclosure/
+- **WCAG 2.2 "Redundant entry" (3.3.7)** is about forms, but the same idea held here: don't make people read the same thing twice. The cheque no longer has a paragraph restating it, and the compose preview drops the blocks its proof card already covers. https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry.html
+- **Captions become chips or labels.** A sentence like "Every day at 08:00 · on its own inside US$0.20 a week" is now three chips (Daily 08:00, Buys ≤ US$0.04, US$0.20/wk). Long text moved to VoiceOver labels, so screen readers lose nothing.
+- **Web-safe motion again.** springify() on entering/layout animations doesn't run on web, and it left the pocket page's History rows invisible there. All entering and layout animations are timed now.

@@ -12,6 +12,40 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: the Evidence and Sellers pages
 
+## Calm pass (17 Oct, night 2)
+
+The owner said the app looked nice but "a little bit too packed and too much text". The answers (memory: calm-pass-decisions) were:
+- Home's "This week": my choice;
+- rules: one collapsed card;
+- captions: "visual, less text";
+- Home: an icon row, and no Recent activity.
+
+Words per screen (headless count at 402 × 874, every visible word with a letter in it):
+
+| Screen | Before | After |
+| --- | --- | --- |
+| Home | 222 | 173 |
+| Pocket page | 276 | 154 |
+| Agents | 197 | 155 |
+| Brain | 193 | 135 |
+| New pocket app, composed | ~6 screens | ~4 screens |
+
+Home's above-the-fold count is mostly the seven card names and balances, which are the content itself.
+
+- [x] **Home** (c2f3d5b): one "This week" card (the curve on top, the covers under it, three icon counts). It replaces three money summaries. The tiles became round quick actions, and Recent activity was dropped.
+  - Decision: I merged the chart and the digest rather than drop either. The curve says when the money went and the covers say what it bought, and each lost something alone.
+- [x] **Pocket page** (1aedf95):
+  - one "Rules you signed" card: icon tiles, sellers as marks with "Others" refused, worst case beside the main wallet's US$0.00; it opens to the seller switches;
+  - header chips in place of a sentence;
+  - a terse "Will never" with lock/brain tags;
+  - no budget caption.
+  - Bug found: AnimatedList and Rise's SHIFT used springify(), so History rows never appeared on web. They are timed now.
+- [x] **Brain** (213afbb): four panels (Understood, How it shopped, Guarded, Remembers) instead of eight.
+- [x] **Agents and receipt** (965d582): no explainer card or Today tiles; one footer line per agent; the receipt's checks fold into "6 contract checks passed".
+- [x] **New pocket app** (ccc7f19): the preview drops Next run and Sources (already in the proof card and timeline), and the footnotes are one line each.
+- [x] **The cheque** (6bf4fcb): the paragraph that restated the cheque is now its VoiceOver label, and the title fits on one line.
+- E2E 57/57 after every slice. One regression was caught and fixed: the budget meter must keep "co-signed by you on its cheque" for scene 12.
+
 ## Critique pass 1 (headless Chromium at 402 × 874, plus iOS)
 
 Each screen is scored 1–5 on first-glance wow / hierarchy / visuals over text / motion / system consistency / "AI-made" tells (5 means no tells).
