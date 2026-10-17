@@ -48,6 +48,9 @@ The owner said the look is good but the UX isn't (memory: ux-round-2-decisions, 
   - Live shows 12 cards, then "Earlier". A plain payment's sub-line is its pocket's name, not the repeated "Inside the pocket's rules". Live was 383 words.
   - Words now: Home 65 above the fold, Live 91, Settings 82, Agents 116 (mostly the pocket strips' names and balances).
   - Evidence: `ios-53-wallet-home.png`; e2e 57/57. The e2e taps See all before looking for Research data.
+- [x] **Console Evidence** (2f66bb6): scenes 11 (haggle) and 12 (routine) were never rows; now 13 rows. Amounts no longer read "US$0.00" for US$0.007.
+- [x] **Full auto-play re-verified** after the canvas, the build, the wallet Home and Live: scenes 1–12 in 412 s (headless Chromium), ending on Live, no page errors (`w-56-autoplay-run.png`, a frame every 15 s).
+  - The first attempt broke at scene 4 because I edited a shared file mid-run and Metro reloaded the page. Rule kept: no phone or shared edits while auto-play or e2e runs.
 
 ## Calm pass (17 Oct, night 2)
 

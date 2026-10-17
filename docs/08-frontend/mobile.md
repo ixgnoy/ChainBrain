@@ -79,15 +79,20 @@ Every routine pocket also has:
 ## What a judge sees (VaultBank round, 16 Oct)
 
 - **Intro on the first launch** (replay: Settings, "How ChainBrain works"): the four-tile mark and a Clash wordmark; three user-paced pages (swipe or Next, nothing moves on its own), Skip always there. Page 1 is VaultBank's onboarding: the owner's own pocket cards are dealt in, tilted and spilling off the edge, and the mark's tiles lock into place (`src/components/Intro.tsx`, `ui/BrandMark.tsx`).
-- **Home:** the money in agent pockets and the main wallet on one line, then every pocket at first glance as a **wallet stack of 2.5D cards** (`PocketWallet.tsx`, `PocketFace.tsx`: VaultBank card anatomy, the card's side under the face, a Skia material with a sheen that follows the phone's tilt). Each card shows its name row and a live sign in the corner (`glyphOf` in `shared/sim/pocketAppData.ts`: a price watch's sparkline and latest quote, the next run, a run going on, paused, what a haggler saved, else the balance); the front card shows whole. Neighbours never share a face when the pockets allow it. The cards drop into the stack on launch, a pull on Home fans them apart, and a tap on any card flies it into its page (a measured overlay, `CardFlight.tsx`). Then Move money, New pocket and a powder-blue Connect tile; **Next up**, every routine's next run soonest first, with its agent, its sellers' marks and its cost, and "Asks you" when the run would pass what is left of the allowance (`NextUp.tsx`); weekly agent spending as VaultBank's chart (`SpendChart.tsx`, `lib/agents.ts`); recent activity with the agent that acted.
+- **Home (18 Oct):** the main wallet is the hero card. It leans with the phone, carries ChainBrain's mark and "Only your key", and shows "US$5.62 out in 7 pockets" with a split bar by pocket.
+  - The pockets hang under it on a rail (`WalletHome.tsx`). Each row has a mini card in its job's face with the job's icon and the agent's mark, the name, and one job line from its own spec ("Buys Smart-money flows at ≤ US$0.04", "Haggles DataPro down first", "Renews 3 feeds · Mondays 09:00"). It also has a spend bar, the balance, and its live sign (`glyphOf`).
+  - The first four rows show one pocket of each job, then See all. A tap flies the mini card into the pocket page (`CardFlight.tsx`).
+  - Below: round quick actions (Move money, New pocket, Connect), **Next up** (each routine's next run, with Pause all) and one "This week" card (the spending curve, what was bought, three counts).
+  - The 2.5D wallet stack (`PocketWallet.tsx`) is kept for its strips, which Agents, Brain and the receipt still use.
 - **Home, added in the overnight push:**
   - the total has a thin split bar by pocket, in each card's face colour;
   - "Your agents got you" shows the last 7 days' buys as covers, with bought / co-signed / stopped counts, in the same window as the weekly chart (`WeekDigest.tsx`, `weekDigest`);
   - Next up has Pause all / Resume all;
   - a stack card lifts under the thumb, and the ask dock folds to the agent's mark and ring when you scroll down.
-- **Agents:** each agent's pockets are a small wallet of the same strips as Home (`AgentCard.tsx`).
+- **Agents:** each agent's pockets are a small wallet of the same strips as Home (`AgentCard.tsx`). Each card has "Give Claude a pocket" (or ChatGPT, or ChainBrain): it opens New pocket app with the sentence started as "Let Claude …".
+- **Live (tab, replaces Brain):** a pinned "Now" line, then requests waiting for you, then one stream of decision cards newest first: paid, co-signed, refused, seller text ignored (quoted, struck through), chat attacks, Sentinel freezes, and price checks that waited. Agent filter chips; tap a card for the rule, the tx and its receipt (`(tabs)/live.tsx`, `lib/live.ts`).
 - **Activity:** a 14-day pulse of payments and refusals above the list (`ActivityPulse.tsx`).
-- **Brain:** the pocket it explains is shown as its card strip, and a Routine panel gives the schedule, the allowance used and the seller texts ignored.
+- **Brain (pushed screen, from the chat's memory note):** the pocket it explains as its card strip, what it understood, how it shopped, what guarded it, and what it remembers, with Forget.
 - **Settings:** the main wallet is a card of its own: white, with an ink hatch edge and ChainBrain's mark.
 - **Receipt:** the seller's mark leads, with the paying agent's mark on it, plus the six Pocket.sol checks a settled payment passed and its pocket as a strip.
 - **Pocket page:** the routine has Edit (cadence, time, allowance; a looser allowance is signed with Face ID) beside Pause (`EditRoutineSheet.tsx`, `world.editRoutine`).
@@ -104,7 +109,7 @@ Every routine pocket also has:
 
 ## Screens
 
-Tabs: Home, Agents, Brain, Activity, Settings (a floating white pill bar; the active tab is a black pill that slides). Stack screens: chat (`/agent`), Agent detail (`/agents/[id]`), Connect (`/connect`), Approvals (`/approvals`), Radar alert (`/radar`), pocket page (`/pocket/[id]`), create wizard (`/create`). Sheets: approval, consent, question, receipt, explorer, add money / return / revoke (hold), rules, pocket picker (ChainBrain's pockets only).
+Tabs: Home, Agents, Live, Activity, Settings (a floating white pill bar; the active tab is a black pill that slides). Stack screens: chat (`/agent`), Brain (`/brain`), New pocket app with its live canvas (`/compose`), Agent detail (`/agents/[id]`), Connect (`/connect`), Approvals (`/approvals`), Radar alert (`/radar`), pocket page (`/pocket/[id]`), create wizard (`/create`). Sheets: approval, consent, question, receipt, explorer, add money / return / revoke (hold), rules, pocket picker (ChainBrain's pockets only).
 
 ## Motion and haptics
 
