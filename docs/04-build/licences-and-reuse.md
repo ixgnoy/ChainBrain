@@ -240,3 +240,18 @@ Licences were checked against each cloned repo's `LICENSE` file on 2026-10-17.
 **Brand marks:** the Claude, OpenAI, Exa, CoinGecko and Nansen marks are shown unaltered, at avatar size, never recoloured (`shared/brand/SOURCES.md`). Anthropic's trademark guidelines and OpenAI's brand page are cited in `docs/08-frontend/pocket-apps-research.md`.
 
 **One data note:** Nansen's "smart-money flows" quote on the built-in network moves by day around Nansen's published US$0.05. This was the owner's call, for the deal watcher, and is said in `shared/sim/catalog.ts`. It is never shown as a live Nansen price.
+
+## The live canvas, 18 Oct: what was read and what was reused
+
+These were cloned read-only into `reference/repos/genui/` (git-ignored) and studied. **No code was copied.** Each idea was re-written in our own code.
+
+| Source | Licence | Taken (as an idea) | Ours |
+| --- | --- | --- | --- |
+| [vercel-labs/json-render](https://github.com/vercel-labs/json-render) | Apache-2.0 | A generated UI streamed as RFC 6902 JSON Patch lines, one operation per line, rendered progressively | `shared/sim/specStream.ts` turns the decided spec into patch ops; the canvas replays them |
+| [liveblocks/liveblocks](https://github.com/liveblocks/liveblocks) examples | Apache-2.0 | A collaborator's cursor drawn as a pointer with a name pill | The agent's mark as the cursor (our own pointer path) in `LiveCanvas.tsx` |
+| [firecrawl/open-lovable](https://github.com/firecrawl/open-lovable), [stackblitz-labs/bolt.diy](https://github.com/stackblitz-labs/bolt.diy) | MIT | A preview that updates while the build log streams beside it | The canvas over the spec panel |
+| [onlook-dev/onlook](https://github.com/onlook-dev/onlook) | Apache-2.0 | Read only (visual editing on a live canvas) | — |
+| [google/A2UI](https://github.com/google/A2UI), [CopilotKit](https://github.com/CopilotKit/CopilotKit), [ag-ui](https://github.com/ag-ui-protocol/ag-ui), [thesysdev/openui](https://github.com/thesysdev/openui), [tldraw/make-real](https://github.com/tldraw/make-real) | Apache-2.0 / MIT | Read only | — |
+| [Shopify/react-native-skia](https://github.com/Shopify/react-native-skia), [wcandillon/can-it-be-done-in-react-native](https://github.com/wcandillon/can-it-be-done-in-react-native) | MIT | Read only (shimmer and motion examples); the shimmer is a plain sliding band | — |
+
+**New dependencies:** none.

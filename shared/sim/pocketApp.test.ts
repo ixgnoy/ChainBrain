@@ -281,3 +281,19 @@ test("routine edit: same routine, spend so far still counts; the change is in th
   assert.ok(done, "the run ended once its asks were answered");
   assert.throws(() => w.editRoutine(pocket, { allowance: { amount: "-1", period: "week" } }));
 });
+
+test("spec stream: the canvas replays the spec's real decisions and ends on the spec exactly", async () => {
+  const { specOps, blocksAfter, opLine } = await import("./specStream");
+  const reg = sellers();
+  const { spec, agent } = pickApp("Let Claude buy Nansen's smart-money flows every morning when the price drops below US$0.04. Max US$0.20 a week.", { sellers: ["nansen"], per: { amount: "0.20", period: "week" }, limit: "0.04", budget: "0.40" }, reg);
+  const ops = specOps(spec, agent);
+  assert.deepEqual(ops.slice(0, 4).map((o) => o.beat), ["catalogue", "layout", "title", "agent"]);
+  assert.equal(ops.find((o) => o.beat === "layout")!.value, "deal");
+  assert.equal(blocksAfter(ops, ops.length).join(), spec.blocks.map((b) => b.type).join(), "replaying every op gives the spec's blocks in its order");
+  for (const o of ops) assert.doesNotThrow(() => JSON.parse(opLine(o)));
+  // a reordered spec (as Claude might compose it) is shown as real moves, and still ends on the spec
+  const shuffled = { ...spec, blocks: [...spec.blocks].reverse() };
+  const ops2 = specOps(shuffled, agent);
+  assert.ok(ops2.some((o) => o.beat === "move"));
+  assert.equal(blocksAfter(ops2, ops2.length).join(), shuffled.blocks.map((b) => b.type).join());
+});

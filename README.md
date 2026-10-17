@@ -116,4 +116,5 @@ Scenes 1-8 play on the built-in network (offline), on the dev stack, and on the 
 - ITF Free Font License: Clash Display and General Sans (Fontshare), fetched at install, never redistributed
 - MIT: Lucide icons, React Native Reanimated, React Native SVG, zod (server)
 - Ideas only, no code copied (pocket apps, 17 Oct): vercel-labs/json-render and a2ui-project/a2ui (Apache-2.0), CopilotKit and ag-ui-protocol/ag-ui (MIT), thesysdev/openui (MIT), MetaMask/delegation-framework's period enforcer semantics (MIT and Apache-2.0), google-agentic-commerce/AP2's IntentMandate vocabulary (Apache-2.0). See `docs/04-build/licences-and-reuse.md`
+- Ideas only, no code copied (the live canvas, 18 Oct): vercel-labs/json-render's JSON Patch streaming (Apache-2.0), liveblocks' cursor pattern (Apache-2.0), open-lovable and bolt.diy's live preview (MIT). See `docs/04-build/licences-and-reuse.md`
 - Brand marks: Claude, OpenAI, Exa, CoinGecko and Nansen marks are shown unaltered at avatar size, per `shared/brand/SOURCES.md`

@@ -5,7 +5,7 @@
 // sign it; the pocket is created and funded on-chain, its routine stored as typed fields, and the card flies into its app.
 // Nothing here is written by the AI: the spec only names blocks, every figure is computed.
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Keyboard, ScrollView, View } from "react-native";
+import { Keyboard, ScrollView, View, useWindowDimensions } from "react-native";
 import { router } from "expo-router";
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -33,6 +33,8 @@ import { PAGE_MARGIN, pageCardWidth } from "../components/CardFlight";
 import { txError } from "../components/ActionSheet";
 import { AppHeader, PocketApp, type AppCtx } from "../components/app/PocketApp";
 import { Understood } from "../components/app/Understood";
+import { BuildStage, type StepKey, type StepState } from "../components/app/BuildStage";
+import { LiveCanvas } from "../components/app/LiveCanvas";
 import { FACE, LAYOUT_NAME, agentName } from "../components/app/theme";
 import { Hatch } from "../ui/Hatch";
 import { AgentAvatar } from "../ui/AgentAvatar";
@@ -61,11 +63,13 @@ export default function Compose() {
   const [err, setErr] = useState<string | null>(null);
   const [made, setMade] = useState<{ pocket: Address } | null>(null);
   const [build, setBuild] = useState(0); // a new composition replays the assembly
+  const [canvas, setCanvas] = useState(false); // the live canvas, over the page, from Compose until the slide (or Close)
   const scroller = useRef<ScrollView>(null);
   const proofY = useRef(380); // where the proof card starts in the scroll content (measured)
   const cardRef = useRef<View>(null);
   const left = useRef(false);
   const W = pageCardWidth(390);
+  const { width: winW } = useWindowDimensions();
 
   const sellers = (cfg?.sellers ?? []).map((s) => ({ id: s.id, name: s.name }));
   const p = res && draft ? proof(draft, sellers) : null;
@@ -87,6 +91,7 @@ export default function Compose() {
     try {
       const r = await api.composeApp(s);
       setRes({ ...r, asked: new Set() }); setDraft(r.draft); setBuild((n) => n + 1);
+      setCanvas(true);
       haptic.success();
       setTimeout(() => scroller.current?.scrollTo({ y: Math.max(0, proofY.current - 12), animated: true }), 320);
     } catch {
@@ -107,31 +112,70 @@ export default function Compose() {
     cardRef.current.measureInWindow((x, y, w, h) => { startFlight(pocket, { x, y, w, h }, toneFor([{ address: pocket, app: spec }], pocket), 0); go(); });
   };
 
+  // the build after the slide: each step runs the real thing and lasts at least `min` ms, so a room can follow it
+  const [steps, setSteps] = useState<StepState[] | null>(null);
+  const [stage, setStage] = useState<{ address?: Address; funded: boolean }>({ funded: false });
+  const mark = (key: StepKey, patch: Partial<StepState>) => setSteps((st) => (st ? st.map((x) => (x.key === key ? { ...x, ...patch } : x)) : st));
+  const step = async <R,>(key: StepKey, min: number, fn: () => Promise<R> | R, detail?: (r: R) => string) => {
+    mark(key, { status: "run" });
+    const [r] = await Promise.all([Promise.resolve().then(fn), new Promise((res2) => setTimeout(res2, min))]);
+    mark(key, { status: "done", detail: detail?.(r as R) });
+    haptic.light();
+    return r as R;
+  };
+  const tx = (h: string) => `${h.slice(0, 6)}…${h.slice(-4)}`;
+
   const create = async () => {
     setErr(null);
-    if (!wallet || !cfg || !spec || !draft) throw new Error("not ready");
+    if (!wallet || !cfg || !spec || !draft || !p) throw new Error("not ready");
     const ok = await confirmOwner(`Create ${title}`);
     if (ok === "cancel") { const e = new Error("Cancelled"); setErr("Face ID was cancelled. Nothing was created."); throw e; }
+    const who = agentName(agent.id);
+    setStage({ funded: false });
+    setSteps([
+      { key: "check", icon: "checks", status: "wait", title: "Checking your rules" },
+      { key: "deploy", icon: "layers", status: "wait", title: "Deploying the pocket contract" },
+      { key: "rules", icon: "key", status: "wait", title: "Writing your rules into it" },
+      { key: "key", icon: "bot", status: "wait", title: outside ? `Handing ${who} its own key` : `Setting ${who} as its agent` },
+      { key: "fund", icon: "arrowIn", status: "wait", title: `Moving US$${draft.budget} from your main wallet` },
+      { key: "arrange", icon: "squarePlus", status: "wait", title: "Arranging your pocket app" },
+      { key: "live", icon: "bolt", status: "wait", title: "Live" },
+    ]);
     try {
+      await step("check", 1100, () => p.tests, (t) => `${t.length} test payments · ${t.every((x) => x.ok) ? "all as expected" : "see the proof card"}`);
       if (outside) connectAgent(agent.id);
       const payTo = Object.fromEntries(cfg.sellers.map((s) => [s.id, s.payTo]));
-      const m = await wallet.createPocket({
-        agent: (outside ? agent.address : cfg.agent) as Address, cap: parseUsd(draft.cap),
-        askAbove: draft.askAbove === "never" ? NEVER : parseUsd(draft.askAbove), expiresAt: expiryFor(draft.lifetime),
-        sellers: draft.sellers.map((s) => payTo[s] as Address),
-      });
-      recordTx({ kind: "create", pocket: m.pocket, hash: m.tx });
-      await addPocket(m.pocket, { name: title, style: "custom", app: { ...spec, title } }, { activate: !outside });
-      const f = await wallet.fund(m.pocket, budget);
-      recordTx({ kind: "fund", pocket: m.pocket, hash: f.hash, amount: budget.toString() });
-      api.setApp(m.pocket, { ...spec, title });
-      if (spec.routine) api.setRoutine(m.pocket, spec.routine);
-      await refreshPockets();
+      const m = await step("deploy", 1700, async () => {
+        const r = await wallet.createPocket({
+          agent: (outside ? agent.address : cfg.agent) as Address, cap: parseUsd(draft.cap),
+          askAbove: draft.askAbove === "never" ? NEVER : parseUsd(draft.askAbove), expiresAt: expiryFor(draft.lifetime),
+          sellers: draft.sellers.map((s) => payTo[s] as Address),
+        });
+        recordTx({ kind: "create", pocket: r.pocket, hash: r.tx });
+        await addPocket(r.pocket, { name: title, style: "custom", app: { ...spec, title } }, { activate: !outside });
+        setStage({ address: r.pocket, funded: false });
+        return r;
+      }, (r) => `Contract 0x…${r.pocket.slice(-4).toLowerCase()} · tx ${tx(r.tx)}`);
+      await step("rules", 1300, () => null, () => "In the same transaction · only your key can change them");
+      await step("key", 1100, () => null, () => `${who} can pay only from this pocket`);
+      const f = await step("fund", 1500, async () => {
+        const r = await wallet.fund(m.pocket, budget);
+        recordTx({ kind: "fund", pocket: m.pocket, hash: r.hash, amount: budget.toString() });
+        setStage({ address: m.pocket, funded: true });
+        return r;
+      }, (r) => `tx ${tx(r.hash)}`);
+      await step("arrange", 1800, async () => {
+        api.setApp(m.pocket, { ...spec, title });
+        if (spec.routine) api.setRoutine(m.pocket, spec.routine);
+        await refreshPockets();
+      }, () => `${spec.blocks.length} blocks${spec.routine ? " · its routine saved" : ""}`);
+      await step("live", 500, () => null, () => "Created and funded on-chain");
+      haptic.success();
       if (!outside) setActive(m.pocket);
       setNotice({ title: `${title} created and funded`, pocket: m.pocket, txs: [{ label: "Create pocket", hash: m.tx }, { label: `Add US$${draft.budget}`, hash: f.hash }] });
       setMade({ pocket: m.pocket });
       setTimeout(() => open(m.pocket), 2200);
-    } catch (e) { setErr(txError(e)); throw e; }
+    } catch (e) { setSteps(null); setErr(txError(e)); throw e; }
   };
 
   // ---- auto-play: type the sentence, compose, slide, open
@@ -262,11 +306,11 @@ export default function Compose() {
                     <SuccessMark size={56} />
                     <T v="head">{`${title} is live`}</T>
                     <T v="cap" color="muted" style={{ textAlign: "center" }}>{spec.routine ? `Created and funded on-chain. Its routine is saved as fixed fields; ${agentName(agent.id)} runs it.` : "Created and funded on-chain."}</T>
-                    <Button label="Open the pocket app" icon="arrowUpRight" auto="compose.open" onPress={() => open(made.pocket)} />
+                    <Button label="Open the pocket app" icon="arrowUpRight" onPress={() => open(made.pocket)} />
                   </Card>
                 ) : (
                   <>
-                    <SlideToConfirm label={`Slide to create · US$${draft?.budget ?? ""}`} doneLabel="Created" auto="compose.create" disabled={!draft?.sellers.length || short || !wallet} onConfirm={create} />
+                    {canvas ? null : <SlideToConfirm label={`Slide to create · US$${draft?.budget ?? ""}`} doneLabel="Created" auto="compose.create" disabled={!draft?.sellers.length || short || !wallet} onConfirm={create} />}
                     <T v="cap" color="mutedOnCanvas" style={{ textAlign: "center" }}>
                       {short ? "Not enough in your main wallet for this budget." : !draft?.sellers.length ? "Name at least one seller in the sentence." : `${signer ?? "Your key"} signs 2 transactions: create, then fund US$${draft?.budget}`}
                     </T>
@@ -284,6 +328,45 @@ export default function Compose() {
           </Press>
         ) : null}
       </ScrollView>
+      {canvas && res && preview && spec && draft && ctx && p ? (
+        <LiveCanvas key={build} spec={spec} agentId={agent.id} by={res.specBy === "claude" ? "claude" : "picker"} sentence={text} ctx={ctx} pocket={preview}
+          tone={toneFor([{ address: preview.address, app: spec }], preview.address)} onClose={() => setCanvas(false)}
+          sign={
+            <View style={{ backgroundColor: c.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 16, paddingHorizontal: 20, paddingBottom: insets.bottom + 14, gap: 12, shadowColor: c.ink, shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: -6 }, elevation: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}><Icon name="shieldCheck" size={18} color={c.white} stroke={2} /></View>
+                <View style={{ flex: 1 }}>
+                  <T v="head">{`Worst case ${p.worstCase.startsWith("US$") ? p.worstCase : `US$${p.worstCase}`}`}</T>
+                  <T v="cap" color="muted">even if the agent is fooled</T>
+                </View>
+                <Press haptics="select" onPress={() => { setCanvas(false); setTimeout(() => scroller.current?.scrollTo({ y: Math.max(0, proofY.current - 12), animated: true }), 250); }}
+                  accessibilityRole="button" accessibilityLabel="See every rule" style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 6 }}>
+                  <T v="sub" w="semi" color="vermillionInk">Every rule</T>
+                </Press>
+              </View>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                {[`Cap US$${draft.cap}`, draft.askAbove === "never" ? "Never asks" : `Asks above US$${draft.askAbove}`, ...(spec.routine ? [`US$${spec.routine.allowance.amount}/${spec.routine.allowance.period}`] : [])].map((t) => (
+                  <View key={t} style={{ height: 28, paddingHorizontal: 10, borderRadius: 14, backgroundColor: c.fill, justifyContent: "center" }}><T v="cap" w="semi">{t}</T></View>
+                ))}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 28, paddingLeft: 4, paddingRight: 10, borderRadius: 14, backgroundColor: c.fill }}>
+                  {draft.sellers.map((id) => <SellerMark key={id} id={id} size={20} radius={6} />)}
+                  <T v="cap" w="semi">only</T>
+                </View>
+              </View>
+              <SlideToConfirm label={`Slide to create · US$${draft.budget}`} doneLabel="Created" auto="compose.create" disabled={!draft.sellers.length || short || !wallet} onConfirm={create} />
+              {err ? <T v="sub" color="negative">{err}</T> : (
+                <T v="cap" color="muted" style={{ textAlign: "center" }}>{short ? "Not enough in your main wallet for this budget." : `${signer ?? "Your key"} signs 2 transactions: create, then fund US$${draft.budget}`}</T>
+              )}
+            </View>
+          } />
+      ) : null}
+      {steps && preview && spec && draft ? (
+        <BuildStage steps={steps} title={title} width={winW} agentId={agent.id} sellers={draft.sellers} solid={!!stage.address} blocks={spec.blocks.map((b) => b.type)}
+          pocket={{ ...preview, address: (stage.address ?? ZERO) as Address, balance: stage.funded ? budget : 0n }}
+          tone={toneFor([{ address: preview.address, app: spec }], preview.address)}
+          chips={[`Cap US$${draft.cap}`, draft.askAbove === "never" ? "Never asks" : `Asks above US$${draft.askAbove}`, `${draft.sellers.length} ${draft.sellers.length === 1 ? "seller" : "sellers"} only`, ...(spec.routine ? [`US$${spec.routine.allowance.amount}/${spec.routine.allowance.period}`] : [])]}
+          onOpen={made ? () => open(made.pocket) : undefined} />
+      ) : null}
     </View>
   );
 }

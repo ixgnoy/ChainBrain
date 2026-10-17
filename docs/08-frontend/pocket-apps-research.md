@@ -252,3 +252,25 @@ Not verified:
 - **WCAG 2.2 "Redundant entry" (3.3.7)** is about forms, but the same idea held here: don't make people read the same thing twice. The cheque no longer has a paragraph restating it, and the compose preview drops the blocks its proof card already covers. https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry.html
 - **Captions become chips or labels.** A sentence like "Every day at 08:00 · on its own inside US$0.20 a week" is now three chips (Daily 08:00, Buys ≤ US$0.04, US$0.20/wk). Long text moved to VoiceOver labels, so screen readers lose nothing.
 - **Web-safe motion again.** springify() on entering/layout animations doesn't run on web, and it left the pocket page's History rows invisible there. All entering and layout animations are timed now.
+
+## Loop 9: the live canvas (18 Oct 2026)
+
+The owner asked for the pocket app to visibly build itself in the front end, like an AI design tool showing a screen appear from a prompt. Their answers: at Compose; write → watch → sign; skeleton → real, an agent cursor, visible edits and a live spec panel; 10–15 s; a paced replay of the real spec.
+
+- **GitHub** (cloned to `reference/repos/genui/`, licences checked):
+  - json-render streams generated UI as JSON Patch lines, one operation per line. Our canvas replays the decided spec as those operations: catalogue, layout, title, agent, routine, each block, any reorder, then the validation. So every visible change is one real line.
+  - Liveblocks' cursor examples: a pointer plus a name pill.
+  - open-lovable and bolt.diy: a preview that updates beside a streaming log.
+- **Online and papers:**
+  - Buell & Norton 2011, the "labor illusion": showing the work raises how much people value the result. https://pubsonline.informs.org/doi/10.1287/mnsc.1110.1376
+  - Liveblocks on multiplayer cursors: a spring keeps momentum. For a scripted path, an eased curve with a soft landing reads naturally. https://liveblocks.io/blog/how-to-animate-multiplayer-cursors
+  - Skeleton guidance: hold a skeleton long enough to be seen before it fills, or it reads as a glitch, and give it the final size so nothing jumps. Our canvas renders the real block underneath at opacity 0, so the skeleton has the block's exact size.
+- **Unverified:** I couldn't confirm what Google Stitch shows mid-generation (no public description found), so the demo copy doesn't claim "like Stitch".
+- **Honesty:** the panel says who decided the spec ("Picked by ChainBrain" or "Composed by Claude") and "replayed". The "edits" are real decisions landing:
+  - the blueprint takes its job's colour when `/layout` lands;
+  - the title types when `/title` lands;
+  - the agent's mark arrives with `/agent`;
+  - the header chips arrive with `/routine`;
+  - a reorder appears only if the spec's order differs from the layout default (as a Claude-composed spec can).
+
+  The validation pass checks every block. Nothing is invented. A test proves that replaying all the ops gives the spec's blocks in its order, including a reordered spec.

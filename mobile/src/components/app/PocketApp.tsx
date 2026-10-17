@@ -669,7 +669,7 @@ function Guard({ ctx }: { ctx: AppCtx }) {
 
 // ---------------------------------------------------------------- the renderer
 
-function BlockView({ block, ctx }: { block: Block; ctx: AppCtx }) {
+export function BlockView({ block, ctx }: { block: Block; ctx: AppCtx }) {
   switch (block.type) {
     case "shelf": return <Shelf ctx={ctx} />;
     case "price-chart": return <PriceHero ctx={ctx} block={block} />;

@@ -262,11 +262,11 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await must("home.newPocket");
     await wait(1400);
     await must("compose.text", { text: text("12").text }, 15_000);
-    await wait(5800); // the proof card, then the blocks fly in one after another
-    await must("compose.create");
+    // the live canvas: the app designs itself (about 13 s), then the sign sheet's slide appears
+    await must("compose.create", undefined, 25_000);
     await until("the pocket app", (s) => s.pocketCount > before12, 30_000);
-    await wait(3200); // it opens by itself: the card flies into its own app
-    await tap("compose.open", undefined, 1200);
+    // the paced build (about 9 s: deploy, rules, key, fund, arrange) ends with Open, and opens by itself a moment later
+    await tap("compose.open", undefined, 16_000);
     await wait(2600);
     const runs0 = host.state().routineRuns ?? 0;
     const runNow = async (n: number) => { await must("routine.runNow"); await until(`routine run ${n}`, (s) => (s.routineRuns ?? 0) >= runs0 + n, 40_000); await wait(2600); };
