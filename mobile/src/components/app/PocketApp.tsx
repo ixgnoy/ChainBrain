@@ -221,6 +221,9 @@ function PriceHero({ ctx, block }: { ctx: AppCtx; block: Block }) {
   const s = ctx.address ? priceSeries(ctx.events, ctx.address, { now: ctx.now, days, limit }) : null;
   const item = ctx.spec.routine?.items[0];
   const last = s?.last;
+  // before any quote: the seller's list price (the catalogue's) against the limit, so the deal is visible from the start
+  const lp = item ? ctx.registry?.find((x) => x.id === item.sellerId)?.items.find((i) => i.sku === item.sku)?.price : null;
+  const listed = lp ? BigInt(Math.round(Number(lp) * 1e6)) : null;
   return (
     <BlockCard label={item ? `${ctx.sellerName(item.sellerId)} · quoted prices` : "Quoted prices"} right={`${days} days`}>
       <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
@@ -236,7 +239,8 @@ function PriceHero({ ctx, block }: { ctx: AppCtx; block: Block }) {
       </View>
       {s && s.quotes.length ? (
         <PriceChart quotes={s.quotes} buys={s.buys} limit={limit} />
-      ) : <Empty icon="chart" text={limit != null ? `Every quote lands here. It buys at US$${usd(limit)} or less.` : "Every quote lands here."} />}
+      ) : limit != null && listed != null ? <PriceGauge limit={limit} listed={listed} seller={item ? ctx.sellerName(item.sellerId) : "The seller"} />
+        : <Empty icon="chart" text={limit != null ? `Every quote lands here. It buys at US$${usd(limit)} or less.` : "Every quote lands here."} />}
       {s && s.quotes.length ? (
         <View style={{ flexDirection: "row", gap: 16, flexWrap: "wrap" }}>
           <Legend swatch={<View style={{ width: 14, height: 0, borderTopWidth: 2, borderColor: c.blueInk, borderStyle: "dashed" }} />} text="Your limit" />
@@ -252,6 +256,33 @@ const Legend = ({ swatch, text }: { swatch: React.ReactNode; text: string }) => 
 );
 
 const SEG = [c.ink, c.vermillion, c.blue, c.green];
+/** No quotes yet: a price scale with the buy zone (at or under your limit) shaded and the seller's list price marked. */
+function PriceGauge({ limit, listed, seller }: { limit: bigint; listed: bigint; seller: string }) {
+  const max = Number(listed > limit ? listed : limit) * 1.35;
+  const at = (v: bigint) => `${Math.min(96, (Number(v) / max) * 100)}%` as const;
+  const inZone = listed <= limit;
+  return (
+    <View accessible accessibilityLabel={`${seller} lists it at US$${usd(listed)}. It buys at US$${usd(limit)} or less${inZone ? ", so the list price is already in the buy zone" : ", so it waits for the price to drop"}. Every quote will land on this chart.`} style={{ gap: 10 }}>
+      <View style={{ height: 96, justifyContent: "center" }}>
+        <View style={{ height: 14, borderRadius: 7, backgroundColor: c.fill, overflow: "hidden" }}>
+          <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: at(limit), backgroundColor: c.blueSoft }}><Hatch color={c.blueInk} pitch={6} stroke={1} opacity={0.25} /></View>
+        </View>
+        {/* the limit */}
+        <View style={{ position: "absolute", left: at(limit), top: 12, bottom: 12, width: 2, marginLeft: -1, backgroundColor: c.blueInk }} />
+        <View style={{ position: "absolute", left: at(limit), bottom: 0, transform: [{ translateX: -30 }], height: 22, paddingHorizontal: 7, borderRadius: 7, backgroundColor: c.blueInk, justifyContent: "center" }}>
+          <T v="cap" w="bold" style={{ color: c.white, fontSize: 11 }}>{`≤ ${usd(limit)}`}</T>
+        </View>
+        {/* the list price */}
+        <View style={{ position: "absolute", left: at(listed), top: 0, transform: [{ translateX: -40 }], height: 22, paddingHorizontal: 7, borderRadius: 7, backgroundColor: c.vermillion, justifyContent: "center" }}>
+          <T v="cap" w="bold" style={{ color: c.white, fontSize: 11 }}>{`lists ${usd(listed)}`}</T>
+        </View>
+        <View style={{ position: "absolute", left: at(listed), top: 41, width: 14, height: 14, marginLeft: -7, borderRadius: 7, backgroundColor: c.white, borderWidth: 3, borderColor: c.vermillion }} />
+      </View>
+      <T v="cap" color="muted">{inZone ? "Already in the buy zone. Every quote lands here." : "It waits for the price to drop into the blue. Every quote lands here."}</T>
+    </View>
+  );
+}
+
 function MonthSpend({ ctx }: { ctx: AppCtx }) {
   const m = ctx.address ? monthBySeller(ctx.events, ctx.address, ctx.now) : { rows: [], total: 0n, window: { start: ctx.now, end: ctx.now } };
   const month = new Date(ctx.now).toLocaleDateString("en-GB", { month: "long" });

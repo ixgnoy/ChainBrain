@@ -17,7 +17,7 @@ import { RoutineTimeline } from "./RoutineTimeline";
 const I = { strokeWidth: 1.75 } as const;
 // each pocket's app, by its job (the card face's colour): research desk ink, deal watcher blue, subscriptions hatch, haggler vermillion
 const LAYOUT_LABEL = { research: "Research desk", deal: "Deal watcher", subscriptions: "Subscriptions", haggle: "Haggler" } as const;
-const LAYOUT_DOT = { research: "bg-ink", deal: "bg-blue", subscriptions: "hatch", haggle: "bg-vermillion" } as const;
+const LAYOUT_DOT = { research: "bg-ink", deal: "bg-blue", subscriptions: "hatch", haggle: "bg-[#E9D6AE]" } as const;
 const COUNT = ({ n }: { n: number }) => <span className="num text-[12px] opacity-70">{n}</span>;
 
 // ------------------------------------------------------------------ Pockets

@@ -52,6 +52,7 @@ const EXAMPLES: { icon: IconName; label: string; text: string; layout: Layout; a
   { icon: "target", label: "Haggle a report", layout: "haggle", agent: "chainbrain", text: "Get DataPro's premium report, but negotiate the price down first, at most US$2 each, ask me above US$1, one-off." },
 ];
 const ZERO = "0x0000000000000000000000000000000000000000" as Address;
+const cap1 = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
 export default function Compose() {
   const insets = useSafeAreaInsets();
@@ -312,7 +313,7 @@ export default function Compose() {
                   <>
                     {canvas ? null : <SlideToConfirm label={`Slide to create · US$${draft?.budget ?? ""}`} doneLabel="Created" auto="compose.create" disabled={!draft?.sellers.length || short || !wallet} onConfirm={create} />}
                     <T v="cap" color="mutedOnCanvas" style={{ textAlign: "center" }}>
-                      {short ? "Not enough in your main wallet for this budget." : !draft?.sellers.length ? "Name at least one seller in the sentence." : `${signer ?? "Your key"} signs 2 transactions: create, then fund US$${draft?.budget}`}
+                      {short ? "Not enough in your main wallet for this budget." : !draft?.sellers.length ? "Name at least one seller in the sentence." : `${cap1(signer ?? "Your key")} signs 2 transactions: create, then fund US$${draft?.budget}`}
                     </T>
                   </>
                 )}
@@ -355,7 +356,7 @@ export default function Compose() {
               </View>
               <SlideToConfirm label={`Slide to create · US$${draft.budget}`} doneLabel="Created" auto="compose.create" disabled={!draft.sellers.length || short || !wallet} onConfirm={create} />
               {err ? <T v="sub" color="negative">{err}</T> : (
-                <T v="cap" color="muted" style={{ textAlign: "center" }}>{short ? "Not enough in your main wallet for this budget." : `${signer ?? "Your key"} signs 2 transactions: create, then fund US$${draft.budget}`}</T>
+                <T v="cap" color="muted" style={{ textAlign: "center" }}>{short ? "Not enough in your main wallet for this budget." : `${cap1(signer ?? "Your key")} signs 2 transactions: create, then fund US$${draft.budget}`}</T>
               )}
             </View>
           } />

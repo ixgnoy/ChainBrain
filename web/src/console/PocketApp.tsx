@@ -20,7 +20,7 @@ const I = { strokeWidth: 1.75 } as const;
 const LAYOUT_NAME: Record<Layout, string> = { research: "Research desk", deal: "Deal watcher", subscriptions: "Subscriptions", haggle: "Haggler" };
 const FACE: Record<Layout, { bg: string; ink: string; sub: string; band: string; hatch?: boolean }> = {
   research: { bg: "#111215", ink: "#FFFFFF", sub: "rgba(255,255,255,0.64)", band: "#2A2B30" },
-  haggle: { bg: "#F04E23", ink: "#FFFFFF", sub: "rgba(255,255,255,0.82)", band: "#111215" },
+  haggle: { bg: "#E9D6AE", ink: "#111215", sub: "rgba(17,18,21,0.66)", band: "#111215" }, // wheat, as on the phone: vermillion is for alerts
   deal: { bg: "#9DCAFF", ink: "#111215", sub: "rgba(17,18,21,0.66)", band: "#111215" },
   subscriptions: { bg: "#FFFFFF", ink: "#111215", sub: "#5E5F68", band: "#111215", hatch: true },
 };

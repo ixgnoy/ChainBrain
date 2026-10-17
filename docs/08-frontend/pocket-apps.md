@@ -50,7 +50,7 @@ Related documents:
 | Research desk | black | `shelf`: the reports bought, as covers | `schedule` | "Every Monday, a durian brief" |
 | Deal watcher | powder blue | `price-chart`: every quote, the limit, the buys | `price-watch` | "Buy when the price drops below US$0.04" |
 | Subscriptions | white hatch | `month-spend`: this month by seller | `renewals` | "Renew these feeds every Monday" |
-| Haggler / one-off | vermillion | `ladder`: ask, offers, counters, paid | none | "Negotiate DataPro's report down" |
+| Haggler / one-off | wheat (vermillion until 18 Oct: it read as Anthropic's coral) | `ladder`: ask, offers, counters, paid | none | "Negotiate DataPro's report down" |
 
 The card face comes from the layout (`components/app/theme.ts` `FACE`, used by `toneFor`). It uses only the design system's four deck faces.
 

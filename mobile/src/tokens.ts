@@ -59,7 +59,8 @@ export const hatch = { stroke: 2, pitch: 6, angle: 45 } as const;
  *  under the face (2.5D thickness). */
 export const deck = [
   { face: "#111215", ink: "#FFFFFF", sub: "rgba(255,255,255,0.64)", chip: "rgba(255,255,255,0.14)", band: "#2A2B30", edge: "#000000" },
-  { face: "#F04E23", ink: "#FFFFFF", sub: "rgba(255,255,255,0.82)", chip: "rgba(17,18,21,0.16)", band: "#111215", edge: "#B8371A" },
+  // the haggler's face: warm wheat, not vermillion (a vermillion card read as Anthropic's coral; vermillion is for alerts and actions)
+  { face: "#E9D6AE", ink: "#111215", sub: "rgba(17,18,21,0.66)", chip: "rgba(17,18,21,0.10)", band: "#111215", edge: "#C4AC7C" },
   { face: "#9DCAFF", ink: "#111215", sub: "rgba(17,18,21,0.66)", chip: "rgba(17,18,21,0.10)", band: "#111215", edge: "#6E9FD8" },
   { face: "#FFFFFF", ink: "#111215", sub: "#5E5F68", chip: "rgba(17,18,21,0.06)", hatch: true, band: "#111215", edge: "#C9C8C3" },
 ] as const;
