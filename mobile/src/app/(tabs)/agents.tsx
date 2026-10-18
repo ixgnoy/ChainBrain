@@ -50,7 +50,7 @@ export default function Agents() {
         </View>
       </View>
 
-      <View style={{ gap: 12 }}>
+      <View style={{ gap: 30, marginTop: 6 }}>
         {agents.map((a, i) => <Reveal key={a.id} index={i + 2}><AgentCard a={a} busy={a.kind === "builtin" && chatBusy} /></Reveal>)}
       </View>
 

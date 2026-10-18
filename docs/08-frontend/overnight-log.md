@@ -12,6 +12,15 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: the Evidence and Sellers pages
 
+## Cards by usage, Agents as card rows (18 Oct)
+
+The owner found the black card faces heavy against the white wallet card, the Agents tab's card-in-a-card cluttered, and asked for colour by a clearer category (memory: usage-cards-decisions).
+
+- **Colour is usage, how often a pocket spends** (`shared/sim/pocketApp.ts` `usageOf`, `usageChip`, tested): daily powder blue, weekly or monthly sage (new; it replaces black), one-time wheat, when asked white hatch. It is read from the pocket's app (its routine's cadence; a haggler buys once; anything else spends when asked), so a new pocket gets its colour from its own schedule. Rejected: by agent (brand colours collide, ChainBrain holds 4 of 7, the mark is already on every strip) and by money (it would change colour as balances move).
+- **Home:** each strip carries a usage chip in its face's dark tone ("Daily 08:00", "Weekly · Mon", "One-time", "When asked") before the job line, which no longer repeats the schedule. A count row above the stack is the legend. The stack is grouped by usage, scheduled first from the top (`stackOrder(…, grouped)`), instead of alternating faces.
+- **Agents:** no box round an agent. A plain header (mark, name, maker, what it has done, Chat or Manage), then its cards in a row you swipe, snapping, the next one peeking, dots under it, ending with a dashed slot "Give Claude its own card · A pocket only Claude can spend from" that opens New pocket app for that agent. "Pocket" stays the product's word everywhere else (the contract, the pitch); the slot says card because it is one. On a full card with the usage line, the "Available" label goes so the contract number fits.
+- **Console:** the pocket app's card and the Pockets list's dot use the same usage colours and chip.
+
 ## The Brain as a working DAG (18 Oct)
 
 The owner asked for the Brain to be "really working", more professional, "like a real DAG", keeping the current dark graph but more impressive, with live events plus a test button, phone first and then the console (memory: brain-dag-decisions).
