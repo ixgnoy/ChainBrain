@@ -18,7 +18,7 @@ Last updated: 2026-10-19
 
 **P1**
 - [x] 10. Seller catalogue match
-- [ ] 11. Starter seed on chain
+- [x] 11. Starter seed on chain
 - [x] 12. Persistence
 - [ ] 13. Evidence and judge path
 - [ ] 14. Routines and auto-play on the real chain
@@ -204,7 +204,7 @@ Last updated: 2026-10-19
 
 **Next:** item 6, real by default in both apps (onboarding, sign-in, per-card agents, the Demo network switch, the console's owner identity), then the Playwright e2e.
 
-## Round 6, part 1 · 19 Oct 03:03–03:35 · Item 6, real by default (server, phone, console)
+## Round 6, part 1 · 19 Oct 03:03–03:31 · Item 6, real by default (server, phone, console)
 
 **What changed**
 - Server: `chainInfo().rpc` and the faucet info use `publicRpc()`: `PUBLIC_RPC_URL`, else `FISCO_RPC` if it isn't loopback, else `<PUBLIC_API_URL>/rpc/fisco` (that proxy is item 7). A phone never gets `127.0.0.1` again.
@@ -251,7 +251,7 @@ Last updated: 2026-10-19
 
 **Not done yet (part 2):** rewrite the phone e2e against the current UI (create a card, chat → intent → pay, co-sign above ask-me, revoke, all with hashes checked on chain). Also find out why "Research data" didn't appear after switching Demo network on.
 
-## Round 6, part 2 · 19 Oct 03:35–04:00 · Item 6 done: the phone e2e on the chain, visitor auth on in the dev stack
+## Round 6, part 2 · 19 Oct 03:31–03:43 · Item 6 done: the phone e2e on the chain, visitor auth on in the dev stack
 
 **What changed**
 - Rewrote the phone half of `devstack/e2e/e2e.cjs` for the current UI. It now:
@@ -270,7 +270,7 @@ Last updated: 2026-10-19
 - `node devstack/e2e/e2e.cjs` (web + phone, fresh dev stack, visitor auth on): **60/60 checks passed**, with no page errors or unexpected HTTP errors in either app. Screenshots are in `docs/08-frontend/screenshots/e2e-*.png`.
 - `pnpm --dir devstack test` 21 passed (signed in); server 99 passed, 6 skipped; web 90; mobile 61 (guard 8 with HKT).
 
-## Round 7 · 19 Oct 04:00–04:20 · Item 7, explorer that explains
+## Round 7 · 19 Oct 03:43–03:51 · Item 7, explorer that explains
 
 **What changed**
 - `GET /api/explorer/tx/:hash` and the apps' `GET /api/tx/:hash` now return:
@@ -303,7 +303,7 @@ Last updated: 2026-10-19
 
 **Next:** item 8, the model flag.
 
-## Round 8 · 19 Oct 04:20–05:00 · Item 8, the model flag
+## Round 8 · 19 Oct 03:51–04:25 · Item 8, the model flag
 
 **Research**
 - OpenRouter docs (ctx7, `/websites/openrouter_ai`): the Anthropic SDK works against `https://openrouter.ai/api` (`POST /api/v1/messages`), and that endpoint serves any model. I use it because every model call in the server already speaks the Messages format, tools included.
@@ -359,7 +359,7 @@ Last updated: 2026-10-19
 - Re-run with Haiku: scenes 1–3 passed on a second try, so runs vary.
 - Server suite **114 passed, 6 skipped** at this point (no real calls).
 
-## Round 9 · 19 Oct 05:00–05:20 · Item 9, attacks on the real chain
+## Round 9 · 19 Oct 04:10–04:30 · Item 9, attacks on the real chain
 
 **What changed**
 - New `server/src/arena.ts`:
@@ -381,7 +381,7 @@ Last updated: 2026-10-19
 - e2e (fresh dev stack, visitor auth on): **63/63**. Three new checks in the console owner flow: from the signed-in console session, straight to the chain on the owner's card gives a reverted hash with `SELLER_NOT_ALLOWED`, signed by the card's own agent, nothing moved, and the explorer explains it.
 - Server **117 passed, 6 skipped** (23 files); devstack 21; web 90; mobile 61.
 
-## Round 10 · 19 Oct 05:20–05:45 · Items 10 and 12: one seller catalogue, state that survives a restart
+## Round 10 · 19 Oct 04:30–04:42 · Items 10 and 12: one seller catalogue, state that survives a restart
 
 **What changed**
 - **One catalogue.** `server/src/sellers.json` adds **Exa, CoinGecko, Nansen and TradeWire** (16 Oct decision: mocked sellers with real x402 payment):
@@ -403,6 +403,18 @@ Last updated: 2026-10-19
 - e2e (fresh dev stack): **64/64**.
 - Server **119 passed, 6 skipped** (24 files); devstack 21 (its catalogue check now lists 8 sellers); mobile 61; web 90.
 - **Deploy note:** the API checks that the sellers service reports every seller's pay-to, so **deploy the sellers service before the API**.
+
+## Round 11 · 19 Oct 04:42–04:55 · Item 11, starter cards on chain
+
+**What changed**
+- New `POST /v1/starter {cards}` (`server/src/starter.ts`): visitor token, each card must be the visitor's, once per visitor (claimed before paying). Each card's **own derived agent** makes real small x402 payments: card 1 buys Exa durian news and CoinGecko's ETH price, card 2 buys Nansen exporter balances.
+- Phone: right after a **new** sign-up, the phone's key creates "Daily brief" (Exa + CoinGecko) and "Market watch" (Nansen), each with HK$2, a HK$0.40 cap, never asks and 7 days. That's 4 guarded owner transactions with per-card agents. The phone then calls `/v1/starter` and shows one notice with all seven hashes. If anything fails the account still works, and nothing fake fills in. This replaces the demo seed on live; the demo network keeps its own.
+- The phone card face said "agent pocket"; now "agent card" (the card-not-pocket rule).
+
+**Evidence**
+- `server/test/starter-chain.test.ts`: two cards from the visitor's key. Another visitor gets 403. Three payments (exa, coingecko, nansen), each receipt status 1. Balances: brief HK$2 − 0.056 − 0.08, watch HK$2 − 0.08. A second call gets 409.
+- e2e (fresh dev stack): **66/66**. The phone opens with "out in 2 cards", the main wallet is HK$496 on chain (500 − 2 − 2), and the starter payments to Exa, CoinGecko and Nansen have status-1 receipts. Screenshot `e2e-phone-02-funded.png`: Home shows both cards and "ChainBrain paid Nansen HK$0.08 · just now".
+- (Log housekeeping: rounds 6–10 headings corrected to the commit times.)
 
 ---
 

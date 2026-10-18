@@ -187,7 +187,7 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draf
         {(face.band as string) === (face.face as string) || dark ? <Hatch color="#FFFFFF" pitch={6} stroke={1} opacity={0.12} /> : null}
         <View style={{ alignSelf: "flex-start", height: 24 * k + 2, paddingLeft: 3, paddingRight: 10, borderRadius: 999, backgroundColor: c.white, flexDirection: "row", alignItems: "center", gap: 6 }}>
           {agentId ? <AgentAvatar kind={agentId} size={Math.round(18 * k + 2)} /> : <View style={{ width: 6 }} />}
-          <T v="cap" w="semi" numberOfLines={1} style={{ color: c.ink, fontSize: 12 * Math.max(k, 0.9) }}>{agent ? `${agent} · ${pocket.app ? LAYOUT_NAME[pocket.app.layout].toLowerCase() : "agent pocket"}` : "Your card"}</T>
+          <T v="cap" w="semi" numberOfLines={1} style={{ color: c.ink, fontSize: 12 * Math.max(k, 0.9) }}>{agent ? `${agent} · ${pocket.app ? LAYOUT_NAME[pocket.app.layout].toLowerCase() : "agent card"}` : "Your card"}</T>
         </View>
       </View>
       {/* the balance and the rules */}

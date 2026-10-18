@@ -31,6 +31,7 @@ import { visitorRoutes, guard } from "./visitors";
 import { agentRoutes } from "./agentKeys";
 import { rpcProxyRoutes } from "./rpcProxy";
 import { arenaRoutes, publishAttack } from "./arena";
+import { starterRoutes } from "./starter";
 import { rateLimit } from "./limits";
 import { table } from "./store";
 
@@ -56,6 +57,7 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
   app.use("/v1/*", rateLimit());
   app.route("/", visitorRoutes()); // /v1/challenge, /v1/visitors, /v1/login, /v1/me
   app.route("/", agentRoutes()); // /v1/cards/agent: a new card's own agent address
+  app.route("/", starterRoutes()); // /v1/starter: a new account's two starter cards make real small payments
   app.route("/", arenaRoutes()); // /api/arena/straight: the fooled agent's transfer, refused by the chain
   app.route("/", rpcProxyRoutes()); // /rpc/fisco: read-only JSON-RPC (method allowlist, batch and log-range caps, per-IP limit)
 

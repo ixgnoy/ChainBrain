@@ -339,17 +339,21 @@ async function phoneFlow(browser, scenes, issues) {
     check("Demo network is off on launch", (await sw.getAttribute("aria-checked")) === "false");
     await until("connected and signed in", async () => /Connected · local test network · signed in/.test(await body()), 60000);
     check("connected to the chain and signed in with one guarded Login signature", true);
+    await tab("Home");
+    await until("the two starter cards", async () => /out in 2 cards/.test(await body()), 90000);
+    check("a new account opens with two starter cards made by the phone's key", true);
+    await tab("Settings");
     await sw.click();
     await until("demo switch on", async () => (await sw.getAttribute("aria-checked")) === "true", 5000);
     await tab("Home");
-    await until("the demo network's seeded cards", async () => /out in [1-9]\d* cards/.test(await body()), 40000);
+    await until("the demo network's seeded cards", async () => /Durian watch|Data renewals/.test(await body()), 40000);
     check("Demo network on: the built-in simulation's cards", true);
     await tab("Settings");
     await page.getByRole("switch", { name: "Demo network" }).click();
     await until("back on the chain", async () => /Connected · local test network · signed in/.test(await body()), 60000);
     check("Demo network off: back on the real chain", true);
     await tab("Home");
-    await until("no demo cards left on Home", async () => /out in 0 cards/.test(await body()), 20000);
+    await until("no demo cards left on Home", async () => /out in 2 cards/.test(await body()), 30000);
     check("nothing from the demo network lingers on Home", !/Durian watch|Data renewals|ChatGPT paid/.test(await body()));
   });
 
@@ -371,12 +375,14 @@ async function phoneFlow(browser, scenes, issues) {
     await tab("Home");
   });
 
-  await stp("phone: sign-up funds the wallet with real transactions, once", async () => {
-    await until("phone funded on chain", async () => (await ehkdOf(wallet)) >= 500, 30000);
-    await sleep(3000); // a second claim would land within a few seconds
-    check("phone funded with exactly HK$500 by its sign-up (no second claim)", (await ehkdOf(wallet)) === 500, String(await ehkdOf(wallet)));
-    await until("home shows the main wallet balance", async () => /Main wallet\s*HK\$500\.00/.test(await body()), 20000);
+  await stp("phone: sign-up funds the wallet once; the starter cards' agents paid for real", async () => {
+    await until("phone funded and starter cards made", async () => (await ehkdOf(wallet)) === 496, 60000);
+    check("HK$500 from sign-up (no second claim), HK$4 moved to the two starter cards", (await ehkdOf(wallet)) === 496, String(await ehkdOf(wallet)));
+    await until("home shows the main wallet balance", async () => /Main wallet\s*HK\$496\.00/.test(await body()), 20000);
     check("home shows the main wallet balance from the chain", true);
+    const all = await (await fetch(`${API}/api/events.json`)).json();
+    const starter = payments(all).filter((e) => ["exa", "coingecko", "nansen"].includes(e.sellerId));
+    check("the starter cards' own agents paid Exa, CoinGecko and Nansen (x402, receipts status 1)", starter.length >= 3 && (await Promise.all(starter.map((e) => rpc("eth_getTransactionReceipt", [e.tx])))).every((r) => r?.status === "0x1"), String(starter.length));
     await shot(page, "phone-02-funded");
   });
 
@@ -405,7 +411,7 @@ async function phoneFlow(browser, scenes, issues) {
 
   await stp("phone: chat, confirm the task, co-sign above ask-me with the phone's key", async () => {
     await page.goto(`http://127.0.0.1:${PHONE_PORT}/`);
-    await until("signed in again", async () => /out in 1 card/.test(await body()), 60000);
+    await until("signed in again", async () => /out in 3 cards/.test(await body()), 60000);
     await page.getByRole("button", { name: /^Ask ChainBrain/ }).first().click();
     await page.waitForURL(/\/agent$/, { timeout: 15000 });
     await chatSay(S[2].text);
@@ -434,7 +440,7 @@ async function phoneFlow(browser, scenes, issues) {
 
   await stp("phone: hold to revoke, on chain", async () => {
     await page.goto(`http://127.0.0.1:${PHONE_PORT}/`);
-    await until("card listed", async () => /out in 1 card/.test(await body()), 60000);
+    await until("card listed", async () => /out in 3 cards/.test(await body()), 60000);
     await page.goto(`http://127.0.0.1:${PHONE_PORT}/pocket/${pocket}`).catch(() => {});
     const before = await ehkdOf(wallet);
     await page.getByRole("button", { name: "Revoke", exact: true }).first().click();

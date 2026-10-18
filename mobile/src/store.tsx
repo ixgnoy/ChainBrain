@@ -3,8 +3,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import type { Address, Hex } from "viem";
-import { loadConfig, resetConfig, type Config } from "./lib/shared";
-import { detectDev, isHttpUrl, getApi, getDev, getSource, setApiUrl as setRuntimeApi, setDev, setSource as setRuntimeSource, subscribeRuntime, ENV_API, type DevInfo, type Source } from "./lib/runtime";
+import { loadConfig, resetConfig, parseHkd, NEVER, type Config } from "./lib/shared";
+import { detectDev, fetchTimeout, isHttpUrl, getApi, getDev, getSource, setApiUrl as setRuntimeApi, setDev, setSource as setRuntimeSource, subscribeRuntime, ENV_API, type DevInfo, type Source } from "./lib/runtime";
 import { ownerWallet, readPocket, isOwner, type OwnerWallet, type PocketView } from "./lib/wallet";
 import { createKey, loadKey, loadPockets, randomKey, saveKey, savePockets } from "./lib/keystore";
 import { builtin, seedFor, startOutsideAgents, uiGet, uiSet, wasRestored } from "./lib/builtin";
@@ -29,7 +29,7 @@ import {
 import { getItem, setItem, deleteItem } from "./storage";
 import { addOwnerTx, ownerRows, parseOwnerTxs, type OwnerTx } from "./lib/ownerTxs";
 import { curSign, getChain } from "./lib/runtime";
-import { setVisitorToken, signUp, stillSignedIn, tokenKey } from "./lib/visitor";
+import { setVisitorToken, signUp, stillSignedIn, tokenKey, visitorHeaders } from "./lib/visitor";
 
 export type Turn = { id: string; pocket: string; text: string; fromAt: number; toAt?: number; /** the last event when the turn finished: anything later happened after it */ endAt?: number; reply?: string; stopped?: string; error?: string; done: boolean };
 export type Pocket = PocketView & { name: string; style: PocketMeta["style"]; owned: boolean; /** the agent that holds it (immutable agent key) */ agentId?: AgentId; /** its pocket app, when it has one */ app?: PocketMeta["app"] };
@@ -226,6 +226,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // A new account is funded by the server with real transactions; the notice shows the hash.
   const [visitor, setVisitor] = useState<Visitor>({ state: "none" });
   const refreshRef = useRef<() => Promise<void>>(async () => {});
+  const addRef = useRef<(a: Address, m?: PocketMeta, o?: { activate?: boolean }) => Promise<void>>(async () => {});
+  /**
+   * A new account opens lived-in, for real: two small starter cards made with this phone's key (create + fund each,
+   * every one through the signing guard), then the server's starter job has each card's own agent buy something small
+   * over x402. All hashes show in one notice. Once, right after the first sign-up.
+   */
+  const seedStarter = async (w: OwnerWallet) => {
+    try {
+      const c = await loadConfig();
+      const pay = (id: string) => c.sellers.find((x) => x.id === id)?.payTo;
+      if (!pay("exa") || !pay("nansen")) return; // an older server without the shared catalogue
+      const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 7 * 86_400);
+      const make = async (name: string, sellers: string[]) => {
+        const made = await w.createPocket({ agent: c.agent, cap: parseHkd("0.40"), askAbove: NEVER, expiresAt, sellers: sellers.map((x) => pay(x)!) });
+        const fund = await w.fund(made.pocket, parseHkd("2"));
+        await addRef.current(made.pocket, { name, style: "research" }, { activate: false });
+        return { ...made, fundTx: fund.hash as Hex };
+      };
+      const brief = await make("Daily brief", ["exa", "coingecko"]);
+      const watch = await make("Market watch", ["nansen"]);
+      const r = await fetchTimeout(`${getApi()}/v1/starter`, { method: "POST", headers: { "content-type": "application/json", ...visitorHeaders() }, body: JSON.stringify({ cards: [brief.pocket, watch.pocket] }) }, 90_000);
+      const j = r.ok ? await r.json() : { payments: [] };
+      const paid = (j.payments as { tx?: string; sellerId: string }[]).filter((x) => x.tx);
+      setNotice({ title: "Two starter cards are ready, and their agents bought something small", txs: [
+        { label: "Create Daily brief", hash: brief.tx }, { label: `Add ${curSign()}2.00`, hash: brief.fundTx },
+        { label: "Create Market watch", hash: watch.tx }, { label: `Add ${curSign()}2.00`, hash: watch.fundTx },
+        ...paid.map((x) => ({ label: `Paid ${c.sellers.find((y) => y.id === x.sellerId)?.name ?? x.sellerId}`, hash: x.tx! })),
+      ] });
+      void refreshRef.current();
+    } catch { /* the account works without them; nothing is faked in their place */ }
+  };
   useEffect(() => {
     if (local || conn !== "online" || !wallet || !cfg) { setVisitorToken(null); setVisitor({ state: "none" }); return; }
     let alive = true;
@@ -244,6 +275,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setVisitor({ state: r.funding.error ? "error" : "ready", id: r.visitorId, error: r.funding.error ? `Signed in, but funding failed: ${r.funding.error}` : undefined });
         if (r.created && r.funding.mintTx) setNotice({ title: `Your wallet is ready: ${curSign()}${r.funding.minted} arrived`, txs: [{ label: `${curSign()}${r.funding.minted} to your main wallet`, hash: r.funding.mintTx }] });
         void refreshRef.current();
+        if (r.created && r.funding.mintTx) void seedStarter(wallet);
       } catch (e) {
         if (alive) setVisitor({ state: "error", error: (e as Error).message });
       }
@@ -344,6 +376,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     await refreshPockets();
   }, [wallet, meta, refreshPockets, local]);
+  addRef.current = addPocket;
 
   // ---- event stream: poll /api/events.json (React Native has no EventSource), then reconcile with /api/pending
   const poll = useCallback(async () => {
