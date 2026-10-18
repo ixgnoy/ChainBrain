@@ -35,7 +35,7 @@ Last updated: 2026-10-19
 
 ---
 
-## Round 1 · 19 Oct 02:25–03:05 · Item 1, environment
+## Round 1 · 19 Oct 02:25–02:42 · Item 1, environment
 
 **What changed**
 - Built the local chain with `scripts/fisco/setup.sh` (FISCO 3.16.4 Air, 1 node, web3 RPC on `127.0.0.1:8545`, governor `0xf737…4c25`).
@@ -73,7 +73,7 @@ Last updated: 2026-10-19
 
 **Next:** item 2, the ledger context.
 
-## Round 2 · 19 Oct 03:05–03:50 · Item 2, ledger context
+## Round 2 · 19 Oct 02:42–02:48 · Item 2, ledger context
 
 **What changed**
 - New `server/src/ledger.ts`, the one path for server-sent transactions:
@@ -109,7 +109,7 @@ Last updated: 2026-10-19
 
 **Next:** item 3, visitor accounts.
 
-## Round 3 · 19 Oct 03:50–04:30 · Item 3, visitor accounts
+## Round 3 · 19 Oct 02:48–02:54 · Item 3, visitor accounts
 
 **What changed**
 - `shared/chain/login.ts` (new, no imports): the EIP-712 `Login {statement, owner, nonce, issuedAt}` typed data under domain `ChainBrain / 1 / 20200`, the statement ("…moves no money and approves no payment") and the `x-visitor-token` header name. The server, the web console and the phone all use it.
@@ -142,7 +142,7 @@ Last updated: 2026-10-19
 
 **Next:** item 4, per-card agent keys.
 
-## Round 4 · 19 Oct 04:30–05:00 · Item 4, per-card agent keys
+## Round 4 · 19 Oct 02:54–02:59 · Item 4, per-card agent keys
 
 **What changed**
 - `server/src/agentKeys.ts` (new):
@@ -168,7 +168,7 @@ Last updated: 2026-10-19
 
 **Next:** item 5, the signing guard.
 
-## Round 5 · 19 Oct 05:00–05:25 · Item 5, signing guard
+## Round 5 · 19 Oct 02:59–03:03 · Item 5, signing guard
 
 **What changed**
 - `shared/chain/guard.ts` (new, no imports beyond `login.ts`; each app passes its own viem `decodeFunctionData`):
