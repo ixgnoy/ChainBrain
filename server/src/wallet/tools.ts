@@ -145,7 +145,7 @@ const defs: Record<string, Tool> = {
       if (kind === "accept") { rec.amount = answered; rec.agreed = true; rec.url = `${base}?deal=${encodeURIComponent(j.deal)}`; }
       bus.publish({ type: "haggle", pocket: ctx.pocket, quoteId, sellerId: rec.sellerId, sku: rec.sku, round: rec.rounds, offer, reply: kind, price: answered, final, list: rec.list, accepting });
       return kind === "accept"
-        ? { ok: true, deal: true, price: formatAmount(answered), list: formatAmount(rec.list), saved: formatAmount(rec.list - answered), needsOwnerApproval: (await P(ctx.pocket).needsOwner(answered)) || sentinel.isHeld(ctx.pocket), note: "Deal agreed: pay (or ask_owner first if needsOwnerApproval) with the same quoteId." }
+        ? { ok: true, deal: true, price: formatAmount(answered), list: formatAmount(rec.list), saved: formatAmount(rec.list - answered), needsOwnerApproval: (await P(ctx.pocket).canPay(rec.payTo, answered)) === "OVER_PERIOD" || (await P(ctx.pocket).needsOwner(answered)) || sentinel.isHeld(ctx.pocket), note: "Deal agreed: pay (or ask_owner first if needsOwnerApproval) with the same quoteId." }
         : { ok: true, deal: false, counter: formatAmount(answered), final, roundsLeft: MAX_ROUNDS - rec.rounds, note: final ? "The seller's final price: accept it by offering exactly this price, or walk away." : "Offer again (lower than the counter), accept the counter by offering exactly it, or walk away." };
     },
   },

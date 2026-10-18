@@ -40,7 +40,8 @@ export function pocket(address: Address) {
     async info(): Promise<PocketInfo> {
       const [owner, agent, cap, askAbove, expiresAt, revoked, balance, periodKind, periodLimit, spent] = await Promise.all([
         r("owner"), r("agent"), r("perPaymentCap"), r("askAbove"), r("expiresAt"), r("revoked"), tokenBalance(address),
-        r("periodKind"), r("periodLimit"), r("spentThisPeriod"),
+        // pockets from an older factory have no period allowance: 0 (none)
+        r("periodKind").catch(() => 0), r("periodLimit").catch(() => 0n), r("spentThisPeriod").catch(() => 0n),
       ]);
       return { address, owner, agent, cap, askAbove, expiresAt, revoked, balance, periodKind: Number(periodKind), periodLimit, spent };
     },

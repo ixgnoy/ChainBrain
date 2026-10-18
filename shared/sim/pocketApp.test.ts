@@ -317,6 +317,32 @@ test("routine edit: same routine, spend so far still counts; the change is in th
   assert.throws(() => w.editRoutine(pocket, { allowance: { amount: "-1", period: "week" } }));
 });
 
+test("routine allowance follows the chain: a week-to-day edit resets the pocket's count, so a run the pocket allows doesn't ask", async () => {
+  const { w, pocket } = await routinePocket();
+  await w.runRoutineNow(pocket);
+  await w.runRoutineNow(pocket); // HK$0.272 spent this week, all of it today
+  w.editRoutine(pocket, { allowance: { amount: "0.40", period: "day" } }); // a new period kind: the pocket counts from zero
+  assert.equal(w.chain.spentThisPeriod(pocket), 0n);
+  const r3 = await w.runRoutineNow(pocket);
+  assert.equal(w.pending(pocket).length, 0, "the chain would pay it, so the run doesn't ask");
+  assert.deepEqual(r3.outs.map((o: { outcome: string }) => o.outcome), ["paid", "paid"]);
+  assert.equal(w.chain.spentThisPeriod(pocket), parseHkd(r3.paid));
+});
+
+test("routine allowance follows the chain: the rules sheet's change holds; a schedule-only edit never touches the pocket", async () => {
+  const { w, pocket } = await routinePocket();
+  const v = w.chain.view(pocket);
+  w.chain.setPeriodLimit(v.owner, pocket, 2, parseHkd("1.00")); // the owner raises it in the rules sheet (no routine edit)
+  assert.deepEqual(w.routine(pocket)!.allowance, { amount: "1.00", period: "week" }, "the routine shows the allowance that holds");
+  const sets = () => w.chain.txs().filter((t) => t.method === "setPeriodLimit" && t.pocket === pocket).length;
+  const before = sets();
+  w.editRoutine(pocket, { cadence: { every: "week", weekday: 1, dayOfMonth: null, hour: 9, minute: 0 } });
+  assert.equal(sets(), before, "no setPeriodLimit: the edit didn't change the allowance");
+  assert.equal(w.chain.view(pocket).periodLimit, parseHkd("1.00"), "the owner's HK$1.00 still holds");
+  for (let i = 0; i < 3; i++) await w.runRoutineNow(pocket); // HK$0.408 this week: under HK$1.00
+  assert.equal(w.pending(pocket).length, 0, "no ask under the raised allowance");
+});
+
 test("spec stream: the canvas replays the spec's real decisions and ends on the spec exactly", async () => {
   const { specOps, blocksAfter, opLine } = await import("./specStream");
   const reg = sellers();
