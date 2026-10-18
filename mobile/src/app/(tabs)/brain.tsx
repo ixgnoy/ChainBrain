@@ -3,8 +3,7 @@
 // Edges curve and thicken with the payments that crossed them in the last two weeks, and that traffic flows along them.
 // Each thing the agents did travels the graph as a pulse along the edges it touched, with its line underneath, and "How it
 // decided" rebuilds that decision stage by stage from its own events (lib/brainTrace.ts): the quote, the pocket's on-chain
-// rules, Radar, you, pre-flight, the settlement, the Sentinel, memory. "Run a test" sends one real payment (or one the rules
-// must refuse) through those same stages on the built-in network, and the graph and the stages light as it happens.
+// rules, Radar, you, pre-flight, the settlement, the Sentinel, memory. (The judges' "Run a test" lives on the console.)
 // Tap a node to see its neighbourhood. Every node, number and pulse is a real agent, pocket, seller, memory item or event.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, View, useWindowDimensions } from "react-native";
@@ -28,7 +27,7 @@ import { usd } from "../../lib/util";
 import { initials } from "../../components/ActivityRow";
 import { faceOf, toneFor } from "../../components/PocketFace";
 import { RING, brainGraph, pulsesOf, trafficOf, type GEdge, type GNode, type Pulse, type PulseTone } from "../../lib/brainGraph";
-import { liveTraceOf, traceOf, type Stage, type StageState, type Trace } from "../../lib/brainTrace";
+import { traceOf, type Stage, type StageState, type Trace } from "../../lib/brainTrace";
 import { MEMORY_KIND, type MemoryItem } from "../../lib/brain";
 import * as api from "../../lib/api";
 import { agentInfo } from "../../../../shared/sim/agents";
@@ -84,46 +83,25 @@ export default function BrainTab() {
   const pulses = useMemo(() => pulsesOf(events, { agentOf: (p) => findPocket(p ?? "")?.agentId ?? "chainbrain", sellerName: name, agentName })
     .map((p) => ({ ...p, path: p.path.filter((n) => byId.has(n)) })).filter((p) => p.path.length >= 2), [decisionN, byId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ---- the test: one real payment (or a refusal) through every stage, watched live
-  const testable = useMemo(() => live.filter((p) => api.testPlan(p.address, "pay") && api.testPlan(p.address, "refuse")), [live]);
-  const [testPocket, setTestPocket] = useState<string>();
-  const tp = testable.find((p) => p.address === testPocket) ?? testable[0];
-  const [test, setTest] = useState<{ pocket: string; since: number; mode: api.TestMode; done?: boolean } | null>(null);
-  const [holdUntil, setHoldUntil] = useState(0);
-  const [focus, setFocus] = useState<string | null>(null);
-  const run = async (mode: api.TestMode) => {
-    if (!tp || (test && !test.done)) return;
-    haptic.medium();
-    setFocus(null);
-    // the network's own clock: the test is everything after the last event so far
-    const since = events.reduce((m, e) => Math.max(m, e.at), 0) + 1;
-    setTest({ pocket: tp.address, since, mode });
-    const r = await api.runTest(tp.address as `0x${string}`, mode).catch(() => ({ ok: false as const, reason: "ERROR" }));
-    if (r.ok) haptic.success(); else haptic.warning();
-    setTest({ pocket: tp.address, since, mode, done: true });
-    setHoldUntil(Date.now() + 9000);
-    setTimeout(() => setTest((t) => (t && t.since === since ? null : t)), 9000);
-  };
 
-  // the pulse on show: the newest ones in turn, anything new as it happens, held on a test's result for a while
+  // the pulse on show: the newest ones in turn, and anything new as it happens
   const recent = pulses.slice(0, 12);
   const [i, setI] = useState(0);
   const newest = useRef(pulses[0]?.key);
   useEffect(() => {
-    if (pulses[0] && pulses[0].key !== newest.current) { newest.current = pulses[0].key; setI(0); if (!test) haptic.light(); }
+    if (pulses[0] && pulses[0].key !== newest.current) { newest.current = pulses[0].key; setI(0); haptic.light(); }
   }, [pulses]); // eslint-disable-line react-hooks/exhaustive-deps
-  const running = !!test && !test.done;
-  const cur: Pulse | undefined = running ? undefined : recent[i % Math.max(recent.length, 1)];
+  const [focus, setFocus] = useState<string | null>(null);
+  const cur: Pulse | undefined = recent[i % Math.max(recent.length, 1)];
   useEffect(() => {
-    if (!focused || recent.length < 2 || focus || running) return;
-    const wait = Math.max(holdUntil - Date.now(), reduce ? 3600 : (cur?.path.length ?? 2) * HOP + REST);
+    if (!focused || recent.length < 2 || focus) return;
+    const wait = reduce ? 3600 : (cur?.path.length ?? 2) * HOP + REST;
     const t = setTimeout(() => setI((n) => (n + 1) % recent.length), wait);
     return () => clearTimeout(t);
-  }, [i, focused, recent.length, reduce, cur?.key, focus, running, holdUntil]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [i, focused, recent.length, reduce, cur?.key, focus]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // the decision behind what is on show: the live test, or the pulse's own events
+  // the decision behind what is on show, from the pulse's own events
   const trace: Trace | null = useMemo(() => {
-    if (running && test) return liveTraceOf(events, test.pocket, test.since, name);
     if (!cur?.pocket) return null;
     if (cur.kind === "memory") {
       // a memory update: the decision it learned from, the last payment or refusal in that pocket before it
@@ -132,14 +110,7 @@ export default function BrainTab() {
     }
     if (cur.kind !== "paid" && cur.kind !== "cosigned" && cur.kind !== "refused") return null;
     return traceOf(events, { pocket: cur.pocket, sellerId: cur.sellerId, at: cur.at, tx: cur.tx }, name);
-  }, [running, test, events, cur?.key]); // eslint-disable-line react-hooks/exhaustive-deps
-  // while a test runs, its path lights as far as it has got
-  const testPath = useMemo(() => {
-    if (!running || !test) return undefined;
-    const pk = `pocket:${test.pocket.toLowerCase()}`;
-    const agent = `agent:${findPocket(test.pocket)?.agentId ?? "chainbrain"}`;
-    return ["brain", agent, pk, ...(trace?.sellerId && byId.has(`seller:${trace.sellerId}`) ? [`seller:${trace.sellerId}`] : [])];
-  }, [running, test, trace?.sellerId, byId, findPocket]);
+  }, [events, cur?.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const paid = pulses.filter((p) => p.tone === "paid").length;
   const stopped = pulses.filter((p) => p.tone === "refused" || p.tone === "guard").length;
@@ -147,50 +118,22 @@ export default function BrainTab() {
   const sellers = graph.nodes.filter((n) => n.kind === "seller").length;
   const agents = graph.nodes.filter((n) => n.kind === "agent").length;
   const open = (address: string) => { setActive(address); router.push("/pocket-brain"); };
-  const plan = tp ? { pay: api.testPlan(tp.address, "pay"), refuse: api.testPlan(tp.address, "refuse") } : null;
 
   return (
     <Screen>
       <PageTitle title="Brain" sub="Watches every payment your agents make, and learns with you" />
       <Rise dy={10} style={{ marginHorizontal: 16, marginTop: 8 }}>
         <View style={{ borderRadius: radius.card, backgroundColor: c.ink, overflow: "hidden", alignItems: "center" }}>
-          <Hud live={focused} agents={agents} pockets={live.length} sellers={sellers} running={running} reduce={reduce} />
+          <Hud live={focused} agents={agents} pockets={live.length} sellers={sellers} reduce={reduce} />
           <View style={{ width: size, height: size }} accessible accessibilityLabel={`ChainBrain's graph: ${agents} agents, ${live.length} pockets, ${sellers} sellers, ${memory.length} things remembered.${cur ? ` Latest: ${cur.text}, ${ago(cur.at, Date.now())}.` : ""}`}>
-            <Graph nodes={graph.nodes} edges={graph.edges} byId={byId} size={size} pulse={cur} lit={testPath} reduce={reduce} play={focused} pockets={pockets} focus={focus} onFocus={(id) => { haptic.select(); setFocus((f) => (f === id ? null : id)); }} />
+            <Graph nodes={graph.nodes} edges={graph.edges} byId={byId} size={size} pulse={cur} reduce={reduce} play={focused} pockets={pockets} focus={focus} onFocus={(id) => { haptic.select(); setFocus((f) => (f === id ? null : id)); }} />
           </View>
-          {focus ? <FocusPanel id={focus} byId={byId} edges={graph.edges} events={events} pockets={live} onOpen={open} onClose={() => setFocus(null)} /> : <Caption pulse={cur} running={running} trace={trace} />}
+          {focus ? <FocusPanel id={focus} byId={byId} edges={graph.edges} events={events} pockets={live} onOpen={open} onClose={() => setFocus(null)} /> : <Caption pulse={cur} />}
         </View>
       </Rise>
 
-      {/* run a real test through every stage */}
-      {plan?.pay && plan.refuse ? (
-        <Rise dy={10} delay={40} style={{ marginHorizontal: 16, marginTop: 10, padding: 14, borderRadius: radius.card, backgroundColor: c.card, gap: 12 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <View style={{ flex: 1 }}>
-              <T v="row" w="bold">Run a test</T>
-              <T v="cap" color="muted" numberOfLines={1}>Real, on the test network · watch every stage</T>
-            </View>
-            {testable.length > 1 ? (
-              <Press haptics="select" disabled={running} onPress={() => { const k = testable.findIndex((p) => p.address === tp!.address); setTestPocket(testable[(k + 1) % testable.length].address); }}
-                accessibilityRole="button" accessibilityLabel={`Test pocket: ${tp!.name}. Change`}
-                style={{ minHeight: 36, flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 4, paddingRight: 10, borderRadius: 18, backgroundColor: c.fill }}>
-                <AgentAvatar kind={tp!.agentId ?? "chainbrain"} size={26} />
-                <T v="cap" w="semi" numberOfLines={1} style={{ maxWidth: 110 }}>{cleanText(tp!.name, 18)}</T>
-                <Icon name="refresh" size={12} color={c.ink2} stroke={2.2} />
-              </Press>
-            ) : null}
-          </View>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <TestButton dark busy={running && test?.mode === "pay"} disabled={running} onPress={() => void run("pay")} title={`Pay ${plan.pay.seller}`} sub={`US$${plan.pay.price} · on its list`}
-              a11y={`Test a payment: pay ${plan.pay.seller} US$${plan.pay.price} from ${tp!.name}, for real on the test network`} />
-            <TestButton busy={running && test?.mode === "refuse"} disabled={running} onPress={() => void run("refuse")} title={`Try ${plan.refuse.seller}`} sub="Not on its list"
-              a11y={`Test a refusal: try to pay ${plan.refuse.seller}, which is not on ${tp!.name}'s list. Its rules must refuse it`} />
-          </View>
-        </Rise>
-      ) : null}
-
       {/* how the decision on show was made, stage by stage */}
-      {trace ? <Pipeline trace={trace} reduce={reduce} title={running ? "Deciding now" : "How it decided"} /> : null}
+      {trace ? <Pipeline trace={trace} reduce={reduce} title="How it decided" /> : null}
 
       {/* what it did, in four numbers */}
       <Rise dy={10} delay={60} style={{ flexDirection: "row", gap: 8, marginHorizontal: 16, marginTop: 10 }}>
@@ -240,8 +183,8 @@ export default function BrainTab() {
   );
 }
 
-/** The graph's header strip: live (or testing), and what it is watching. */
-function Hud({ live, agents, pockets, sellers, running, reduce }: { live: boolean; agents: number; pockets: number; sellers: number; running: boolean; reduce: boolean }) {
+/** The graph's header strip: live, and what it is watching. */
+function Hud({ live, agents, pockets, sellers, reduce }: { live: boolean; agents: number; pockets: number; sellers: number; reduce: boolean }) {
   const o = useSharedValue(1);
   useEffect(() => {
     if (reduce || !live) { cancelAnimation(o); o.value = 1; return; }
@@ -252,25 +195,11 @@ function Hud({ live, agents, pockets, sellers, running, reduce }: { live: boolea
   return (
     <View style={{ alignSelf: "stretch", flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 2 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 24, paddingHorizontal: 9, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.08)" }}>
-        <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: running ? c.blue : c.green }, dot]} />
-        <T v="tab" style={{ color: c.white, letterSpacing: 1.2, textTransform: "uppercase" }}>{running ? "Testing" : "Live"}</T>
+        <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.green }, dot]} />
+        <T v="tab" style={{ color: c.white, letterSpacing: 1.2, textTransform: "uppercase" }}>Live</T>
       </View>
       <T v="tab" style={{ color: DIM, letterSpacing: 1, textTransform: "uppercase", fontVariant: ["tabular-nums"], flexShrink: 1 }} numberOfLines={1}>{`${agents} agents · ${pockets} pockets · ${sellers} sellers`}</T>
     </View>
-  );
-}
-
-function TestButton({ title, sub, onPress, busy, disabled, dark, a11y }: { title: string; sub: string; onPress(): void; busy?: boolean; disabled?: boolean; dark?: boolean; a11y: string }) {
-  const fg = dark ? c.white : c.ink;
-  return (
-    <Press haptics="none" onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ disabled, busy }}
-      style={{ flex: 1, minHeight: 56, paddingHorizontal: 12, paddingVertical: 10, borderRadius: radius.tile, backgroundColor: dark ? c.ink : c.card, borderWidth: dark ? 0 : 1.5, borderColor: c.vermillion, opacity: disabled && !busy ? 0.45 : 1, flexDirection: "row", alignItems: "center", gap: 10 }}>
-      {busy ? <ActivityIndicator size="small" color={fg} /> : <Icon name={dark ? "play" : "ban"} size={16} color={dark ? c.white : c.vermillion} stroke={2.4} />}
-      <View style={{ flex: 1 }}>
-        <T v="row" w="bold" numberOfLines={1} style={{ color: fg }}>{busy ? "Running…" : title}</T>
-        <T v="cap" numberOfLines={1} style={{ color: dark ? DIM : c.muted }}>{sub}</T>
-      </View>
-    </Press>
   );
 }
 
@@ -284,18 +213,12 @@ function Stat({ icon, n, label, a11y, tone }: { icon: IconName; n: number; label
   );
 }
 
-/** The line under the graph: who did what, and when; while a test runs, the stage it is at. */
-function Caption({ pulse, running, trace }: { pulse?: Pulse; running: boolean; trace: Trace | null }) {
+/** The line under the graph: who did what, and when. */
+function Caption({ pulse }: { pulse?: Pulse }) {
   const now = Date.now();
-  const at = trace?.stages.filter((s) => s.state !== "wait").at(-1);
   return (
     <View style={{ alignSelf: "stretch", height: 64, justifyContent: "center", paddingHorizontal: 14, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.08)" }}>
-      {running ? (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <ActivityIndicator size="small" color={c.blue} />
-          <T v="row" w="semi" numberOfLines={1} style={{ color: c.white, flex: 1 }}>{at ? `${at.label}: ${at.value}` : "Starting the test…"}</T>
-        </View>
-      ) : pulse ? (
+      {pulse ? (
         <Animated.View key={pulse.key} entering={FadeIn.duration(240)} exiting={FadeOut.duration(160)} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <AgentAvatar kind={pulse.agent ?? "chainbrain"} size={30} />
           <View style={{ flex: 1 }}>

@@ -119,13 +119,6 @@ export async function runRoutineNow(pocket: Address) {
   if (!isBuiltin()) return { ok: false as const, reason: "NOT_ON_THIS_NETWORK" };
   return builtin().runRoutineNow(pocket);
 }
-/** The Brain tab's test (built-in network): one real payment, or one the pocket's rules must refuse, through every check. */
-export type TestMode = "pay" | "refuse";
-export const testPlan = (pocket: string, mode: TestMode) => (isBuiltin() ? builtin().testPlan(pocket as Address, mode) : null);
-export async function runTest(pocket: Address, mode: TestMode) {
-  if (!isBuiltin()) return { ok: false as const, reason: "NOT_ON_THIS_NETWORK" };
-  return builtin().runTest(pocket, mode);
-}
 /** Publishes the pocket's app on the built-in network, so the console's pocket view shows it too. */
 export const setApp = (pocket: Address, spec: import("../../../shared/sim/pocketApp").PocketAppSpec) => { if (isBuiltin()) builtin().setApp(pocket, spec); };
 /** The owner's edit of when a routine runs and its allowance (the same routine: its spend this period still counts). */

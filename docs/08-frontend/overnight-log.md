@@ -12,6 +12,10 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: the Evidence and Sellers pages
 
+## Run a test leaves the phone (18 Oct)
+
+The owner agreed: the phone's Brain tab only watches; "Run a test" stays on the console's Brain page for judges. The phone's test UI, its state and the `api.runTest` / `testPlan` wrappers are gone (the world's `runTest` stays for the console). The e2e Brain step now checks the graph's counts and a real decision's stages (rules, Radar, pre-flight, settlement) and that no test button is on the phone.
+
 ## Cards by usage, Agents as card rows (18 Oct)
 
 The owner found the black card faces heavy against the white wallet card, the Agents tab's card-in-a-card cluttered, and asked for colour by a clearer category (memory: usage-cards-decisions).
