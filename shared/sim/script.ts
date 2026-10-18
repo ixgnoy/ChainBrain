@@ -55,7 +55,7 @@ export function* draft(fields: ReturnType<typeof intent>, say = "Writing the tas
 
 // Reason codes stay out of the agent's sentences: the cards beside the reply carry them as pills.
 const WHY: Record<string, string> = {
-  SELLER_NOT_ALLOWED: "that seller isn't on your list", OVER_CAP: "it's above this pocket's per-payment cap", OVER_BUDGET: "there isn't enough left in the pocket",
+  SELLER_NOT_ALLOWED: "that seller isn't on your list", OVER_CAP: "it's above this pocket's per-payment cap", OVER_BUDGET: "there isn't enough left in the pocket", OVER_PERIOD: "it would go past this period's allowance without your OK",
   POCKET_REVOKED: "you stopped the pocket", POCKET_EXPIRED: "the pocket has expired", PRICE_ABOVE_INTENT: "it costs more than the task allows",
   INTENT_TOTAL_REACHED: "it would go over the task's total", INTENT_ITEMS_REACHED: "the task already has enough items", OWNER_DECLINED: "you declined it",
   APPROVAL_EXPIRED: "your approval came too late", NEEDS_OWNER_APPROVAL: "it needs your OK", SETTLEMENT_FAILED: "the payment didn't go through",

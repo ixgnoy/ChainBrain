@@ -21,6 +21,7 @@ export const SELLER_REASON: Record<string, string> = {
   SELLER_NOT_ALLOWED: "The buyer's pocket doesn't allow your shop",
   OVER_CAP: "Above the buyer's limit per payment",
   OVER_BUDGET: "The buyer's pocket didn't have enough left",
+  OVER_PERIOD: "Past the buyer's allowance for this period; waiting for their OK",
   POCKET_REVOKED: "The buyer stopped their agent",
   POCKET_EXPIRED: "The buyer's pocket had expired",
   PRICE_ABOVE_INTENT: "More than the buyer agreed to pay",

@@ -18,11 +18,12 @@ export function formatHkd(n: bigint): string {
 
 export { transferTypedData, type Authorization } from "./typed";
 
-/** The complete reason-code map (24 codes, server/src/wallet/reasons.ts). The mobile app used to miss QUOTE_UNKNOWN and NOT_THIS_AGENT. */
+/** The complete reason-code map (25 codes, server/src/wallet/reasons.ts). The mobile app used to miss QUOTE_UNKNOWN and NOT_THIS_AGENT. */
 export const REASONS: Record<string, string> = {
   SELLER_NOT_ALLOWED: "This seller is not in the card's allowlist",
   OVER_CAP: "Above the card's per-payment cap",
   OVER_BUDGET: "Not enough left in the card",
+  OVER_PERIOD: "Over this period's allowance: the card pays it only with the owner's co-signature",
   POCKET_REVOKED: "The owner revoked this card",
   POCKET_EXPIRED: "The card has expired",
   PRICE_ABOVE_INTENT: "The price is above the intent's max per item",

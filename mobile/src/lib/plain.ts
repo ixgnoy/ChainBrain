@@ -8,6 +8,7 @@ export const PLAIN_REASONS: Record<string, string> = {
   SELLER_NOT_ALLOWED: "seller not on your list",
   OVER_CAP: "above the limit for one payment",
   OVER_BUDGET: "not enough left in the card",
+  OVER_PERIOD: "over this period's allowance, so it needs your OK",
   POCKET_REVOKED: "you turned this card off",
   POCKET_EXPIRED: "the card has expired",
   PRICE_ABOVE_INTENT: "above the price you set for this task",

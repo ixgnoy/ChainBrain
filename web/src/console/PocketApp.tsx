@@ -15,7 +15,7 @@ import {
   appFromEvents, budgetOf, haggleOf, monthBySeller, priceChanges, priceSeries, purchasesOf, renewalsOf, routineFromEvents, runsOf, savingsOf, sourcesOf, upcoming,
 } from "@sim/pocketAppData";
 import type { PocketState } from "./chain";
-import { curSign } from "../shared";
+import { allowanceText, curSign } from "../shared";
 
 const I = { strokeWidth: 1.75 } as const;
 const LAYOUT_NAME: Record<Layout, string> = { research: "Research desk", deal: "Deal watcher", subscriptions: "Subscriptions", haggle: "Haggler" };
@@ -361,7 +361,8 @@ function Guard({ c, i }: { c: Ctx; i: number }) {
   const rows: [string, "Contract" | "ChainBrain"][] = [
     [`Pay anyone but ${c.p.allowed.map((id) => c.seller(id)).join(", ")}`, "Contract"],
     [`Pay more than ${hkd(c.p.cap)} at once`, "Contract"],
-    [`Spend past ${curSign()}${rs.allowance.amount} a ${rs.allowance.period} without the owner's cheque`, "ChainBrain"],
+    // the allowance is on-chain when the owner signed setPeriodLimit (Pocket.sol counts each payment); otherwise only the runner checks it
+    [`Spend past ${curSign()}${rs.allowance.amount} a ${rs.allowance.period} without the owner's cheque`, c.p.periodKind ? "Contract" : "ChainBrain"],
     ["Change its own schedule, sellers or limits, whatever a seller says", "ChainBrain"],
     ["Pay anything after the owner revokes the pocket", "Contract"],
   ];
@@ -425,9 +426,10 @@ export function PocketAppView({ address, back, watch }: { address: string; back(
           </div>
           <Card className="p-4">
             <h3 className="mb-3 font-display text-[17px] font-semibold">Rules the owner signed</h3>
-            <dl className="grid grid-cols-3 gap-2 text-[13px]">
+            <dl className="grid grid-cols-2 gap-2 text-[13px] sm:grid-cols-4">
               <div><dt className="text-muted">Cap</dt><dd className="num font-semibold">{hkd(p.cap)}</dd></div>
               <div><dt className="text-muted">Asks above</dt><dd className="num font-semibold">{p.askAbove === NEVER || p.askAbove > p.cap ? "Never" : p.askAbove === 0n ? "Every time" : hkd(p.askAbove)}</dd></div>
+              <div><dt className="text-muted">Allowance</dt><dd className="num font-semibold">{allowanceText(p)}</dd></div>
               <div><dt className="text-muted">Ends</dt><dd className="num font-semibold">{new Date(p.expiresAt * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</dd></div>
             </dl>
             <div className="mt-3 flex flex-wrap items-center gap-1.5">{p.allowed.map((id) => <SellerLogo key={id} id={id} name={c.seller(id)} className="size-7 rounded-[9px]" />)}<span className="ml-1 text-[12px] text-muted">allowed</span></div>

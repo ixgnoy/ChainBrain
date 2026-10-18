@@ -12,7 +12,12 @@ const viemChain = (): Chain => defineChain({ id: getChain()?.id ?? 20200, name: 
 const feeOverrides = () => ({ gasPrice: 0n, type: "legacy" as const });
 export const pub = () => createPublicClient({ chain: viemChain(), transport: http(rpcUrl()) });
 
-export type PocketView = { address: Address; owner: Address; agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean; balance: bigint; allowed: string[]; /** stopped by the Sentinel (or the owner); only the owner unfreezes */ frozen?: boolean };
+export type PocketView = {
+  address: Address; owner: Address; agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean; balance: bigint; allowed: string[];
+  /** stopped by the Sentinel (or the owner); only the owner unfreezes */ frozen?: boolean;
+  /** Pocket.periodKind (0 none, 1 day, 2 week, 3 month), periodLimit and spentThisPeriod(): the allowance the pocket enforces */
+  periodKind?: number; periodLimit?: bigint; spentThisPeriod?: bigint;
+};
 
 export function ownerWallet(pk: Hex) {
   const account = privateKeyToAccount(pk);
@@ -58,6 +63,10 @@ export function ownerWallet(pk: Hex) {
     /** Owner-signed rule edits: per-payment cap and ask-me threshold (NEVER = never ask, 0 = ask every time). */
     setCap: (p: Address, cap: bigint) => isBuiltin() ? simTx((w) => w.chain.setCap(me, p, cap)) : pocketWrite(p, "setCap", [cap]),
     setAskAbove: (p: Address, x: bigint) => isBuiltin() ? simTx((w) => w.chain.setAskAbove(me, p, x)) : pocketWrite(p, "setAskAbove", [x]),
+    /** The allowance the pocket itself enforces: kind 1 day, 2 week, 3 month (Hong Kong calendar), 0 = none. Past it, a payment needs your co-sign. */
+    setPeriodLimit: (p: Address, kind: number, limit: bigint) => isBuiltin() ? simTx((w) => w.chain.setPeriodLimit(me, p, kind, limit)) : pocketWrite(p, "setPeriodLimit", [kind, limit]),
+    /** A seller's own per-payment cap, in place of the pocket's cap (0 = the pocket's cap applies). */
+    setSellerCap: (p: Address, s: Address, cap: bigint) => isBuiltin() ? simTx((w) => w.chain.setSellerCap(me, p, s, cap)) : pocketWrite(p, "setSellerCap", [s, cap]),
     /** Co-sign the exact eHKD transfer the wallet tool layer built (payments above the ask-me threshold). */
     signTransfer: (auth: Authorization) => account.signTypedData(transferTypedData(auth)),
   };
@@ -67,18 +76,21 @@ export type OwnerWallet = ReturnType<typeof ownerWallet>;
 export async function readPocket(address: Address): Promise<PocketView> {
   if (isBuiltin()) {
     const v = builtin().chain.view(address);
-    return { address: v.address, owner: v.owner, agent: v.agent, cap: v.cap, askAbove: v.askAbove, expiresAt: v.expiresAt, revoked: v.revoked, balance: v.balance, allowed: v.allowed, frozen: !!v.frozen };
+    return { address: v.address, owner: v.owner, agent: v.agent, cap: v.cap, askAbove: v.askAbove, expiresAt: v.expiresAt, revoked: v.revoked, balance: v.balance, allowed: v.allowed, frozen: !!v.frozen,
+      periodKind: v.periodKind ?? 0, periodLimit: v.periodLimit ?? 0n, spentThisPeriod: v.spentThisPeriod ?? 0n };
   }
   const c = await loadConfig();
   const sellers: Seller[] = c.sellers;
   const r = (functionName: string, args: unknown[] = []) => pub().readContract({ address, abi: c.abis.pocket, functionName, args }) as Promise<any>;
-  const [owner, agent, cap, askAbove, expiresAt, revoked, balance, flags, frozen] = await Promise.all([
+  const [owner, agent, cap, askAbove, expiresAt, revoked, balance, flags, frozen, periodKind, periodLimit, spentThisPeriod] = await Promise.all([
     r("owner"), r("agent"), r("perPaymentCap"), r("askAbove"), r("expiresAt"), r("revoked"),
     pub().readContract({ address: c.token, abi: c.abis.erc20, functionName: "balanceOf", args: [address] }) as Promise<bigint>,
     Promise.all(sellers.map((s) => r("sellerAllowed", [s.payTo]))),
     r("frozen").catch(() => false), // pockets from an older factory have no freeze
+    r("periodKind").catch(() => 0), r("periodLimit").catch(() => 0n), r("spentThisPeriod").catch(() => 0n), // nor an allowance
   ]);
-  return { address, owner, agent, cap, askAbove, expiresAt, revoked, balance, allowed: sellers.filter((_, i) => flags[i]).map((s) => s.id), frozen: !!frozen };
+  return { address, owner, agent, cap, askAbove, expiresAt, revoked, balance, allowed: sellers.filter((_, i) => flags[i]).map((s) => s.id), frozen: !!frozen,
+    periodKind: Number(periodKind), periodLimit: BigInt(periodLimit), spentThisPeriod: BigInt(spentThisPeriod) };
 }
 
 export const isOwner = (p: Pick<PocketView, "owner">, me: string) => p.owner.toLowerCase() === me.toLowerCase();

@@ -2,13 +2,23 @@
 // needsOwner, onlyOwner, and eHKD balances. Every state change is a transaction with a hash, a block and a log row,
 // which is what the apps show as evidence.
 import { CATALOG } from "./catalog";
+import { PERIODS, periodWindow } from "./pocketApp";
 import type { Hex, SimPocketView, SimTx, SimTxKind } from "./types";
 import { lower, type Rng } from "./util";
 
 type PocketRec = {
   address: Hex; owner: Hex; agent: Hex; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean; frozen: boolean;
   allowed: Set<string>; createdTx: Hex; createdBlock: bigint; createdAt: number;
+  /** Pocket.sellerCap: a seller's own per-payment cap in place of `cap` (absent or 0 = the pocket's cap). */
+  sellerCap?: Map<string, bigint>;
+  /** Pocket.periodKind / periodLimit and the spend count onSpend keeps (spentIn = the period's start, ms). */
+  periodKind?: number; periodLimit?: bigint; spent?: bigint; spentIn?: number;
 };
+
+/** periodKind 1 day, 2 week, 3 month: Hong Kong calendar periods, the same as Pocket.periodOf. */
+const kindPeriod = (k: number) => PERIODS[k - 1];
+/** The start of the period `ms` falls in, standing in for Pocket.periodOf's index. */
+const periodOf = (p: PocketRec, ms: number) => (p.periodKind ? periodWindow(kindPeriod(p.periodKind), ms).start : 0);
 
 export class ChainError extends Error {}
 
@@ -56,9 +66,16 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
     if (p.frozen) return "POCKET_FROZEN";
     if (BigInt(Math.floor(o.now() / 1000)) >= p.expiresAt) return "POCKET_EXPIRED";
     if (!p.allowed.has(lower(to))) return "SELLER_NOT_ALLOWED";
-    if (value > p.cap) return "OVER_CAP";
+    const sc = p.sellerCap?.get(lower(to)) ?? 0n;
+    if (value > (sc === 0n ? p.cap : sc)) return "OVER_CAP";
     if (value > bal(p.address)) return "OVER_BUDGET";
+    if (p.periodKind && spentThisPeriod(p) + value > (p.periodLimit ?? 0n)) return "OVER_PERIOD";
     return "OK";
+  }
+
+  /** Pocket.spentThisPeriod. */
+  function spentThisPeriod(p: PocketRec, at = o.now()): bigint {
+    return p.periodKind && p.spentIn === periodOf(p, at) ? (p.spent ?? 0n) : 0n;
   }
 
   function view(pocket: string): SimPocketView {
@@ -67,6 +84,8 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
       address: p.address, owner: p.owner, agent: p.agent, cap: p.cap, askAbove: p.askAbove, expiresAt: p.expiresAt, revoked: p.revoked, frozen: p.frozen,
       balance: bal(p.address), allowed: CATALOG.filter((s) => p.allowed.has(lower(s.payTo))).map((s) => s.id),
       createdTx: p.createdTx, createdBlock: p.createdBlock, createdAt: p.createdAt,
+      periodKind: p.periodKind ?? 0, periodLimit: p.periodLimit ?? 0n, spentThisPeriod: spentThisPeriod(p),
+      sellerCaps: Object.fromEntries([...(p.sellerCap ?? new Map<string, bigint>())].filter(([, v]) => v > 0n)),
     };
   }
 
@@ -163,6 +182,26 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
       p.askAbove = x;
       return record({ pocket: p.address, kind: "rules", from, status: "success", label: "Ask-me limit changed", method: "setAskAbove", args }).hash;
     },
+    /** Pocket.setSellerCap: a seller's own per-payment cap (0 = the pocket's cap applies). */
+    setSellerCap(from: Hex, pocket: Hex, seller: Hex, cap: bigint) {
+      const args = { seller, cap: cap.toString() };
+      const p = get(pocket); onlyOwner(p, from, "setSellerCap", args);
+      (p.sellerCap ??= new Map()).set(lower(seller), cap);
+      return record({ pocket: p.address, kind: "rules", from, status: "success", label: "Seller cap changed", method: "setSellerCap", args }).hash;
+    },
+    /** Pocket.setPeriodLimit: the allowance per day (1), week (2) or month (3); 0 turns it off. A new kind counts from zero. */
+    setPeriodLimit(from: Hex, pocket: Hex, kind: number, limit: bigint, at?: number) {
+      const args = { kind: String(kind), limit: limit.toString() };
+      const p = get(pocket); onlyOwner(p, from, "setPeriodLimit", args);
+      if (!Number.isInteger(kind) || kind < 0 || kind > 3) {
+        const tx = record({ pocket: p.address, kind: "rules", from, status: "reverted", label: "Reverted by the pocket", method: "setPeriodLimit", reason: "BAD_PERIOD", args, at });
+        throw new ChainError(`transaction reverted: BAD_PERIOD (${tx.hash})`);
+      }
+      if (kind !== (p.periodKind ?? 0)) { p.spent = 0n; p.spentIn = undefined; }
+      p.periodKind = kind; p.periodLimit = limit;
+      return record({ pocket: p.address, kind: "rules", from, status: "success", label: kind ? "Allowance changed" : "Allowance removed", method: "setPeriodLimit", args, at }).hash;
+    },
+    spentThisPeriod: (pocket: string, at?: number) => spentThisPeriod(get(pocket), at),
     setExpiresAt(from: Hex, pocket: Hex, t: bigint) {
       const args = { expiresAt: t.toString() };
       const p = get(pocket); onlyOwner(p, from, "setExpiresAt", args);
@@ -172,19 +211,25 @@ export function createChain(o: { rng: Rng; now: () => number; startBlock?: bigin
 
     /**
      * eHKD.transferWithAuthorization from the pocket, as the facilitator submits it: the pocket's ERC-1271 check runs
-     * canPay and, above the ask-me limit, needs the owner's signature too. A failed check reverts on-chain.
+     * canPay and, above the ask-me limit or over the period allowance (the cheque), needs the owner's signature too.
+     * A failed check reverts on-chain. After the transfer the token calls onSpend, which counts the period's spend.
      */
     settle(pocket: Hex, to: Hex, amount: bigint, o2: { submitter: Hex; ownerSigned: boolean; at?: number }): { tx: Hex; ok: boolean; reason?: string } {
       const p = get(pocket);
       const rule = canPay(pocket, to, amount);
-      const needs = amount > p.askAbove;
-      if (rule !== "OK" || (needs && !o2.ownerSigned)) {
+      const needs = amount > p.askAbove || rule === "OVER_PERIOD";
+      if ((rule !== "OK" && rule !== "OVER_PERIOD") || (needs && !o2.ownerSigned)) {
         const reason = rule !== "OK" ? rule : "NEEDS_OWNER_APPROVAL";
         const tx = record({ pocket: p.address, kind: "out", from: o2.submitter, counterparty: to, amount, status: "reverted", at: o2.at, label: "Reverted by the pocket", method: "transferWithAuthorization", reason, args: { from: p.address, to, value: amount.toString() } });
         return { tx: tx.hash, ok: false, reason };
       }
       setBal(p.address, bal(p.address) - amount);
       setBal(to, bal(to) + amount);
+      if (p.periodKind) { // Pocket.onSpend, called by the token after the transfer
+        const at = o2.at ?? o.now(), idx = periodOf(p, at);
+        if (p.spentIn !== idx) { p.spentIn = idx; p.spent = 0n; }
+        p.spent = (p.spent ?? 0n) + amount;
+      }
       const tx = record({ pocket: p.address, kind: "payment", from: o2.submitter, counterparty: to, amount, status: "success", at: o2.at, method: "transferWithAuthorization", args: { from: p.address, to, value: amount.toString(), cosigned: String(o2.ownerSigned) } });
       moves.push({ from: p.address, to, value: amount, tx: tx.hash, block: tx.block });
       return { tx: tx.hash, ok: true };

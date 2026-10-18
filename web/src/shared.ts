@@ -32,6 +32,7 @@ export const REASONS: Record<string, string> = {
   SELLER_NOT_ALLOWED: "This seller is not in the pocket's allowlist",
   OVER_CAP: "Above the pocket's per-payment cap",
   OVER_BUDGET: "Not enough left in the pocket",
+  OVER_PERIOD: "Over this period's allowance: the pocket pays it only with your co-signature",
   POCKET_REVOKED: "The owner revoked this pocket",
   POCKET_EXPIRED: "The pocket has expired",
   PRICE_ABOVE_INTENT: "The price is above the intent's max per item",
@@ -62,7 +63,7 @@ export const REASONS: Record<string, string> = {
 
 /** Which layer produces a reason code (api spec section 6.1). */
 export const reasonLayer = (code: string): string =>
-  ["SELLER_NOT_ALLOWED", "OVER_CAP", "OVER_BUDGET", "POCKET_REVOKED", "POCKET_EXPIRED"].includes(code) ? "Pocket contract"
+  ["SELLER_NOT_ALLOWED", "OVER_CAP", "OVER_BUDGET", "OVER_PERIOD", "POCKET_REVOKED", "POCKET_EXPIRED"].includes(code) ? "Pocket contract"
   : ["PRICE_ABOVE_INTENT", "INTENT_TOTAL_REACHED", "INTENT_ITEMS_REACHED", "INTENT_EXPIRED", "INTENT_NOT_CONFIRMED"].includes(code) ? "Intent check"
   : ["NEEDS_OWNER_APPROVAL", "APPROVAL_EXPIRED", "OWNER_DECLINED"].includes(code) ? "Owner approval"
   : ["DISCLOSURE_REFUSED", "SIGNATURE_TYPE_NOT_ALLOWED"].includes(code) ? "Content scan"
@@ -70,6 +71,10 @@ export const reasonLayer = (code: string): string =>
   : ["COUNTERPARTY_HIGH_RISK", "COUNTERPARTY_REVIEW"].includes(code) ? "Radar"
   : code === "SENTINEL_HOLD" ? "Sentinel" : code === "POCKET_FROZEN" ? "Pocket contract"
   : code === "NOT_THIS_AGENT" ? "Agent key" : code === "SETTLEMENT_FAILED" ? "Settlement" : "Wallet";
+
+/** "HK$0.40 a week" for a pocket's on-chain allowance (Pocket.periodKind / periodLimit), or "None". */
+export const allowanceText = (p: { periodKind?: number; periodLimit?: bigint }) =>
+  p.periodKind ? `${curSign()}${formatHkd(p.periodLimit ?? 0n)} a ${["", "day", "week", "month"][p.periodKind]}` : "None";
 
 export const shortAddr = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
 /** The live server's FISCO chain, from /api/config (set by LiveNetwork): its RPC and explorer. */

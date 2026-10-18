@@ -43,7 +43,7 @@ import { startFlight } from "../ui/cardFlight";
 import { uniqueName } from "./create";
 import { answer, proof, type Draft } from "../../../shared/sim/speak";
 import { AGENTS, CAN, CANNOT } from "../../../shared/sim/agents";
-import { BLOCK_TYPES, type Layout } from "../../../shared/sim/pocketApp";
+import { BLOCK_TYPES, PERIOD_KIND, type Layout } from "../../../shared/sim/pocketApp";
 import { curSign } from "../lib/runtime";
 import { ProtectedHead } from "../components/Protected";
 import { PROTECT_HEADLINE } from "../../../shared/sim/protect";
@@ -175,9 +175,15 @@ export default function Compose() {
       }, (r) => `tx ${tx(r.hash)}`);
       await step("arrange", 1800, async () => {
         api.setApp(m.pocket, { ...spec, title });
-        if (spec.routine) api.setRoutine(m.pocket, spec.routine);
+        if (spec.routine) {
+          // the allowance goes on-chain from your wallet: past it, the card pays only with your co-sign
+          const al = spec.routine.allowance;
+          const t = await wallet.setPeriodLimit(m.pocket, PERIOD_KIND[al.period], parseHkd(al.amount));
+          recordTx({ kind: "allowance", pocket: m.pocket, hash: t.hash, amount: parseHkd(al.amount).toString(), note: `per ${al.period}` });
+          api.setRoutine(m.pocket, spec.routine);
+        }
         await refreshPockets();
-      }, () => `${spec.blocks.length} blocks${spec.routine ? " · its routine saved" : ""}`);
+      }, () => `${spec.blocks.length} blocks${spec.routine ? " · its routine and on-chain allowance saved" : ""}`);
       await step("live", 500, () => null, () => "Created and funded on-chain");
       haptic.success();
       if (!outside) setActive(m.pocket);

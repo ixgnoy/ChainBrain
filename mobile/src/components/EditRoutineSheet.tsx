@@ -13,7 +13,9 @@ import { AgentAvatar } from "../ui/AgentAvatar";
 import { haptic } from "../haptics";
 import { confirmOwner } from "../lib/biometric";
 import * as api from "../lib/api";
-import { cadenceText, nextRun, type Cadence, type Period, type Routine } from "../../../shared/sim/pocketApp";
+import { parseHkd } from "../lib/shared";
+import { useApp } from "../store";
+import { cadenceText, nextRun, PERIOD_KIND, type Cadence, type Period, type Routine } from "../../../shared/sim/pocketApp";
 import { useCoverDock } from "./AskDock";
 import { agentName } from "./app/theme";
 import { curSign } from "../lib/runtime";
@@ -48,6 +50,7 @@ function Body({ routine, agentId, onClose, onSaved }: { routine: Routine; agentI
   const [hour, setHour] = useState(routine.cadence.hour);
   const [amount, setAmount] = useState(Number(routine.allowance.amount));
   const [period, setPeriod] = useState<Period>(routine.allowance.period);
+  const { wallet, recordTx } = useApp();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const cadence: Cadence = useMemo(() => ({ ...EVERY.find((e) => e.key === every)!.c, hour, minute: 0 }), [every, hour]);
@@ -60,6 +63,12 @@ function Body({ routine, agentId, onClose, onSaved }: { routine: Routine; agentI
     // a looser allowance is signed with Face ID (or the passcode); a stricter one or a new time can only lower the risk
     if (looser && (await confirmOwner(`Let ${who} spend up to ${curSign()}${amount.toFixed(2)} a ${period} on its own`)) === "cancel") { setBusy(false); return; }
     try {
+      // a new allowance is an owner transaction: the pocket itself enforces it (past it, a payment needs your co-sign)
+      if (wallet && (amount !== was || period !== routine.allowance.period)) {
+        const limit = parseHkd(amount.toFixed(2));
+        const t = await wallet.setPeriodLimit(routine.pocket as `0x${string}`, PERIOD_KIND[period], limit);
+        recordTx({ kind: "allowance", pocket: routine.pocket, hash: t.hash, amount: limit.toString(), note: `per ${period}` });
+      }
       api.editRoutine(routine.pocket, { cadence, allowance: { amount: amount.toFixed(2), period } });
       haptic.success(); onSaved?.(); onClose();
     } catch { haptic.error(); setErr("That change didn't save."); }

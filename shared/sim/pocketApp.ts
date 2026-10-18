@@ -16,6 +16,8 @@ export type Layout = "research" | "deal" | "subscriptions" | "haggle";
 export const LAYOUTS: readonly Layout[] = ["research", "deal", "subscriptions", "haggle"];
 export type Period = "day" | "week" | "month";
 export const PERIODS: readonly Period[] = ["day", "week", "month"];
+/** Pocket.setPeriodLimit's kind for each period (0 = no allowance). */
+export const PERIOD_KIND: Record<Period, number> = { day: 1, week: 2, month: 3 };
 
 /** When a routine runs. `weekday` 1 = Monday … 7 = Sunday (ISO); hours and minutes in Hong Kong time. */
 export type Cadence = { every: "day" | "weekday" | "week" | "month"; weekday?: number | null; dayOfMonth?: number | null; hour: number; minute: number };

@@ -33,7 +33,7 @@ import { curSign, getChain } from "./lib/runtime";
 export type Turn = { id: string; pocket: string; text: string; fromAt: number; toAt?: number; /** the last event when the turn finished: anything later happened after it */ endAt?: number; reply?: string; stopped?: string; error?: string; done: boolean };
 export type Pocket = PocketView & { name: string; style: PocketMeta["style"]; owned: boolean; /** the agent that holds it (immutable agent key) */ agentId?: AgentId; /** its pocket app, when it has one */ app?: PocketMeta["app"] };
 export type Sheet = { mode: "fund" | "return" | "revoke"; pocket?: string } | null;
-export type Rules = { pocket: string; field: "cap" | "ask"; amount?: string; topUp?: bigint } | null;
+export type Rules = { pocket: string; field: "cap" | "ask" | "allowance"; amount?: string; topUp?: bigint } | null;
 /** A just-confirmed owner transaction (or two), shown with its hash on the pocket page and in the agent chat until dismissed. */
 export type Notice = { title: string; pocket?: string; txs: { label?: string; hash: string }[] } | null;
 export type Conn = "connecting" | "online" | "offline";

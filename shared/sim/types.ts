@@ -34,6 +34,10 @@ export type SimPocketView = {
   /** Pocket.frozen: the Sentinel (guardian) or the owner stopped all payments; only the owner unfreezes. */
   frozen?: boolean;
   createdTx?: Hex; createdBlock?: bigint; createdAt?: number;
+  /** Pocket.periodKind (0 none, 1 day, 2 week, 3 month, Hong Kong calendar), periodLimit and spentThisPeriod(). */
+  periodKind?: number; periodLimit?: bigint; spentThisPeriod?: bigint;
+  /** Pocket.sellerCap for sellers that have one, by payTo (lowercase). */
+  sellerCaps?: Record<string, bigint>;
 };
 
 export type SimTxKind = "create" | "fund" | "payment" | "return" | "out" | "revoke" | "rules";
@@ -48,7 +52,7 @@ export type SimTx = {
   /** The call's arguments, as plain strings (explorer "Input"). */
   args?: Record<string, string>;
 };
-export type SimMethod = "createPocket" | "transfer" | "transferWithAuthorization" | "revoke" | "returnFunds" | "setSeller" | "setCap" | "setAskAbove" | "setExpiresAt" | "freeze" | "unfreeze";
+export type SimMethod = "createPocket" | "transfer" | "transferWithAuthorization" | "revoke" | "returnFunds" | "setSeller" | "setCap" | "setAskAbove" | "setExpiresAt" | "setSellerCap" | "setPeriodLimit" | "freeze" | "unfreeze";
 
 export type ChatResult = { reply: string; stopped?: string };
 export type AnswerResult = { ok: true } | { ok: false; error: string };

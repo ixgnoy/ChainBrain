@@ -15,7 +15,7 @@ import type { ChainTx } from "./chain";
 import { Button, Card, PageTitle, Pill, Section } from "../seller/ui";
 import { REASONS, shortAddr, tokenSymbol } from "../shared";
 import { cn } from "../lib/cn";
-import { curSign } from "../shared";
+import { allowanceText, curSign } from "../shared";
 
 const lc = (a?: string) => (a ?? "").toLowerCase();
 const when = (at?: number) => (at ? new Date(at).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : undefined);
@@ -330,6 +330,7 @@ function AddressPage({ address, watch }: { address: string; watch?(pocket: strin
             ["Balance", <span key="b" className="figure text-[24px]">{hkd(pocket.balance)}</span>],
             ["Cap per payment", <span key="c" className="num">{hkd(pocket.cap)}</span>],
             ["Asks the owner above", <span key="a" className="num">{pocket.askAbove === NEVER ? "Never asks" : pocket.askAbove === 0n ? "Every time" : hkd(pocket.askAbove)}</span>],
+            ["Allowance", <span key="w" className="num">{allowanceText(pocket)}{pocket.periodKind ? ` · ${hkd(pocket.spentThisPeriod ?? 0n)} used` : ""}</span>],
             ["Ends", <span key="e" className="num">{new Date(pocket.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>],
             ["Allowed sellers", pocket.allowed.map((i) => names.get(i) ?? i).join(", ") || "None"],
             ["Owner", <Addr key="o" address={pocket.owner} />],

@@ -3,7 +3,7 @@
 // (devstack/src/model.ts), on top of the in-memory chain. The apps talk to it through the same calls they use for
 // the real server, so every screen behaves the same in both.
 import { CATALOG, quotedPrice, sellerById, sellerByPayTo, sellerName, sellers, ATTACKER, DRAINER } from "./catalog";
-import { available, nextRun, pickApp, validateRoutine, validateSpec, type Cadence, type Period, type PocketAppSpec, type Routine, type RoutineSpec } from "./pocketApp";
+import { available, nextRun, pickApp, PERIOD_KIND, validateRoutine, validateSpec, type Cadence, type Period, type PocketAppSpec, type Routine, type RoutineSpec } from "./pocketApp";
 import { createMemory, consolidate } from "./memory";
 import { parseSentence, proof } from "./speak";
 import { rules as sentinelRules, ruleSeverity, gate, scriptedAi, stateText, PROBE_REASONS, RANK, type Severity, type Signal, type AiAnswer } from "./sentinel";
@@ -238,6 +238,8 @@ export function createWorld(opts: WorldOptions = {}) {
     trace(pocket, "memory", { version: next.version, questions: reflection.questions.map((q) => q.q), answers: reflection.questions.map((q) => q.a), applied, rejected: rejected.map((r) => r.why) });
   }
 
+  /** Pocket.isValidSignature: OK pays; over the period allowance pays only with the owner's co-signature (the cheque). */
+  const passes = (rule: string, ownerSigned: boolean) => rule === "OK" || (rule === "OVER_PERIOD" && ownerSigned);
   // ---- the wallet tools (server/src/wallet/tools.ts), with realistic latency
   type ToolFn = (pocket: Hex, args: any) => Promise<any>;
   const tools: Record<string, ToolFn> = {
@@ -286,8 +288,10 @@ export function createWorld(opts: WorldOptions = {}) {
       const risk = await counterparty(pocket, q);
       return {
         ok: true, quoteId: q.quoteId, sellerId, sku, description: q.description, price: formatHkd(q.amount),
-        allowedByPocket: rule === "OK" ? "OK" : { reason: rule, why: REASONS[rule] ?? rule },
-        needsOwnerApproval: chain.needsOwner(pocket, q.amount) || watch(pocket).hold,
+        // over the period allowance the pocket still pays with the owner's co-signature, so it is an ask, not a refusal
+        allowedByPocket: passes(rule, true) ? "OK" : { reason: rule, why: REASONS[rule] ?? rule },
+        needsOwnerApproval: chain.needsOwner(pocket, q.amount) || rule === "OVER_PERIOD" || watch(pocket).hold,
+        ...(rule === "OVER_PERIOD" ? { overAllowance: { reason: rule, why: REASONS[rule] } } : {}),
         intentCheck: ic ? { reason: ic, why: REASONS[ic] } : "OK",
         counterpartyRisk: { score: risk.score, verdict: risk.verdict, reasons: brief(risk).reasons },
         ...(it.floor ? { negotiable: true } : {}),
@@ -371,7 +375,7 @@ export function createWorld(opts: WorldOptions = {}) {
       const rule0 = chain.canPay(pocket, q.payTo, q.amount);
       if (watch(pocket).hold && !q.ownerSig && rule0 === "OK") return fail("SENTINEL_HOLD");
       // pre-flight (server: wallet/preflight.ts eth_call): predict this exact transfer on the current chain, then check it
-      const predicted = rule0 !== "OK" ? { outcome: "refused", reason: rule0, by: "sim" }
+      const predicted = !passes(rule0, !!q.ownerSig) ? { outcome: "refused", reason: rule0, by: "sim" }
         : chain.needsOwner(pocket, q.amount) && !q.ownerSig ? { outcome: "refused", reason: "NEEDS_OWNER_APPROVAL", by: "sim" }
         : { outcome: "pays", by: "sim", balanceAfter: (chain.balanceOf(pocket) - q.amount).toString() };
       const base = { pocket, quoteId, sellerId: q.sellerId, sku: q.sku, amount: q.amount };
@@ -388,14 +392,14 @@ export function createWorld(opts: WorldOptions = {}) {
     q.paid = true;
     await jitter(350, 600); // x402: 402 → sign → retry with X-PAYMENT
     const rule = chain.canPay(pocket, q.payTo, q.amount);
-    if (rule !== "OK") return fail(rule, rule);
+    if (!passes(rule, !!q.ownerSig)) return fail(rule, rule);
     if (watch(pocket).hold && !q.ownerSig) return fail("SENTINEL_HOLD"); // after the pocket's rules, so probes still count
     if (chain.needsOwner(pocket, q.amount) && !q.ownerSig) return fail("NEEDS_OWNER_APPROVAL");
     if (q.auth && BigInt(q.auth.validBefore) <= BigInt(Math.floor(now() / 1000) + 10)) return fail("APPROVAL_EXPIRED");
     const auth = (q.auth ??= buildAuthorization(pocket, q.payTo, q.amount));
     await jitter(900, 1500); // facilitator verifies and settles on Base
     const rule2 = chain.canPay(pocket, q.payTo, q.amount); // the owner may have revoked while it settled: the chain decides
-    if (rule2 !== "OK") return fail(rule2, rule2);
+    if (!passes(rule2, !!q.ownerSig)) return fail(rule2, rule2);
     const s = chain.settle(pocket, q.payTo, q.amount, { submitter: chain.view(pocket).agent, ownerSigned: !!q.ownerSig }); // the pocket's own agent key
     if (!s.ok) return fail(s.reason ?? "SETTLEMENT_FAILED");
     t.spent += q.amount; t.items += 1;
@@ -585,7 +589,10 @@ export function createWorld(opts: WorldOptions = {}) {
           if (amount > limit) { outs.push({ ...it, outcome: "watching", amount: q.price }); continue; }
         }
         if (q.allowedByPocket !== "OK") { outs.push({ ...it, outcome: "refused", amount: q.price, reason: q.allowedByPocket.reason }); continue; }
-        const left = available(allowance, routinePayments(pocket, rt.id), rt.allowance.period, now());
+        // the pocket counts the period's spend on-chain (Pocket.onSpend); the routine's own count is the floor of it
+        const own = available(allowance, routinePayments(pocket, rt.id), rt.allowance.period, now());
+        const onChain = chain.spentThisPeriod(pocket);
+        const left = onChain > own.spent ? { ...own, spent: onChain, left: onChain >= allowance ? 0n : allowance - onChain } : own;
         let cosign = false;
         if (amount > left.left || q.needsOwnerApproval) {
           const after = left.spent + amount;
@@ -757,6 +764,10 @@ export function createWorld(opts: WorldOptions = {}) {
       if (!v.ok) throw new Error(`invalid routine: ${v.errors.join("; ")}`);
       const t0 = at ?? now();
       const rt: Routine = { ...v.value, id: `rt_${r.hex(6).slice(2)}`, pocket: lower(pocket), createdAt: t0, nextAt: nextRun(v.value.cadence, t0), runs: 0, status: "active" };
+      // the allowance goes on-chain: the owner's setPeriodLimit, so the pocket itself refuses a run past it without a co-sign
+      // (the phone sends it from the owner's wallet first; then the pocket already holds it and nothing is sent twice)
+      const pv = chain.view(pocket), kind = PERIOD_KIND[rt.allowance.period], limit = parseHkd(rt.allowance.amount);
+      if (pv.periodKind !== kind || pv.periodLimit !== limit) chain.setPeriodLimit(pv.owner, pocket, kind, limit, at);
       routines.set(lower(pocket), rt);
       publish({ type: "routine", kind: "set", pocket, routine: rt, at });
       return { ...rt };
@@ -768,6 +779,9 @@ export function createWorld(opts: WorldOptions = {}) {
       if (!rt) throw new Error("no routine");
       const v = validateRoutine({ kind: rt.kind, cadence: change.cadence ?? rt.cadence, items: rt.items, allowance: change.allowance ?? rt.allowance, limitPrice: rt.limitPrice ?? null }, sellers());
       if (!v.ok) throw new Error(`invalid routine: ${v.errors.join("; ")}`);
+      const p = pocket as Hex;
+      const pv = chain.view(p), kind = PERIOD_KIND[v.value.allowance.period], limit = parseHkd(v.value.allowance.amount);
+      if (pv.periodKind !== kind || pv.periodLimit !== limit) chain.setPeriodLimit(pv.owner, p, kind, limit);
       rt.cadence = v.value.cadence; rt.allowance = v.value.allowance;
       rt.nextAt = nextRun(rt.cadence, now());
       publish({ type: "routine", kind: "edited", pocket, routineId: rt.id, cadence: rt.cadence, allowance: rt.allowance, nextAt: rt.nextAt });

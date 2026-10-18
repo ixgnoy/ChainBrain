@@ -31,6 +31,7 @@ val REASONS = mapOf(
     "SELLER_NOT_ALLOWED" to "Seller not in this pocket's allowlist",
     "OVER_CAP" to "Above the per-payment cap",
     "OVER_BUDGET" to "Not enough left in the pocket",
+    "OVER_PERIOD" to "Over this period's allowance; needs your OK",
     "POCKET_REVOKED" to "You revoked this pocket",
     "POCKET_EXPIRED" to "The pocket has expired",
     "PRICE_ABOVE_INTENT" to "Price above the task's max per item",
