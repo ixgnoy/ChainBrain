@@ -99,7 +99,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
         ) : null}
         {!never ? (
           <View>
-            <Field label={isCap ? `Cap in ${curSign()}` : `Ask above, in ${curSign()}`} value={text} onChangeText={(t) => setText(t.replace(/[^0-9.]/g, "").slice(0, 12))} keyboardType="decimal-pad" inputMode="decimal" placeholder="0.00" accessibilityLabel={isCap ? "Cap in US$" : "Ask above in US$"} />
+            <Field label={isCap ? `Cap in ${curSign()}` : `Ask above, in ${curSign()}`} value={text} onChangeText={(t) => setText(t.replace(/[^0-9.]/g, "").slice(0, 12))} keyboardType="decimal-pad" inputMode="decimal" placeholder="0.00" accessibilityLabel={isCap ? `Cap in ${curSign()}` : `Ask above in ${curSign()}`} />
             {!isCap ? <T v="cap" color="muted" style={{ marginTop: 6 }}>Use 0 to be asked about every payment.</T> : null}
           </View>
         ) : <T v="sub" color="warning">With "Never ask" the agent spends freely up to the cap. The card balance is still its whole budget.</T>}

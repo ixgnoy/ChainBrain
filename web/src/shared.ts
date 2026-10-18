@@ -6,7 +6,7 @@ export const NEVER = 2n ** 256n - 1n;
 
 export function parseHkd(s: string): bigint {
   const m = /^(\d+)(?:\.(\d{1,6}))?$/.exec(String(s).trim());
-  if (!m) throw new Error(`bad USD amount: ${s}`);
+  if (!m) throw new Error(`bad HK$ amount: ${s}`);
   return BigInt(m[1]) * 1_000_000n + BigInt((m[2] ?? "").padEnd(6, "0") || "0");
 }
 export function formatHkd(n: bigint): string {

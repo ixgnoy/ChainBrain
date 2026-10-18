@@ -168,7 +168,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setApiState(getApi());
       void deleteItem(OLD_SOURCE_KEY); // every launch (and every full reload) opens on the built-in network
       setSourceReady(true);
-      // first launch: create the on-device key silently, no setup screen (an existing key is kept; "Import a key" lives in Settings)
+      // first launch: create the on-device key silently, no setup screen (an existing key is kept; "Import a test key" lives in Settings, Advanced)
       let k: Hex | null = null;
       // never overwrite: a key store that cannot be read gets a key for this session only, the stored one stays untouched
       let unreadable = false;

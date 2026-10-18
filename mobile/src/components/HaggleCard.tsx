@@ -19,7 +19,7 @@ function Rung({ s, i }: { s: HaggleStep; i: number }) {
   return (
     <View style={{ flex: 1, minWidth: 54, paddingVertical: 6, paddingHorizontal: 6, borderRadius: 10, backgroundColor: you ? c.accentSoft : c.card, borderWidth: you ? 0 : 1, borderColor: c.line, gap: 1, alignItems: "center" }}>
       <T v="cap" color={you ? "accent" : "muted"} numberOfLines={1}>{label(s, i)}</T>
-      <T v="cap" w="semi" color={you ? "accent" : i === 0 ? "muted" : "ink"} numberOfLines={1} adjustsFontSizeToFit style={i === 0 ? { textDecorationLine: "line-through" } : undefined}>{money(s.price).replace("US$", "$")}</T>
+      <T v="cap" w="semi" color={you ? "accent" : i === 0 ? "muted" : "ink"} numberOfLines={1} adjustsFontSizeToFit style={i === 0 ? { textDecorationLine: "line-through" } : undefined}>{money(s.price)}</T>
     </View>
   );
 }
