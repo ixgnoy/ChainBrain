@@ -21,17 +21,17 @@ Last updated: 2026-10-19
 - [x] 11. Starter seed on chain
 - [x] 12. Persistence
 - [x] 13. Evidence and judge path (the script and README; the hosted evidence file is regenerated after deploy, see the deploy order)
-- [ ] 14. Routines and auto-play on the real chain
+- [ ] 14. Routines and auto-play on the real chain (not started: only if everything else is green and time allows)
 
 ## Acceptance checklist (brief section 7)
 
-- [ ] Fresh browser, web console: sign up → funded → card → chat → x402 pay → attack refused, all decoded in `/explorer`
-- [ ] Fresh phone: the same, plus co-sign above ask-me and revoke
+- [x] Fresh browser, web console: sign up → funded → card → chat → x402 pay → attack refused, all decoded in `/explorer`. On local FISCO through the dev stack: e2e owner step and the Browser preview walk. Hosted: after deploy, with `visitor-evidence.ts`
+- [x] Fresh phone: the same, plus co-sign above ask-me and revoke. Expo web export on local FISCO (e2e): funding, starter payments, card, co-sign, attack refused (NOT_OWNER), revoke, each receipt checked
 - [x] Two visitors: different owner keys and agent keys, neither can act on the other's card (tested): `visitors-chain.test.ts` (NOT_YOUR_CARD), `agent-keys-chain.test.ts` (own derived agents; borrowing refused NOT_THIS_AGENT)
 - [x] "Demo network" in Settings shows the sim; off returns to the real chain: phone e2e (on → the simulation's cards; off → signed in on the chain, nothing lingers); console e2e (`?server=builtin` / Settings switch)
-- [ ] Model flag: Haiku 5.5 via OpenRouter and one open-source preset work with a key; scripted fallback announced without one
-- [ ] Tests: server (chain tests on local FISCO), web, mobile, devstack e2e green; signing-guard refusal tests
-- [ ] Log and env-var list complete; every round committed locally
+- [x] Model flag: Haiku 5.5 via OpenRouter and one open-source preset work with a key (all five presets ran the scenes end to end through the flag, table in round 8); scripted fallback announced without one (agent tests)
+- [x] Tests: server (chain tests on local FISCO), web, mobile, devstack e2e green; signing-guard refusal tests (final run below)
+- [x] Log and env-var list complete; every round committed locally (see "When stopping")
 
 ---
 
@@ -468,3 +468,87 @@ Last updated: 2026-10-19
 | `LLM_MODEL` | API | `claude-haiku-5.5` | or `glm-5.3-flash`, `deepseek-v4.1-flash`, `mimo-v2.6-pro`, `mimo-v2.6-flash` |
 | `ARENA_PER_IP_DAY` | API | `20` | straight-to-the-chain attempts per IP per day |
 | `AGENT_MASTER_KEY` | API | none | 0x + 64 hex (`0x$(openssl rand -hex 32)`). **Generate once, keep secret, never change** (changing it orphans every card's agent) |
+
+---
+
+## When stopping · 19 Oct 05:15
+
+### Final run (HEAD, local FISCO 3.16.4)
+- `forge test`: 55 passed.
+- `pnpm --dir server typecheck` clean. `pnpm --dir server test`: **120 passed, 6 skipped** (25 files, chain tests on local FISCO; the 6 skipped are the opt-in `SCENES` runs).
+- `pnpm --dir web test`: 90 passed. `cd mobile && npx tsc --noEmit && npm test`: clean, 61 passed. `pnpm --dir devstack test`: 21 passed.
+- `node devstack/e2e/e2e.cjs` on a fresh dev stack, visitor auth on: **66/66**.
+
+### What works (all on the real chain, every hash a FISCO transaction)
+- **Real by default.**
+  - Both apps open on the server (phone: `EXPO_PUBLIC_API_URL`, else the hosted API; console: `VITE_API_URL`, else the hosted API). The demo network is only a Settings switch.
+  - Unreachable means a plain message plus the offer of the demo network, never silent sim data.
+  - `chainInfo().rpc` never hands out loopback.
+- **Keys.**
+  - The owner key lives on the device: SecureStore on the phone; in the browser, passkey-PRF-wrapped where the PRF output really comes back, else browser storage with a one-time backup.
+  - One EIP-712 Login signs up (funded with real hashes) or in. Only token hashes are stored.
+  - Agent keys: one per card, `keccak256(AGENT_MASTER_KEY ‖ "<visitorId>#<n>") mod n`, derived and never stored, issued only to the card owner's visitor. The legacy `AGENT_PK` still signs older pockets.
+  - **Signing guard** on both apps: the key signs only what decodes to an allowed action, and the approval UI shows the sentence.
+- **Server.**
+  - One ledger module: legacy, gas 0, simulate→send, per-sender queue, FISCO nonce handling, a liveness tick, typed reverts, chunked logs.
+  - Guarded routes and rate limits.
+  - **Explorer that explains**: decoded call and revert, native receipt or labelled replay. `/rpc/fisco` is a read-only proxy.
+  - **Model flag** with an announced scripted fallback.
+  - **Arena on the chain**: the card's own agent key signs, the chain refuses, real reverted hash.
+  - One seller catalogue (Exa, CoinGecko, Nansen and TradeWire added, real x402).
+  - Starter cards that really pay.
+  - State persisted in `DATA_DIR`.
+- Sample hashes (local chain, `verify-evidence.ts` 8/8):
+  - sign-up funding `0xb6d78d42297b3fffd9957530c65316115d87c583e4eefab7a93c149948c0419a`;
+  - card create `0x03a1c0c7d0d7a4e1119848422b533ef91b442f879f075588d9d4c57c931fc805`;
+  - x402 Exa `0xe68520807419791aaed34cde88df1004aa17cc24c2e35454ceb576fdfb383877`;
+  - straight to the chain, reverted `SELLER_NOT_ALLOWED` `0x5e5bfb43340df52c385811e3596aa95b3dfbdd70ffeaf4e7490da4627b2294ef`;
+  - escalation `setCap`, reverted `NOT_OWNER` `0x3e0da58642932a0de50217bee83434446d974eb67d9a41d9fc5851b1527528eb`;
+  - revoke `0xa9b8127213a1db089f030d5d02183b03b578b3ba9f67e2e44a824d620dadf497`.
+  - Hosted hashes come after deploy (step 5).
+
+### What's left
+- **Deploy** (yours): nothing here is on Railway or Vercel yet. The hosted API still runs the old code; the hosted chain was reset (block ~21), so the old `docs/evidence-fisco-railway.json` hashes are gone.
+- Regenerate `docs/evidence-fisco-railway.json` from a real visitor flow on the hosted stack (step 5 below).
+- Item 14 (routines and auto-play on the real chain): not started. Routines still run only on the demo network.
+- The real-model scenes pass 2–4 of 6 depending on the model. These are task choices, not safety failures (round 8). If a demo needs Opus-like behaviour, the scene prompts or tests can be tuned to Haiku.
+- The phone's passkey path doesn't apply (SecureStore). The console's passkey-PRF path is unit-tested with a fake authenticator, not with a real one.
+
+### Env vars to set
+
+**Railway, API service (`ROLE=api`):**
+| Var | Value |
+| --- | --- |
+| `AGENT_MASTER_KEY` | **new secret**: `0x$(openssl rand -hex 32)`, set once, never change |
+| `LLM_PROVIDER` | `openrouter` |
+| `OPENROUTER_API_KEY` | your OpenRouter key (secret) |
+| `LLM_MODEL` | `claude-haiku-5.5` (or `glm-5.3-flash`, `deepseek-v4.1-flash`, `mimo-v2.6-pro`, `mimo-v2.6-flash`) |
+| `PUBLIC_RPC_URL` | `https://fisco-node-production.up.railway.app` (**required**: the apps send owner transactions through it; `/rpc/fisco` is read-only) |
+| `PUBLIC_API_URL` | `https://fisco-api-production-85c5.up.railway.app` |
+| `FISCO_REVERT_RPC` | `https://fisco-node-production.up.railway.app` (exact revert reasons from the gateway) |
+| `DATA_DIR` | a path on a **Railway volume** mounted on this service, e.g. `/data/chainbrain` (add the volume) |
+| `TICK_PK` | optional; defaults to `FACILITATOR_PK` (it must have a native balance, which bootstrap gives it) |
+| optional | `VISITOR_STARTER=500`, `VISITORS_PER_HOUR=60`, `RATE_LIMIT_PER_MIN=60`, `RATE_LIMIT_GET_PER_MIN=600`, `ARENA_PER_IP_DAY=20`, `FISCO_PROXY_RATE_PER_MIN=600` |
+| unchanged | `FISCO_RPC`, `OWNER_PK`, `AGENT_PK` (legacy pockets), `FACILITATOR_PK`, `FORCE_PK`, `SENTINEL_PK`, `SELLER_*_PK`, `SELLERS_URL`, `FUND_URL`, `FUND_TOKEN` |
+| remove or ignore | `ANTHROPIC_BASE_URL`, `ANTHROPIC_API_KEY`, `AGENT_MODEL` (OpenRouter ignores per-role ids) |
+
+**Railway, sellers service (`ROLE=sellers`):** nothing new. The four new sellers have fixed pay-to addresses and need no keys.
+
+**Railway, `fisco-node`:** nothing new. Redeploy it for the gateway's `chainbrain_getRevertData`.
+
+**Vercel (web console):** `VITE_API_URL=https://fisco-api-production-85c5.up.railway.app`. Optional, because that is already the default; set it to be explicit.
+
+**Phone builds (Expo):** `EXPO_PUBLIC_API_URL=https://fisco-api-production-85c5.up.railway.app` (also the default).
+
+### Deploy order
+1. **fisco-node** (gateway with `chainbrain_getRevertData`). Check: `curl -s <node> -d '{"jsonrpc":"2.0","id":1,"method":"chainbrain_getRevertData","params":["0x…"]}'` answers.
+2. **sellers** (the API refuses to list sellers until the sellers service reports every seller's pay-to, so it goes first). Check: `GET <sellers>/admin/payto` lists 8 sellers.
+3. **API**: add the volume, set the env vars above, deploy. Check:
+   - `GET /api/config` shows `model.on: true`;
+   - `POST /api/chat` without a token gives 401;
+   - `POST /rpc/fisco` with `eth_sendRawTransaction` gives -32601.
+4. **Vercel** (web console), then the phone build (Expo).
+5. **Evidence:**
+   - `cd server && API=https://fisco-api-production-85c5.up.railway.app EVIDENCE_FILE=../docs/evidence-fisco-railway.json FISCO_RPC=https://fisco-node-production.up.railway.app pnpm tsx scripts/visitor-evidence.ts`
+   - then `FISCO_RPC=https://fisco-node-production.up.railway.app pnpm tsx scripts/verify-evidence.ts ../docs/evidence-fisco-railway.json`.
+   - Move the old file aside first; its hashes are from the chain before the reset.
