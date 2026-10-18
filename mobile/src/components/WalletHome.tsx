@@ -74,7 +74,7 @@ export function UsageTabs({ pockets, value, onChange }: { pockets: Pocket[]; val
     const on = value === key;
     const f = key === "all" ? null : deck[USAGE_FACE[key]];
     return (
-      <Press key={key} haptics="select" scale={0.96} onPress={() => onChange(key)} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={`${label}, ${count} ${count === 1 ? "pocket" : "pockets"}`}
+      <Press key={key} haptics="select" scale={0.96} onPress={() => onChange(key)} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={`${label}, ${count} ${count === 1 ? "card" : "cards"}`}
         style={{ flexDirection: "row", alignItems: "center", gap: 5, height: 32, paddingLeft: f ? 7 : 12, paddingRight: 11, borderRadius: 16, backgroundColor: on ? c.ink : c.card }}>
         {f ? <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: f.face, borderWidth: 1, borderColor: on ? "rgba(255,255,255,0.5)" : f.edge }} /> : null}
         <T v="cap" w="semi" style={{ color: on ? c.white : c.ink }}>{label}</T>
@@ -99,23 +99,19 @@ export function WalletHero({ main, out, pockets, all }: { /** the main wallet's 
   return (
     <View style={{ marginHorizontal: 16 }}>
       <Animated.View style={lean}>
-        <View accessible accessibilityLabel={`Main wallet ${main != null ? money(main) : ""}. Only your key moves it. ${money(out)} out in ${pockets.length} pockets.`}
+        <View accessible accessibilityLabel={`Main wallet ${main != null ? money(main) : ""}. ${money(out)} out in ${pockets.length} cards.`}
           style={{ borderRadius: 22, backgroundColor: c.card, overflow: "hidden", borderCurve: "continuous", ...level3, shadowOpacity: 0.12 } as object}>
           <View style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 64, overflow: "hidden" }}><Hatch color={c.ink} pitch={7} stroke={2} opacity={0.9} /></View>
           <View style={{ padding: 20, paddingRight: 84, gap: 14 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <BrandMark size={26} />
               <T v="head">Main wallet</T>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 22, paddingHorizontal: 8, borderRadius: 11, backgroundColor: c.fill }}>
-                <Icon name="key" size={11} color={c.ink2} stroke={2.2} />
-                <T v="tab" w="bold" color="ink2">Only your key</T>
-              </View>
             </View>
             {main != null ? <Money v="balance" value={hkd(main)} label={`Main wallet ${money(main)}`} /> : <T v="balance" color="muted">—</T>}
             <View style={{ gap: 6 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <Icon name="arrowDown" size={13} color={c.ink2} stroke={2.2} />
-                <T v="cap" w="semi" color="ink2" style={{ fontVariant: ["tabular-nums"] }}>{`${money(out)} out in ${pockets.length} ${pockets.length === 1 ? "pocket" : "pockets"}`}</T>
+                <T v="cap" w="semi" color="ink2" style={{ fontVariant: ["tabular-nums"] }}>{`${money(out)} out in ${pockets.length} ${pockets.length === 1 ? "card" : "cards"}`}</T>
               </View>
               {live.length > 1 ? (
                 <View style={{ flexDirection: "row", height: 6, gap: 2, borderRadius: 3, overflow: "hidden" }}>
@@ -149,7 +145,7 @@ export function PocketRows({ pockets, all, routines, glyphs, spent, sellerName, 
         </Animated.View>
       ))}
       {pockets.length > 4 ? (
-        <Press haptics="select" onPress={() => setAllOpen((o) => !o)} accessibilityRole="button" accessibilityLabel={allOpen ? "Show fewer pockets" : `See all ${pockets.length} pockets`}
+        <Press haptics="select" onPress={() => setAllOpen((o) => !o)} accessibilityRole="button" accessibilityLabel={allOpen ? "Show fewer cards" : `See all ${pockets.length} cards`}
           style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, paddingLeft: 4 }}>
           <View style={{ width: 48, alignItems: "center" }}><View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}><Icon name={allOpen ? "chevronUp" : "chevronDown"} size={15} color={c.ink} stroke={2.2} /></View></View>
           <T v="sub" w="semi">{allOpen ? "Show fewer" : `See all ${pockets.length}`}</T>
@@ -174,7 +170,7 @@ function Row({ p, tone, glyph, spent, job }: { p: Pocket; tone: number; glyph: G
     : glyph?.kind === "price" ? `${money(glyph.price)}${glyph.below ? " ✓" : ""}` : glyph?.kind === "paused" ? "Paused" : glyph?.kind === "running" ? "Running" : glyph?.kind === "saved" ? `Saved ${money(glyph.saved)}` : null;
   return (
     <Press kind="row" haptics="light" onPress={open} accessibilityRole="button"
-      accessibilityLabel={`${name} pocket, ${hkd(p.balance)} ${tokenSymbol()}${p.revoked ? ", revoked" : ""}. ${agentInfo(p.agentId ?? "")?.name ?? "Your"} pocket: ${job}`} accessibilityHint="Opens the pocket"
+      accessibilityLabel={`${name} card, ${hkd(p.balance)} ${tokenSymbol()}${p.revoked ? ", revoked" : ""}. ${agentInfo(p.agentId ?? "")?.name ?? "Your"} card: ${job}`} accessibilityHint="Opens the card"
       style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8, minHeight: 72, opacity: p.revoked ? 0.55 : 1 }}>
       {/* the mini card, its job's icon on it and the agent's mark on its corner */}
       <View>

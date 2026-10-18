@@ -51,7 +51,7 @@ export function SpendBars({ rows, name }: { rows: LedgerRow[]; name: (sellerId?:
             </View>
           ))}
         </View>
-      ) : <T v="cap" color="muted">No payments from this pocket in the last 7 days.</T>}
+      ) : <T v="cap" color="muted">No payments from this card in the last 7 days.</T>}
     </View>
   );
 }

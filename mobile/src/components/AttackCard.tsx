@@ -28,8 +28,8 @@ export function attackInfo(e: WalletEvent): AttackInfo | null {
     return {
       key: `forced:${e.tx}`, title: `Blocked a transfer of ${m}`, tx: String(e.tx), txs: [{ label: "Transaction", hash: String(e.tx) }], codes: [String(e.reason ?? "SELLER_NOT_ALLOWED")], verdict: "Reverted",
       body: e.via === "agent"
-        ? `Someone tricked your agent into signing ${m} to ${to}. Your pocket refused it on-chain.`
-        : `Someone used your agent's key to send ${m} to ${to}. Your pocket refused it on-chain.`,
+        ? `Someone tricked your agent into signing ${m} to ${to}. Your card refused it on-chain.`
+        : `Someone used your agent's key to send ${m} to ${to}. Your card refused it on-chain.`,
     };
   }
   if (e.type !== "attack") return null;

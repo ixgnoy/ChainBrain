@@ -120,7 +120,7 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     for (let i = 0; i < 8 && !hasTarget("wizard.create"); i++) { await wait(950); await must("wizard.continue"); }
     await wait(1400);
     await must("wizard.create");
-    await until("the new pocket", (s) => s.pocketCount > before, 30_000);
+    await until("the new card", (s) => s.pocketCount > before, 30_000);
     await wait(2200);
     await tap("wizard.open", undefined, 5000);
     await wait(1800);
@@ -264,7 +264,7 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await must("compose.text", { text: text("12").text }, 15_000);
     // the live canvas: the app designs itself (about 13 s), then the sign sheet's slide appears
     await must("compose.create", undefined, 25_000);
-    await until("the pocket app", (s) => s.pocketCount > before12, 30_000);
+    await until("the card", (s) => s.pocketCount > before12, 30_000);
     // the paced build (about 9 s: deploy, rules, key, fund, arrange) ends with Open, and opens by itself a moment later
     await tap("compose.open", undefined, 16_000);
     await wait(2600);

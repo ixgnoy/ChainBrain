@@ -53,7 +53,7 @@ export function PocketRow({ pocket, onPress, last, lit }: { pocket: Pocket; onPr
   return (
     <ListRow
       last={last} onPress={onPress} lit={lit}
-      a11y={`${cleanText(pocket.name, 30)} pocket, ${hkd(pocket.balance)} ${tokenSymbol()}`}
+      a11y={`${cleanText(pocket.name, 30)} card, ${hkd(pocket.balance)} ${tokenSymbol()}`}
       avatar={<Avatar label={pocket.name} tone={pocket.revoked || isExpired(pocket) ? "fill" : "soft"} />}
       title={cleanText(pocket.name, 30)} sub={pocketLine(pocket)}
       extra={spent > 0n ? <View accessibilityLabel={`${hkd(spent)} of ${hkd(total)} used`} style={{ height: 4, borderRadius: 2, backgroundColor: c.fill, marginTop: 6, overflow: "hidden" }}><View style={{ width: `${share * 100}%`, height: 4, borderRadius: 2, backgroundColor: c.accent }} /></View> : undefined}

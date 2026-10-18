@@ -284,7 +284,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const pockets = useMemo<Pocket[]>(() => addresses.flatMap((a) => {
     const v = views[a.toLowerCase()];
     if (!v || !wallet) return [];
-    const m = meta[a.toLowerCase()] ?? { name: `Pocket ${short(a)}`, style: "custom" as const };
+    const m = meta[a.toLowerCase()] ?? { name: `Card ${short(a)}`, style: "custom" as const };
     return [{ ...v, name: m.name, style: m.style, owned: isOwner(v, wallet.address), agentId: agentIdOf(v, cfg?.agent), ...(m.app ? { app: m.app } : {}) }];
   }), [addresses, views, meta, wallet, cfg]);
 
@@ -373,7 +373,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     for (const e of f) {
       if (forcedSeen.current.has(String(e.tx))) continue;
       forcedSeen.current.add(String(e.tx));
-      const name = meta[String(e.pocket).toLowerCase()]?.name ?? "your pocket";
+      const name = meta[String(e.pocket).toLowerCase()]?.name ?? "your card";
       if (e.reverted) { let a = 0n; try { a = BigInt(e.amount ?? 0); } catch { /* shown without an amount */ } notify(a > 0n ? `Blocked a ${curSign()}${hkd(a)} transfer` : `Blocked a transfer out of ${name}`); haptic.warning(); }
     }
   }, [myEvents, events.length, meta]);
@@ -423,7 +423,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const ids = (cfg?.sellers ?? []).map((s) => s.id);
     const tight = (p: Pocket) => isTightCap(p.cap, ids);
     const target = preset === "one-purchase" ? live.find(tight) : live.find((p) => sameAddr(p.address, activeAddr) && !tight(p)) ?? live.find((p) => !tight(p));
-    if (!target) return { ok: false, text: "No pocket on the phone fits this scene" };
+    if (!target) return { ok: false, text: "No card on the phone fits this scene" };
     if (turnsBy[target.address.toLowerCase()]?.some((t) => !t.done)) return { ok: false, text: "The agent is still busy on the phone" };
     setActiveAddr(target.address);
     try { router.navigate("/agent"); } catch { /* not mounted yet */ }

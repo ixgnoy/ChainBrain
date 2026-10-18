@@ -32,7 +32,7 @@ const PAGE = 25;
 const EMPTY: Record<Filter, { title: string; sub: string }> = {
   all: { title: "No activity yet", sub: "Your agent's purchases and your changes show up here." },
   paid: { title: "Nothing paid yet", sub: "Payments your agents make show up here." },
-  refused: { title: "Nothing refused", sub: "Payments your pocket rules turn down show up here." },
+  refused: { title: "Nothing refused", sub: "Payments your card rules turn down show up here." },
   needs: { title: "Nothing needs you", sub: "When an agent asks for your OK, it waits here." },
 };
 type View_ = "live" | "ledger";
@@ -85,7 +85,7 @@ export default function Activity() {
       while (off(shown[i]) && j + 1 < shown.length && off(shown[j + 1]) && shown[j + 1].pocket === shown[i].pocket) j++;
       if (j > i) {
         const name = findPocket(shown[i].pocket)?.name;
-        rows.push({ key: `run:${shown[i].key}`, at: shown[i].at, note: { title: `${j - i + 1} refused after you stopped it`, sub: [name ? cleanText(name, 24) : undefined, "The pocket was off"].filter(Boolean).join(" · ") } });
+        rows.push({ key: `run:${shown[i].key}`, at: shown[i].at, note: { title: `${j - i + 1} refused after you stopped it`, sub: [name ? cleanText(name, 24) : undefined, "The card was off"].filter(Boolean).join(" · ") } });
         i = j;
       } else rows.push({ key: shown[i].key, at: shown[i].at, row: shown[i] });
     }

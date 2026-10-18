@@ -83,7 +83,7 @@ export function BuildStage({ steps, pocket, tone, width, blocks, chips, sellers,
 
       {done && onOpen ? (
         <Animated.View entering={reduce ? undefined : FadeInDown.duration(motion.base)} style={{ paddingHorizontal: 20 }}>
-          <Button label="Open the pocket app" icon="arrowUpRight" kind="vermillion" auto="compose.open" onPress={onOpen} />
+          <Button label="Open the card" icon="arrowUpRight" kind="vermillion" auto="compose.open" onPress={onOpen} />
         </Animated.View>
       ) : null}
     </Animated.View>

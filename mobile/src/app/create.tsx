@@ -140,13 +140,13 @@ function Done({ name, budget, createTx, fundTx, first, onOpen }: { name: string;
             {first ? <Animated.View pointerEvents="none" style={[{ position: "absolute", width: 72, height: 72, borderRadius: 36, backgroundColor: c.accentSoft }, halo]} /> : null}
             <SuccessMark size={72} delay={120} />
           </View>
-          <T v="section" accessibilityRole="header">Pocket created</T>
+          <T v="section" accessibilityRole="header">Card created</T>
           <View style={{ alignItems: "center", gap: 2 }}>
             <T v="sub" color="muted">{name} now holds</T>
             <Money v="balance" value={budget} countIn />
           </View>
           <View style={{ alignSelf: "stretch", gap: 6 }}>
-            {([["Create pocket", createTx], ["Add " + curSign() + budget, fundTx]] as const).map(([l, h], i) => h ? (
+            {([["Create card", createTx], ["Add " + curSign() + budget, fundTx]] as const).map(([l, h], i) => h ? (
               <Reveal key={l} index={i} step={90} base={620} dy={8}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: c.canvas, borderRadius: 14, paddingLeft: 14, paddingRight: 8 }}>
                   <T v="sub" color="muted">{l}</T><TxLink tx={h} />
@@ -154,7 +154,7 @@ function Done({ name, budget, createTx, fundTx, first, onOpen }: { name: string;
               </Reveal>
             ) : null)}
           </View>
-          <Reveal index={2} step={90} base={620} dy={8} style={{ alignSelf: "stretch" }}><Button label="Open pocket" auto="wizard.open" onPress={onOpen} /></Reveal>
+          <Reveal index={2} step={90} base={620} dy={8} style={{ alignSelf: "stretch" }}><Button label="Open card" auto="wizard.open" onPress={onOpen} /></Reveal>
         </Card>
       </Animated.View>
     </Animated.View>
@@ -204,7 +204,7 @@ export default function Create() {
 
   const choose = (key: keyof typeof PRESETS | "custom") => {
     haptic.select(); setPreset(key);
-    if (key === "custom") { setName("Custom pocket"); return; }
+    if (key === "custom") { setName("Custom card"); return; }
     const p = PRESETS[key];
     setName(p.label); setFunds(Number(p.budget)); setCap(Number(p.cap)); setSellers(p.sellers); setLife(p.lifetime);
     if (p.askAbove === "never") setAskMode("never"); else if (p.askAbove === "0") setAskMode("always"); else { setAskMode("above"); setAsk(Number(p.askAbove)); }
@@ -217,7 +217,7 @@ export default function Create() {
   const askV = Math.min(ask, capV);
   // never two pockets with the same name in a list: "Research data", then "Research data 2"
   const frozen = useRef<string | null>(null); // fixed once creation starts: the new pocket itself must not make it "… 3"
-  const label = frozen.current ?? uniqueName(cleanText(name.trim() || "Pocket", 24), pockets.map((p) => p.name));
+  const label = frozen.current ?? uniqueName(cleanText(name.trim() || "Card", 24), pockets.map((p) => p.name));
   const values: PresetValues = { label, budget: money2(funds), sellers, cap: money2(capV), askAbove: askMode === "never" ? "never" : askMode === "always" ? "0" : money2(askV), lifetime: life };
   const payTo = useMemo(() => Object.fromEntries((cfg?.sellers ?? []).map((s) => [s.id, s.payTo])), [cfg]);
   const style = preset === "custom" ? "custom" : styleForPreset(values.label);
@@ -266,7 +266,7 @@ export default function Create() {
       const id = prog.pocket;
       setFin({ createTx: prog.createTx, fundTx: prog.fundTx, id });
       setStage("done");
-      setNotice({ title: `${values.label} created and funded`, pocket: id, txs: [{ label: "Create pocket", hash: prog.createTx! }, { label: `Add ${curSign()}${values.budget}`, hash: prog.fundTx! }] });
+      setNotice({ title: `${values.label} created and funded`, pocket: id, txs: [{ label: "Create card", hash: prog.createTx! }, { label: `Add ${curSign()}${values.budget}`, hash: prog.fundTx! }] });
       done.current = { createTx: prog.createTx, fundTx: prog.fundTx };
       progress.current = {};
       setTimeout(() => open(id), first.current ? 2600 : 2200);
@@ -302,7 +302,7 @@ export default function Create() {
             })}
             <Option on={preset === "custom"} onPress={() => choose("custom")} title="Custom" sub="Set every limit yourself." />
           </View>
-          <Field label="Name (kept on this phone)" value={name} onChangeText={(t) => setName(t.slice(0, 24))} placeholder="Pocket name" accessibilityLabel="Pocket name" />
+          <Field label="Name (kept on this phone)" value={name} onChangeText={(t) => setName(t.slice(0, 24))} placeholder="Card name" accessibilityLabel="Card name" />
         </View>);
       case 1: return (
         <View style={{ gap: 20 }}>
@@ -314,7 +314,7 @@ export default function Create() {
         </View>);
       case 2: return (
         <View style={{ gap: 16 }}>
-          <Title h="Who can it pay?" sub="Only these sellers can be paid from the pocket. Anyone else is refused." />
+          <Title h="Who can it pay?" sub="Only these sellers can be paid from the card. Anyone else is refused." />
           {(cfg?.sellers ?? []).length === 0 && <T v="sub" color="muted">Sellers did not load. Check the connection.</T>}
           {groupSellers(cfg?.sellers ?? []).map(([cat, list]) => (
             <View key={cat} style={{ gap: 10 }}>
@@ -343,13 +343,13 @@ export default function Create() {
         </View>);
       case 5: return (
         <View style={{ gap: 14 }}>
-          <Title h="How long does it last?" sub="After this, the pocket ends and the agent cannot spend." />
+          <Title h="How long does it last?" sub="After this, the card ends and the agent cannot spend." />
           {LIFETIMES.map(([k, h, sub]) => <Option key={k} on={life === k} onPress={() => setLife(k)} title={h} sub={sub} />)}
           {tonightPassed && <T v="sub" color="warning">It is already past 23:59, so this would end immediately. Pick another.</T>}
         </View>);
       default: return (
         <View style={{ gap: 16 }}>
-          <Title h="Looks right?" sub="Two steps signed on this phone: create the pocket, then add the money. The agent gets exactly these limits." />
+          <Title h="Looks right?" sub="Two steps signed on this phone: create the card, then add the money. The agent gets exactly these limits." />
           <View style={{ backgroundColor: c.accentSoft, borderRadius: radius.tile, borderCurve: "continuous", padding: 16, gap: 4 }} accessibilityLiveRegion="polite">
             <T v="cap" w="semi" color="accent">Most the agent can lose</T>
             <Money v="balance" value={values.budget} color="ink" />
@@ -358,7 +358,7 @@ export default function Create() {
           <EditableSummary onEdit={stage === "idle" && !progress.current.pocket ? edit : undefined} rows={[[0, "Name", values.label], [1, "Money in", `${curSign()}${values.budget}`], [2, "Sellers", sellers.map((s) => cleanText(cfg?.sellers.find((x) => x.id === s)?.name ?? s, 24)).join(", ")], [3, "Per payment", `up to ${curSign()}${values.cap}`], [4, "Asks you", askLabel], [5, "Ends", new Date(Number(expiryFor(life)) * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })]]} />
           {stage !== "idle" || progress.current.pocket || done.current.createTx ? (
             <Card style={{ gap: 10 }}>
-              {([["create", "1. Create the pocket", !!progress.current.pocket || !!done.current.createTx, progress.current.createTx ?? done.current.createTx], ["fund", "2. Add the money", !!progress.current.funded || !!done.current.fundTx, progress.current.fundTx ?? done.current.fundTx]] as const).map(([k, l, ok, hash]) => (
+              {([["create", "1. Create the card", !!progress.current.pocket || !!done.current.createTx, progress.current.createTx ?? done.current.createTx], ["fund", "2. Add the money", !!progress.current.funded || !!done.current.fundTx, progress.current.fundTx ?? done.current.fundTx]] as const).map(([k, l, ok, hash]) => (
                 <View key={k} style={{ gap: 4 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                     <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: ok ? c.accent : c.fill, alignItems: "center", justifyContent: "center" }}>{ok && <Icon name="check" size={13} color={c.onAccent} stroke={2.6} />}</View>
@@ -369,7 +369,7 @@ export default function Create() {
               ))}
             </Card>
           ) : null}
-          {error && <T v="sub" color="negative">{error}{progress.current.pocket ? " The pocket exists, so sliding again only retries the missing step." : ""}</T>}
+          {error && <T v="sub" color="negative">{error}{progress.current.pocket ? " The card exists, so sliding again only retries the missing step." : ""}</T>}
         </View>);
     }
   })();
@@ -395,7 +395,7 @@ export default function Create() {
       <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: insets.bottom + 12, gap: 6, backgroundColor: c.canvas }}>
         {big ? null : worstNote}
         {step === STEPS.length - 1 ? (
-          <SlideToConfirm key={String(error)} label={progress.current.pocket ? "Slide to retry" : "Slide to create and fund"} doneLabel="Pocket created" onConfirm={create} auto="wizard.create" disabled={!wallet || !cfg || tonightPassed} />
+          <SlideToConfirm key={String(error)} label={progress.current.pocket ? "Slide to retry" : "Slide to create and fund"} doneLabel="Card created" onConfirm={create} auto="wizard.create" disabled={!wallet || !cfg || tonightPassed} />
         ) : (
           <Button label={editing.current ? "Back to review" : step === 0 && preset !== "custom" ? "Review" : "Continue"} auto="wizard.continue" onPress={next} disabled={!canNext} />
         )}

@@ -142,14 +142,14 @@ export function agentSteps(events: WalletEvent[], pockets: string[], name: (sell
       if (e.tool === "search_sellers" && r.ok) {
         const all = Array.isArray(r.sellers) ? r.sellers : [];
         const ok = all.filter((s: any) => s.allowedByPocket).map((s: any) => s.name);
-        out.push({ ...base, kind: "search", title: "Searched sellers", detail: ok.length ? `Allowed here: ${ok.join(", ")}` : "None allowed in this pocket", status: { label: "Checked", tone: "fill" } });
+        out.push({ ...base, kind: "search", title: "Searched sellers", detail: ok.length ? `Allowed here: ${ok.join(", ")}` : "None allowed in this card", status: { label: "Checked", tone: "fill" } });
       } else if (e.tool === "get_quote" && r.ok && !r.free) {
         const blocked = r.allowedByPocket !== "OK";
         out.push({ ...base, kind: "quote", title: `Quote from ${name(r.sellerId)}`, detail: r.description, amount: cents(r.price),
           status: blocked ? { label: "Not allowed", tone: "vermillion" } : r.counterpartyRisk ? { label: `Risk ${r.counterpartyRisk.score}/10`, tone: r.counterpartyRisk.verdict === "ok" ? "fill" : "vermillion" } : { label: "Checked", tone: "fill" } });
       }
     } else if (e.type === "payment") {
-      out.push({ ...base, kind: "paid", title: `Paid ${name(e.sellerId)}`, amount: atomic(e.amount), tx: e.tx, detail: e.cosigned ? "Co-signed by you" : "Inside the pocket's limits", status: { label: "Paid", tone: "green" } });
+      out.push({ ...base, kind: "paid", title: `Paid ${name(e.sellerId)}`, amount: atomic(e.amount), tx: e.tx, detail: e.cosigned ? "Co-signed by you" : "Inside the card's limits", status: { label: "Paid", tone: "green" } });
     } else if (e.type === "refusal") {
       out.push({ ...base, kind: "refused", title: `Asked to pay ${name(e.sellerId)}`, amount: atomic(e.amount), detail: plainReason(e.reason), status: { label: "Refused", tone: "vermillion" } });
     } else if (e.approval?.id && (e.approval.kind === "payment" || e.approval.kind === "intent")) {

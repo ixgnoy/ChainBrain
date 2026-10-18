@@ -40,9 +40,9 @@ export function ComposeLoading({ sentence }: { sentence: string }) {
   return (
     <Animated.View entering={FadeIn.duration(motion.base)}
       style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, zIndex: 25, backgroundColor: c.canvas, paddingTop: insets.top + 60, paddingHorizontal: 28, alignItems: "center" }}
-      accessibilityViewIsModal accessibilityLiveRegion="polite" accessibilityLabel={`Composing your pocket app. ${STEPS[Math.min(at, STEPS.length - 1)].text}`}>
+      accessibilityViewIsModal accessibilityLiveRegion="polite" accessibilityLabel={`Composing your card. ${STEPS[Math.min(at, STEPS.length - 1)].text}`}>
       <Animated.View style={beat}><BrandMark size={56} /></Animated.View>
-      <T v="section" style={{ marginTop: 18, textAlign: "center" }}>Composing your pocket app</T>
+      <T v="section" style={{ marginTop: 18, textAlign: "center" }}>Composing your card</T>
       <View style={{ alignSelf: "stretch", marginTop: 20, padding: 16, borderRadius: 18, backgroundColor: c.card, overflow: "hidden" }}>
         <T v="body" color="ink2" style={{ fontSize: 15, lineHeight: 22 }} numberOfLines={4}>{`“${sentence}”`}</T>
         <Animated.View pointerEvents="none" style={[{ position: "absolute", top: -40, bottom: -40, left: 0, width: 80, backgroundColor: "rgba(157,202,255,0.35)" }, sweep]} />

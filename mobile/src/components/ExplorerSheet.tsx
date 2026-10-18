@@ -128,7 +128,7 @@ function Body({ hash, close }: { hash: string; close: () => void }) {
               ["To", `${tx.toName}${tx.to ? ` · ${shortAddr(tx.to)}` : ""}`],
               ["Method", tx.method],
               ...(bad && tx.revert ? [["On-chain error", tx.revert] as [string, string]] : []),
-              ...(bad && tx.rule ? [["Pocket rule that failed", tx.rule] as [string, string]] : []),
+              ...(bad && tx.rule ? [["Card rule that failed", tx.rule] as [string, string]] : []),
             ]} />
             {tx.args.length ? <SummaryCard rows={tx.args.map((a): [string, string] => [a.name, field(a)])} /> : null}
             {tx.logs.length ? (

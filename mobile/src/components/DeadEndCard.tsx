@@ -21,7 +21,7 @@ export function DeadEndCard({ id, evs, pocket, sellerName, onRetry, resolved, ta
   const d = deadEndOf(evs, pocket);
   if (!d) return null;
   const fixed = !!d.fix && d.fix.cap === pocket.cap && d.fix.topUp === 0n;
-  const label = d.fix ? `Raise cap${d.fix.topUp > 0n ? " and budget" : ""} to ${curSign()}${hkd(d.fix.cap)}` : "Open pocket to allow a seller";
+  const label = d.fix ? `Raise cap${d.fix.topUp > 0n ? " and budget" : ""} to ${curSign()}${hkd(d.fix.cap)}` : "Open card to allow a seller";
   const again = d.minPrice != null ? `Then ask again with a price limit of at least ${curSign()}${hkd(d.minPrice)}.` : "Then ask your agent again.";
   const codes = [...new Set(d.tried.flatMap((t) => t.reasons))];
   return (

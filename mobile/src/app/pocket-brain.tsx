@@ -150,7 +150,7 @@ export default function BrainTab() {
   if (!active || !b) {
     return (
       <Screen>
-        <PageTitle title="Brain" sub="Create a pocket first: the brain works per pocket." />
+        <PageTitle title="Brain" sub="Create a card first: the brain works per card." />
       </Screen>
     );
   }
@@ -175,14 +175,14 @@ export default function BrainTab() {
   const runs = routine ? runsOf(mine, active.address) : [];
   const ignored = runs.reduce((n, r) => n + r.ignored.length, 0);
   const rb = routine ? budgetOf(mine, active.address, { routine, balance: active.balance, now: Date.now() }) : null;
-  const sentinelNow = active.frozen ? "Froze the pocket" : b.sentinel.at(-1)?.kind === "hold" ? "Waiting for you" : b.sentinel.some((v) => v.kind !== "clear") ? "Watching" : "All clear";
+  const sentinelNow = active.frozen ? "Froze the card" : b.sentinel.at(-1)?.kind === "hold" ? "Waiting for you" : b.sentinel.some((v) => v.kind !== "clear") ? "Watching" : "All clear";
 
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
       <BackHeader title="Brain" />
       <Screen tabs={false} top={false}>
       {/* the pocket this brain is about, as its own card strip (the same as Home's stack): tap to choose another */}
-      <Press kind="row" haptics="select" disabled={pockets.length < 2} onPress={() => setPickerOpen(true)} accessibilityRole="button" accessibilityLabel={`Pocket: ${active.name}. Change pocket`}
+      <Press kind="row" haptics="select" disabled={pockets.length < 2} onPress={() => setPickerOpen(true)} accessibilityRole="button" accessibilityLabel={`Card: ${active.name}. Change card`}
         style={{ marginTop: 8, marginHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 10 }}>
         <View style={{ flex: 1, height: stripFor(stripW), borderRadius: 18, overflow: "hidden" }} onLayout={(e) => setStripW(e.nativeEvent.layout.width)}>
           {stripW ? <PocketFace pocket={active} width={stripW} tone={toneFor(pockets, active.address)} still peek /> : null}
@@ -288,7 +288,7 @@ export default function BrainTab() {
                 {b.memory!.answers[i] ? <T v="cap" color="muted">{cleanText(b.memory!.answers[i], 300)}</T> : null}
               </View>
             ))}
-            <T v="cap" color="faint">Answered only from your words and your wallet's record, never from seller pages. Memory never changes your pocket's rules: only you can, by signing.</T>
+            <T v="cap" color="faint">Answered only from your words and your wallet's record, never from seller pages. Memory never changes your card's rules: only you can, by signing.</T>
           </Details>
         ) : null}
       </Panel>

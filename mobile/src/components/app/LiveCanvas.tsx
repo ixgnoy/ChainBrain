@@ -194,7 +194,7 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
           <Icon name="x" size={18} color={c.ink} stroke={2.2} />
         </Press>
         <View style={{ flex: 1, alignItems: "center" }}>
-          <T v="head" numberOfLines={1}>{v.done ? "Your pocket app" : "Designing your pocket app"}</T>
+          <T v="head" numberOfLines={1}>{v.done ? "Your card" : "Designing your card"}</T>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             {!v.done ? <Pulse /> : <Icon name="check" size={12} color={c.greenInk} stroke={2.6} />}
             <T v="cap" color="muted">{v.done ? `${spec.blocks.length} blocks · ${byLine}` : !v.face ? "Reading your sentence" : `${who} is placing blocks`}</T>
@@ -214,7 +214,7 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
       {/* the canvas */}
       <View style={{ alignItems: "center", marginTop: 12 }}>
         <View style={{ width: FW + 12, height: FH + 12, borderRadius: 34, backgroundColor: c.ink, padding: 6 }}>
-          <View style={{ width: FW, height: FH, borderRadius: 28, overflow: "hidden", backgroundColor: c.canvas }} accessible accessibilityLabel={`The pocket app being built: ${blocks.map((b) => BLOCK_NAME[b.type] ?? b.type).join(", ")}`}>
+          <View style={{ width: FW, height: FH, borderRadius: 28, overflow: "hidden", backgroundColor: c.canvas }} accessible accessibilityLabel={`The card being built: ${blocks.map((b) => BLOCK_NAME[b.type] ?? b.type).join(", ")}`}>
             <Animated.View style={content}>
               <View style={{ width: IN_W, transform: [{ scale: s }], transformOrigin: "top left" } as object}>
                 <View style={{ paddingTop: 16, paddingBottom: 24, gap: 12 }}>

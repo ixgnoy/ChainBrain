@@ -42,7 +42,7 @@ export function HaggleCard({ h }: { h: HaggleView }) {
           ["What the seller saw", "Prices only, never your details or any text"],
           ["Each offer", "Below the seller's price, never above its first quote or your task's limit"],
           ["Rounds", "3 offers at most, enforced by the wallet's code"],
-          ["Paying", "The pocket pays exactly the agreed price; your ask-me limit still applies"],
+          ["Paying", "The card pays exactly the agreed price; your ask-me limit still applies"],
         ],
       }}
     >

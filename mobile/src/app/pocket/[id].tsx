@@ -115,8 +115,8 @@ export default function PocketDetail() {
   if (!pocket) {
     return (
       <View style={{ flex: 1, backgroundColor: c.canvas }}>
-        <BackHeader title="Pocket" />
-        <View style={{ padding: 24 }}><T v="body" color="ink2">{pocketsLoaded ? "This pocket was not found. If the test network was restarted, older pockets are gone." : "Loading…"}</T></View>
+        <BackHeader title="Card" />
+        <View style={{ padding: 24 }}><T v="body" color="ink2">{pocketsLoaded ? "This card was not found. If the test network was restarted, older cards are gone." : "Loading…"}</T></View>
       </View>
     );
   }
@@ -142,7 +142,7 @@ export default function PocketDetail() {
     onRunNow: owned && !off ? async () => {
       haptic.medium(); setRunErr(null);
       const r = await api.runRoutineNow(pocket.address).catch(() => ({ ok: false as const, reason: "ERROR" }));
-      if (!r.ok) { haptic.error(); setRunErr(r.reason === "BUSY" ? "The agent is busy with another task in this pocket. Try again in a moment." : r.reason === "AGENT_DISCONNECTED" ? "This agent is disconnected, so its routine doesn't run." : "That run didn't start."); }
+      if (!r.ok) { haptic.error(); setRunErr(r.reason === "BUSY" ? "The agent is busy with another task in this card. Try again in a moment." : r.reason === "AGENT_DISCONNECTED" ? "This agent is disconnected, so its routine doesn't run." : "That run didn't start."); }
       // no success tap here: the payment it makes gets one when it settles (PocketApp's payoff)
     } : undefined,
     onPause: owned && !off ? (paused) => { haptic.select(); api.pauseRoutine(pocket.address, paused); } : undefined,
@@ -178,7 +178,7 @@ export default function PocketDetail() {
           <Rise index={0}>
             <View style={{ marginHorizontal: PAGE_MARGIN, marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, height: 46, borderRadius: 14, backgroundColor: c.vermillionSoft }}>
               <Icon name="shield" size={18} color={c.vermillionInk} stroke={2} />
-              <T v="tab" w="bold" style={{ flex: 1, color: c.vermillionInk, letterSpacing: 0.9, textTransform: "uppercase" }}>Pocket revoked · agent locked out</T>
+              <T v="tab" w="bold" style={{ flex: 1, color: c.vermillionInk, letterSpacing: 0.9, textTransform: "uppercase" }}>Card revoked · agent locked out</T>
               <View style={{ paddingHorizontal: 7, height: 22, borderRadius: 5, backgroundColor: c.vermillionInk, justifyContent: "center" }}><T v="tab" w="bold" style={{ color: c.white, letterSpacing: 0.9 }}>LOCKED</T></View>
             </View>
           </Rise>
@@ -203,7 +203,7 @@ export default function PocketDetail() {
             </View>
           </Rise>
         ) : !owned ? (
-          <Card style={{ marginHorizontal: PAGE_MARGIN, marginTop: 16 }}><T v="sub" color="ink2">Another key owns this pocket. Add money, return or revoke from the device that created it.</T></Card>
+          <Card style={{ marginHorizontal: PAGE_MARGIN, marginTop: 16 }}><T v="sub" color="ink2">Another key owns this card. Add money, return or revoke from the device that created it.</T></Card>
         ) : null}
         <TxNotice pocket={pocket.address} />
         {err ? <T v="sub" color="vermillionInk" style={{ textAlign: "center", paddingHorizontal: 32, marginTop: 12 }}>{err}</T> : null}
@@ -223,7 +223,7 @@ export default function PocketDetail() {
               ) : null}
               {pocket.balance > 0n ? (
                 <Button label={`Return ${money(pocket.balance)} to main wallet`} kind="vermillion" icon="arrowIn" auto="return.open" onPress={() => setAction({ mode: "return", pocket: pocket.address })} />
-              ) : returned === 0n ? <T v="sub" color="ink2">The pocket was empty when you revoked it.</T> : null}
+              ) : returned === 0n ? <T v="sub" color="ink2">The card was empty when you revoked it.</T> : null}
             </Card>
             <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 12, flexDirection: "row", gap: 12 }}>
               {agent ? <AgentAvatar kind={agent.id} size={44} /> : <Avatar icon="bot" size={44} />}
@@ -232,7 +232,7 @@ export default function PocketDetail() {
                   <T v="head">Agent locked out</T>
                   {agent ? <View style={{ paddingHorizontal: 7, height: 20, borderRadius: 5, backgroundColor: c.fill, justifyContent: "center" }}><T v="tab" w="bold" style={{ letterSpacing: 0.6, textTransform: "uppercase" }}>{agent.name}</T></View> : null}
                 </View>
-                <T v="sub" color="ink2">{`${agent?.name ?? "The agent"} can no longer pay from this pocket. The contract refuses any payment, by anyone, for good.`}</T>
+                <T v="sub" color="ink2">{`${agent?.name ?? "The agent"} can no longer pay from this card. The contract refuses any payment, by anyone, for good.`}</T>
               </View>
             </Card>
           </Rise>
@@ -241,7 +241,7 @@ export default function PocketDetail() {
         {pocket.frozen && !pocket.revoked ? (
           <Card style={{ marginHorizontal: PAGE_MARGIN, marginTop: 16, gap: 10 }}>
             <T v="row" w="bold">Frozen by the Sentinel</T>
-            <T v="sub" color="ink2">{`${lastFreeze ? `${sentinelReason(lastFreeze)}, so it` : "It"} stopped all payments from this pocket on-chain.${lastFreeze && !movedMoney(lastFreeze) ? " No money moved." : ""} Its key can only freeze; only yours can unfreeze.`}</T>
+            <T v="sub" color="ink2">{`${lastFreeze ? `${sentinelReason(lastFreeze)}, so it` : "It"} stopped all payments from this card on-chain.${lastFreeze && !movedMoney(lastFreeze) ? " No money moved." : ""} Its key can only freeze; only yours can unfreeze.`}</T>
             <UnfreezeButton pocket={pocket.address} />
           </Card>
         ) : null}
@@ -313,7 +313,7 @@ export default function PocketDetail() {
         )}
 
         <SectionHeader title="History" />
-        {rows.length === 0 ? <Card style={{ marginHorizontal: PAGE_MARGIN }}><T v="sub" color="ink2">Nothing from this pocket yet. Creating, adding money, payments and refusals show up here, each with its transaction.</T></Card>
+        {rows.length === 0 ? <Card style={{ marginHorizontal: PAGE_MARGIN }}><T v="sub" color="ink2">Nothing from this card yet. Creating, adding money, payments and refusals show up here, each with its transaction.</T></Card>
           : <ListCard><AnimatedList initial="stagger">{(allRows ? rows : rows.slice(0, HISTORY)).map((r, i, shown) => <ActivityRow key={r.key} row={r} showAgent={false} last={i === shown.length - 1} onPress={() => setReceipt(r)} />)}</AnimatedList></ListCard>}
         {!allRows && rows.length > HISTORY ? <Button label={`Show all ${rows.length}`} kind="text" small onPress={() => setAllRows(true)} style={{ marginTop: 8, alignSelf: "center" }} /> : null}
         </> : null}
@@ -329,11 +329,11 @@ function AuditTrail({ rows, name, onExport }: { rows: LedgerRow[]; name: (id?: s
     const t = new Date(r.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
     if (r.kind === "owner") {
       const k = r.ownerKind;
-      const title = k === "revoke" ? "You revoked the pocket" : k === "return" ? `${money(r.amount ?? 0n)} returned to your wallet` : k === "fund" ? `You added ${money(r.amount ?? 0n)}` : k === "create" ? "Pocket created" : "Rule changed";
+      const title = k === "revoke" ? "You revoked the card" : k === "return" ? `${money(r.amount ?? 0n)} returned to your wallet` : k === "fund" ? `You added ${money(r.amount ?? 0n)}` : k === "create" ? "Card created" : "Rule changed";
       return { key: r.key, t, title, sub: "Owner transaction", tone: k === "revoke" ? c.vermillion : c.ink };
     }
-    if (r.kind === "payment") return { key: r.key, t, title: `Paid ${name(r.sellerId)} ${money(r.amount ?? 0n)}`, sub: r.cosigned ? "Co-signed by you" : "Inside the pocket's limits", tone: c.green };
-    if (r.outcome === "refused") return { key: r.key, t, title: `${name(r.sellerId)} refused`, sub: r.reasons[0] ? r.reasons[0].replace(/_/g, " ").toLowerCase() : "Not allowed by the pocket", tone: c.vermillionInk };
+    if (r.kind === "payment") return { key: r.key, t, title: `Paid ${name(r.sellerId)} ${money(r.amount ?? 0n)}`, sub: r.cosigned ? "Co-signed by you" : "Inside the card's limits", tone: c.green };
+    if (r.outcome === "refused") return { key: r.key, t, title: `${name(r.sellerId)} refused`, sub: r.reasons[0] ? r.reasons[0].replace(/_/g, " ").toLowerCase() : "Not allowed by the card", tone: c.vermillionInk };
     return { key: r.key, t, title: r.kind === "intent" ? "Task confirmed" : "Approval", sub: r.outcome, tone: c.muted };
   });
   return (

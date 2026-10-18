@@ -276,7 +276,7 @@ export default function AgentChat() {
   const waitingHere = !!(intent || pay || question);
   const busyHere = chatBusy || waitingHere;
   const dot: DotState = active?.revoked || active?.frozen ? "stopped" : waitingHere ? "waiting" : chatBusy ? "working" : "ready";
-  const headStatus = !active ? "Create a pocket first" : active.revoked ? "Stopped · this pocket is off" : active.frozen ? "Frozen by the Sentinel · only you can unfreeze"
+  const headStatus = !active ? "Create a card first" : active.revoked ? "Stopped · this card is off" : active.frozen ? "Frozen by the Sentinel · only you can unfreeze"
     : waitingHere ? "Waiting for you" : chatBusy ? "Working…" : `Ready · ${money(active.balance)} left`;
   // the stop path is revoking the pocket (confirmed by the hold-to-revoke sheet); without one, send simply hides while the agent works
   const showStop = canStop && chatBusy;
@@ -290,7 +290,7 @@ export default function AgentChat() {
           <Icon name="chevronLeft" size={22} stroke={2.2} />
         </Press>
         <Press kind="row" haptics="select" auto="picker.open" onPress={() => { if (pockets.filter((p) => (p.agentId ?? "chainbrain") === "chainbrain").length > 1) setPickerOpen(true); }} onLongPress={() => autoplay.toggle()} delayLongPress={HOLD_MS} hitSlop={6}
-          accessibilityRole="button" accessibilityLabel={active ? `${active.name}, ${headStatus}. Change pocket` : "No pocket yet"}
+          accessibilityRole="button" accessibilityLabel={active ? `${active.name}, ${headStatus}. Change card` : "No card yet"}
           style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minHeight: 52, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.tile, borderCurve: "continuous", backgroundColor: c.card, borderWidth: 1, borderColor: hairline }}>
           <AgentAvatar kind="chainbrain" size={38} badge={dot === "ready" ? c.green : dot === "stopped" ? c.faint : c.vermillion} />
           <View style={{ flex: 1, gap: 1 }}>
@@ -298,7 +298,7 @@ export default function AgentChat() {
               <T v="head" numberOfLines={1} accessibilityRole="header" style={{ flexShrink: 1 }}>ChainBrain Agent</T>
               <Icon name="circleCheck" size={14} color={c.vermillion} stroke={2.2} />
             </View>
-            <T v="cap" color="muted" numberOfLines={1}>{active ? `Pocket: ${cleanText(active.name, 22)} · ${headStatus}` : "Create a pocket first"}</T>
+            <T v="cap" color="muted" numberOfLines={1}>{active ? `Card: ${cleanText(active.name, 22)} · ${headStatus}` : "Create a card first"}</T>
           </View>
           <Icon name="chevronDown" size={16} color={c.muted} />
         </Press>
@@ -316,8 +316,8 @@ export default function AgentChat() {
             <Rise dy={8} duration={260}>
               <View style={{ flex: 1, justifyContent: "center", gap: 20, paddingVertical: 24 }}>
                 <View style={{ gap: 8 }}>
-                  <T v="display">{active ? "What should I buy?" : "Create a pocket first"}</T>
-                  <T v="body" color="ink2">{active ? "I only spend from the pocket you funded, within the limits you set. For bigger payments I wait for your OK." : "Your agent works inside a pocket. Create one on Home, then come back."}</T>
+                  <T v="display">{active ? "What should I buy?" : "Create a card first"}</T>
+                  <T v="body" color="ink2">{active ? "I only spend from the card you funded, within the limits you set. For bigger payments I wait for your OK." : "Your agent works inside a card. Create one on Home, then come back."}</T>
                 </View>
                 {active && prompts.length ? (
                   <View style={{ gap: 8 }}>

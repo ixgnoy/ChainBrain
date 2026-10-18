@@ -52,7 +52,7 @@ export function LiveFeed({ onLedger }: { /** no ledger row for a card: show the 
   const routines = pockets.filter((p) => !p.revoked).map((p) => ({ p, rt: api.routineOf(p.address) })).filter((x) => x.rt && x.rt.status === "active");
   const next = routines.sort((a, b) => a.rt!.nextAt - b.rt!.nextAt)[0];
   const running = events.filter((e) => e.type === "routine" && (e.kind === "run-start" || e.kind === "run")).reduce((m, e) => m.set(String(e.pocket), e.kind), new Map<string, string>());
-  const runningNow = [...running.entries()].filter(([, k]) => k === "run-start").map(([pk]) => ({ agent: agentOf(pk), pocket: cleanText(findPocket(pk)?.name ?? "a pocket", 24) }));
+  const runningNow = [...running.entries()].filter(([, k]) => k === "run-start").map(([pk]) => ({ agent: agentOf(pk), pocket: cleanText(findPocket(pk)?.name ?? "a card", 24) }));
   const line = nowLine({
     asks: asks.map((a) => ({ agent: a.agent, amount: a.data?.amount ? `${curSign()}${cleanText(String(a.data.amount), 10)}` : undefined })),
     busy: chatBusy, running: runningNow, watching: pockets.filter((p) => !p.revoked).length,

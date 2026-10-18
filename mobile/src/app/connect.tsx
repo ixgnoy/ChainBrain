@@ -146,7 +146,7 @@ export default function Connect() {
           <Card pad={18} style={{ marginHorizontal: 16, marginTop: 12, gap: 10 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: opening ? c.ink : c.line, alignItems: "center", justifyContent: "center" }}><T v="label" style={{ color: c.white, fontSize: 13 }}>2</T></View>
-              <T v="section" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ flex: 1 }}>{`${info.name} asks for a pocket`}</T>
+              <T v="section" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ flex: 1 }}>{`${info.name} asks for a card`}</T>
             </View>
             {opening && !consent ? (
               <Animated.View entering={FadeIn.duration(motion.base)} exiting={FadeOut.duration(motion.exit)} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -154,11 +154,11 @@ export default function Connect() {
                 <T v="sub" color="ink2">{`Waiting for ${info.name} to open the link…`}</T>
               </Animated.View>
             ) : (
-              <T v="sub" color="muted">{`You choose the budget and the sellers. ${info.name} never sees your main wallet or your other pockets.`}</T>
+              <T v="sub" color="muted">{`You choose the budget and the sellers. ${info.name} never sees your main wallet or your other cards.`}</T>
             )}
           </Card>
         </Reveal>
-        <Eyebrow color="mutedOnCanvas" accessibilityLabel="One pocket per agent grant, disconnect any time" style={{ textAlign: "center", marginTop: 18, paddingHorizontal: 24, lineHeight: 18 }}>{"One pocket per agent grant\nDisconnect any time"}</Eyebrow>
+        <Eyebrow color="mutedOnCanvas" accessibilityLabel="One card per agent grant, disconnect any time" style={{ textAlign: "center", marginTop: 18, paddingHorizontal: 24, lineHeight: 18 }}>{"One card per agent grant\nDisconnect any time"}</Eyebrow>
       </Screen>
       <ConsentSheet agent={agent} visible={consent} onClose={() => { setConsent(false); setOpening(false); }} onAllowed={allowed} />
     </View>

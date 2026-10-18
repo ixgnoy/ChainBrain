@@ -30,7 +30,7 @@ export function WorstCase({ pocket, sellers, off }: { pocket: Pocket; sellers: s
         <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c.vermillionSoft, alignItems: "center", justifyContent: "center" }}><Icon name="shieldCheck" size={20} color={c.vermillionInk} stroke={2} /></View>
         <View style={{ flex: 1 }}>
           <T v="head">Worst case</T>
-          <T v="cap" color="muted">If this pocket's agent is hijacked</T>
+          <T v="cap" color="muted">If this card's agent is hijacked</T>
         </View>
         {blocked ? <View style={{ minHeight: 24, paddingHorizontal: 9, borderRadius: 12, backgroundColor: c.fill, justifyContent: "center" }}><T v="cap" w="bold">{`${blocked} blocked`}</T></View> : null}
       </View>

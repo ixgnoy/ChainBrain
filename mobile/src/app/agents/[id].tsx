@@ -68,12 +68,12 @@ export default function AgentDetail() {
 
         <Reveal index={1}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 22, marginBottom: 10 }}>
-            <Eyebrow color="mutedOnCanvas">{held.length === 1 ? "Assigned pocket" : `${held.length} pockets`}</Eyebrow>
+            <Eyebrow color="mutedOnCanvas">{held.length === 1 ? "Assigned card" : `${held.length} cards`}</Eyebrow>
             {held.length ? <T v="cap" color="mutedOnCanvas">{`${curSign()}${hkd(a.balance)} left in total`}</T> : null}
           </View>
           <View style={{ gap: 12 }}>
             {held.map((p) => <HeldPocket key={p.address} p={p} />)}
-            {!held.length ? <Card style={{ marginHorizontal: 16 }}><T v="sub" color="ink2">{`${a.name} holds no pocket. Give it one to let it pay inside limits you set.`}</T></Card> : null}
+            {!held.length ? <Card style={{ marginHorizontal: 16 }}><T v="sub" color="ink2">{`${a.name} holds no card. Give it one to let it pay inside limits you set.`}</T></Card> : null}
           </View>
         </Reveal>
 
@@ -84,7 +84,7 @@ export default function AgentDetail() {
                 <T v="head">Spent today</T>
                 <T v="head" style={{ color: c.vermillionInk }} accessibilityLabel="share of its money spent today">{`${startOfDayBalance > 0n ? Math.round((Number(a.spentToday) / Number(startOfDayBalance)) * 100) : 0}%`}</T>
               </View>
-              <T v="sub" color="muted">{`${curSign()}${hkd(a.spentToday)} spent today · ${curSign()}${hkd(a.balance)} left in its ${held.length === 1 ? "pocket" : "pockets"}`}</T>
+              <T v="sub" color="muted">{`${curSign()}${hkd(a.spentToday)} spent today · ${curSign()}${hkd(a.balance)} left in its ${held.length === 1 ? "card" : "cards"}`}</T>
               <HatchBar value={startOfDayBalance > 0n ? Number(a.spentToday) / Number(startOfDayBalance) : 0} tone={c.vermillion} height={16} label="Spent today" />
             </Card>
           </Reveal>
@@ -112,17 +112,17 @@ export default function AgentDetail() {
           {a.kind === "builtin" ? (
             <>
               <Button label="Chat with ChainBrain" icon="chat" onPress={() => router.navigate("/agent")} />
-              <Button label="Give it another pocket" kind="secondary" icon="plus" onPress={() => router.push("/create")} />
-              <T v="cap" color="mutedOnCanvas" style={{ textAlign: "center" }}>The built-in agent stops when you revoke its pocket.</T>
+              <Button label="Give it another card" kind="secondary" icon="plus" onPress={() => router.push("/create")} />
+              <T v="cap" color="mutedOnCanvas" style={{ textAlign: "center" }}>The built-in agent stops when you revoke its card.</T>
             </>
           ) : off ? (
             <Button label={`Reconnect ${a.name}`} icon="link" onPress={() => connectAgent(a.id as AgentId)} />
           ) : (
             <>
-              <Button label="Give another pocket" icon="plus" onPress={() => router.push({ pathname: "/connect", params: { agent: a.id } })} />
+              <Button label="Give another card" icon="plus" onPress={() => router.push({ pathname: "/connect", params: { agent: a.id } })} />
               <Card pad={14} style={{ gap: 10 }}>
                 <HoldToRevoke label={`Hold to disconnect ${a.name}`} onComplete={async () => { disconnectAgent(a.id as AgentId); }} />
-                <T v="cap" color="muted" style={{ textAlign: "center" }}>Stops the agent. Money stays safe in the pocket.</T>
+                <T v="cap" color="muted" style={{ textAlign: "center" }}>Stops the agent. Money stays safe in the card.</T>
               </Card>
             </>
           )}

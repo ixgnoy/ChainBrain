@@ -67,7 +67,7 @@ async function until(what, fn, ms = 30000, step = 200) {
   await run("intro: four user-paced pages on the first launch, Skip always there", async () => {
     const skip = page.getByRole("button", { name: "Skip" });
     await skip.waitFor({ timeout: 60000 });
-    await visible("Give your AI a pocket, not your wallet").waitFor();
+    await visible("Give your AI a card, not your wallet").waitFor();
     check("intro page 1 shows the pitch line with Skip", true);
     await shot("00-intro");
     await page.getByRole("button", { name: "Next", exact: true }).click(); // exact: Home's "Next up" tiles say "next run"
@@ -75,7 +75,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await visible("The limits live in a contract you own").waitFor();
     await page.getByRole("button", { name: "Next", exact: true }).click(); // exact: Home's "Next up" tiles say "next run"
-    await visible("The worst case is the pocket balance").waitFor();
+    await visible("The worst case is the card balance").waitFor();
     check("intro pages 2 to 4 are reachable and Skip stays visible", await skip.isVisible());
     await skip.click();
     await skip.waitFor({ state: "detached", timeout: 5000 });
@@ -85,15 +85,15 @@ async function until(what, fn, ms = 30000, step = 200) {
   await run("launch: straight to a lived-in Home, nothing says demo", async () => {
     await visible("Main wallet").waitFor({ timeout: 60000 });
     // Home shows three cards by default (one of each usage), the rest behind "See all"; the Brain strip under the wallet
-    await visible(/Brain is watching \d+ pockets/).waitFor({ timeout: 20000 });
-    check("the Brain strip says what it watches, and Home shows at most three cards", (await page.getByRole("button", { name: / pocket, [\d.]+ USDC/ }).count()) <= 3);
+    await visible(/Brain is watching \d+ cards/).waitFor({ timeout: 20000 });
+    check("the Brain strip says what it watches, and Home shows at most three cards", (await page.getByRole("button", { name: / card, [\d.]+ eHKD/ }).count()) <= 3);
     await page.getByRole("button", { name: /See all \d+ cards/ }).click(); await sleep(600);
     await visible("Research data").waitFor();
     const t = await body();
     check("four seeded pockets", /Research data/.test(t) && /One purchase/.test(t) && /Market news/.test(t) && /Trade quotes/.test(t));
-    check("each pocket says what it does, under the wallet that funds it", /out in \d+ pockets/.test(t) && /Haggles DataPro down first/.test(t) && /Buys .+ at ≤ HK\$0\.32/.test(t) && /When asked/.test(t) && /Daily 08:00/.test(t) && /One-time/.test(t));
-    check("the deck shows every pocket as a button", (await page.getByRole("button", { name: /Research data pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /One purchase pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /Market news pocket/ }).count()) === 1);
-    check("the agents that hold them are named", (await page.getByRole("button", { name: /ChainBrain pocket:/ }).count()) > 0 && (await page.getByRole("button", { name: /Claude pocket:/ }).count()) > 0 && (await page.getByRole("button", { name: /ChatGPT pocket:/ }).count()) > 0);
+    check("each pocket says what it does, under the wallet that funds it", /out in \d+ cards/.test(t) && /Haggles DataPro down first/.test(t) && /Buys .+ at ≤ HK\$0\.32/.test(t) && /When asked/.test(t) && /Daily 08:00/.test(t) && /One-time/.test(t));
+    check("the deck shows every pocket as a button", (await page.getByRole("button", { name: /Research data card/ }).count()) === 1 && (await page.getByRole("button", { name: /One purchase card/ }).count()) === 1 && (await page.getByRole("button", { name: /Market news card/ }).count()) === 1);
+    check("the agents that hold them are named", (await page.getByRole("button", { name: /ChainBrain card:/ }).count()) > 0 && (await page.getByRole("button", { name: /Claude card:/ }).count()) > 0 && (await page.getByRole("button", { name: /ChatGPT card:/ }).count()) > 0);
     check("spending this week is computed (vs last week)", /This week/.test(t) && /vs last week/.test(t) && /bought/.test(t));
     check("main wallet shows HK$438.40", /438\.40/.test(t), t.slice(0, 200));
     check("no demo / sample / mock wording", !/\bdemo\b|sample data|mock|simulat/i.test(t));
@@ -101,7 +101,7 @@ async function until(what, fn, ms = 30000, step = 200) {
   });
 
   await run("tap a card: it opens the pocket page", async () => {
-    const card = page.getByRole("button", { name: /Research data pocket/ });
+    const card = page.getByRole("button", { name: /Research data card/ });
     await card.evaluate((e) => e.scrollIntoView({ block: "center" })); // the front card of the stack: clear of the tab bar and the ask dock
     await card.click({ position: { x: 120, y: 24 } }); // its name row
     await page.waitForURL(/pocket\/0x[0-9a-fA-F]{40}/, { timeout: 15000 });
@@ -127,7 +127,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Activity ledger").waitFor({ timeout: 15000 });
     const d = await body();
     check("Claude's page: its pocket, spent today, its own ledger", /Market news/.test(d) && /Spent today/.test(d) && /Paid (Exa|CoinGecko)/.test(d));
-    check("Disconnect keeps the money", /Money stays safe in the pocket/.test(d));
+    check("Disconnect keeps the money", /Money stays safe in the card/.test(d));
     await shot("01e-agent-claude");
     await page.goBack(); await sleep(600);
   });
@@ -164,22 +164,22 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Add ChainBrain to your AI").waitFor({ timeout: 15000 });
     await page.getByRole("button", { name: "Connect ChatGPT" }).click();
     await page.getByRole("button", { name: "Copy link" }).click();
-    await visible("ChatGPT wants to use a pocket").waitFor({ timeout: 15000 });
+    await visible("ChatGPT wants to use a card").waitFor({ timeout: 15000 });
     const t = await body();
-    check("consent: a new pocket, can and can't, other pockets keep their agents", /New pocket: ChatGPT research/.test(t) && /ChatGPT can't/i.test(t) && /keep the agent/.test(t));
+    check("consent: a new pocket, can and can't, other pockets keep their agents", /New card: ChatGPT research/.test(t) && /ChatGPT can't/i.test(t) && /keep the agent/.test(t));
     await shot("01h-consent");
     await slide("Allow");
     await visible("See ChatGPT").waitFor({ timeout: 30000 });
     await page.getByRole("button", { name: "See ChatGPT" }).click();
     await visible("Activity ledger").waitFor({ timeout: 15000 });
-    check("ChatGPT now holds two pockets", /2 pockets/i.test(await body()));
+    check("ChatGPT now holds two pockets", /2 cards/i.test(await body()));
     await shot("01i-agent-chatgpt");
     await page.goBack(); await sleep(600);
   });
 
   await run("scene 1: create and fund a Research pocket in the wizard", async () => {
     await tab("Home");
-    await page.getByRole("button", { name: "New pocket" }).first().click();
+    await page.getByRole("button", { name: "New card" }).first().click();
     await visible("Say what it's").waitFor();
     await page.getByRole("button", { name: "Set it up step by step instead" }).click();
     await visible("What is it for?").waitFor();
@@ -270,8 +270,8 @@ async function until(what, fn, ms = 30000, step = 200) {
   });
 
   await run("scene 8: dead end on the One purchase pocket", async () => {
-    await page.getByRole("button", { name: /Change pocket/ }).click();
-    await visible("Which pocket?").waitFor();
+    await page.getByRole("button", { name: /Change card/ }).click();
+    await visible("Which card?").waitFor();
     await page.getByText("One purchase").filter({ visible: true }).last().click();
     await sleep(500);
     await visible("A search for half a cent").waitFor();
@@ -302,7 +302,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await tab("Activity");
     // Activity opens on Live: what the agents did and decided, the co-signed Nansen payment among them
     await visible("Paid Nansen").waitFor();
-    check("Activity opens on Live", /Watching \d+ pockets|is waiting for your co-signature|is running|is working/.test(await body()));
+    check("Activity opens on Live", /Watching \d+ cards|is waiting for your co-signature|is running|is working/.test(await body()));
     await shot("09-live");
     await tab("Ledger");
     await visible("Nansen").waitFor();
@@ -347,11 +347,11 @@ async function until(what, fn, ms = 30000, step = 200) {
 
   await run("scene 12: one sentence makes a pocket app; its routine runs, and the run past its allowance asks", async () => {
     await tab("Home");
-    await page.getByRole("button", { name: "New pocket" }).first().click();
+    await page.getByRole("button", { name: "New card" }).first().click();
     await visible("Say what it's").waitFor();
-    await page.getByLabel("What the pocket is for, in one sentence").fill("Every morning, get me durian export news from Exa and the ETH price from CoinGecko. Max HK$0.40 a week.");
-    await page.getByRole("button", { name: "Compose my pocket app" }).click();
-    await visible("Your pocket app").waitFor();
+    await page.getByLabel("What the card is for, in one sentence").fill("Every morning, get me durian export news from Exa and the ETH price from CoinGecko. Max HK$0.40 a week.");
+    await page.getByRole("button", { name: "Compose my card" }).click();
+    await visible("Your card").waitFor();
     await sleep(2600);
     let t = await body();
     check("proof card: worst case HK$0.80, the weekly allowance, every test payment as expected", /Worst case, even if the agent is fooled/.test(t) && /HK\$0\.80/.test(t) && /a week, on its own/.test(t) && /6 payments tried · all as expected/.test(t));
@@ -392,7 +392,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await page.getByRole("button", { name: /How ChainBrain works/ }).click();
     const skip = page.getByRole("button", { name: "Skip" });
     await skip.waitFor({ timeout: 10000 });
-    check("How ChainBrain works replays the intro", await visible("Give your AI a pocket, not your wallet").isVisible());
+    check("How ChainBrain works replays the intro", await visible("Give your AI a card, not your wallet").isVisible());
     await skip.click();
     await skip.waitFor({ state: "detached", timeout: 5000 });
   });
@@ -401,8 +401,8 @@ async function until(what, fn, ms = 30000, step = 200) {
     await tab("Brain");
     await visible("How it decided").waitFor({ timeout: 20000 });
     const t = await body();
-    check("the graph names its agents, pockets and sellers", /\d+ agents · \d+ pockets · \d+ sellers/i.test(t));
-    check("each stage comes from the decision's own events", /Pocket rules/.test(t) && /Risk \d+\/10/.test(t) && /Predicted (it pays|a refusal)/.test(t) && /(on-chain · 0x|no money moved)/.test(t));
+    check("the graph names its agents, pockets and sellers", /\d+ agents · \d+ cards/i.test(t));
+    check("each stage comes from the decision's own events", /Card rules/.test(t) && /Risk \d+\/10/.test(t) && /Predicted (it pays|a refusal)/.test(t) && /(on-chain · 0x|no money moved)/.test(t));
     check("no test buttons on the phone (the console has them)", (await page.getByRole("button", { name: /^Test a payment/ }).count()) === 0);
     await shot("13-brain");
   });

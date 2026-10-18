@@ -59,7 +59,7 @@ export function SentinelCard({ v }: { v: SentinelView }) {
   return (
     <EventCard
       tone={freeze ? "blocked" : "waiting"} alert={v.key}
-      title={freeze ? "Sentinel froze this pocket" : "Sentinel wants your OK"}
+      title={freeze ? "Sentinel froze this card" : "Sentinel wants your OK"}
       body={freeze ? `${reason(v)}. ${movedMoney(v) ? "Nothing more can leave the pocket" : "No money moved"}. Only you can unfreeze it.` : `${reason(v)}. Your next payment needs your signature.`}
       why={{
         title: "Why", rows, codes: v.signals.map((s) => s.id),
@@ -84,7 +84,7 @@ export function SentinelCard({ v }: { v: SentinelView }) {
 /** Watching and clearing: one quiet line each. */
 export function SentinelLine({ v }: { v: SentinelView }) {
   const text = v.kind === "clear"
-    ? v.by === "unfreeze" ? "Sentinel: you unfroze the pocket. Watching again from now." : "Sentinel: you co-signed, so the hold is lifted."
+    ? v.by === "unfreeze" ? "Sentinel: you unfroze the card. Watching again from now." : "Sentinel: you co-signed, so the hold is lifted."
     : `Sentinel is watching: ${reason(v).replace(/^./, (x) => x.toLowerCase())}`;
   return (
     <Rise dy={6} layout style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -98,7 +98,7 @@ export function SentinelLine({ v }: { v: SentinelView }) {
 export function SentinelActivityRow({ v, last, delay = 0 }: { v: SentinelView; last?: boolean; delay?: number }) {
   const { findPocket, setExplorerTx } = useApp();
   const pocket = findPocket(v.pocket);
-  const title = v.kind === "freeze" ? "Sentinel froze the pocket" : "Sentinel asked for your OK";
+  const title = v.kind === "freeze" ? "Sentinel froze the card" : "Sentinel asked for your OK";
   return (
     <Rise delay={Math.max(delay, 0)} instant={delay < 0} dy={10} layout>
       <TxRow square={<BrandSquare icon={v.kind === "freeze" ? "freeze" : "eye"} tone={v.kind === "freeze" ? "fill" : "blue"} />} title={title}

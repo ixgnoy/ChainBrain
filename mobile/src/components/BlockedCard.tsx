@@ -15,7 +15,7 @@ export function BlockedCard({ e }: { e: WalletEvent }) {
   return (
     <EventCard
       tone="blocked" alert={`forced:${e.tx}`} title={`Blocked a transfer of ${money(amount)}`}
-      body={`Someone used the agent's signature to send it to ${shortHex(String(e.to ?? ""), 6, 4)}. That address is not on your list, so the pocket refused it on-chain. Nothing moved.`}
+      body={`Someone used the agent's signature to send it to ${shortHex(String(e.to ?? ""), 6, 4)}. That address is not on your list, so the card refused it on-chain. Nothing moved.`}
       onPress={() => row && setReceipt(row)} a11y={`Blocked a transfer of ${money(amount)}. Open details`}
       why={{ codes: ["REVERTED"], rows: [["Transaction", shortHex(String(e.tx ?? ""), 6, 4)]] }}
     />

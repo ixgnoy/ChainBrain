@@ -7,9 +7,9 @@ import { curSign } from "./runtime";
 export const PLAIN_REASONS: Record<string, string> = {
   SELLER_NOT_ALLOWED: "seller not on your list",
   OVER_CAP: "above the limit for one payment",
-  OVER_BUDGET: "not enough left in the pocket",
-  POCKET_REVOKED: "you turned this pocket off",
-  POCKET_EXPIRED: "the pocket has expired",
+  OVER_BUDGET: "not enough left in the card",
+  POCKET_REVOKED: "you turned this card off",
+  POCKET_EXPIRED: "the card has expired",
   PRICE_ABOVE_INTENT: "above the price you set for this task",
   INTENT_TOTAL_REACHED: "over the total you set for this task",
   INTENT_ITEMS_REACHED: "already bought enough for this task",
@@ -24,16 +24,16 @@ export const PLAIN_REASONS: Record<string, string> = {
   DISCLOSURE_REFUSED: "the seller asked for more data than a purchase needs",
   SIGNATURE_TYPE_NOT_ALLOWED: "the seller asked for a signature that is not a payment",
   SETTLEMENT_FAILED: "the payment did not go through",
-  NOT_THIS_AGENT: "this pocket belongs to a different agent",
+  NOT_THIS_AGENT: "this card belongs to a different agent",
   COUNTERPARTY_HIGH_RISK: "Radar traced the seller's money to a high-risk source",
   COUNTERPARTY_REVIEW: "the seller's money looks risky, so it needs your OK",
-  POCKET_FROZEN: "the pocket is frozen until you unfreeze it",
+  POCKET_FROZEN: "the card is frozen until you unfreeze it",
   SENTINEL_HOLD: "the Sentinel saw something unusual, so it needs your OK",
-  REVERTED: "the pocket refused it on-chain",
+  REVERTED: "the card refused it on-chain",
 };
 const ASK: Record<string, string> = {
   owner_full_name: "your full name", owner_email: "your email", owner_phone: "your phone number", wallet_history: "your wallet history",
-  other_pockets: "your other pockets", owner_address: "your address", balance: "your balance", kyc: "your ID documents",
+  other_pockets: "your other cards", owner_address: "your address", balance: "your balance", kyc: "your ID documents",
 };
 /** "your full name, your email and an approval signature": what a seller asked for, in words. */
 export function plainAsks(asked: string[], sign: boolean): string {
@@ -102,8 +102,8 @@ export const visibleRows = (rows: LedgerRow[]) => rows.filter((r) => !(r.kind ==
 
 /** The pitch line: if the agent is hijacked, the most it can lose is the pocket balance, and only to the allowed sellers. */
 export function worstCase(balance: bigint, sellers: string[], dead = false): string {
-  if (dead) return "This pocket is switched off. The agent can't spend anything from it.";
-  if (balance === 0n) return "The pocket is empty, so a hijacked agent could not lose anything.";
+  if (dead) return "This card is switched off. The agent can't spend anything from it.";
+  if (balance === 0n) return "The card is empty, so a hijacked agent could not lose anything.";
   const to = sellers.length === 0 ? "to no one: no seller is allowed" : `only to ${sellers.length === 1 ? sellers[0] : `${sellers.slice(0, -1).join(", ")} and ${sellers.at(-1)}`}`;
   return `If the agent is hijacked, the most it can lose is ${curSign()}${hkd(balance)}, ${to}.`;
 }

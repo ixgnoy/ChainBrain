@@ -141,11 +141,11 @@ export default function Compose() {
     setStage({ funded: false });
     setSteps([
       { key: "check", icon: "checks", status: "wait", title: "Checking your rules" },
-      { key: "deploy", icon: "layers", status: "wait", title: "Deploying the pocket contract" },
+      { key: "deploy", icon: "layers", status: "wait", title: "Deploying the card contract" },
       { key: "rules", icon: "key", status: "wait", title: "Writing your rules into it" },
       { key: "key", icon: "bot", status: "wait", title: outside ? `Handing ${who} its own key` : `Setting ${who} as its agent` },
       { key: "fund", icon: "arrowIn", status: "wait", title: `Moving ${curSign()}${draft.budget} from your main wallet` },
-      { key: "arrange", icon: "squarePlus", status: "wait", title: "Arranging your pocket app" },
+      { key: "arrange", icon: "squarePlus", status: "wait", title: "Arranging your card" },
       { key: "live", icon: "bolt", status: "wait", title: "Live" },
     ]);
     try {
@@ -164,7 +164,7 @@ export default function Compose() {
         return r;
       }, (r) => `Contract 0x…${r.pocket.slice(-4).toLowerCase()} · tx ${tx(r.tx)}`);
       await step("rules", 1300, () => null, () => "In the same transaction · only your key can change them");
-      await step("key", 1100, () => null, () => `${who} can pay only from this pocket`);
+      await step("key", 1100, () => null, () => `${who} can pay only from this card`);
       const f = await step("fund", 1500, async () => {
         const r = await wallet.fund(m.pocket, budget);
         recordTx({ kind: "fund", pocket: m.pocket, hash: r.hash, amount: budget.toString() });
@@ -179,7 +179,7 @@ export default function Compose() {
       await step("live", 500, () => null, () => "Created and funded on-chain");
       haptic.success();
       if (!outside) setActive(m.pocket);
-      setNotice({ title: `${title} created and funded`, pocket: m.pocket, txs: [{ label: "Create pocket", hash: m.tx }, { label: `Add ${curSign()}${draft.budget}`, hash: f.hash }] });
+      setNotice({ title: `${title} created and funded`, pocket: m.pocket, txs: [{ label: "Create card", hash: m.tx }, { label: `Add ${curSign()}${draft.budget}`, hash: f.hash }] });
       setMade({ pocket: m.pocket });
       setTimeout(() => open(m.pocket), 2200);
     } catch (e) { setSteps(null); setErr(txError(e)); throw e; }
@@ -215,7 +215,7 @@ export default function Compose() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas }}>
-      <BackHeader title="New pocket app" />
+      <BackHeader title="New card" />
       <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" contentInsetAdjustmentBehavior="never" automaticallyAdjustKeyboardInsets contentContainerStyle={{ paddingTop: 8, /* the header above is in the flow (no scrollY), so it already holds the top inset */ paddingBottom: insets.bottom + 120, gap: 16 }}>{/* room for the ask dock that floats over the bottom */}
         <View style={{ paddingHorizontal: 20, gap: 6 }}>
           <T v="display" accessibilityRole="header" style={{ fontSize: 30, lineHeight: 36 }}>{"Say what it's for."}</T>
@@ -223,7 +223,7 @@ export default function Compose() {
         </View>
 
         <Card pad={16} style={{ marginHorizontal: PAGE_MARGIN, gap: 12 }}>
-          <Field value={text} onChangeText={(t) => setText(t.slice(0, 300))} placeholder={EXAMPLES[0].text} multiline accessibilityLabel="What the pocket is for, in one sentence"
+          <Field value={text} onChangeText={(t) => setText(t.slice(0, 300))} placeholder={EXAMPLES[0].text} multiline accessibilityLabel="What the card is for, in one sentence"
             style={{ minHeight: 128, paddingVertical: 14, fontSize: 17, lineHeight: 24, textAlignVertical: "top" }} />
           <Understood text={text} sellers={sellers} />
           {/* the four kinds of app, as small cards in their job's face with the agent that would hold them: tap one to try it */}
@@ -245,7 +245,7 @@ export default function Compose() {
               );
             })}
           </View>
-          <Button label={res ? "Compose again" : "Compose my pocket app"} kind={res ? "secondary" : "primary"} icon="layers" loading={reading} onPress={() => void compose()} />
+          <Button label={res ? "Compose again" : "Compose my card"} kind={res ? "secondary" : "primary"} icon="layers" loading={reading} onPress={() => void compose()} />
           {err ? <T v="sub" color="negative">{err}</T> : null}
         </Card>
 
@@ -268,7 +268,7 @@ export default function Compose() {
 
             <Stage i={2}>
               <View style={{ paddingHorizontal: 20, gap: 8, marginTop: 4, alignItems: "flex-start" }}>
-                <T v="section">Your pocket app</T>
+                <T v="section">Your card</T>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 10, borderRadius: 14, backgroundColor: c.card }}>
                   <Icon name="layers" size={14} color={c.ink} />
                   <T v="cap" w="semi">{`${LAYOUT_NAME[spec.layout]} · ${spec.blocks.length} of ${BLOCK_TYPES.length} blocks`}</T>
@@ -291,7 +291,7 @@ export default function Compose() {
             {outside ? (
               <Stage i={spec.blocks.length + 4}>
                 <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, gap: 12 }}>
-                  <T v="head">{`${agent.name} gets its own key for this pocket`}</T>
+                  <T v="head">{`${agent.name} gets its own key for this card`}</T>
                   <View style={{ flexDirection: "row", gap: 16 }}>
                     <View style={{ flex: 1, gap: 6 }}>
                       <T v="cap" w="semi" color="muted">Can</T>
@@ -313,7 +313,7 @@ export default function Compose() {
                     <SuccessMark size={56} />
                     <T v="head">{`${title} is live`}</T>
                     <T v="cap" color="muted" style={{ textAlign: "center" }}>{spec.routine ? `Created and funded on-chain. Its routine is saved as fixed fields; ${agentName(agent.id)} runs it.` : "Created and funded on-chain."}</T>
-                    <Button label="Open the pocket app" icon="arrowUpRight" onPress={() => open(made.pocket)} />
+                    <Button label="Open the card" icon="arrowUpRight" onPress={() => open(made.pocket)} />
                   </Card>
                 ) : (
                   <>
@@ -471,7 +471,7 @@ function ProofCard({ worst, lines, tests, never, by, sellers, cap, per, limit, s
               </View>
             ))}
           </View>
-          <T v="cap" color="muted">{`Read by ${by === "claude" ? "two independent Claude readings, the stricter kept" : "a fixed reader (no AI)"}. Every line is computed from the pocket's own rule order.`}</T>
+          <T v="cap" color="muted">{`Read by ${by === "claude" ? "two independent Claude readings, the stricter kept" : "a fixed reader (no AI)"}. Every line is computed from the card's own rule order.`}</T>
         </View>
       ) : null}
     </Card>

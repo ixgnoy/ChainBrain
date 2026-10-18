@@ -58,7 +58,7 @@ export default function RadarAlertPage() {
         txs.push({ label: cleanText(p.name, 24), hash: r.hash });
       }
       haptic.success();
-      if (txs.length) setNotice({ title: `${seller.name} removed from ${txs.length} ${txs.length === 1 ? "pocket" : "pockets"}`, txs });
+      if (txs.length) setNotice({ title: `${seller.name} removed from ${txs.length} ${txs.length === 1 ? "card" : "cards"}`, txs });
       await refreshPockets();
     } catch (e) { haptic.error(); setErr(txError(e)); } finally { setBusy(false); }
   };
@@ -77,11 +77,11 @@ export default function RadarAlertPage() {
               </View>
             </View>
             <T v="tab" style={{ color: "rgba(255,255,255,0.8)", letterSpacing: 1, textTransform: "uppercase" }}>{blocked ? "Radar blocked a seller" : "Radar wants your OK"}</T>
-            <T v="section" style={{ color: c.white }} accessibilityRole="header">{blocked ? `${name} is blocked for all your pockets` : `${name} needs your OK before any payment`}</T>
+            <T v="section" style={{ color: c.white }} accessibilityRole="header">{blocked ? `${name} is blocked for all your cards` : `${name} needs your OK before any payment`}</T>
             <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.22)" }} />
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.white }} />
-              <T v="cap" w="semi" style={{ color: c.white }}>{paidAfter ? "A payment went through after the alert" : "No money left your pockets to it after the alert"}</T>
+              <T v="cap" w="semi" style={{ color: c.white }}>{paidAfter ? "A payment went through after the alert" : "No money left your cards to it after the alert"}</T>
             </View>
           </View>
         </Reveal>
@@ -115,7 +115,7 @@ export default function RadarAlertPage() {
                     <Link label={i === trail.length - 1 ? (blocked ? "Payment refused by Radar" : "Waits for your OK") : share(v?.share) ? `${share(v?.share)} of its money` : undefined} cut={i === trail.length - 1} />
                   </React.Fragment>
                 ))}
-                <Node icon="wallet" title="Your pockets" sub={blocked ? "Protected: nothing paid" : "Asks you first"} tone="safe" />
+                <Node icon="wallet" title="Your cards" sub={blocked ? "Protected: nothing paid" : "Asks you first"} tone="safe" />
               </View>
             </Card>
           </Reveal>
@@ -124,7 +124,7 @@ export default function RadarAlertPage() {
         <Reveal index={3}>
           <Card pad={18} style={{ marginHorizontal: 16, marginTop: 12, gap: 12 }}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <T v="head">Pockets that allow it</T>
+              <T v="head">Cards that allow it</T>
               <T v="cap" color="muted">{`${refused.length} refused`}</T>
             </View>
             {allowing.length ? allowing.map((p) => {
@@ -134,12 +134,12 @@ export default function RadarAlertPage() {
                   <AgentAvatar kind={p.agentId ?? "chainbrain"} size={34} />
                   <View style={{ flex: 1 }}>
                     <T v="row" w="bold" numberOfLines={1}>{cleanText(p.name, 24)}</T>
-                    <T v="cap" color="muted">{`${money(p.balance)} in the pocket · cap ${money(p.cap)}`}</T>
+                    <T v="cap" color="muted">{`${money(p.balance)} in the card · cap ${money(p.cap)}`}</T>
                   </View>
                   {lost.length ? <View style={{ paddingHorizontal: 8, height: 22, borderRadius: 11, backgroundColor: c.vermillionSoft, justifyContent: "center" }}><T v="tab" w="bold" style={{ color: c.vermillionInk }}>{`${lost.length} refused`}</T></View> : null}
                 </View>
               );
-            }) : <T v="sub" color="muted">{`No live pocket allows ${name} now.`}</T>}
+            }) : <T v="sub" color="muted">{`No live card allows ${name} now.`}</T>}
           </Card>
         </Reveal>
 

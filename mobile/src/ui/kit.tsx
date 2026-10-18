@@ -159,7 +159,7 @@ export function Button({ label, onPress, kind = "primary", icon, iconRight, disa
   );
 }
 
-export function SectionHeader({ title, right, action, onAction, count }: { title: string; right?: string; action?: string; onAction?: () => void; /** a small count badge after the title ("Active pockets 3") */ count?: number }) {
+export function SectionHeader({ title, right, action, onAction, count }: { title: string; right?: string; action?: string; onAction?: () => void; /** a small count badge after the title ("Active cards 3") */ count?: number }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 28, marginBottom: 12, gap: 12 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>

@@ -132,7 +132,7 @@ export function AppHeader({ ctx, onOpen }: { ctx: AppCtx; /** opens the agent's 
     ? rs.kind === "price-watch"
       ? `Checks ${cadenceText(rs.cadence).replace(/^Every /, "every ").toLowerCase()} · buys at ${curSign()}${rs.limitPrice} or less`
       : `${cadenceText(rs.cadence)} · on its own inside ${curSign()}${rs.allowance.amount} a ${rs.allowance.period}`
-    : spec.layout === "haggle" ? "Negotiates first, pays only what you allow" : "Buys when you ask, inside the pocket's rules";
+    : spec.layout === "haggle" ? "Negotiates first, pays only what you allow" : "Buys when you ask, inside the card's rules";
   const hm2 = (cd: { hour: number; minute: number }) => `${String(cd.hour).padStart(2, "0")}:${String(cd.minute).padStart(2, "0")}`;
   const when = rs ? (rs.cadence.every === "day" ? "Daily" : rs.cadence.every === "weekday" ? "Weekdays" : rs.cadence.every === "week" ? ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][rs.cadence.weekday ?? 1] : `${rs.cadence.dayOfMonth ?? 1}${(rs.cadence.dayOfMonth ?? 1) === 1 ? "st" : "th"}`) + ` ${hm2(rs.cadence)}` : null;
   // the header's facts as chips: when it runs, the price it buys at, what it may spend on its own

@@ -26,7 +26,7 @@ export function liveCards(events: WalletEvent[], o: { agentOf(pocket?: string): 
     if (e.at < since) continue;
     const base = { at: e.at, pocket: e.pocket, agent: o.agentOf(e.pocket), sellerId: e.sellerId };
     if (e.type === "payment") out.push({ ...base, key: `pay:${e.tx ?? e.at}`, kind: e.cosigned ? "cosigned" : "paid", amount: usd(e.amount), tx: e.tx,
-      title: `Paid ${sn(e.sellerId)}`, why: e.cosigned ? "You co-signed it" : e.routine ? `Routine run ${e.routine.run}, inside its allowance` : "Inside the pocket's rules" });
+      title: `Paid ${sn(e.sellerId)}`, why: e.cosigned ? "You co-signed it" : e.routine ? `Routine run ${e.routine.run}, inside its allowance` : "Inside the card's rules" });
     else if (e.type === "refusal") out.push({ ...base, key: `ref:${e.at}:${e.sellerId}`, kind: "refused", amount: e.amount ? usd(e.amount) : undefined, reason: e.reason,
       title: `${sn(e.sellerId)} refused`, why: plainReason(String(e.reason ?? "")) });
     else if (e.type === "forced" && e.reverted) out.push({ ...base, key: `forced:${e.tx}`, kind: "refused", amount: usd(e.amount), tx: e.tx,
@@ -34,7 +34,7 @@ export function liveCards(events: WalletEvent[], o: { agentOf(pocket?: string): 
     else if (e.type === "routine" && e.kind === "ignored") out.push({ ...base, key: `ign:${e.at}:${e.sellerId}`, kind: "ignored", quote: e.excerpt,
       title: `${sn(e.sellerId)} tried to give orders`, why: "Ignored: a routine is fixed fields you signed" });
     else if (e.type === "attack") out.push({ ...base, key: `atk:${e.at}`, kind: e.verdict === "fooled" ? "refused" : "attack", quote: e.text,
-      title: e.verdict === "fooled" ? "A fooled agent tried to send money" : "A chat message tried to take over", why: e.verdict === "fooled" ? "The pocket contract refused it" : "Refused: only your key changes the rules" });
+      title: e.verdict === "fooled" ? "A fooled agent tried to send money" : "A chat message tried to take over", why: e.verdict === "fooled" ? "The card contract refused it" : "Refused: only your key changes the rules" });
     else if (e.type === "quote" && e.limit != null && !e.below) out.push({ ...base, key: `q:${e.at}`, kind: "watched", amount: usd(e.price),
       title: `Checked ${sn(e.sellerId)}'s price`, why: `Above your ${usd(e.limit)} limit, so it waited` });
     else if (e.type === "routine" && e.kind === "run" && !(Array.isArray(e.outs) && e.outs.length)) out.push({ ...base, key: `run:${e.routineId}:${e.run}`, kind: "run",
@@ -50,7 +50,7 @@ export function liveCards(events: WalletEvent[], o: { agentOf(pocket?: string): 
       title: `${sn(e.args?.sellerId)}'s page tried to give orders`, why: "Ignored: seller text is data, never an instruction" });
   }
   for (const v of sentinelEvents(events)) if (v.kind === "freeze" && v.at >= since) out.push({ key: v.key, at: v.at, kind: "freeze", pocket: v.pocket, agent: o.agentOf(v.pocket), tx: v.tx,
-    title: "Sentinel froze the pocket", why: v.signals[0]?.text ?? "Payments stopped on-chain until you unfreeze" });
+    title: "Sentinel froze the card", why: v.signals[0]?.text ?? "Payments stopped on-chain until you unfreeze" });
   return out.sort((a, b) => b.at - a.at);
 }
 
@@ -60,6 +60,6 @@ export function nowLine(o: { asks: { agent?: string; amount?: string; seller?: s
   if (a) return { agent: a.agent ?? "chainbrain", tone: "wait" as const, text: `${o.agentName(a.agent)} is waiting for your co-signature${a.amount ? ` · ${a.amount}` : ""}` };
   if (o.running[0]) return { agent: o.running[0].agent ?? "chainbrain", tone: "live" as const, text: `${o.agentName(o.running[0].agent)} is running ${o.running[0].pocket}'s routine` };
   if (o.busy) return { agent: "chainbrain", tone: "live" as const, text: "ChainBrain is working on your task" };
-  return { agent: "chainbrain", tone: "idle" as const, text: `Watching ${o.watching} ${o.watching === 1 ? "pocket" : "pockets"}${o.next ? ` · next: ${o.next.name} ${o.next.when}` : ""}` };
+  return { agent: "chainbrain", tone: "idle" as const, text: `Watching ${o.watching} ${o.watching === 1 ? "card" : "cards"}${o.next ? ` · next: ${o.next.name} ${o.next.when}` : ""}` };
 }
 

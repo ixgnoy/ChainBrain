@@ -39,14 +39,14 @@ import { curSign } from "../lib/runtime";
 
 export function describeApprovalError(code: string): string {
   switch (code) {
-    case "OWNER_SIGNATURE_INVALID": return "The signature did not match this pocket's owner key, so nothing was approved. Approve it on the device that created this pocket.";
+    case "OWNER_SIGNATURE_INVALID": return "The signature did not match this card's owner key, so nothing was approved. Approve it on the device that created this card.";
     case "NOT_PENDING": return "This request was already answered or has timed out.";
-    case "NOT_OWNER": return "This phone's key does not own this pocket, so it cannot co-sign here.";
+    case "NOT_OWNER": return "This phone's key does not own this card, so it cannot co-sign here.";
     case "AUTH_EXPIRED": return "The 10-minute approval window has passed. Ask your agent again.";
     case "NO_AUTH": return "This request is missing the details needed to sign it.";
     case "AUTH_WRONG_POCKET":
     case "AUTH_WRONG_SELLER":
-    case "AUTH_WRONG_AMOUNT": return "This request doesn't match what you're approving (pocket, seller or amount), so nothing was signed.";
+    case "AUTH_WRONG_AMOUNT": return "This request doesn't match what you're approving (card, seller or amount), so nothing was signed.";
     case "SIGN_FAILED": return "Could not sign on this phone. Try again.";
     case "NETWORK": return "Could not reach the server. Check the connection and try again.";
     default: return "Could not send your answer. Check the connection and try again.";
@@ -101,7 +101,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const seller = cleanText(sellerName(a.data?.sellerId), 60);
   const amount = safeHkd(a.data?.amount);
   const limitText = !pocket || pocket.askAbove === NEVER ? "Above your ask-me limit"
-    : pocket.askAbove === 0n ? "This pocket asks about every payment"
+    : pocket.askAbove === 0n ? "This card asks about every payment"
     : `Above your ${curSign()}${hkd(pocket.askAbove)} ask-me limit`;
   const item = cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment";
 
@@ -251,7 +251,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
               <AgentAvatar kind={agent?.id ?? "chainbrain"} size={48} />
               <View style={{ flex: 1, gap: 2 }}>
                 <T v="section">{agent?.kind === "outside" ? `${who} wants to start a task` : "Confirm the task?"}</T>
-                <T v="sub" color="muted">{pocket ? `${cleanText(pocket.name, 30)} pocket` : shortAddr(a.pocket)}{queue > 1 ? ` · ${queue - 1} more waiting` : ""}</T>
+                <T v="sub" color="muted">{pocket ? `${cleanText(pocket.name, 30)} card` : shortAddr(a.pocket)}{queue > 1 ? ` · ${queue - 1} more waiting` : ""}</T>
               </View>
             </View>
             <IntentCard text={a.text} />
@@ -281,7 +281,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
             </>
           ) : (
             <>
-              <T v="sub" color="ink2" style={{ textAlign: "center" }}>Another key owns this pocket. Approve it on the device that created the pocket.</T>
+              <T v="sub" color="ink2" style={{ textAlign: "center" }}>Another key owns this card. Approve it on the device that created the card.</T>
               <Button label="Close" kind="secondary" onPress={() => setApprovalOpen(false)} />
             </>
           )

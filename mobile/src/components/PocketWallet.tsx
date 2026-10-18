@@ -136,7 +136,7 @@ function WalletCard({ pocket, pockets, index, count, cw, strip, play, reduce, sc
           <Press kind="row" haptics="light" onPress={open}
             onPressIn={() => { if (!reduce) lift.value = withTiming(1, { duration: 120 }); }}
             onPressOut={() => { lift.value = reduce ? 0 : withSpring(0, motion.spring.deck); }}
-            accessibilityRole="button" accessibilityLabel={`${name} pocket, ${hkd(pocket.balance)} ${tokenSymbol()}${pocket.revoked ? ", revoked" : ""}${job ? `. ${agentInfo(pocket.agentId ?? "")?.name ?? "Your"} pocket: ${job}` : ""}`} accessibilityHint="Opens the pocket">
+            accessibilityRole="button" accessibilityLabel={`${name} card, ${hkd(pocket.balance)} ${tokenSymbol()}${pocket.revoked ? ", revoked" : ""}${job ? `. ${agentInfo(pocket.agentId ?? "")?.name ?? "Your"} card: ${job}` : ""}`} accessibilityHint="Opens the card">
             <PocketFace pocket={pocket} width={cw} tone={tone} shadow focused={focused} tilt={front} glyph={glyph} peek={!front} job={job} />
           </Press>
         </View>

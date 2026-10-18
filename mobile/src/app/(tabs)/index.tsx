@@ -41,25 +41,17 @@ import { GLASS_TAB_SPACE as TAB_SPACE } from "../../ui/glass/GlassTabBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { curSign } from "../../lib/runtime";
 
-/** Network chip: a quiet grey pill with a vermillion dot (DESIGN.md chips). */
-export function NetworkChip({ label = "Test network" }: { label?: string }) {
-  return (
-    <View accessibilityLabel="Test network, no real money" style={{ minHeight: 30, paddingHorizontal: 12, borderRadius: 15, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 7 }}>
-      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.vermillion }} />
-      <T v="tab" w="bold" style={{ letterSpacing: 0.9, textTransform: "uppercase" }}>{label}</T>
-    </View>
-  );
-}
-
-/** Header: owner (opens Settings), the network chip, the bell with how many requests wait (opens the Approvals inbox). */
+/** Header: owner (opens Settings) and the bell with how many requests wait (opens the Approvals inbox). Nothing in between: less to read. */
 export function HomeHeader() {
   const { pending, setQuestionOpen } = useApp();
   const asks = pending.filter((a) => a.kind !== "question").length;
   const question = pending.some((a) => a.kind === "question");
   return (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 14 }}>
-      <Press onPress={() => router.navigate("/settings")} accessibilityRole="button" accessibilityLabel="Settings and wallet" kind="round" haptics="light" hitSlop={4}><Avatar icon="user" tone="solid" size={44} /></Press>
-      <NetworkChip />
+      <Press onPress={() => router.navigate("/settings")} accessibilityRole="button" accessibilityLabel="Settings and wallet" kind="round" haptics="light" hitSlop={4}
+        style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
+        <Icon name="user" size={20} stroke={2} />
+      </Press>
       <Press
         onPress={() => { if (asks) router.push("/approvals"); else if (question) setQuestionOpen(true); else router.push("/approvals"); }}
         kind="round" auto="inbox.open" accessibilityRole="button" accessibilityLabel={asks ? `Approvals, ${asks} waiting` : question ? "Notifications, your agent has a question" : "Approvals"}
@@ -87,7 +79,7 @@ function LoadingDeck() {
   const h = cardHeight(cw);
   const strip = stripFor(cw, true);
   return (
-    <View accessible accessibilityLabel="Loading your pockets" style={{ height: 2 * strip + h + 16 }}>
+    <View accessible accessibilityLabel="Loading your cards" style={{ height: 2 * strip + h + 16 }}>
       {[0, 1, 2].map((i) => (
         <View key={i} style={{ position: "absolute", left: PAGE_MARGIN, top: i * strip, width: cw, height: h, borderRadius: 18, backgroundColor: i === 2 ? c.tile : c.fill, borderWidth: 1, borderColor: c.tileStroke }} />
       ))}
@@ -101,7 +93,7 @@ const Allocation = React.memo(function Allocation({ pockets, all, total }: { poc
   const parts = [...pockets].filter((p) => p.balance > 0n).sort((a, b) => (b.balance > a.balance ? 1 : -1));
   const label = parts.map((p) => `${cleanText(p.name, 24)} ${Math.round((Number(p.balance) / Number(total)) * 100)}%`).join(", ");
   return (
-    <View accessible accessibilityLabel={`Split by pocket: ${label}`} style={{ flexDirection: "row", height: 8, gap: 2, marginTop: 10, borderRadius: 4, overflow: "hidden" }}>
+    <View accessible accessibilityLabel={`Split by card: ${label}`} style={{ flexDirection: "row", height: 8, gap: 2, marginTop: 10, borderRadius: 4, overflow: "hidden" }}>
       {parts.map((p) => {
         const f = faceOf(toneFor(all, p.address));
         const white = f.face === "#FFFFFF";
@@ -130,10 +122,10 @@ function EmptyPockets() {
     <Card pad={24} style={{ marginHorizontal: 16, alignItems: "center", gap: 16 }}>
       <PopIn from={0.92}><Avatar icon="card" size={72} tone="blue" /></PopIn>
       <View style={{ gap: 6, alignItems: "center" }}>
-        <T v="section" style={{ textAlign: "center" }}>Give your agent a pocket</T>
-        <T v="body" color="ink2" style={{ textAlign: "center" }}>A pocket holds a little money, with rules you choose. Your agent can only spend from it.</T>
+        <T v="section" style={{ textAlign: "center" }}>Give your agent a card</T>
+        <T v="body" color="ink2" style={{ textAlign: "center" }}>A card holds a little money, with rules you choose. Your agent can only spend from it.</T>
       </View>
-      <Button label="Create your first pocket" kind="vermillion" onPress={() => router.push("/create")} style={{ alignSelf: "stretch" }} />
+      <Button label="Create your first card" kind="vermillion" onPress={() => router.push("/create")} style={{ alignSelf: "stretch" }} />
     </Card>
   );
 }
@@ -278,8 +270,8 @@ function Home({ ready }: { ready: boolean }) {
       {loading ? null : <>
       <Rise play={play} index={1}>
         <View style={{ flexDirection: "row", justifyContent: "space-around", marginHorizontal: 16, marginTop: 4 }}>
-          <QuickAction icon="arrowIn" label="Move money" a11y="Move money from your main wallet to a pocket" onPress={() => setAction({ mode: "fund" })} />
-          <QuickAction icon="plus" label="New pocket" auto="home.newPocket" tone="ink" onPress={() => router.push("/compose")} />
+          <QuickAction icon="arrowIn" label="Move money" a11y="Move money from your main wallet to a card" onPress={() => setAction({ mode: "fund" })} />
+          <QuickAction icon="plus" label="New card" auto="home.newPocket" tone="ink" onPress={() => router.push("/compose")} />
           {canConnect
             ? <QuickAction icon="link" label="Connect" tone="blue" a11y="Connect an agent" auto="home.connect" onPress={() => router.push("/connect")} />
             : <QuickAction icon="chat" label="Ask agent" tone="blue" onPress={() => router.navigate("/agent")} />}

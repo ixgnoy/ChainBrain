@@ -45,7 +45,7 @@ export default function Agents() {
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginTop: 24, marginBottom: 10 }}>
         <T v="head">{`${agents.length} ${agents.length === 1 ? "agent" : "agents"}`}</T>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <T v="cap" color="mutedOnCanvas">In agent pockets</T>
+          <T v="cap" color="mutedOnCanvas">In agent cards</T>
           <Money v="row" value={hkd(inPockets)} decorative />
         </View>
       </View>

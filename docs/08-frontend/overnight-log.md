@@ -12,6 +12,19 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: the Evidence and Sellers pages
 
+## Cards, less text, a launch, the Brain map (18 Oct)
+
+The owner asked: is HK$ right, less text, why no splash on refresh, card or pocket, where auto-play is, a Brain canvas, a less AI-looking Learned icon, and whether black buttons are right (memory: card-wording-decisions).
+
+- **HK$ is right** for amounts on screen (the currency's symbol, on its banknotes); HKD, the ISO code, stays for data, exports and screen-reader text.
+- **Less text:** the "Only your key" pill (Home's wallet card, Settings) and the Test network chip in Home's header are gone; the header is just the profile and bell.
+- **Card in the UI:** every owner-facing phone string says card ("New card", "Give Claude its own card", "Card rules", "Brain is watching 7 cards"); each card is its own smart contract with its rules. Code, contracts and APIs keep "pocket". A sweep over string literals, guarded so paths, keys and `pocket.x` code stay, then nested templates and plural ternaries by hand; e2e strings follow.
+- **Launch:** Expo Go never shows the native splash (Expo docs: since SDK 52 it shows the app icon; test splash on a preview or production build). An in-app launch curtain (`LaunchCurtain.tsx`) plays on every start, refresh included: the four tiles lock in, the wordmark rises, it fades after about 1 s; Reduce Motion fades sooner.
+- **Learned with you:** a remembered purchase shows the seller's own logo, what was bought, and the price; other notes a plain icon for their kind on a neutral tile. No sparkle, no blue disc.
+- **Colour:** black stays the main button, used less: Next up tiles take their card's usage colour instead of a black first tile.
+- **Brain map** (`brain-map.tsx`, the graph moved to `components/BrainGraphView.tsx`): Expand on the Brain card opens it full screen. Pinch to zoom and drag to move, or the + / − / fit buttons (web and VoiceOver); after a pinch it lays out again at the new size so nodes and names stay sharp. Every node is named, busy edges show "N paid" from 1.4x zoom, a tapped node opens its panel. Zoom buttons sit above the ask dock's pill.
+- **Auto-play:** long-press (about 1.5 s) the card name row at the top of the ChainBrain chat.
+
 ## Merged origin/main: FISCO BCOS + Mock e-HKD (18 Oct)
 
 Origin brought 38 commits: the whole stack on FISCO BCOS with a Mock e-HKD token (amounts x8, HK$ everywhere, `usd`→`hkd`, `formatUsd`/`parseUsd`→`formatHkd`/`parseHkd`, `curSign()` / `tokenSymbol()` from the server's chain), a console Faucet tab, Vercel hosting for the console and Railway for the chain, sellers and wallet API. 15 files conflicted; each kept this branch's UI (usage cards, Agents rows, Brain graph, calm Home) with origin's currency and chain changes. Our newer code (Brain graph and trace, Live feed, Home strip, compose canvas, the world's `runTest`) was moved to HK$ the same way.

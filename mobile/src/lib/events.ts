@@ -295,7 +295,7 @@ export function preflightResults(events: WalletEvent[]): PreflightView[] {
   }));
 }
 /** "on-chain simulation" (server, eth_call) or "the built-in chain" (dry run of the same rules). */
-export const preflightBy = (by?: string) => (by === "eth_call" ? "a simulation of the exact transfer (eth_call)" : by === "sim" ? "a dry run on the built-in chain" : "the pocket's rules");
+export const preflightBy = (by?: string) => (by === "eth_call" ? "a simulation of the exact transfer (eth_call)" : by === "sim" ? "a dry run on the built-in chain" : "the card's rules");
 
 export type HaggleStep = { who: "seller" | "you"; price: bigint; final?: boolean };
 export type HaggleView = { key: string; at: number; pocket?: string; quoteId: string; sellerId?: string; list: bigint; steps: HaggleStep[]; deal?: bigint; saved?: bigint };

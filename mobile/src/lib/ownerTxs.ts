@@ -21,8 +21,8 @@ export function parseOwnerTxs(raw: string | null): OwnerTx[] {
 }
 
 export const OWNER_TITLE: Record<OwnerTxKind, string> = {
-  create: "Pocket created", fund: "Money added", return: "Funds returned", revoke: "Pocket revoked",
-  seller: "Seller list changed", cap: "Payment cap changed", ask: "Ask-me limit changed", unfreeze: "Pocket unfrozen",
+  create: "Card created", fund: "Money added", return: "Funds returned", revoke: "Card revoked",
+  seller: "Seller list changed", cap: "Payment cap changed", ask: "Ask-me limit changed", unfreeze: "Card unfrozen",
 };
 
 /** Owner transactions as ledger rows, so Activity and the pocket history show task, payment and owner transactions together. */

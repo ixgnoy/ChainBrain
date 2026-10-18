@@ -25,10 +25,10 @@ import { EASE_OUT, rubberband, useReduceMotion } from "../ui/motion";
 import { finishIntro } from "../ui/intro";
 
 const PAGES = [
-  { title: "Give your AI a pocket, not your wallet", sub: "A pocket holds a small budget for one agent: ChainBrain's own, Claude or ChatGPT. It can only spend what you put in." },
-  { title: "Say what it's for", sub: "One sentence. ChainBrain reads it into rules you sign, a routine that runs on time, and the pocket's own app." },
+  { title: "Give your AI a card, not your wallet", sub: "A card holds a small budget for one agent: ChainBrain's own, Claude or ChatGPT. It can only spend what you put in." },
+  { title: "Say what it's for", sub: "One sentence. ChainBrain reads it into rules you sign, a routine that runs on time, and the card's own app." },
   { title: "The limits live in a contract you own", sub: "Which sellers, how much per payment, when to ask you. Only your key can change them." },
-  { title: "The worst case is the pocket balance", sub: "Even a tricked agent can only pay sellers you allowed, and never more than the pocket holds." },
+  { title: "The worst case is the card balance", sub: "Even a tricked agent can only pay sellers you allowed, and never more than the card holds." },
 ] as const;
 
 /** 0 while the page is away, 1 once its illustration has played (instant under Reduce Motion). */
@@ -131,7 +131,7 @@ function WorstArt({ active, reduce }: { active: boolean; reduce: boolean }) {
       <View style={{ gap: 10 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <T v="cap" w="medium" color="muted">Everything you own</T>
-          <Animated.View style={label}><T v="cap" w="bold" color="vermillionInk">Pocket · HK$40.00</T></Animated.View>
+          <Animated.View style={label}><T v="cap" w="bold" color="vermillionInk">Card · HK$40.00</T></Animated.View>
         </View>
         <View style={{ height: 26, borderRadius: 13, backgroundColor: c.card, overflow: "hidden" }}>
           <Hatch color={c.line} pitch={7} stroke={1.5} />

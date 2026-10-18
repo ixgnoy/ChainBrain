@@ -20,11 +20,11 @@ export { transferTypedData, type Authorization } from "./typed";
 
 /** The complete reason-code map (24 codes, server/src/wallet/reasons.ts). The mobile app used to miss QUOTE_UNKNOWN and NOT_THIS_AGENT. */
 export const REASONS: Record<string, string> = {
-  SELLER_NOT_ALLOWED: "This seller is not in the pocket's allowlist",
-  OVER_CAP: "Above the pocket's per-payment cap",
-  OVER_BUDGET: "Not enough left in the pocket",
-  POCKET_REVOKED: "The owner revoked this pocket",
-  POCKET_EXPIRED: "The pocket has expired",
+  SELLER_NOT_ALLOWED: "This seller is not in the card's allowlist",
+  OVER_CAP: "Above the card's per-payment cap",
+  OVER_BUDGET: "Not enough left in the card",
+  POCKET_REVOKED: "The owner revoked this card",
+  POCKET_EXPIRED: "The card has expired",
   PRICE_ABOVE_INTENT: "The price is above the intent's max per item",
   INTENT_TOTAL_REACHED: "This would exceed the intent's total",
   INTENT_ITEMS_REACHED: "The intent's item count is already reached",
@@ -39,10 +39,10 @@ export const REASONS: Record<string, string> = {
   DISCLOSURE_REFUSED: "The seller asked for data beyond the purchase; refused and shown to the owner",
   SIGNATURE_TYPE_NOT_ALLOWED: "The wallet only signs in-rule eHKD payments it built itself",
   SETTLEMENT_FAILED: "Settlement failed",
-  NOT_THIS_AGENT: "This pocket belongs to a different agent key",
+  NOT_THIS_AGENT: "This card belongs to a different agent key",
   COUNTERPARTY_HIGH_RISK: "Radar traced this seller's funds to a high-risk source; choose another seller",
   COUNTERPARTY_REVIEW: "Radar found risk in this seller's funds: call ask_owner with this quote first",
-  POCKET_FROZEN: "The pocket is frozen (by the Sentinel or the owner); only the owner can unfreeze",
+  POCKET_FROZEN: "The card is frozen (by the Sentinel or the owner); only the owner can unfreeze",
   SENTINEL_HOLD: "The Sentinel saw unusual behaviour: call ask_owner with this quote; the owner must co-sign the next payment",
 };
 export const reasonText = (code: string) => REASONS[code] ?? code;

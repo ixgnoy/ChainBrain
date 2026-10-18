@@ -28,9 +28,9 @@ import { curSign } from "../lib/runtime";
 
 type Mode = "fund" | "return" | "revoke";
 const COPY: Record<Mode, { title: string; hint: string }> = {
-  fund: { title: "Move to a pocket", hint: "From your main wallet into a pocket. What is in the pocket is its agent's whole budget." },
-  return: { title: "Return funds", hint: "Send everything left in the pocket back to your main wallet. The pocket stays active." },
-  revoke: { title: "Revoke this pocket", hint: "Two transactions, both signed here." },
+  fund: { title: "Move to a card", hint: "From your main wallet into a card. What is in the card is its agent's whole budget." },
+  return: { title: "Return funds", hint: "Send everything left in the card back to your main wallet. The card stays active." },
+  revoke: { title: "Revoke this card", hint: "Two transactions, both signed here." },
 };
 const AMOUNTS = ["4.00", "8.00", "16.00", "40.00"];
 
@@ -137,7 +137,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
         </View>
         {scoped && chosen ? <OnePocket p={chosen} tone={toneFor(pockets, chosen.address)} /> : null}
         {mode === "revoke" && chosen ? <RevokeOutcome p={chosen} /> : null}
-        {scoped ? null : pockets.length === 0 ? <T v="sub" color="muted">No pockets yet.</T> : (
+        {scoped ? null : pockets.length === 0 ? <T v="sub" color="muted">No cards yet.</T> : (
           <View style={{ backgroundColor: c.fill, borderRadius: 20, overflow: "hidden" }}>
             {pockets.map((p, i) => {
               const ok = eligible(p);
@@ -212,7 +212,7 @@ function RevokeOutcome({ p }: { p: Pocket }) {
           <T v="body" color="ink2" style={{ flex: 1 }}>{text}</T>
         </View>
       ))}
-      <T v="cap" color="muted">This can't be undone. To give the agent money again, make a new pocket.</T>
+      <T v="cap" color="muted">This can't be undone. To give the agent money again, make a new card.</T>
     </View>
   );
 }

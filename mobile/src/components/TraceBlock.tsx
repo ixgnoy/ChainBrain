@@ -20,11 +20,11 @@ import { traceLines, type TraceLine, type WalletEvent } from "../lib/events";
 
 const cap1 = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 export const STEP: Record<string, string> = {
-  get_pocket: "Checked the pocket", search_sellers: "Looked for sellers", draft_intent: "Wrote the task for your OK", get_quote: "Asked for a price",
+  get_pocket: "Checked the card", search_sellers: "Looked for sellers", draft_intent: "Wrote the task for your OK", get_quote: "Asked for a price",
   ask_owner: "Asked you", pay: "Paid", ask_user: "Asked you a question",
 };
 const ACTIVE: Record<string, string> = {
-  get_pocket: "Checking the pocket…", search_sellers: "Looking for sellers…", draft_intent: "Writing the task for your OK…", get_quote: "Asking for a price…",
+  get_pocket: "Checking the card…", search_sellers: "Looking for sellers…", draft_intent: "Writing the task for your OK…", get_quote: "Asking for a price…",
   ask_owner: "Waiting for you…", pay: "Paying…", ask_user: "Asking you a question…",
 };
 

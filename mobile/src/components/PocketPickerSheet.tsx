@@ -31,8 +31,8 @@ export function PocketPickerSheet() {
   return (
     <Sheet visible={pickerOpen} onClose={() => setPickerOpen(false)}>
       <View style={{ paddingHorizontal: 20, paddingBottom: 12, gap: 4 }}>
-        <T v="section">Which pocket?</T>
-        <T v="sub" color="ink2">ChainBrain only spends from the pocket you pick. Pockets you gave Claude or ChatGPT stay theirs.</T>
+        <T v="section">Which card?</T>
+        <T v="sub" color="ink2">ChainBrain only spends from the card you pick. Cards you gave Claude or ChatGPT stay theirs.</T>
       </View>
       <View style={{ marginHorizontal: 20, marginBottom: 12, borderRadius: 20, overflow: "hidden", backgroundColor: c.fill }}>
         {choices.map((p, i) => (

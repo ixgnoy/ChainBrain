@@ -13,7 +13,7 @@ export type Stage = { key: StageKey; label: string; value: string; state: StageS
 export type Trace = { pocket: string; sellerId?: string; outcome: "paid" | "refused" | "running"; at: number; stages: Stage[] };
 
 export const STAGE_LABEL: Record<StageKey, string> = {
-  task: "Task", quote: "Quote", rules: "Pocket rules", radar: "Radar", owner: "You", preflight: "Pre-flight", settle: "Settlement", sentinel: "Sentinel", memory: "Memory",
+  task: "Task", quote: "Quote", rules: "Card rules", radar: "Radar", owner: "You", preflight: "Pre-flight", settle: "Settlement", sentinel: "Sentinel", memory: "Memory",
 };
 const RULE_REASONS = new Set(["SELLER_NOT_ALLOWED", "OVER_CAP", "OVER_BUDGET", "POCKET_REVOKED", "POCKET_EXPIRED"]);
 const TASK_REASONS = new Set(["PRICE_ABOVE_INTENT", "INTENT_TOTAL_REACHED", "INTENT_ITEMS_REACHED", "INTENT_EXPIRED", "INTENT_NOT_CONFIRMED"]);
@@ -113,7 +113,7 @@ function build(mine: WalletEvent[], end: WalletEvent, sellerName: (id?: string) 
     ? { key: "settle", label: STAGE_LABEL.settle, value: `${usd(end.amount)} on-chain · ${tail(end.tx)}`, state: "ok", at: T }
     : { key: "settle", label: STAGE_LABEL.settle, value: "Refused · no money moved", state: "stop", at: T };
   const sen: Stage = sentinel
-    ? { key: "sentinel", label: STAGE_LABEL.sentinel, value: sentinel.kind === "freeze" ? "Froze the pocket" : sentinel.kind === "hold" ? "Holding payments for you" : sentinel.kind === "watch" ? "Watching closer" : "All clear", state: sentinel.kind === "freeze" || sentinel.kind === "hold" ? "stop" : "ok", at: sentinel.at }
+    ? { key: "sentinel", label: STAGE_LABEL.sentinel, value: sentinel.kind === "freeze" ? "Froze the card" : sentinel.kind === "hold" ? "Holding payments for you" : sentinel.kind === "watch" ? "Watching closer" : "All clear", state: sentinel.kind === "freeze" || sentinel.kind === "hold" ? "stop" : "ok", at: sentinel.at }
     : { key: "sentinel", label: STAGE_LABEL.sentinel, value: "No alert", state: "ok" };
   const added = Array.isArray(mem?.applied) ? mem!.applied.filter((a: { op?: string }) => a?.op === "add").length : 0;
   const memory: Stage = mem

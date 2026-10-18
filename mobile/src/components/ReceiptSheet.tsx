@@ -26,11 +26,11 @@ import { curSign } from "../lib/runtime";
  *  settled otherwise), so these are facts of the payment, not decoration. The ask-me rule says who let it through. */
 function Checks({ cosigned }: { cosigned?: boolean }) {
   const [open, setOpen] = React.useState(false);
-  const items: [string, boolean][] = [["Agent's signature", false], ["Pocket active", false], ["Allowed seller", false], ["Under the cap", false], ["Within the balance", false], [cosigned ? "You co-signed" : "Under ask-me", !!cosigned]];
+  const items: [string, boolean][] = [["Agent's signature", false], ["Card active", false], ["Allowed seller", false], ["Under the cap", false], ["Within the balance", false], [cosigned ? "You co-signed" : "Under ask-me", !!cosigned]];
   return (
     <View style={{ gap: 10 }}>
       <Press kind="row" haptics="select" onPress={() => setOpen((o) => !o)} accessibilityRole="button" accessibilityState={{ expanded: open }}
-        accessibilityLabel={`The pocket contract checked six rules and the payment passed them all${cosigned ? ", with your co-signature" : ""}`}
+        accessibilityLabel={`The card contract checked six rules and the payment passed them all${cosigned ? ", with your co-signature" : ""}`}
         style={{ alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 8, minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: c.greenSoft }}>
         <Icon name="shieldCheck" size={16} color={c.greenInk} stroke={2.2} />
         <T v="sub" w="semi" style={{ color: c.greenInk }}>6 contract checks passed</T>
@@ -81,7 +81,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
   const got = useMemo(() => (row.kind === "payment" ? deliveredLines(events, row.tx) : []), [events, row]);
   const status = row.kind === "forced" ? (bad ? "Reverted on chain" : "Sent") : row.kind === "owner" ? "Confirmed on chain" : row.kind === "payment" ? (row.cosigned ? "Paid · co-signed by you" : "Paid") : row.outcome === "pending" ? "Waiting for your OK" : bad ? "Refused" : row.outcome === "approved" ? "Approved" : "Done";
   const sentence = row.kind === "forced"
-    ? bad ? "Someone submitted a transfer out of this pocket with the agent's signature, straight to the token contract. The pocket checks every transfer on-chain: this address is not allowed, so it reverted and nothing moved." : "Money left the pocket to an address outside your list."
+    ? bad ? "Someone submitted a transfer out of this card with the agent's signature, straight to the token contract. The card checks every transfer on-chain: this address is not allowed, so it reverted and nothing moved." : "Money left the card to an address outside your list."
     : row.kind === "owner" ? `${row.text}${row.detail ? ` (${cleanText(row.detail, 80)})` : ""}. You signed this on your phone.`
     : row.kind === "payment"
     ? row.cosigned ? `${who} paid ${seller}. You co-signed this payment on your phone.` : `${who} paid ${seller} on its own, within your limits.`
@@ -101,7 +101,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
   if (row.kind === "forced") facts.push(["To", row.detail ? shortHex(row.detail) : "Unknown address"]);
   else if (row.kind !== "intent" && row.kind !== "owner" && !(row.kind === "payment" && row.sellerId && hasSellerMark(row.sellerId))) facts.push(["Seller", seller]); // a payment shows its seller as the mark
   if (row.description) facts.push(["Item", cleanText(row.description, 80)]);
-  if (row.kind !== "payment" || !pocket) facts.push(["Pocket", pocket ? cleanText(pocket.name, 40) : "n/a"]); // a payment shows its pocket as the card
+  if (row.kind !== "payment" || !pocket) facts.push(["Card", pocket ? cleanText(pocket.name, 40) : "n/a"]); // a payment shows its pocket as the card
   facts.push(["When", stamp(row.at)]);
   const tech: [string, string][] = [["Network", dev ? "Local test network" : source === "builtin" ? "Test network" : "FISCO BCOS (chain 20200)"]];
     if (row.detail && row.kind !== "forced") tech.push(["Detail", cleanText(row.detail, 200)]);
@@ -133,7 +133,7 @@ function Body({ row, close }: { row: LedgerRow; close: () => void }) {
         {row.kind === "payment" && !bad ? <Reveal {...R(3)}><Checks cosigned={row.cosigned} /></Reveal> : null}
         {row.kind === "payment" && pocket ? (
           <Reveal {...R(3)}>
-            <View accessible accessibilityLabel={`From the ${cleanText(pocket.name, 40)} pocket`} style={{ height: stripFor(Math.min(winW, 480) - 40), borderRadius: 18, overflow: "hidden" }}>
+            <View accessible accessibilityLabel={`From the ${cleanText(pocket.name, 40)} card`} style={{ height: stripFor(Math.min(winW, 480) - 40), borderRadius: 18, overflow: "hidden" }}>
               <PocketFace pocket={pocket} width={Math.min(winW, 480) - 40} tone={toneFor(pockets, pocket.address)} still peek />
             </View>
           </Reveal>

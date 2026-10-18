@@ -48,7 +48,7 @@ export function BrainStrip() {
   const tone = latest?.tone === "refused" || latest?.tone === "guard" ? c.vermillion : latest?.tone === "paid" ? c.white : c.blue;
   return (
     <Press kind="row" haptics="select" onPress={() => router.navigate("/brain")} accessibilityRole="button"
-      accessibilityLabel={`Brain is watching ${live} pockets.${latest ? ` Latest: ${latest.text}, ${ago(latest.at)}.` : ""} Opens the Brain`}
+      accessibilityLabel={`Brain is watching ${live} cards.${latest ? ` Latest: ${latest.text}, ${ago(latest.at)}.` : ""} Opens the Brain`}
       style={{ marginHorizontal: 16, marginTop: 12, minHeight: 56, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 18, backgroundColor: c.ink, flexDirection: "row", alignItems: "center", gap: 12 }}>
       <View style={{ width: W, height: H }}>
         <Svg width={W} height={H}>
@@ -60,7 +60,7 @@ export function BrainStrip() {
       </View>
       <View style={{ flex: 1 }}>
         <T v="row" w="semi" numberOfLines={1} style={{ color: c.white }}>{latest ? latest.text : "No decisions yet"}</T>
-        <T v="cap" numberOfLines={1} style={{ color: "rgba(255,255,255,0.6)" }}>{`${latest ? `${ago(latest.at)} · ` : ""}Brain is watching ${live} ${live === 1 ? "pocket" : "pockets"}`}</T>
+        <T v="cap" numberOfLines={1} style={{ color: "rgba(255,255,255,0.6)" }}>{`${latest ? `${ago(latest.at)} · ` : ""}Brain is watching ${live} ${live === 1 ? "card" : "cards"}`}</T>
       </View>
       <Icon name="chevronRight" size={16} color="rgba(255,255,255,0.6)" stroke={2} />
     </Press>

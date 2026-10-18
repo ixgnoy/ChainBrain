@@ -100,13 +100,13 @@ function Cards({ pockets, agent, name, off, onReconnect }: { pockets: Pocket[]; 
           </View>
         ) : (
           <Press haptics="medium" scale={0.97} onPress={() => router.push({ pathname: "/compose", params: { agent } })} accessibilityRole="button"
-            accessibilityLabel={`Give ${name} its own card: a pocket only ${name} can spend from`}
+            accessibilityLabel={`Give ${name} its own card: a card only ${name} can spend from`}
             style={{ width: cw, height: h, borderRadius: 18, borderWidth: 1.5, borderStyle: "dashed", borderColor: c.ink2, alignItems: "center", justifyContent: "center", gap: 10, padding: 20 }}>
             <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: c.vermillion, alignItems: "center", justifyContent: "center" }}>
               <Icon name="plus" size={24} color={c.white} stroke={2.6} />
             </View>
             <T v="row" w="bold" style={{ textAlign: "center" }}>{`Give ${name} its own card`}</T>
-            <T v="cap" color="muted" style={{ textAlign: "center" }}>{`A pocket only ${name} can spend from`}</T>
+            <T v="cap" color="muted" style={{ textAlign: "center" }}>{`A card only ${name} can spend from`}</T>
           </Press>
         )}
       </ScrollView>
@@ -128,7 +128,7 @@ function AgentPocket({ p, w, tone, job }: { p: Pocket; w: number; tone: number; 
   };
   return (
     <View ref={ref} collapsable={false}>
-      <Press kind="row" haptics="light" scale={0.98} onPress={open} accessibilityRole="button" accessibilityLabel={`${cleanText(p.name, 30)}, ${hkd(p.balance)} ${tokenSymbol()}${p.revoked ? ", revoked" : ""}${job ? `. ${job}` : ""}. Opens the pocket`}>
+      <Press kind="row" haptics="light" scale={0.98} onPress={open} accessibilityRole="button" accessibilityLabel={`${cleanText(p.name, 30)}, ${hkd(p.balance)} ${tokenSymbol()}${p.revoked ? ", revoked" : ""}${job ? `. ${job}` : ""}. Opens the card`}>
         <PocketFace pocket={p} width={w} tone={tone} job={job} still />
       </Press>
     </View>

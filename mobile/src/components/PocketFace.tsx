@@ -187,13 +187,13 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draf
         {(face.band as string) === (face.face as string) || dark ? <Hatch color="#FFFFFF" pitch={6} stroke={1} opacity={0.12} /> : null}
         <View style={{ alignSelf: "flex-start", height: 24 * k + 2, paddingLeft: 3, paddingRight: 10, borderRadius: 999, backgroundColor: c.white, flexDirection: "row", alignItems: "center", gap: 6 }}>
           {agentId ? <AgentAvatar kind={agentId} size={Math.round(18 * k + 2)} /> : <View style={{ width: 6 }} />}
-          <T v="cap" w="semi" numberOfLines={1} style={{ color: c.ink, fontSize: 12 * Math.max(k, 0.9) }}>{agent ? `${agent} · ${pocket.app ? LAYOUT_NAME[pocket.app.layout].toLowerCase() : "agent pocket"}` : "Your pocket"}</T>
+          <T v="cap" w="semi" numberOfLines={1} style={{ color: c.ink, fontSize: 12 * Math.max(k, 0.9) }}>{agent ? `${agent} · ${pocket.app ? LAYOUT_NAME[pocket.app.layout].toLowerCase() : "agent pocket"}` : "Your card"}</T>
         </View>
       </View>
       {/* the balance and the rules */}
       <View style={{ paddingHorizontal: pad, marginTop: 10 * k }}>
         {/* with the usage line on top there is no room for the label: the big number is the balance */}
-        {!job || state ? <T v="tab" style={{ color: sub, textTransform: "uppercase", letterSpacing: 0.9 }}>{state ? "Left in the pocket" : "Available"}</T> : null}
+        {!job || state ? <T v="tab" style={{ color: sub, textTransform: "uppercase", letterSpacing: 0.9 }}>{state ? "Left in the card" : "Available"}</T> : null}
         <Money v={k >= 0.9 ? "amount" : "section"} value={hkd(pocket.balance)} color={state ? "muted" : dark ? "white" : "ink"} label={`${name} balance`} decorative />
       </View>
       <View style={{ flex: 1 }} />
@@ -202,7 +202,7 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draf
         <View>
           <T v="cap" style={{ color: sub, marginBottom: 2 }} numberOfLines={1}>{`Cap ${money(pocket.cap)} · ${ask}`}</T>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <T v="mono" accessibilityLabel={draft ? "Not on-chain yet" : `Pocket contract ending ${pocket.address.slice(-4)}`} style={{ color: ink, fontSize: 20 * k, lineHeight: 26 * k, letterSpacing: 0.2, textTransform: "none", opacity: draft ? 0.45 : 1 }}>{draft ? "0x…····" : tail}</T>
+            <T v="mono" accessibilityLabel={draft ? "Not on-chain yet" : `Card contract ending ${pocket.address.slice(-4)}`} style={{ color: ink, fontSize: 20 * k, lineHeight: 26 * k, letterSpacing: 0.2, textTransform: "none", opacity: draft ? 0.45 : 1 }}>{draft ? "0x…····" : tail}</T>
             <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, backgroundColor: face.chip }}>
               <T v="tab" style={{ color: sub, textTransform: "uppercase", letterSpacing: 0.8, fontSize: 9.5, lineHeight: 12 }}>{draft ? "Draft" : "Contract"}</T>
             </View>

@@ -77,7 +77,7 @@ export default function Approvals() {
             <Card style={{ marginHorizontal: 16, alignItems: "center", gap: 10, paddingVertical: 28 }}>
               <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: c.greenSoft, alignItems: "center", justifyContent: "center" }}><Icon name="check" size={24} color={c.greenInk} stroke={2.4} /></View>
               <T v="head">You're all caught up</T>
-              <T v="sub" color="muted" style={{ textAlign: "center", paddingHorizontal: 24 }}>When an agent wants to pay above a pocket's limit, or starts a task, it asks you here first.</T>
+              <T v="sub" color="muted" style={{ textAlign: "center", paddingHorizontal: 24 }}>When an agent wants to pay above a card's limit, or starts a task, it asks you here first.</T>
             </Card>
           ) : null}
         </View>
@@ -116,7 +116,7 @@ export default function Approvals() {
 
         <Card style={{ marginHorizontal: 16, marginTop: 16, flexDirection: "row", alignItems: "center", gap: 12 }}>
           <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: c.blueSoft, alignItems: "center", justifyContent: "center" }}><Icon name="lock" size={17} color={c.blueInk} stroke={2} /></View>
-          <T v="sub" color="ink2" style={{ flex: 1 }}>Your signature approves one payment. The pocket contract checks every rule again when it settles.</T>
+          <T v="sub" color="ink2" style={{ flex: 1 }}>Your signature approves one payment. The card contract checks every rule again when it settles.</T>
         </Card>
       </Screen>
     </View>
@@ -169,7 +169,7 @@ function Waiting({ a, now, onOpen }: { a: Approval; now: number; onOpen: () => v
             </View>
             <Fact k="Seller" v={seller} />
             <Fact k="Item" v={cleanText(a.data?.description ?? "", 60) || "A seller's item"} />
-            {pocket ? <Fact k="Pocket" v={`${money(pocket.balance)} left · cap ${money(pocket.cap)} a payment`} /> : null}
+            {pocket ? <Fact k="Card" v={`${money(pocket.balance)} left · cap ${money(pocket.cap)} a payment`} /> : null}
           </View>
         ) : (
           <View style={{ borderRadius: radius.tile, backgroundColor: c.fill, padding: 14, gap: 8 }}>

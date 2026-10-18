@@ -56,7 +56,7 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
       const f = await wallet.fund(made.pocket, parseHkd(budget));
       recordTx({ kind: "fund", pocket: made.pocket, hash: f.hash, amount: parseHkd(budget).toString() });
       await refreshPockets();
-      setDone({ pocket: made.pocket, name: label, txs: [{ label: "Create pocket", hash: made.tx }, { label: `Add ${curSign()}${budget}`, hash: f.hash }] });
+      setDone({ pocket: made.pocket, name: label, txs: [{ label: "Create card", hash: made.tx }, { label: `Add ${curSign()}${budget}`, hash: f.hash }] });
     } catch (e) {
       setError(txError(e));
       throw e;
@@ -68,7 +68,7 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
     <Sheet visible={visible} onClose={onClose}>
       {done ? (
         <View style={{ paddingHorizontal: 20, paddingBottom: 12, gap: 16 }}>
-          <SheetSuccess title={`${info.name} can use ${done.name}`} sub={`${curSign()}${budget} in the pocket. ${info.name} pays only ${sellerList}, asks you above ${curSign()}${ASK}, and stops when you disconnect it.`} txs={done.txs} />
+          <SheetSuccess title={`${info.name} can use ${done.name}`} sub={`${curSign()}${budget} in the card. ${info.name} pays only ${sellerList}, asks you above ${curSign()}${ASK}, and stops when you disconnect it.`} txs={done.txs} />
           <Button label={`See ${info.name}`} onPress={() => onAllowed(done.pocket)} auto="consent.done" />
         </View>
       ) : (
@@ -79,17 +79,17 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
               <View style={{ alignSelf: "flex-start", minHeight: 22, paddingHorizontal: 9, borderRadius: 11, backgroundColor: c.blueSoft, justifyContent: "center" }}>
                 <T v="tab" w="bold" style={{ color: c.blueInk, letterSpacing: 0.4 }}>Incoming request</T>
               </View>
-              <T v="section" accessibilityRole="header" accessibilityLabel={`${info.name} wants to use a pocket`}>{`${info.name} wants to use\u00a0a\u00a0pocket`}</T>
+              <T v="section" accessibilityRole="header" accessibilityLabel={`${info.name} wants to use a card`}>{`${info.name} wants to use\u00a0a\u00a0card`}</T>
             </View>
           </View>
 
           <View style={{ gap: 10 }}>
-            <Eyebrow>Its own pocket</Eyebrow>
+            <Eyebrow>Its own card</Eyebrow>
             <View style={{ borderRadius: radius.tile, borderWidth: 2, borderColor: c.ink, padding: 14, gap: 12 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}><View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.white }} /></View>
                 <View style={{ flex: 1 }}>
-                  <T v="row" w="bold">{`New pocket: ${name}`}</T>
+                  <T v="row" w="bold">{`New card: ${name}`}</T>
                   <T v="cap" color="muted">{`Cap ${curSign()}${CAP} a payment · asks you above ${curSign()}${ASK} · ${DAYS} days`}</T>
                 </View>
               </View>
@@ -128,7 +128,7 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
 
           <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
             <Icon name="lock" size={14} color={c.muted} />
-            <T v="cap" color="muted" style={{ flex: 1 }}>The pocket contract enforces these rules on every payment. Disconnect stops the agent; revoke returns the money.</T>
+            <T v="cap" color="muted" style={{ flex: 1 }}>The card contract enforces these rules on every payment. Disconnect stops the agent; revoke returns the money.</T>
           </View>
 
         </SheetScroll>
