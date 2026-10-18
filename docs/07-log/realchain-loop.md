@@ -9,7 +9,7 @@ Last updated: 2026-10-19
 - [x] 1. Environment: local FISCO node, `forge build`, server chain tests, FISCO 3.16.4 probe
 - [x] 2. Ledger context on the server
 - [x] 3. Visitor accounts
-- [ ] 4. Per-card agent keys
+- [x] 4. Per-card agent keys
 - [ ] 5. Signing guard
 - [ ] 6. Real by default in both apps
 - [ ] 7. Explorer that explains
@@ -142,6 +142,32 @@ Last updated: 2026-10-19
 
 **Next:** item 4, per-card agent keys.
 
+## Round 4 · 19 Oct 04:30–05:00 · Item 4, per-card agent keys
+
+**What changed**
+- `server/src/agentKeys.ts` (new):
+  - `deriveAgentKey(master, cardId) = keccak256(master ‖ cardId) mod n`, with `cardId = "<visitorId>#<n>"`. Keys are derived on use; only `agent address → cardId` is stored (table `agent-cards`).
+  - `POST /v1/cards/agent` (visitor token required, even with `VISITOR_AUTH=off`) → `{cardId, agent}`. The device puts `agent` in `factory.create`. It returns 503 `PER_CARD_KEYS_OFF` without `AGENT_MASTER_KEY`.
+  - `agentKeyFor(agent, owner)`:
+    - the legacy `AGENT_PK` if it matches (old and evidence pockets, the dev stack);
+    - else the derived key, **only if that agent was issued to the card owner's own visitor**;
+    - if the table has lost the entry, it searches the owner's first 64 card ids and re-records the match.
+  - A malformed master key warns once and turns per-card keys off.
+- `settle()` and `preflight()` sign with the card's own key (`agentFor(info)`). `NOT_THIS_AGENT` now means "no key this server can derive for this card and owner".
+- Explorer labels derived agents "Agent key, card v-…#n"; the old one is "Agent key (shared, legacy)".
+- `/api/config` still returns the legacy `agent`, used by the dev stack and the apps until item 6 moves them to `/v1/cards/agent`.
+- Dev master key added to both `DEV_KEYS` lists (local chains only).
+
+**Evidence** (`server/test/agent-keys-chain.test.ts`, 5 tests on local FISCO)
+- Derivation is deterministic, differs per card id and per master, and stays inside the curve order.
+- Alice gets `…#0` then `…#1`; Bob gets his own. All three agents differ, and none is the legacy key. No token gives 401; no master key gives 503.
+- Alice's card (created and funded by Alice's own key, naming her derived agent) pays DataLite through real x402 settlement (receipt `success`).
+- Bob's card naming Alice's agent gives `NOT_THIS_AGENT`.
+- After `resetAgentKeys()` (table lost), Bob's card still pays (rebuilt from his visitor id).
+- Full server suite **99 passed, 6 skipped** (20 files); devstack 21 passed.
+
+**Next:** item 5, the signing guard.
+
 ---
 
 ## Env vars so far (kept current each round)
@@ -156,3 +182,4 @@ Last updated: 2026-10-19
 | `TICK_PK` | API, sellers | `FACILITATOR_PK` | liveness tick sender (needs native balance) |
 | `FISCO_LOG_STEP` | API | `10` | blocks per `eth_getLogs` call |
 | `FISCO_REVERT_RPC` | API | unset | gateway URL answering `chainbrain_getRevertData` (item 7) |
+| `AGENT_MASTER_KEY` | API | none | 0x + 64 hex (`0x$(openssl rand -hex 32)`). **Generate once, keep secret, never change** (changing it orphans every card's agent) |

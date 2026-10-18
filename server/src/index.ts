@@ -26,6 +26,7 @@ import { compileRules, type RulesModel } from "./rules/compile";
 import { explorerRoutes } from "./explorer";
 import { faucetRoutes } from "./faucet";
 import { visitorRoutes, guard } from "./visitors";
+import { agentRoutes } from "./agentKeys";
 import { rateLimit } from "./limits";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
@@ -49,6 +50,7 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
   app.use("/api/*", rateLimit());
   app.use("/v1/*", rateLimit());
   app.route("/", visitorRoutes()); // /v1/challenge, /v1/visitors, /v1/login, /v1/me
+  app.route("/", agentRoutes()); // /v1/cards/agent: a new card's own agent address
 
   app.route("/api/radar", radarRoutes({ model: deps.radarModel }));
   app.get("/api/events", sse);

@@ -1,7 +1,7 @@
 import type { Address, Hex } from "viem";
 import { pocket as P, pub } from "./chain";
 import { cfg } from "../chains";
-import { agentAccount, prepareApproval } from "./pay";
+import { agentFor, prepareApproval } from "./pay";
 import { envelope, transferTypedData } from "./scheme";
 import { isReason } from "./reasons";
 import type { QuoteRec } from "./state";
@@ -30,7 +30,9 @@ export async function preflight(pocket: Address, rec: QuoteRec, intentHash: Hex)
   const balanceAfter = (info.balance - rec.amount).toString();
   try {
     const auth = prepareApproval(pocket, rec, intentHash); // the same authorization (and nonce) the payment will use
-    const agentSig = await agentAccount().signTypedData(transferTypedData(auth));
+    const agent = agentFor(info);
+    if (!agent) return { outcome: "refused", reason: "NOT_THIS_AGENT", by: "rules" };
+    const agentSig = await agent.signTypedData(transferTypedData(auth));
     await pub().simulateContract({
       address: cfg().token, abi: TWA, functionName: "transferWithAuthorization",
       args: [auth.from, auth.to, BigInt(auth.value), BigInt(auth.validAfter), BigInt(auth.validBefore), auth.nonce, envelope(auth, agentSig, rec.ownerSig ?? "0x")],

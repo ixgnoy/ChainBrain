@@ -5,6 +5,7 @@ import { pub, pocketAbi, factoryAbi, erc20Abi, factoryAddress } from "./wallet/c
 import { cfg } from "./chains";
 import { directory } from "./wallet/directory";
 import { agentAccount } from "./wallet/pay";
+import { agentLabels } from "./agentKeys";
 import { toJson } from "./wallet/events";
 import { formatAmount } from "./wallet/money";
 
@@ -27,7 +28,8 @@ function decode(log: Log) {
 }
 
 async function labels(): Promise<Record<string, string>> {
-  const l: Record<string, string> = { [cfg().token.toLowerCase()]: "Mock e-HKD token", [agentAccount().address.toLowerCase()]: "Agent key" };
+  const l: Record<string, string> = { [cfg().token.toLowerCase()]: "Mock e-HKD token", [agentAccount().address.toLowerCase()]: "Agent key (shared, legacy)" };
+  for (const [a, cardId] of Object.entries(agentLabels())) l[a] = `Agent key, card ${cardId}`;
   try { l[factoryAddress().toLowerCase()] = "Pocket factory"; } catch { /* no factory yet */ }
   for (const s of await directory().catch(() => [])) l[s.payTo.toLowerCase()] = `Seller: ${s.name}`;
   return l;

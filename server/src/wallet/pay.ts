@@ -9,9 +9,16 @@ import { state, type Quote, type QuoteRec } from "./state";
 import { bus } from "./events";
 import { isReason, type Reason } from "./reasons";
 import { freshHead } from "../ledger";
+import { agentKeyFor } from "../agentKeys";
 
 const sellersUrl = () => process.env.SELLERS_URL ?? "http://localhost:4021";
+/** The legacy shared agent (pockets created before per-card keys, and the dev stack). */
 export const agentAccount = () => privateKeyToAccount(process.env.AGENT_PK as Hex);
+/** The account this server signs with for a pocket's agent, or undefined when it holds no such key. */
+export const agentFor = (info: { agent: Address; owner: Address }) => {
+  const pk = agentKeyFor(info.agent, info.owner);
+  return pk ? privateKeyToAccount(pk) : undefined;
+};
 
 export async function fetchQuote(sellerId: string, sku: string): Promise<{ kind: "priced"; quote: Quote } | { kind: "free"; status: number; body: string }> {
   const url = `${sellersUrl()}/${sellerId}/${sku}`;
@@ -58,7 +65,8 @@ export async function settle(pocket: Address, rec: QuoteRec, intentHash: Hex): P
     await freshHead().catch(() => null);
     const p = P(pocket);
     const info = await p.info();
-    if (info.agent.toLowerCase() !== agentAccount().address.toLowerCase()) return fail("NOT_THIS_AGENT");
+    const agent = agentFor(info); // this card's own derived key, or the legacy shared one
+    if (!agent) return fail("NOT_THIS_AGENT");
     const rule = await p.canPay(rec.payTo, rec.amount);
     if (rule !== "OK") return fail(isReason(rule) ? rule : "SETTLEMENT_FAILED", rule);
     if ((await p.needsOwner(rec.amount)) && !rec.ownerSig) return fail("NEEDS_OWNER_APPROVAL");
@@ -66,7 +74,7 @@ export async function settle(pocket: Address, rec: QuoteRec, intentHash: Hex): P
     const auth = prepareApproval(pocket, rec, intentHash);
 
     const pay = wrapFetchWithPaymentFromConfig(fetch, {
-      schemes: [{ network: cfg().network, client: new PocketScheme({ auth, agent: agentAccount(), ownerSig: rec.ownerSig ?? "0x" }) as any }],
+      schemes: [{ network: cfg().network, client: new PocketScheme({ auth, agent, ownerSig: rec.ownerSig ?? "0x" }) as any }],
       // @x402/fetch defaults to $1 of known USD tokens only; allow our token, capped atomically at the pocket's cap (the real limit)
       spendControls: { allowedAssets: [{ network: cfg().network, asset: cfg().token, maxAmountPerPayment: info.cap.toString() }] },
     } as any);
