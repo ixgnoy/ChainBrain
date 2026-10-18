@@ -62,7 +62,7 @@ The biggest problems are not visual:
 
 - **Shown on every launch (High).** A returning owner sits through it each time, or reaches for Skip. Show it once, keep "How ChainBrain works" in Settings, and teach limits at the first pocket.
 - **2.2 s per page, auto-advancing (High).** Too fast to read, and moving content is easy to miss. Let the user page, or keep auto-advance with a visible pause. Stop it under Reduce Motion and as soon as the user touches it (it already stops on touch).
-- **The content is good.** "Give your AI a pocket, not your wallet", "The limits live in a contract you own" and "The worst case is the pocket balance" are the three ideas an owner needs. Move the same sentences to where they matter: the first pocket, the first consent, the first approval.
+- **The content is good.** "Give your AI a pocket, not your wallet", "The limits live in a contract you own" and "Your AI can be fooled. ChainBrain protects you" are the three ideas an owner needs. Move the same sentences to where they matter: the first pocket, the first consent, the first approval.
 
 ### 3. Home and the money model
 
@@ -74,14 +74,14 @@ The biggest problems are not visual:
 
 ### 4. Creating a pocket
 
-- **Strong:** the one-sentence path, the live worst-case line ("If the agent is hijacked, the most it can lose is HK$40.00, only to DataLite and DataPro"), and the Review step with "Slide to create and fund".
+- **Strong:** the one-sentence path, the live "Protected by ChainBrain" block (the four layers, and "only to DataLite and DataPro"), and the Review step with "Slide to create and fund".
 - **Seven steps when a preset is chosen (Medium).** Jump to Review with every row editable, as the sentence path does.
 - **Two equal black buttons on step 1 ("Build my pocket" and "Continue").** Make the sentence path's button secondary until text is typed, so the screen has one primary action.
 - **Closing loses the draft without a word.** Fine on step 1. From step 3 on, ask "Discard this pocket?".
 
 ### 5. A pocket, and revoking it
 
-- **Strong:** the rule tiles (cap, ask-me limit, end), the worst case with main-wallet exposure of HK$0.00, and the revoked state (banner, what came back, "Agent locked out").
+- **Strong:** the rule tiles (cap, ask-me limit, end), the "Protected by ChainBrain" block with main-wallet exposure of HK$0.00, and the revoked state (banner, what came back, "Agent locked out").
 - **The revoke sheet lists every pocket (High).** From a pocket page, show only that pocket and its consequence: "Stops Claude for good. HK$39.20 returns to your main wallet. Payments already made stay made."
 - **Revoke sits beside Return funds at the same weight.** The hold protects against a slip, but give Revoke a little distance, and add the plain button from fix 2.
 - **No undo.** Revoke is final on the contract, so a confirmation is right here. NN/g reserves the extra friction for exactly this case. Keep the hold for the slide-path users. [N: NN/g confirmation dialogs]

@@ -39,7 +39,7 @@ The stepper at the bottom of the console (1 to 8) types each scene on the phone 
 
 Optional, between 6 and 7 (privilege escalation, scored under Security): console Judges, **Claim to be the admin**. The phone's agent refuses ("Only the owner's key can change this pocket's cap or sellers"), then the agent's key is made to try `setCap` and `setSeller` anyway and both revert `NOT_OWNER` on the chain; the arena card shows the rule and the two reverted hashes.
 
-Close on the console Live: the worst-case bar ("can lose at most HK$X, only to Exa, CoinGecko and Nansen") and the evidence strip (paid, co-signed, refused, injections ignored, transfers reverted).
+Close on the console Live: the "Protected by ChainBrain" card (Radar, Pre-flight, Card contract and Sentinel, with live counts per layer) and the evidence strip (paid, co-signed, refused, injections ignored, transfers reverted).
 
 ## What judges can do on their own (Judges tab, attack arena)
 

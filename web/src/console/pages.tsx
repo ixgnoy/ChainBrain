@@ -7,7 +7,6 @@ import { explorerHref } from "./route";
 import { useNetwork } from "./network";
 import { AgentTag, PhoneTag, TxHash, Verdict, pocketStatus, useViewTx, hkd, NEVER } from "./parts";
 import { Disclosure, KpiStrip, chip } from "./kit";
-import { worstCase } from "./worst";
 import { Button, Card, Empty, PageTitle, Pill, PillSelect, Section } from "../seller/ui";
 import { shortAddr } from "../shared";
 import { cn } from "../lib/cn";
@@ -24,7 +23,7 @@ const COUNT = ({ n }: { n: number }) => <span className="num text-[12px] opacity
 // ------------------------------------------------------------------ Pockets
 type PocketFilter = "all" | "active" | "stopped";
 export function Pockets({ open }: { open(addr: string): void }) {
-  const { listed, cfg, txs, chainError, nameOf, isPhone, events } = useNetwork();
+  const { listed, cfg, chainError, nameOf, isPhone, events, attempts } = useNetwork();
   const [f, setF] = useState<PocketFilter>("all");
   const pockets = listed([], { all: true });
   const names = new Map(cfg.sellers.map((s) => [s.id, s.name]));
@@ -38,7 +37,7 @@ export function Pockets({ open }: { open(addr: string): void }) {
       <KpiStrip items={[
         { label: "Pockets", value: pockets.length, note: `${active.length} active` },
         { label: "Held for agents", value: hkd(total), note: "Across all pockets" },
-        { label: "Most any agent can lose", value: hkd(pockets.reduce((n, p) => n + worstCase(p, txs, (id) => names.get(id) ?? id).max, 0n)), note: "Only to each pocket's allowed sellers", accent: true, icon: <ShieldCheck className="size-4" {...I} aria-hidden /> },
+        { label: "Stopped by ChainBrain", value: attempts.filter((a) => a.verdict !== "paid").length, note: "Refused, reverted or held across every pocket", accent: true, icon: <ShieldCheck className="size-4" {...I} aria-hidden /> },
       ]} />
       {chainError && <p role="alert" className="mt-4 text-[14px] font-semibold text-vermillion-ink">Could not read the chain: {chainError}</p>}
       <div className="mt-6"><RoutineTimeline open={open} /></div>
@@ -48,12 +47,11 @@ export function Pockets({ open }: { open(addr: string): void }) {
         </div>
         <Card className="overflow-hidden">
           <div aria-hidden className="eyebrow hidden h-11 grid-cols-[minmax(0,1.5fr)_110px_100px_110px_120px_120px] items-center gap-x-4 border-b border-line px-5 text-muted lg:grid">
-            <span>Pocket</span><span>Agent</span><span>Status</span><span className="text-right">Balance</span><span className="text-right">Max loss</span><span className="pl-3">Ends</span>
+            <span>Pocket</span><span>Agent</span><span>Status</span><span className="text-right">Balance</span><span className="text-right">Sellers</span><span className="pl-3">Ends</span>
           </div>
           <div className="divide-y divide-line">
             {shown.length ? shown.map((p) => {
               const st = pocketStatus(p);
-              const w = worstCase(p, txs, (id) => names.get(id) ?? id);
               const off = st.label !== "Active"; // stopped, revoked or expired pockets wear a hatch edge
               return (
                 <div key={p.address} className="relative transition-colors hover:bg-tile">
@@ -68,7 +66,7 @@ export function Pockets({ open }: { open(addr: string): void }) {
                   <span className="hidden lg:block"><AgentTag agentKey={p.agent} serverAgent={cfg.agent} /></span>
                   <span className="max-lg:order-3"><Verdict kind={st.kind}>{st.label}</Verdict></span>
                   <span className={cn("num text-right text-[17px] font-extrabold leading-5 tracking-[-0.02em] max-lg:order-2", off && "text-muted")}>{hkd(p.balance)}</span>
-                  <span className="num text-right text-[13px] text-ink2 max-lg:order-4"><span className="text-muted lg:hidden">Max loss </span>{hkd(w.max)}</span>
+                  <span className="num text-right text-[13px] text-ink2 max-lg:order-4"><span className="text-muted lg:hidden">Sellers </span>{p.allowed.length ? `${p.allowed.length} allowed` : "None"}</span>
                   <span className="num hidden pl-3 text-[13px] text-ink2 lg:block">{new Date(p.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
                   </div>
                 </div>

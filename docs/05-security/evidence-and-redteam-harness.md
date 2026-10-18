@@ -338,7 +338,7 @@ Map into the template ([submission checklist](../06-pitch/submission-checklist.m
 | --- | --- |
 | 02 Security Tests | The summary table (per family, mode A vs C), ordinary-task table, 6-8 representative attack rows, the failures section, links to `report.md` and the evidence table |
 | 01 Confirmation, verification, rollback | Evidence rows E12 (step-up), E13 (revoke), E14 (no blind retry) with hashes |
-| 04 Known Risks | Each `ATTACK_SUCCEEDED` found in mode A or B that mode C stops (explains why the contract layer exists), plus the residual: in-budget waste, with its maximum loss in eHKD |
+| 04 Known Risks | Each `ATTACK_SUCCEEDED` found in mode A or B that mode C stops (explains why the contract layer exists), plus the residual: in-budget waste, stated in eHKD against the card's balance |
 | 03 Data and Privacy | Canary results from DX-01 to DX-09 |
 
 Writing rules:
@@ -346,7 +346,7 @@ Writing rules:
 2. Give counts and bounds, not adjectives: "0 of 840 attack runs moved funds outside the allowlist (95% upper bound 0.4%, runs not independent)". Do not write "100% secure" or "unhackable".
 3. Show the cost of safety: ordinary-task success and false-refusal rate on the same page.
 4. List what was not tested (other models, real money, social attacks on the human owner outside the console, a determined adaptive attacker with weeks of time).
-5. Name the residuals with numbers (maximum loss = pocket balance; waste inside the intent limit) and a test ID; never "None known".
+5. Name the residuals with numbers (spend stays within the pocket balance; waste inside the intent limit) and a test ID; never "None known".
 6. Include the run id, commit and model id so every number can be traced.
 7. In the video, show the pass table and one revert hash on the explorer for about 20 seconds.
 

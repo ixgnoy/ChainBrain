@@ -12,6 +12,16 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: the Evidence and Sellers pages
 
+## Sell the protection, not the worst case (18 Oct)
+
+The owner: stop saying the worst case is the card's money gone; sell how secure ChainBrain is. Headline: "Your AI can be fooled. ChainBrain protects you." No maximum-loss statement anywhere (the owner's call), and no claim that money can never be lost.
+
+- **One source** (`shared/sim/protect.ts`, tested): the headline, the four layers in payment order with what each really does (Radar screens every seller before it's paid; Pre-flight tests each payment before it's sent; Card contract refuses anything outside your rules; Sentinel freezes the card when it spots an attack), `protectedLine` for a card, and `layerCounts`, what each layer has done from the events.
+- **Phone:** the intro's last page plays a fooled agent's payment meeting the four layers, ending "Blocked · nothing paid". Compose's sign sheet and proof card, Speak your rules, the wizard's Review and the card page show "Protected by ChainBrain" with the layers (`components/Protected.tsx`) where a worst-case figure was. `WorstCase.tsx` and `worstCase()` are gone.
+- **Console:** Live's worst-case bar is a "Protected by ChainBrain" card with live counts per layer (screens, predictions, refusals, freezes) and who the pocket may pay; Pockets' "Most any agent can lose" is "Stopped by ChainBrain" (refused, reverted or held attempts) and the "Max loss" column is "Sellers". The arena's "4 of 4 attacks blocked · HK$0.00 lost" stays: it is proof, not a loss.
+- **Docs:** README, the pitch, technical, product, security and frontend docs lead with the layers; where a boundary must be stated it is positive ("spends only from that card's own balance and only to sellers you approved"). Two inconsistencies fixed on the way: Radar blocks at 8/10, the authorization lifetime is 600 s.
+- Verified: phone 53/53, sim protect 2/2, web 83/83 and build, e2e 61/61 (intro and proof card checks now read the new copy). The console e2e (`e2e.cjs`) needs the FISCO dev stack and was not run here.
+
 ## Home in two layers, and two ways to ask ChainBrain (18 Oct)
 
 The owner pointed at Ryt Bank's home (a coloured band with "Ask Ryt AI" in the header, the account on a sheet over it) and asked for ChainBrain's own theme, a way to ask from Home, and a stronger chat entry on Agents. Ryt's help centre documents a tap on the header, not a gesture, so the visible entry comes first and the pull is a shortcut.

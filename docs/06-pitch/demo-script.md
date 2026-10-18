@@ -250,7 +250,7 @@ The spike (see [x402 pocket feasibility](../04-build/x402-pocket-feasibility.md)
 | 2, 3: payments H3, H4 | Standard x402 hash | Hash via our contract; not wire-compatible | Standard x402 hash from the hot wallet |
 | 4: bots | No change | No change | No change (gateway guards) |
 | 5a: re-plan on `POCKET_SELLER_NOT_ALLOWED` | No change (the refusal is at the gateway) | No change | No change |
-| **6: revert hash H6** | Real on-chain revert; narration "the pocket refuses" | Real revert from our contract | **No revert hash.** The MCP server refuses; narration "our signing server refuses, and the most the wallet can lose is its balance, HK$X" |
+| **6: revert hash H6** | Real on-chain revert; narration "the pocket refuses" | Real revert from our contract | **No revert hash.** The MCP server refuses; narration "our signing server refuses, and it spends only from that wallet's own balance, HK$X, to sellers it allows" |
 | 6b: phishing | No change (MCP server) | No change | No change |
 | **8: revoke** | Revoke tx and the next payment fails on-chain | Same | MCP stops signing; the registry revoke stays on-chain; no reverted payment |
 | 10: second agent (bonus) | Possible | Weak | Possible, no per-agent pocket |

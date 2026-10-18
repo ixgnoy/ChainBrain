@@ -15,6 +15,7 @@ import { cleanText } from "../lib/sanitize";
 import * as api from "../lib/api";
 import { answer, proof, type Compiled, type Draft } from "../../../shared/sim/speak";
 import { curSign } from "../lib/runtime";
+import { ProtectedHead, ProtectedLayers } from "./Protected";
 
 const HOSTILE = ["shadyfeed", "tradewire"];
 
@@ -70,10 +71,9 @@ export function SpeakRules({ onUse }: { onUse(d: Draft): void }) {
       {err ? <T v="sub" color="negative">{err}</T> : null}
       {res && p ? (
         <Rise dy={8} style={{ gap: 12 }}>
-          <View style={{ gap: 2, padding: 14, borderRadius: 16, backgroundColor: c.canvas }} accessible accessibilityLabel={`Worst case: ${curSign()}${p.worstCase}`}>
-            <T v="cap" color="muted">Worst case, even if your agent is fooled</T>
-            <T v="section">{curSign()}{p.worstCase}</T>
-            <T v="cap" color="muted">The card holds this and nothing else.</T>
+          <View style={{ gap: 12, padding: 14, borderRadius: 16, backgroundColor: c.canvas }}>
+            <ProtectedHead />
+            <ProtectedLayers tone="card" short />
           </View>
           <View style={{ gap: 6 }}>{p.lines.map((l, i) => <View key={i} style={{ flexDirection: "row", gap: 8 }}><Icon name="check" size={16} color={c.accent} /><T v="sub" style={{ flex: 1 }}>{cleanText(l, 120)}</T></View>)}</View>
           {p.neverPayable.length ? <T v="sub" color="ink2">Can never pay: {p.neverPayable.map((n) => cleanText(n, 24)).join(", ")} or any other address.</T> : null}

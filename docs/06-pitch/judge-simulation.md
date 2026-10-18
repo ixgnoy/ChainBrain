@@ -45,10 +45,10 @@ Cares about: chain correctness, whether FISCO BCOS is used honestly, key custody
 
 Three hardest questions on 22 Nov:
 1. "What exactly runs on FISCO, and can I see a hash from it? Mock e-HKD is not money, so which token runs in production?"
-2. "Your budget is the pocket balance. An agent signs 50 authorizations at once, each under the cap. What is the maximum loss and who stops it?"
+2. "Your budget is the pocket balance. An agent signs 50 authorizations at once, each under the cap. Who stops it?"
 3. "The facilitator verified, then settlement failed after your gateway served content. What state is the buyer, the seller and the chain in?"
 
-#1 if: FISCO deployment has a real hash with the same pocket logic, the loss bound is stated as a number with a short validBefore, and settlement-before-release is demonstrated.
+#1 if: FISCO deployment has a real hash with the same pocket logic, the spending boundary (the card's own balance, allowed sellers, a 600 s validBefore) is shown on screen, and settlement-before-release is demonstrated.
 Dropped if: FISCO is a logo slide, the claim says "ERC-4337" for a custom non-4337 contract, or a double grant appears in the live test.
 
 ### Persona 2: WeBank AI scientist (federated and trustworthy AI interests)
@@ -149,7 +149,7 @@ Spread is small; the real variance is outside the personas: the testnet-hash rul
 | 1 | Testnet and self-built sellers are not "real"; will the hashes even count? | 1, 3, 4, 5 | Organiser question unanswered ([judging](how-judges-score.md)) |
 | 2 | "Seller-side verification is new" is false; the big players and HKT/Red Date have it | 3, 4, 5, 1 | [competitors](../03-research/competitors-industry.md) |
 | 3 | A limit-wallet pocket is not novel; why isn't it Leash / sucsage / MetaMask? | 4, 1, 2 | [prior art](../03-research/prior-art-hackathons-github.md) |
-| 4 | Loss bound: pocket balance only; many under-cap signatures; no running counter | 1, 2, 3 | [feasibility](../04-build/x402-pocket-feasibility.md) |
+| 4 | Spending boundary: the card's own balance and allowed sellers; many under-cap signatures; no running counter | 1, 2, 3 | [feasibility](../04-build/x402-pocket-feasibility.md) |
 | 5 | Prompt-injection claims: adaptive attacks break detectors; in-bounds steering is unstoppable | 2, 4, 5 | [threat model](../05-security/threat-model-and-red-team.md) |
 | 6 | Reputation (ERC-8004) is Sybil-prone; KYC issuers are simulated | 3, 4, 5 | [identity](../04-build/identity-reputation-fisco.md) |
 | 7 | Gateway bugs: serve-before-settle, double grant, cached paid content | 1, 4 | Li et al., Ling et al. (papers doc) |
@@ -193,7 +193,7 @@ Why it works: it answers all four test points and the three AI criteria (correct
 | Question (persona) | Suggested answer (honest, short) |
 | --- | --- |
 | What runs on FISCO, and which token? (1) | "Everything: Mock e-HKD, the pocket factory and every pocket run on FISCO BCOS 3.16.4, chain 20200; here is a hash in our explorer. Mock e-HKD is a test token, not the HKMA e-HKD and not money; production settlement would be a licensed HKD token or tokenised deposit. The pocket logic is chain-agnostic." Never claim more than the hash. |
-| Maximum loss if the agent signs many authorizations? (1) | "Bounded by the pocket balance, which is the budget, and by a validBefore of 60 seconds or less. Per-payment cap and allowlist are enforced by the contract. We do not claim an on-chain running counter because the token checks contract signatures read-only." |
+| Many authorizations signed at once? (1) | "Each payment needs the card contract's approval. Every authorization spends only from that card's own balance, expires within 600 seconds, and goes only to sellers you approved. Per-payment cap and allowlist are enforced by the contract. We do not claim an on-chain running counter because the token checks contract signatures read-only." |
 | Verify passed, settlement failed? (1) | "The gateway serves only after confirmed settlement and claims each payment once; if settlement fails, nothing is served and the buyer's money did not move. Here is the test and its hash." (Must be tested before saying it.) |
 | Seller privacy and quote probing? (2) | "Sellers get yes/no checks and reason codes, never raw KYC. Repeated price probing is a residual risk; we limit it with step-up on price changes and a cap on quotes per intent." |
 | False-refusal and attack rates? (2) | Quote the measured numbers from `npm run redteam` (attacks x20 runs, ordinary tasks, turns per task). If not measured, say "not yet" rather than estimating. |

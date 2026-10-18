@@ -100,10 +100,3 @@ function describeBase(row: LedgerRow, seller: string, when: string, where?: stri
 /** Rows worth listing: an approved payment approval is already told by its payment row. */
 export const visibleRows = (rows: LedgerRow[]) => rows.filter((r) => !(r.kind === "approval" && r.outcome === "approved"));
 
-/** The pitch line: if the agent is hijacked, the most it can lose is the pocket balance, and only to the allowed sellers. */
-export function worstCase(balance: bigint, sellers: string[], dead = false): string {
-  if (dead) return "This card is switched off. The agent can't spend anything from it.";
-  if (balance === 0n) return "The card is empty, so a hijacked agent could not lose anything.";
-  const to = sellers.length === 0 ? "to no one: no seller is allowed" : `only to ${sellers.length === 1 ? sellers[0] : `${sellers.slice(0, -1).join(", ")} and ${sellers.at(-1)}`}`;
-  return `If the agent is hijacked, the most it can lose is ${curSign()}${hkd(balance)}, ${to}.`;
-}

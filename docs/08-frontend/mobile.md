@@ -36,7 +36,7 @@ Every pocket page is its own app. Full description: [pocket-apps.md](pocket-apps
 - **The blocks the pocket's spec names.**
 - **The owner zone,** which the AI never touches:
   - Rules you signed;
-  - Worst case;
+  - Protected by ChainBrain (Radar, Pre-flight, Card contract, Sentinel);
   - Allowed sellers;
   - History.
 
@@ -57,7 +57,7 @@ Every routine pocket also has:
 
 **New pocket app** (Home → New pocket, `app/compose.tsx`):
 1. Say one sentence, or tap an example.
-2. The proof card appears: worst case, three fact tiles, and the test payments folded behind a disclosure.
+2. The proof card appears, headed "Protected by ChainBrain" with the four layers, three fact tiles, and the test payments folded behind a disclosure.
 3. The pocket app builds itself:
    - the card arrives blank, then takes its face and its agent's mark;
    - the blocks fly up one after another;
@@ -102,9 +102,9 @@ Every routine pocket also has:
 - **Agents tab:** ChainBrain's agent, Claude and ChatGPT with the pockets they hold, spent share, what they are doing; Agent detail with its own ledger, Give another pocket and hold-to-disconnect; **Connect** (pairing link and QR, then the consent sheet: a new pocket for the agent, can / can't, slide to allow).
 - **Ask dock and cheque:** when Claude or ChatGPT asks, a black dock rises above the tab bar (the agent's mark, "Claude asks HK$0.40", to Nansen, a 10-minute countdown ring that turns vermillion only in its last minute, "+2" for more) and after 8 s folds into a pill at the bottom right; on every other screen (chat, a pocket, an agent, Connect) the pill shows there too. Tapping it opens the **cheque**: who asks and why you are asked, one money sentence ("Claude pays DataPro HK$12.00 from Market news. HK$27.20 stays in the pocket.") and what happens if you don't answer, the pocket's card turning over to show pay / to / for / what is left after, Radar's seller check and the paying pocket, then the agent's note marked "not checked". Slide to approve (or tap twice: every slide and hold has a tap path, WCAG 2.5.7), then Face ID or Touch ID (skipped without biometrics, on web and in auto-play). Decline confirms itself. An opt-in local notification brings you to the cheque when the app is in the background (`AskDock.tsx`, `Cheque.tsx`, `ApprovalSheet.tsx`, `lib/biometric.ts`, `lib/notify.ts`). ChainBrain's own asks in chat open the cheque directly.
 - **Approvals inbox** (the bell): every agent's waiting requests with their 10-minute countdown and the history.
-- **Pocket page:** the 2.5D card leaning with the phone, the rules as VaultBank category tiles (dot, figure, meaning, pencil to edit), Add / Return / Revoke tiles, worst case with main-wallet exposure HK$0.00, spending by day as hatch bars split by seller, the holding agent, black seller toggles, history. Revoked: banner, white-hatch card, what came back, audit trail with a JSON export.
+- **Pocket page:** the 2.5D card leaning with the phone, the rules as VaultBank category tiles (dot, figure, meaning, pencil to edit), Add / Return / Revoke tiles, a "Protected by ChainBrain" block with the four layers and main-wallet exposure HK$0.00, spending by day as hatch bars split by seller, the holding agent, black seller toggles, history. Revoked: banner, white-hatch card, what came back, audit trail with a JSON export.
 - **Chat** (pushed from Agents or Home): black owner bubbles, the agent's words in white cards, green / vermillion / blue event cards, Radar cards that open the **Radar alert** page (diagnosis, money trail, affected pockets, Keep blocked or remove the seller).
-- **Brain tab** (the AI brain for the active pocket, [ai-brain.md](../ai-brain.md)): your rules with the worst case; spent from this pocket; Understood (the confirmed task, the one question it asked); How it shopped (prices asked, paid, refused by your rules, "Negotiated a price down: US$0.40 saved, numbers only"); Stopped (hidden orders, data asks, chat attacks, forced transfers; no money moved); Radar (each seller's score); Pre-flight (predicted vs actual) and the Sentinel side by side, with Unfreeze; Remembers (memory version, items with Forget).
+- **Brain tab** (the AI brain for the active pocket, [ai-brain.md](../ai-brain.md)): your rules and the layers protecting it; spent from this pocket; Understood (the confirmed task, the one question it asked); How it shopped (prices asked, paid, refused by your rules, "Negotiated a price down: US$0.40 saved, numbers only"); Stopped (hidden orders, data asks, chat attacks, forced transfers; no money moved); Radar (each seller's score); Pre-flight (predicted vs actual) and the Sentinel side by side, with Unfreeze; Remembers (memory version, items with Forget).
 - **Haggle card** (chat): the price ladder from the seller's first price to the deal, each rung an offer or counter, and why it is safe (prices only, below the seller's price, 3 offers at most, the pocket pays exactly the agreed price). The paid card then reads "Negotiated from US$1.50" (`src/components/HaggleCard.tsx`).
 - **ChainBrain explorer sheet:** every hash opens it ("Test network"; a link to the server's `/explorer` only against a real server).
 - **Hidden auto-play (for the video):** long-press the chat header for about 1.5 s. Scenes 1-8 as before (wizard, question, co-sign, refusal, injection plus the forced transfer, data grab, escalation, revoke, dead end and fix), then: Connect Claude (pairing, consent, its own pocket), confirm Claude's task and co-sign its payment from the ask dock (the cheque), scene 11 (the haggler, on Premium reports), scene 9 (Radar, opening the money trail) and scene 10 (Sentinel), and it closes on Activity's Live view. Every step presses the real control through a named target (`src/lib/autoplay.ts`, `src/lib/autoplayTargets.ts`).

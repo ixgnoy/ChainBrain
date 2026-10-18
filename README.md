@@ -1,6 +1,6 @@
 # 链AI脑 ChainBrain
 
-**Give your AI a pocket, not your wallet.** A consumer wallet where you open *pockets* for your AI agent. Each pocket holds its own Mock e-HKD balance and rules. The agent spends from it on-chain by itself over x402, and a pocket smart contract enforces the rules. Even a hijacked agent can lose at most the pocket's balance, and only to sellers you approved.
+**Give your AI a pocket, not your wallet.** A consumer wallet where you open *pockets* for your AI agent. Each pocket holds its own Mock e-HKD balance and rules. The agent spends from it on-chain by itself over x402, and a pocket smart contract enforces the rules. Your AI can be fooled. ChainBrain protects you: Radar screens every seller, a pre-flight test checks every payment, your card's own contract refuses anything outside your rules, and the Sentinel freezes the card when it spots an attack.
 
 Inside the pocket, an **AI brain** does the work: it understands the task, shops and pays, re-plans after a refusal, resists injection and phishing, screens every seller's money (Radar), watches itself and can freeze the pocket on-chain (Sentinel), remembers, turns spoken rules into pocket rules, predicts every payment before sending it (Pre-flight) and negotiates the price with numbers only (the haggler). AI only tightens: nothing it says can loosen a pocket. See [`docs/ai-brain.md`](docs/ai-brain.md).
 

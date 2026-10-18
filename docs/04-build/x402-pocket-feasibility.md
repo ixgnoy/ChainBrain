@@ -117,7 +117,7 @@ The type hash is `keccak256("TransferWithAuthorization(address from,address to,u
 | One-task pocket void after use | Partly | the token's own nonce stops replay of one authorization; "void after first payment" needs state, so use balance = one price or let the owner drain |
 | **Total budget (running spend)** | **No** (cannot write state in a read-only call) | **Make the pocket's eHKD balance the budget.** Fund exactly the budget; unused money returns through the owner-only `returnFunds`. Bonus: this is the spec's "funds physically separated from the owner's main balance". |
 
-Residual risk to state honestly in the security report: while the pocket is live, the agent could sign several authorizations at once, each under the cap and to allowlisted sellers; the worst case is bounded by the pocket balance. Cap `validBefore` to a short window (for example 10 minutes from now) to limit stockpiled authorizations.
+Residual risk to state honestly in the security report: while the pocket is live, the agent could sign several authorizations at once, each under the cap and to allowlisted sellers; every authorization spends only from the pocket's own balance. Cap `validBefore` to a short window (for example 10 minutes from now) to limit stockpiled authorizations.
 
 ### 4.4 Path B in short (ERC-7710 with MetaMask) (not built)
 

@@ -45,6 +45,8 @@ import { answer, proof, type Draft } from "../../../shared/sim/speak";
 import { AGENTS, CAN, CANNOT } from "../../../shared/sim/agents";
 import { BLOCK_TYPES, type Layout } from "../../../shared/sim/pocketApp";
 import { curSign } from "../lib/runtime";
+import { ProtectedHead } from "../components/Protected";
+import { PROTECT_HEADLINE } from "../../../shared/sim/protect";
 
 type Composed = Awaited<ReturnType<typeof api.composeApp>>;
 const EXAMPLES: { icon: IconName; label: string; text: string; layout: Layout; agent: string }[] = [
@@ -252,7 +254,7 @@ export default function Compose() {
         {res && p && spec && preview && ctx ? (
           <React.Fragment key={build}>
             <Stage i={0} onY={(y) => { proofY.current = y; }}>
-              <ProofCard worst={p.worstCase} lines={p.lines} tests={p.tests} never={p.neverPayable} by={res.by} sellers={draft!.sellers} cap={draft!.cap} per={draft!.per} limit={draft!.limit} sellerLabel={(id) => sellers.find((x) => x.id === id)?.name ?? id} />
+              <ProofCard lines={p.lines} tests={p.tests} never={p.neverPayable} by={res.by} sellers={draft!.sellers} cap={draft!.cap} per={draft!.per} limit={draft!.limit} sellerLabel={(id) => sellers.find((x) => x.id === id)?.name ?? id} />
             </Stage>
             {open0.map((q) => (
               <Stage i={1} key={String(q.field)}>
@@ -342,11 +344,7 @@ export default function Compose() {
           sign={
             <View style={{ backgroundColor: c.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 16, paddingHorizontal: 20, paddingBottom: insets.bottom + 14, gap: 12, shadowColor: c.ink, shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: -6 }, elevation: 12 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}><Icon name="shieldCheck" size={18} color={c.white} stroke={2} /></View>
-                <View style={{ flex: 1 }}>
-                  <T v="head">{`Worst case ${/^[A-Z]{2}\$/.test(p.worstCase) ? p.worstCase : `${curSign()}${p.worstCase}`}`}</T>
-                  <T v="cap" color="muted">even if the agent is fooled</T>
-                </View>
+                <ProtectedHead />
                 <Press haptics="select" onPress={() => { setCanvas(false); setTimeout(() => scroller.current?.scrollTo({ y: Math.max(0, proofY.current - 12), animated: true }), 250); }}
                   accessibilityRole="button" accessibilityLabel="See every rule" style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 6 }}>
                   <T v="sub" w="semi" color="vermillionInk">Every rule</T>
@@ -417,9 +415,9 @@ function FaceIn({ width, children }: { width: number; children: React.ReactNode 
 }
 
 /** The proof card: what can and cannot happen with these rules, computed by code (shared/sim/speak.ts proof). At a glance:
- *  the worst case and three facts as tiles; the sentences and the payments tried against the rules fold out on request. */
-function ProofCard({ worst, lines, tests, never, by, sellers, cap, per, limit, sellerLabel }: {
-  worst: string; lines: string[]; tests: { label: string; got: string; ok: boolean }[]; never: string[]; by: string; sellerLabel: (id: string) => string;
+ *  ChainBrain's protection and three facts as tiles; the sentences and the payments tried against the rules fold out. */
+function ProofCard({ lines, tests, never, by, sellers, cap, per, limit, sellerLabel }: {
+  lines: string[]; tests: { label: string; got: string; ok: boolean }[]; never: string[]; by: string; sellerLabel: (id: string) => string;
   sellers: string[]; cap: string; per?: { amount: string; period: string } | null; limit?: string | null;
 }) {
   const [open, setOpen] = useState(false);
@@ -428,11 +426,7 @@ function ProofCard({ worst, lines, tests, never, by, sellers, cap, per, limit, s
   return (
     <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, gap: 14 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-        <View style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}><Icon name="shieldCheck" size={24} color={c.white} stroke={1.8} /></View>
-        <View style={{ flex: 1 }} accessible accessibilityLabel={`Worst case, even if the agent is fooled: ${curSign()}${worst}`}>
-          <T v="cap" color="muted">Worst case, even if the agent is fooled</T>
-          <T v="amount">{`${curSign()}${worst}`}</T>
-        </View>
+        <ProtectedHead size={52} sub={PROTECT_HEADLINE} />
       </View>
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Fact a11y={`Pays only ${sellers.length} seller${sellers.length === 1 ? "" : "s"}`} label={sellers.length === 1 ? `${cleanText(sellerLabel(sellers[0]), 14)} only` : `only these ${sellers.length}`}>

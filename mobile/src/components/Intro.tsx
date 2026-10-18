@@ -13,22 +13,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { c, F, level3, motion, radius } from "../tokens";
 import { useApp, useAppSelect } from "../store";
 import { cleanText } from "../lib/sanitize";
-import { Hatch } from "../ui/Hatch";
 import { PocketFace, toneFor } from "./PocketFace";
 import { BrandMark } from "../ui/BrandMark";
 import type { Pocket } from "../store";
 import { haptic } from "../haptics";
 import { Button, Press } from "../ui/kit";
 import { T } from "../ui/Text";
-import { Icon } from "../ui/Icon";
+import { Icon, type IconName } from "../ui/Icon";
 import { EASE_OUT, rubberband, useReduceMotion } from "../ui/motion";
 import { finishIntro } from "../ui/intro";
+import { LAYERS, PROTECT_HEADLINE } from "../../../shared/sim/protect";
+import { LAYER_ICON } from "./Protected";
 
 const PAGES = [
   { title: "Give your AI a card, not your wallet", sub: "A card holds a small budget for one agent: ChainBrain's own, Claude or ChatGPT. It can only spend what you put in." },
   { title: "Say what it's for", sub: "One sentence. ChainBrain reads it into rules you sign, a routine that runs on time, and the card's own app." },
   { title: "The limits live in a contract you own", sub: "Which sellers, how much per payment, when to ask you. Only your key can change them." },
-  { title: "The worst case is the card balance", sub: "Even a tricked agent can only pay sellers you allowed, and never more than the card holds." },
+  { title: PROTECT_HEADLINE, sub: "Radar screens every seller, a pre-flight tests every payment, your card's contract enforces your rules, and the Sentinel freezes a card under attack." },
 ] as const;
 
 /** 0 while the page is away, 1 once its illustration has played (instant under Reduce Motion). */
@@ -120,34 +121,32 @@ function Rule({ k, v, t, from }: { k: string; v: string; t: SharedValue<number>;
   );
 }
 
-// ---- page 3: the worst case is a small segment of everything you own
-function WorstArt({ active, reduce }: { active: boolean; reduce: boolean }) {
-  const t = usePlay(active, reduce, 1500, 200);
-  const sellers = useArtSellers();
-  const seg = useAnimatedStyle(() => ({ width: `${22 * win(t.value, 0.05, 0.5)}%` }));
-  const label = useAnimatedStyle(() => ({ opacity: win(t.value, 0.4, 0.6) }));
+// ---- page 3: a fooled agent tries to pay a stranger; ChainBrain's four layers light up one by one and the payment is blocked
+function ProtectArt({ active, reduce }: { active: boolean; reduce: boolean }) {
+  const t = usePlay(active, reduce, 1900, 200);
   return (
-    <View style={{ width: 290, gap: 22 }}>
-      <View style={{ gap: 10 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <T v="cap" w="medium" color="muted">Everything you own</T>
-          <Animated.View style={label}><T v="cap" w="bold" color="vermillionInk">Card · HK$40.00</T></Animated.View>
-        </View>
-        <View style={{ height: 26, borderRadius: 13, backgroundColor: c.card, overflow: "hidden" }}>
-          <Hatch color={c.line} pitch={7} stroke={1.5} />
-          <Animated.View style={[{ height: 26, borderRadius: 13, backgroundColor: c.vermillion }, seg]} />
-        </View>
-      </View>
-      <View style={{ gap: 10 }}>
-        <T v="cap" w="medium" color="muted">It can only pay</T>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          {sellers.map((n, i) => <Chip key={n} t={t} from={0.55 + i * 0.05} label={n} ok />)}
-          <Chip t={t} from={0.78} label="Anyone else" />
-        </View>
-      </View>
+    <View style={{ width: 290, gap: 10 }}>
+      <Chip t={t} from={0} label="Fooled agent: pay a stranger" />
+      {LAYERS.map((l, i) => <LayerRow key={l.key} t={t} from={0.18 + i * 0.13} icon={LAYER_ICON[l.key]} name={l.name} line={l.line} />)}
+      <Chip t={t} from={0.82} label="Blocked · nothing paid" ok />
     </View>
   );
 }
+
+function LayerRow({ t, from, icon, name, line }: { t: SharedValue<number>; from: number; icon: IconName; name: string; line: string }) {
+  const a = useAnimatedStyle(() => ({ opacity: 0.25 + 0.75 * win(t.value, from, from + 0.12), transform: [{ translateX: -8 * (1 - win(t.value, from, from + 0.12)) }] }));
+  return (
+    <Animated.View style={[{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44, paddingHorizontal: 12, borderRadius: 14, backgroundColor: c.card }, a]}>
+      <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}><Icon name={icon} size={14} color={c.white} stroke={2.2} /></View>
+      <View style={{ flex: 1 }}>
+        <T v="row" w="bold">{name}</T>
+        <T v="cap" color="muted" numberOfLines={2}>{line}</T>
+      </View>
+      <Icon name="check" size={16} color={c.greenInk} stroke={2.6} />
+    </Animated.View>
+  );
+}
+
 function Chip({ t, from, label, ok }: { t: SharedValue<number>; from: number; label: string; ok?: boolean }) {
   const a = useAnimatedStyle(() => ({ opacity: win(t.value, from, from + 0.15), transform: [{ translateY: 6 * (1 - win(t.value, from, from + 0.15)) }] }));
   return (
@@ -213,7 +212,7 @@ function Page({ i, w, pos, active, reduce }: { i: number; w: number; pos: Shared
   return (
     <View style={{ width: w, flex: 1, paddingHorizontal: 24 }}>
       <Animated.View style={[{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 12 }, art]}>
-        {i === 0 ? <DeckArt active={active} reduce={reduce} w={w} /> : i === 1 ? <SentenceArt active={active} reduce={reduce} w={w} /> : i === 2 ? <ContractArt active={active} reduce={reduce} /> : <WorstArt active={active} reduce={reduce} />}
+        {i === 0 ? <DeckArt active={active} reduce={reduce} w={w} /> : i === 1 ? <SentenceArt active={active} reduce={reduce} w={w} /> : i === 2 ? <ContractArt active={active} reduce={reduce} /> : <ProtectArt active={active} reduce={reduce} />}
       </Animated.View>
       <Animated.View style={[{ gap: 12, paddingBottom: 20 }, text]}>
         <T v="display" accessibilityRole="header" style={{ fontSize: 34, lineHeight: 40 }}>{PAGES[i].title}</T>

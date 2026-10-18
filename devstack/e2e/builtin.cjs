@@ -75,7 +75,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await visible("The limits live in a contract you own").waitFor();
     await page.getByRole("button", { name: "Next", exact: true }).click(); // exact: Home's "Next up" tiles say "next run"
-    await visible("The worst case is the card balance").waitFor();
+    await visible("Your AI can be fooled. ChainBrain protects you.").waitFor();
     check("intro pages 2 to 4 are reachable and Skip stays visible", await skip.isVisible());
     await skip.click();
     await skip.waitFor({ state: "detached", timeout: 5000 });
@@ -354,7 +354,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Your card").waitFor();
     await sleep(2600);
     let t = await body();
-    check("proof card: worst case HK$0.80, the weekly allowance, every test payment as expected", /Worst case, even if the agent is fooled/.test(t) && /HK\$0\.80/.test(t) && /a week, on its own/.test(t) && /6 payments tried · all as expected/.test(t));
+    check("proof card: protected by ChainBrain, the weekly allowance, every test payment as expected, no loss wording", /Protected by ChainBrain/.test(t) && !/worst case|can lose/i.test(t) && /a week, on its own/.test(t) && /6 payments tried · all as expected/.test(t));
     check("the app is composed from the fixed blocks", /Research desk · 6 of 13 blocks/.test(t) && /draft/i.test(t));
     await shot("14-compose");
     await slide("Slide to create · HK$0.80");

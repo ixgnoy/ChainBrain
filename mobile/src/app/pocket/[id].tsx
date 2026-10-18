@@ -41,6 +41,7 @@ import { AppHeader, PocketApp, type AppCtx } from "../../components/app/PocketAp
 import { appOf } from "../../components/app/theme";
 import * as api from "../../lib/api";
 import { curSign } from "../../lib/runtime";
+import { ProtectedHead, ProtectedLayers } from "../../components/Protected";
 
 /** A rule chip: white pill with a muted label and a bold value; editable ones open the rule sheet. */
 /** A rule as VaultBank's category tile: a coloured dot, the figure big, what it means under it; a pencil when you can edit it. */
@@ -254,7 +255,7 @@ export default function PocketDetail() {
             <View style={{ marginTop: 16 }}><PocketApp ctx={ctx} /></View>
 
             {/* the owner zone: fixed, never chosen by the AI. One card: the rules as tiles (tap to edit), who it may pay as
-                marks, the worst case as one figure; open it for the seller switches */}
+                marks, and the layers protecting it; open it for the seller switches */}
             <Card pad={16} style={{ marginHorizontal: PAGE_MARGIN, marginTop: 24, gap: 12 }}>
               <Press kind="row" haptics="select" onPress={() => setRulesOpen((o) => !o)} accessibilityRole="button" accessibilityState={{ expanded: rulesOpen }} accessibilityLabel={`Rules you signed. ${rulesOpen ? "Hide" : "Show"} sellers`}
                 style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 }}>
@@ -278,16 +279,10 @@ export default function PocketDetail() {
                   <T v="cap" w="semi" style={{ color: c.vermillionInk }}>Others</T>
                 </View>
               </Press>
-              {/* the worst case, as one figure against nothing from the main wallet */}
-              <View accessible accessibilityLabel={`Worst case ${money(off ? 0n : pocket.balance)} if the agent is fooled. Main wallet exposure ${curSign()}0.00`} style={{ flexDirection: "row", gap: 8 }}>
-                <View style={{ flex: 1, borderRadius: radius.tile, backgroundColor: c.vermillionSoft, padding: 12, gap: 2 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Icon name="shieldCheck" size={14} color={c.vermillionInk} stroke={2.2} /><T v="cap" w="semi" style={{ color: c.vermillionInk }}>Worst case</T></View>
-                  <T v="head" style={{ color: c.vermillionInk, fontVariant: ["tabular-nums"] }}>{money(off ? 0n : pocket.balance)}</T>
-                </View>
-                <View style={{ flex: 1, borderRadius: radius.tile, backgroundColor: c.tile, padding: 12, gap: 2 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Icon name="vault" size={14} color={c.ink2} stroke={2.2} /><T v="cap" w="semi" color="ink2">Main wallet</T></View>
-                  <T v="head" style={{ fontVariant: ["tabular-nums"] }}>{`${curSign()}0.00`}</T>
-                </View>
+              {/* what protects every payment from this card, layer by layer */}
+              <View style={{ gap: 10, marginTop: 4 }}>
+                <ProtectedHead size={32} sub={off ? "Switched off: it can't pay anyone" : undefined} />
+                <ProtectedLayers />
               </View>
               {rulesOpen ? (
                 <View style={{ gap: 2, marginTop: 4 }}>

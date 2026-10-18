@@ -199,7 +199,7 @@ Instead, chips pop in under the box (`Understood.tsx`, `shared/sim/understand.ts
 
 ### Pocket page tabs: considered, not done
 
-Splitting the pocket page into "App" and "Rules & history" tabs would shorten it, but it would hide the signed rules and the worst case behind a tap. Those are the trust story. They stay on the page, in order, below the app.
+Splitting the pocket page into "App" and "Rules & history" tabs would shorten it, but it would hide the signed rules and the protection block behind a tap. Those are the trust story. They stay on the page, in order, below the app.
 
 ## Loop 5: validation of the first-glance round (17 Oct 2026)
 

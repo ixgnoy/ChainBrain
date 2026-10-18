@@ -7,9 +7,10 @@ import { useNetwork } from "./useNetwork";
 import { Expected, PhoneTag, Reason, TxHash, Verdict, clock, pocketStatus, hkd, NEVER, AgentTag, SellerLogo } from "./parts";
 import { argsOf, evidenceOf, injectionOf, plainSummary, type Injection } from "./story";
 import { txLabel } from "./network";
-import { orList, worstCase, worstSegments } from "./worst";
+import { orList, worstCase } from "./worst";
+import { LAYERS, PROTECT_HEADLINE, layerCounts } from "@sim/protect";
 import { decisionsOf, durationLabel, groupTurns, holdKeys, offsetLabel, waiting, type DecisionKind, type Turn } from "./liveRules";
-import { Disclosure, EmptyState, SegmentBar, Tracker } from "./kit";
+import { Disclosure, EmptyState, Tracker } from "./kit";
 import { traceRows, untrustedOf, type TraceRow } from "../lib/trace";
 import { eventPocket, samePocket, type WalletEvent } from "../lib/events";
 import { salesFor } from "../seller/data";
@@ -137,31 +138,25 @@ function TurnHeader({ t, expected }: { t: Turn; expected: boolean }) {
   );
 }
 
-/** "Can lose at most HK$X, only to A or B", with a meter split into what was spent and what could still be lost. */
-function WorstCase({ w, refused, ignored }: { w: ReturnType<typeof worstCase>; refused: number; ignored: number }) {
-  const segs = worstSegments(w);
-  const total = segs.reduce((n, s) => n + s.value, 0n);
-  const share = (v: bigint) => (total > 0n ? Number((v * 10_000n) / total) / 10_000 : 0);
-  const spent = segs.find((s) => s.key === "spent");
+/** "Protected by ChainBrain": the four layers every payment from this pocket passes, each with what it has done so far
+ *  (shared/sim/protect.ts), and who the pocket may pay at all. */
+function Protected({ events, to, stopped }: { events: WalletEvent[]; to: string[]; stopped: boolean }) {
+  const counts = layerCounts(events as never[]);
   return (
-    <div data-testid="worst-case" className="card p-4 sm:p-5">
+    <div data-testid="protected-layers" className="card p-4 sm:p-5">
       <div className="flex items-center gap-3">
-        <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-vermillion-soft text-vermillion-ink"><ShieldCheck className="size-5" {...I} /></span>
-        <div className="min-w-0"><p className="text-[18px] font-bold leading-6 tracking-[-0.02em]">Worst case</p><p className="text-[12px] leading-4 text-muted">The most this pocket can ever lose</p></div>
+        <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-ink text-on-accent"><ShieldCheck className="size-5" {...I} /></span>
+        <div className="min-w-0"><p className="text-[18px] font-bold leading-6 tracking-[-0.02em]">Protected by ChainBrain</p><p className="text-[12px] leading-4 text-muted">{PROTECT_HEADLINE}</p></div>
       </div>
-      <p className="t-body tile mt-3.5 px-4 py-3.5 text-[15px] leading-6 text-ink2">
-        {w.stopped ? <b className="font-bold text-ink" data-testid="worst-max">Stopped: the agent can't spend.</b> : <>If the agent is hijacked, it can lose at most <b className="num font-extrabold text-ink" data-testid="worst-max">{hkd(w.max)}</b>, only to {orList(w.to)}.</>}
-      </p>
-      <div className="mt-3"><SegmentBar label="Share of the funding still at risk" barTestId="worst-bar" segments={segs.map((s) => ({ key: s.key, share: share(s.value) }))} /></div>
-      <div className="num mt-2 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-[12px] leading-4 text-muted">
-        <span className="inline-flex flex-wrap items-center gap-x-3">
-          {w.stopped ? <span>{w.fundedKnown ? `${hkd(w.funded)} was funded in total` : "Stopped"}</span> : <>
-            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-vermillion" aria-hidden />Can still be lost {hkd(w.max)}</span>
-            {spent ? <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-ink" aria-hidden />Spent so far {hkd(spent.value)}</span> : <span>Nothing spent yet</span>}
-          </>}
-        </span>
-        {(refused > 0 || ignored > 0) && <span>{[refused > 0 && `${refused} refused`, ignored > 0 && `${ignored} injected ${ignored === 1 ? "order" : "orders"} ignored`].filter(Boolean).join(", ")}, nothing moved</span>}
-      </div>
+      <ul className="mt-3.5 grid gap-2 sm:grid-cols-2">
+        {LAYERS.map((l) => (
+          <li key={l.key} className="tile flex items-start gap-2.5 px-3.5 py-3">
+            <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-green-ink" strokeWidth={2.6} />
+            <span className="min-w-0"><span className="block text-[14px] font-bold leading-5">{l.name}</span><span className="block text-[12px] leading-4 text-muted">{l.line}</span><span className="num mt-1 block text-[12px] font-semibold leading-4 text-ink2" data-testid={`layer-${l.key}`}>{counts[l.key]}</span></span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-[13px] leading-5 text-ink2" data-testid="protected-to">{stopped ? <b className="font-bold text-ink">Stopped: this pocket can't pay anyone.</b> : <>Pays only {orList(to)}. Your main wallet is out of reach.</>}</p>
     </div>
   );
 }
@@ -269,7 +264,6 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
   const ev = useMemo(() => evidenceOf(mine), [mine]);
   const attempts = useMemo(() => allAttempts.filter((a) => samePocket(a.pocket, pocket)), [allAttempts, pocket]);
   const decisions = useMemo(() => decisionsOf(mine), [mine]);
-  const refused = mine.filter((e) => e.type === "refusal" || e.type === "disclosure" || (e.type === "forced" && e.reverted)).length;
 
   if (!pocket) return <Card><EmptyState icon={<Wallet {...I} />} title="No pocket on the network yet">Create one in the phone app and it shows up here.</EmptyState></Card>;
   const st = p ? pocketStatus(p) : undefined;
@@ -304,7 +298,7 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
       {p && worst ? (
         <>
           <PocketCard p={p} name={nameOf(pocket)} phone={isPhone(pocket)} stopped={worst.stopped} status={st} present={present} />
-          <WorstCase w={worst} refused={refused} ignored={ev.injections} />
+          <Protected events={mine} to={worst.to} stopped={worst.stopped} />
           {!present && (
             <Card className="p-4 sm:p-5">
               <h3 className="mb-3 text-[18px] font-bold leading-6 tracking-[-0.02em]">Allowed sellers</h3>

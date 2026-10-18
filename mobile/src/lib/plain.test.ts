@@ -20,14 +20,16 @@ test("plain wording: refused rows read as sentences, approved approvals are hidd
   assert.equal(plainReason("SOMETHING_NEW"), "not allowed by your rules");
 });
 
-import { worstCase } from "./plain";
+import { protectedLine } from "../../../shared/sim/protect";
 import { deadEndOf, retryText } from "./deadend";
 import { addOwnerTx, ownerRows } from "./ownerTxs";
 
-test("worst case line names the balance and the allowed sellers", () => {
-  assert.equal(worstCase(1_285_000n, ["Exa", "Nansen"]), "If the agent is hijacked, the most it can lose is HK$1.285, only to Exa and Nansen.");
-  assert.match(worstCase(5_000n, ["Exa"]), /only to Exa\.$/);
-  assert.match(worstCase(0n, []), /empty/);
+test("protected line names the allowed sellers and ChainBrain's checks, never a loss", () => {
+  assert.equal(protectedLine(["Exa", "Nansen"]), "It can pay only Exa and Nansen, and ChainBrain checks every payment first.");
+  assert.match(protectedLine(["Exa"]), /only Exa,/);
+  assert.match(protectedLine([]), /can't pay anyone/);
+  assert.match(protectedLine(["Exa"], true), /switched off/);
+  for (const s of [protectedLine(["Exa"]), protectedLine([]), protectedLine(["Exa"], true)]) assert.doesNotMatch(s, /lose|worst/i);
 });
 
 test("owner transactions become ledger rows with a hash", () => {

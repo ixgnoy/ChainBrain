@@ -77,7 +77,7 @@ Evidence:
 The AI never chooses or orders these parts of the page:
 - the rule tiles;
 - Add / Return / Revoke;
-- the worst case;
+- Protected by ChainBrain (the four layers);
 - seller toggles;
 - history.
 

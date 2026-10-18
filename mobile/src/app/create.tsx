@@ -21,7 +21,7 @@ import { txError } from "../components/ActionSheet";
 import { SpeakRules } from "../components/SpeakRules";
 import type { Draft } from "../../../shared/sim/speak";
 import { TxLink } from "../components/TxLink";
-import { worstCase } from "../lib/plain";
+import { protectedLine } from "../../../shared/sim/protect";
 import { cleanText } from "../lib/sanitize";
 import { presetsFor, toPocketArgs, expiryFor, type Lifetime, type PresetValues } from "../lib/presets";
 import { styleForPreset } from "../lib/pocketNames";
@@ -29,6 +29,7 @@ import { parseHkd } from "../lib/shared";
 import { money2, hkd } from "../lib/util";
 import { haptic } from "../haptics";
 import { curSign } from "../lib/runtime";
+import { ProtectedHead, ProtectedLayers } from "../components/Protected";
 
 /** Sellers under their category (Research data, Food and drink), in the order the API lists them. */
 export function groupSellers<S extends { category: string }>(list: S[]): [string, S[]][] {
@@ -350,10 +351,10 @@ export default function Create() {
       default: return (
         <View style={{ gap: 16 }}>
           <Title h="Looks right?" sub="Two steps signed on this phone: create the card, then add the money. The agent gets exactly these limits." />
-          <View style={{ backgroundColor: c.accentSoft, borderRadius: radius.tile, borderCurve: "continuous", padding: 16, gap: 4 }} accessibilityLiveRegion="polite">
-            <T v="cap" w="semi" color="accent">Most the agent can lose</T>
-            <Money v="balance" value={values.budget} color="ink" />
-            <T v="sub" color="ink2">{worstCase(parseHkd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
+          <View style={{ backgroundColor: c.accentSoft, borderRadius: radius.tile, borderCurve: "continuous", padding: 16, gap: 12 }} accessibilityLiveRegion="polite">
+            <ProtectedHead />
+            <T v="sub" color="ink2">{protectedLine(sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
+            <ProtectedLayers tone="card" short />
           </View>
           <EditableSummary onEdit={stage === "idle" && !progress.current.pocket ? edit : undefined} rows={[[0, "Name", values.label], [1, "Money in", `${curSign()}${values.budget}`], [2, "Sellers", sellers.map((s) => cleanText(cfg?.sellers.find((x) => x.id === s)?.name ?? s, 24)).join(", ")], [3, "Per payment", `up to ${curSign()}${values.cap}`], [4, "Asks you", askLabel], [5, "Ends", new Date(Number(expiryFor(life)) * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })]]} />
           {stage !== "idle" || progress.current.pocket || done.current.createTx ? (
@@ -374,12 +375,12 @@ export default function Create() {
     }
   })();
 
-  // the product's one sentence, live: every choice above changes what a hijacked agent could lose. Pinned over the buttons;
+  // the product's one sentence, live: who this card can pay, and that ChainBrain checks every payment. Pinned over the buttons;
   // at large text it would take half the screen there, so it follows the step's content instead
   const worstNote = step > 0 && step < STEPS.length - 1 ? (
     <View accessibilityLiveRegion="polite" style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", padding: 12, marginBottom: big ? 0 : 6, borderRadius: 16, backgroundColor: c.accentSoft }}>
       <Icon name="shield" size={16} color={c.accent} />
-      <T v="cap" color="ink2" style={{ flex: 1 }}>{worstCase(parseHkd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
+      <T v="cap" color="ink2" style={{ flex: 1 }}>{protectedLine(sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
     </View>
   ) : null;
 

@@ -129,7 +129,7 @@ async function webFlow(browser, _scenes, issues) {
     check("trace shows the tool calls and the SELLER_NOT_ALLOWED reason code", /get_quote|pay/.test(await trace.innerText()));
     await until("pocket balance read from chain", async () => (await page.getByTestId("pocket-balance").innerText()) === hkdText((await ehkdOf(target)) * 1e6), 20000);
     check("pocket balance matches the chain", true);
-    check("worst case line shown", await page.getByText(/Worst case/).filter({ visible: true }).first().isVisible());
+    check("protection card shown with its four layers", await page.getByTestId("protected-layers").isVisible() && (await page.getByTestId("protected-layers").innerText()).includes("Sentinel"));
     await shot(page, "web-01-live");
   });
 

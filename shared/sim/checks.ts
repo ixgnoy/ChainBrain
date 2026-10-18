@@ -39,7 +39,7 @@ export const GATES: Record<GateId, { layer: Layer; title: string; plain: string 
   active: { layer: "contract", title: "Pocket active", plain: "A revoked, frozen or expired pocket pays no one." },
   seller: { layer: "contract", title: "Allowed seller", plain: "Money can only go to sellers on the pocket's list." },
   cap: { layer: "contract", title: "Per-payment cap", plain: "No single payment above the cap." },
-  budget: { layer: "contract", title: "Pocket balance", plain: "The worst case is what is in the pocket; the main wallet is out of reach." },
+  budget: { layer: "contract", title: "Card balance", plain: "It pays only from the card's own balance; the main wallet is out of reach." },
   cosign: { layer: "contract", title: "Ask-me limit", plain: "Above the ask-me limit the owner's own signature on this exact transfer is required." },
   paid: { layer: "seller", title: "Seller paid", plain: "eHKD arrives at the seller, with a transaction hash." },
 };

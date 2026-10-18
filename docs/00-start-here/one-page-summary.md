@@ -6,7 +6,7 @@ Last updated: 2026-10-17
 ## In one minute
 
 - **ChainBrain (链AI脑)** is a consumer wallet where you open **pockets** for your AI agent. Pitch line: **Give your AI a pocket, not your wallet.**
-- A pocket is a small smart contract that holds its own Mock e-HKD (eHKD) and its own rules. The agent spends from it on-chain by itself over x402. The pocket checks every payment, so even a hijacked agent can lose at most the pocket's balance, and only to sellers the owner approved.
+- A pocket is a small smart contract that holds its own Mock e-HKD (eHKD) and its own rules. The agent spends from it on-chain by itself over x402. Every payment is checked by Radar, a pre-flight test and the pocket's own contract, while the Sentinel watches for attacks. A hijacked agent spends only from that pocket's own balance and only to sellers the owner approved.
 - **Entry:** FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Chain: FISCO BCOS 3.16.4 (chain id 20200), with a Mock e-HKD test token. Mock e-HKD is not the HKMA e-HKD and is not money.
 - **Prelim scope:** main wallet, pockets, an in-house agent that plans and pays, and defences against the four attacks the scoring names. On top, an **AI brain** of ten features (Radar, Sentinel, memory, Speak your rules, Pre-flight, the haggler and more) that only ever tightens what the agent may do ([ai-brain.md](../ai-brain.md), 16 Oct). **Finals roadmap (not in the prelim demo):** seller trust layer, attested seller categories, reputation, bring-your-own-agent, production money, privacy.
 - **Status:** built and tested on FISCO BCOS, locally and on Railway ([evidence](../evidence-fisco.md)); deck, video and submission are still to do. See [status and plan](status-and-plan.md).

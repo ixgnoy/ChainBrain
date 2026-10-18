@@ -2,7 +2,7 @@
 
 FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Prelim entry.
 
-**Give your AI a pocket, not your wallet.** ChainBrain is a consumer wallet where the owner opens *pockets* for an AI agent. Each pocket holds its own Mock e-HKD (eHKD) and rules, on FISCO BCOS. The agent spends from it on-chain by itself over x402, and the pocket contract enforces the rules at settlement. A hijacked agent can lose at most the pocket's balance, and only to sellers the owner approved.
+**Give your AI a pocket, not your wallet.** ChainBrain is a consumer wallet where the owner opens *pockets* for an AI agent. Each pocket holds its own Mock e-HKD (eHKD) and rules, on FISCO BCOS. The agent spends from it on-chain by itself over x402, and the pocket contract enforces the rules at settlement. Your AI can be fooled. ChainBrain protects you: Radar screens every seller, a pre-flight test checks every payment, the pocket contract refuses any seller or amount outside the owner's rules, and the Sentinel freezes the pocket when it spots an attack.
 
 ## 1. Architecture
 
