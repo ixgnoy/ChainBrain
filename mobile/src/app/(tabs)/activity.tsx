@@ -1,12 +1,14 @@
-import React, { useMemo, useState } from "react";
-import Animated from "react-native-reanimated";
+// Activity: two views of the same events. Live (the default) narrates what the agents are doing and deciding, now
+// (components/LiveFeed.tsx); Ledger is the full record, day by day, with filters and receipts.
+import React, { useEffect, useMemo, useState } from "react";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { RefreshControl, View } from "react-native";
 import { useApp } from "../../store";
-import { c } from "../../tokens";
+import { c, motion } from "../../tokens";
 import { Screen, PageTitle } from "../../ui/Screen";
 import { router } from "expo-router";
 import { AgentAvatar } from "../../ui/AgentAvatar";
-import { Button, ListCard } from "../../ui/kit";
+import { Button, ListCard, Press } from "../../ui/kit";
 import { Rise, SHIFT, useStagger } from "../../ui/Rise";
 import { SlidingPills } from "../../ui/SlidingPills";
 import { haptic } from "../../haptics";
@@ -15,6 +17,7 @@ import { T } from "../../ui/Text";
 import { Icon } from "../../ui/Icon";
 import { ActivityItem, BrandSquare, DayHead, TxRow } from "../../components/ActivityRow";
 import { ActivityPulse } from "../../components/ActivityPulse";
+import { LiveFeed } from "../../components/LiveFeed";
 import { AttackActivityRow, NoteRow, attackInfo, isAttackEvent } from "../../components/AttackCard";
 import { RadarActivityRow } from "../../components/RadarCard";
 import { SentinelActivityRow, isSentinelAlert } from "../../components/SentinelCard";
@@ -31,13 +34,41 @@ const EMPTY: Record<Filter, { title: string; sub: string }> = {
   refused: { title: "Nothing refused", sub: "Payments your pocket rules turn down show up here." },
   needs: { title: "Nothing needs you", sub: "When an agent asks for your OK, it waits here." },
 };
+type View_ = "live" | "ledger";
+const VIEWS: { key: View_; label: string }[] = [{ key: "live", label: "Live" }, { key: "ledger", label: "Ledger" }];
 const FILTERS: { key: Filter; label: string }[] = [{ key: "all", label: "All" }, { key: "paid", label: "Paid" }, { key: "refused", label: "Refused" }, { key: "needs", label: "Needs you" }];
+
+/** Live or Ledger: a segmented control, with a live dot on Live (it is a different thing from the filters under it). */
+function ViewSwitch({ value, onChange }: { value: View_; onChange(v: View_): void }) {
+  const reduce = useReduceMotion();
+  const [w, setW] = useState(0);
+  const x = useSharedValue(0);
+  useEffect(() => { x.value = reduce ? (value === "live" ? 0 : 1) : withTiming(value === "live" ? 0 : 1, { duration: motion.base }); }, [value, reduce, x]);
+  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: x.value * (w / 2) }] }));
+  return (
+    <View onLayout={(e) => setW(e.nativeEvent.layout.width - 8)} accessibilityRole="tablist"
+      style={{ flexDirection: "row", marginHorizontal: 16, marginTop: 8, padding: 4, height: 48, borderRadius: 24, backgroundColor: c.card }}>
+      {w ? <Animated.View style={[{ position: "absolute", left: 4, top: 4, bottom: 4, width: w / 2, borderRadius: 20, backgroundColor: c.ink }, thumb]} /> : null}
+      {VIEWS.map((v) => {
+        const on = v.key === value;
+        return (
+          <Press key={v.key} haptics="select" onPress={() => onChange(v.key)} accessibilityRole="tab" accessibilityLabel={v.label} accessibilityState={{ selected: on }}
+            style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 }}>
+            {v.key === "live" ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.green }} /> : <Icon name="receipt" size={14} color={on ? c.white : c.ink2} stroke={2.2} />}
+            <T v="row" w="bold" style={{ color: on ? c.white : c.ink2 }}>{v.label}</T>
+          </Press>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function Activity() {
   const { ledger, events, pockets, findPocket, setExplorerTx, pending, setReceipt, setApprovalOpen, setQuestionOpen, sellerName, refreshPockets, agents, openApproval } = useApp();
   const reduce = useReduceMotion();
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
+  const [view, setView] = useState<View_>("live");
   // the newest items first; older ones on request. Two weeks of history is ~60 rows, each with its own entrance and layout
   // spring, and building them all at once held the screen for most of a second
   const [limit, setLimit] = useState(PAGE);
@@ -85,6 +116,8 @@ export default function Activity() {
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} />}>
       <PageTitle title="Activity" sub={paid ? `All time: ${paid} paid · ${money(paidTotal(ledger))} spent by your ${agents.length > 1 ? "agents" : "agent"}` : "What your agents paid and were refused"} />
+      <ViewSwitch value={view} onChange={setView} />
+      {view === "live" ? <LiveFeed onLedger={() => setView("ledger")} /> : <>
       <ActivityPulse ledger={ledger} />
       {showNeeds && pending.length > 0 ? (
         <Rise dy={10} exit layout style={{ marginTop: 12 }}><ListCard>
@@ -115,6 +148,7 @@ export default function Activity() {
       {shownGroups.more > 0 ? (
         <Button label={`Show earlier (${shownGroups.more})`} kind="text" small onPress={() => setLimit((n) => n + PAGE)} style={{ marginTop: 12, alignSelf: "center" }} />
       ) : null}
+      </>}
     </Screen>
   );
 }

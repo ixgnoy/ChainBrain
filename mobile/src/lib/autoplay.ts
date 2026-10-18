@@ -29,7 +29,7 @@ export type HostState = {
   routineRuns?: number;
 };
 export type AutoplayHost = {
-  navigate(path: "/" | "/agent" | "/brain" | "/live"): void;
+  navigate(path: "/" | "/agent" | "/brain" | "/activity"): void;
   state(): HostState;
   subscribe(f: () => void): () => void;
   /** Scene 5's on-chain backstop on this phone's network: the agent key signs the injected transfer; the pocket reverts it. */
@@ -286,7 +286,7 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await wait(900);
     await must("picker.pocket", "Research data ·");
     await wait(1400);
-    host.navigate("/live");
+    host.navigate("/activity");
     await wait(5000);
   }
 

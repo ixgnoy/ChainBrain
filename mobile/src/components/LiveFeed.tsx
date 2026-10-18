@@ -1,26 +1,25 @@
-// Live: what the agents are doing and deciding, now. A pinned line says who is doing what (or what comes next), the
+// Activity's Live view: what the agents are doing and deciding, now. A pinned line says who is doing what (or what comes next), the
 // requests waiting for you sit on top, then one stream of decision cards, newest first: paid, refused by the contract, a
 // seller's text that tried to give orders (quoted, struck through, ignored), a chat attack refused, the Sentinel freezing a
 // pocket, a price watch that checked and waited. Filter by agent. Tap a card for the why: the rule, the quote, the
-// transaction, and the way to its receipt. Activity stays the ledger; this is the narrated slice of it (lib/live.ts).
+// transaction, and the way to its receipt. The Ledger view is the full record; this is the narrated slice of it (lib/live.ts).
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import { router } from "expo-router";
-import { useApp } from "../../store";
-import { c, radius } from "../../tokens";
-import { haptic } from "../../haptics";
-import { Screen, PageTitle } from "../../ui/Screen";
-import { Press } from "../../ui/kit";
-import { T } from "../../ui/Text";
-import { Icon, type IconName } from "../../ui/Icon";
-import { AgentAvatar } from "../../ui/AgentAvatar";
-import { SellerMark, hasSellerMark } from "../../ui/SellerMark";
-import { useReduceMotion } from "../../ui/motion";
-import { cleanText } from "../../lib/sanitize";
-import { liveCards, nowLine, type LiveCard, type LiveKind } from "../../lib/live";
-import { agentInfo } from "../../../../shared/sim/agents";
-import * as api from "../../lib/api";
+import { useApp } from "../store";
+import { c, radius } from "../tokens";
+import { haptic } from "../haptics";
+import { Press } from "../ui/kit";
+import { T } from "../ui/Text";
+import { Icon, type IconName } from "../ui/Icon";
+import { AgentAvatar } from "../ui/AgentAvatar";
+import { SellerMark, hasSellerMark } from "../ui/SellerMark";
+import { useReduceMotion } from "../ui/motion";
+import { cleanText } from "../lib/sanitize";
+import { liveCards, nowLine, type LiveCard, type LiveKind } from "../lib/live";
+import { agentInfo } from "../../../shared/sim/agents";
+import * as api from "../lib/api";
 
 const LOOK: Record<LiveKind, { edge: string; icon: IconName; tone: string; bg: string; label: string }> = {
   paid: { edge: c.ink, icon: "check", tone: c.ink, bg: c.card, label: "Paid" },
@@ -34,7 +33,7 @@ const LOOK: Record<LiveKind, { edge: string; icon: IconName; tone: string; bg: s
 };
 const ago = (at: number, now: number) => { const m = Math.round((now - at) / 60_000); return m < 1 ? "now" : m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; };
 
-export default function Live() {
+export function LiveFeed({ onLedger }: { /** no ledger row for a card: show the Ledger view */ onLedger(): void }) {
   const { events, pockets, pending, sellerName, chatBusy, findPocket, ledger, setReceipt, openApproval } = useApp();
   const [agent, setAgent] = useState<string>("all");
   const [open, setOpen] = useState<string | null>(null);
@@ -70,11 +69,10 @@ export default function Live() {
   }, [cards]);
   const receipt = (x: LiveCard) => {
     const row = ledger.find((r) => (x.tx && r.tx === x.tx) || (r.at === x.at && r.pocket?.toLowerCase() === x.pocket?.toLowerCase()));
-    if (row) setReceipt(row); else router.navigate("/activity");
+    if (row) setReceipt(row); else onLedger();
   };
   return (
-    <Screen>
-      <PageTitle title="Live" />
+    <>
       <NowLine agent={line.agent} tone={line.tone} text={line.text} />
       {/* waiting for you, on top */}
       {asks.map((a) => (
@@ -111,7 +109,7 @@ export default function Live() {
         ) : null}
         {!shown.length ? <T v="sub" color="mutedOnCanvas" style={{ textAlign: "center", paddingVertical: 32 }}>Nothing yet. When an agent pays, waits or is refused, it shows up here.</T> : null}
       </View>
-    </Screen>
+    </>
   );
 }
 
