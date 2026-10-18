@@ -12,6 +12,16 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: the Evidence and Sellers pages
 
+## UX round 3 (18 Oct)
+
+The owner's notes on iOS (memory: ux-round-3-decisions): the cursor pill was cut to "Chain", Skip and Replay should go, Compose needs a loading state, the card stack was more striking than rows, Live belongs in Activity, and Brain should come back as a visual brain that watches and learns.
+
+- **Compose** (b2e732f): the cursor's name pill sits in a 220 pt box, so "ChainBrain" shows whole. Skip and Replay are gone, and so is the "replayed" word (the owner overrode the earlier label rule). Compose shows a full-screen loading state for 2.6 s: the sentence in a card under a light sweep and four steps ticking (read, write the rules, test payments, choose blocks), each a real step of composeApp. It cuts straight to the canvas with no crossfade.
+- **Home:** the wallet hero, then the 2.5D stack again. Each strip now shows the agent's mark, the name and the job line. The rows and See all are gone. The e2e no longer clicks See all.
+- **Activity:** one tab, a segmented Live / Ledger switch (black thumb, green live dot), opening on Live. Live moved to `components/LiveFeed.tsx`, and the tab bar is Home · Agents · Brain · Activity · Settings. Auto-play ends on `/activity`.
+- **Brain:** a node graph on a black card (`lib/brainGraph.ts`, tested: every node is real, one pulse per payment, every pulse runs over graph nodes). Pulses use transforms and opacity only; the dot moves one edge per 520 ms and a ring opens on the last node. The per-pocket brain moved to `/pocket-brain`.
+- **Found while checking:** leaving Home logged "svg width -1". The hidden stack measures 0 wide, so the job-row avatar got a negative size. It is now clamped to 16.
+
 ## UX round 2 (18 Oct)
 
 The owner said the look is good but the UX isn't (memory: ux-round-2-decisions, live-canvas-decisions).

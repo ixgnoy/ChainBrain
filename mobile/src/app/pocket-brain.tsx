@@ -1,4 +1,4 @@
-// The Brain tab: one place that shows, for the active pocket, what the agent's AI understood, how it planned and adapted,
+// One pocket's brain (opened from the Brain tab or the chat's memory note): for the active pocket, what the agent's AI understood, how it planned and adapted,
 // what it resisted, what Radar found about each seller, and what it remembers (with Forget). Everything here is derived from
 // the same event stream as the chat, so it is the same on the built-in network and a real server.
 import React, { useCallback, useEffect, useMemo, useState } from "react";

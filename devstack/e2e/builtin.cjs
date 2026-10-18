@@ -84,8 +84,7 @@ async function until(what, fn, ms = 30000, step = 200) {
 
   await run("launch: straight to a lived-in Home, nothing says demo", async () => {
     await visible("Main wallet").waitFor({ timeout: 60000 });
-    // Home shows four pockets under the wallet (one of each job), then "See all"
-    await page.getByRole("button", { name: /See all \d+ pockets/ }).click(); await sleep(500);
+    // Home shows every pocket as a card in the stack under the wallet, each strip with its job line
     await visible("Research data").waitFor();
     const t = await body();
     check("four seeded pockets", /Research data/.test(t) && /One purchase/.test(t) && /Market news/.test(t) && /Trade quotes/.test(t));
@@ -299,6 +298,11 @@ async function until(what, fn, ms = 30000, step = 200) {
   await run("activity and receipt with what was bought", async () => {
     await leaveChat();
     await tab("Activity");
+    // Activity opens on Live: what the agents did and decided, the co-signed Nansen payment among them
+    await visible("Paid Nansen").waitFor();
+    check("Activity opens on Live", /Watching \d+ pockets|is waiting for your co-signature|is running|is working/.test(await body()));
+    await shot("09-live");
+    await tab("Ledger");
     await visible("Nansen").waitFor();
     await shot("09-activity");
     await page.getByRole("button", { name: "Paid", exact: true }).filter({ visible: true }).first().click(); // the co-signed payment, not scene 8's refused quote
