@@ -139,6 +139,8 @@ export default function Compose() {
     if (!wallet || !cfg || !spec || !draft || !p) throw new Error("not ready");
     const ok = await confirmOwner(`Create ${title}`);
     if (ok === "cancel") { const e = new Error("Cancelled"); setErr("Face ID was cancelled. Nothing was created."); throw e; }
+    // a card is created once: after the contract exists, sliding again must not deploy and fund a second one
+    if (stage.address) { setErr("This card is already created. Open it from Home to add money or change its rules."); throw new Error("already created"); }
     const who = agentName(agent.id);
     setStage({ funded: false });
     setSteps([
@@ -147,6 +149,7 @@ export default function Compose() {
       { key: "rules", icon: "key", status: "wait", title: "Writing your rules into it" },
       { key: "key", icon: "bot", status: "wait", title: outside ? `Handing ${who} its own key` : `Setting ${who} as its agent` },
       { key: "fund", icon: "arrowIn", status: "wait", title: `Moving ${curSign()}${draft.budget} from your main wallet` },
+      ...(spec.routine ? [{ key: "allowance" as const, icon: "gauge" as const, status: "wait" as const, title: `Setting its allowance: ${curSign()}${spec.routine.allowance.amount} a ${spec.routine.allowance.period}` }] : []),
       { key: "arrange", icon: "squarePlus", status: "wait", title: "Arranging your card" },
       { key: "live", icon: "bolt", status: "wait", title: "Live" },
     ]);
@@ -173,21 +176,29 @@ export default function Compose() {
         setStage({ address: m.pocket, funded: true });
         return r;
       }, (r) => `tx ${tx(r.hash)}`);
+      // the allowance goes on-chain from your wallet: past it, the card pays only with your co-sign. The card already exists
+      // and holds the money here, so a failed allowance is reported, not thrown: the owner sets it again in the card's rules
+      let allowanceSaved = false;
+      if (spec.routine) {
+        const al = spec.routine.allowance;
+        allowanceSaved = await step("allowance", 900, async () => {
+          try {
+            const t = await wallet.setPeriodLimit(m.pocket, PERIOD_KIND[al.period], parseHkd(al.amount));
+            recordTx({ kind: "allowance", pocket: m.pocket, hash: t.hash, amount: parseHkd(al.amount).toString(), note: `per ${al.period}` });
+            return true;
+          } catch { return false; }
+        }, (ok) => (ok ? "On-chain · past it, a payment needs your co-sign" : "The allowance didn't save. Set it in the card's rules."));
+      }
       await step("arrange", 1800, async () => {
         api.setApp(m.pocket, { ...spec, title });
-        if (spec.routine) {
-          // the allowance goes on-chain from your wallet: past it, the card pays only with your co-sign
-          const al = spec.routine.allowance;
-          const t = await wallet.setPeriodLimit(m.pocket, PERIOD_KIND[al.period], parseHkd(al.amount));
-          recordTx({ kind: "allowance", pocket: m.pocket, hash: t.hash, amount: parseHkd(al.amount).toString(), note: `per ${al.period}` });
-          api.setRoutine(m.pocket, spec.routine);
-        }
+        const saved = spec.routine ? !!api.setRoutine(m.pocket, spec.routine) : false; // routines live on the built-in network only
         await refreshPockets();
-      }, () => `${spec.blocks.length} blocks${spec.routine ? " · its routine and on-chain allowance saved" : ""}`);
+        return saved;
+      }, (saved) => `${spec.blocks.length} blocks${saved ? " · its routine saved" : ""}`);
       await step("live", 500, () => null, () => "Created and funded on-chain");
       haptic.success();
       if (!outside) setActive(m.pocket);
-      setNotice({ title: `${title} created and funded`, pocket: m.pocket, txs: [{ label: "Create card", hash: m.tx }, { label: `Add ${curSign()}${draft.budget}`, hash: f.hash }] });
+      setNotice({ title: spec.routine && !allowanceSaved ? `${title} created and funded. The allowance didn't save. Set it in the card's rules.` : `${title} created and funded`, pocket: m.pocket, txs: [{ label: "Create card", hash: m.tx }, { label: `Add ${curSign()}${draft.budget}`, hash: f.hash }] });
       setMade({ pocket: m.pocket });
       setTimeout(() => open(m.pocket), 2200);
     } catch (e) { setSteps(null); setErr(txError(e)); throw e; }

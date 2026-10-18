@@ -32,7 +32,7 @@ export const REASONS: Record<string, string> = {
   SELLER_NOT_ALLOWED: "This seller is not in the pocket's allowlist",
   OVER_CAP: "Above the pocket's per-payment cap",
   OVER_BUDGET: "Not enough left in the pocket",
-  OVER_PERIOD: "Over this period's allowance: the pocket pays it only with your co-signature",
+  OVER_PERIOD: "Over this period's allowance: the pocket pays it only with the owner's co-signature",
   POCKET_REVOKED: "The owner revoked this pocket",
   POCKET_EXPIRED: "The pocket has expired",
   PRICE_ABOVE_INTENT: "The price is above the intent's max per item",

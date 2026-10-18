@@ -19,6 +19,7 @@ import { txError } from "./ActionSheet";
 import { SheetSuccess } from "./SheetSuccess";
 import { ErrorNote } from "./ErrorNote";
 import { curSign } from "../lib/runtime";
+import * as api from "../lib/api";
 
 export function RulesSheet() {
   const { rules, setRules } = useApp();
@@ -48,7 +49,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
   const [done, setDone] = useState<{ title: string; txs: { label: string; hash: string }[] } | null>(null);
   const formH = useRef(0);
   const capDone = useRef<{ text: string; hash: string } | null>(null); // a cap already set whose top-up failed: a retry only repeats the top-up
-  useEffect(() => { setError(null); }, [text, never]);
+  useEffect(() => { setError(null); }, [text, never, kind]);
 
   if (!pocket) return null;
   const ok = isCap || isAllow ? never && isAllow || validAmount(text) && parseHkd(text) > 0n : never || validAmount(text);
@@ -79,6 +80,10 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
         const a = await wallet.setPeriodLimit(pocket.address, never ? 0 : kind, v);
         recordTx({ kind: "allowance", pocket: pocket.address, hash: a.hash, amount: never ? undefined : v.toString(), note: never ? "no allowance" : `${money(v)} a ${PERIOD[kind]}` });
         txs.push({ label: "New allowance", hash: a.hash });
+        // a card with a routine (built-in network) keeps the routine's allowance equal to the card's, so the runner and
+        // the card agree on where to stop and ask; the chain already holds it, so this writes nothing on-chain
+        const rt = never ? null : api.routineOf(pocket.address);
+        if (rt) { try { api.editRoutine(pocket.address, { allowance: { amount: text.trim(), period: PERIOD[kind] as "day" | "week" | "month" } }); } catch { /* the card's rule is set; the routine view catches up on its next read */ } }
         setDone({ title: never ? "No allowance: only the cap and the balance limit your agent" : `Your agent can spend ${money(v)} a ${PERIOD[kind]} on its own`, txs });
       } else {
         const v = never ? NEVER : parseHkd(text);
@@ -94,7 +99,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
   const hint = isCap
     ? `The most your agent can pay in one go from ${name}. Now ${money(pocket.cap)}.`
     : isAllow
-    ? `The most your agent can spend from ${name} in a day, week or month (Hong Kong time). The pocket counts it on-chain; past it, a payment needs your co-sign. Now ${pocket.periodKind ? `${money(pocket.periodLimit ?? 0n)} a ${PERIOD[pocket.periodKind]}` : "none"}.`
+    ? `The most your agent can spend from ${name} in a day, week or month (Hong Kong time). The card counts it on-chain; past it, a payment needs your co-sign. Now ${pocket.periodKind ? `${money(pocket.periodLimit ?? 0n)} a ${PERIOD[pocket.periodKind]}` : "none"}.`
     : `Payments up to this amount go through on their own; above it your agent waits for your OK. Now ${pocket.askAbove === NEVER || pocket.askAbove > pocket.cap ? "never" : money(pocket.askAbove)}.`;
   const form = (
     <Animated.View key="form" onLayout={(e) => { formH.current = Math.max(formH.current, e.nativeEvent.layout.height); }} style={{ flexShrink: 1 }}>
@@ -118,11 +123,12 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
           <View>
             <Field label={isCap ? `Cap in ${curSign()}` : isAllow ? `Allowance a ${PERIOD[kind]}, in ${curSign()}` : `Ask above, in ${curSign()}`} value={text} onChangeText={(t) => setText(t.replace(/[^0-9.]/g, "").slice(0, 12))} keyboardType="decimal-pad" inputMode="decimal" placeholder="0.00" accessibilityLabel={isCap ? `Cap in ${curSign()}` : isAllow ? `Allowance in ${curSign()}` : `Ask above in ${curSign()}`} />
             {!isCap && !isAllow ? <T v="cap" color="muted" style={{ marginTop: 6 }}>Use 0 to be asked about every payment.</T> : null}
+            {isAllow && !!pocket.periodKind && kind !== pocket.periodKind ? <T v="cap" color="vermillionInk" style={{ marginTop: 6 }}>A new period starts the count from zero, so the full allowance is free again right away.</T> : null}
           </View>
         ) : isAllow
           ? <T v="sub" color="warning">With no allowance a stolen agent key could spend the whole balance in payments under the cap.</T>
           : <T v="sub" color="warning">With "Never ask" the agent spends freely up to the cap. The card balance is still its whole budget.</T>}
-        {topUp > 0n ? <T v="sub" color="ink2">The pocket holds less than this price, so {money(topUp)} from your main wallet is added in a second step.</T> : null}
+        {topUp > 0n ? <T v="sub" color="ink2">The card holds less than this price, so {money(topUp)} from your main wallet is added in a second step.</T> : null}
         {error ? <ErrorNote text={error} /> : null}
       </SheetScroll>
     </Animated.View>

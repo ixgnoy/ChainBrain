@@ -17,7 +17,7 @@ import { PocketFace, cardHeight, type Tone } from "../PocketFace";
 import { useCoverDock } from "../AskDock";
 import type { Pocket } from "../../store";
 
-export type StepKey = "check" | "deploy" | "rules" | "key" | "fund" | "arrange" | "live";
+export type StepKey = "check" | "deploy" | "rules" | "key" | "fund" | "allowance" | "arrange" | "live";
 export type StepState = { key: StepKey; title: string; icon: IconName; status: "wait" | "run" | "done"; detail?: string };
 export const BLOCK_NAME: Record<string, string> = {
   shelf: "Library", "price-chart": "Price chart", "month-spend": "This month", ladder: "Offers", budget: "This week", "next-run": "Next run",

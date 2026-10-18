@@ -10,12 +10,12 @@ import { Card, Empty } from "../seller/ui";
 import { cn } from "../lib/cn";
 import { cleanText } from "../lib/sanitize";
 import { CLAUDE_SPARK, OPENAI_BLOSSOM } from "../../../shared/brand/marks";
-import { BLOCKS, cadenceText, nextRuns, param, usageChip, usageOf, type Block, type Layout, type PocketAppSpec, type Routine, type Usage } from "@sim/pocketApp";
+import { BLOCKS, PERIOD_KIND, cadenceText, nextRuns, param, usageChip, usageOf, type Block, type Layout, type PocketAppSpec, type Routine, type Usage } from "@sim/pocketApp";
 import {
   appFromEvents, budgetOf, haggleOf, monthBySeller, priceChanges, priceSeries, purchasesOf, renewalsOf, routineFromEvents, runsOf, savingsOf, sourcesOf, upcoming,
 } from "@sim/pocketAppData";
 import type { PocketState } from "./chain";
-import { allowanceText, curSign } from "../shared";
+import { allowanceText, curSign, parseHkd } from "../shared";
 
 const I = { strokeWidth: 1.75 } as const;
 const LAYOUT_NAME: Record<Layout, string> = { research: "Research desk", deal: "Deal watcher", subscriptions: "Subscriptions", haggle: "Haggler" };
@@ -358,11 +358,17 @@ function Savings({ c, i }: { c: Ctx; i: number }) {
 
 function Guard({ c, i }: { c: Ctx; i: number }) {
   const rs = c.spec.routine!;
+  // the contract enforces its own on-chain allowance; it backs the routine's only when the two are the same rule
+  const onChain = !!c.p.periodKind;
+  const same = onChain && c.p.periodKind === PERIOD_KIND[rs.allowance.period] && c.p.periodLimit === parseHkd(rs.allowance.amount);
+  const allowanceRows: [string, "Contract" | "ChainBrain"][] = same || !onChain
+    ? [[`Spend past ${curSign()}${rs.allowance.amount} a ${rs.allowance.period} without the owner's cheque`, same ? "Contract" : "ChainBrain"]]
+    : [[`Spend past ${allowanceText(c.p)} without the owner's cheque`, "Contract"], [`Spend past ${curSign()}${rs.allowance.amount} a ${rs.allowance.period} on this routine without asking`, "ChainBrain"]];
   const rows: [string, "Contract" | "ChainBrain"][] = [
     [`Pay anyone but ${c.p.allowed.map((id) => c.seller(id)).join(", ")}`, "Contract"],
     [`Pay more than ${hkd(c.p.cap)} at once`, "Contract"],
     // the allowance is on-chain when the owner signed setPeriodLimit (Pocket.sol counts each payment); otherwise only the runner checks it
-    [`Spend past ${curSign()}${rs.allowance.amount} a ${rs.allowance.period} without the owner's cheque`, c.p.periodKind ? "Contract" : "ChainBrain"],
+    ...allowanceRows,
     ["Change its own schedule, sellers or limits, whatever a seller says", "ChainBrain"],
     ["Pay anything after the owner revokes the pocket", "Contract"],
   ];

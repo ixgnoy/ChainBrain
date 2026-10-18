@@ -43,9 +43,10 @@ import * as api from "../../lib/api";
 import { curSign } from "../../lib/runtime";
 import { ProtectedHead, ProtectedLayers } from "../../components/Protected";
 
-/** A rule chip: white pill with a muted label and a bold value; editable ones open the rule sheet. */
-/** A rule as VaultBank's category tile: a coloured dot, the figure big, what it means under it; a pencil when you can edit it. */
+/** Pocket.periodKind as a word. */
 const PERIOD_WORD: Record<number, string> = { 1: "day", 2: "week", 3: "month" };
+
+/** A rule as VaultBank's category tile: a coloured dot, the figure big, what it means under it; a pencil when you can edit it. */
 function RuleTile({ icon, label, value, onPress, a11y }: { icon: IconName; label: string; value: string; onPress?: () => void; a11y: string }) {
   const body = (
     <>
@@ -273,7 +274,7 @@ export default function PocketDetail() {
               </View>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <RuleTile icon="refresh" label={pocket.periodKind ? `Allowance · ${money(pocket.spentThisPeriod ?? 0n)} used this ${PERIOD_WORD[pocket.periodKind]}` : "Allowance"} value={allowance}
-                  a11y={`Edit allowance: ${allowance}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "allowance" }) : undefined} />
+                  a11y={`${editable ? "Edit allowance" : "Allowance"}: ${allowance}${pocket.periodKind ? `, ${money(pocket.spentThisPeriod ?? 0n)} used this ${PERIOD_WORD[pocket.periodKind]}` : ""}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "allowance" }) : undefined} />
               </View>
               <Press kind="row" haptics="select" onPress={() => setRulesOpen((o) => !o)} accessibilityRole="button" accessibilityLabel={`Allowed sellers: ${sellerNames.join(", ")}. Anyone else is refused`}
                 style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 }}>
