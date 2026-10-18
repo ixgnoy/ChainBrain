@@ -95,7 +95,8 @@ export default function BrainTab() {
     if (!tp || (test && !test.done)) return;
     haptic.medium();
     setFocus(null);
-    const since = Date.now();
+    // the network's own clock: the test is everything after the last event so far
+    const since = events.reduce((m, e) => Math.max(m, e.at), 0) + 1;
     setTest({ pocket: tp.address, since, mode });
     const r = await api.runTest(tp.address as `0x${string}`, mode).catch(() => ({ ok: false as const, reason: "ERROR" }));
     if (r.ok) haptic.success(); else haptic.warning();

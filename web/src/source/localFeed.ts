@@ -68,6 +68,16 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
           return { ok: !r.stopped || r.stopped !== "llm_error", text: r.reply, pocket };
         } catch (e) { return { ok: false, text: (e as Error).message, pocket }; } finally { autopilot.release(); }
       },
+      testPlan: (pocket, mode) => world.testPlan(pocket as Hex, mode),
+      // the owner's test from the Brain page: the story waits while it runs, like a judge's own attack
+      async runTest(pocket, mode) {
+        autopilot.hold();
+        try {
+          for (let i = 0; i < 100 && world.isBusy(pocket); i++) await new Promise((r) => setTimeout(r, 200));
+          const r = await world.runTest(pocket as Hex, mode);
+          return r.ok ? { ok: true, tx: r.tx } : { ok: false, reason: r.reason };
+        } finally { autopilot.release(); }
+      },
       async hijack(pocket, text) {
         autopilot.hold();
         try {

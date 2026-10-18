@@ -64,3 +64,16 @@ it("every scene 1-10 plays from the Judges tab (runScene) and returns its pocket
   expect(feed.snapshot().events.filter((e) => e.type === "payment" && e.pocket === p1).length).toBeGreaterThan(0);
   feed.stop();
 });
+
+it("the Brain page's test: one real payment and one the pocket's rules refuse, through the console's own feed", async () => {
+  const f = createLocalFeed({ speed: 0, seed: 3, revokeWindowMs: 0 });
+  await f.autopilot.runStory();
+  const p = f.world.chain.pockets().find((x) => !x.revoked && f.actions.testPlan!(x.address, "pay") && f.actions.testPlan!(x.address, "refuse"))!;
+  expect(p).toBeTruthy();
+  const before = p.balance;
+  const plan = f.actions.testPlan!(p.address, "pay")!;
+  expect(await f.actions.runTest!(p.address, "pay")).toMatchObject({ ok: true });
+  expect(await f.actions.runTest!(p.address, "refuse")).toMatchObject({ ok: false, reason: "SELLER_NOT_ALLOWED" });
+  const after = f.world.chain.pockets().find((x) => x.address === p.address)!.balance;
+  expect(before - after).toBe(BigInt(Math.round(Number(plan.price) * 1e6)));
+});

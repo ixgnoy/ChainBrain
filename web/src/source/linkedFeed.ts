@@ -132,6 +132,12 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
         } catch (e) { return { ok: false, text: (e as Error).message }; }
       },
       runScene: local.actions.runScene,
+      // the Brain page's test runs on this tab's own pockets; a linked phone's pockets are tested on the phone
+      testPlan: (pocket, mode) => (isPhonePocket(pocket) ? null : local.actions.testPlan!(pocket, mode)),
+      async runTest(pocket, mode) {
+        if (isPhonePocket(pocket)) return { ok: false, reason: "TEST_ON_THE_PHONE" };
+        return local.actions.runTest!(pocket, mode);
+      },
       async chat(pocket, text) {
         if (!isPhonePocket(pocket)) return local.actions.chat!(pocket, text);
         // the phone types it to its agent (a pocket that fits the research preset), like Play does

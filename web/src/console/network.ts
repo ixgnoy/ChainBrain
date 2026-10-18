@@ -25,7 +25,13 @@ export type Actions = {
   chat?(pocket: string, text: string): Promise<SayResult>;
   /** Induced transfer, "assume the AI is fooled": the agent's own key signs the attacker's transfer and the pocket contract refuses it. */
   hijack?(pocket: string, text?: string): Promise<ForceResult>;
+  /** The Brain page's test: what one test would buy (a payment the pocket allows, or one its rules must refuse). */
+  testPlan?(pocket: string, mode: TestMode): TestPlan | null;
+  /** Runs that test for real through the wallet tools (quote, rules, Radar, pre-flight, settlement), then a reflection. */
+  runTest?(pocket: string, mode: TestMode): Promise<{ ok: boolean; tx?: string; reason?: string }>;
 };
+export type TestMode = "pay" | "refuse";
+export type TestPlan = { sellerId: string; seller: string; sku: string; description: string; price: string };
 export type SayResult = { ok: boolean; text: string; pocket?: string };
 
 export type TxDetail = {

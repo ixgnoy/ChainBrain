@@ -8,6 +8,7 @@ import { Pockets, Judges } from "./pages";
 import { PocketAppView } from "./PocketApp";
 import { Explorer } from "./Explorer";
 import { Evidence } from "./Evidence";
+import { Brain } from "./Brain";
 import SellerView from "../seller/SellerView";
 import { PhoneTag, TestnetChip, usd } from "./parts";
 import { Stepper } from "./Stepper";
@@ -19,8 +20,8 @@ import { PageTitle, PillSelect } from "../seller/ui";
 import { cn } from "../lib/cn";
 import { parseExplorer, splitHash, type ExplorerRoute } from "./route";
 
-type Tab = "live" | "pockets" | "sellers" | "explorer" | "evidence" | "judges";
-const TABS: [Tab, string][] = [["live", "Live"], ["pockets", "Pockets"], ["sellers", "Sellers"], ["explorer", "Explorer"], ["evidence", "Evidence"], ["judges", "Judges"]];
+type Tab = "live" | "brain" | "pockets" | "sellers" | "explorer" | "evidence" | "judges";
+const TABS: [Tab, string][] = [["live", "Live"], ["brain", "Brain"], ["pockets", "Pockets"], ["sellers", "Sellers"], ["explorer", "Explorer"], ["evidence", "Evidence"], ["judges", "Judges"]];
 const ADDR = /^0x[0-9a-fA-F]{40}$/;
 type Route = { tab: Tab; pocket?: string; present: boolean; explorer: ExplorerRoute };
 const HOME: ExplorerRoute = { kind: "home" };
@@ -134,6 +135,7 @@ function Shell() {
             <Live pocket={pocket} present={present} goJudges={() => go({ tab: "judges" })} />
           </>
         )}
+        {!present && tab === "brain" && <Brain />}
         {!present && tab === "pockets" && (pinned
           ? <div className="mx-auto max-w-[1180px]"><PocketAppView address={pinned} back={() => go({ tab: "pockets", pocket: null })} watch={openPocket} /></div>
           : <div className="mx-auto max-w-[1040px]"><Pockets open={(a) => go({ tab: "pockets", pocket: a })} /></div>)}
