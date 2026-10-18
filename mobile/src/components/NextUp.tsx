@@ -20,6 +20,7 @@ import { budgetOf } from "../../../shared/sim/pocketAppData";
 import { agentInfo } from "../../../shared/sim/agents";
 import type { Pocket } from "../store";
 import type { Seller } from "../lib/shared";
+import { faceOf, toneFor } from "./PocketFace";
 
 export type NextRun = { pocket: Pocket; routine: Routine; at: number; cost: bigint | null; limit: bigint | null; asks: boolean };
 
@@ -66,15 +67,17 @@ export function NextUp({ runs, now }: { runs: NextRun[]; now: number }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} directionalLockEnabled decelerationRate="fast" snapToInterval={TILE + 10} snapToAlignment="start"
       contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }} accessibilityRole="list">
-      {runs.map((r, i) => <RunTile key={r.pocket.address} r={r} first={i === 0} now={now} />)}
+      {runs.map((r) => <RunTile key={r.pocket.address} r={r} now={now} />)}
     </ScrollView>
   );
 }
 
-function RunTile({ r, first, now }: { r: NextRun; first: boolean; now: number }) {
+function RunTile({ r, now }: { r: NextRun; now: number }) {
   const big = useLargeText(); // the marks and the price stack, so a figure never breaks across lines
-  const ink = first ? c.white : c.ink;
-  const sub = first ? "rgba(255,255,255,0.66)" : c.muted;
+  // each tile in its card's own usage colour (daily blue, weekly sage…), not a black block: black is for the main action
+  const face = faceOf(toneFor([r.pocket], r.pocket.address));
+  const ink = c.ink;
+  const sub = face.sub;
   const agent = agentInfo(r.pocket.agentId ?? "")?.name ?? "ChainBrain";
   const sellers = [...new Set(r.routine.items.map((x) => x.sellerId))];
   const what = r.routine.kind === "price-watch" ? "check" : r.routine.kind === "renewals" ? "renewal" : "run";
@@ -84,7 +87,7 @@ function RunTile({ r, first, now }: { r: NextRun; first: boolean; now: number })
   return (
     <Press kind="row" haptics="select" onPress={() => router.push({ pathname: "/pocket/[id]", params: { id: r.pocket.address } })}
       accessibilityRole="button" accessibilityLabel={label}
-      style={{ width: TILE, padding: 14, borderRadius: radius.card, backgroundColor: first ? c.ink : c.card, gap: 10 }}>
+      style={{ width: TILE, padding: 14, borderRadius: radius.card, backgroundColor: face.face, borderWidth: (face as { hatch?: boolean }).hatch ? 1 : 0, borderColor: c.tileStroke, gap: 10 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <T v="tab" style={{ color: sub, textTransform: "uppercase", letterSpacing: 0.8 }} numberOfLines={1}>{dayWord(r.at, now)}</T>
         <AgentAvatar kind={r.pocket.agentId ?? "chainbrain"} size={22} />
@@ -97,7 +100,7 @@ function RunTile({ r, first, now }: { r: NextRun; first: boolean; now: number })
       <View style={{ flexDirection: big ? "column" : "row", alignItems: big ? "flex-start" : "center", gap: 8 }}>
         <View style={{ flexDirection: "row" }}>
           {sellers.filter(hasSellerMark).slice(0, 3).map((s, i) => (
-            <View key={s} style={{ marginLeft: i ? -6 : 0, borderRadius: 7, borderWidth: 2, borderColor: first ? c.ink : c.card }}><SellerMark id={s} size={22} radius={6} /></View>
+            <View key={s} style={{ marginLeft: i ? -6 : 0, borderRadius: 7, borderWidth: 2, borderColor: face.face }}><SellerMark id={s} size={22} radius={6} /></View>
           ))}
         </View>
         {r.asks ? (

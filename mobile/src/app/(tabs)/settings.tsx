@@ -91,7 +91,7 @@ export default function Settings() {
       <Group title="Wallet" />
       <ListCard>
         {dev || !custom || getChain()?.key === "fisco" ? <ListRow a11y="Get test funds" onPress={getFunds} icon="plus" title="Get test funds" sub={funds.text ?? "Test money, for this network"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
-        <ListRow a11y="Add an existing pocket" onPress={() => setAdding(!adding)} icon="layers" title="Add an existing pocket" sub="By its address"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
+        <ListRow a11y="Add an existing card" onPress={() => setAdding(!adding)} icon="layers" title="Add an existing card" sub="By its address"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} icon="key" title="Import a key" sub="A test key you have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         {/* a browser tab keeps the built-in network across reloads (lib/builtin.ts); this is the way back to a fresh one */}
         {source === "builtin" && Platform.OS === "web" ? (
@@ -104,10 +104,10 @@ export default function Settings() {
       {adding ? (
         <Animated.View entering={FadeInDown.duration(motion.base)} exiting={FadeOut.duration(motion.exit)}>
           <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
-            <Field value={addr} onChangeText={setAddr} placeholder="Pocket address (0x…)" autoCapitalize="none" autoCorrect={false} accessibilityLabel="Pocket address" />
+            <Field value={addr} onChangeText={setAddr} placeholder="Card address (0x…)" autoCapitalize="none" autoCorrect={false} accessibilityLabel="Card address" />
             <View style={{ flexDirection: "row", gap: 8 }}>
               <Button label="Cancel" kind="secondary" small style={{ flex: 1 }} onPress={() => { setAdding(false); setAddr(""); }} />
-              <Button label="Add pocket" small style={{ flex: 1 }} disabled={!isAddress(addr.trim())} onPress={async () => { await addPocket(addr.trim() as Address); setAddr(""); setAdding(false); }} />
+              <Button label="Add card" small style={{ flex: 1 }} disabled={!isAddress(addr.trim())} onPress={async () => { await addPocket(addr.trim() as Address); setAddr(""); setAdding(false); }} />
             </View>
           </Card>
         </Animated.View>
@@ -115,7 +115,7 @@ export default function Settings() {
       {importing ? (
         <Animated.View entering={FadeInDown.duration(motion.base)} exiting={FadeOut.duration(motion.exit)}>
         <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
-          <T v="sub" color="ink2">Pockets owned by your current key can no longer be managed from this phone after you switch. Test keys only.</T>
+          <T v="sub" color="ink2">Cards owned by your current key can no longer be managed from this phone after you switch. Test keys only.</T>
           <Field value={pk} onChangeText={setPk} placeholder="Private key (0x…)" autoCapitalize="none" autoCorrect={false} secureTextEntry accessibilityLabel="Private key" />
           {!!keyErr && <T v="sub" color="negative">{keyErr}</T>}
           <Button label="Import this key" small disabled={!isPrivateKey(pk)} onPress={async () => { try { await importKey(pk); setImporting(false); setPk(""); setKeyErr(""); haptic.warning(); } catch (e) { setKeyErr((e as Error).message); } }} />
@@ -129,7 +129,7 @@ export default function Settings() {
         <ListRow a11y="How ChainBrain works, shows the intro again" icon="info" title="How ChainBrain works" sub="The intro, in under a minute" onPress={replayIntro}>
           <Icon name="chevronRight" size={18} color={c.muted} />
         </ListRow>
-        <ListRow a11y="About and compliance" icon="globe" title="About and compliance" sub="ChainBrain · pockets, not your wallet" onPress={() => setAbout(!about)}>
+        <ListRow a11y="About and compliance" icon="globe" title="About and compliance" sub="ChainBrain · cards, not your wallet" onPress={() => setAbout(!about)}>
           <View style={{ transform: [{ rotate: about ? "90deg" : "0deg" }] }}><Icon name="chevronRight" size={18} color={c.muted} /></View>
         </ListRow>
       </ListCard>
@@ -178,7 +178,6 @@ function WalletFace({ address, ehkd, copied, onCopy }: { address?: string; ehkd?
             <T v="head">Main wallet</T>
           </View>
           <View>
-            <T v="cap" w="semi" color="muted">Only your key moves it</T>
             {ehkd != null ? <Money v="amount" value={hkd(ehkd)} /> : <T v="row" color="muted">Loading…</T>}
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
