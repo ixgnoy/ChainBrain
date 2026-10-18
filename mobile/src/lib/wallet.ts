@@ -1,11 +1,12 @@
 // The owner's main wallet on the phone: a non-custodial key held on the device (see keystore.ts), signing with viem.
 // ponytail: in-app key instead of WalletConnect → MetaMask mobile; WalletConnect needs a Reown project ID and native
 // modules Expo Go doesn't ship. Upgrade path: a development build with Reown AppKit.
-import { createPublicClient, createWalletClient, defineChain, http, parseEventLogs, type Address, type Chain, type Hex } from "viem";
+import { createPublicClient, createWalletClient, decodeFunctionData, defineChain, encodeFunctionData, http, parseEventLogs, type Address, type Chain, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { getChain, isBuiltin, rpcUrl } from "./runtime";
 import { builtin } from "./builtin";
 import { loadConfig, transferTypedData, type Authorization, type Seller } from "./shared";
+import { checkTx, checkTypedData, GuardRefused, type GuardContext, type Verdict } from "../../../shared/chain/guard";
 
 /** The FISCO chain as viem sees it. Gas is free, but the RPC wants a legacy tx with gasPrice 0. */
 const viemChain = (): Chain => defineChain({ id: getChain()?.id ?? 20200, name: getChain()?.name ?? "FISCO BCOS", nativeCurrency: { name: "FISCO", symbol: "FISCO", decimals: 18 }, rpcUrls: { default: { http: [rpcUrl()] } } });
@@ -14,12 +15,36 @@ export const pub = () => createPublicClient({ chain: viemChain(), transport: htt
 
 export type PocketView = { address: Address; owner: Address; agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; revoked: boolean; balance: bigint; allowed: string[]; /** stopped by the Sentinel (or the owner); only the owner unfreezes */ frozen?: boolean };
 
-export function ownerWallet(pk: Hex) {
+const cardOwners = new Map<string, string>(); // card -> owner, read once from the chain (a Pocket's owner never changes)
+
+export function ownerWallet(pk: Hex, opts: { /** tests: a fixed guard context instead of the server's config and chain reads */ guard?: () => Promise<GuardContext> } = {}) {
   const account = privateKeyToAccount(pk);
   // built per call: the RPC URL changes when the API URL is overridden or dev mode is detected
   const wallet = () => createWalletClient({ account, chain: viemChain(), transport: http(rpcUrl()) });
 
+  /** What the signing guard needs: this owner, the deployment, and a chain read of a card's owner. */
+  async function guardContext(): Promise<GuardContext> {
+    if (opts.guard) return opts.guard();
+    const c = await loadConfig();
+    return {
+      owner: account.address, chainId: getChain()?.id ?? 20200, factory: c.factory, token: c.token, decode: decodeFunctionData as any,
+      sellerName: (a) => c.sellers.find((s: Seller) => s.payTo.toLowerCase() === a.toLowerCase())?.name,
+      isOwnCard: async (a) => {
+        const k = a.toLowerCase();
+        if (!cardOwners.has(k)) {
+          const o = await pub().readContract({ address: a, abi: c.abis.pocket, functionName: "owner" }).catch(() => undefined);
+          if (!o) return false; // not a card (no owner())
+          cardOwners.set(k, String(o).toLowerCase());
+        }
+        return cardOwners.get(k) === account.address.toLowerCase();
+      },
+    };
+  }
+
   async function write(address: Address, abi: any[], functionName: string, args: unknown[] = []) {
+    // the signing guard decodes the exact calldata first: anything it can't read or doesn't allow is never signed
+    const verdict = await checkTx(await guardContext(), { to: address, data: encodeFunctionData({ abi, functionName, args } as any) });
+    if (!verdict.ok) throw new GuardRefused(verdict);
     const hash = await wallet().writeContract({ address, abi, functionName, args, account, chain: viemChain(), ...feeOverrides() } as any);
     const receipt = await pub().waitForTransactionReceipt({ hash });
     if (receipt.status !== "success") throw new Error(`transaction reverted: ${hash}`);
@@ -58,8 +83,20 @@ export function ownerWallet(pk: Hex) {
     /** Owner-signed rule edits: per-payment cap and ask-me threshold (NEVER = never ask, 0 = ask every time). */
     setCap: (p: Address, cap: bigint) => isBuiltin() ? simTx((w) => w.chain.setCap(me, p, cap)) : pocketWrite(p, "setCap", [cap]),
     setAskAbove: (p: Address, x: bigint) => isBuiltin() ? simTx((w) => w.chain.setAskAbove(me, p, x)) : pocketWrite(p, "setAskAbove", [x]),
-    /** Co-sign the exact eHKD transfer the wallet tool layer built (payments above the ask-me threshold). */
-    signTransfer: (auth: Authorization) => account.signTypedData(transferTypedData(auth)),
+    /**
+     * Co-sign the exact eHKD transfer the wallet tool layer built (payments above the ask-me threshold). `pending` is the
+     * approval it answers: the guard signs only that exact authorization, from one of this owner's cards.
+     */
+    async signTransfer(auth: Authorization, pending: Authorization) {
+      const td = transferTypedData(auth);
+      const verdict = await checkTypedData(await guardContext(), td as any, pending as any);
+      if (!verdict.ok) throw new GuardRefused(verdict);
+      return account.signTypedData(td);
+    },
+    /** The guard's sentence for a co-sign, for the approval screen (what exactly the owner is about to sign). */
+    async explainCosign(auth: Authorization): Promise<Verdict> {
+      return checkTypedData(await guardContext(), transferTypedData(auth) as any, auth as any);
+    },
   };
 }
 export type OwnerWallet = ReturnType<typeof ownerWallet>;

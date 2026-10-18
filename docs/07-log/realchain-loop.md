@@ -10,7 +10,7 @@ Last updated: 2026-10-19
 - [x] 2. Ledger context on the server
 - [x] 3. Visitor accounts
 - [x] 4. Per-card agent keys
-- [ ] 5. Signing guard
+- [x] 5. Signing guard
 - [ ] 6. Real by default in both apps
 - [ ] 7. Explorer that explains
 - [ ] 8. Model flag
@@ -167,6 +167,42 @@ Last updated: 2026-10-19
 - Full server suite **99 passed, 6 skipped** (20 files); devstack 21 passed.
 
 **Next:** item 5, the signing guard.
+
+## Round 5 · 19 Oct 05:00–05:25 · Item 5, signing guard
+
+**What changed**
+- `shared/chain/guard.ts` (new, no imports beyond `login.ts`; each app passes its own viem `decodeFunctionData`):
+  - `checkTx` allows only:
+    - `PocketFactory.create`;
+    - a Mock e-HKD `transfer` to one of the owner's own cards;
+    - the Pocket owner methods `revoke`, `returnFunds`, `unfreeze`, `setCap`, `setAskAbove`, `setSeller` and `setExpiresAt`, on the owner's own card.
+    - Refusals: `UNDECODABLE`, `UNKNOWN_CONTRACT`, `METHOD_NOT_ALLOWED` (e.g. `approve`, `freeze`), `NOT_YOUR_CARD`, `SENDS_VALUE`.
+  - `checkTypedData` allows only:
+    - `Login` (ChainBrain domain, this owner, the exact statement);
+    - `TransferWithAuthorization` that equals the pending approval field for field, on the HK$ token and chain 20200, from the owner's card.
+    - Refusals: `WRONG_CHAIN`, `NOT_A_PENDING_APPROVAL`, `UNKNOWN_MESSAGE` (e.g. a `Permit`), `NOT_YOU`.
+  - Every verdict carries a plain HK$ sentence, e.g. "Approve one payment of HK$12.50 from card 0x0000…0a1d to DataLite, valid until 2030-03-17 17:46 UTC."
+- Phone (`mobile/src/lib/wallet.ts`):
+  - every real-chain owner `write` is encoded and checked before signing, and throws `GuardRefused` on a no;
+  - `signTransfer(auth, pending)` now needs the approval it answers; `explainCosign(auth)` gives the sentence.
+  - The card-owner check is a chain read of `Pocket.owner()`, cached.
+  - The guard context can be injected for tests.
+- Approval sheet: on the real chain it shows "Your key signs: …" under the wallet checks, or "Won't sign: …" in vermillion, plus a `GUARD_REFUSED` error message.
+- The web console doesn't sign yet. It will use the same guard when it gets an owner key (item 6).
+
+**Evidence**
+- `mobile/src/lib/guard.test.ts`, 8 tests:
+  - create with its sentence;
+  - fund your own card only (another card → `NOT_YOUR_CARD`; `approve` → `METHOD_NOT_ALLOWED`);
+  - all 7 owner controls with their sentences, while `revoke` on someone else's card → `UNKNOWN_CONTRACT` and `freeze` → `METHOD_NOT_ALLOWED`;
+  - undecodable, empty, foreign contract and native value are refused;
+  - a co-sign must equal the pending approval (changed amount or no pending → `NOT_A_PENDING_APPROVAL`; another card's → `NOT_YOUR_CARD`; wrong token → `UNKNOWN_MESSAGE`; wrong chain → `WRONG_CHAIN`);
+  - login only as yourself (another key → `NOT_YOU`, changed statement → `UNKNOWN_MESSAGE`, a `Permit` → `UNKNOWN_MESSAGE`);
+  - the phone wallet rejects a refused co-sign and signs the right one;
+  - HK$ rounding.
+- `cd mobile && npx tsc --noEmit` clean; `npm test` **61 passed** (53 before + 8).
+
+**Next:** item 6, real by default in both apps (onboarding, sign-in, per-card agents, the Demo network switch, the console's owner identity), then the Playwright e2e.
 
 ---
 

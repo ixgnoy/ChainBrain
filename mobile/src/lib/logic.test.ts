@@ -17,8 +17,8 @@ const auth: Authorization = {
 };
 
 test("owner co-sign from the phone is the exact eHKD transfer the pocket checks", async () => {
-  const w = ownerWallet(PK);
-  const sig = await w.signTransfer(auth);
+  const w = ownerWallet(PK, { guard: async () => ({ owner: privateKeyToAccount(PK).address, chainId: 20200, factory: "0x00000000000000000000000000000000000000f1", token: "0x0355c0c5Afe2A35369056FBB854903A4aF07781A", decode: () => { throw new Error("unused"); }, isOwnCard: (a) => a === auth.from }) });
+  const sig = await w.signTransfer(auth, auth);
   assert.equal(await recoverTypedDataAddress({ ...transferTypedData(auth), signature: sig }), privateKeyToAccount(PK).address);
   assert.equal(await verifyTypedData({ address: w.address, ...transferTypedData({ ...auth, value: "1900000" }), signature: sig }), false);
 });

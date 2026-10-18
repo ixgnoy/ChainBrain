@@ -33,6 +33,7 @@ import { parseHkd } from "../lib/shared";
 import { contractTail, hkd, shortAddr } from "../lib/util";
 import { IntentCard, parseIntent } from "./IntentCard";
 import { SheetSuccess } from "./SheetSuccess";
+import { isBuiltin } from "../lib/runtime";
 import { notify as toast } from "../lib/toast";
 import { ErrorNote } from "./ErrorNote";
 import { curSign } from "../lib/runtime";
@@ -48,6 +49,7 @@ export function describeApprovalError(code: string): string {
     case "AUTH_WRONG_SELLER":
     case "AUTH_WRONG_AMOUNT": return "This request doesn't match what you're approving (card, seller or amount), so nothing was signed.";
     case "SIGN_FAILED": return "Could not sign on this phone. Try again.";
+    case "GUARD_REFUSED": return "Your phone refused to sign: this isn't exactly the payment waiting for you.";
     case "NETWORK": return "Could not reach the server. Check the connection and try again.";
     default: return "Could not send your answer. Check the connection and try again.";
   }
@@ -106,6 +108,12 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const item = cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment";
 
   const [cardW, setCardW] = useState(0);
+  // the signing guard's own reading of the exact message the key will sign (real chain only: the demo network signs nothing)
+  const [signs, setSigns] = useState<{ ok: boolean; sentence: string } | null>(null);
+  useEffect(() => {
+    if (!auth || !wallet || isBuiltin()) return;
+    void wallet.explainCosign(auth).then(setSigns, () => setSigns(null));
+  }, [auth, wallet]);
   const [bio, setBio] = useState<OwnerCheck | null>(null);
   const Bio = bio ? bio[0].toUpperCase() + bio.slice(1) : null; // at the start of a sentence
   useEffect(() => { void biometricKind().then(setBio); }, []);
@@ -219,6 +227,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
               <CheckLine label="Seller check" tone={risky ? "vermillion" : "green"} value={radar?.score != null ? `${radar.verdict === "ok" ? "Low risk" : radar.verdict === "block" ? "Blocked" : "Review"} · ${radar.score}/10` : "Checked"} />
               <CheckLine label="Pays from" value={pocket ? `${cleanText(pocket.name, 22)} · ${contractTail(a.pocket)}` : shortAddr(a.pocket)} last />
             </View>
+            {signs ? <T v="cap" color={signs.ok ? "muted" : undefined} style={signs.ok ? { marginTop: -10 } : { marginTop: -10, color: c.vermillionInk }} accessibilityLabel={`Your key signs: ${signs.sentence}`}>{signs.ok ? `Your key signs: ${signs.sentence}` : `Won't sign: ${signs.sentence}`}</T> : null}
             {/* the agent's own words: not checked by the wallet, so they look different */}
             {a.text ? (
               <View style={{ borderRadius: 20, overflow: "hidden", backgroundColor: c.fill, padding: 16, gap: 10 }} accessible accessibilityLabel={`${who}'s note, not checked by your wallet: ${cleanText(a.text, 400)}`}>

@@ -452,7 +452,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const view = views[a.pocket.toLowerCase()];
     if (view && !isOwner(view, wallet.address)) return { ok: false, error: "NOT_OWNER" };
     let signature: Hex;
-    try { signature = await wallet.signTransfer(auth); } catch { return { ok: false, error: "SIGN_FAILED" }; }
+    try { signature = await wallet.signTransfer(auth, auth); } catch (e) { return { ok: false, error: (e as Error)?.name === "GuardRefused" ? "GUARD_REFUSED" : "SIGN_FAILED" }; }
     const r = await api.answerApproval(a.id, { approved: true, signature });
     if (r.ok || r.error === "NOT_PENDING") setAnswered((s) => new Set(s).add(a.id));
     void pollRef.current();
