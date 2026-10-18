@@ -1,3 +1,4 @@
+import { ownerAddress } from "../owner/wallet";
 import { useState } from "react";
 import { usePlay } from "./play";
 import { copyFor } from "./sceneCopy";
@@ -123,7 +124,10 @@ export function Judges({ pocket, open }: { pocket?: string; open(addr: string): 
     setBusy(t == null ? "clear" : "plant"); setMsg(undefined);
     try { setMsg(await plant(seller, t)); } catch (e) { setMsg({ ok: false, text: (e as Error).message }); } finally { setBusy(undefined); }
   };
-  const aim = target || pocket || listed()[0]?.address || "";
+  // a signed-in owner attacks their own card (the server answers only the owner): their newest live one by default
+  const me = ownerAddress()?.toLowerCase();
+  const mine = me ? listed().find((p) => p.owner.toLowerCase() === me && !p.revoked) : undefined;
+  const aim = target || mine?.address || pocket || listed()[0]?.address || "";
   const force = async () => {
     if (!aim || !forceTransfer) return;
     setBusy("force"); setForced(undefined);

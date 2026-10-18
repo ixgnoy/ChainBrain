@@ -10,6 +10,9 @@ const tokenKey = (api: string, owner: string) => `cb.visitor.${api.replace(/\/+$
 let token: string | null = null;
 export const visitorHeaders = (): Record<string, string> => (token ? { [VISITOR_HEADER]: token } : {});
 export const hasSession = () => !!token;
+let signedIn: string | null = null;
+/** The signed-in owner's address (the console aims its arena at this owner's own cards). */
+export const ownerAddress = () => signedIn;
 
 export type Pending = { id: string; pocket: Address; kind: string; text?: string; data?: { auth?: Authorization; amount?: string; sellerId?: string } };
 export type SignUp = { visitorId: string; created: boolean; funding: { nativeFunded: boolean; mintTx?: Hex; minted?: string; error?: string } };
@@ -48,7 +51,7 @@ export function ownerWallet(pk: Hex, o: { api: string; rpc: string; cfg: Config;
     /** Back in with a saved token, or sign up / in with one Login signature (the server funds a new visitor). */
     async session(): Promise<SignUp | null> {
       const saved = localStorage.getItem(tokenKey(o.api, account.address));
-      if (saved && (await fetch(`${o.api}/v1/me`, { headers: { [VISITOR_HEADER]: saved } }).then((r) => r.ok, () => false))) { token = saved; return null; }
+      if (saved && (await fetch(`${o.api}/v1/me`, { headers: { [VISITOR_HEADER]: saved } }).then((r) => r.ok, () => false))) { token = saved; signedIn = account.address; return null; }
       const ch = (await (await fetch(`${o.api}/v1/challenge`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ owner: account.address }) })).json()) as LoginChallenge;
       const td = loginTypedData(ch);
       const verdict = await checkTypedData(ctx, td as any);
@@ -58,6 +61,7 @@ export function ownerWallet(pk: Hex, o: { api: string; rpc: string; cfg: Config;
       const j = await r.json();
       if (!r.ok) throw new Error(j.error === "SIGNUPS_FULL" ? "Too many new accounts this hour: try again later, or use the demo network." : j.error ?? `sign-up ${r.status}`);
       token = j.token;
+      signedIn = account.address;
       try { localStorage.setItem(tokenKey(o.api, account.address), j.token); } catch { /* private window */ }
       return j;
     },

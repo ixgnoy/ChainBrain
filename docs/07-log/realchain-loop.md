@@ -20,7 +20,7 @@ Last updated: 2026-10-19
 - [x] 10. Seller catalogue match
 - [x] 11. Starter seed on chain
 - [x] 12. Persistence
-- [ ] 13. Evidence and judge path
+- [x] 13. Evidence and judge path (the script and README; the hosted evidence file is regenerated after deploy, see the deploy order)
 - [ ] 14. Routines and auto-play on the real chain
 
 ## Acceptance checklist (brief section 7)
@@ -415,6 +415,37 @@ Last updated: 2026-10-19
 - `server/test/starter-chain.test.ts`: two cards from the visitor's key. Another visitor gets 403. Three payments (exa, coingecko, nansen), each receipt status 1. Balances: brief HK$2 − 0.056 − 0.08, watch HK$2 − 0.08. A second call gets 409.
 - e2e (fresh dev stack): **66/66**. The phone opens with "out in 2 cards", the main wallet is HK$496 on chain (500 − 2 − 2), and the starter payments to Exa, CoinGecko and Nansen have status-1 receipts. Screenshot `e2e-phone-02-funded.png`: Home shows both cards and "ChainBrain paid Nansen HK$0.08 · just now".
 - (Log housekeeping: rounds 6–10 headings corrected to the commit times.)
+
+## Round 12 · 19 Oct 04:55–05:10 · Item 13, evidence and the judge path
+
+**What changed**
+- New `server/scripts/visitor-evidence.ts`: a **fresh visitor's flow against any server over HTTP**, exactly as the apps do (a new key, never a server key):
+  - sign-up funding;
+  - a card with its own derived agent, created and funded by the visitor's key;
+  - the card's agent pays Exa and CoinGecko over x402 (the starter job);
+  - straight to the chain (a reverted hash);
+  - a privilege-escalation chat (the agent key's `setCap` reverts);
+  - revoke.
+  - Every hash goes to `EVIDENCE_FILE` with the status, event and contract it must show, for `verify-evidence.ts` to re-check on the chain.
+- `README.md`:
+  - new **"Try it in 3 minutes (real chain)"**: the console path (Your wallet → key → HK$500 hash → card → chat → paid → arena revert, each decoded in `/explorer`), the phone path, and the two script commands;
+  - the old "Try it with nothing running" is now **"The demo network"** (a Settings switch, never a silent fallback);
+  - `shared/chain/` added to the repository table;
+  - the build log linked; the YINGLONG credit added.
+- Console Judges: a signed-in owner's own newest live card is the default target, so judges don't hit "That card isn't yours" (found when walking the README path in the Browser preview).
+- Why the hosted `docs/evidence-fisco-railway.json` is not regenerated here: it needs this code deployed, plus the production keys only Railway holds, and the brief says never to deploy. It's step 5 of the deploy order below.
+
+**Evidence**
+- `visitor-evidence.ts` on the dev stack (local FISCO), then `verify-evidence.ts`: **8/8 hashes valid** (each receipt, block membership, target contract and event re-read from the chain):
+  - funding `0xb6d7…419a`;
+  - create `0x03a1…c805`;
+  - fund `0xd6bd…98d7`;
+  - Exa `0xe685…3877`;
+  - CoinGecko `0x6895…7a8b`;
+  - straight to the chain (reverted, SELLER_NOT_ALLOWED) `0x5e5b…94ef`;
+  - escalation `setCap` (reverted, NOT_OWNER) `0x3e0d…28eb`;
+  - revoke `0xa9b8…f497`.
+- Walked the README console path in the Browser preview: key → signed in → card created (two hashes) → Judges → "Assume the AI is fooled" on the owner's card gives "its signed transfer reverted on-chain and no money moved", stopped by "Allowed seller (pocket contract)", with an explorer link to `0xb785…ad7a`.
 
 ---
 
