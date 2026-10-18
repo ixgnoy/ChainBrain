@@ -1,4 +1,5 @@
-// Settings: a quiet gear in the header. One section, "Connection": use a custom server instead of the built-in network.
+// Settings: a quiet gear in the header. "Connection": the demo network switch (the built-in simulation) and, while it is
+// off, the server on the real chain.
 import { useId, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Check, Settings as Gear, X } from "lucide-react";
@@ -18,15 +19,15 @@ function Switch({ checked, onChange, label }: { checked: boolean; onChange(v: bo
 export function Settings({ presenter }: { presenter?: () => void }) {
   const src = useSource();
   const [open, setOpen] = useState(false);
-  const [on, setOn] = useState(src.kind === "live");
+  const [demo, setDemo] = useState(src.kind === "demo");
   const [url, setUrl] = useState(src.kind === "live" ? src.url : savedUrl());
   const [probe, setProbe] = useState<Probe | "testing">();
   const field = useId();
   const target = cleanUrl(url) || DEFAULT_API;
   const valid = isHttpUrl(target);
 
-  const reset = (o: boolean) => { setOpen(o); if (o) { setOn(src.kind === "live"); setUrl(src.kind === "live" ? src.url : savedUrl()); setProbe(undefined); } };
-  const toggle = (v: boolean) => { setOn(v); setProbe(undefined); if (!v) setSource({ kind: "demo" }); };
+  const reset = (o: boolean) => { setOpen(o); if (o) { setDemo(src.kind === "demo"); setUrl(src.kind === "live" ? src.url : savedUrl()); setProbe(undefined); } };
+  const toggle = (v: boolean) => { setDemo(v); setProbe(undefined); setSource(v ? { kind: "demo" } : { kind: "live", url: target }); };
   const test = async () => { setProbe("testing"); setProbe(await testConnection(target)); };
   const use = () => { setSource({ kind: "live", url: target }); setOpen(false); };
 
@@ -52,10 +53,10 @@ export function Settings({ presenter }: { presenter?: () => void }) {
           )}
           <h3 className="eyebrow mb-2 mt-5 text-muted">Connection</h3>
           <div className="flex items-center gap-4 tile px-4 py-3.5">
-            <div className="min-w-0 flex-1"><div className="text-[15px] font-medium">Custom server</div><div className="text-[13px] leading-5 text-muted">Use your own ChainBrain server instead of the built-in network.</div></div>
-            <Switch checked={on} onChange={toggle} label="Custom server" />
+            <div className="min-w-0 flex-1"><div className="text-[15px] font-medium">Demo network</div><div className="text-[13px] leading-5 text-muted">{demo ? "On: the built-in simulation, nothing on a real chain." : "Off: the real FISCO BCOS chain, through the server below."}</div></div>
+            <Switch checked={demo} onChange={toggle} label="Demo network" />
           </div>
-          {on && (
+          {!demo && (
             <div className="mt-3">
               <label htmlFor={field} className="mb-1.5 block text-[14px] font-medium">Server URL</label>
               <input id={field} value={url} onChange={(e) => { setUrl(e.target.value); setProbe(undefined); }} placeholder={DEFAULT_API} inputMode="url" autoCapitalize="off" spellCheck={false}

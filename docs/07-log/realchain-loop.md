@@ -204,6 +204,53 @@ Last updated: 2026-10-19
 
 **Next:** item 6, real by default in both apps (onboarding, sign-in, per-card agents, the Demo network switch, the console's owner identity), then the Playwright e2e.
 
+## Round 6, part 1 · 19 Oct 03:03–03:35 · Item 6, real by default (server, phone, console)
+
+**What changed**
+- Server: `chainInfo().rpc` and the faucet info use `publicRpc()`: `PUBLIC_RPC_URL`, else `FISCO_RPC` if it isn't loopback, else `<PUBLIC_API_URL>/rpc/fisco` (that proxy is item 7). A phone never gets `127.0.0.1` again.
+- Phone:
+  - Opens on the real chain. `runtime.ts` defaults to `source: "server"` with `EXPO_PUBLIC_API_URL ||` the hosted Railway API. `store.tsx` no longer deletes `cb.source`; it keeps the owner's choice.
+  - New `lib/visitor.ts`: after connecting, the phone signs up or back in with one Login signature, checked by the signing guard (`wallet.signLogin`, with a minimal guard context if the config isn't loaded). The token is kept per server and key. A new account shows a notice: "Your wallet is ready: HK$500.00 arrived", with the hash.
+  - `api.ts` sends `x-visitor-token` on every call.
+  - `wallet.createPocket` swaps ChainBrain's shared agent for a fresh per-card agent from `/v1/cards/agent` when signed in. `agentIdOf` treats every card on a server as ChainBrain's.
+  - Settings:
+    - "Custom server" became a **Demo network** switch, with a "Server" row (edit, Test, Save) while it's off;
+    - the status line says "Connected · FISCO BCOS · signed in", or shows the error;
+    - a "Back up your key" row copies the key after a warning.
+  - Home: when the server can't be reached, a card says so plainly and offers **Try again** or **Use the demo network**. Nothing falls back silently.
+- Console:
+  - Opens live on `VITE_API_URL ||` the hosted API. Settings has the **Demo network** switch (`?server=builtin` still works). The unreachable screen says "Can't reach the ChainBrain network" and offers the demo network.
+  - **"Your wallet"** (`web/src/console/Owner.tsx`, `web/src/owner/{key,wallet}.ts`):
+    - the key is made in the browser: a passkey via WebAuthn PRF where the passkey really returns PRF output, else browser storage with a one-time "Copy my key" backup; an existing key can be imported;
+    - one guarded Login signs up, with the funding hash shown;
+    - "Create a card with HK$20" makes two guarded transactions (create with a per-card agent, then fund) and shows both hashes plus the guard's sentences;
+    - for each of your cards: chat with its agent, "Waiting for you" (Confirm/Decline an intent, guarded co-sign for a payment above ask-me) and Revoke.
+  - The console's chat sends the token; a 401 or 403 explains itself.
+  - **Chain index** (`web/src/console/chain.ts`): the console now scans only new blocks, 10 per `getLogs` call, and keeps the logs. That replaces the 20k-block windows a truncating node would cut short.
+  - Header fixed at 1024 px (it overflowed before this round too); the wallet button is icon-only below `xl`.
+
+**Two more FISCO findings (round 6)**
+- **A one-element JSON-RPC batch is answered with a bare object, not an array** (local 3.16.4 macOS node; the hosted node answers with an array). viem's batching can't match it: batched reads failed with "Cannot read properties of undefined (reading 'error')", and `waitForTransactionReceipt` never resolved. `clientFor` no longer batches.
+- Logs in receipts carry FISCO's ASCII `transactionIndex` (`0x307830`) on the dev proxy too, not only on the hosted node. It's harmless to viem (it reads a wrong number) but worth knowing.
+
+**Evidence**
+- Console, driven by hand in the Browser preview against the dev stack:
+  - sign-up showed "HK$500.00 arrived" with a hash;
+  - card created and funded (two hashes, balance HK$480);
+  - chat → intent confirmed → DataLite paid. Payment `0xdb38a55b73150d4751e9d543ada80ee3beb5d8dcfd36e5718299131525ada256`: `/api/tx` status `success`, block 644, from the facilitator; the card went from HK$20.00 to HK$17.70.
+  - No horizontal scroll at 375, 1024 or 1440 px.
+- `devstack/e2e/e2e.cjs --web-only`: **35/36** on the first run, and the one failure was a stale step (it opened Pockets from a pinned Live link). Fixed. The new step "a judge signs up in the browser, is funded, creates a card, and its agent pays" passes all 7 checks:
+  - funding receipt status 1 and HK$500 on chain;
+  - create and fund receipts status 1;
+  - the card's agent is not the shared key;
+  - the guard sentence is shown;
+  - the payment receipt is status 1;
+  - the card balance on chain went down by the price.
+- Unit suites: server **99 passed, 6 skipped**; web **90** (85 + the chain index 2 + passkey/PRF wrap 5 with a fake authenticator); mobile **61**; devstack **21**.
+- `--phone-only` e2e: the new launch checks pass (Demo network off on launch, connected and signed in, funded on chain, no page errors). The rest of the phone script is **stale**: it still expects the old `US$` labels, "New pocket" and the old chat entry. I'm rewriting it in part 2.
+
+**Not done yet (part 2):** rewrite the phone e2e against the current UI (create a card, chat → intent → pay, co-sign above ask-me, revoke, all with hashes checked on chain). Also find out why "Research data" didn't appear after switching Demo network on.
+
 ---
 
 ## Env vars so far (kept current each round)

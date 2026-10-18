@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { isAddress, type Address, type Hex } from "viem";
-import { cfg } from "./chains";
+import { cfg, publicRpc } from "./chains";
 import { write } from "./ledger";
 import { pub } from "./wallet/chain";
 import { fundIfEmpty } from "./fund";
@@ -18,7 +18,6 @@ const byIp = new Map<string, number[]>();
 
 const mintAbi = [{ type: "function", name: "mint", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [] }] as const;
 const amount = () => process.env.FAUCET_AMOUNT ?? "100";
-const publicRpc = () => process.env.PUBLIC_RPC_URL || cfg().chain.rpcUrls.default.http[0];
 const publicApi = () => process.env.PUBLIC_API_URL ?? "http://localhost:8787";
 
 export function faucetRoutes() {

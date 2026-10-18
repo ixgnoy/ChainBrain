@@ -34,6 +34,18 @@ export function cfg(): ChainCfg {
   };
 }
 
+const loopback = (u: string) => /^https?:\/\/(localhost|127\.|0\.0\.0\.0|\[::1\])/i.test(u);
+/**
+ * The RPC the apps get (never this server's own, which can carry a provider key, and never a loopback address a phone
+ * can't reach): PUBLIC_RPC_URL, else FISCO_RPC if it is public, else this API's read-only proxy at /rpc/fisco.
+ */
+export function publicRpc(): string {
+  if (process.env.PUBLIC_RPC_URL) return process.env.PUBLIC_RPC_URL;
+  const rpc = process.env.FISCO_RPC;
+  if (rpc && !loopback(rpc)) return rpc;
+  return `${process.env.PUBLIC_API_URL ?? "http://localhost:8787"}/rpc/fisco`;
+}
+
 export const factoryFromDeployments = (id: number): Address | undefined => deployments(id).PocketFactory;
 
 const NEVER = 2n ** 256n - 1n;

@@ -1,6 +1,6 @@
 // End-to-end test of the ChainBrain phone app (owner) and the web network console against a running dev stack.
 //   pnpm --dir devstack start                  # fresh stack (restart it before each run)
-//   pnpm --dir web build
+//   VITE_API_URL=http://localhost:8787 pnpm --dir web build     (the console's default server: the dev stack, not the hosted one)
 //   (cd mobile && EXPO_PUBLIC_API_URL=http://localhost:8787 npx expo export --platform web --output-dir dist)
 //   node devstack/e2e/e2e.cjs [--web-only|--phone-only] [--mobile-dist <dir>] [--headed]
 // Starts its own `vite preview` of web/dist and a static server for the Expo web export. The phone flow types the exact
@@ -109,7 +109,7 @@ async function webFlow(browser, _scenes, issues) {
   let seeded;
 
   await stp("web: console opens on Live with no login", async () => {
-    await page.goto(`${base}/?server=${encodeURIComponent(API)}#live`); // hidden switch: use the dev stack (the default is the built-in network)
+    await page.goto(`${base}/?server=${encodeURIComponent(API)}#live`); // the dev stack (also the build's default, VITE_API_URL)
     await page.getByRole("heading", { name: "Live" }).waitFor();
     const text = await page.locator("body").innerText();
     check("no connect, login or key screen", !/connect wallet|log ?in|sign ?in|disconnect|private key/i.test(text));
@@ -134,7 +134,7 @@ async function webFlow(browser, _scenes, issues) {
   });
 
   await stp("web: pockets and explorer pages read the chain", async () => {
-    await tab("Pockets");
+    await page.goto(`${base}/#pockets`); // the list, not the pocket Live was pinned to
     const pocketsOnChain = [...new Set(seeded.map((e) => e.pocket).filter(Boolean))].length;
     await until("pockets listed", async () => (await page.locator("main").getByRole("button", { name: /^Pocket [0-9A-F]{4}/ }).count()) >= pocketsOnChain, 20000);
     check("every seeded pocket is listed from the chain", true);
@@ -179,6 +179,42 @@ async function webFlow(browser, _scenes, issues) {
     check("Live trace shows the reverted forced transfer", true);
   });
 
+  await stp("web: a judge signs up in the browser, is funded, creates a card, and its agent pays (all real transactions)", async () => {
+    const o = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const p = await o.newPage(); watch(p, "web-owner", issues);
+    p.setDefaultTimeout(30000);
+    await p.goto(`${base}/#live`); // no ?server: the console's default is the real chain (here the build's VITE_API_URL, the dev stack)
+    await p.getByRole("button", { name: "Your wallet" }).click();
+    await p.getByRole("button", { name: "Make a key in this browser" }).click();
+    const funded = p.getByRole("link", { name: /arrived in your main wallet/ });
+    await funded.waitFor({ timeout: 60000 });
+    const hashOf = async (l) => (await l.getAttribute("href")).match(/0x[0-9a-fA-F]{64}/)[0];
+    const receipt = async (h) => rpc("eth_getTransactionReceipt", [h]);
+    const fundTx = await hashOf(funded);
+    check("sign-up funding is a real transaction (receipt status 1)", (await receipt(fundTx))?.status === "0x1", fundTx);
+    const me = await p.evaluate(() => JSON.parse(localStorage.getItem("cb.owner.v1")).address);
+    check("the browser's key holds HK$500 on chain", (await ehkdOf(me)) === 500, String(await ehkdOf(me)));
+    await p.getByRole("button", { name: /Create a card with/ }).click();
+    const created = p.getByRole("link", { name: /Card created/ });
+    await created.waitFor({ timeout: 60000 });
+    const createTx = await hashOf(created), fundCardTx = await hashOf(p.getByRole("link", { name: /moved to the card/ }));
+    check("card created and funded by the browser's key (two receipts, status 1)", (await receipt(createTx))?.status === "0x1" && (await receipt(fundCardTx))?.status === "0x1");
+    const createdLog = (await receipt(createTx)).logs.find((l) => l.topics.length === 4); // PocketCreated(pocket, owner, agent)
+    const card = "0x" + createdLog.topics[1].slice(26), agent = "0x" + createdLog.topics[3].slice(26);
+    check("the card's agent is its own derived key, not the shared one", agent.toLowerCase() !== (await (await fetch(`${API}/api/config`)).json()).agent.toLowerCase(), agent);
+    check("the guard's sentence is shown for what the key signed", /Your key signed: Create a card/.test(await p.getByRole("dialog").innerText()));
+    const row = p.getByRole("dialog").locator(".tile").filter({ has: p.getByPlaceholder(/Ask its agent/) }).filter({ hasText: "HK$20.00" }).first();
+    await row.getByPlaceholder(/Ask its agent/).fill("Buy the DataLite durian report. Max HK$8, by tonight. Confirmed, go ahead.");
+    await row.getByRole("button", { name: "Send" }).click();
+    await row.getByRole("button", { name: "Confirm" }).click({ timeout: 60000 });
+    await until("the card paid DataLite", async () => payments(await events(card)).length >= 1, 60000, 500);
+    const pay = payments(await events(card))[0];
+    check("the agent paid DataLite from the card with an x402 settlement (receipt status 1)", (await receipt(pay.tx))?.status === "0x1", pay.tx);
+    check("the card's balance on chain went down by the price", money(await ehkdOf(card)) === money(20 - Number(pay.amount) / 1e6), String(await ehkdOf(card)));
+    await shot(p, "web-05-owner");
+    await o.close();
+  });
+
   await stp("web: phone width has no sideways scroll", async () => {
     const m = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const p = await m.newPage(); watch(p, "web-390", issues);
@@ -190,12 +226,12 @@ async function webFlow(browser, _scenes, issues) {
     await m.close();
   });
 
-  await stp("web: opens on the built-in network by default, nothing in the UI says so", async () => {
+  await stp("web: the demo network (Settings switch, or ?server=builtin) plays the story with no server", async () => {
     const d = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
     const p = await d.newPage();
     await p.route(`${API}/**`, (r) => r.abort()); // the built-in network needs no server
     await p.route("**/dev/relay/**", (r) => r.abort()); // nor a phone linked through a relay on this laptop (it would mirror that phone)
-    await p.goto(`${base}/#live`);
+    await p.goto(`${base}/?server=builtin#live`);
     await p.getByRole("list", { name: "Agent trace" }).waitFor();
     await until("story shows on Live", async () => (await p.getByRole("list", { name: "Agent trace" }).innerText()).length > 100, 15000);
     check("built-in network plays the story with no server", true);
@@ -239,9 +275,7 @@ async function webFlow(browser, _scenes, issues) {
 async function phoneFlow(browser, scenes, issues) {
   const S = Object.fromEntries(scenes.map((s) => [s.id, s]));
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: false, isMobile: false });
-  // the app opens on its built-in network on every launch and every reload; this run switches to the dev stack the way a
-  // person does (Settings, Advanced, Custom server, Connect). The address field remembers the stack's URL.
-  await ctx.addInitScript(([api]) => { localStorage.setItem("cb.apiUrl", api); }, [API]);
+  // the app opens on the real chain: the export's EXPO_PUBLIC_API_URL, here the dev stack. The demo network is a Settings switch.
   const page = await ctx.newPage();
   watch(page, "phone", issues);
   page.setDefaultTimeout(20000);
@@ -276,28 +310,33 @@ async function phoneFlow(browser, scenes, issues) {
   let wallet, pocket;
   const useServer = async () => {
     await tab("Settings");
-    const sw = page.getByRole("switch", { name: "Custom server" });
+    const sw = page.getByRole("switch", { name: "Demo network" });
     await sw.waitFor();
-    if ((await sw.getAttribute("aria-checked")) !== "true") {
-      await sw.click();
-      await page.getByRole("button", { name: "Connect", exact: true }).click();
-    }
-    // connected: the line under the address field says so (it can sit under the floating tab bar, so read the text)
-    await until("connected to the stack", async () => /Connected · local test network/.test(await body()), 30000);
+    if ((await sw.getAttribute("aria-checked")) === "true") await sw.click();
+    // connected and signed in: the line under the Advanced card says so (it can sit under the floating tab bar, so read the text)
+    await until("connected to the stack", async () => /Connected · local test network · signed in/.test(await body()), 60000);
     await tab("Home");
   };
   const load = async () => { await page.goto(`http://127.0.0.1:${PHONE_PORT}/`); await skipIntro(); await useServer(); };
 
   await page.goto(`http://127.0.0.1:${PHONE_PORT}/`); await skipIntro();
 
-  await stp("phone: opens on its built-in network; the server is a quiet switch in Settings", async () => {
-    await visible("Research data").waitFor({ timeout: 40000 }); // the built-in network's seeded pockets
+  await stp("phone: opens on the real chain (the dev stack here) and signs in by itself; the demo network is a Settings switch", async () => {
     await tab("Settings");
-    const sw = page.getByRole("switch", { name: "Custom server" });
-    check("Custom server is off on launch", (await sw.getAttribute("aria-checked")) !== "true");
+    const sw = page.getByRole("switch", { name: "Demo network" });
+    await sw.waitFor();
+    check("Demo network is off on launch", (await sw.getAttribute("aria-checked")) !== "true");
+    await until("connected and signed in", async () => /Connected · local test network · signed in/.test(await body()), 60000);
+    check("connected to the chain and signed in with one guarded Login signature", true);
+    await sw.click();
     await tab("Home");
-    await useServer();
-    check("Settings, Custom server, Connect: on the dev stack", true);
+    await visible("Research data").waitFor({ timeout: 40000 }); // the demo network's seeded cards
+    check("Demo network on: the built-in simulation's cards", true);
+    await tab("Settings");
+    await page.getByRole("switch", { name: "Demo network" }).click();
+    await until("back on the chain", async () => /Connected · local test network/.test(await body()), 30000);
+    check("Demo network off: back on the real chain", true);
+    await tab("Home");
   });
 
   await stp("phone: first launch goes straight to Home (key made silently, no login)", async () => {

@@ -29,6 +29,7 @@ import {
 import { getItem, setItem, deleteItem } from "./storage";
 import { addOwnerTx, ownerRows, parseOwnerTxs, type OwnerTx } from "./lib/ownerTxs";
 import { curSign, getChain } from "./lib/runtime";
+import { setVisitorToken, signUp, stillSignedIn, tokenKey } from "./lib/visitor";
 
 export type Turn = { id: string; pocket: string; text: string; fromAt: number; toAt?: number; /** the last event when the turn finished: anything later happened after it */ endAt?: number; reply?: string; stopped?: string; error?: string; done: boolean };
 export type Pocket = PocketView & { name: string; style: PocketMeta["style"]; owned: boolean; /** the agent that holds it (immutable agent key) */ agentId?: AgentId; /** its pocket app, when it has one */ app?: PocketMeta["app"] };
@@ -37,10 +38,11 @@ export type Rules = { pocket: string; field: "cap" | "ask"; amount?: string; top
 /** A just-confirmed owner transaction (or two), shown with its hash on the pocket page and in the agent chat until dismissed. */
 export type Notice = { title: string; pocket?: string; txs: { label?: string; hash: string }[] } | null;
 export type Conn = "connecting" | "online" | "offline";
+export type Visitor = { state: "none" | "signing" | "ready" | "error"; id?: string; error?: string };
 
 const API_KEY = "cb.apiUrl";
-// an older build saved the server choice; it now lasts until the app is reloaded or relaunched, so the key is cleared
-const OLD_SOURCE_KEY = "cb.source";
+/** "builtin" when the owner turned on the demo network in Settings; anything else is the real chain (the default). */
+const SOURCE_KEY = "cb.source";
 const POLL_MS = 1500;
 
 type Ctx = {
@@ -49,8 +51,12 @@ type Ctx = {
   cfg: Config | null;
   // owner key
   keyState: "loading" | "none" | "ready"; wallet: OwnerWallet | null; importKey(pk: string): Promise<void>; newKey(): Promise<void>;
-  /** Where data comes from: the network built into the app (default) or the wallet server at `apiUrl`. */
+  /** Where data comes from: the ChainBrain server at `apiUrl` on the real chain (default) or the demo network (Settings). */
   source: Source; setSource(s: Source): Promise<void>;
+  /** This key's visitor account on the server: signed up (or back in) with one guarded Login signature after connecting. */
+  visitor: Visitor;
+  /** The owner key, for the one-time backup in Settings. */
+  exportKey(): Hex | null;
   balances: { ehkd: bigint; eth: bigint } | null;
   // pockets
   pockets: Pocket[]; pocketsLoaded: boolean; active?: Pocket; setActive(a: string): void;
@@ -166,7 +172,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const saved = await getItem(API_KEY);
       if (saved) setRuntimeApi(saved);
       setApiState(getApi());
-      void deleteItem(OLD_SOURCE_KEY); // every launch (and every full reload) opens on the built-in network
+      // the real chain unless the owner chose the demo network in Settings (that choice is kept)
+      if ((await getItem(SOURCE_KEY)) === "builtin") setRuntimeSource("builtin");
       setSourceReady(true);
       // first launch: create the on-device key silently, no setup screen (an existing key is kept; "Import a key" lives in Settings)
       let k: Hex | null = null;
@@ -204,7 +211,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         if (!alive) return;
         setConn("offline");
-        setConnError(`Wallet API not reachable at ${apiUrl}. On a phone use your laptop's LAN address, not localhost.`);
+        setConnError(`Can't reach the ChainBrain network at ${apiUrl.replace(/^https?:\/\//, "")}.`);
       }
     })();
     return () => { alive = false; };
@@ -214,6 +221,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const t = setTimeout(() => setRetry((n) => n + 1), 5000);
     return () => clearTimeout(t);
   }, [conn, retry]);
+
+  // ---- visitor account: once connected to a server, sign up or back in (one Login signature, checked by the signing guard).
+  // A new account is funded by the server with real transactions; the notice shows the hash.
+  const [visitor, setVisitor] = useState<Visitor>({ state: "none" });
+  const refreshRef = useRef<() => Promise<void>>(async () => {});
+  useEffect(() => {
+    if (local || conn !== "online" || !wallet || !cfg) { setVisitorToken(null); setVisitor({ state: "none" }); return; }
+    let alive = true;
+    (async () => {
+      const k = tokenKey(apiUrl, wallet.address);
+      const saved = await getItem(k);
+      if (saved && (await stillSignedIn(saved))) { if (alive) { setVisitorToken(saved); setVisitor({ state: "ready" }); } return; }
+      if (!alive) return;
+      setVisitor({ state: "signing" });
+      try {
+        const r = await signUp(wallet.address, (ch) => wallet.signLogin(ch));
+        if (!alive) return;
+        setVisitorToken(r.token); await setItem(k, r.token);
+        setVisitor({ state: r.funding.error ? "error" : "ready", id: r.visitorId, error: r.funding.error ? `Signed in, but funding failed: ${r.funding.error}` : undefined });
+        if (r.created && r.funding.mintTx) setNotice({ title: `Your wallet is ready: ${curSign()}${r.funding.minted} arrived`, txs: [{ label: `${curSign()}${r.funding.minted} to your main wallet`, hash: r.funding.mintTx }] });
+        void refreshRef.current();
+      } catch (e) {
+        if (alive) setVisitor({ state: "error", error: (e as Error).message });
+      }
+    })();
+    return () => { alive = false; };
+  }, [local, conn, wallet, cfg, apiUrl]);
 
   // ---- pockets for this owner
   useEffect(() => {
@@ -268,6 +302,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, [wallet, cfg]);
 
+  refreshRef.current = refreshPockets;
   useEffect(() => { void refreshPockets(); }, [refreshPockets, addresses, conn, dev]);
   // routines run when their time comes while the app is open (built-in network; lib/builtin.ts)
   useEffect(() => { if (!local) return; const t = setInterval(() => void builtin().tickRoutines().catch(() => {}), 20_000); return () => clearInterval(t); }, [local]);
@@ -538,6 +573,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // nothing from the other network may linger on screen (a stale notice could link its hash to the server explorer)
     setNotice(null); setReceipt(null); setAction(null); setRules(null); setApprovalOpen(false); setQuestionOpen(false); setPickerOpen(false); forcedSeen.current = null;
     setExplorerTx(null); autoplayRef.current?.stop();
+    if (s === "builtin") await setItem(SOURCE_KEY, "builtin"); else await deleteItem(SOURCE_KEY);
     setRuntimeSource(s);
     setRetry((n) => n + 1);
   }, []);
@@ -550,7 +586,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value: Ctx = {
-    apiUrl, setApiUrl, conn, connError, dev, retryConnect: () => setRetry((n) => n + 1), cfg, source, setSource,
+    apiUrl, setApiUrl, conn, connError, dev, retryConnect: () => setRetry((n) => n + 1), cfg, source, setSource, visitor, exportKey: () => pk,
     keyState, wallet, importKey, newKey, balances,
     pockets, pocketsLoaded: pocketsReady, active, setActive: setActiveAddr, addPocket, refreshPockets,
     findPocket: (a) => pockets.find((p) => sameAddr(p.address, a)),

@@ -122,8 +122,10 @@ export async function checkTypedData(ctx: GuardContext, td: TypedData, pending?:
 
 /** Thrown by a guarded wallet when the guard says no. */
 export class GuardRefused extends Error {
-  constructor(readonly verdict: Extract<Verdict, { ok: false }>) {
+  readonly verdict: Extract<Verdict, { ok: false }>;
+  constructor(verdict: Extract<Verdict, { ok: false }>) {
     super(`${verdict.reason}: ${verdict.sentence}`);
     this.name = "GuardRefused";
+    this.verdict = verdict;
   }
 }

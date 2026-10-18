@@ -5,9 +5,10 @@ import { formatHkd, loadConfig, setChainInfo, txUrl, curSign, type Config } from
 import { detectDev } from "../dev";
 import { EventsProvider, useEvents } from "../useEvents";
 import { setSource } from "../source/source";
+import { visitorHeaders } from "../owner/wallet";
 import { networkLabel } from "@sim/explorer";
 import { attemptsFrom } from "@sim/checks";
-import { toBig, clientFor, loadHistory, loadPockets, scanFrom, type ChainTx, type PocketState } from "./chain";
+import { toBig, clientFor, chainIndex, loadHistory, loadPockets, scanFrom, type ChainIndex, type ChainTx, type PocketState } from "./chain";
 import { NetworkCtx, lookupTx, pocketLookups, type Actions, type Network, type Scene } from "./network";
 
 const ENV_RPC: string | undefined = import.meta.env.VITE_RPC_URL;
@@ -20,12 +21,13 @@ function Connecting({ url, failed, retry }: { url: string; failed: boolean; retr
   return (
     <div className="grid min-h-dvh place-items-center bg-canvas px-6 text-center">
       <div>
-        <p className="text-[22px] font-bold tracking-[-0.02em]">{failed ? "Can't reach the server" : "Connecting…"}</p>
+        <p className="text-[22px] font-bold tracking-[-0.02em]">{failed ? "Can't reach the ChainBrain network" : "Connecting…"}</p>
+        {failed && <p className="mx-auto mt-1 max-w-[420px] text-[14px] text-muted">Nothing here is made up, so the console stays empty until the server answers. The demo network is a simulation that runs in this tab.</p>}
         <p className="num mt-1 break-all text-[13px] text-muted">{url}</p>
         {failed && (
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             <button type="button" onClick={retry} className="pressable h-11 rounded-full bg-ink px-5 text-[14px] font-bold text-on-accent hover:bg-accent-press">Try again</button>
-            <button type="button" onClick={() => setSource({ kind: "demo" })} className="pressable h-11 rounded-full bg-card px-5 text-[14px] font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile">Use the built-in network</button>
+            <button type="button" onClick={() => setSource({ kind: "demo" })} className="pressable h-11 rounded-full bg-card px-5 text-[14px] font-bold text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)] hover:bg-tile">Use the demo network</button>
           </div>
         )}
       </div>
@@ -68,16 +70,21 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
   }, [live.events]);
   useEffect(() => { const t = setInterval(() => setTick((x) => x + 1), 8000); return () => clearInterval(t); }, []);
   const fromRef = useRef<bigint | undefined>(undefined);
+  const indexRef = useRef<{ key: string; client: ReturnType<typeof clientFor>; index: ChainIndex } | undefined>(undefined);
   useEffect(() => {
     if (!cfg) return;
     let alive = true;
-    const client = clientFor(dev ? `${url}/dev/rpc` : ENV_RPC ?? cfg.chain?.rpc ?? "https://fisco-node-production.up.railway.app");
+    const rpc = dev ? `${url}/dev/rpc` : ENV_RPC ?? cfg.chain?.rpc ?? "https://fisco-node-production.up.railway.app";
+    const key = `${rpc}|${cfg.factory}|${cfg.token}`;
+    if (indexRef.current?.key !== key) { const client = clientFor(rpc); indexRef.current = { key, client, index: chainIndex(client, cfg) }; fromRef.current = undefined; }
+    const { client, index } = indexRef.current;
     (async () => {
       try {
         fromRef.current ??= await scanFrom(client, dev);
+        await index.sync(fromRef.current);
         const seen = [...new Set(live.events.map((e) => e.pocket).filter((p): p is string => typeof p === "string" && /^0x[0-9a-fA-F]{40}$/.test(p)))];
-        const ps = await loadPockets(client, cfg, fromRef.current, seen);
-        const hist = await loadHistory(client, cfg, ps, fromRef.current);
+        const ps = await loadPockets(client, cfg, index, seen);
+        const hist = loadHistory(cfg, ps, index);
         if (alive) { setPockets(ps); setTxs(hist); setChainError(undefined); }
       } catch (e) { if (alive) setChainError((e as Error).message.split("\n")[0]); }
     })();
@@ -113,7 +120,9 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
     // the chat route exists on every ChainBrain server: an attack sentence goes to the agent like the owner's own message
     actions.chat = async (pocket, text) => {
       try {
-        const r = await fetch(`${url}/api/chat`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pocket, text }) });
+        const r = await fetch(`${url}/api/chat`, { method: "POST", headers: { "content-type": "application/json", ...visitorHeaders() }, body: JSON.stringify({ pocket, text }) });
+        if (r.status === 401) return { ok: false, text: "Sign in first: open Your wallet (top right). Only a card's owner can talk to its agent.", pocket };
+        if (r.status === 403) return { ok: false, text: "That card isn't yours. Pick one of your own cards (make one in Your wallet).", pocket };
         if (!r.ok) return { ok: false, text: `The server answered ${r.status}.`, pocket };
         const j = await r.json();
         setTick((x) => x + 1);
@@ -127,6 +136,7 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
       dev, builtin: false, chainName: networkLabel({ builtin: false, dev, chainName: cfg.chain?.key === "fisco" ? "FISCO BCOS" : undefined }), cfg, events: live.events, pockets, txs, allTxs, attempts, chainError,
       explorer: dev ? undefined : txUrl,
       scenes, txDetail, actions, linked: false, ...pocketLookups(pockets, [], live.events), refresh: () => setTick((x) => x + 1),
+      live: { api: url, rpc: dev ? `${url}/dev/rpc` : ENV_RPC ?? cfg.chain?.rpc ?? "https://fisco-node-production.up.railway.app", chainId: cfg.chain?.id ?? 20200 },
     };
   }, [cfg, dev, url, live.events, pockets, txs, allTxs, attempts, chainError, scenes]);
 

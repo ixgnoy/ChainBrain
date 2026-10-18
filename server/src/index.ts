@@ -8,7 +8,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { sse, bus, toJson } from "./wallet/events";
 import { approvals } from "./wallet/approvals";
 import { pocket, pub, factoryAddress, pocketAbi, factoryAbi, erc20Abi } from "./wallet/chain";
-import { cfg } from "./chains";
+import { cfg, publicRpc } from "./chains";
 import { transferTypedData } from "./wallet/scheme";
 import { directory } from "./wallet/directory";
 import { agentAccount } from "./wallet/pay";
@@ -34,8 +34,7 @@ type Msg = Anthropic.Beta.Messages.BetaMessageParam;
 /** What the apps need to sign and link: never keys. */
 export const chainInfo = () => {
   const c = cfg();
-  // The server's own RPC URL can carry a provider API key: the apps get PUBLIC_RPC_URL or the chain's public default.
-  const rpc = process.env.PUBLIC_RPC_URL || c.chain.rpcUrls.default.http[0];
+  const rpc = publicRpc();
   return { key: c.key, id: c.chain.id, name: c.chain.name, rpc, network: c.network, domain: c.domain, currency: c.currency, txUrl: c.txUrl("") };
 };
 

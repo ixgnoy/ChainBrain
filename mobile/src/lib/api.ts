@@ -4,8 +4,10 @@ import { fetchTimeout, getApi, getChain, isBuiltin, normalizeUrl } from "./runti
 import type { Approval, WalletEvent } from "./events";
 import { builtin } from "./builtin";
 import { SCENES } from "../../../shared/sim";
+import { visitorHeaders } from "./visitor";
 
-const json = { "content-type": "application/json" };
+/** JSON headers plus the visitor's session token (the server's visitor-only routes need it). */
+const hdrs = () => ({ "content-type": "application/json", ...visitorHeaders() });
 
 export async function fetchEvents(after: number, pocket?: string): Promise<WalletEvent[]> {
   if (isBuiltin()) return builtin().events(after, pocket) as WalletEvent[];
@@ -29,7 +31,7 @@ export type ApprovalAnswer = { ok: true } | { ok: false; error: string };
 export async function answerApproval(id: string, body: { approved: boolean; signature?: string; answer?: string }): Promise<ApprovalAnswer> {
   if (isBuiltin()) return builtin().answer(id, body);
   try {
-    const r = await fetchTimeout(`${getApi()}/api/approvals/${id}`, { method: "POST", headers: json, body: JSON.stringify(body) }, 15000);
+    const r = await fetchTimeout(`${getApi()}/api/approvals/${id}`, { method: "POST", headers: hdrs(), body: JSON.stringify(body) }, 15000);
     if (r.ok) return { ok: true };
     let error = `HTTP ${r.status}`;
     try { const j = await r.json(); if (j?.error) error = String(j.error); } catch { /* plain text error */ }
@@ -42,7 +44,7 @@ export async function answerApproval(id: string, body: { approved: boolean; sign
 /** POST /api/chat. The request stays open for the whole agent turn (approval waits up to 10 min): no timeout here on purpose. */
 export async function chat(pocket: Address, text: string): Promise<{ reply: string; stopped?: string }> {
   if (isBuiltin()) return builtin().chat(pocket, text);
-  const r = await fetch(`${getApi()}/api/chat`, { method: "POST", headers: json, body: JSON.stringify({ pocket, text }) });
+  const r = await fetch(`${getApi()}/api/chat`, { method: "POST", headers: hdrs(), body: JSON.stringify({ pocket, text }) });
   const raw = await r.text();
   let j: any;
   try { j = JSON.parse(raw); } catch { throw new Error(r.ok ? "Bad reply from the server" : `Server error ${r.status}`); }
@@ -71,12 +73,12 @@ export async function devScenes(): Promise<Scene[]> {
 export async function devFund(address: string): Promise<{ eth: string; ehkd: string }> {
   if (isBuiltin()) return builtin().fundTestMoney(address as Address);
   if (getChain()?.key === "fisco") {
-    const r = await fetchTimeout(`${getApi()}/api/faucet`, { method: "POST", headers: json, body: JSON.stringify({ address }) }, 30000);
+    const r = await fetchTimeout(`${getApi()}/api/faucet`, { method: "POST", headers: hdrs(), body: JSON.stringify({ address }) }, 30000);
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error === "ALREADY_CLAIMED" ? "Already claimed today" : j.error ?? `HTTP ${r.status}`);
     return { eth: j.nativeFunded ? "native" : "0", ehkd: String(j.minted) };
   }
-  const r = await fetchTimeout(`${getApi()}/dev/fund`, { method: "POST", headers: json, body: JSON.stringify({ address }) }, 15000);
+  const r = await fetchTimeout(`${getApi()}/dev/fund`, { method: "POST", headers: hdrs(), body: JSON.stringify({ address }) }, 15000);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
@@ -92,14 +94,14 @@ export async function fetchMemory(pocket: string): Promise<{ snapshot: import(".
 /** POST /api/memory/forget: the owner removes one memory item; the brain writes a new version without it. */
 export async function forgetMemory(pocket: string, id: string): Promise<boolean> {
   if (isBuiltin()) return builtin().forgetMemory(pocket, id);
-  const r = await fetchTimeout(`${getApi()}/api/memory/forget`, { method: "POST", headers: json, body: JSON.stringify({ pocket, id }) }, 8000).catch(() => null);
+  const r = await fetchTimeout(`${getApi()}/api/memory/forget`, { method: "POST", headers: hdrs(), body: JSON.stringify({ pocket, id }) }, 8000).catch(() => null);
   return !!r?.ok;
 }
 
 /** POST /api/rules/compile: one sentence -> proposed rules, open questions and a computed proof card. Never creates a pocket. */
 export async function compileRules(sentence: string): Promise<import("../../../shared/sim/speak").Compiled & { proof: import("../../../shared/sim/speak").Proof }> {
   if (isBuiltin()) return builtin().compileRules(sentence) as any;
-  const r = await fetchTimeout(`${getApi()}/api/rules/compile`, { method: "POST", headers: json, body: JSON.stringify({ sentence }) }, 30000);
+  const r = await fetchTimeout(`${getApi()}/api/rules/compile`, { method: "POST", headers: hdrs(), body: JSON.stringify({ sentence }) }, 30000);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
@@ -112,7 +114,7 @@ type Composed = import("../../../shared/sim/speak").Compiled & {
 /** POST /api/pocket-app/compose: one sentence -> the rules, the proof card, the pocket app spec and the agent. Creates nothing. */
 export async function composeApp(sentence: string): Promise<Composed> {
   if (isBuiltin()) return builtin().composeApp(sentence) as Composed;
-  const r = await fetchTimeout(`${getApi()}/api/pocket-app/compose`, { method: "POST", headers: json, body: JSON.stringify({ sentence }) }, 30000);
+  const r = await fetchTimeout(`${getApi()}/api/pocket-app/compose`, { method: "POST", headers: hdrs(), body: JSON.stringify({ sentence }) }, 30000);
   if (!r.ok) throw new Error(`compose ${r.status}`);
   return (await r.json()) as Composed;
 }

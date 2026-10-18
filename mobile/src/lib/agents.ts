@@ -8,12 +8,16 @@ export const DAY = 86_400_000;
 
 type PocketLike = { address: string; agent: string; balance: bigint; revoked: boolean; frozen?: boolean };
 
-/** Which agent holds a pocket: its immutable agent key. On a real server every pocket uses the server's one agent key. */
+/**
+ * Which agent holds a pocket: its immutable agent key. On a real server (serverAgent given) every card's agent is
+ * ChainBrain's: the shared legacy key or a key derived for that card alone (POST /v1/cards/agent), since no outside agent
+ * can connect there yet.
+ */
 export function agentIdOf(p: { agent: string } | undefined, serverAgent?: string): AgentId | undefined {
   if (!p) return undefined;
   const a = agentByAddress(p.agent)?.id;
   if (a) return a;
-  return serverAgent && sameAddr(p.agent, serverAgent) ? "chainbrain" : undefined;
+  return serverAgent ? "chainbrain" : undefined;
 }
 
 export type AgentView = {

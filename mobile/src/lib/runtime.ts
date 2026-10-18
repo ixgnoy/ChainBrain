@@ -2,7 +2,9 @@
 // The API URL can be overridden at run time (Settings); dev mode (the dev stack on a FISCO node) is detected from GET /dev/health.
 import type { Address } from "viem";
 
-export const ENV_API: string = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8787";
+/** The hosted ChainBrain API (Railway): the app opens on the real FISCO chain unless EXPO_PUBLIC_API_URL says otherwise. */
+export const HOSTED_API = "https://fisco-api-production-85c5.up.railway.app";
+export const ENV_API: string = process.env.EXPO_PUBLIC_API_URL || HOSTED_API;
 export const ENV_RPC: string = process.env.EXPO_PUBLIC_RPC_URL || "https://fisco-node-production.up.railway.app";
 
 /** The server's FISCO chain, from /api/config: its RPC, explorer link and the Mock e-HKD's signing domain. */
@@ -10,12 +12,12 @@ export type ChainProfile = { key: "fisco"; id: number; name: string; rpc: string
 let chain: ChainProfile | null = null;
 
 export type DevInfo = { mode: "local-chain"; chainId: number; rpcPath: string; owner?: Address; startedAt?: number };
-/** Where data comes from: the network built into the app (default on every launch) or a wallet server (Settings). */
+/** Where data comes from: a ChainBrain server on the real FISCO chain (the default) or the demo network built into the app (Settings). */
 export type Source = "builtin" | "server";
 
 let api = ENV_API;
 let dev: DevInfo | null = null;
-let source: Source = "builtin";
+let source: Source = "server";
 const subs = new Set<() => void>();
 const emit = () => subs.forEach((f) => f());
 

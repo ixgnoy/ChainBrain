@@ -1,15 +1,16 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { applyServerParam, loadSource, resetSource, savedUrl, setSource, testConnection } from "./source";
+import { DEFAULT_API, applyServerParam, loadSource, resetSource, savedUrl, setSource, testConnection } from "./source";
 
 const loc = (search: string, hash = "#live") => ({ search, pathname: "/", hash }) as Location;
 const hist = () => ({ replaceState: vi.fn() }) as unknown as History;
 beforeEach(() => { localStorage.clear(); resetSource(); });
 
-it("opens on the built-in network by default", () => {
-  expect(loadSource()).toEqual({ kind: "demo" });
+it("opens on the real chain by default (the hosted server, or VITE_API_URL)", () => {
+  expect(loadSource()).toEqual({ kind: "live", url: DEFAULT_API });
+  expect(DEFAULT_API).toMatch(/^https?:\/\//);
 });
 
-it("remembers a custom server and goes back to the built-in network", () => {
+it("remembers the demo network and a custom server", () => {
   setSource({ kind: "live", url: "http://localhost:8787/" });
   expect(localStorage.getItem("cb.source")).toBe("live");
   expect(loadSource()).toEqual({ kind: "live", url: "http://localhost:8787" });

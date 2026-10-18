@@ -36,6 +36,15 @@
         "pnpm --dir web dev --port 5174 --strictPort"
       ],
       "port": 5174
+    },
+    {
+      "name": "devstack",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "pnpm --dir devstack start"
+      ],
+      "port": 8787
     }
   ]
 }

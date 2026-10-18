@@ -25,7 +25,8 @@ import { money, shortAddr, hkd } from "../../lib/util";
 const Group = ({ title }: { title: string }) => <T v="cap" w="semi" color="muted" accessibilityRole="header" style={{ paddingHorizontal: 24, marginTop: 24, marginBottom: 8 }}>{title}</T>;
 
 export default function Settings() {
-  const { addPocket, apiUrl, setApiUrl, conn, connError, dev, source, setSource, wallet, balances, importKey, refreshPockets, pending } = useApp();
+  const { addPocket, apiUrl, setApiUrl, conn, connError, dev, source, setSource, wallet, balances, importKey, refreshPockets, pending, visitor, exportKey } = useApp();
+  const [backup, setBackup] = useState<"closed" | "open" | "copied">("closed");
   const [draft, setDraft] = useState(apiUrl);
   const [test, setTest] = useState<{ state: "idle" | "busy" | "ok" | "fail"; text?: string }>({ state: "idle" });
   const [copied, setCopied] = useState(false);
@@ -37,12 +38,11 @@ export default function Settings() {
   const [pk, setPk] = useState("");
   const [keyErr, setKeyErr] = useState("");
   const [funds, setFunds] = useState<{ state: "idle" | "busy" | "ok" | "fail"; text?: string }>({ state: "idle" });
-  const custom = source === "server";
+  const demo = source === "builtin";
   // a console on the laptop showing this phone (built-in network mirrored through the dev stack's relay)
   const [linked, setLinked] = useState(relayLinked());
   useEffect(() => { const t = setInterval(() => setLinked(relayLinked()), 3000); const off = onRelay(() => setLinked(relayLinked())); return () => { clearInterval(t); off(); }; }, []);
-  const [editing, setEditing] = useState(false); // switch turned on, address not confirmed yet
-  const serverOpen = custom || editing;
+  const [editing, setEditing] = useState(false); // the server address card is open
   const scroller = useRef<any>(null);
   // the server card opens below the fold: bring it into view above the tab bar
   useEffect(() => { if (!editing) return; const t = setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 260); return () => clearTimeout(t); }, [editing]);
@@ -52,7 +52,7 @@ export default function Settings() {
     const url = normalizeUrl(draft);
     if (url && !isHttpUrl(url)) { setTest({ state: "fail", text: "Use a full address, for example http://192.168.1.10:8787." }); haptic.error(); return; }
     setTest({ state: "busy" });
-    if (custom && url && url !== apiUrl) await setApiUrl(url);
+    if (!demo && url && url !== apiUrl) await setApiUrl(url);
     try {
       const r = await api.ping(url || ENV_API);
       const d = await detectDev(url || ENV_API);
@@ -69,18 +69,19 @@ export default function Settings() {
     try { await api.devFund(wallet.address); await refreshPockets(); setFunds({ state: "ok", text: "Added test money to your wallet." }); haptic.success(); }
     catch { setFunds({ state: "fail", text: "The test network did not accept that. Is it running?" }); haptic.error(); }
   };
-  const connect = async () => {
+  /** The demo network is the app's built-in simulation; off is the real FISCO chain through the server below. */
+  const toggleDemo = async (v: boolean) => {
+    setEditing(false); setTest({ state: "idle" });
+    await setSource(v ? "builtin" : "server"); haptic.success();
+  };
+  const saveServer = async () => {
     const url = normalizeUrl(draft);
     if (url && !isHttpUrl(url)) { setTest({ state: "fail", text: "Use a full address, for example http://192.168.1.10:8787." }); haptic.error(); return; }
     if (url !== apiUrl) await setApiUrl(url);
-    await setSource("server"); setEditing(false); setTest({ state: "idle" }); haptic.success();
+    setEditing(false); setTest({ state: "idle" }); haptic.success();
   };
-  const toggleServer = async (v: boolean) => {
-    if (v) { setEditing(true); return; }
-    setEditing(false); setTest({ state: "idle" });
-    if (custom) await setSource("builtin");
-  };
-  const network = conn === "online" ? (dev ? "Connected · local test network" : "Connected · FISCO BCOS") : conn === "offline" ? connError || "Not reachable" : "Connecting…";
+  const account = visitor.state === "ready" ? " · signed in" : visitor.state === "signing" ? " · signing in…" : visitor.state === "error" ? ` · ${visitor.error}` : "";
+  const network = conn === "online" ? `${dev ? "Connected · local test network" : "Connected · FISCO BCOS"}${account}` : conn === "offline" ? connError || "Not reachable" : "Connecting…";
 
   return (
     <Screen innerRef={scroller}>
@@ -90,9 +91,10 @@ export default function Settings() {
         onCopy={async () => { if (wallet) { await Clipboard.setStringAsync(wallet.address); setCopied(true); haptic.success(); setTimeout(() => setCopied(false), 1400); } }} />
       <Group title="Wallet" />
       <ListCard>
-        {dev || !custom || getChain()?.key === "fisco" ? <ListRow a11y="Get test funds" onPress={getFunds} icon="plus" title="Get test funds" sub={funds.text ?? "Test money, for this network"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
+        {dev || demo || getChain()?.key === "fisco" ? <ListRow a11y="Get test funds" onPress={getFunds} icon="plus" title="Get test funds" sub={funds.text ?? "Test money, for this network"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
         <ListRow a11y="Add an existing card" onPress={() => setAdding(!adding)} icon="layers" title="Add an existing card" sub="By its address"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} icon="key" title="Import a key" sub="A test key you have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
+        <ListRow a11y="Back up your key" onPress={() => setBackup(backup === "closed" ? "open" : "closed")} icon="key" title="Back up your key" sub="Only on this phone: copy it somewhere safe"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         {/* a browser tab keeps the built-in network across reloads (lib/builtin.ts); this is the way back to a fresh one */}
         {source === "builtin" && Platform.OS === "web" ? (
           <ListRow a11y="Start the built-in network over" icon="refresh" title={startOver ? "Tap again to start over" : "Start over"}
@@ -109,6 +111,15 @@ export default function Settings() {
               <Button label="Cancel" kind="secondary" small style={{ flex: 1 }} onPress={() => { setAdding(false); setAddr(""); }} />
               <Button label="Add card" small style={{ flex: 1 }} disabled={!isAddress(addr.trim())} onPress={async () => { await addPocket(addr.trim() as Address); setAddr(""); setAdding(false); }} />
             </View>
+          </Card>
+        </Animated.View>
+      ) : null}
+      {backup !== "closed" ? (
+        <Animated.View entering={FadeInDown.duration(motion.base)} exiting={FadeOut.duration(motion.exit)}>
+          <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
+            <T v="sub" color="ink2">Your key is your account: whoever has it controls your main wallet and your cards. It lives only on this phone, so if you lose the phone without a copy, your cards are gone. Test money only.</T>
+            <Button label={backup === "copied" ? "Copied. Paste it somewhere safe" : "Copy my key"} small onPress={async () => { const k = exportKey(); if (!k) return; await Clipboard.setStringAsync(k); setBackup("copied"); haptic.warning(); }} />
+            <Button label="Close" kind="text" small onPress={() => setBackup("closed")} />
           </Card>
         </Animated.View>
       ) : null}
@@ -137,22 +148,27 @@ export default function Settings() {
 
       <Group title="Advanced" />
       <ListCard>
-        <ListRow icon="globe" title="Custom server" sub={custom ? apiUrl.replace(/^https?:\/\//, "") : editing ? "Enter the address below" : "Off"}>
-          <Toggle on={serverOpen} onChange={(v) => void toggleServer(v)} a11y="Custom server" />
+        <ListRow icon="layers" title="Demo network" sub={demo ? "On · the built-in simulation, no real chain" : "Off · the real FISCO BCOS chain"}>
+          <Toggle on={demo} onChange={(v) => void toggleDemo(v)} a11y="Demo network" />
         </ListRow>
-        {!custom && linked ? <ListRow icon="activity" title="Laptop console" sub="Linked" /> : null}
+        {!demo ? (
+          <ListRow a11y="Server" icon="globe" title="Server" sub={apiUrl.replace(/^https?:\/\//, "")} onPress={() => setEditing(!editing)}>
+            <Icon name="chevronRight" size={18} color={c.muted} />
+          </ListRow>
+        ) : null}
+        {demo && linked ? <ListRow icon="activity" title="Laptop console" sub="Linked" /> : null}
       </ListCard>
-      {serverOpen ? (
+      {!demo ? <T v="cap" color={conn === "offline" || visitor.state === "error" ? "negative" : "muted"} style={{ paddingHorizontal: 24, paddingTop: 8 }}>{network}</T> : null}
+      {editing && !demo ? (
         <Animated.View entering={FadeInDown.duration(motion.base)} exiting={FadeOut.duration(motion.exit)}>
           <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
-            <Field label="Server address" value={draft} onChangeText={setDraft} onSubmitEditing={() => void (custom ? setApiUrl(draft) : connect())} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={ENV_API} accessibilityLabel="API URL" />
+            <Field label="Server address" value={draft} onChangeText={setDraft} onSubmitEditing={() => void saveServer()} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={ENV_API} accessibilityLabel="API URL" />
             <T v="cap" color="muted">Your laptop's address on the same Wi-Fi, for example http://192.168.1.10:8787. Empty uses {ENV_API}.</T>
             <View style={{ flexDirection: "row", gap: 10 }}>
               <Button label="Test" kind="secondary" small loading={test.state === "busy"} onPress={runTest} style={{ flex: 1 }} />
-              {custom ? null : <Button label="Connect" small onPress={() => void connect()} style={{ flex: 1 }} />}
+              <Button label="Save" small onPress={() => void saveServer()} style={{ flex: 1 }} />
             </View>
             {test.text ? <Animated.View key={test.text} entering={FadeInDown.duration(motion.base).withInitialValues({ opacity: 0, transform: [{ translateY: 6 }] })}><T v="sub" color={test.state === "ok" ? "positive" : "negative"}>{test.text}</T></Animated.View> : null}
-            {custom ? <T v="cap" color={conn === "offline" ? "negative" : "muted"}>{network}</T> : null}
           </Card>
         </Animated.View>
       ) : null}

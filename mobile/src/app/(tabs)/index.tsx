@@ -182,7 +182,7 @@ function LiveStrip() {
 }
 
 function Home({ ready }: { ready: boolean }) {
-  const { pockets, pocketsLoaded, conn, balances, ledger, events, setReceipt, setAction, refreshPockets, agentOf, agents, cfg } = useApp();
+  const { pockets, pocketsLoaded, conn, balances, ledger, events, setReceipt, setAction, refreshPockets, agentOf, agents, cfg, connError, retryConnect, setSource, source } = useApp();
   const scrollY = useSharedValue(0);
   // the clock the run times count down from: a minute is fine-grained enough for "in 3 h"
   const [now, setNow] = useState(() => Date.now());
@@ -260,6 +260,17 @@ function Home({ ready }: { ready: boolean }) {
       </View>
       <HomeHeader dark />
       <View style={{ backgroundColor: c.canvas, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderCurve: "continuous", paddingTop: 18, marginBottom: -(TAB_SPACE + insets.bottom + 40), paddingBottom: TAB_SPACE + insets.bottom + 40 } as object}>
+      {/* the real chain out of reach: say so, never show made-up numbers; the demo network is one tap, never automatic */}
+      {conn === "offline" && source === "server" ? (
+        <Card style={{ marginHorizontal: 20, marginBottom: 16, gap: 10 }}>
+          <T v="row" w="bold">Can't reach the network</T>
+          <T v="sub" color="ink2">{`${connError} Your cards and money are safe on the chain; this screen stays empty until it's back.`}</T>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <Button label="Try again" kind="secondary" small style={{ flex: 1 }} onPress={retryConnect} />
+            <Button label="Use the demo network" small style={{ flex: 1 }} onPress={() => void setSource("builtin")} />
+          </View>
+        </Card>
+      ) : null}
       <Rise play={play} index={0}>
         <Animated.View style={pulseStyle}>
           <WalletHero main={balances?.ehkd} out={sumAll} pockets={live} all={pockets} />

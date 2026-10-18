@@ -1,11 +1,14 @@
-// Where the console gets its network from. Default: the built-in network (runs in this tab). A custom server can be
-// chosen in Settings (kept in localStorage: cb.source, cb.apiUrl) or with a hidden ?server=<url> (used by the e2e tests;
-// ?server=builtin goes back). Everything below this file only sees the `Network` shape, never the choice.
+// Where the console gets its network from. Default: the hosted ChainBrain server on the real FISCO chain (VITE_API_URL).
+// Settings has a "Demo network" switch for the built-in simulation, and the server URL (kept in localStorage: cb.source,
+// cb.apiUrl); a hidden ?server=<url> sets it too (the e2e tests; ?server=builtin is the demo network). Everything below
+// this file only sees the `Network` shape, never the choice.
 import { useSyncExternalStore } from "react";
 
 export type Source = { kind: "demo" } | { kind: "live"; url: string };
 
-export const DEFAULT_API: string = import.meta.env.VITE_API_URL ?? "http://localhost:8787";
+/** The hosted ChainBrain API (Railway), unless the build sets VITE_API_URL. */
+export const HOSTED_API = "https://fisco-api-production-85c5.up.railway.app";
+export const DEFAULT_API: string = import.meta.env.VITE_API_URL || HOSTED_API;
 const K_SOURCE = "cb.source", K_URL = "cb.apiUrl";
 
 const read = (k: string): string | null => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -14,9 +17,11 @@ const write = (k: string, v: string | null) => { try { if (v == null) localStora
 export const cleanUrl = (u: string) => u.trim().replace(/\/+$/, "");
 export const isHttpUrl = (u: string) => { try { return /^https?:$/.test(new URL(u).protocol); } catch { return false; } };
 
+/** The real chain unless the demo network was switched on in Settings. */
 export function loadSource(): Source {
+  if (read(K_SOURCE) === "demo") return { kind: "demo" };
   const url = cleanUrl(read(K_URL) ?? "");
-  return read(K_SOURCE) === "live" && isHttpUrl(url) ? { kind: "live", url } : { kind: "demo" };
+  return { kind: "live", url: isHttpUrl(url) ? url : DEFAULT_API };
 }
 
 /** Applies ?server= (then removes it from the address bar). Returns true when it changed the source. */

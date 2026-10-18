@@ -7,6 +7,8 @@ import { getChain, isBuiltin, rpcUrl } from "./runtime";
 import { builtin } from "./builtin";
 import { loadConfig, transferTypedData, type Authorization, type Seller } from "./shared";
 import { checkTx, checkTypedData, GuardRefused, type GuardContext, type Verdict } from "../../../shared/chain/guard";
+import { loginTypedData, type LoginChallenge } from "../../../shared/chain/login";
+import { getVisitorToken, newCardAgent } from "./visitor";
 
 /** The FISCO chain as viem sees it. Gas is free, but the RPC wants a legacy tx with gasPrice 0. */
 const viemChain = (): Chain => defineChain({ id: getChain()?.id ?? 20200, name: getChain()?.name ?? "FISCO BCOS", nativeCurrency: { name: "FISCO", symbol: "FISCO", decimals: 18 }, rpcUrls: { default: { http: [rpcUrl()] } } });
@@ -70,6 +72,11 @@ export function ownerWallet(pk: Hex, opts: { /** tests: a fixed guard context in
     async createPocket(a: { agent: Address; cap: bigint; askAbove: bigint; expiresAt: bigint; sellers: Address[] }) {
       if (isBuiltin()) return sim((w) => w.chain.createPocket(me, a)) as Promise<{ pocket: Address; tx: Hex }>;
       const c = await loadConfig();
+      // ChainBrain's own agent: a key derived on the server for this card alone (the shared key only on an older server)
+      if (getVisitorToken() && a.agent.toLowerCase() === c.agent.toLowerCase()) {
+        const own = await newCardAgent();
+        if (own) a = { ...a, agent: own.agent };
+      }
       const { hash, receipt } = await write(c.factory, c.abis.factory, "create", [a.agent, a.cap, a.askAbove, a.expiresAt, a.sellers]);
       const [ev] = parseEventLogs({ abi: c.abis.factory, logs: receipt.logs, eventName: "PocketCreated" }) as any[];
       return { pocket: ev.args.pocket as Address, tx: hash };
@@ -92,6 +99,16 @@ export function ownerWallet(pk: Hex, opts: { /** tests: a fixed guard context in
       const verdict = await checkTypedData(await guardContext(), td as any, pending as any);
       if (!verdict.ok) throw new GuardRefused(verdict);
       return account.signTypedData(td);
+    },
+    /** Sign the server's Login challenge (sign-up and sign-in): the guard checks it is ChainBrain's, for this key. */
+    async signLogin(ch: LoginChallenge) {
+      const td = loginTypedData(ch);
+      const zero = "0x0000000000000000000000000000000000000000" as Address;
+      // a Login needs no deployment: without the server's config the guard still checks the chain, the statement and the key
+      const c = await guardContext().catch((): GuardContext => ({ owner: account.address, chainId: getChain()?.id ?? 20200, factory: zero, token: zero, decode: decodeFunctionData as any, isOwnCard: () => false }));
+      const verdict = await checkTypedData(c, td as any);
+      if (!verdict.ok) throw new GuardRefused(verdict);
+      return account.signTypedData(td as any);
     },
     /** The guard's sentence for a co-sign, for the approval screen (what exactly the owner is about to sign). */
     async explainCosign(auth: Authorization): Promise<Verdict> {

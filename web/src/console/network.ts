@@ -71,6 +71,8 @@ export type Network = {
   txDetail(hash: string): TxDetail | undefined;
   actions: Actions;
   refresh(): void;
+  /** A real server: its API, the RPC the owner's browser key sends through, and the chain id (absent on the demo network). */
+  live?: { api: string; rpc: string; chainId: number };
 };
 
 export const NetworkCtx = createContext<Network | null>(null);
