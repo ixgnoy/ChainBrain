@@ -17,3 +17,4 @@ reference/
 /research/
 .fisco/
 contracts/deployments/*.bak
+__pycache__/
