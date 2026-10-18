@@ -85,10 +85,10 @@ cd contracts && forge test                              # 73: MockEHKD 7, pocket
 cd server && pnpm test && pnpm typecheck                # on the local FISCO node: 84 passed + 6 skipped without ANTHROPIC_API_KEY (needs forge build)
 cd server && SCENE_REPLAY=1 pnpm test:scenes            # 6 passed: scenes through the agent loop (drop SCENE_REPLAY to use the real model)
 cd server && pnpm tsx scripts/verify-evidence.ts       # re-fetch every hash in docs/evidence-fisco.json
-cd web && pnpm test && pnpm build                       # 82 tests
-cd mobile && node --import tsx --test ../shared/sim/*.test.ts   # built-in network, scenes 1-11, 60 tests
+cd web && pnpm test && pnpm build                       # 83 tests
+cd mobile && node --import tsx --test ../shared/sim/*.test.ts   # built-in network, scenes 1-11, 65 tests
 node devstack/e2e/builtin.cjs --url http://localhost:8091   # phone on the built-in network, no server needed
-cd mobile && npm install && npm test && npm run typecheck && npx expo-doctor   # 46 tests
+cd mobile && npm install && npm test && npm run typecheck && npx expo-doctor   # 53 tests
 cd android && ./gradlew testDebugUnitTest assembleDebug   # 6 unit tests
 python3 -m unittest verify/test_verify.py                 # 9: the independent verifier (stdlib Python)
 ```
