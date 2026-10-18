@@ -5,7 +5,7 @@
 // changes to match it: the blueprint card takes its job's colour, the title types itself, the agent's mark lands on the
 // card, the header's chips arrive, each block drops in as a skeleton and fills with its real content, and a final pass
 // checks every block. It is a paced replay of a spec that was already decided (by the picker or by Claude: the panel says
-// which), slowed so a room can follow it. Skip jumps to the end; Reduce Motion plays it fast, without the cursor.
+// which), at a pace a room can follow; Reduce Motion plays it fast, without the cursor.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, View, useWindowDimensions, Platform } from "react-native";
 import Animated, { Easing, FadeIn, FadeInDown, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
@@ -172,12 +172,6 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
     return () => { live = false; };
   }, [run]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const skip = () => {
-    setLines(ops.map(opLine));
-    setV({ face: true, title: spec.title.length, agent: true, header: true, step: ops.length, filled: blockOps.length, checked: blockOps.length, done: true, read: sentence.length, guess: spec.layout });
-    token.current++; // the running script stops at its next step
-    seen.value = 0; scroll.value = 0;
-  };
 
   useEffect(() => { panel.current?.scrollToEnd({ animated: !reduce }); }, [lines.length, reduce]);
 
@@ -191,7 +185,7 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
   const byLine = by === "claude" ? "Composed by Claude" : "Picked by ChainBrain";
 
   return (
-    <Animated.View entering={FadeIn.duration(motion.base)} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, zIndex: 20, backgroundColor: c.canvas }}
+    <Animated.View style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, zIndex: 20, backgroundColor: c.canvas }}
       accessibilityViewIsModal>
       {/* top: close, what is happening, skip / replay */}
       <View style={{ paddingTop: insets.top + 6, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -206,10 +200,7 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
             <T v="cap" color="muted">{v.done ? `${spec.blocks.length} blocks · ${byLine}` : !v.face ? "Reading your sentence" : `${who} is placing blocks`}</T>
           </View>
         </View>
-        <Press kind="round" haptics="select" onPress={v.done ? () => setRun((r) => r + 1) : skip} accessibilityRole="button" accessibilityLabel={v.done ? "Replay the build" : "Skip to the finished app"}
-          style={{ minWidth: 44, height: 44, paddingHorizontal: 12, borderRadius: 14, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
-          <T v="cap" w="bold">{v.done ? "Replay" : "Skip"}</T>
-        </Press>
+        <View style={{ width: 44 }} />
       </View>
       {/* the sentence it is building from */}
       <View style={{ marginHorizontal: 24, marginTop: 10, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, backgroundColor: c.card, flexDirection: "row", gap: 8 }}>
@@ -261,11 +252,11 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
             </Animated.View>
           </View>
           {/* the cursor, over the canvas */}
-          <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 6, top: 6 }, cursor]}>
+          <Animated.View pointerEvents="none" style={[{ position: "absolute", left: 6, top: 6, width: 220, height: 50 }, cursor]}>
             <Svg width={18} height={22} viewBox="0 0 18 22"><Path d="M1.5 1.5 L16 12.2 L9.4 13.1 L6.2 20 Z" fill={c.ink} stroke={c.white} strokeWidth={1.6} strokeLinejoin="round" /></Svg>
-            <View style={{ position: "absolute", left: 14, top: 18, flexDirection: "row", alignItems: "center", gap: 5, paddingLeft: 3, paddingRight: 9, height: 26, borderRadius: 13, backgroundColor: c.ink }}>
+            <View style={{ position: "absolute", left: 14, top: 18, flexDirection: "row", alignItems: "center", gap: 5, paddingLeft: 3, paddingRight: 10, height: 26, borderRadius: 13, backgroundColor: c.ink, alignSelf: "flex-start" }}>
               <AgentAvatar kind={agentId} size={20} />
-              <T v="cap" w="bold" style={{ color: c.white }}>{who}</T>
+              <T v="cap" w="bold" numberOfLines={1} style={{ color: c.white, flexShrink: 0 }}>{who}</T>
             </View>
           </Animated.View>
         </View>
@@ -276,7 +267,7 @@ export function LiveCanvas({ spec, agentId, by, sentence, ctx, pocket, tone, onC
         accessible accessibilityLabel={`The spec, ${byLine.toLowerCase()}: ${lines.length} of ${ops.length} decisions`}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
           <T v="cap" w="bold" style={{ color: c.white, fontFamily: MONO }}>{"{ } spec"}</T>
-          <T v="cap" style={{ color: "rgba(255,255,255,0.55)", flex: 1 }} numberOfLines={1}>{`${byLine} · from 13 fixed blocks · replayed`}</T>
+          <T v="cap" style={{ color: "rgba(255,255,255,0.55)", flex: 1 }} numberOfLines={1}>{`${byLine} · from 13 fixed blocks`}</T>
           <T v="cap" style={{ color: "rgba(255,255,255,0.55)", fontVariant: ["tabular-nums"] }}>{`${Math.min(lines.filter((l) => !l.startsWith("//")).length, ops.length)}/${ops.length}`}</T>
         </View>
         <ScrollView ref={panel} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>

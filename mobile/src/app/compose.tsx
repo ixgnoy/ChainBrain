@@ -35,6 +35,7 @@ import { AppHeader, PocketApp, type AppCtx } from "../components/app/PocketApp";
 import { Understood } from "../components/app/Understood";
 import { BuildStage, type StepKey, type StepState } from "../components/app/BuildStage";
 import { LiveCanvas } from "../components/app/LiveCanvas";
+import { COMPOSE_MS, ComposeLoading } from "../components/app/ComposeLoading";
 import { FACE, LAYOUT_NAME, agentName } from "../components/app/theme";
 import { Hatch } from "../ui/Hatch";
 import { AgentAvatar } from "../ui/AgentAvatar";
@@ -64,6 +65,7 @@ export default function Compose() {
   const [res, setRes] = useState<(Composed & { asked: Set<string> }) | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [reading, setReading] = useState(false);
+  const reduceMotion = useReduceMotion();
   const [err, setErr] = useState<string | null>(null);
   const [made, setMade] = useState<{ pocket: Address } | null>(null);
   const [build, setBuild] = useState(0); // a new composition replays the assembly
@@ -93,7 +95,7 @@ export default function Compose() {
     if (!text.trim() && !s0) setText(s);
     setReading(true); setErr(null); setMade(null);
     try {
-      const r = await api.composeApp(s);
+      const [r] = await Promise.all([api.composeApp(s), new Promise((res) => setTimeout(res, reduceMotion ? 0 : COMPOSE_MS))]);
       setRes({ ...r, asked: new Set() }); setDraft(r.draft); setBuild((n) => n + 1);
       setCanvas(true);
       haptic.success();
@@ -332,6 +334,7 @@ export default function Compose() {
           </Press>
         ) : null}
       </ScrollView>
+      {reading ? <ComposeLoading sentence={(text.trim() || EXAMPLES[0].text)} /> : null}
       {canvas && res && preview && spec && draft && ctx && p ? (
         <LiveCanvas key={build} spec={spec} agentId={agent.id} by={res.specBy === "claude" ? "claude" : "picker"} sentence={text} ctx={ctx} pocket={preview}
           tone={toneFor([{ address: preview.address, app: spec }], preview.address)} onClose={() => setCanvas(false)}
