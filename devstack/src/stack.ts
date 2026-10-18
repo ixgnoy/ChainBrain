@@ -1,3 +1,4 @@
+import { makeGetLogs, MAX_LOGS_PER_BATCH, batchLimitError, rewrapBatch, answerBatch } from "../../deploy/fisco-node/logs.mjs";
 import { networkInterfaces } from "node:os";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -66,7 +67,8 @@ export async function startDevStack(o: DevStackOptions = {}) {
   const pc = createPublicClient({ chain, transport: http(rpc) }) as PublicClient;
 
   const lan = lanIp();
-  Object.assign(process.env, DEV_KEYS, { FISCO_RPC: rpc, SELLERS_URL: `http://${lan ?? "localhost"}:${sellersPort}` });
+  // apps read the chain through /dev/rpc (eth_getLogs fixed there), never the bare node
+  Object.assign(process.env, DEV_KEYS, { FISCO_RPC: rpc, SELLERS_URL: `http://${lan ?? "localhost"}:${sellersPort}`, PUBLIC_RPC_URL: `http://${lan ?? "localhost"}:${apiPort}/dev/rpc` });
 
   const owner = privateKeyToAccount(DEV_KEYS.OWNER_PK);
   const { fundIfEmpty } = await import(server("fund.ts"));
@@ -100,9 +102,21 @@ export async function startDevStack(o: DevStackOptions = {}) {
   const root = new Hono();
   root.use("/dev/*", cors({ origin: "*" }));
   root.get("/dev/health", (c) => c.json({ mode: "local-chain", chainId: 20200, rpcPath: "/dev/rpc", startedAt, owner: owner.address }));
+  // eth_getLogs goes through the same windowed scan as the Railway gateway (FISCO drops logs from wide ranges)
+  const node = (m: object) => fetch(rpc, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(m) }).then((r) => r.json());
+  const getLogs = makeGetLogs(node);
   root.post("/dev/rpc", async (c) => {
-    const r = await fetch(rpc, { method: "POST", headers: { "content-type": "application/json" }, body: await c.req.text() });
-    return c.body(await r.text(), r.status as any, { "content-type": "application/json" });
+    const body = await c.req.text();
+    const msg = (() => { try { return JSON.parse(body); } catch { return undefined; } })();
+    const logs = (m: any) => m?.method === "eth_getLogs";
+    if (logs(msg)) return c.json(await getLogs(msg.id, msg.params));
+    if (Array.isArray(msg)) { // the node refuses batches over 8 calls; getLogs answered here
+      let n = 0;
+      const special = (m: any) => (logs(m) ? (++n > MAX_LOGS_PER_BATCH ? Promise.resolve(batchLimitError(m.id)) : getLogs(m.id, m.params)) : null);
+      return c.json(await answerBatch(msg, special, node));
+    }
+    const r = await fetch(rpc, { method: "POST", headers: { "content-type": "application/json" }, body });
+    return c.body(rewrapBatch(body, await r.text()), r.status as any, { "content-type": "application/json" });
   });
   root.post("/dev/fund", async (c) => {
     const { address } = (await c.req.json().catch(() => ({}))) as { address?: string };

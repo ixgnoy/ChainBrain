@@ -134,7 +134,7 @@ async function webFlow(browser, _scenes, issues) {
   });
 
   await stp("web: pockets and explorer pages read the chain", async () => {
-    await tab("Pockets");
+    await page.goto(`${base}/#pockets`); // the list: the Pockets tab keeps a pinned pocket open, and the previous step pinned one
     const pocketsOnChain = [...new Set(seeded.map((e) => e.pocket).filter(Boolean))].length;
     await until("pockets listed", async () => (await page.locator("main").getByRole("button", { name: /^Pocket [0-9A-F]{4}/ }).count()) >= pocketsOnChain, 20000);
     check("every seeded pocket is listed from the chain", true);
