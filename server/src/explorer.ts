@@ -162,7 +162,7 @@ async function showTx(h){
 async function showAddr(a){
   const x=await get("/api/explorer/address/"+a);
   m.innerHTML='<section class=card><h2>'+(x.label?esc(x.label):x.pocket?"Pocket":x.isContract?"Contract":"Account")+'</h2><dl><dt>Address</dt><dd class=mono>'+esc(x.address)+'</dd><dt>Mock e-HKD</dt><dd>HK$'+esc(x.eHKD)+'</dd><dt>Native balance</dt><dd>'+esc(x.native)+' (only needs to be above 0 to send; gas is free)</dd><dt>Nonce</dt><dd>'+esc(x.nonce)+"</dd>"+
-  (x.pocket?'<dt>Owner</dt><dd>'+addr(x.pocket.owner)+'</dd><dt>Agent</dt><dd>'+addr(x.pocket.agent)+'</dd><dt>Per-payment cap</dt><dd>HK$'+esc(x.pocket.cap)+'</dd><dt>Expires</dt><dd>'+time(x.pocket.expiresAt)+'</dd><dt>Revoked</dt><dd>'+esc(x.pocket.revoked)+"</dd>":"")+"</dl></section>"+
+  (x.pocket?'<dt>Owner</dt><dd>'+addr(x.pocket.owner)+'</dd><dt>Agent</dt><dd>'+addr(x.pocket.agent)+'</dd><dt>Per-payment cap</dt><dd>HK$'+esc(x.pocket.cap)+'</dd><dt>Expires</dt><dd>'+time(x.pocket.expiresAt)+'</dd>'+(x.pocket.allowance?'<dt>Allowance</dt><dd>HK$'+esc(x.pocket.allowance.limit)+' per '+esc(x.pocket.allowance.per)+' (HK$'+esc(x.pocket.allowance.spentThisPeriod)+' spent this '+esc(x.pocket.allowance.per)+')</dd>':'')+'<dt>Frozen</dt><dd>'+esc(x.pocket.frozen)+'</dd><dt>Revoked</dt><dd>'+esc(x.pocket.revoked)+"</dd>":"")+"</dl></section>"+
   '<section class=card><h2>Transactions</h2><p class=note>From the latest blocks only (since block '+esc(x.scannedFrom)+').</p><table><tr><th>Tx</th><th>Block</th><th>From</th><th>To</th></tr>'+x.txs.map((t)=>"<tr><td>"+tx(t.hash)+"</td><td>"+blk(t.block)+"</td><td>"+addr(t.from)+"</td><td>"+addr(t.to)+"</td></tr>").join("")+"</table></section>";
 }
 async function showBlock(n){
