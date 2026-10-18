@@ -34,6 +34,7 @@ export type TargetName =
   | "radar.open"          // a Radar alert card or row: open the Radar alert page
   | "sheet.close"         // any open sheet that should be dismissed (success screens)
   | "home.compose"        // Home: "New pocket app" (opens the compose flow)
+  | "home.ask"            // Home: "Ask ChainBrain" pill in the header (opens the chat)
   | "compose.text"        // compose: type `arg.text` into the sentence field, then compose (resolves when the app has assembled)
   | "compose.create"      // compose: slide to create the pocket app (resolves when the slide commits)
   | "compose.open"        // compose success: open the new pocket app (the card flies into it)

@@ -57,7 +57,7 @@ async function until(what, fn, ms = 30000, step = 200) {
   };
   const confirmTask = async () => { const b = page.getByRole("button", { name: "Confirm task" }).last(); await b.waitFor({ timeout: 30000 }); await sleep(450); await b.click(); };
   // the chat is a pushed screen (Agents tab, ChainBrain's card, Chat); tabs come back once it is closed
-  const openChat = async () => { await tab("Agents"); await page.getByRole("button", { name: "Chat", exact: true }).first().click(); await page.waitForURL(/\/agent$/, { timeout: 15000 }); };
+  const openChat = async () => { await tab("Agents"); await page.getByRole("button", { name: /^Chat with ChainBrain/ }).first().click(); await page.waitForURL(/\/agent$/, { timeout: 15000 }); };
   const leaveChat = async () => { if (/\/agent$/.test(page.url())) { await page.goBack(); await sleep(600); } };
   const idle = () => until("agent idle", async () => /Ready ·|Stopped ·/.test(await body()), 60000, 300);
   const run = async (name, f) => { console.log(`\n# ${name}`); try { await f(); } catch (e) { check(`${name}: no exception`, false, e.message.split("\n")[0]); await shot(`fail-${name.replace(/\W+/g, "_")}`); } };

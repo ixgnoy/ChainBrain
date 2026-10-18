@@ -12,6 +12,15 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: the Evidence and Sellers pages
 
+## Home in two layers, and two ways to ask ChainBrain (18 Oct)
+
+The owner pointed at Ryt Bank's home (a coloured band with "Ask Ryt AI" in the header, the account on a sheet over it) and asked for ChainBrain's own theme, a way to ask from Home, and a stronger chat entry on Agents. Ryt's help centre documents a tap on the header, not a gesture, so the visible entry comes first and the pull is a shortcut.
+
+- **Two layers on Home:** an ink back layer with the brand's hatch behind the header (it also fills the rubber-band overscroll), and the whole Home on a canvas front sheet with 28 pt rounded top corners over it. Light status bar while Home shows (`setStatusBarStyle` on focus), dark elsewhere. Home only. The wallet card is unchanged.
+- **Ask ChainBrain… field** between profile and bell: see-through glass on the ink layer, the four-tile mark on a white tile (on ink the mark's black tile vanished), "Ask ChainBrain…", a blue dot while it works. A round ink pill was tried first and dropped ("ugly"). Not on Agents, which has its own ask bar.
+- **Pull to ask** (`PullToAsk.tsx`): pull Home down and a hint shows above the header, filling vermillion until "Release to ask ChainBrain" with one tick at 100 pt; letting go opens the chat. A short pull still fans the stack (from 72 pt). Pull-to-refresh on Home is gone (it refreshes itself every 1.5 s). iOS's rubber band moves the page about a third of the finger, so 130 pt was too far; 100 pt is a firm but easy pull. Web and Android have no overscroll: the field is the way in there.
+- **Agents:** ChainBrain gets an ink ask bar under its header ("Ask ChainBrain to buy something…" with a vermillion send button) in place of the small chat circle that looked like Claude's settings button; outside agents keep Manage. e2e opens the chat through it.
+
 ## Cards, less text, a launch, the Brain map (18 Oct)
 
 The owner asked: is HK$ right, less text, why no splash on refresh, card or pocket, where auto-play is, a Brain canvas, a less AI-looking Learned icon, and whether black buttons are right (memory: card-wording-decisions).

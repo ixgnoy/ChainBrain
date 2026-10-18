@@ -54,18 +54,25 @@ export function AgentCard({ a, busy }: { a: AgentView; busy?: boolean }) {
             </View>
           </View>
         </Press>
-        {off ? null : a.kind === "builtin" ? (
-          <Press kind="round" haptics="select" onPress={() => router.navigate("/agent")} accessibilityRole="button" accessibilityLabel="Chat"
-            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
-            <Icon name="chat" size={18} color={c.ink} stroke={2} />
-          </Press>
-        ) : (
+        {off || a.kind === "builtin" ? null : (
           <Press kind="round" haptics="select" onPress={open} accessibilityRole="button" accessibilityLabel={`Manage ${a.name}`}
             style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
             <Icon name="settings" size={18} color={c.ink} stroke={2} />
           </Press>
         )}
       </View>
+      {/* the one agent you talk to here gets an ask bar: it looks like the chat box it opens, so it reads at a glance;
+          outside agents (Claude, ChatGPT) run elsewhere and keep only Manage */}
+      {a.kind === "builtin" && !off ? (
+        <Press kind="row" haptics="medium" scale={0.98} onPress={() => router.navigate("/agent")} accessibilityRole="button" accessibilityLabel={`Chat with ChainBrain${busy ? ". It is working" : ""}`}
+          style={{ marginHorizontal: 16, marginTop: 12, height: 52, paddingLeft: 16, paddingRight: 6, borderRadius: 26, backgroundColor: c.ink, flexDirection: "row", alignItems: "center", gap: 10 }}>
+          {busy ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.blue }} /> : null}
+          <T v="row" numberOfLines={1} style={{ flex: 1, color: "rgba(255,255,255,0.72)" }}>{busy ? "ChainBrain is working…" : "Ask ChainBrain to buy something…"}</T>
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.vermillion, alignItems: "center", justifyContent: "center" }}>
+            <Icon name="arrowUp" size={18} color={c.white} stroke={2.4} />
+          </View>
+        </Press>
+      ) : null}
       {/* its cards, swiped left and right, and the slot that adds one */}
       <Cards pockets={held} agent={a.id} name={name} off={off} onReconnect={() => connectAgent(a.id)} />
     </View>

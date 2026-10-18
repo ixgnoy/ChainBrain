@@ -29,7 +29,7 @@ export default function Agents() {
   const asks = pending.filter((a) => a.kind !== "question").length;
   return (
     <Screen contentContainerStyle={{ paddingBottom: TAB_SPACE + insets.bottom + 32 }}>
-      <HomeHeader />
+      <HomeHeader ask={false} />
       <PageTitle title="Connected agents"
         right={<View style={{ minHeight: 28, paddingHorizontal: 11, borderRadius: 14, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 6 }}>
           <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.vermillion }} />

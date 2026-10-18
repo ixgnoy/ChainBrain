@@ -5,10 +5,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RefreshControl, useWindowDimensions, View } from "react-native";
 import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
-import { router } from "expo-router";
+import { router, useIsFocused } from "expo-router";
+import { setStatusBarStyle } from "expo-status-bar";
 import { StatusDot } from "../../ui/StatusDot";
 import { useApp } from "../../store";
 import { c, motion } from "../../tokens";
+import { BrandMark } from "../../ui/BrandMark";
+import { ASK_PULL, InkBand, PullHint } from "../../components/PullToAsk";
 import { haptic } from "../../haptics";
 import { Screen } from "../../ui/Screen";
 import { Avatar, Button, Card, ListCard, Press, SectionHeader, Tile } from "../../ui/kit";
@@ -41,24 +44,41 @@ import { GLASS_TAB_SPACE as TAB_SPACE } from "../../ui/glass/GlassTabBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { curSign } from "../../lib/runtime";
 
-/** Header: owner (opens Settings) and the bell with how many requests wait (opens the Approvals inbox). Nothing in between: less to read. */
-export function HomeHeader() {
+/** "Ask ChainBrain…": the way in to the agent, filling the header between profile and bell like a search box. On Home's ink
+ *  layer it is see-through glass; elsewhere a white field. It opens the chat; a blue dot while ChainBrain works. */
+export function AskPill({ dark }: { dark?: boolean }) {
+  const { agentState } = useApp();
+  const busy = agentState === "working";
+  return (
+    <Press haptics="medium" scale={0.98} auto="home.ask" onPress={() => router.navigate("/agent")} accessibilityRole="button" accessibilityLabel={busy ? "Ask ChainBrain. It is working" : "Ask ChainBrain"}
+      style={{ flex: 1, marginHorizontal: 10, height: 44, paddingHorizontal: 14, borderRadius: 14, borderCurve: "continuous", flexDirection: "row", alignItems: "center", gap: 10,
+        backgroundColor: dark ? "rgba(255,255,255,0.10)" : c.card, borderWidth: dark ? 1 : 0, borderColor: "rgba(255,255,255,0.14)" } as object}>
+      <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: dark ? c.white : c.canvas, alignItems: "center", justifyContent: "center" }}><BrandMark size={16} /></View>
+      <T v="row" numberOfLines={1} style={{ flex: 1, color: dark ? "rgba(255,255,255,0.72)" : c.muted }}>{busy ? "ChainBrain is working…" : "Ask ChainBrain…"}</T>
+      {busy ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.blue }} /> : null}
+    </Press>
+  );
+}
+
+/** Header: owner (opens Settings), Ask ChainBrain in the middle, and the bell with how many requests wait (opens the Approvals inbox). */
+export function HomeHeader({ dark, ask = true }: { /** on Home's ink back layer */ dark?: boolean; /** the Ask ChainBrain field (Agents has its own ask bar) */ ask?: boolean }) {
   const { pending, setQuestionOpen } = useApp();
   const asks = pending.filter((a) => a.kind !== "question").length;
   const question = pending.some((a) => a.kind === "question");
   return (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 14 }}>
       <Press onPress={() => router.navigate("/settings")} accessibilityRole="button" accessibilityLabel="Settings and wallet" kind="round" haptics="light" hitSlop={4}
-        style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
-        <Icon name="user" size={20} stroke={2} />
+        style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: dark ? "rgba(255,255,255,0.12)" : c.card, alignItems: "center", justifyContent: "center" }}>
+        <Icon name="user" size={20} stroke={2} color={dark ? c.white : c.ink} />
       </Press>
+      {ask ? <AskPill dark={dark} /> : null}
       <Press
         onPress={() => { if (asks) router.push("/approvals"); else if (question) setQuestionOpen(true); else router.push("/approvals"); }}
         kind="round" auto="inbox.open" accessibilityRole="button" accessibilityLabel={asks ? `Approvals, ${asks} waiting` : question ? "Notifications, your agent has a question" : "Approvals"}
-        style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
-        <Icon name="bell" size={21} stroke={2} />
+        style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: dark ? "rgba(255,255,255,0.12)" : c.card, alignItems: "center", justifyContent: "center" }}>
+        <Icon name="bell" size={21} stroke={2} color={dark ? c.white : c.ink} />
         {asks || question ? (
-          <Animated.View entering={FadeIn.duration(motion.base)} exiting={FadeOut.duration(motion.exit)} style={{ position: "absolute", top: -4, right: -4, minWidth: 20, minHeight: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: c.vermillion, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: c.canvas }}>
+          <Animated.View entering={FadeIn.duration(motion.base)} exiting={FadeOut.duration(motion.exit)} style={{ position: "absolute", top: -4, right: -4, minWidth: 20, minHeight: 20, paddingHorizontal: 5, borderRadius: 10, backgroundColor: c.vermillion, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: dark ? c.ink : c.canvas }}>
             <T v="tab" w="bold" style={{ color: c.white, fontSize: 10, lineHeight: 12 }}>{String(asks || 1)}</T>
           </Animated.View>
         ) : null}
@@ -225,16 +245,21 @@ function Home({ ready }: { ready: boolean }) {
   }, [sumAll, reduce, pulse]);
   const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
 
-  const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = async () => {
-    haptic.medium();
-    setRefreshing(true);
-    try { await Promise.all([refreshPockets(), new Promise((r) => setTimeout(r, 700))]); } finally { setRefreshing(false); }
-  };
+  // pull down far enough and let go: the chat with ChainBrain opens (Home already refreshes itself every second and a half)
+  // Home's top is ink: light status bar while it shows, dark again anywhere else
+  const homeFocused = useIsFocused();
+  useEffect(() => { setStatusBarStyle(homeFocused ? "light" : "dark"); }, [homeFocused]);
+  const onPullEnd = (y: number) => { if (y < -ASK_PULL) { haptic.medium(); router.navigate("/agent"); } };
 
   return (
-    <Screen scrollY={scrollY} contentContainerStyle={{ paddingBottom: TAB_SPACE + insets.bottom + 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={c.ink} colors={[c.ink]} />}>
-      <HomeHeader />
+    <Screen scrollY={scrollY} contentContainerStyle={{ paddingBottom: TAB_SPACE + insets.bottom + 40 }} onScrollEndDrag={(e) => onPullEnd(e.nativeEvent.contentOffset.y)}>
+      {/* two layers: the ink back layer behind the header, and the app on a front sheet over it */}
+      <View style={{ height: 0 }}>
+        <InkBand above={insets.top + 12} below={58 + 40} />
+        <PullHint scrollY={scrollY} top={0} />
+      </View>
+      <HomeHeader dark />
+      <View style={{ backgroundColor: c.canvas, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderCurve: "continuous", paddingTop: 18, marginBottom: -(TAB_SPACE + insets.bottom + 40), paddingBottom: TAB_SPACE + insets.bottom + 40 } as object}>
       <Rise play={play} index={0}>
         <Animated.View style={pulseStyle}>
           <WalletHero main={balances?.ehkd} out={sumAll} pockets={live} all={pockets} />
@@ -296,6 +321,7 @@ function Home({ ready }: { ready: boolean }) {
           footer={<WeekBought d={digest} itemName={itemName} sellerName={sellerLabel} />} />
       </Rise>
       </>}
+      </View>
     </Screen>
   );
 }
