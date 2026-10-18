@@ -251,8 +251,8 @@ async function phoneFlow(browser, scenes, issues) {
   // the intro shows on the first launch only: Skip it when it is there
   const skipIntro = async () => { const s = page.getByRole("button", { name: "Skip" }); if (await s.waitFor({ timeout: 8000 }).then(() => true, () => false)) { await s.click(); await sleep(700); } };
   const tab = (name) => page.getByRole("tab", { name }).click();
-  // the chat is a pushed screen (Agents tab, ChainBrain's card, Chat); tabs come back once it is closed
-  const openChat = async () => { await tab("Agents"); await page.getByRole("button", { name: "Chat", exact: true }).first().click(); await page.waitForURL(/\/agent$/, { timeout: 15000 }); };
+  // the chat is a pushed screen (Agents tab, Chat with ChainBrain); tabs come back once it is closed
+  const openChat = async () => { await tab("Agents"); await page.getByRole("button", { name: "Chat with ChainBrain" }).first().click(); await page.waitForURL(/\/agent$/, { timeout: 15000 }); };
   const leaveChat = async () => { if (/\/agent$/.test(page.url())) { await page.goBack(); await sleep(600); } };
   const chatSay = async (text) => {
     const input = page.getByLabel("Message");
@@ -316,22 +316,27 @@ async function phoneFlow(browser, scenes, issues) {
     await tab("Home");
   });
 
+  // on a FISCO server the phone asks the faucet itself: HK$100 eHKD plus the native balance a sender needs
   await stp("phone: test funds arrive by themselves on the dev stack", async () => {
-    await until("phone funded on chain", async () => (await ehkdOf(wallet)) >= 160, 30000);
-    check("phone funded with HK$160 eHKD on chain without a tap", (await ehkdOf(wallet)) >= 160, String(await ehkdOf(wallet)));
-    await page.getByLabel(/^Main wallet US\$2\d\.\d\d$/).first().waitFor();
+    await until("phone funded on chain", async () => (await ehkdOf(wallet)) >= 100, 30000);
+    check("phone funded with HK$100 eHKD on chain without a tap", (await ehkdOf(wallet)) >= 100, String(await ehkdOf(wallet)));
+    await page.getByLabel(/^Main wallet HK\$\d+\.\d\d$/).first().waitFor();
     check("home shows the main wallet balance", true);
     await shot(page, "phone-02-funded");
   });
 
+  // New card opens the one-sentence composer; the step-by-step wizard sits behind "Set it up step by step instead"
   const createViaWizard = async () => {
     await tab("Home");
-    await page.getByRole("button", { name: "New pocket" }).first().click();
+    await page.getByRole("button", { name: "New card" }).first().click();
+    await page.getByRole("button", { name: "Set it up step by step instead" }).click();
     await visible("What is it for?").waitFor();
-    await page.getByText(/US\$5 budget · up to US\$2 each/).first().click();
+    await visible("HK$40 budget · up to HK$15 each · asks above HK$8").click(); // the Research data preset
     // a preset sets every limit, so one press goes straight to Review
     await page.getByRole("button", { name: "Review", exact: true }).click();
     await visible("Looks right?").waitFor();
+    const review = await body();
+    check("review keeps the preset's limits (up to HK$15.00 each, asks above HK$8.00)", /up to HK\$15\.00/.test(review) && /Above HK\$8\.00/.test(review), (review.match(/Per payment\s*\n?[^\n]*\n?[^\n]*/) ?? [""])[0].replace(/\n/g, " ") + " / " + (review.match(/Asks you\s*\n?[^\n]*/) ?? [""])[0].replace(/\n/g, " "));
     await slide("Slide to create and fund");
     // the wizard replaces itself with the pocket page once create and fund are both mined
     await page.waitForURL(/pocket\/0x[0-9a-fA-F]{40}/, { timeout: 90000 });
@@ -339,8 +344,8 @@ async function phoneFlow(browser, scenes, issues) {
   };
   const openNewestPocket = async (count, balance) => {
     await load();
-    await until(`${count} pocket cards`, async () => (await page.getByRole("button", { name: /pocket, [\d.]+ eHKD/ }).count()) >= count, 40000);
-    await page.getByRole("button", { name: new RegExp(`pocket, ${balance} eHKD`) }).first().click({ position: { x: 120, y: 24 } }); // the visible header strip of the front card
+    await until(`${count} cards`, async () => (await page.getByRole("button", { name: /card, [\d.]+ eHKD/ }).count()) >= count, 40000);
+    await page.getByRole("button", { name: new RegExp(`card, ${balance} eHKD`) }).first().click({ position: { x: 120, y: 24 } }); // the visible header strip of the front card
     await page.getByRole("button", { name: "Revoke", exact: true }).waitFor();
     return (page.url().match(/0x[0-9a-fA-F]{40}/) ?? [])[0];
   };
@@ -348,7 +353,7 @@ async function phoneFlow(browser, scenes, issues) {
   await stp("phone: create a pocket through the wizard", async () => {
     const made = await createViaWizard();
     await shot(page, "phone-03-wizard-done");
-    pocket = await openNewestPocket(1, "5\\.00");
+    pocket = await openNewestPocket(1, "40\\.00");
     check("wizard opens the new pocket page", pocket.toLowerCase() === made.toLowerCase());
     check("home lists one active pocket", !!pocket);
     check("pocket funded with HK$40.00 on chain", pocket && (await ehkdOf(pocket)) === 40, `${pocket}`);
@@ -386,14 +391,15 @@ async function phoneFlow(browser, scenes, issues) {
   await stp("phone: Activity and a receipt", async () => {
     await leaveChat();
     await tab("Activity");
+    await page.getByRole("tab", { name: "Ledger" }).click(); // Activity opens on Live; the payments with receipts are in the Ledger
     await visible("DataPro").waitFor();
     const t0 = await body();
     check("activity lists the DataLite and DataPro payments", /DataLite/.test(t0) && /DataPro/.test(t0));
     await shot(page, "phone-07-activity");
-    await page.getByText("DataPro", { exact: true }).filter({ visible: true }).first().click();
+    await page.getByRole("button", { name: /^DataPro, (Co-signed|Paid)/ }).filter({ visible: true }).first().click();
     await visible("What you got").waitFor();
     const t = await body();
-    check("receipt shows amount and co-signed", /1\.50/.test(t) && /co-?signed/i.test(t), t.slice(0, 300));
+    check("receipt shows amount and co-signed", /11\.70/.test(t) && /co-?sign/i.test(t), t.slice(-400));
     await shot(page, "phone-08-receipt");
     check("receipt has no explorer link in dev mode", (await page.locator('a[href*="explorer"]').count()) === 0);
     await page.getByRole("button", { name: "Done" }).filter({ visible: true }).last().click();
@@ -402,7 +408,7 @@ async function phoneFlow(browser, scenes, issues) {
 
   await stp("phone: scene 7 hold to revoke stops the next payment and returns the rest", async () => {
     await createViaWizard();
-    const p7 = await openNewestPocket(2, "5\\.00");
+    const p7 = await openNewestPocket(2, "40\\.00");
     check("scene 7: second pocket created and funded on chain", p7 && p7.toLowerCase() !== pocket.toLowerCase() && (await ehkdOf(p7)) === 40, p7);
     await page.goBack();
     await openChat();
