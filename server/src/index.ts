@@ -25,6 +25,8 @@ import { composeApp } from "./pocketApp/compose";
 import { compileRules, type RulesModel } from "./rules/compile";
 import { explorerRoutes } from "./explorer";
 import { faucetRoutes } from "./faucet";
+import { visitorRoutes, guard } from "./visitors";
+import { rateLimit } from "./limits";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
 
@@ -43,7 +45,10 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
   const reflecting = new Map<string, Promise<unknown>>();
   // Memory is on with a model or a key; BRAIN_MEMORY=off turns it off (history is still trimmed).
   const memoryOn = () => process.env.BRAIN_MEMORY !== "off" && (!!deps.memoryModel || !!process.env.ANTHROPIC_API_KEY);
-  app.use("*", cors({ origin: "*" }));
+  app.use("*", cors({ origin: "*", allowHeaders: ["content-type", "x-visitor-token"] }));
+  app.use("/api/*", rateLimit());
+  app.use("/v1/*", rateLimit());
+  app.route("/", visitorRoutes()); // /v1/challenge, /v1/visitors, /v1/login, /v1/me
 
   app.route("/api/radar", radarRoutes({ model: deps.radarModel }));
   app.get("/api/events", sse);
@@ -74,6 +79,8 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
   app.post("/api/approvals/:id", async (c) => {
     const a = approvals.get(c.req.param("id"));
     if (!a || a.status !== "pending") return c.json({ error: "NOT_PENDING" }, 404);
+    const denied = await guard(c, a.pocket); // only the card's owner answers its approvals and questions
+    if (denied) return denied;
     const body = (await c.req.json()) as { approved: boolean; signature?: Hex; answer?: string };
     if (a.kind === "payment" && body.approved) {
       const signer = await recoverTypedDataAddress({ ...transferTypedData((a.data as any).auth), signature: body.signature! }).catch(() => undefined);
@@ -86,6 +93,8 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
 
   app.post("/api/chat", async (c) => {
     const { pocket: p, conversationId = p, text } = (await c.req.json()) as { pocket: Address; conversationId?: string; text: string };
+    const denied = await guard(c, p);
+    if (denied) return denied;
     for (const q of approvals.pending(p).filter((x) => x.kind === "question")) approvals.resolve(q.id, { approved: true, answer: text });
     await reflecting.get(conversationId); // the last reflection lands before this turn reads memory
     const out = await runTurn({ pocket: p }, chats.get(conversationId) ?? [], text, { model: deps.model, memory: render(memory.get(p)) });
@@ -96,12 +105,16 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
 
   // "Speak your rules": one sentence -> proposed rules + a computed proof card. It never creates a pocket; the owner signs that.
   app.post("/api/rules/compile", async (c) => {
+    const denied = await guard(c); // a model call: visitors only
+    if (denied) return denied;
     const { sentence } = (await c.req.json()) as { sentence?: string };
     if (!sentence?.trim()) return c.json({ error: "EMPTY_SENTENCE" }, 400);
     return c.json(await compileRules(sentence, { main: deps.rulesModel }));
   });
   // Pocket apps: one sentence -> rules + proof card + the pocket's app spec (fixed blocks). Never creates a pocket.
   app.post("/api/pocket-app/compose", async (c) => {
+    const denied = await guard(c);
+    if (denied) return denied;
     const { sentence } = (await c.req.json()) as { sentence?: string };
     if (!sentence?.trim()) return c.json({ error: "EMPTY_SENTENCE" }, 400);
     return c.json(await composeApp(sentence, { model: deps.pocketAppModel ?? deps.rulesModel }));
@@ -112,9 +125,10 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
     await Promise.all(reflecting.values()); // read after the latest reflection, not before it
     return c.body(toJson({ snapshot: memory.get(p), log: memory.log(p) }), 200, { "content-type": "application/json" });
   });
-  // ponytail: no owner auth, like the other demo routes; production needs an owner signature here.
   app.post("/api/memory/forget", async (c) => {
     const { pocket: p, id } = (await c.req.json()) as { pocket: string; id: string };
+    const denied = await guard(c, p);
+    if (denied) return denied;
     return memory.forget(p, id) ? c.json({ ok: true }) : c.json({ error: "NOT_FOUND" }, 404);
   });
   return app;

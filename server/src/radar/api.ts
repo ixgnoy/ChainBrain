@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { guard } from "../visitors";
 import { isAddress } from "viem";
 import { toJson } from "../wallet/events";
 import { directory } from "../wallet/directory";
@@ -27,7 +28,9 @@ export function radarRoutes(deps: { model?: AskModel } = {}) {
     return c.req.query("full") ? json(c, s) : json(c, { ...brief(s), factors: s.factors, narrative: s.narrative, at: s.at });
   });
   app.get("/alerts", (c) => json(c, radar.alerts()));
-  app.post("/alerts/:id/close", (c) => {
+  app.post("/alerts/:id/close", async (c) => {
+    const denied = await guard(c);
+    if (denied) return denied;
     const a = radar.alerts().find((x) => x.id === c.req.param("id"));
     if (!a) return c.json({ error: "NOT_FOUND" }, 404);
     a.status = "closed";
@@ -36,6 +39,8 @@ export function radarRoutes(deps: { model?: AskModel } = {}) {
   app.get("/rules", (c) => c.json({ thresholds: THRESHOLDS, rules: radar.rules() }));
   app.get("/labels", (c) => json(c, labels.all()));
   app.post("/ask", async (c) => {
+    const denied = await guard(c); // a model call: visitors only
+    if (denied) return denied;
     const { question } = (await c.req.json()) as { question?: string };
     if (!question?.trim()) return c.json({ error: "EMPTY_QUESTION" }, 400);
     try {

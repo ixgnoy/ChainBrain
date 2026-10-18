@@ -17,3 +17,6 @@ reference/
 /research/
 .fisco/
 contracts/deployments/*.bak
+
+# server state (visitors, approvals) when run locally
+server/.data/

@@ -8,7 +8,7 @@ Last updated: 2026-10-19
 **P0**
 - [x] 1. Environment: local FISCO node, `forge build`, server chain tests, FISCO 3.16.4 probe
 - [x] 2. Ledger context on the server
-- [ ] 3. Visitor accounts
+- [x] 3. Visitor accounts
 - [ ] 4. Per-card agent keys
 - [ ] 5. Signing guard
 - [ ] 6. Real by default in both apps
@@ -108,3 +108,51 @@ Last updated: 2026-10-19
 - The web console's `loadPockets` / `loadHistory` (`web/src/console/chain.ts`) read 20k-block `getLogs` windows. On a node that truncates, they miss pockets. Fix in item 6/7: read through the server (indexed with `scanLogs`) or chunk on the client.
 
 **Next:** item 3, visitor accounts.
+
+## Round 3 · 19 Oct 03:50–04:30 · Item 3, visitor accounts
+
+**What changed**
+- `shared/chain/login.ts` (new, no imports): the EIP-712 `Login {statement, owner, nonce, issuedAt}` typed data under domain `ChainBrain / 1 / 20200`, the statement ("…moves no money and approves no payment") and the `x-visitor-token` header name. The server, the web console and the phone all use it.
+- `server/src/visitors.ts` (new):
+  - `POST /v1/challenge {owner}` → a single-use 32-byte nonce (5 minutes).
+  - `POST /v1/visitors {owner, nonce, issuedAt, signature}` → creates the visitor once (id `v-` + 16 hex of `keccak(owner)`), funds the native balance (`fundIfEmpty`) and mints `VISITOR_STARTER` (default HK$500) through the ledger, then returns a token. 201 on create, 200 after. A failed funding is kept and retried on the next sign-up. A per-visitor in-flight promise stops a double mint.
+  - `POST /v1/login` (same body) for an existing visitor. `GET /v1/me`.
+  - Tokens: 32 random bytes; only `keccak256(token)` is stored, 7-day expiry, at most 5 per visitor.
+  - `guard(c, pocket?)`: a valid token, and for a card that `Pocket.owner()` (read on chain, cached) is the visitor's key. Errors are `VISITOR_TOKEN_REQUIRED` 401, `NOT_YOUR_CARD` 403 and `BAD_POCKET` 400.
+- **Deviation from the brief, on purpose:** sign-up also needs the Login signature, not just `{owner}`. Otherwise anyone could fund arbitrary addresses and use up the hourly sign-up cap. It is the same one signature the client makes for login.
+- Guarded routes:
+  - token + card owner: `POST /api/chat`, `POST /api/approvals/:id` (payment co-signs, intent confirmations, questions, declines), `POST /api/memory/forget`;
+  - token only (model calls or mutations without a card): `/api/rules/compile`, `/api/pocket-app/compose`, `/api/radar/ask`, `/api/radar/alerts/:id/close`.
+  - Reads (events, pending, memory, config, explorer) stay open.
+- `server/src/limits.ts` (new): per-IP sliding windows on `/api/*` and `/v1/*`: writes `RATE_LIMIT_PER_MIN` (60), reads `RATE_LIMIT_GET_PER_MIN` (600); SSE is not counted. Global `VISITORS_PER_HOUR` (60).
+- `server/src/store.ts` (new): a JSON-file table in `DATA_DIR` (default `server/.data/`, gitignored; `memory` for tests) with debounced atomic writes. Visitors use it now; item 12 reuses it.
+- CORS allows the `x-visitor-token` header.
+- **Transition switch:** `VISITOR_AUTH=off` turns the guard off. The server test config and the dev stack set it until the apps sign in (item 6); its default is on. **Don't deploy until item 6 lands**, or the hosted console's chat and Radar ask will get 401s.
+
+**Evidence** (`server/test/visitors-chain.test.ts`, 5 tests on local FISCO)
+- Sign-up returns 201 with `funding.mintTx` (receipt `success`), HK$500.00 on chain, native balance > 0 and an explorer link.
+- A repeat sign-up returns 200, `created: false`, no second mint and a new token. `/v1/me` works with the token and gives 401 without.
+- A replayed nonce gives `CHALLENGE_EXPIRED`, a signature from another key `BAD_SIGNATURE`, an unknown visitor's login 404, and a garbage signature 401.
+- Alice's card (created by Alice's own key through the factory):
+  - chat gives 401 with no token, `NOT_YOUR_CARD` with Bob's token and 200 with Alice's;
+  - memory-forget gives 403 for Bob and 404 for Alice (past the guard);
+  - rules compile and Radar ask give 401 without a token.
+- `VISITORS_PER_HOUR=0` gives `SIGNUPS_FULL` for a new key, but Alice still signs in. At 3 writes per minute the 4th from an IP gets 429 and another IP gets 200.
+- Full server suite **94 passed, 6 skipped** (19 files); devstack 21 passed.
+
+**Next:** item 4, per-card agent keys.
+
+---
+
+## Env vars so far (kept current each round)
+
+| Var | Where | Default | Notes |
+| --- | --- | --- | --- |
+| `VISITOR_AUTH` | API | on | `off` only for the dev stack until item 6 |
+| `VISITOR_STARTER` | API | `500` | HK$ minted to a new visitor |
+| `VISITORS_PER_HOUR` | API | `60` | global sign-up cap |
+| `RATE_LIMIT_PER_MIN` / `RATE_LIMIT_GET_PER_MIN` | API | `60` / `600` | per IP |
+| `DATA_DIR` | API | `server/.data` | set to the Railway volume path |
+| `TICK_PK` | API, sellers | `FACILITATOR_PK` | liveness tick sender (needs native balance) |
+| `FISCO_LOG_STEP` | API | `10` | blocks per `eth_getLogs` call |
+| `FISCO_REVERT_RPC` | API | unset | gateway URL answering `chainbrain_getRevertData` (item 7) |

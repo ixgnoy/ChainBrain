@@ -67,6 +67,9 @@ export async function startDevStack(o: DevStackOptions = {}) {
 
   const lan = lanIp();
   Object.assign(process.env, DEV_KEYS, { FISCO_RPC: rpc, SELLERS_URL: `http://${lan ?? "localhost"}:${sellersPort}` });
+  // ponytail: the phone and console don't sign in yet (realchain item 6); until then the dev stack runs without visitor auth
+  process.env.VISITOR_AUTH ??= "off";
+  process.env.DATA_DIR ??= "memory";
 
   const owner = privateKeyToAccount(DEV_KEYS.OWNER_PK);
   const { fundIfEmpty } = await import(server("fund.ts"));
