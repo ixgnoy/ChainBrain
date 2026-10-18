@@ -1,5 +1,5 @@
 import { networkInterfaces } from "node:os";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -71,6 +71,8 @@ export async function startDevStack(o: DevStackOptions = {}) {
   Object.assign(process.env, DEV_KEYS, { FISCO_RPC: rpc, SELLERS_URL: `http://${lan ?? "localhost"}:${sellersPort}` });
   // visitor auth stays on (both apps sign in); a fresh stack keeps its visitors in memory
   process.env.DATA_DIR ??= "memory";
+  // exact revert reasons from the local node's native receipt (mutual TLS with the chain's SDK certs), not a replay
+  if (!process.env.FISCO_NATIVE_RPC && existsSync(new URL("../../.fisco/nodes/127.0.0.1/sdk/sdk.crt", import.meta.url))) process.env.FISCO_NATIVE_RPC = "https://127.0.0.1:20200";
 
   const owner = privateKeyToAccount(DEV_KEYS.OWNER_PK);
   const { fundIfEmpty } = await import(server("fund.ts"));

@@ -12,7 +12,7 @@ Last updated: 2026-10-19
 - [x] 4. Per-card agent keys
 - [x] 5. Signing guard
 - [x] 6. Real by default in both apps
-- [ ] 7. Explorer that explains
+- [x] 7. Explorer that explains
 - [ ] 8. Model flag
 - [ ] 9. Attacks on the real chain
 
@@ -270,6 +270,39 @@ Last updated: 2026-10-19
 - `node devstack/e2e/e2e.cjs` (web + phone, fresh dev stack, visitor auth on): **60/60 checks passed**, with no page errors or unexpected HTTP errors in either app. Screenshots are in `docs/08-frontend/screenshots/e2e-*.png`.
 - `pnpm --dir devstack test` 21 passed (signed in); server 99 passed, 6 skipped; web 90; mobile 61 (guard 8 with HKT).
 
+## Round 7 · 19 Oct 04:00–04:20 · Item 7, explorer that explains
+
+**What changed**
+- `GET /api/explorer/tx/:hash` and the apps' `GET /api/tx/:hash` now return:
+  - `call`: contract, function and named arguments, decoded with the Mock e-HKD, PocketFactory and Pocket ABIs;
+  - for a reverted transaction, `revert {name, args, message}` and `revertSource`. The source is `native` (the node's own receipt) or `replay` (`eth_call` on latest state), with a `note` saying a replay can differ.
+  - `/api/explorer/tx` also gives `toName`; `/api/tx` gives the explorer link.
+- `/explorer` page: new "Why it reverted" (error, message, source) and "Call" sections.
+- **`POST /rpc/fisco`** (new `server/src/rpcProxy.ts`), a read-only JSON-RPC proxy:
+  - method allowlist (writes get -32601);
+  - batches capped at `FISCO_PROXY_MAX_BATCH` (20) and **always answered as an array**, which fixes FISCO's one-element batch;
+  - `eth_getLogs` needs an address, refuses `blockHash` and caps the range at `FISCO_PROXY_MAX_BLOCK_RANGE` (5000), and the error mentions the 10-block truncation;
+  - per-IP limit `FISCO_PROXY_RATE_PER_MIN` (600);
+  - 20 s upstream timeout and 502 on failure;
+  - a local `chainbrain_getRevertData(hash)`.
+- **Hosted node gateway** (`deploy/fisco-node/gateway.mjs`): answers `chainbrain_getRevertData(hash)` from the node's native receipt over mutual TLS, using the SDK certs in the container (`$FISCO_HOME/nodes/127.0.0.1/sdk`, port 20200). The API then uses it with `FISCO_REVERT_RPC=<the gateway URL>`.
+- The dev stack defaults `FISCO_NATIVE_RPC` to the local node when the certs are there, so dev reverts are exact.
+- Phone `ExplorerSheet`: on a server it reads `/api/tx/:hash` and shows "On the chain" (status, block, decoded call, why it reverted, where that was read from). That also covers hashes the phone has no local record of.
+- Console explorer: on a live server, a reverted transaction shows the server's decoded error and its source. A hash not in the console's index yet shows "From the chain" instead of "not found".
+
+**Evidence**
+- `server/test/explorer-chain.test.ts`, 8 tests on local FISCO:
+  - a reverted raw transfer: call `Mock e-HKD.transfer(to, …)` and revert `ERC20InsufficientBalance` labelled `replay` with a note, on both routes;
+  - with `FISCO_NATIVE_RPC` the source becomes `native`;
+  - with `FISCO_REVERT_RPC` a gateway is asked `chainbrain_getRevertData` and the source is `native`;
+  - a card creation decodes as `PocketFactory.create(agent, cap, …)` with a `PocketCreated` log.
+  - `/rpc/fisco`: reads pass, a one-element batch comes back as an array, `eth_sendRawTransaction` gets -32601, 21 requests get 400, `getLogs` without an address or over 5000 blocks is refused, `chainbrain_getRevertData` decodes, and the 3rd call at 2/min gets 429.
+- Gateway smoke test on the local node: `chainbrain_getRevertData(0xa0bf…6834)` returned `0xe450d38c…` (ERC20InsufficientBalance); normal reads pass through.
+- Dev stack by hand: `/api/tx/0x5f11…de78` gives `reverted`, call `Mock e-HKD.transfer`, revert `ERC20InsufficientBalance(…)`. The `/explorer` page shows "Why it reverted" and "Call". A `/rpc/fisco` batch refuses the write and answers `eth_chainId`.
+- Server **107 passed, 6 skipped** (21 files); web 90; devstack 21; mobile typecheck clean.
+
+**Next:** item 8, the model flag.
+
 ---
 
 ## Env vars so far (kept current each round)
@@ -283,5 +316,7 @@ Last updated: 2026-10-19
 | `DATA_DIR` | API | `server/.data` | set to the Railway volume path |
 | `TICK_PK` | API, sellers | `FACILITATOR_PK` | liveness tick sender (needs native balance) |
 | `FISCO_LOG_STEP` | API | `10` | blocks per `eth_getLogs` call |
-| `FISCO_REVERT_RPC` | API | unset | gateway URL answering `chainbrain_getRevertData` (item 7) |
+| `FISCO_REVERT_RPC` | API | unset | **set to the node gateway URL** (`https://fisco-node-production.up.railway.app`): exact revert reasons from the native receipt |
+| `FISCO_NATIVE_RPC` / `FISCO_SDK_DIR` | API (local only) | unset | the node's native RPC with the SDK certs (the dev stack sets it itself) |
+| `FISCO_PROXY_RATE_PER_MIN` / `FISCO_PROXY_MAX_BATCH` / `FISCO_PROXY_MAX_BLOCK_RANGE` | API | `600` / `20` / `5000` | `/rpc/fisco` limits |
 | `AGENT_MASTER_KEY` | API | none | 0x + 64 hex (`0x$(openssl rand -hex 32)`). **Generate once, keep secret, never change** (changing it orphans every card's agent) |

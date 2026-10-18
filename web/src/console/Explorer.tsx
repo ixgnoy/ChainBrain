@@ -1,7 +1,7 @@
 // The ChainBrain explorer: every hash and address in the console opens here. Built-in and local-fork hashes are not on any
 // FISCO chain the server reports, so they never get an explorer link; a real server links to its own /explorer.
 // Pages: #explorer (blocks and latest transactions), #explorer/tx/0x…, #explorer/block/n, #explorer/address/0x….
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Search, ShieldCheck } from "lucide-react";
 import { blocksFrom, explainTx, txsOfAddress, hkdText, type ExplorerInput, type Field } from "@sim/explorer";
 import { useNetwork } from "./useNetwork";
@@ -185,10 +185,42 @@ function Home() {
   );
 }
 
+/** On a real server, its reading of the hash (GET /api/tx/:hash): the call decoded with our ABIs and why it reverted. */
+type ServerTx = { status: "success" | "reverted"; blockNumber: string; from: string; to: string | null; call?: { contract: string; function: string; args: Record<string, unknown> } | null; revert?: { name: string; message: string }; revertSource?: "native" | "replay"; note?: string };
+function useServerTx(hash: string, api?: string): ServerTx | null {
+  const [v, setV] = useState<ServerTx | null>(null);
+  useEffect(() => {
+    if (!api) return;
+    let alive = true;
+    fetch(`${api}/api/tx/${hash}`).then((r) => (r.ok ? r.json() : null)).then((j) => alive && setV(j), () => {});
+    return () => { alive = false; };
+  }, [hash, api]);
+  return v;
+}
+const readFrom = (s?: ServerTx) => (s?.revertSource === "native" ? "Read from the node's own receipt: exactly what the chain executed." : s?.revertSource === "replay" ? (s.note ?? "Replayed on the latest state.") : undefined);
+
 function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void }) {
   const { net, who, inputs, chainTx, ctx } = useChain();
   const input = inputs.find((t) => lc(t.hash) === lc(hash));
   const attempt = useMemo(() => net.attempts.find((a) => lc(a.tx) === lc(hash) || (a.txs ?? []).some((h) => lc(h) === lc(hash))), [net.attempts, hash]);
+  const server = useServerTx(hash, net.live?.api);
+  if (!input && server) {
+    return (
+      <div data-testid="explorer-tx" data-found="true" data-status={server.status} className="fade-up"><Crumbs here="Transaction" />
+        <header className="mb-6"><div className="flex flex-wrap items-center gap-3"><h1 className="title-serif text-[32px] leading-10 sm:text-[40px] sm:leading-[46px]">Transaction</h1><StatusPill status={server.status} /></div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1"><span className="num break-all text-[13px] text-ink2">{hash}</span><CopyButton text={hash} /></div></header>
+        <Section title="From the chain">
+          <Card className="px-5 sm:px-6"><Rows rows={[
+            ["Block", <a key="b" href={explorerHref.block(server.blockNumber)} className="num font-bold text-ink underline decoration-line decoration-2 underline-offset-4">{server.blockNumber}</a>],
+            ["From", <Addr key="f" address={server.from} full />],
+            ["To", server.to ? <Addr key="t" address={server.to} full /> : undefined],
+            ["Call", server.call ? <span key="c" className="num font-bold">{server.call.contract}.{server.call.function}</span> : undefined],
+            ["Why it reverted", server.revert ? <span key="r"><CodePill code={server.revert.name} /> <span className="text-[13px] text-muted">{readFrom(server)}</span></span> : undefined],
+          ]} /></Card>
+        </Section>
+      </div>
+    );
+  }
   if (!input) {
     return (
       <div data-testid="explorer-tx" data-found="false"><Crumbs here="Transaction" />
@@ -216,7 +248,8 @@ function TxPage({ hash, watch }: { hash: string; watch?(pocket: string): void })
         {x.status === "reverted" && (
           <div data-testid="explorer-revert" className="band-bad hatch relative mt-4 overflow-hidden rounded-[16px] p-1.5">
           <div className="rounded-[12px] bg-card px-4 py-3.5">
-            <p className="flex flex-wrap items-center gap-2 text-[14px] font-bold text-ink"><ShieldCheck className="size-4 shrink-0 text-vermillion-ink" strokeWidth={2} aria-hidden />{revert ? <>Reverted: <CodePill code={revert} /></> : "Reverted on-chain"}</p>
+            <p className="flex flex-wrap items-center gap-2 text-[14px] font-bold text-ink"><ShieldCheck className="size-4 shrink-0 text-vermillion-ink" strokeWidth={2} aria-hidden />{revert ? <>Reverted: <CodePill code={revert} /></> : server?.revert ? <>Reverted: <CodePill code={server.revert.name} /></> : "Reverted on-chain"}</p>
+            {server?.revert && <p data-testid="explorer-revert-source" className="mt-1 text-[13px] leading-5 text-muted">{server.revert.message}. {readFrom(server)}</p>}
             {revert && REASONS[revert] && <p className="mt-1 text-[14px] leading-5 text-ink2">{REASONS[revert]}</p>}
             {rule && <p className="mt-2 text-[14px] leading-5 text-ink">Pocket rule that failed (canPay): <CodePill code={rule} /><span className="text-ink2"> {REASONS[rule] ? `· ${REASONS[rule]}` : ""}</span></p>}
             <p className="mt-2 text-[13px] leading-5 text-muted">No money moved.</p>

@@ -5,8 +5,13 @@
 //                      transactionIndex is repaired in responses: FISCO returns the hex of the ASCII text ("0x307830" for
 //                      "0x0"), which overflows client number parsers (viem) and confuses wallets.
 //   GET  /health       200 when the node answers eth_blockNumber
+//                      chainbrain_getRevertData(txHash) is answered here: the web3 receipt of a reverted transaction carries
+//                      no revert data, the node's native receipt does (status 16, output = the ABI-encoded error). The native
+//                      RPC needs mutual TLS with the chain's SDK certs, which live in this container next to the node.
 //   POST /admin/fund   {addresses: [...]}, Bearer FUND_TOKEN: credit native balance (the web3 RPC refuses senders with 0)
 import { createServer } from "node:http";
+import { request as httpsRequest } from "node:https";
+import { readFileSync } from "node:fs";
 import { execFile } from "node:child_process";
 
 const RPC = "http://127.0.0.1:8545";
@@ -24,6 +29,27 @@ const readBody = (req) => new Promise((ok, fail) => {
   req.on("error", fail);
 });
 const rpc = (body) => fetch(RPC, { method: "POST", headers: { "content-type": "application/json" }, body });
+
+// the node's native JSON-RPC (mutual TLS) for a receipt's revert output
+const SDK = `${process.env.FISCO_HOME ?? "/data/fisco"}/nodes/127.0.0.1/sdk`;
+const NATIVE_PORT = Number(process.env.FISCO_NATIVE_PORT ?? 20200);
+function nativeReceipt(hash) {
+  return new Promise((ok, fail) => {
+    const req = httpsRequest({ host: "127.0.0.1", port: NATIVE_PORT, method: "POST", path: "/", headers: { "content-type": "application/json" }, timeout: 10_000,
+      ca: readFileSync(`${SDK}/ca.crt`), cert: readFileSync(`${SDK}/sdk.crt`), key: readFileSync(`${SDK}/sdk.key`), checkServerIdentity: () => undefined },
+    (res) => { let t = ""; res.on("data", (c) => (t += c)); res.on("end", () => { try { ok(JSON.parse(t).result); } catch (e) { fail(e); } }); });
+    req.on("error", fail);
+    req.on("timeout", () => req.destroy(new Error("native RPC timeout")));
+    req.end(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getTransactionReceipt", params: ["group0", "", hash, false] }));
+  });
+}
+async function revertData(id, [hash] = []) {
+  if (typeof hash !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(hash)) return { jsonrpc: "2.0", id, error: { code: -32602, message: "params: [txHash]" } };
+  try {
+    const r = await nativeReceipt(hash);
+    return { jsonrpc: "2.0", id, result: r?.output && r.output !== "0x" ? r.output : "0x" };
+  } catch (e) { return { jsonrpc: "2.0", id, error: { code: -32000, message: `native receipt: ${e.message}` } }; }
+}
 
 const hex = (n) => "0x" + n.toString(16);
 async function feeHistory(id, [count, newest, percentiles = []]) {
@@ -56,9 +82,9 @@ const repaired = (text) => (text.includes("transactionIndex") ? JSON.stringify(r
 async function forward(body) {
   let msg;
   try { msg = JSON.parse(body); } catch { return null; } // let the node answer malformed JSON itself
-  const one = async (m) => (m?.method === "eth_feeHistory" ? feeHistory(m.id, m.params ?? []) : null);
+  const one = async (m) => (m?.method === "eth_feeHistory" ? feeHistory(m.id, m.params ?? []) : m?.method === "chainbrain_getRevertData" ? revertData(m.id, m.params ?? []) : null);
   if (Array.isArray(msg)) {
-    if (!msg.some((m) => m?.method === "eth_feeHistory")) return null;
+    if (!msg.some((m) => m?.method === "eth_feeHistory" || m?.method === "chainbrain_getRevertData")) return null;
     const out = await Promise.all(msg.map(async (m) => (await one(m)) ?? repair(await rpc(JSON.stringify(m)).then((r) => r.json()))));
     return JSON.stringify(out);
   }

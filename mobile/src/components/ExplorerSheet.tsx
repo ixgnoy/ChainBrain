@@ -2,7 +2,7 @@
 // hash exists on no public chain, so it is explained here and never linked out; the chain is labelled "Test network". Only a real
 // real server (explorerEnabled) also offers "Open in the explorer". Payments, refusals and attacks show the checks path they
 // travelled (shared/sim attemptsFrom), the gate that stopped them, and the reason codes under "Why".
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Linking, View } from "react-native";
 import { c, radius } from "../tokens";
 import { useApp } from "../store";
@@ -13,7 +13,7 @@ import { Money } from "../ui/Money";
 import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { builtin } from "../lib/builtin";
-import { explorerEnabled, txUrl } from "../lib/runtime";
+import { explorerEnabled, fetchTimeout, getApi, txUrl } from "../lib/runtime";
 import { sameAddr } from "../lib/events";
 import { cleanText } from "../lib/sanitize";
 import { shortAddr, shortHex, stamp, money } from "../lib/util";
@@ -66,9 +66,20 @@ function GatePath({ attempt }: { attempt: Attempt }) {
   );
 }
 
+/** The server's reading of a hash (GET /api/tx/:hash): status, the call decoded with our ABIs, and why it reverted. */
+type ChainView = { status: "success" | "reverted"; blockNumber: string; from: string; to: string | null; call?: { contract: string; function: string } | null; revert?: { name: string; message: string }; revertSource?: "native" | "replay" };
+
 function Body({ hash, close }: { hash: string; close: () => void }) {
   const { cfg, pockets, wallet, events, ledger, ownerTxs, sellerName, dev, source } = useApp();
   const isBuiltin = source === "builtin";
+  // on a server, the chain's own record (the demo network has none)
+  const [chain, setChain] = useState<ChainView | null>(null);
+  useEffect(() => {
+    if (isBuiltin) return;
+    let alive = true;
+    fetchTimeout(`${getApi()}/api/tx/${hash}`, {}, 10_000).then((r) => (r.ok ? r.json() : null)).then((j) => alive && setChain(j), () => {});
+    return () => { alive = false; };
+  }, [hash, isBuiltin]);
   const nameOf = (a: string) => pockets.find((p) => sameAddr(p.address, a))?.name
     ?? cfg?.sellers.find((s) => sameAddr(s.payTo, a))?.name
     ?? (wallet && sameAddr(a, wallet.address) ? "Your wallet" : cfg && sameAddr(a, cfg.agent) ? "Your agent" : undefined);
@@ -103,8 +114,16 @@ function Body({ hash, close }: { hash: string; close: () => void }) {
           <T v="section" accessibilityRole="header">Transaction</T>
           <View accessibilityLabel={net} style={{ minHeight: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: c.fill, justifyContent: "center" }}><T v="cap" w="medium" color="ink2" style={{ fontSize: 12, lineHeight: 16 }}>{net}</T></View>
         </View>
+        {chain ? (
+          <SummaryCard rows={[
+            ["On the chain", chain.status === "reverted" ? "Reverted · nothing moved" : "Success"],
+            ["Block", `#${chain.blockNumber}`],
+            ...(chain.call ? [["Call", `${chain.call.contract}.${chain.call.function}`] as [string, string]] : []),
+            ...(chain.revert ? [["Why it reverted", chain.revert.message] as [string, string], ["Read from", chain.revertSource === "native" ? "The node's own receipt" : "A replay on the latest state"] as [string, string]] : []),
+          ]} />
+        ) : null}
         {!tx ? (
-          <T v="body" color="ink2">This transaction is not in the records this phone holds. {shortHex(hash, 10, 8)}</T>
+          chain ? null : <T v="body" color="ink2">This transaction is not in the records this phone holds. {shortHex(hash, 10, 8)}</T>
         ) : (
           <>
             <View style={{ alignItems: "center", gap: 10 }}>

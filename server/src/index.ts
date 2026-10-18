@@ -23,10 +23,11 @@ import { reflect, type ReflectModel } from "./brain/reflect";
 import { trimHistory } from "./brain/window";
 import { composeApp } from "./pocketApp/compose";
 import { compileRules, type RulesModel } from "./rules/compile";
-import { explorerRoutes } from "./explorer";
+import { explorerRoutes, decodeCall, explainRevert } from "./explorer";
 import { faucetRoutes } from "./faucet";
 import { visitorRoutes, guard } from "./visitors";
 import { agentRoutes } from "./agentKeys";
+import { rpcProxyRoutes } from "./rpcProxy";
 import { rateLimit } from "./limits";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
@@ -50,6 +51,7 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
   app.use("/v1/*", rateLimit());
   app.route("/", visitorRoutes()); // /v1/challenge, /v1/visitors, /v1/login, /v1/me
   app.route("/", agentRoutes()); // /v1/cards/agent: a new card's own agent address
+  app.route("/", rpcProxyRoutes()); // /rpc/fisco: read-only JSON-RPC (method allowlist, batch and log-range caps, per-IP limit)
 
   app.route("/api/radar", radarRoutes({ model: deps.radarModel }));
   app.get("/api/events", sse);
@@ -69,9 +71,14 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
   app.get("/api/tx/:hash", async (c) => {
     const hash = c.req.param("hash");
     if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return c.json({ error: "BAD_HASH" }, 400);
-    const rc = await pub().getTransactionReceipt({ hash: hash as Hex }).catch(() => undefined);
+    const [rc, tx] = await Promise.all([
+      pub().getTransactionReceipt({ hash: hash as Hex }).catch(() => undefined),
+      pub().request({ method: "eth_getTransactionByHash", params: [hash as Hex] } as any).catch(() => undefined) as Promise<{ input?: Hex } | undefined>,
+    ]);
     if (!rc) return c.json({ error: "NOT_FOUND" }, 404);
-    return c.body(toJson({ chain: cfg().key, chainId: cfg().chain.id, hash, status: rc.status, blockNumber: rc.blockNumber, from: rc.from, to: rc.to, logs: rc.logs.length }), 200, { "content-type": "application/json" });
+    // the call decoded with our ABIs, and for a reverted one why (native receipt, else a labelled replay)
+    return c.body(toJson({ chain: cfg().key, chainId: cfg().chain.id, hash, status: rc.status, blockNumber: rc.blockNumber, from: rc.from, to: rc.to, logs: rc.logs.length,
+      call: decodeCall(tx?.input), ...(rc.status === "reverted" ? await explainRevert(hash as Hex) : {}), explorer: cfg().txUrl(hash) }), 200, { "content-type": "application/json" });
   });
   app.route("/", explorerRoutes()); // /explorer page + /api/explorer/* (read-only)
   app.route("/", faucetRoutes()); // /faucet page + POST /api/faucet (Mock e-HKD, FISCO only)

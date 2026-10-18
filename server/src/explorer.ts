@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { readFileSync } from "node:fs";
-import { decodeEventLog, formatEther, hexToBigInt, hexToString, isAddress, isHash, toHex, type Abi, type Address, type Hex, type Log } from "viem";
+import { decodeEventLog, decodeFunctionData, formatEther, hexToBigInt, hexToString, isAddress, isHash, toHex, type Abi, type Address, type Hex, type Log } from "viem";
 import { pub, pocketAbi, factoryAbi, erc20Abi, factoryAddress } from "./wallet/chain";
 import { cfg } from "./chains";
 import { directory } from "./wallet/directory";
@@ -8,6 +8,7 @@ import { agentAccount } from "./wallet/pay";
 import { agentLabels } from "./agentKeys";
 import { toJson } from "./wallet/events";
 import { formatAmount } from "./wallet/money";
+import { revertOf } from "./ledger";
 
 /** Read-only block explorer for the local FISCO chain: no indexer, everything is read from the node on request. */
 const tokenAbi = JSON.parse(readFileSync(new URL("../../contracts/out/MockEHKD.sol/MockEHKD.json", import.meta.url), "utf8")).abi as Abi;
@@ -16,6 +17,37 @@ const ABIS = [tokenAbi, factoryAbi as Abi, pocketAbi as Abi];
 const SCAN = 300;
 
 const json = (c: any, v: unknown, status = 200) => c.body(toJson(v), status, { "content-type": "application/json" });
+
+const NAMES: [Abi, string][] = [[tokenAbi, "Mock e-HKD"], [factoryAbi as Abi, "PocketFactory"], [pocketAbi as Abi, "Pocket"]];
+
+/** The call a transaction made, decoded with our ABIs: contract, function and named arguments. */
+export function decodeCall(input: Hex | undefined): { contract: string; function: string; args: Record<string, unknown> } | null {
+  if (!input || input.length < 10) return null;
+  for (const [abi, contract] of NAMES) {
+    try {
+      const d = decodeFunctionData({ abi, data: input });
+      const item = abi.find((x: any) => x.type === "function" && x.name === d.functionName) as any;
+      const args: Record<string, unknown> = {};
+      (d.args ?? []).forEach((v, i) => { args[item?.inputs?.[i]?.name || `arg${i}`] = v; });
+      return { contract, function: d.functionName, args };
+    } catch { /* not this contract */ }
+  }
+  return null;
+}
+
+/**
+ * Why a reverted transaction reverted: the native receipt's exact output when the node is configured for it, else a
+ * replay of the call on latest state (FISCO's eth_call ignores block tags), labelled as such.
+ */
+export async function explainRevert(hash: Hex) {
+  const r = await revertOf(hash).catch(() => null);
+  if (!r) return {};
+  return {
+    revert: { name: r.revert.name, args: r.revert.args, message: r.revert.message },
+    revertSource: r.source,
+    ...(r.source === "replay" ? { note: "Replayed on the latest state: FISCO's web3 receipt carries no revert data, and the result can differ if the state has changed since." } : {}),
+  };
+}
 
 function decode(log: Log) {
   for (const abi of ABIS) {
@@ -80,9 +112,11 @@ export function explorerRoutes() {
     ]);
     if (!tx || !rc) return json(c, { error: "NOT_FOUND" }, 404);
     const block = await c0().getBlock({ blockNumber: rc.blockNumber });
+    const L = await labels();
     return json(c, {
-      hash, status: rc.status, blockNumber: rc.blockNumber, timestamp: block.timestamp, from: tx.from, to: tx.to, contractAddress: rc.contractAddress,
-      nonce: tx.nonce, input: tx.input, gasUsed: rc.gasUsed, logs: rc.logs.map(decode),
+      hash, status: rc.status, blockNumber: rc.blockNumber, timestamp: block.timestamp, from: tx.from, to: tx.to, toName: tx.to ? L[tx.to.toLowerCase()] : undefined,
+      contractAddress: rc.contractAddress, nonce: tx.nonce, input: tx.input, gasUsed: rc.gasUsed, call: decodeCall(tx.input), logs: rc.logs.map(decode),
+      ...(rc.status === "reverted" ? await explainRevert(hash as Hex) : {}),
     });
   });
 
@@ -159,6 +193,8 @@ async function home(){
 async function showTx(h){
   const t=await get("/api/explorer/tx/"+h);
   m.innerHTML='<section class=card><h2>Transaction</h2><dl><dt>Hash</dt><dd class=mono>'+esc(t.hash)+'</dd><dt>Status</dt><dd><span class="badge '+(t.status==="success"?"":"bad")+'">'+esc(t.status)+'</span></dd><dt>Block</dt><dd>'+blk(t.blockNumber)+" ("+time(t.timestamp)+')</dd><dt>From</dt><dd>'+addr(t.from)+'</dd><dt>To</dt><dd>'+addr(t.to)+'</dd>'+(t.contractAddress?'<dt>Created</dt><dd>'+addr(t.contractAddress)+"</dd>":"")+'<dt>Nonce</dt><dd>'+esc(t.nonce)+'</dd><dt>Gas used</dt><dd>'+esc(t.gasUsed)+' (gas is free on this chain)</dd></dl></section>'+
+  (t.revert?'<section class=card><h2>Why it reverted</h2><p><span class="badge bad">'+esc(t.revert.name)+'</span> <span class=mono>'+esc(t.revert.message)+'</span></p><p class=note>'+(t.revertSource==="native"?"Read from the node's own receipt: exactly what the chain executed.":esc(t.note||"Replayed on the latest state."))+'</p></section>':"")+
+  (t.call?'<section class=card><h2>Call</h2><p><b>'+esc(t.call.contract)+'.'+esc(t.call.function)+'</b></p>'+args(t.call.args)+'</section>':"")+
   '<section class=card><h2>Events ('+t.logs.length+')</h2><table><tr><th>Event</th><th>Emitted by</th><th>Arguments</th></tr>'+t.logs.map((l)=>"<tr><td>"+esc(l.event??"(unknown)")+"</td><td>"+addr(l.address)+"</td><td>"+(l.event?args(l.args):'<span class=mono>'+esc(JSON.stringify(l.topics))+"</span>")+"</td></tr>").join("")+"</table></section>";
 }
 async function showAddr(a){
