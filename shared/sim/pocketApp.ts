@@ -377,3 +377,28 @@ export function stricterRoutine(a: RoutineSpec, b: RoutineSpec): { routine: Rout
   if (JSON.stringify(a.cadence) !== JSON.stringify(b.cadence)) d.push("Schedule: used the one that runs less often");
   return { routine: { ...a, allowance, items: items.length ? items : a.items.filter(() => false), limitPrice, cadence }, disagreements: d };
 }
+
+// ---- usage: how often a pocket spends, the category its card's colour says (phone and console alike)
+export type Usage = "daily" | "weekly" | "monthly" | "once" | "asked";
+/** Scheduled pockets first: they move money without being asked. */
+export const USAGE_ORDER: Usage[] = ["daily", "weekly", "monthly", "once", "asked"];
+export const USAGE_LABEL: Record<Usage, string> = { daily: "Daily", weekly: "Weekly", monthly: "Monthly", once: "One-time", asked: "When asked" };
+/** From the pocket's app: its routine's cadence when it has one, a haggler buys once, anything else spends only when asked. */
+export function usageOf(spec?: { layout: Layout; routine?: RoutineSpec | null } | null): Usage {
+  if (!spec) return "asked";
+  const c = spec.routine?.cadence;
+  if (c) return c.every === "day" || c.every === "weekday" ? "daily" : c.every === "week" ? "weekly" : "monthly";
+  return spec.layout === "haggle" ? "once" : "asked";
+}
+const WDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const hhmm = (h: number, m: number) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+/** The chip on a card: "Daily 08:00", "Weekdays 08:00", "Weekly · Mon", "Monthly · 1st", "One-time", "When asked". */
+export function usageChip(spec?: { layout: Layout; routine?: RoutineSpec | null } | null): string {
+  const c = spec?.routine?.cadence;
+  if (!c) return USAGE_LABEL[usageOf(spec)];
+  if (c.every === "day") return `Daily ${hhmm(c.hour, c.minute)}`;
+  if (c.every === "weekday") return `Weekdays ${hhmm(c.hour, c.minute)}`;
+  if (c.every === "week") return `Weekly · ${WDAY[c.weekday ?? 1]}`;
+  const d = c.dayOfMonth ?? 1;
+  return `Monthly · ${d}${d % 10 === 1 && d !== 11 ? "st" : d % 10 === 2 && d !== 12 ? "nd" : d % 10 === 3 && d !== 13 ? "rd" : "th"}`;
+}

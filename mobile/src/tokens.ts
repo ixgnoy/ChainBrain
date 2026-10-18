@@ -55,14 +55,17 @@ export const hairline = "rgba(17,18,21,0.06)";
 /** 45° hatch (DESIGN.md "Hatch Infill"): 2 px stroke on a 4 px pitch… scaled to read on a phone (2 px on 6 px). */
 export const hatch = { stroke: 2, pitch: 6, angle: 45 } as const;
 
-/** Pocket card faces, in deck order (VaultBank cards): `band` is the stripe across the card, `edge` the card's side seen
+/** Pocket card faces, one per usage (shared/sim/pocketApp.ts `usageOf`; components/app/theme.ts `USAGE_FACE`): `band` is the stripe across the card, `edge` the card's side seen
  *  under the face (2.5D thickness). */
 export const deck = [
-  { face: "#111215", ink: "#FFFFFF", sub: "rgba(255,255,255,0.64)", chip: "rgba(255,255,255,0.14)", band: "#2A2B30", edge: "#000000" },
-  // the haggler's face: warm wheat, not vermillion (a vermillion card read as Anthropic's coral; vermillion is for alerts and actions)
-  { face: "#E9D6AE", ink: "#111215", sub: "rgba(17,18,21,0.66)", chip: "rgba(17,18,21,0.10)", band: "#111215", edge: "#C4AC7C" },
-  { face: "#9DCAFF", ink: "#111215", sub: "rgba(17,18,21,0.66)", chip: "rgba(17,18,21,0.10)", band: "#111215", edge: "#6E9FD8" },
-  { face: "#FFFFFF", ink: "#111215", sub: "#5E5F68", chip: "rgba(17,18,21,0.06)", hatch: true, band: "#111215", edge: "#C9C8C3" },
+  // weekly and monthly: sage (a black face read as a heavy block against the white wallet card)
+  { face: "#CBD9C4", ink: "#111215", sub: "rgba(17,18,21,0.66)", chip: "rgba(17,18,21,0.10)", band: "#111215", edge: "#9DB396", usage: "#2C4A2A" },
+  // one-time: warm wheat, not vermillion (a vermillion card read as Anthropic's coral; vermillion is for alerts and actions)
+  { face: "#E9D6AE", ink: "#111215", sub: "rgba(17,18,21,0.66)", chip: "rgba(17,18,21,0.10)", band: "#111215", edge: "#C4AC7C", usage: "#5C4314" },
+  // daily: powder blue
+  { face: "#9DCAFF", ink: "#111215", sub: "rgba(17,18,21,0.66)", chip: "rgba(17,18,21,0.10)", band: "#111215", edge: "#6E9FD8", usage: "#124977" },
+  // when asked: white hatch (it spends only when an agent is asked to buy)
+  { face: "#FFFFFF", ink: "#111215", sub: "#5E5F68", chip: "rgba(17,18,21,0.06)", hatch: true, band: "#111215", edge: "#C9C8C3", usage: "#111215" },
 ] as const;
 export type DeckFace = (typeof deck)[number];
 

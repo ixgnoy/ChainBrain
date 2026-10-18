@@ -26,7 +26,7 @@ import { cardHeight, faceOf, toneFor } from "../../components/PocketFace";
 import type { Pocket } from "../../store";
 import * as api from "../../lib/api";
 import { glyphKey, glyphOf, weekDigest, type Glyph } from "../../../../shared/sim/pocketAppData";
-import { WalletHero, jobLine } from "../../components/WalletHome";
+import { UsageLegend, WalletHero, jobLine } from "../../components/WalletHome";
 import { WeekBought } from "../../components/WeekDigest";
 import { SpendChart } from "../../components/SpendChart";
 import { useIntroDone } from "../../ui/intro";
@@ -246,7 +246,10 @@ function Home({ ready }: { ready: boolean }) {
         ) : pockets.length === 0 ? (
           <EmptyPockets />
         ) : (
-          <PocketWallet pockets={pockets} play={play} scrollY={scrollY} glyphs={glyphs} jobs={jobs} />
+          <>
+            <UsageLegend pockets={pockets} />
+            <PocketWallet pockets={pockets} play={play} scrollY={scrollY} glyphs={glyphs} jobs={jobs} grouped />
+          </>
         )}
       </View>
 

@@ -10,7 +10,7 @@ import { Card, Empty } from "../seller/ui";
 import { cn } from "../lib/cn";
 import { cleanText } from "../lib/sanitize";
 import { CLAUDE_SPARK, OPENAI_BLOSSOM } from "../../../shared/brand/marks";
-import { BLOCKS, cadenceText, nextRuns, param, type Block, type Layout, type PocketAppSpec, type Routine } from "@sim/pocketApp";
+import { BLOCKS, cadenceText, nextRuns, param, usageChip, usageOf, type Block, type Layout, type PocketAppSpec, type Routine, type Usage } from "@sim/pocketApp";
 import {
   appFromEvents, budgetOf, haggleOf, monthBySeller, priceChanges, priceSeries, purchasesOf, renewalsOf, routineFromEvents, runsOf, savingsOf, sourcesOf, upcoming,
 } from "@sim/pocketAppData";
@@ -18,11 +18,14 @@ import type { PocketState } from "./chain";
 
 const I = { strokeWidth: 1.75 } as const;
 const LAYOUT_NAME: Record<Layout, string> = { research: "Research desk", deal: "Deal watcher", subscriptions: "Subscriptions", haggle: "Haggler" };
-const FACE: Record<Layout, { bg: string; ink: string; sub: string; band: string; hatch?: boolean }> = {
-  research: { bg: "#111215", ink: "#FFFFFF", sub: "rgba(255,255,255,0.64)", band: "#2A2B30" },
-  haggle: { bg: "#E9D6AE", ink: "#111215", sub: "rgba(17,18,21,0.66)", band: "#111215" }, // wheat, as on the phone: vermillion is for alerts
-  deal: { bg: "#9DCAFF", ink: "#111215", sub: "rgba(17,18,21,0.66)", band: "#111215" },
-  subscriptions: { bg: "#FFFFFF", ink: "#111215", sub: "#5E5F68", band: "#111215", hatch: true },
+// the card's face says how often the pocket spends (usageOf, as on the phone): daily powder blue, weekly or monthly sage,
+// one-time wheat (vermillion is for alerts), when asked white hatch
+const SAGE = { bg: "#CBD9C4", ink: "#111215", sub: "rgba(17,18,21,0.66)", band: "#111215", chip: "#2C4A2A" };
+const FACE: Record<Usage, { bg: string; ink: string; sub: string; band: string; chip: string; hatch?: boolean }> = {
+  daily: { bg: "#9DCAFF", ink: "#111215", sub: "rgba(17,18,21,0.66)", band: "#111215", chip: "#124977" },
+  weekly: SAGE, monthly: SAGE,
+  once: { bg: "#E9D6AE", ink: "#111215", sub: "rgba(17,18,21,0.66)", band: "#111215", chip: "#5C4314" },
+  asked: { bg: "#FFFFFF", ink: "#111215", sub: "#5E5F68", band: "#111215", chip: "#111215", hatch: true },
 };
 type Ev = { type: string; pocket?: string; at: number; [k: string]: any };
 const day = (ms: number) => new Date(ms).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
@@ -45,7 +48,7 @@ function AgentMark({ id, size = 40 }: { id?: string; size?: number }) {
 
 /** The pocket as its card: the job's face, the agent on a white pill across the stripe, the balance, the contract tail. */
 function FaceCard({ p, spec, agentId, agentName }: { p: PocketState; spec: PocketAppSpec; agentId?: string; agentName: string }) {
-  const f = FACE[spec.layout];
+  const f = FACE[usageOf(spec)];
   const st = pocketStatus(p);
   const off = st.label !== "Active";
   return (
@@ -53,7 +56,7 @@ function FaceCard({ p, spec, agentId, agentName }: { p: PocketState; spec: Pocke
       aria-label={`${cleanText(p.name ?? spec.title, 30)} card, ${usd(p.balance)}`}>
       {(f.hatch || off) && <span aria-hidden className="hatch hatch-soft absolute inset-0 opacity-70" />}
       <div className="relative flex h-full flex-col">
-        <div className="flex items-center justify-between px-5 pt-4"><span className="font-display text-[18px] font-semibold">{cleanText(p.name ?? spec.title, 28)}</span>{off && <span className="rounded-full bg-vermillion-soft px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-vermillion-ink">{st.label}</span>}</div>
+        <div className="flex items-center justify-between px-5 pt-4"><span className="flex min-w-0 items-center gap-2"><span className="truncate font-display text-[18px] font-semibold">{cleanText(p.name ?? spec.title, 28)}</span>{!off && <span className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: f.chip }}>{usageChip(spec)}</span>}</span>{off && <span className="rounded-full bg-vermillion-soft px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-vermillion-ink">{st.label}</span>}</div>
         <div className="mt-2 flex h-10 items-center px-5" style={{ background: off ? "#3A3B41" : f.band }}>
           <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-white pl-0.5 pr-3 text-[12px] font-semibold text-ink"><AgentMark id={agentId} size={24} />{agentName} · {LAYOUT_NAME[spec.layout].toLowerCase()}</span>
         </div>

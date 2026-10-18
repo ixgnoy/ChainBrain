@@ -22,6 +22,7 @@ import { cleanText } from "../lib/sanitize";
 import type { Pocket } from "../store";
 import type { Glyph } from "../../../shared/sim/pocketAppData";
 import { agentInfo } from "../../../shared/sim/agents";
+import { byUsage } from "./WalletHome";
 import { JOB_H, PocketFace, cardHeight, toneFor, type Tone } from "./PocketFace";
 import { PAGE_MARGIN, pageCardWidth } from "./CardFlight";
 
@@ -34,9 +35,11 @@ const FOOT = 16;
 
 /** Top to bottom: revoked pockets first (quiet, at the back), then the live ones with the front card last; walking up from
  *  the front, each next card is the first in list order whose face differs from the one below it. */
-export function stackOrder(pockets: Pocket[], front?: string): string[] {
+export function stackOrder(pockets: Pocket[], front?: string, grouped = false): string[] {
   const tone = (a: string) => toneFor(pockets, a);
   const ids = (ps: Pocket[]) => ps.map((p) => p.address.toLowerCase());
+  // grouped (Home): by usage, scheduled first from the top, so each colour reads as one category
+  if (grouped) return ids(byUsage(pockets));
   const dead = ids(pockets.filter((p) => p.revoked));
   const rest = ids(pockets.filter((p) => !p.revoked));
   const f = front?.toLowerCase();
@@ -50,10 +53,11 @@ export function stackOrder(pockets: Pocket[], front?: string): string[] {
   return [...dead, ...up.reverse()];
 }
 
-export const PocketWallet = React.memo(function PocketWallet({ pockets, play, scrollY, glyphs, jobs }: {
+export const PocketWallet = React.memo(function PocketWallet({ pockets, play, scrollY, glyphs, jobs, grouped }: {
   pockets: Pocket[]; play: boolean; /** Home's raw scroll offset (negative while pulled down) */ scrollY: SharedValue<number>;
   /** each pocket's live sign, by lower-case address */ glyphs: Record<string, Glyph | null>;
   /** each pocket's one-line job, by lower-case address (shown under its name on its strip) */ jobs?: Record<string, string>;
+  /** group the stack by usage instead of alternating faces */ grouped?: boolean;
 }) {
   const activeAddress = useAppSelect((s) => s.active?.address);
   // full width on a phone: size the stack in the first frame, or Home draws without it and jumps when it measures (web
@@ -65,7 +69,7 @@ export const PocketWallet = React.memo(function PocketWallet({ pockets, play, sc
   const reduce = useReduceMotion();
   // the order is set once per set of pockets: a balance change must not reshuffle the stack under the owner's thumb
   const ids = pockets.map((p) => p.address.toLowerCase()).join();
-  const order = useMemo(() => stackOrder(pockets, activeAddress), [ids]); // eslint-disable-line react-hooks/exhaustive-deps
+  const order = useMemo(() => stackOrder(pockets, activeAddress, grouped), [ids, grouped]); // eslint-disable-line react-hooks/exhaustive-deps
   const cw = w ? pageCardWidth(w + PAGE_MARGIN * 2) : 0; // the pocket page's card width: the flight only moves it
   const h = cardHeight(cw);
   const strip = stripFor(cw, !!jobs);

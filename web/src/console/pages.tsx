@@ -12,12 +12,13 @@ import { Button, Card, Empty, PageTitle, Pill, PillSelect, Section } from "../se
 import { shortAddr } from "../shared";
 import { cn } from "../lib/cn";
 import { appFromEvents } from "@sim/pocketAppData";
+import { USAGE_LABEL, usageOf } from "@sim/pocketApp";
 import { RoutineTimeline } from "./RoutineTimeline";
 
 const I = { strokeWidth: 1.75 } as const;
-// each pocket's app, by its job (the card face's colour): research desk ink, deal watcher blue, subscriptions hatch, haggler vermillion
+// each pocket's app: its job, and a dot in its card's colour for how often it spends (daily blue, weekly sage, one-time wheat, when asked hatch)
 const LAYOUT_LABEL = { research: "Research desk", deal: "Deal watcher", subscriptions: "Subscriptions", haggle: "Haggler" } as const;
-const LAYOUT_DOT = { research: "bg-ink", deal: "bg-blue", subscriptions: "hatch", haggle: "bg-[#E9D6AE]" } as const;
+const USAGE_DOT = { daily: "bg-blue", weekly: "bg-[#CBD9C4]", monthly: "bg-[#CBD9C4]", once: "bg-[#E9D6AE]", asked: "hatch" } as const;
 const COUNT = ({ n }: { n: number }) => <span className="num text-[12px] opacity-70">{n}</span>;
 
 // ------------------------------------------------------------------ Pockets
@@ -60,7 +61,7 @@ export function Pockets({ open }: { open(addr: string): void }) {
                   <button type="button" onClick={() => open(p.address)} aria-label={`${nameOf(p.address)} ${usd(p.balance)}`} className="absolute inset-0 z-0 h-full w-full" />
                   <div className="pointer-events-none relative grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 px-4 py-3.5 lg:min-h-16 lg:grid-cols-[minmax(0,1.5fr)_110px_100px_110px_120px_120px] lg:px-5 lg:py-2">
                   <span className="min-w-0 max-lg:order-1">
-                    <span className="block truncate text-[15px] font-bold leading-5 tracking-[-0.01em]">{nameOf(p.address)}{isPhone(p.address) && <PhoneTag />}{(() => { const a = appFromEvents(events as never, p.address); return a ? <span className="ml-2 inline-flex h-5 items-center gap-1 rounded-full bg-fill px-2 align-[2px] text-[11px] font-semibold text-ink2"><span className={cn("size-2 rounded-[3px]", LAYOUT_DOT[a.layout])} />{LAYOUT_LABEL[a.layout]}</span> : null; })()}</span>
+                    <span className="block truncate text-[15px] font-bold leading-5 tracking-[-0.01em]">{nameOf(p.address)}{isPhone(p.address) && <PhoneTag />}{(() => { const a = appFromEvents(events as never, p.address); return a ? <span className="ml-2 inline-flex h-5 items-center gap-1 rounded-full bg-fill px-2 align-[2px] text-[11px] font-semibold text-ink2"><span className={cn("size-2 rounded-[3px]", USAGE_DOT[usageOf(a)])} />{`${LAYOUT_LABEL[a.layout]} · ${USAGE_LABEL[usageOf(a)]}`}</span> : null; })()}</span>
                     <span className="block truncate text-[12px] leading-4 text-muted">Owner {shortAddr(p.owner)} · cap {usd(p.cap)} · {p.askAbove === NEVER ? "never asks" : `asks above ${usd(p.askAbove)}`} · {p.allowed.map((i) => names.get(i) ?? i).join(", ") || "no sellers"}</span>
                     <a href={explorerHref.address(p.address)} className="pointer-events-auto relative z-10 text-[12px] font-bold leading-4 text-ink underline decoration-line decoration-2 underline-offset-4 hover:decoration-vermillion">Open in explorer</a>
                   </span>

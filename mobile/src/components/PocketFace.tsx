@@ -22,8 +22,8 @@ import { NEVER } from "../lib/shared";
 import { cleanText } from "../lib/sanitize";
 import { contractTail, money, usd } from "../lib/util";
 import { agentInfo } from "../../../shared/sim/agents";
-import type { Layout } from "../../../shared/sim/pocketApp";
-import { FACE, LAYOUT_NAME } from "./app/theme";
+import { usageChip, usageOf, type Layout, type RoutineSpec } from "../../../shared/sim/pocketApp";
+import { LAYOUT_NAME, USAGE_FACE } from "./app/theme";
 import { glyphKey, type Glyph } from "../../../shared/sim/pocketAppData";
 import Svg, { Circle, Polyline } from "react-native-svg";
 import type { Pocket } from "../store";
@@ -33,14 +33,11 @@ export const CARD_RATIO = 1.586;
 export const cardHeight = (w: number) => Math.round(w / CARD_RATIO);
 /** Deck slot 0..3 (black, vermillion, blue, white hatch). Older callers passed "navy" / "teal". */
 export type Tone = number;
-/** The card face says what the pocket is for (pocket apps, components/app/theme.ts): research desk black, haggler vermillion,
- *  deal watcher powder blue, subscriptions white hatch. A pocket without an app keeps the older rule: its creation order
- *  (the list is newest first), so a new pocket never recolours the others. */
-export function toneFor(pockets: { address: string; app?: { layout: Layout } }[], address: string): Tone {
-  const i = pockets.findIndex((p) => p.address.toLowerCase() === address.toLowerCase());
-  const layout = i >= 0 ? pockets[i].app?.layout : undefined;
-  if (layout) return FACE[layout];
-  return (i < 0 ? 0 : pockets.length - 1 - i) % deck.length;
+/** The card face says how often the pocket spends (shared/sim/pocketApp.ts `usageOf`): daily powder blue, weekly or monthly
+ *  sage, one-time wheat, when asked white hatch. A pocket without an app spends only when asked. */
+export function toneFor(pockets: { address: string; app?: { layout: Layout; routine?: RoutineSpec | null } }[], address: string): Tone {
+  const p = pockets.find((x) => x.address.toLowerCase() === address.toLowerCase());
+  return USAGE_FACE[usageOf(p?.app)];
 }
 export const faceOf = (tone: Tone): DeckFace => deck[((tone % deck.length) + deck.length) % deck.length];
 const FROZEN: DeckFace = deck[3];
@@ -150,7 +147,7 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draf
   const ink = state ? c.muted : face.ink;
   const sub = state ? c.muted : face.sub;
   const hatched = "hatch" in face && face.hatch;
-  const dark = face.ink === "#FFFFFF";
+  const dark = (face.ink as string) === "#FFFFFF";
   const pad = 16 * k + 4;
   return (
     <TextScaleCap max={1}>
@@ -164,7 +161,15 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draf
             {agentId && peek ? <AgentAvatar kind={agentId} size={Math.max(16, Math.round(26 * k))} /> : null}
             <View style={{ flexShrink: 1 }}>
               <T v="head" numberOfLines={1} style={{ color: ink, fontSize: 17 * Math.max(k, 0.9) }}>{name}</T>
-              <T v="cap" numberOfLines={1} style={{ color: sub, fontSize: 12 * Math.max(k, 0.9) }}>{job}</T>
+              {/* how often it spends, as a chip in its face's own dark tone, then what it does */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                {!state ? (
+                  <View style={{ height: 17, paddingHorizontal: 7, borderRadius: 9, backgroundColor: face.usage, justifyContent: "center", flexShrink: 0 }}>
+                    <T v="tab" numberOfLines={1} style={{ color: c.white, fontSize: 10.5, lineHeight: 13, letterSpacing: 0.2, textTransform: "none" }}>{usageChip(pocket.app)}</T>
+                  </View>
+                ) : null}
+                <T v="cap" numberOfLines={1} style={{ color: sub, fontSize: 12 * Math.max(k, 0.9), flexShrink: 1 }}>{job}</T>
+              </View>
             </View>
           </View>
         ) : <T v="head" numberOfLines={1} style={{ color: ink, flexShrink: 1, fontSize: 17 * Math.max(k, 0.9) }}>{name}</T>}
@@ -179,7 +184,7 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draf
       </View>
       {/* the stripe, with the agent that holds the pocket on a white pill */}
       <View style={{ marginTop: 8 * k, height: 36 * k + 4, backgroundColor: state ? c.ink2 : face.band, justifyContent: "center", paddingHorizontal: pad, overflow: "hidden" }}>
-        {face.band === face.face || dark ? <Hatch color="#FFFFFF" pitch={6} stroke={1} opacity={0.12} /> : null}
+        {(face.band as string) === (face.face as string) || dark ? <Hatch color="#FFFFFF" pitch={6} stroke={1} opacity={0.12} /> : null}
         <View style={{ alignSelf: "flex-start", height: 24 * k + 2, paddingLeft: 3, paddingRight: 10, borderRadius: 999, backgroundColor: c.white, flexDirection: "row", alignItems: "center", gap: 6 }}>
           {agentId ? <AgentAvatar kind={agentId} size={Math.round(18 * k + 2)} /> : <View style={{ width: 6 }} />}
           <T v="cap" w="semi" numberOfLines={1} style={{ color: c.ink, fontSize: 12 * Math.max(k, 0.9) }}>{agent ? `${agent} · ${pocket.app ? LAYOUT_NAME[pocket.app.layout].toLowerCase() : "agent pocket"}` : "Your pocket"}</T>
@@ -187,7 +192,8 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draf
       </View>
       {/* the balance and the rules */}
       <View style={{ paddingHorizontal: pad, marginTop: 10 * k }}>
-        <T v="tab" style={{ color: sub, textTransform: "uppercase", letterSpacing: 0.9 }}>{state ? "Left in the pocket" : "Available"}</T>
+        {/* with the usage line on top there is no room for the label: the big number is the balance */}
+        {!job || state ? <T v="tab" style={{ color: sub, textTransform: "uppercase", letterSpacing: 0.9 }}>{state ? "Left in the pocket" : "Available"}</T> : null}
         <Money v={k >= 0.9 ? "amount" : "section"} value={usd(pocket.balance)} color={state ? "muted" : dark ? "white" : "ink"} label={`${name} balance`} decorative />
       </View>
       <View style={{ flex: 1 }} />

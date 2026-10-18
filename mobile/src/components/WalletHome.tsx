@@ -4,10 +4,10 @@
 // spent, its balance and its live sign. Four, then "See all". Tap a row and its mini card flies up into the pocket's page.
 // Every figure is from the store; the job line is from the pocket's own spec and rules.
 import React, { useRef, useState } from "react";
-import { View, useWindowDimensions } from "react-native";
+import { ScrollView, View, useWindowDimensions } from "react-native";
 import Animated, { FadeInDown, useAnimatedStyle } from "react-native-reanimated";
 import { router } from "expo-router";
-import { c, level3 } from "../tokens";
+import { c, deck, level3 } from "../tokens";
 import { T } from "../ui/Text";
 import { Icon, type IconName } from "../ui/Icon";
 import { Press } from "../ui/kit";
@@ -23,27 +23,54 @@ import { money, usd } from "../lib/util";
 import { faceOf, toneFor } from "./PocketFace";
 import type { Pocket } from "../store";
 import { agentInfo } from "../../../shared/sim/agents";
-import type { Routine } from "../../../shared/sim/pocketApp";
+import { USAGE_LABEL, USAGE_ORDER, usageOf, type Routine, type Usage } from "../../../shared/sim/pocketApp";
+import { USAGE_FACE } from "./app/theme";
 import type { Glyph } from "../../../shared/sim/pocketAppData";
 
 export const JOB_ICON: Record<string, IconName> = { research: "file", deal: "target", subscriptions: "refresh", haggle: "arrowDown" };
-const WD = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const hm = (h: number, m: number) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 
 /** One line of what a pocket does, from its own spec and rules (never invented). */
 export function jobLine(p: Pocket, rt: Routine | null | undefined, sellerName: (id: string) => string, itemName: (s: string, k: string) => string, negotiable: (sellerId: string) => boolean = () => false): string {
+  // how often it spends is the chip beside this line (shared/sim/pocketApp.ts usageChip); this says what it does
   const app = p.app;
   const names = p.allowed.map(sellerName).slice(0, 2).join(" & ");
   if (p.revoked) return "Revoked · the agent is locked out";
-  if (!app) return names ? `When asked · ${names}` : "When asked";
+  if (!app) return names || "Any seller on its list";
   const r = rt ?? app.routine;
   if (app.layout === "deal" && r?.items[0]) return `Buys ${itemName(r.items[0].sellerId, r.items[0].sku)} at ≤ US$${r.limitPrice}`;
   if (app.layout === "haggle") return p.allowed.some(negotiable) ? `Haggles ${p.allowed.filter(negotiable).map(sellerName)[0]} down first` : `Buys once from ${names}`;
-  if (r) {
-    const when = r.cadence.every === "day" ? "Daily" : r.cadence.every === "weekday" ? "Weekdays" : r.cadence.every === "week" ? `${WD[r.cadence.weekday ?? 1]}s` : `The ${r.cadence.dayOfMonth ?? 1}st`;
-    return app.layout === "subscriptions" ? `Renews ${r.items.length} feeds · ${when} ${hm(r.cadence.hour, r.cadence.minute)}` : `${when} ${hm(r.cadence.hour, r.cadence.minute)} · ${names}`;
-  }
-  return `When asked · ${names}`;
+  if (r && app.layout === "subscriptions") return `Renews ${r.items.length} feeds`;
+  return names || "Any seller on its list";
+}
+
+/** Live pockets by usage, scheduled first (they move money without being asked); revoked ones lead, as the stack's quiet top. */
+export function byUsage<P extends Pocket>(pockets: P[]): P[] {
+  const rank = (p: P) => (p.revoked ? -1 : USAGE_ORDER.indexOf(usageOf(p.app)));
+  return pockets.map((p, i) => ({ p, i })).sort((a, b) => rank(a.p) - rank(b.p) || a.i - b.i).map((x) => x.p);
+}
+
+/** The stack's legend: how many pockets spend daily, weekly, once or only when asked, each in its card's own colour. */
+export function UsageLegend({ pockets }: { pockets: Pocket[] }) {
+  const n = new Map<Usage, number>();
+  for (const p of pockets) if (!p.revoked) n.set(usageOf(p.app), (n.get(usageOf(p.app)) ?? 0) + 1);
+  const shown = USAGE_ORDER.filter((u) => n.get(u));
+  if (shown.length < 2) return null;
+  return (
+    // one line whatever the text size: it scrolls sideways rather than wrapping
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} accessible accessibilityLabel={`Your pockets: ${shown.map((u) => `${n.get(u)} ${USAGE_LABEL[u].toLowerCase()}`).join(", ")}`}
+      style={{ marginBottom: 10, flexGrow: 0 }} contentContainerStyle={{ gap: 5, paddingHorizontal: 16 }}>
+      {shown.map((u) => {
+        const f = deck[USAGE_FACE[u]];
+        return (
+          <View key={u} style={{ flexDirection: "row", alignItems: "center", gap: 5, height: 28, paddingLeft: 6, paddingRight: 9, borderRadius: 14, backgroundColor: c.card }}>
+            <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: f.face, borderWidth: 1, borderColor: f.edge }} />
+            <T v="cap" w="semi">{USAGE_LABEL[u]}</T>
+            <T v="cap" w="bold" style={{ color: f.usage, fontVariant: ["tabular-nums"] }}>{String(n.get(u))}</T>
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
 }
 
 export function WalletHero({ usdc, out, pockets, all }: { usdc?: bigint; out: bigint; pockets: Pocket[]; all: Pocket[] }) {

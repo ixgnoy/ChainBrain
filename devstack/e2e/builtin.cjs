@@ -88,7 +88,7 @@ async function until(what, fn, ms = 30000, step = 200) {
     await visible("Research data").waitFor();
     const t = await body();
     check("four seeded pockets", /Research data/.test(t) && /One purchase/.test(t) && /Market news/.test(t) && /Trade quotes/.test(t));
-    check("each pocket says what it does, under the wallet that funds it", /out in \d+ pockets/.test(t) && /Haggles DataPro down first/.test(t) && /Buys .+ at ≤ US\$0\.04/.test(t) && /When asked · /.test(t));
+    check("each pocket says what it does, under the wallet that funds it", /out in \d+ pockets/.test(t) && /Haggles DataPro down first/.test(t) && /Buys .+ at ≤ US\$0\.04/.test(t) && /When asked/.test(t) && /Daily 08:00/.test(t) && /One-time/.test(t));
     check("the deck shows every pocket as a button", (await page.getByRole("button", { name: /Research data pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /One purchase pocket/ }).count()) === 1 && (await page.getByRole("button", { name: /Market news pocket/ }).count()) === 1);
     check("the agents that hold them are named", (await page.getByRole("button", { name: /ChainBrain pocket:/ }).count()) > 0 && (await page.getByRole("button", { name: /Claude pocket:/ }).count()) > 0 && (await page.getByRole("button", { name: /ChatGPT pocket:/ }).count()) > 0);
     check("spending this week is computed (vs last week)", /This week/.test(t) && /vs last week/.test(t) && /bought/.test(t));

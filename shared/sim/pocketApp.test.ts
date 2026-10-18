@@ -5,7 +5,7 @@ import { createWorld } from "./world";
 import { sellers } from "./catalog";
 import { seedOwner } from "./seed";
 import { parseSentence, stricterDraft } from "./speak";
-import { available, nextRun, periodWindow, pickApp, stricterRoutine, validateSpec, cadenceText, cleanLabel, catalogPrompt, type RoutineSpec } from "./pocketApp";
+import { usageChip, usageOf, available, nextRun, periodWindow, pickApp, stricterRoutine, validateSpec, cadenceText, cleanLabel, catalogPrompt, type RoutineSpec } from "./pocketApp";
 import { appFromEvents, glyphOf, weekDigest, budgetOf, priceChanges, priceSeries, purchasesOf, routineFromEvents, runsOf, monthBySeller, renewalsOf, sourcesOf, haggleOf } from "./pocketAppData";
 import { BAD_SPECS, GOOD_SPECS } from "./pocketApp.fixtures";
 import { understand } from "./understand";
@@ -303,4 +303,19 @@ test("spec stream: the canvas replays the spec's real decisions and ends on the 
   assert.deepEqual(r.map((x) => x.layout), ["research", "deal"]);
   assert.ok(s.slice(0, r[1].upto).endsWith("drops below"));
   assert.equal(r.at(-1)!.layout, spec.layout, "the reading ends where the picker did");
+});
+
+test("usage: how often a pocket spends, from its app; the chip says when", () => {
+  const routine = (every: "day" | "weekday" | "week" | "month", extra: object = {}) => ({ kind: "schedule" as const, cadence: { every, hour: 8, minute: 0, ...extra }, items: [], allowance: { amount: "1", period: "week" as const } } as never);
+  assert.equal(usageOf(null), "asked");
+  assert.equal(usageOf({ layout: "research", routine: null }), "asked");
+  assert.equal(usageOf({ layout: "haggle", routine: null }), "once");
+  assert.equal(usageOf({ layout: "deal", routine: routine("day") }), "daily");
+  assert.equal(usageOf({ layout: "deal", routine: routine("weekday") }), "daily");
+  assert.equal(usageOf({ layout: "subscriptions", routine: routine("week", { weekday: 1 }) }), "weekly");
+  assert.equal(usageOf({ layout: "subscriptions", routine: routine("month", { dayOfMonth: 22 }) }), "monthly");
+  assert.equal(usageChip({ layout: "deal", routine: routine("day") }), "Daily 08:00");
+  assert.equal(usageChip({ layout: "subscriptions", routine: routine("week", { weekday: 1 }) }), "Weekly · Mon");
+  assert.equal(usageChip({ layout: "subscriptions", routine: routine("month", { dayOfMonth: 22 }) }), "Monthly · 22nd");
+  assert.equal(usageChip({ layout: "haggle", routine: null }), "One-time");
 });
