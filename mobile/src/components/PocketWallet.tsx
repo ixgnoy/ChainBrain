@@ -21,11 +21,12 @@ import { usd } from "../lib/util";
 import { cleanText } from "../lib/sanitize";
 import type { Pocket } from "../store";
 import type { Glyph } from "../../../shared/sim/pocketAppData";
-import { PocketFace, cardHeight, toneFor, type Tone } from "./PocketFace";
+import { agentInfo } from "../../../shared/sim/agents";
+import { JOB_H, PocketFace, cardHeight, toneFor, type Tone } from "./PocketFace";
 import { PAGE_MARGIN, pageCardWidth } from "./CardFlight";
 
 /** How much of each card shows above the next: its name row and a sliver of its stripe. */
-export const stripFor = (cw: number) => { const k = Math.min(1, cw / 340); return Math.round(16 * k + 4 + 26 * k + 8 * k + 3); }; // 3 pt of stripe: a dark rule between cards, above the agent's pill
+export const stripFor = (cw: number, job = false) => { const k = Math.min(1, cw / 340); return Math.round(16 * k + 4 + 26 * k + 8 * k + 3 + (job ? JOB_H * k : 0)); }; // 3 pt of stripe: a dark rule between cards, above the agent's pill
 /** Pull distance at which the strips are fully fanned (and the tick plays). */
 const FAN = 90;
 /** Room under the front card for its shadow. */
@@ -49,9 +50,10 @@ export function stackOrder(pockets: Pocket[], front?: string): string[] {
   return [...dead, ...up.reverse()];
 }
 
-export const PocketWallet = React.memo(function PocketWallet({ pockets, play, scrollY, glyphs }: {
+export const PocketWallet = React.memo(function PocketWallet({ pockets, play, scrollY, glyphs, jobs }: {
   pockets: Pocket[]; play: boolean; /** Home's raw scroll offset (negative while pulled down) */ scrollY: SharedValue<number>;
   /** each pocket's live sign, by lower-case address */ glyphs: Record<string, Glyph | null>;
+  /** each pocket's one-line job, by lower-case address (shown under its name on its strip) */ jobs?: Record<string, string>;
 }) {
   const activeAddress = useAppSelect((s) => s.active?.address);
   // full width on a phone: size the stack in the first frame, or Home draws without it and jumps when it measures (web
@@ -66,7 +68,7 @@ export const PocketWallet = React.memo(function PocketWallet({ pockets, play, sc
   const order = useMemo(() => stackOrder(pockets, activeAddress), [ids]); // eslint-disable-line react-hooks/exhaustive-deps
   const cw = w ? pageCardWidth(w + PAGE_MARGIN * 2) : 0; // the pocket page's card width: the flight only moves it
   const h = cardHeight(cw);
-  const strip = stripFor(cw);
+  const strip = stripFor(cw, !!jobs);
   const n = order.length;
 
   // one tick as the strips open fully on a pull
@@ -84,16 +86,16 @@ export const PocketWallet = React.memo(function PocketWallet({ pockets, play, sc
         if (!p) return null;
         return (
           <WalletCard key={addr} pocket={p} pockets={pockets} index={i} count={n} cw={cw} strip={strip} play={play && !reduce} reduce={reduce}
-            scrollY={scrollY} focused={focused} tone={toneFor(pockets, p.address)} glyph={glyphs[addr] ?? null} hidden={flight?.pocket === addr} />
+            scrollY={scrollY} focused={focused} tone={toneFor(pockets, p.address)} glyph={glyphs[addr] ?? null} job={jobs?.[addr]} hidden={flight?.pocket === addr} />
         );
       }) : null}
     </View>
   );
 });
 
-function WalletCard({ pocket, pockets, index, count, cw, strip, play, reduce, scrollY, focused, tone, glyph, hidden }: {
+function WalletCard({ pocket, pockets, index, count, cw, strip, play, reduce, scrollY, focused, tone, glyph, job, hidden }: {
   pocket: Pocket; pockets: Pocket[]; index: number; count: number; cw: number; strip: number; play: boolean; reduce: boolean;
-  scrollY: SharedValue<number>; focused: boolean; tone: Tone; glyph: Glyph | null; hidden: boolean;
+  scrollY: SharedValue<number>; focused: boolean; tone: Tone; glyph: Glyph | null; job?: string; hidden: boolean;
 }) {
   const ref = useRef<View>(null);
   const front = index === count - 1;
@@ -129,8 +131,8 @@ function WalletCard({ pocket, pockets, index, count, cw, strip, play, reduce, sc
           <Press kind="row" haptics="light" onPress={open}
             onPressIn={() => { if (!reduce) lift.value = withTiming(1, { duration: 120 }); }}
             onPressOut={() => { lift.value = reduce ? 0 : withSpring(0, motion.spring.deck); }}
-            accessibilityRole="button" accessibilityLabel={`${name} pocket, ${usd(pocket.balance)} USDC${pocket.revoked ? ", revoked" : ""}`} accessibilityHint="Opens the pocket">
-            <PocketFace pocket={pocket} width={cw} tone={tone} shadow focused={focused} tilt={front} glyph={glyph} peek={!front} />
+            accessibilityRole="button" accessibilityLabel={`${name} pocket, ${usd(pocket.balance)} USDC${pocket.revoked ? ", revoked" : ""}${job ? `. ${agentInfo(pocket.agentId ?? "")?.name ?? "Your"} pocket: ${job}` : ""}`} accessibilityHint="Opens the pocket">
+            <PocketFace pocket={pocket} width={cw} tone={tone} shadow focused={focused} tilt={front} glyph={glyph} peek={!front} job={job} />
           </Press>
         </View>
       </Animated.View>

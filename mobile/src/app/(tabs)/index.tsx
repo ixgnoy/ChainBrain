@@ -25,8 +25,8 @@ import { pageCardWidth, PAGE_MARGIN } from "../../components/CardFlight";
 import { cardHeight, faceOf, toneFor } from "../../components/PocketFace";
 import type { Pocket } from "../../store";
 import * as api from "../../lib/api";
-import { budgetOf, glyphKey, glyphOf, weekDigest, type Glyph } from "../../../../shared/sim/pocketAppData";
-import { PocketRows, WalletHero } from "../../components/WalletHome";
+import { glyphKey, glyphOf, weekDigest, type Glyph } from "../../../../shared/sim/pocketAppData";
+import { WalletHero, jobLine } from "../../components/WalletHome";
 import { WeekBought } from "../../components/WeekDigest";
 import { SpendChart } from "../../components/SpendChart";
 import { useIntroDone } from "../../ui/intro";
@@ -82,7 +82,7 @@ function LoadingDeck() {
   const { width } = useWindowDimensions();
   const cw = pageCardWidth(width);
   const h = cardHeight(cw);
-  const strip = stripFor(cw);
+  const strip = stripFor(cw, true);
   return (
     <View accessible accessibilityLabel="Loading your pockets" style={{ height: 2 * strip + h + 16 }}>
       {[0, 1, 2].map((i) => (
@@ -193,28 +193,11 @@ function Home({ ready }: { ready: boolean }) {
   const liveRoutines = useMemo(() => pockets.filter((p) => !p.revoked).map((p) => routines.get(p.address.toLowerCase())).filter((r): r is NonNullable<typeof r> => !!r), [pockets, routines]);
   const anyActive = liveRoutines.some((r) => r.status === "active");
   const pauseAll = (pause: boolean) => { haptic.medium(); for (const r of liveRoutines) if ((r.status === "active") === pause) api.pauseRoutine(r.pocket, pause); };
-  // the rows: live pockets, the one an agent touched last first; revoked ones at the end
-  const rowOrder = useMemo(() => {
-    const last = new Map<string, number>();
-    for (const e of events) if (e.pocket) last.set(String(e.pocket).toLowerCase(), e.at);
-    const t = (p: Pocket) => last.get(p.address.toLowerCase()) ?? 0;
-    const byRecent = [...pockets].sort((a, b) => Number(a.revoked) - Number(b.revoked) || t(b) - t(a));
-    // the first rows show one pocket of each job (deal watcher, research desk, subscriptions, haggler), so the four kinds
-    // are seen at a glance; then everything else, most recent first
-    const first: Pocket[] = [];
-    for (const p of byRecent) if (!p.revoked && !first.some((x) => (x.app?.layout ?? "research") === (p.app?.layout ?? "research"))) first.push(p);
-    return [...first, ...byRecent.filter((p) => !first.includes(p))];
-  }, [pockets, moneyN]); // eslint-disable-line react-hooks/exhaustive-deps
-  // what each pocket has spent of what it was given (its period allowance when it has a routine)
-  const spentShare = useMemo(() => {
-    const out: Record<string, number> = {};
-    for (const p of pockets) {
-      const a = p.address.toLowerCase();
-      const b = budgetOf(events, p.address, { routine: routines.get(a) ?? null, balance: p.balance, now: Date.now() });
-      out[a] = b.limit > 0n ? Number(b.spent) / Number(b.limit) : 0;
-    }
-    return out;
-  }, [pockets, routines, moneyN]); // eslint-disable-line react-hooks/exhaustive-deps
+  // each pocket's one-line job, for its strip in the stack
+  const jobs = useMemo(() => {
+    const neg = (id: string) => !!cfg?.sellers.find((x) => x.id === id)?.items.some((i) => (i as { negotiable?: boolean }).negotiable);
+    return Object.fromEntries(pockets.map((p) => [p.address.toLowerCase(), jobLine(p, routines.get(p.address.toLowerCase()), sellerLabel, itemName, neg)]));
+  }, [pockets, routines, cfg, sellerLabel, itemName]);
   const upcoming = useMemo(() => nextRuns(pockets, (a) => routines.get(a.toLowerCase()) ?? null, events, cfg?.sellers ?? [], now), [pockets, routines, events, cfg, now]);
   const reduce = useReduceMotion();
   const big = useLargeText();
@@ -263,7 +246,7 @@ function Home({ ready }: { ready: boolean }) {
         ) : pockets.length === 0 ? (
           <EmptyPockets />
         ) : (
-          <PocketRows pockets={rowOrder} all={pockets} routines={routines} glyphs={glyphs} spent={spentShare} sellerName={sellerLabel} itemName={itemName} negotiable={(id) => !!cfg?.sellers.find((x) => x.id === id)?.items.some((i) => (i as { negotiable?: boolean }).negotiable)} />
+          <PocketWallet pockets={pockets} play={play} scrollY={scrollY} glyphs={glyphs} jobs={jobs} />
         )}
       </View>
 

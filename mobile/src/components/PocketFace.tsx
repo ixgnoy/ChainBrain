@@ -45,14 +45,15 @@ export function toneFor(pockets: { address: string; app?: { layout: Layout } }[]
 export const faceOf = (tone: Tone): DeckFace => deck[((tone % deck.length) + deck.length) % deck.length];
 const FROZEN: DeckFace = deck[3];
 
-function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, tilt, still, draft, glyph, peek }: { pocket: Pocket; width: number; tone: Tone; /** Warning haptic when it freezes in view */ buzz?: boolean;
+function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, tilt, still, draft, glyph, peek, job }: { pocket: Pocket; width: number; tone: Tone; /** Warning haptic when it freezes in view */ buzz?: boolean;
   /** lean with the phone (the one card in focus: the pocket page, the front of the deck) */ tilt?: boolean;
   /** the level-3 card shadow (DESIGN.md: fanned cards) */ shadow?: boolean;
   /** the screen showing this card is in front: a freeze that happened while it was away plays when it comes back */ focused?: boolean;
   /** no material layer (the flying copy, small thumbnails) */ still?: boolean;
   /** not on-chain yet (the compose preview): no contract number */ draft?: boolean;
   /** the live sign in the top corner (Home's wallet stack shows only each card's top strip) */ glyph?: Glyph | null;
-  /** only the top strip shows: without a live sign, the corner carries the balance */ peek?: boolean }) {
+  /** only the top strip shows: without a live sign, the corner carries the balance */ peek?: boolean;
+  /** one line of what the pocket does, under its name, with the agent's mark (Home's stack: each strip says what it is) */ job?: string }) {
   const reduce = useReduceMotion();
   const h = cardHeight(width);
   const k = Math.min(1, width / 340);
@@ -109,7 +110,7 @@ function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, til
       <Animated.View style={[{ position: "absolute", left: 0, top: 0, width, height: h, borderRadius: R, borderCurve: "continuous", backgroundColor: off ? FROZEN.edge : face.edge } as object, shadow ? level3 : null, edgeStyle]} />
       <View style={{ width, height: h, borderRadius: R, overflow: "hidden", borderCurve: "continuous" } as object}>
         <Animated.View style={[{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }, live]}>
-          <Print pocket={pocket} name={name} agent={agent?.name} agentId={pocket.agentId} face={face} k={k} w={width} h={h} still={still} draft={draft} glyph={glyph} peek={peek} />
+          <Print pocket={pocket} name={name} agent={agent?.name} agentId={pocket.agentId} face={face} k={k} w={width} h={h} still={still} draft={draft} glyph={glyph} peek={peek} job={job} />
         </Animated.View>
         {deadOn ? (
           <Animated.View pointerEvents={off ? "auto" : "none"} style={[{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }, dead]}>
@@ -123,10 +124,12 @@ function PocketFaceView({ pocket, width, tone, buzz, shadow, focused = true, til
 /** Memoised: its props are stable store values, so a new event or ask elsewhere leaves it alone. `focused` only matters to
  *  a card that is off (a freeze seen late plays on return), so a live card ignores it: leaving Home must not redraw the deck. */
 export const PocketFace = React.memo(PocketFaceView, (a, b) =>
-  a.pocket === b.pocket && a.width === b.width && a.tone === b.tone && a.buzz === b.buzz && a.shadow === b.shadow && a.tilt === b.tilt && a.still === b.still && a.draft === b.draft && glyphKey(a.glyph ?? null) === glyphKey(b.glyph ?? null) && a.peek === b.peek &&
+  a.pocket === b.pocket && a.width === b.width && a.tone === b.tone && a.buzz === b.buzz && a.shadow === b.shadow && a.tilt === b.tilt && a.still === b.still && a.draft === b.draft && glyphKey(a.glyph ?? null) === glyphKey(b.glyph ?? null) && a.peek === b.peek && a.job === b.job &&
   (a.focused === b.focused || !(b.pocket.revoked || !!b.pocket.frozen || isExpired(b.pocket))));
 
 const R = 18;
+/** The job line's height under the name (pt at full width). */
+export const JOB_H = 18;
 /** How much of the card's side shows under the face (pt). */
 const EDGE = 4;
 
@@ -141,7 +144,7 @@ export const expiryText = (expiresAt: bigint | number) => {
 
 /** The print, VaultBank's card anatomy: the pocket name, a stripe across the card carrying the holding agent on a white pill,
  *  the balance, the pocket's rules in one line, and the short pocket number big at the bottom with the expiry. */
-function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draft, glyph, peek }: { pocket: Pocket; name: string; agent?: string; agentId?: string; face: DeckFace; k: number; w: number; h: number; state?: string; still?: boolean; draft?: boolean; glyph?: Glyph | null; peek?: boolean }) {
+function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draft, glyph, peek, job }: { pocket: Pocket; name: string; agent?: string; agentId?: string; face: DeckFace; k: number; w: number; h: number; state?: string; still?: boolean; draft?: boolean; glyph?: Glyph | null; peek?: boolean; job?: string }) {
   const ask = pocket.askAbove === NEVER || pocket.askAbove > pocket.cap ? "never asks" : pocket.askAbove === 0n ? "asks every time" : `asks above ${money(pocket.askAbove)}`;
   const tail = contractTail(pocket.address);
   const ink = state ? c.muted : face.ink;
@@ -155,8 +158,16 @@ function Print({ pocket, name, agent, agentId, face, k, w, h, state, still, draf
       {hatched ? <Hatch color={c.line} pitch={7} stroke={1.5} /> : null}
       {!still ? <CardMaterial width={w} height={h} dark={dark} /> : null}
       {/* top: the pocket's name, or its state */}
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, paddingHorizontal: pad, paddingTop: pad - 2, height: pad + 26 * k }}>
-        <T v="head" numberOfLines={1} style={{ color: ink, flexShrink: 1, fontSize: 17 * Math.max(k, 0.9) }}>{name}</T>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, paddingHorizontal: pad, paddingTop: pad - 2, height: pad + 26 * k + (job ? JOB_H * k : 0) }}>
+        {job ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
+            {agentId && peek ? <AgentAvatar kind={agentId} size={Math.max(16, Math.round(26 * k))} /> : null}
+            <View style={{ flexShrink: 1 }}>
+              <T v="head" numberOfLines={1} style={{ color: ink, fontSize: 17 * Math.max(k, 0.9) }}>{name}</T>
+              <T v="cap" numberOfLines={1} style={{ color: sub, fontSize: 12 * Math.max(k, 0.9) }}>{job}</T>
+            </View>
+          </View>
+        ) : <T v="head" numberOfLines={1} style={{ color: ink, flexShrink: 1, fontSize: 17 * Math.max(k, 0.9) }}>{name}</T>}
         {state ? (
           <View accessibilityLabel={state} style={{ minHeight: 24, paddingHorizontal: 9, borderRadius: 12, backgroundColor: c.vermillionSoft, flexDirection: "row", alignItems: "center", gap: 5 }}>
             <Icon name="lock" size={12} color={c.vermillionInk} stroke={2.2} />
