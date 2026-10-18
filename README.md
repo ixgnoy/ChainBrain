@@ -81,21 +81,26 @@ Redeploy: `RAILWAY_TOKEN=<project token> railway up --service fisco-node|fisco-a
 ## Test
 
 ```bash
-cd contracts && forge test                              # 55: MockEHKD 7, pockets on eHKD 24, on a millisecond clock 24
-cd server && pnpm test && pnpm typecheck                # on the local FISCO node: 82 passed + 6 skipped without ANTHROPIC_API_KEY (needs forge build)
+cd contracts && forge test                              # 73: MockEHKD 7, pockets on eHKD 30, on a millisecond clock 30, 5 fuzz, 6 invariants (128k random calls)
+cd server && pnpm test && pnpm typecheck                # on the local FISCO node: 84 passed + 6 skipped without ANTHROPIC_API_KEY (needs forge build)
 cd server && SCENE_REPLAY=1 pnpm test:scenes            # 6 passed: scenes through the agent loop (drop SCENE_REPLAY to use the real model)
 cd server && pnpm tsx scripts/verify-evidence.ts       # re-fetch every hash in docs/evidence-fisco.json
 cd web && pnpm test && pnpm build                       # 82 tests
-cd mobile && node --import tsx --test ../shared/sim/*.test.ts   # built-in network, scenes 1-11, 58 tests (57 pass; one time-of-day test is a known failure)
+cd mobile && node --import tsx --test ../shared/sim/*.test.ts   # built-in network, scenes 1-11, 60 tests
 node devstack/e2e/builtin.cjs --url http://localhost:8091   # phone on the built-in network, no server needed
 cd mobile && npm install && npm test && npm run typecheck && npx expo-doctor   # 46 tests
 cd android && ./gradlew testDebugUnitTest assembleDebug   # 6 unit tests
+python3 -m unittest verify/test_verify.py                 # 9: the independent verifier (stdlib Python)
 ```
+
+## Check a pocket without trusting us
+
+`verify/verify_pocket.py` is a separate verifier in standard-library Python. It shares no code with the TypeScript stack. It reads a pocket's rules straight from the chain and says them in plain English, then checks them against what the owner approved: `python3 verify/verify_pocket.py --rpc https://fisco-node-production.up.railway.app --pocket 0x... [--approved approved.json]`. Exit code 0 means every field matches. See [verify/README.md](verify/README.md).
 
 ## Deployment guide
 
 1. **Factory** (once): `bash scripts/fisco/deploy.sh` runs `contracts/script/DeployFisco.s.sol` and writes `contracts/deployments/20200.json`. The server reads it, or `FACTORY_ADDRESS` if set.
-2. **Live gate:** `cd server && pnpm spike` pays DataLite (agent only) and DataPro (owner co-signed) from a fresh pocket: HK$2.30 and HK$11.70. Set `EVIDENCE_FILE=../docs/evidence-fisco.json` to record the hashes.
+2. **Live gate:** `cd server && pnpm spike` pays DataLite (agent only) and DataPro (owner co-signed) from a fresh pocket: HK$2.30 and HK$11.70. Set `EVIDENCE_FILE=../docs/evidence-fisco.json` to record the hashes. `pnpm tsx scripts/allowance.ts` proves the weekly allowance on the chain: a first report pays, a second from the agent key alone reverts at the token, and the owner's co-signature lets it through.
 3. **Run the stack:** in `server/`, `pnpm sellers` (port 4021) and `pnpm dev` (port 8787). In `web/`, `pnpm dev`, then open http://localhost:5173.
 4. **Phone, Expo Go:** `cd mobile && EXPO_PUBLIC_API_URL=http://<laptop LAN IP>:8787 npx expo start`, then scan the QR code. Phone and laptop must share Wi-Fi. The app still opens on the built-in network: turn on Settings, Advanced, **Custom server** and connect to the URL above to use the real server. (`EXPO_PUBLIC_API_URL` is the address the app offers there, and the relay address in the linked setup below.)
 5. **Phone, native Android:** open `android/` in Android Studio and run on a device or emulator. The wallet API URL is set on the app's first screen. Use `http://10.0.2.2:8787` from the emulator, or the laptop's LAN IP from a phone. The defaults live in `android/gradle.properties`. The local chain RPC is `http://10.0.2.2:8545` from the emulator.

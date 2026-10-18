@@ -122,6 +122,20 @@ The web console has its own Explorer tab (`/#explorer`) that reads the same data
 | `GET /api/explorer/tx/<hash>` | status, block, time, from, to, nonce, input, gas used, decoded logs |
 | `GET /api/explorer/address/<addr>` | native and eHKD balance, nonce, whether it is a contract, pocket settings if it is a pocket, and its recent transactions (up to 50, from a scan of recent blocks) |
 
+## Pocket rules on-chain
+
+Each pocket enforces these rules in `Pocket.sol`:
+- **Per-payment cap.** A seller can have its own cap that replaces the pocket's (`setSellerCap`).
+- **Seller allowlist.**
+- **Ask-me limit.** Payments above it also need the owner's signature.
+- **Expiry.**
+- **Period allowance.** At most `periodLimit` per day, week or month, in Hong Kong calendar time, set with `setPeriodLimit(kind, limit)`.
+- **Freeze and revoke.**
+
+**How the allowance is counted:** `isValidSignature` is view-only, so the pocket can't count spend there. Instead, after every authorized transfer out of a pocket, Mock e-HKD calls `pocket.onSpend(to, value)`. The token gives that call a fixed 100,000 gas and refuses the payment if less is left, so a caller can't starve the count. Over the allowance, `canPay` returns `OVER_PERIOD`, and the payment settles only with the owner's co-signature. A real e-HKD would need the same settlement hook.
+
+Every allowlist and seller-cap change is emitted as `SellerSet` or `SellerCapSet`, so the rules can be rebuilt from logs alone. That is what `verify/verify_pocket.py` does.
+
 ## Using the chain from code
 
 The chain speaks the Ethereum JSON-RPC, so viem, ethers, `cast` and MetaMask work. These FISCO differences apply:
@@ -130,6 +144,7 @@ The chain speaks the Ethereum JSON-RPC, so viem, ethers, `cast` and MetaMask wor
 - **Use legacy transactions with gas price 0.** Send type-0 transactions with `gasPrice: 0`. Do not use EIP-1559 fee fields.
 - **Send a sender's transactions one at a time.** FISCO does not order a sender's pending transactions by nonce, so wait for each receipt before sending the next.
 - **`block.timestamp` is in milliseconds.** Contracts read time through `Clock.nowSec()`, which divides by 1000. Off-chain code should do the same when it reads block times.
+- **`eth_getLogs` needs `toBlock`, `address` and `topics`, and loses logs on wide ranges.** The node rejects a filter missing any of them, and a range of more than a few blocks silently returns only part of the logs. The hosted RPC gateway fills the defaults and scans in 5-block windows, so clients there get every log. Against a bare local node, query in windows of 5 blocks yourself (`verify/verify_pocket.py` does).
 - **Some addresses look like contracts.** For accounts the node tracks, `eth_getCode` can return a pseudo-code string starting with `[PRECOMPILED]`. Treat it as "not a contract".
 - **EIP-712 signing domain for eHKD** (EIP-3009 `transferWithAuthorization`, used by x402): name `Mock e-HKD`, version `1`, chainId `20200`, verifyingContract = the token address.
 
