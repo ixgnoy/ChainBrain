@@ -20,6 +20,7 @@ The owner's notes on iOS (memory: ux-round-3-decisions): the cursor pill was cut
 - **Home:** the wallet hero, then the 2.5D stack again. Each strip now shows the agent's mark, the name and the job line. The rows and See all are gone. The e2e no longer clicks See all.
 - **Activity:** one tab, a segmented Live / Ledger switch (black thumb, green live dot), opening on Live. Live moved to `components/LiveFeed.tsx`, and the tab bar is Home · Agents · Brain · Activity · Settings. Auto-play ends on `/activity`.
 - **Brain:** a node graph on a black card (`lib/brainGraph.ts`, tested: every node is real, one pulse per payment, every pulse runs over graph nodes). Pulses use transforms and opacity only; the dot moves one edge per 520 ms and a ring opens on the last node. The per-pocket brain moved to `/pocket-brain`.
+- **Verified:** tsc; phone tests 49/49 (2 new for the graph); e2e 58/58 (new: Activity opens on Live, then Ledger); auto-play runs every scene and ends on Activity's Live view at about 405 s with no page errors; iOS Simulator (prod bundle) shows the stack Home, the graph mid-pulse and Activity (screenshots `ios-54` to `ios-56` in `screenshots/pocket-apps/`).
 - **Found while checking:** leaving Home logged "svg width -1". The hidden stack measures 0 wide, so the job-row avatar got a negative size. It is now clamped to 16.
 
 ## UX round 2 (18 Oct)
