@@ -95,8 +95,11 @@ export function explorerRoutes() {
     // FISCO reports accounts it tracks (balance, nonce) with pseudo-code "[PRECOMPILED],…,/usr/<addr>": not a contract
     const isContract = !!code && code.length > 2 && !hexToString(code).startsWith("[PRECOMPILED]");
     const pocket = isContract
-      ? await Promise.all(["owner", "agent", "perPaymentCap", "askAbove", "expiresAt", "revoked"].map((functionName) => c0().readContract({ address, abi: pocketAbi, functionName } as any)))
-          .then(([owner, agent, cap, askAbove, expiresAt, revoked]) => ({ owner, agent, cap: formatAmount(cap as bigint), askAbove: askAbove as bigint, expiresAt, revoked }))
+      ? await Promise.all(["owner", "agent", "perPaymentCap", "askAbove", "expiresAt", "revoked", "frozen", "periodKind", "periodLimit", "spentThisPeriod"].map((functionName) => c0().readContract({ address, abi: pocketAbi, functionName } as any)))
+          .then(([owner, agent, cap, askAbove, expiresAt, revoked, frozen, periodKind, periodLimit, spent]) => ({
+            owner, agent, cap: formatAmount(cap as bigint), askAbove: askAbove as bigint, expiresAt, revoked, frozen,
+            allowance: Number(periodKind) ? { per: ["", "day", "week", "month"][Number(periodKind)], limit: formatAmount(periodLimit as bigint), spentThisPeriod: formatAmount(spent as bigint) } : null,
+          }))
           .catch(() => null)
       : null;
     const low = address.toLowerCase();

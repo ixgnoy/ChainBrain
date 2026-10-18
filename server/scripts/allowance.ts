@@ -1,8 +1,8 @@
 // The period allowance on the live chain (FISCO): the pocket, not the server, holds "at most HK$3.00 a week".
 //   1) owner creates + funds a pocket (cap 15, never asks) and sets a weekly allowance of HK$3.00   → must settle
-//   2) DataLite durian report (HK$2.30) with the agent key alone                                  → must settle (Spent)
+//   2) DataLite durian report (HK$2.30) with the agent key alone                                  → must settle (the pocket counts it)
 //   3) a second report, agent key alone, submitted straight to the token (no server in the way)   → must revert
-//   4) the same second report with the owner's co-signature (the cheque)                          → must settle (Spent)
+//   4) the same second report with the owner's co-signature (the cheque)                          → must settle
 // Prints tx hashes for the evidence file. Requires: factory deployed, OWNER and FORCE funded.
 import "dotenv/config";
 import { serve } from "@hono/node-server";
@@ -47,7 +47,7 @@ const q1 = await fetchQuote("datalite", "durian-report");
 if (q1.kind !== "priced") throw new Error("expected 402");
 const r1 = await settle(pocket, track(pocket, q1.quote), intentHash);
 console.log("first report, agent alone →", r1);
-if (r1.ok) record("allowance: first report HK$2.30, agent key alone (counted on-chain)", r1.tx, "success", "Spent(address,uint256,uint256)", pocket);
+if (r1.ok) record("allowance: first report HK$2.30, agent key alone (counted on-chain)", r1.tx, "success", "AuthorizationUsed(address,bytes32)", cfg().token);
 
 // the second report: a compromised agent key goes straight to the token, past any server check
 const q2 = await fetchQuote("datalite", "durian-report");
@@ -70,7 +70,7 @@ const rec = track(pocket, q2.quote);
 rec.ownerSig = await owner.signTypedData(transferTypedData(prepareApproval(pocket, rec, intentHash)));
 const r2 = await settle(pocket, rec, intentHash);
 console.log("second report, owner co-signed →", r2);
-if (r2.ok) record("allowance: second report with the owner's co-signature (the cheque)", r2.tx, "success", "Spent(address,uint256,uint256)", pocket);
+if (r2.ok) record("allowance: second report with the owner's co-signature (the cheque)", r2.tx, "success", "AuthorizationUsed(address,bytes32)", cfg().token);
 
 server?.close();
 process.exit(r1.ok && r2.ok && frc.status === "reverted" ? 0 : 1);
