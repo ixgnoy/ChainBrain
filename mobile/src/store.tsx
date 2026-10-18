@@ -232,12 +232,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       const k = tokenKey(apiUrl, wallet.address);
       const saved = await getItem(k);
-      if (saved && (await stillSignedIn(saved))) { if (alive) { setVisitorToken(saved); setVisitor({ state: "ready" }); } return; }
+      if (saved && (await stillSignedIn(saved))) { if (alive) { autoFunded.current = wallet.address; setVisitorToken(saved); setVisitor({ state: "ready" }); } return; }
       if (!alive) return;
       setVisitor({ state: "signing" });
       try {
         const r = await signUp(wallet.address, (ch) => wallet.signLogin(ch));
         if (!alive) return;
+        // sign-up funded this wallet: the faucet must not claim again on a balance read from before the mint
+        if (!r.funding.error) autoFunded.current = wallet.address;
         setVisitorToken(r.token); await setItem(k, r.token);
         setVisitor({ state: r.funding.error ? "error" : "ready", id: r.visitorId, error: r.funding.error ? `Signed in, but funding failed: ${r.funding.error}` : undefined });
         if (r.created && r.funding.mintTx) setNotice({ title: `Your wallet is ready: ${curSign()}${r.funding.minted} arrived`, txs: [{ label: `${curSign()}${r.funding.minted} to your main wallet`, hash: r.funding.mintTx }] });
@@ -312,9 +314,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const autoFunded = useRef<string>("");
   useEffect(() => {
     if (!(dev || getChain()?.key === "fisco") || !wallet || !balances || balances.ehkd > 0n || autoFunded.current === wallet.address) return;
+    // sign-up funds a new visitor; the faucet only steps in once sign-up is done and the wallet is still empty
+    if (visitor.state === "signing" || visitor.state === "none") return;
     autoFunded.current = wallet.address;
     api.devFund(wallet.address).then(() => refreshPockets()).catch(() => { autoFunded.current = ""; });
-  }, [dev, wallet, balances, refreshPockets]);
+  }, [dev, wallet, balances, refreshPockets, visitor.state]);
 
   const pockets = useMemo<Pocket[]>(() => addresses.flatMap((a) => {
     const v = views[a.toLowerCase()];

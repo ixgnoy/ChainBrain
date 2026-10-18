@@ -28,7 +28,7 @@ test("allows creating a card, and says what it will do", async () => {
   const data = enc("function create(address,uint256,uint256,uint64,address[])", "create", [SHOP, 15_000_000n, 8_000_000n, 1_900_000_000n, [SHOP]]);
   const v = await checkTx(ctx, { to: FACTORY, data });
   assert.equal(v.ok, true);
-  assert.match(v.sentence, /pays up to HK\$15\.00 each, asks you above HK\$8\.00, until 2030-03-17 .*Shops: DataLite/);
+  assert.match(v.sentence, /pays up to HK\$15\.00 each, asks you above HK\$8\.00, until 2030-03-18 01:46 HKT\. Shops: DataLite/);
 });
 
 test("allows funding only the owner's own card", async () => {
@@ -73,7 +73,7 @@ const twa = (a: Authorization) => ({ ...transferTypedData(a), domain: { name: "M
 
 test("co-signs only the exact pending approval, from the owner's card", async () => {
   const v = await checkTypedData(ctx, twa(auth) as any, auth);
-  assert.deepEqual([v.ok, v.sentence], [true, "Approve one payment of HK$12.50 from card 0x0000…0a1d to DataLite, valid until 2030-03-17 17:46 UTC."]);
+  assert.deepEqual([v.ok, v.sentence], [true, "Approve one payment of HK$12.50 from card 0x0000…0a1d to DataLite, valid until 2030-03-18 01:46 HKT."]);
   assert.equal(((await checkTypedData(ctx, twa({ ...auth, value: "99000000" }) as any, auth)) as any).reason, "NOT_A_PENDING_APPROVAL");
   assert.equal(((await checkTypedData(ctx, twa(auth) as any)) as any).reason, "NOT_A_PENDING_APPROVAL");
   const theirs = { ...auth, from: THEIR_CARD };

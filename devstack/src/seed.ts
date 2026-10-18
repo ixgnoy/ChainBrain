@@ -3,12 +3,14 @@
 import { createWalletClient, defineChain, encodeFunctionData, http, parseEventLogs, publicActions, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { DEV_KEYS } from "./stack";
+import { loginTypedData, VISITOR_HEADER } from "../../shared/chain/login";
 
 const API = process.env.API ?? "http://localhost:8787";
 const NEVER = 2n ** 256n - 1n;
 const hkd = (s: string) => BigInt(Math.round(Number(s) * 1e6));
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const post = (path: string, body: object) => fetch(`${API}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+let token = ""; // the owner's visitor session: the server's card routes answer only the card's owner
+const post = (path: string, body: object) => fetch(`${API}${path}`, { method: "POST", headers: { "content-type": "application/json", ...(token ? { [VISITOR_HEADER]: token } : {}) }, body: JSON.stringify(body) });
 const get = async (path: string) => (await fetch(`${API}${path}`)).json() as Promise<any>;
 
 async function rpc(method: string, params: unknown[] = []) {
@@ -23,6 +25,12 @@ const cfg = await get("/api/config");
 const account = privateKeyToAccount(DEV_KEYS.OWNER_PK);
 const chain = defineChain({ id: 20200, name: "FISCO BCOS", nativeCurrency: { name: "FISCO", symbol: "FISCO", decimals: 18 }, rpcUrls: { default: { http: [`${API}/dev/rpc`] } } });
 const owner = createWalletClient({ account, chain, transport: http(`${API}/dev/rpc`) }).extend(publicActions);
+{ // sign in as the owner, like the apps: one Login signature over the server's nonce
+  const ch = await (await post("/v1/challenge", { owner: account.address })).json();
+  const signature = await account.signTypedData(loginTypedData(ch) as any);
+  token = (await (await post("/v1/visitors", { owner: account.address, nonce: ch.nonce, issuedAt: ch.issuedAt, signature })).json()).token;
+  if (!token) { console.error("sign-in failed"); process.exit(1); }
+}
 
 // FISCO: gas is free, legacy transactions at gas price 0
 const sendTx = async (to: Address, data: Hex) => owner.waitForTransactionReceipt({ hash: await owner.sendTransaction({ to, data, gasPrice: 0n, type: "legacy" } as any) });

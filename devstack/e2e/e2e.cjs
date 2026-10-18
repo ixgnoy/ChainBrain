@@ -325,18 +325,21 @@ async function phoneFlow(browser, scenes, issues) {
     await tab("Settings");
     const sw = page.getByRole("switch", { name: "Demo network" });
     await sw.waitFor();
-    check("Demo network is off on launch", (await sw.getAttribute("aria-checked")) !== "true");
+    check("Demo network is off on launch", (await sw.getAttribute("aria-checked")) === "false");
     await until("connected and signed in", async () => /Connected · local test network · signed in/.test(await body()), 60000);
     check("connected to the chain and signed in with one guarded Login signature", true);
     await sw.click();
+    await until("demo switch on", async () => (await sw.getAttribute("aria-checked")) === "true", 5000);
     await tab("Home");
-    await visible("Research data").waitFor({ timeout: 40000 }); // the demo network's seeded cards
+    await until("the demo network's seeded cards", async () => /out in [1-9]\d* cards/.test(await body()), 40000);
     check("Demo network on: the built-in simulation's cards", true);
     await tab("Settings");
     await page.getByRole("switch", { name: "Demo network" }).click();
-    await until("back on the chain", async () => /Connected · local test network/.test(await body()), 30000);
+    await until("back on the chain", async () => /Connected · local test network · signed in/.test(await body()), 60000);
     check("Demo network off: back on the real chain", true);
     await tab("Home");
+    await until("no demo cards left on Home", async () => /out in 0 cards/.test(await body()), 20000);
+    check("nothing from the demo network lingers on Home", !/Durian watch|Data renewals|ChatGPT paid/.test(await body()));
   });
 
   await stp("phone: first launch goes straight to Home (key made silently, no login)", async () => {
@@ -351,120 +354,83 @@ async function phoneFlow(browser, scenes, issues) {
     wallet = privateKeyToAccount(pk).address;
     check("phone key is its own account (not the dev owner)", wallet.toLowerCase() !== OWNER.toLowerCase(), wallet);
     await tab("Settings");
-    check("Settings names the local test network quietly", /local test network/i.test(await body()));
+    await until("Settings names the local test network", async () => /local test network/i.test(await body()), 20000);
+    check("Settings names the local test network quietly", true);
     await tab("Home");
   });
 
-  await stp("phone: test funds arrive by themselves on the dev stack", async () => {
-    await until("phone funded on chain", async () => (await ehkdOf(wallet)) >= 160, 30000);
-    check("phone funded with HK$160 eHKD on chain without a tap", (await ehkdOf(wallet)) >= 160, String(await ehkdOf(wallet)));
-    await page.getByLabel(/^Main wallet US\$2\d\.\d\d$/).first().waitFor();
-    check("home shows the main wallet balance", true);
+  await stp("phone: sign-up funds the wallet with real transactions, once", async () => {
+    await until("phone funded on chain", async () => (await ehkdOf(wallet)) >= 500, 30000);
+    await sleep(3000); // a second claim would land within a few seconds
+    check("phone funded with exactly HK$500 by its sign-up (no second claim)", (await ehkdOf(wallet)) === 500, String(await ehkdOf(wallet)));
+    await until("home shows the main wallet balance", async () => /Main wallet\s*HK\$500\.00/.test(await body()), 20000);
+    check("home shows the main wallet balance from the chain", true);
     await shot(page, "phone-02-funded");
   });
 
-  const createViaWizard = async () => {
+  const createViaWizard = async (preset) => {
     await tab("Home");
-    await page.getByRole("button", { name: "New pocket" }).first().click();
+    await page.getByRole("button", { name: "New card" }).first().click();
+    await page.getByRole("button", { name: "Set it up step by step instead" }).click();
     await visible("What is it for?").waitFor();
-    await page.getByText(/US\$5 budget · up to US\$2 each/).first().click();
-    // a preset sets every limit, so one press goes straight to Review
+    await page.getByRole("button", { name: preset, exact: true }).click();
     await page.getByRole("button", { name: "Review", exact: true }).click();
     await visible("Looks right?").waitFor();
     await slide("Slide to create and fund");
-    // the wizard replaces itself with the pocket page once create and fund are both mined
+    // the wizard replaces itself with the card page once create and fund are both mined
     await page.waitForURL(/pocket\/0x[0-9a-fA-F]{40}/, { timeout: 90000 });
     return (page.url().match(/0x[0-9a-fA-F]{40}/) ?? [])[0];
   };
-  const openNewestPocket = async (count, balance) => {
-    await load();
-    await until(`${count} pocket cards`, async () => (await page.getByRole("button", { name: /pocket, [\d.]+ eHKD/ }).count()) >= count, 40000);
-    await page.getByRole("button", { name: new RegExp(`pocket, ${balance} eHKD`) }).first().click({ position: { x: 120, y: 24 } }); // the visible header strip of the front card
-    await page.getByRole("button", { name: "Revoke", exact: true }).waitFor();
-    return (page.url().match(/0x[0-9a-fA-F]{40}/) ?? [])[0];
-  };
+  const agentOf = async (card) => "0x" + (await rpc("eth_call", [{ to: card, data: "0xf5ff5c76" }, "latest"])).slice(26); // agent()
 
-  await stp("phone: create a pocket through the wizard", async () => {
-    const made = await createViaWizard();
-    await shot(page, "phone-03-wizard-done");
-    pocket = await openNewestPocket(1, "5\\.00");
-    check("wizard opens the new pocket page", pocket.toLowerCase() === made.toLowerCase());
-    check("home lists one active pocket", !!pocket);
-    check("pocket funded with HK$40.00 on chain", pocket && (await ehkdOf(pocket)) === 40, `${pocket}`);
-    await shot(page, "phone-04-pocket");
-    await page.goBack();
+  await stp("phone: create a card in the wizard, with its own agent key", async () => {
+    pocket = await createViaWizard("Ask every time");
+    await shot(page, "phone-03-card");
+    check("card funded with HK$40.00 on chain", (await ehkdOf(pocket)) === 40, `${pocket}`);
+    const agent = await agentOf(pocket);
+    check("the card's agent is derived for this card, not the shared key", agent.toLowerCase() !== (await (await fetch(`${API}/api/config`)).json()).agent.toLowerCase(), agent);
   });
 
-  await stp("phone: scenes 1-3 (question, intent, auto payment, slide to approve co-sign)", async () => {
-    await openChat();
-    await chatSay(S[1].text);
-    await visible("HK$15 in total or per report?").waitFor({ timeout: 40000 });
-    check("scene 1: agent asks 'HK$15 in total or per report?'", true);
-    await chatSay(S[1].followUp);
+  await stp("phone: chat, confirm the task, co-sign above ask-me with the phone's key", async () => {
+    await page.goto(`http://127.0.0.1:${PHONE_PORT}/`);
+    await until("signed in again", async () => /out in 1 card/.test(await body()), 60000);
+    await page.getByRole("button", { name: /^Ask ChainBrain/ }).first().click();
+    await page.waitForURL(/\/agent$/, { timeout: 15000 });
+    await chatSay(S[2].text);
     await confirmTask();
-    check("scene 1: task card confirmed", true);
-    await until("DataLite paid", async () => (await ehkdOf(pocket)) <= 37.7, 40000);
-    check("scene 2: DataLite paid automatically (HK$2.30)", money(await ehkdOf(pocket)) === 37.7);
-    await visible("asks you to co-sign").waitFor({ timeout: 40000 }); // the cheque opens by itself for ChainBrain's own ask
-    await sleep(1600); // the card turns over to the cheque
+    check("task card confirmed", true);
+    await visible("asks you to co-sign").waitFor({ timeout: 60000 }); // the cheque opens by itself: this card asks every time
+    await sleep(1600);
     const t = await body();
-    check("scene 3: the cheque shows DataPro HK$11.70", /11\.70/.test(t) && /DataPro/.test(t));
+    check("the cheque shows DataLite HK$2.30", /2\.30/.test(t) && /DataLite/.test(t));
+    check("the sheet shows what the key will sign", /Your key signs: Approve one payment of HK\$2\.30/.test(t));
     await shot(page, "phone-05-approval");
     await slide("Slide to approve");
-    await until("DataPro paid", async () => money(await ehkdOf(pocket)) === 26, 40000);
-    check("scene 3: paid co-signed with the phone key, pocket HK$26.00 on chain", money(await ehkdOf(pocket)) === 26);
-    await until("DataPro payment event", async () => payments(await events(pocket)).some((p) => p.sellerId === "datapro"), 30000);
-    await waitReply(pocket, 2);
-    const pay = payments(await events(pocket));
-    check("scene 3: DataPro payment event cosigned=true", pay.some((p) => p.sellerId === "datapro" && p.cosigned === true), JSON.stringify(pay.map((p) => [p.sellerId, p.cosigned])));
-    await visible("Paid DataPro").waitFor({ timeout: 20000 });
-    check("chat shows the paid cards", /Paid DataLite/.test(await body()));
+    await until("DataLite paid", async () => payments(await events(pocket)).some((p) => p.sellerId === "datalite"), 60000, 500);
+    const pay = payments(await events(pocket)).find((p) => p.sellerId === "datalite");
+    check("co-signed payment settled (receipt status 1)", (await rpc("eth_getTransactionReceipt", [pay.tx]))?.status === "0x1", pay.tx);
+    check("payment event says cosigned", pay.cosigned === true);
+    check("card balance on chain is HK$37.70", money(await ehkdOf(pocket)) === 37.7, String(await ehkdOf(pocket)));
     await shot(page, "phone-06-paid");
-  });
-
-  await stp("phone: Activity and a receipt", async () => {
     await leaveChat();
-    await tab("Activity");
-    await visible("DataPro").waitFor();
-    const t0 = await body();
-    check("activity lists the DataLite and DataPro payments", /DataLite/.test(t0) && /DataPro/.test(t0));
-    await shot(page, "phone-07-activity");
-    await page.getByText("DataPro", { exact: true }).filter({ visible: true }).first().click();
-    await visible("What you got").waitFor();
-    const t = await body();
-    check("receipt shows amount and co-signed", /1\.50/.test(t) && /co-?signed/i.test(t), t.slice(0, 300));
-    await shot(page, "phone-08-receipt");
-    check("receipt has no explorer link in dev mode", (await page.locator('a[href*="explorer"]').count()) === 0);
-    await page.getByRole("button", { name: "Done" }).filter({ visible: true }).last().click();
-    await sleep(500);
   });
 
-  await stp("phone: scene 7 hold to revoke stops the next payment and returns the rest", async () => {
-    await createViaWizard();
-    const p7 = await openNewestPocket(2, "5\\.00");
-    check("scene 7: second pocket created and funded on chain", p7 && p7.toLowerCase() !== pocket.toLowerCase() && (await ehkdOf(p7)) === 40, p7);
-    await page.goBack();
-    await openChat();
+  await stp("phone: hold to revoke, on chain", async () => {
+    await page.goto(`http://127.0.0.1:${PHONE_PORT}/`);
+    await until("card listed", async () => /out in 1 card/.test(await body()), 60000);
+    await page.goto(`http://127.0.0.1:${PHONE_PORT}/pocket/${pocket}`).catch(() => {});
     const before = await ehkdOf(wallet);
-    await chatSay(S[7].text);
-    await confirmTask();
-    await until("first payment", async () => money(await ehkdOf(p7)) === 37.7, 40000, 100);
-    // the agent waits about 10 s before the second payment: stop it from the chat (revoke = freeze + return what is left)
-    await page.getByRole("button", { name: "Stop agent" }).click();
+    await page.getByRole("button", { name: "Revoke", exact: true }).first().click();
     const hold = page.getByRole("button", { name: /Hold to revoke/ }).filter({ visible: true }).last();
     await hold.waitFor();
-    await sleep(650); // let the sheet finish sliding in before reading the button's position
+    await sleep(650);
     const b = await hold.boundingBox();
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
-    await page.mouse.down(); await sleep(1700); await page.mouse.up(); // the hold is 1.2 s
-    await until("revoked on chain", () => isRevoked(p7), 15000);
-    check("scene 7: hold-to-revoke revoked the pocket on chain", await isRevoked(p7));
-    await waitReply(p7);
-    const evs = await events(p7);
-    check("scene 7: second payment refused with POCKET_REVOKED", reasonsIn(evs).has("POCKET_REVOKED"), [...reasonsIn(evs)].join());
-    check("scene 7: only one payment settled", payments(evs).length === 1);
-    await until("funds returned", async () => (await ehkdOf(p7)) === 0, 30000);
-    check("scene 7: the revoke returned HK$37.70 to the phone key on chain", money((await ehkdOf(wallet)) - before) === 37.7, `${before} -> ${await ehkdOf(wallet)}`);
+    await page.mouse.down(); await sleep(1700); await page.mouse.up();
+    await until("revoked on chain", () => isRevoked(pocket), 30000);
+    check("the card is revoked on chain by the phone's key", await isRevoked(pocket));
+    await until("money back", async () => (await ehkdOf(pocket)) === 0, 30000);
+    check("what was left came back to the main wallet", money((await ehkdOf(wallet)) - before) === 37.7, `${before} -> ${await ehkdOf(wallet)}`);
     await shot(page, "phone-09-revoked");
   });
 

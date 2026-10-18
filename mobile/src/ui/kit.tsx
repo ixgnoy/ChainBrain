@@ -284,7 +284,7 @@ export function Toggle({ on, onChange, a11y, disabled }: { on: boolean; onChange
   const knob = useAnimatedStyle(() => ({ transform: [{ translateX: x.value * 20 }] }));
   return (
     <Press haptics="select" scale={0.96} disabled={disabled} onPress={() => onChange(!on)} hitSlop={8}
-      accessibilityRole="switch" accessibilityLabel={a11y} accessibilityState={{ checked: on, disabled: !!disabled }} style={{ opacity: disabled ? 0.5 : 1 }}>
+      accessibilityRole="switch" accessibilityLabel={a11y} accessibilityState={{ checked: on, disabled: !!disabled }} aria-checked={on} style={{ opacity: disabled ? 0.5 : 1 }}>
       <Animated.View style={[{ width: 51, height: 31, borderRadius: 16, padding: 2 }, track]}>
         <Animated.View style={[{ width: 27, height: 27, borderRadius: 14, backgroundColor: "#FFFFFF", shadowColor: c.ink, shadowOpacity: 0.18, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 2 }, knob]} />
       </Animated.View>

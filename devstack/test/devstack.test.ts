@@ -4,6 +4,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { startDevStack, DEV_KEYS } from "../src/stack";
+import { loginTypedData, VISITOR_HEADER } from "../../shared/chain/login";
 
 // async on purpose: spawnSync would freeze this process and stale its keep-alive connections to the node (ECONNRESET)
 const run = (cmd: string, args: string[], env: NodeJS.ProcessEnv) =>
@@ -30,7 +31,8 @@ let cfg: any;
 let owner: Address;
 
 const get = async (path: string) => (await fetch(`${API}${path}`)).json() as Promise<any>;
-const post = (path: string, body: object) => fetch(`${API}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+let token = ""; // the owner's visitor session (beforeAll signs in like the apps)
+const post = (path: string, body: object) => fetch(`${API}${path}`, { method: "POST", headers: { "content-type": "application/json", ...(token ? { [VISITOR_HEADER]: token } : {}) }, body: JSON.stringify(body) });
 async function rpc(method: string, params: unknown[] = []) {
   const j: any = await (await post("/dev/rpc", { jsonrpc: "2.0", id: 1, method, params })).json();
   if (j.error) throw new Error(`${method}: ${j.error.message}`);
@@ -116,6 +118,9 @@ beforeAll(async () => {
   cfg = await get("/api/config");
   owner = (await get("/dev/health")).owner;
   scenes = await get("/dev/scenes");
+  const me = privateKeyToAccount(DEV_KEYS.OWNER_PK);
+  const ch = await (await post("/v1/challenge", { owner: me.address })).json();
+  token = (await (await post("/v1/visitors", { owner: me.address, nonce: ch.nonce, issuedAt: ch.issuedAt, signature: await me.signTypedData(loginTypedData(ch) as any) })).json()).token;
 });
 afterAll(async () => { await stack?.stop(); });
 

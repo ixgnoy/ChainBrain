@@ -43,7 +43,8 @@ export const hk = (atomic: bigint) => {
   const cents = (atomic + 5_000n) / 10_000n;
   return `HK$${(cents / 100n).toLocaleString("en-US")}.${String(cents % 100n).padStart(2, "0")}`;
 };
-const when = (sec: bigint) => new Date(Number(sec) * 1000).toISOString().slice(0, 16).replace("T", " ") + " UTC";
+/** Hong Kong time (UTC+8, no daylight saving), the apps' own clock: "2030-03-18 01:46 HKT". */
+const when = (sec: bigint) => new Date(Number(sec) * 1000 + 8 * 3_600_000).toISOString().slice(0, 16).replace("T", " ") + " HKT";
 const refuse = (reason: GuardRefusal, sentence: string): Verdict => ({ ok: false, reason, sentence });
 
 function tryDecode(ctx: GuardContext, abi: readonly unknown[], data: Hex) {

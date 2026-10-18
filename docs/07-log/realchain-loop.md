@@ -11,7 +11,7 @@ Last updated: 2026-10-19
 - [x] 3. Visitor accounts
 - [x] 4. Per-card agent keys
 - [x] 5. Signing guard
-- [ ] 6. Real by default in both apps
+- [x] 6. Real by default in both apps
 - [ ] 7. Explorer that explains
 - [ ] 8. Model flag
 - [ ] 9. Attacks on the real chain
@@ -27,8 +27,8 @@ Last updated: 2026-10-19
 
 - [ ] Fresh browser, web console: sign up → funded → card → chat → x402 pay → attack refused, all decoded in `/explorer`
 - [ ] Fresh phone: the same, plus co-sign above ask-me and revoke
-- [ ] Two visitors: different owner keys and agent keys, neither can act on the other's card (tested)
-- [ ] "Demo network" in Settings shows the sim; off returns to the real chain
+- [x] Two visitors: different owner keys and agent keys, neither can act on the other's card (tested): `visitors-chain.test.ts` (NOT_YOUR_CARD), `agent-keys-chain.test.ts` (own derived agents; borrowing refused NOT_THIS_AGENT)
+- [x] "Demo network" in Settings shows the sim; off returns to the real chain: phone e2e (on → the simulation's cards; off → signed in on the chain, nothing lingers); console e2e (`?server=builtin` / Settings switch)
 - [ ] Model flag: Haiku 5.5 via OpenRouter and one open-source preset work with a key; scripted fallback announced without one
 - [ ] Tests: server (chain tests on local FISCO), web, mobile, devstack e2e green; signing-guard refusal tests
 - [ ] Log and env-var list complete; every round committed locally
@@ -250,6 +250,25 @@ Last updated: 2026-10-19
 - `--phone-only` e2e: the new launch checks pass (Demo network off on launch, connected and signed in, funded on chain, no page errors). The rest of the phone script is **stale**: it still expects the old `US$` labels, "New pocket" and the old chat entry. I'm rewriting it in part 2.
 
 **Not done yet (part 2):** rewrite the phone e2e against the current UI (create a card, chat → intent → pay, co-sign above ask-me, revoke, all with hashes checked on chain). Also find out why "Research data" didn't appear after switching Demo network on.
+
+## Round 6, part 2 · 19 Oct 03:35–04:00 · Item 6 done: the phone e2e on the chain, visitor auth on in the dev stack
+
+**What changed**
+- Rewrote the phone half of `devstack/e2e/e2e.cjs` for the current UI. It now:
+  - launches on the chain and signs in; Demo network on shows the simulation's cards; off returns to the chain and nothing from the demo lingers;
+  - checks sign-up funds exactly HK$500;
+  - creates a card in the wizard ("Ask every time") with HK$40, and its agent is the per-card key read from `agent()` on chain;
+  - chats ("Buy the DataLite durian report…"), confirms the task, shows the cheque with "Your key signs: Approve one payment of HK$2.30…", slides to approve, and checks the payment receipt is status 1 with `cosigned` and the card at HK$37.70;
+  - holds to revoke: `revoked()` is true on chain and HK$37.70 comes back to the main wallet.
+- Fixes found by it:
+  - **double funding**: the phone's faucet auto-claim fired on a balance read from before the sign-up mint (HK$600). A finished sign-up now marks the wallet funded, and the faucet waits until sign-up is done.
+  - **the phone's `Toggle` had no `aria-checked` on web.** RN-web drops `accessibilityState.checked` there, so screen readers couldn't tell a switch's state (and the old e2e check passed vacuously). It now sets `aria-checked`.
+- **The dev stack now runs with visitor auth on.** The seed script and the devstack tests sign in as the dev owner with the shared Login. `/api/chat` with no token gives 401.
+- Signing guard sentences give Hong Kong time ("… valid until 2030-03-18 01:46 HKT"), matching the cheque's clock.
+
+**Evidence**
+- `node devstack/e2e/e2e.cjs` (web + phone, fresh dev stack, visitor auth on): **60/60 checks passed**, with no page errors or unexpected HTTP errors in either app. Screenshots are in `docs/08-frontend/screenshots/e2e-*.png`.
+- `pnpm --dir devstack test` 21 passed (signed in); server 99 passed, 6 skipped; web 90; mobile 61 (guard 8 with HKT).
 
 ---
 
