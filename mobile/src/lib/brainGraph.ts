@@ -6,9 +6,10 @@ import type { WalletEvent } from "./events";
 import { liveCards, type LiveKind } from "./live";
 
 export type GNode = { id: string; kind: "brain" | "agent" | "pocket" | "seller" | "memory"; x: number; y: number; label: string; ref?: string; layout?: string };
-export type GEdge = { from: string; to: string };
+export type GEdge = { from: string; to: string; /** payments along it in the window (pocket → seller edges) */ traffic?: number };
 export type PulseTone = "paid" | "refused" | "guard" | "watched" | "learned";
-export type Pulse = { key: string; at: number; tone: PulseTone; path: string[]; text: string; agent?: string };
+export type Pulse = { key: string; at: number; tone: PulseTone; path: string[]; text: string; agent?: string;
+  /** what it came from, so its decision trace can be rebuilt (lib/brainTrace.ts) */ pocket?: string; sellerId?: string; tx?: string; kind: LiveKind | "memory" };
 
 type PocketIn = { address: string; agentId?: string; allowed: string[]; revoked?: boolean; name: string; layout?: string };
 
@@ -27,7 +28,7 @@ function spread(items: { id: string; a: number }[], gap: number) {
 }
 
 /** Positions in 0..1 (multiply by the graph's size). `memory` is how many items the brain remembers (shown up to 8). */
-export function brainGraph(o: { pockets: PocketIn[]; agentName(id: string): string; sellerName(id: string): string; memory: number }): { nodes: GNode[]; edges: GEdge[] } {
+export function brainGraph(o: { pockets: PocketIn[]; agentName(id: string): string; sellerName(id: string): string; memory: number; /** payments by "pocket>seller" (lower-case pocket) */ traffic?: Record<string, number> }): { nodes: GNode[]; edges: GEdge[] } {
   const live = o.pockets.filter((p) => !p.revoked);
   const nodes: GNode[] = [{ id: "brain", kind: "brain", x: 0.5, y: 0.5, label: "ChainBrain" }];
   const edges: GEdge[] = [];
@@ -53,7 +54,7 @@ export function brainGraph(o: { pockets: PocketIn[]; agentName(id: string): stri
   const sellers = spread([...users].map(([id, as]) => ({ id, a: mean(as) })), TAU / Math.max(users.size * 1.15, 9));
   for (const s of sellers) {
     nodes.push({ id: `seller:${s.id}`, kind: "seller", ...at(RING.seller, s.a), label: o.sellerName(s.id), ref: s.id });
-    for (const p of live) if (p.allowed.includes(s.id)) edges.push({ from: `pocket:${p.address.toLowerCase()}`, to: `seller:${s.id}` });
+    for (const p of live) if (p.allowed.includes(s.id)) edges.push({ from: `pocket:${p.address.toLowerCase()}`, to: `seller:${s.id}`, traffic: o.traffic?.[`${p.address.toLowerCase()}>${s.id}`] ?? 0 });
   }
   // what it remembers: small satellites close round the centre
   const m = Math.min(o.memory, 8);
@@ -73,7 +74,7 @@ export function pulsesOf(events: WalletEvent[], o: { agentOf(pocket?: string): s
     const tone = TONE[x.kind];
     // a payment travels out to the seller; a refusal and a guard stop at the pocket; seller text comes in from the seller
     const path = tone === "guard" ? [seller, pocket, "brain"] : tone === "refused" ? ["brain", `agent:${agent}`, pocket] : ["brain", `agent:${agent}`, pocket, seller];
-    out.push({ key: x.key, at: x.at, tone, path: path.filter((p): p is string => !!p), agent,
+    out.push({ key: x.key, at: x.at, tone, path: path.filter((p): p is string => !!p), agent, pocket: x.pocket, sellerId: x.sellerId, tx: x.tx, kind: x.kind,
       text: tone === "paid" ? `${o.agentName(agent)} paid ${o.sellerName(x.sellerId)}${x.amount ? ` ${x.amount}` : ""}` : x.title });
   }
   const since = (o.now ?? Date.now()) - (o.days ?? 14) * 86_400_000;
@@ -81,8 +82,16 @@ export function pulsesOf(events: WalletEvent[], o: { agentOf(pocket?: string): s
     if (e.at < since || e.type !== "trace" || e.phase !== "memory" || !e.pocket) continue;
     const added = Array.isArray(e.applied) ? e.applied.filter((a: { op?: string }) => a?.op === "add").length : 0;
     const agent = o.agentOf(e.pocket) ?? "chainbrain";
-    out.push({ key: `mem:${e.at}:${e.pocket}`, at: e.at, tone: "learned", path: [`pocket:${String(e.pocket).toLowerCase()}`, `agent:${agent}`, "brain"], agent,
+    out.push({ key: `mem:${e.at}:${e.pocket}`, at: e.at, tone: "learned", path: [`pocket:${String(e.pocket).toLowerCase()}`, `agent:${agent}`, "brain"], agent, pocket: String(e.pocket), kind: "memory",
       text: added ? `Learned ${added} new ${added === 1 ? "thing" : "things"}` : `Memory version ${Number(e.version) || 1}` });
   }
   return out.sort((a, b) => b.at - a.at);
+}
+
+/** Payments per pocket → seller edge in the window, the graph's traffic. */
+export function trafficOf(events: WalletEvent[], o: { now?: number; days?: number } = {}): Record<string, number> {
+  const since = (o.now ?? Date.now()) - (o.days ?? 14) * 86_400_000;
+  const out: Record<string, number> = {};
+  for (const e of events) if (e.type === "payment" && e.at >= since && e.pocket && e.sellerId) { const k = `${String(e.pocket).toLowerCase()}>${e.sellerId}`; out[k] = (out[k] ?? 0) + 1; }
+  return out;
 }

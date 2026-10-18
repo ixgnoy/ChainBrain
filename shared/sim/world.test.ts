@@ -436,3 +436,21 @@ test("save and reload keeps which outside agents are connected", () => {
   assert.equal(v.agents().find((a) => a.id === "claude")!.status, "connected");
   assert.equal(v.agents().find((a) => a.id === "chatgpt")!.status, "available");
 });
+
+test("Brain test: one real payment through every check, and one the pocket's rules refuse", async () => {
+  const w = createWorld({ speed: 0, seed: 11 });
+  const s = await seedOwner(w, OWNER);
+  const rd = s.pockets.find((p) => p.name === "Research data")!;
+  const before = w.balances(rd.address).usdc;
+  const t0 = w.now();
+  const pay = await w.runTest(rd.address, "pay");
+  assert.equal(pay.ok, true);
+  const plan = w.testPlan(rd.address, "pay")!;
+  assert.equal(w.balances(rd.address).usdc, before - parseUsd(plan.price), "the test moved exactly the quoted price");
+  const no = await w.runTest(rd.address, "refuse");
+  assert.equal(no.ok, false);
+  assert.equal(no.reason, "SELLER_NOT_ALLOWED");
+  assert.equal(w.balances(rd.address).usdc, before - parseUsd(plan.price), "the refused test moved nothing");
+  const kinds = w.events(0).filter((e) => e.at >= t0 && same(e.pocket, rd.address)).map((e) => e.type);
+  for (const k of ["radar", "preflight", "payment", "refusal"]) assert.ok(kinds.includes(k), `emits ${k}`);
+});

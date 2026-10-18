@@ -12,6 +12,16 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: the Evidence and Sellers pages
 
+## The Brain as a working DAG (18 Oct)
+
+The owner asked for the Brain to be "really working", more professional, "like a real DAG", keeping the current dark graph but more impressive, with live events plus a test button, phone first and then the console (memory: brain-dag-decisions).
+
+- **The pipeline is real.** Every payment already leaves its steps as events: the quote (with Pocket.sol's rule check and Radar's screen), the pay call's Radar check, pre-flight's prediction and its result, the payment or refusal with its tx, then the Sentinel and memory. `lib/brainTrace.ts` rebuilds a decision from those, stage by stage, and `liveTraceOf` shows a test in flight with the rest waiting. Tests: a seeded payment traces with the tx and "Predicted it pays · matched"; the test refusal stops at the pocket's rules and moves nothing; a test cut mid-flight waits at settlement.
+- **Run a test** (`world.runTest`, `testPlan`): the owner's tap confirms one item at the quoted price; get_quote and pay run through the same tools an agent uses, then a reflection. The cheapest allowed item under the ask-me limit for a payment, the cheapest seller not on the list for a refusal. Sim test: the payment moves exactly the quote, the refusal moves nothing, and radar, pre-flight, payment and refusal events all appear.
+- **The look:** curved edges (a quadratic bend), stroke and opacity by 14-day traffic, traffic as moving dots on the 12 busiest edges, a radial glow behind the brain, a dashed scan ring turning round it, agents and sellers named, pockets named when lit or tapped, a comet-style pulse with a ring opening on the last node, tap to focus a neighbourhood. Ring labels were tried and dropped: they collided with nodes. Transforms and opacity only; Reduce Motion stops travel, flows and breathing.
+- **Honesty fixes found while checking:** a refused test first showed Radar and pre-flight as "Not reached", but both ran (the contract refused at settlement), so every stage now shows what its own event said. After a test, the memory update became the newest pulse and the trace vanished; a memory pulse now shows the decision it learned from. The e2e caught that the second test button did nothing for 9 s after a test; fixed.
+- **Verified:** tsc; phone 52/52 (5 new); sim 60/60 (1 new); e2e 61/61 (new: a test payment with its tx and "Predicted it pays · matched", then a test refusal "Seller not on your list" with "Predicted a refusal · matched"); iOS Simulator: the graph mid-pulse and a live test ending "Version 1 · learned 1" (`ios-57`, `ios-58`), web refusal trace (`w-57`).
+
 ## UX round 3 (18 Oct)
 
 The owner's notes on iOS (memory: ux-round-3-decisions): the cursor pill was cut to "Chain", Skip and Replay should go, Compose needs a loading state, the card stack was more striking than rows, Live belongs in Activity, and Brain should come back as a visual brain that watches and learns.

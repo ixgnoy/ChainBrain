@@ -504,6 +504,47 @@ export function createWorld(opts: WorldOptions = {}) {
   const ROUTINE_WORDS = /\b(?:routine|schedule|every (?:hour|minute)|from now on|switch (?:to|sellers?)|instead of|ignore (?:all|previous|your)|new instructions?|raise (?:the|your) (?:cap|limit|allowance))\b/i;
   const routinePayments = (pocket: string, id: string) =>
     recent.filter((e) => e.type === "payment" && same(e.pocket, pocket) && e.routine?.id === id).map((e) => ({ at: e.at, amount: BigInt(e.amount) }));
+  // ---- the Brain tab's "Run a test": the owner asks for one real payment (or one the rules must refuse) through the same
+  // tools an agent uses: the quote, Pocket.sol's rules, Radar, pre-flight, x402 settlement, then a reflection. The owner's
+  // tap is the confirmation, so the task is confirmed for exactly one item at the quoted price; nothing else can be bought.
+  type TestMode = "pay" | "refuse";
+  function testPlan(pocket: Hex, mode: TestMode) {
+    if (!chain.isPocket(pocket)) return null;
+    const v = chain.view(pocket);
+    const ok = new Set(v.allowed);
+    const items = sellers().flatMap((s) => s.items.filter((i) => i.price && !i.negotiable).map((i) => ({ sellerId: s.id, sku: i.sku, description: i.description, amount: parseUsd(quotedPrice(i, now())!) })))
+      .sort((a, b) => (a.amount < b.amount ? -1 : a.amount > b.amount ? 1 : 0));
+    const pick = mode === "pay"
+      ? items.find((x) => ok.has(x.sellerId) && x.amount <= v.cap && x.amount <= v.balance && !chain.needsOwner(pocket, x.amount))
+      : items.find((x) => !ok.has(x.sellerId) && x.amount <= v.cap);
+    return pick ? { sellerId: pick.sellerId, seller: sellerName(pick.sellerId), sku: pick.sku, description: pick.description, price: formatUsd(pick.amount) } : null;
+  }
+  async function runTest(pocket: Hex, mode: TestMode) {
+    if (busy.has(lower(pocket))) return { ok: false as const, reason: "BUSY" };
+    if (!chain.isPocket(pocket) || chain.view(pocket).revoked) return { ok: false as const, reason: "POCKET_REVOKED" };
+    const plan = testPlan(pocket, mode);
+    if (!plan) return { ok: false as const, reason: "NO_TEST_ITEM" };
+    busy.add(lower(pocket));
+    const from = now();
+    try {
+      newTask(pocket);
+      const t = task(pocket);
+      t.intent = {
+        request: "test", description: `Test: ${plan.description}`, maxPricePerItem: plan.price, maxTotal: plan.price, maxItems: 1,
+        deadline: new Date(now() + 600_000).toISOString(), intentHash: r.hex(32), status: "confirmed",
+      };
+      trace(pocket, "thinking", { test: mode, text: mode === "pay"
+        ? `You asked for a test: one real payment to ${plan.seller}, US$${plan.price}, through every check.`
+        : `You asked for a test: a payment to ${plan.seller}, which is not on this pocket's list. Its rules must refuse it.` });
+      const q = await runTool(pocket, "get_quote", { sellerId: plan.sellerId, sku: plan.sku });
+      if (!q?.ok) return { ok: false as const, reason: q?.reason ?? "QUOTE_UNKNOWN", ...plan };
+      const p = await runTool(pocket, "pay", { quoteId: q.quoteId });
+      trace(pocket, "reply", { test: mode, text: p?.ok ? `Test passed every check: paid ${plan.seller} US$${plan.price}.` : `Test stopped: ${plan.seller} was refused (${p?.reason ?? "refused"}). No money moved.` });
+      reflectTurn(pocket, `Test payment to ${plan.seller}`, from);
+      return p?.ok ? { ok: true as const, tx: String(p.tx), ...plan } : { ok: false as const, reason: String(p?.reason ?? "REFUSED"), ...plan };
+    } finally { busy.delete(lower(pocket)); }
+  }
+
   async function runRoutine(pocket: Hex, o: { early?: boolean } = {}) {
     const rt = routines.get(lower(pocket));
     if (!rt) return { ok: false, reason: "NO_ROUTINE" };
@@ -744,6 +785,8 @@ export function createWorld(opts: WorldOptions = {}) {
     },
     /** "Run the next one now": the next scheduled run, now, at its real time; the schedule then moves to the slot after it. */
     runRoutineNow: (pocket: Hex) => runRoutine(pocket, { early: true }),
+    testPlan: (pocket: Hex, mode: TestMode) => testPlan(pocket, mode),
+    runTest: (pocket: Hex, mode: TestMode) => runTest(pocket, mode),
     /** Runs every routine whose time has come (the apps call it on a timer; seeding calls it on the seeding clock). */
     async tickRoutines() {
       const due = [...routines.values()].filter((x) => x.status === "active" && x.nextAt <= now() && chain.isPocket(x.pocket) && !chain.view(x.pocket as Hex).revoked);

@@ -395,6 +395,24 @@ async function until(what, fn, ms = 30000, step = 200) {
     await skip.waitFor({ state: "detached", timeout: 5000 });
   });
 
+  await run("brain: the graph, and a test payment and a test refusal through every stage", async () => {
+    await tab("Brain");
+    await visible("Run a test").waitFor({ timeout: 15000 });
+    check("the graph names its agents, pockets and sellers", /\d+ agents · \d+ pockets · \d+ sellers/i.test(await body()));
+    await page.getByRole("button", { name: /^Test a payment/ }).click();
+    await page.getByText(/on-chain · 0x/).filter({ visible: true }).first().waitFor({ timeout: 20000 });
+    let t = await body();
+    check("the test paid for real: quote, rules, Radar, pre-flight matched, the tx", /Allowed seller · under the cap/.test(t) && /Risk \d+\/10/.test(t) && /Predicted it pays · matched/.test(t));
+    await shot("13-brain-test");
+    await page.getByRole("button", { name: /^Test a refusal/ }).filter({ visible: true }).waitFor();
+    await page.waitForFunction(() => !document.body.innerText.includes("Running…"), null, { timeout: 15000 });
+    await page.getByRole("button", { name: /^Test a refusal/ }).click();
+    await page.getByText("Refused · no money moved").filter({ visible: true }).first().waitFor({ timeout: 20000 });
+    t = await body();
+    check("the refusal stops at the pocket's rules, pre-flight predicted it", /Seller not on your list/.test(t) && /Predicted a refusal · matched/.test(t));
+    await shot("14-brain-refusal");
+  });
+
   check("no page errors", issues.length === 0, issues.slice(0, 5).join(" | "));
   console.log(`\n${passed} passed, ${failed.length} failed`);
   await browser.close();
