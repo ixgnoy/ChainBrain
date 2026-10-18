@@ -1,5 +1,25 @@
 # Topic F rivals: who else is entering, and how ChainBrain beats them
-Last updated: 2026-10-16
+Last updated: 2026-10-19
+
+> **Update (19 Oct):** we re-checked every known repo and searched GitHub again (14 repo queries for repos created since 1 Oct, about 300 READMEs grepped, plus 7 code searches). Rows added on 19 Oct are marked **(19 Oct)**. Code-level detail is in [the deep dive, section 0](competitor-deep-dive.md).
+> - **Our side changed first.** On 17-18 Oct ChainBrain moved from Base Sepolia + Circle test USDC to **FISCO BCOS 3.16.4 + Mock e-HKD**, hosted on Railway with a public RPC, explorer and faucet. The "real Circle test USDC on a public chain" edge below (lines marked 15 Oct) **no longer applies**.
+> - **Nine new Topic F repos:**
+>   - **YINGLONG** (`ABRUBAB/YINGLONG`): ERC-7710 mandates with 14 enforcers and a passkey seal, on its own **4-sealer FISCO BCOS 3.17.1 chain** and Base Sepolia, a live app, about 396 contract tests and a 300-attack bench. It is now the strongest entry.
+>   - **AgentWallet** (`Turjo101365/AgentWallet`): owner EIP-712 approvals on chain, 23 real Sepolia hashes, a live-LLM safety suite.
+>   - **BaKhi** (`thaicuong576/agent-wallet`).
+>   - A second, **unrelated LEASH** (`Brieuclerouxtardif/leash`).
+>   - **Treasury Agent** (`AsylkhanKali/fintechathon`).
+>   - **Aegis Wallet** (`ado1d/aegis-wallet`).
+>   - **Guardian Wallet** (`siammds/Guardian_Wallet`).
+>   - `EngrIbadUllah/agent-wallet`.
+>   - **Guardian** (`ahammadshawki8/guardian`), spec only.
+> - **Known rivals:**
+>   - sucsage grew into a large Thai e-money app (still private Besu, mock THB, now with an MCP server).
+>   - **Mandate Wallet now has a real contract close to our Pocket** (x402 via ERC-1271, freeze, co-sign, 126 Foundry tests), but no agent and no deployment.
+>   - edxzh only has bot snapshots.
+>   - KendraFi added docs but did not deploy on FISCO.
+>   - Leash (finbase), xizo13, AgentVax and KiteShield have not pushed since 13-14 Oct.
+> - **The field now has about 17 visible Topic F repos and about 45 other-topic International Track repos.**
 
 > **Update (15 Oct):** a fresh GitHub search found **four more Topic F entries**: `xizo13/webank` (Agent Wallet MVP: MCP connector, FISCO BCOS), `ttwrpz/agentvax` (AgentVax: on-chain mandate, quarantined reader model, shared threat bulletin, a written paper), `atulharshvardhan2006/KiteShield-Backend` (policy engine and separate signer) and `Safius-Sifat/Fintechathon` (Mandate Wallet, spec only). A fifth, `shads-01/KendraFi`, is a Topic E entry with a Topic F-style escrow. sucsage moved to its own private chain with a live app. Our new Radar (counterparty screening) and Brain memory (PRs #1-#3 on origin/main) are also reflected below. Rows and lines added on 15 Oct are marked **(15 Oct)**.
 
@@ -15,6 +35,8 @@ Last updated: 2026-10-16
 >   It is building the most bank-like consumer product in the field, still on its own private chain with a mock token.
 > - **Outside the competition:** `MELcodes99/sentry` (MoonPay hackathon) is a pre-sign check an agent pays US$0.01 over x402 for. It answers ALLOW / WARN / BLOCK with "dollars at risk", and has a "try to fool it" page. This is the industry direction our Radar and Pre-flight sit in. It is not a rival entry.
 > - **Our side:** Sentinel, Pre-flight and "Speak your rules" (PRs #4 and #5) are added below. Rows marked **(16 Oct)**.
+
+> **Code-level deep dive (15 Oct):** [competitor-deep-dive.md](competitor-deep-dive.md). It covers what to copy from each rival, six weaknesses it exposed in our own code, and the ranked plan to 20 Oct.
 
 > **Status (14 Oct, v2):** The rival findings below still apply. Our own claims are superseded by the [v2 spec](../02-product/product-design.md): ChainBrain is now a consumer wallet. Our novelty is delegated spending with hard limits the user owns in a contract (pockets). The seller trust layer (verdict, seller guards, reputation, ERC-8004) is a finals roadmap item, not in the prelim demo. Lines marked "(old design, deferred to finals)" describe the earlier seller-side plan. Our build is now done locally and tested; live Base Sepolia hashes are still pending ([evidence](../evidence.md)).
 
@@ -61,6 +83,8 @@ Last updated: 2026-10-16
 | **(15 Oct)** `gh search repos` created since 12 Oct for fintechathon, "fintechathon 2026", "agent wallet fintechathon", "shenzhen fintech", webank, "topic f", "agent wallet x402", "agentic wallet" (33 repos), then README, root-file and doc checks on every candidate | New Topic F: **xizo13/webank**, **KiteShield** (`atulharshvardhan2006/KiteShield-Backend`), **Mandate Wallet** (`Safius-Sifat/Fintechathon`, spec only). New other topics: Signet (B, FISCO BCOS anchoring), PocketPilot (A), Hela (C), Dorsal and Triody and HarborCFO (E), ClearTrade (`Salixandom/weBankHackathon`, cross-border trade, C or E), an MSME loan copilot (`FachryAlfareeza/WeBank-AI`, E), KendraFi (E with an F-style escrow), Equilibrium AI (topic unstated). Not entries: `HarihsS8/lunar_wallet`, `mackendell/agentic-wallet` (CoinWallet skill), `track-md/agentic-wallet-tracks` (empty) |
 | **(15 Oct)** A code search earlier the same day (`"Topic F"`, `"Agent Wallet"`, fintechathon) | **AgentVax** (`ttwrpz/agentvax`, its paper says Topic F), KiteShield, KendraFi, sucsage, and our private `ixgnoy/Fintechathon-LianAiNao`. A second code-search pass later that day returned nothing (rate limit), so re-run on 19 Oct |
 
+| **(19 Oct)** `gh search repos` created since 1 Oct for fintechathon, "fintechathon 2026", webank, "shenzhen fintech", "agent wallet", "agentic wallet", x402, fisco, e-hkd, ehkd, "agent payment", "agent spending", "AI financial participant", "fintech hackathon 2026" (307 unique repos). Every README fetched and grepped for fintechathon, webank, 微众, shenzhen, 深圳, "topic f", "international track". Then `gh search code` for "Topic F" + "Agent Wallet", "Autonomous On-chain Wallet", `fintechathon.szfintech.org`, "Shenzhen International FinTech Competition", "FinTechathon 2026" | **9 new Topic F repos** (see 2a, 19 Oct table) and about 25 new other-topic entries (see 2b). `Cmeteorite/fintechathon-ai` is a **Domestic track** entry (国内赛道), not ours. HarborCFO (`azmaeenmahtab/Shenzen-Fintechathon`) now returns 404. Our `ixgnoy/Fintechathon-LianAiNao` is still private. Several quoted-phrase code searches returned nothing (exact-phrase behaviour) |
+
 Limits to remember: GitHub-visible only; commit dates below are from the GitHub commits API in UTC (13 Oct 02:16 UTC+8 is 12 Oct 18:16 UTC). Team sizes are the visible committers only.
 
 ## 2. Rivals table
@@ -78,6 +102,30 @@ Limits to remember: GitHub-visible only; commit dates below are from the GitHub 
 | **(15 Oct) Mandate Wallet** [`Safius-Sifat/Fintechathon`](https://github.com/Safius-Sifat/Fintechathon) | F (pitch says "For Topic F") | Owner-controlled agent wallet that buys digital services (a "browser check"), operates an approved vault and makes bounded scheduled payments. "Task Permit" puts the financial boundary on chain; an evidence inspector with a portable task receipt | Strong framing for reviewers: independently checkable receipts and a standalone verifier | **Specification only**: the PRD says `status: specification-not-implemented`, target 18 Oct. Three Markdown files, no code | 2026-10-14 09:39 |
 | **(15 Oct) KendraFi** [`shads-01/KendraFi`](https://github.com/shads-01/KendraFi) | E, with a Topic F-style escrow it calls a "+5 bonus" | Five SME copilot agents form Grameen-style peer lending groups; ERC-4337 session keys and `KendraEscrow.sol` on Base Sepolia and FISCO BCOS (planned) | Ambitious WeBank tie-ins (Weiyedai, FATE federated learning) | Not a Topic F rival on score; it misreads the bonus as a Topic F add-on | 2026-10-15 13:39 |
 | Kagi Wallet, x402 Guard, IntentGuard, PragmaMoney, LedgerMind | Not FinTechathon | Covered in [prior art](prior-art-hackathons-github.md) | n/a | n/a | n/a |
+
+**(19 Oct) New Topic F entries** (all pushed 16-18 Oct; read in code, see [deep dive 0.2](competitor-deep-dive.md)):
+
+| Repo | What it does | Strengths | Weaknesses | Threat |
+| --- | --- | --- | --- | --- |
+| **YINGLONG** [`ABRUBAB/YINGLONG`](https://github.com/ABRUBAB/YINGLONG), team "Shadow Chaser" (5 named, 2 committers, 117 commits) | The owner states rules in plain language. They compile into an ERC-7710 delegation whose caveat enforcers are the rules, sealed with a passkey. The agent can only redeem the delegation. Student and Shenzhen-SME scenarios, a regulator view, a ZK private mandate | **Team-run FISCO BCOS 3.17.1 chain with 4 PBFT sealers + observer**, plus Base Sepolia with the same bytecode. 14 enforcers. x402 on FISCO. ~191 hashes with typed reverts. A Python verifier that turns a mandate back into English. ~396 Foundry tests, halmos + stateful fuzz. A 300-attack bench with a held-out family hashed in advance and a no-protection control. KR-01..19 and a compliance matrix. A live app with `/judge`, `/challenge`, `/proof` | The bench ran on Anvil with a rule parser, not a live LLM. Within-mandate manipulation got through 9/44 (their own figure). Fictional x402 sellers. Qwen, not a tool loop. Very heavy (46 contracts, 5 rails). No video yet. English only | **HIGH** |
+| **AgentWallet** [`Turjo101365/AgentWallet`](https://github.com/Turjo101365/AgentWallet) (3 names, ~45 commits) | Treasury agent on Ethereum Sepolia: gpt-4.1-mini drafts transfers, a 14-check risk engine simulates them, and the owner signs an EIP-712 approval or a bounded task grant that the contract checks | 23 real Etherscan hashes (spot-checked). Live-LLM safety suite 19 cases × 4 runs. 26/26 public read-only checks incl. attack probes. Hosted Vercel + Render, deck PDF, "not claimed" list | v1 trusted the backend. 0.0001 ETH amounts. Test-only wallet bridge for the public run. RL gas advisor trained on synthetic data. No x402, no FISCO, English only | **HIGH** |
+| **BaKhi** [`thaicuong576/agent-wallet`](https://github.com/thaicuong576/agent-wallet) | DeFi agent inside an owner's Investment Policy Statement (Aave, Morpho, Uniswap on Base Sepolia) | ~1,224 test functions. 46-scenario eval published by category (100%, replayed). Tiers, step-up signatures, hash-chained audit log, Render demo, full submission pack | **No contract**: a custodial server key and off-chain rules. 10 hashes, no revert | MEDIUM |
+| **LEASH** [`Brieuclerouxtardif/leash`](https://github.com/Brieuclerouxtardif/leash) (solo, 90 commits; **not related** to detinatran's Leash) | Bill-paying and DCA agent capped by `LeashVault` on Ethereum Sepolia | 105 hashes incl. 15 mined refusals (spot-checked). A vault with a **published agent key**. A worst-case meter computed from chain data. A "no LEASH" counterfactual. 51 tests + 9 invariants | Codex CLI model, mostly recorded replays. No x402, no hosted app, no video file | MEDIUM |
+| **Treasury Agent** [`AsylkhanKali/fintechathon`](https://github.com/AsylkhanKali/fintechathon) | Crypto-company treasurer: payroll, buffer, yield vault, depeg exit | `Treasury.sol` caps, daily cap, approval queue, vault share. 74 tests + 5 invariants | No LLM agent (the LLM only explains). 11 setup hashes only | MEDIUM |
+| **Aegis Wallet** [`ado1d/aegis-wallet`](https://github.com/ado1d/aegis-wallet) | Natural-language wallet with a per-user `AegisVault` | ~77 tests, rolling 24 h cap | 2 commits on 18 Oct. Local Anvil hashes only. No security or evidence docs. Custodial keys | LOW |
+| **Guardian Wallet** [`siammds/Guardian_Wallet`](https://github.com/siammds/Guardian_Wallet) | FastAPI + Android app, Python rules T01-T23 | Candid limitations doc | **Its code gives every approved payment one of 8 hard-coded Sepolia hashes** (`transaction_service.py` ~l.234). The guard contract is never called | LOW |
+| `EngrIbadUllah/agent-wallet` | Flask app; Claude parses one command | — | No contract, no hashes ("Pending") | LOW |
+| **Guardian** [`ahammadshawki8/guardian`](https://github.com/ahammadshawki8/guardian) (team of 3) | Spec: vault with a locked reserve, cooling-off for new payees, delayed loosening with a trusted-contact co-sign, "AI fooled vs money lost" attack numbers | Aims straight at the security rubric | No code; feature freeze 19 Oct 20:00 | MEDIUM if it ships |
+
+**(19 Oct) Refresh of known rows:**
+
+| Repo | What changed since 15-16 Oct | Last push (UTC) |
+| --- | --- | --- |
+| sucsage | 64 commits: a Thai e-money and freelance-deal app (mock KYC, Stripe/PromptPay test money, group wallets), a Bun desktop app with an hourly Merkle anchor (`ChainAnchor.sol`), an **MCP server**, 13 agent tools, a multi-model dispute panel, 35 attack cases with a status column. Still private Besu + mock THB, no x402, no FISCO. EVIDENCE.md still stamped 15 Oct | 2026-10-18 14:31 |
+| edxzh | Only bot snapshots (`history.json`, `jobs.json`). Still not labelled as an entry | 2026-10-18 11:22 |
+| Mandate Wallet | **Real contracts now**: `MandateWallet.sol` + libs (~2,000 lines), owner permits, co-sign, freeze, scheduled transfers, **x402 via ERC-1271**, 126 Foundry tests incl. 4 invariants. MCP, policy and worker are stubs, there is no LLM code, and nothing is deployed | 2026-10-18 14:56 |
+| KendraFi | Deck, video storyboard, LangGraph, ZK toys. Claims Topic E + F. **Not on FISCO** (a compatibility claim only). Only 1 of 9 hash-like values in its evidence resolves on Base Sepolia | 2026-10-18 06:49 |
+| Leash (finbase), xizo13, AgentVax, KiteShield | No change | 13-14 Oct |
 
 Other agent-wallet repos from the 15 Sep+ scan (`PDiTO/agent-wallet`, `NEXE-sudo/aegis-agent-wallet`, `Makabeez/mandate`, `loveaihq/ada-agent-wallet`, `voidly-ai/agent-wallet-kit`, `leodevnc/world-agent-wallet`) describe on-chain limits, policy gates or x402, but none mention the competition. Treat them as "same idea, other hackathons"; I did not read them in depth. `harsh11067/vectis` ("Autonomous On-chain Wallet Agent", ERC-7710 redelegation) dates from June, so it is a different event.
 
@@ -116,6 +164,44 @@ Totals: counting the 14 in the 12 Oct note and the six new repos above (OneGate,
   - [Equilibrium AI](https://github.com/Regulus-24/Equilibrium-AI) (unstated).
 - **FISCO BCOS:** the "policy engine, never the model" line is now universal. At least three entries (xizo13, Signet, KendraFi) use or plan FISCO BCOS.
 
+**(19 Oct) Other topics: about 45 public International Track repos** (README and file-tree review through the API; DuitDuit read locally). The details sit in the reviewer notes; the summary is below.
+
+- **The polish bar is evidence packaging, not chain.** Nine are tier A:
+  - Corridor Wealth (B, `pzy54154631-hub/Shenzhen-Fintech-international-Project`);
+  - Bluefin (C, `Tasrif-Ahmed-Mohsin/finbuddy`, the repo we called Sathi);
+  - Runway (E, `gabi200/runway`);
+  - DuitDuit (E);
+  - Signet (B);
+  - FundBun (A);
+  - OneGate (E);
+  - Dorsal (E);
+  - Fiona (E, `Asharib19khan/fiona`).
+
+  They share:
+  - a numbered attack or "judge task" suite mapped to the score weights;
+  - a security self-assessment;
+  - a hash-chained audit log;
+  - an offline scripted model so judges can reproduce without a key;
+  - a video;
+  - a hosted link.
+
+  We have every item except the first.
+- **FISCO in other topics:**
+  - **Bluefin** has real FISCO BCOS 3.17.1 deploy and anchor hashes on a 4-node PBFT chain. Its chain ports are localhost-only, so judges can only check through its app.
+  - **Signet** has a FISCO contract and a 4-node script but publishes no hashes.
+  - `SamJU25/F-SME-Finance-Copilot` has a FISCO contract with no deployment.
+
+  No entry uses WeBank's other open-source stack (WeIdentity, FATE, WeDPR, WeBASE).
+- **No other-topic entry enforces rules in a contract or pays x402 sellers.** All of them use off-chain policy engines over sandbox banks.
+- **Numbers worth matching:**
+  - FundBun: **0/26 false refusals, 1.35 user turns per task** (the only published dialogue-efficiency metric).
+  - FlowGuard: gated vs ungated arms, unauthorised execution 0/14 vs 14/14.
+  - Corridor Wealth: strict replay of recorded live-model runs (142/142), a blind attack corpus, and upper bounds on zero-event rates.
+  - DuitDuit: a table mapping the four named attack classes to task IDs.
+  - Bluefin: judge tasks grouped by score weight (9/7/4).
+- **A China-reachability warning, from DuitDuit's README:** `vercel.app` is blocked in mainland China. **Our judge console is on `fintechathon-lian-ai-nao.vercel.app`.** Judges at WeBank in Shenzhen may not reach it without a VPN.
+- **Topic D** appears to be an Insurance Assistant (ClaimShield AI labels itself so; no organiser source). `Cmeteorite/fintechathon-ai` is a Domestic-track entry. No README contains prompt-injection text aimed at AI judges.
+
 ## 3. What the Topic F rivals mean for ChainBrain's novelty claims
 
 | Our claim in the docs | What the code shows | Fix |
@@ -132,6 +218,10 @@ Totals: counting the 14 in the 12 Oct note and the six new repos above (OneGate,
 | **(16 Oct)** Sentinel: "a second AI watches the agent and can freeze the pocket on chain" (PR #4) | AgentVax runs "a guardian process per wallet"; Sathi lets its agent freeze a card but never undo it; Leash and sucsage have an owner pause; xizo13 denies a "frozen agent" | Not new as a pattern. Our narrow part: the guardian key can only **freeze**, only the owner unfreezes (enforced in `Pocket.sol`); fixed behaviour rules (refusal bursts, ghost transfers, injection follow-through) decide, and a decision model (Jev, or a Claude stand-in) can only make the response stricter. Say "like AgentVax and Sathi, protection is one-way" |
 | **(16 Oct)** Pre-flight: "the agent predicts each payment's outcome before paying, then checks it" (PR #5) | Leash's policy engine has pre-flight simulation; edxzh has a free dry-run page (`eth_simulateV1`) | Table stakes. Our only extra: predicted vs actual is shown per payment and counted ("predicted 5 of 5"). Don't headline it |
 | **(16 Oct)** Speak your rules: "one sentence becomes pocket rules plus a proof card" (PR #5) | AgentVax turns the owner's mission into an owner-signed mandate; sucsage asks before drafting | Partly new: two independent model readings are merged so a disagreement takes the **stricter** value, and the worst case plus rule checks are **computed by code**, not written by the AI. The owner still reviews and signs. Say exactly that, not "AI writes your rules" |
+| **(19 Oct)** "The pocket on FISCO BCOS" (now built: 1 node on Railway) | **YINGLONG runs a 4-sealer FISCO 3.17.1 chain** with x402 and passkey co-sign on it; xizo13 has a local 4-node chain | A bonus we share. Say "a FISCO BCOS node anyone can query, with an explorer and a faucet". Never say "the only FISCO entry" |
+| **(19 Oct)** "x402 paid from an ERC-1271 contract with owner co-sign and freeze" | Mandate Wallet's new contract does the same (not deployed); YINGLONG pays x402 with ERC-7710 child delegations; edxzh does ERC-1271 x402 | Table stakes in design. Our part is that it is **deployed and paid by a live Claude agent** |
+| **(19 Oct)** "A guardian that can only freeze" (Sentinel) | YINGLONG KillSwitch, LEASH pause-only guardian, Treasury `emergencyExit`, AgentVax guardian | Not new. Keep the narrow part: behaviour rules decide, and only the owner unfreezes |
+| **(19 Oct)** Published attack numbers | YINGLONG 300 (rule parser), BaKhi 46 (replay), AgentWallet 19 × 4 (live gpt-4.1-mini), LEASH 16 + 6, sucsage 35 cases | We have none. A **live-Claude** row would be the only one measured on a frontier model with a tool loop |
 | **(15 Oct)** "Every AI layer can only add refusals; the contract has the final say" | Every Topic F entry says a version of this: Leash, sucsage ("a hallucinating agent still cannot move funds outside policy"), AgentVax (P1), KiteShield ("model output is untrusted"), xizo13, Hela | Table stakes. Keep it as the foundation, never as the headline novelty |
 
 ## 4. Head-to-head against ChainBrain (written 13 Oct against the old plan; the build now exists locally, live hashes pending; "seller" rows are old design, deferred to finals)
@@ -225,16 +315,19 @@ Written to be true against what we read. Each needs the matching proof in the de
 
 1. **(Old design, deferred to finals; use as finals roadmap line only.) "Every other wallet protects the buyer. ChainBrain also protects the seller."** In the three Topic F rivals, the checks sit on the paying side. None runs a verdict (serve, step up, refuse) before the merchant delivers.
 2. **"A refusal is an instruction, not a dead end."** The agent reads a reason code, explains, and re-plans to a seller that fits the budget; the final payment has a hash. Leash's agent is told to stop after a block; we show the next successful hash seconds after the revert.
-3. **"Real money-shaped test dollars, not play tokens."** We pay with Circle's test USDC through the standard x402 flow, so any explorer or x402 tool recognises it. Leash and sucsage deploy their own mintable mock token.
+3. **(Superseded 19 Oct: we now use Mock e-HKD.)** **"Real money-shaped test dollars, not play tokens."** We pay with Circle's test USDC through the standard x402 flow, so any explorer or x402 tool recognises it. Leash and sucsage deploy their own mintable mock token.
 4. **"Hit it yourself."** A judge types an attack, the agent can be fooled on purpose, and the contract reverts with a visible hash. (Leash has a "simulate compromised agent" switch, edxzh a dry-run page. Ours adds a seller-side attack and a live re-plan after it.)
 5. **"One sentence, one question, one receipt."** Show the dialogue: owner says one sentence, agent asks one clarifying question, then pays. Count the turns on screen. This is the line the three Topic F repos do not speak to.
 6. **"We checked the field."** One honest slide: Leash and sucsage (buyer-side limits), edxzh (ERC-1271 x402 wallet with reputation), Visa TAP, Skyfire, Kagi. Our claim is only the narrow, true one. Judges who know the repos will trust us more. **(15 Oct) Add:** xizo13 (MCP connector, FISCO BCOS), AgentVax (on-chain mandate, reader/planner split), KiteShield (policy engine and signer).
-7. **(15 Oct) "Real dollars, real shops, a public chain."** Of the Topic F entries we can see, only ChainBrain and edxzh pay real Circle test USDC to real x402 web endpoints on a public testnet. The others use a mock token, a private chain or a mock RPC, and edxzh has no AI conversation. True only once our live hashes exist.
+7. **(Superseded 19 Oct: FISCO + Mock e-HKD; YINGLONG also pays x402 on FISCO.)** **(15 Oct) "Real dollars, real shops, a public chain."** Of the Topic F entries we can see, only ChainBrain and edxzh pay real Circle test USDC to real x402 web endpoints on a public testnet. The others use a mock token, a private chain or a mock RPC, and edxzh has no AI conversation. True only once our live hashes exist.
 8. **(15 Oct) "Your approved seller turned bad? Every pocket stops paying it."** Radar's fund-flow screening and alerts. The nearest rivals share attack signatures (AgentVax) or block a honeypot merchant (xizo13); nobody traces where a seller's money came from.
 9. **(16 Oct) "The AI can stop your money, never move it."** The Sentinel freezes the pocket on chain when the agent behaves like it was fooled; only the owner can unfreeze. Show scene 10 and the freeze hash. Say AgentVax and Sathi share the one-way principle.
 10. **(16 Oct) "Say it in one sentence. The proof is computed, not written."** Two AI readings, the stricter one wins, and the card shows the worst case in dollars. Pair it with line 5.
 
-Avoid: "first", "nobody", "novel pocket", "ERC-1271 x402 is new", "only team with on-chain tiers". **(15 Oct) Also avoid:** "the only team with MCP", "the only FISCO BCOS entry", "AI can't move money outside policy" as a headline (everyone says it), "Elliptic clone", "multi-agent system", and "memory reduces hallucination".
+11. **(19 Oct) "Your AI can be fooled. ChainBrain protects you."** (README headline since `d8440fe`). Proof: the red-team report with "AI fooled" and "money lost" counted apart, a live-Claude subset, and reverted hashes on the hosted FISCO chain.
+12. **(19 Oct) "One card per agent, set in one sentence, frozen in one tap."** The consumer answer to YINGLONG's enterprise mandate stack. Keep the pitch simple where theirs is heavy.
+
+Avoid: "first", "nobody", "novel pocket", "ERC-1271 x402 is new", "only team with on-chain tiers". **(19 Oct) Also avoid:** "the only FISCO entry", "real USDC", "public chain" for our FISCO node (say "a FISCO node anyone can query"), "the only ERC-1271 x402 wallet". **(15 Oct) Also avoid:** "the only team with MCP", "the only FISCO BCOS entry", "AI can't move money outside policy" as a headline (everyone says it), "Elliptic clone", "multi-agent system", and "memory reduces hallucination".
 
 ## What this means for winning
 
@@ -255,9 +348,17 @@ Avoid: "first", "nobody", "novel pocket", "ERC-1271 x402 is new", "only team wit
 - **(16 Oct) [must] Record one real-model run of the AI layers.** Jev / Claude for the Sentinel and Speak-your-rules has only run against fake responses so far. AgentVax is already criticised (above) for mock-model-only results; we must not be open to the same line. Innovation 30
 - **(15 Oct) [should] Ask the organisers (O1) whether private-chain or local-chain hashes count.** If they don't, sucsage and xizo13 lose most of the 40%. If they do, our public-chain edge shrinks. Either way the answer changes the pitch. Task 40
 
+- **(19 Oct) [must] Publish red-team numbers today.** Six rivals now do; we are the only serious entry with none. See [deep dive 0.6](competitor-deep-dive.md) item 1. Security 30
+- **(19 Oct) [must] Add Pocket invariants and fuzz (tests only, no redeploy)** and a reverted-attack battery on the hosted chain. YINGLONG, Mandate Wallet, LEASH and Treasury all have invariants. Security 30, Task 40
+- **(19 Oct) [must] Write a judge guide** with a "real vs simulated" table and a Chinese summary; make every shown hash resolve on the hosted chain. Two rivals' evidence fails a simple receipt check (Guardian Wallet, KendraFi); judges who check will reward ours. Task 40
+- **(19 Oct) [must] Check the console from mainland China, or mirror it.** DuitDuit warns `vercel.app` is blocked there, and our console is on Vercel. Railway (`up.railway.app`) is untested too. A mirror on a reachable host, or a recorded replay page in the repo, protects the Task 40 demo. Task 40
+- **(19 Oct) [should] Report dialogue efficiency and false refusals** (user turns per task, clarifying questions asked, ordinary tasks wrongly refused), the way FundBun does. Innovation 30
+- **(19 Oct) [should] Record the video.** No Topic F rival has one yet. Interaction 30
+- **(19 Oct) [could] Re-check YINGLONG, Mandate Wallet and Guardian (`ahammadshawki8`) on 20 Oct morning.** Mandate could deploy, and Guardian could push code after its 19 Oct freeze. All
+
 ## Open questions
 
-- Is `edxzh/agent-wallet` a competition entry? Its README never says. If the author submits it to Topic F it is our closest rival; if not, it is still public proof against our novelty claim. [VERIFY]
+- **(19 Oct)** Still unlabelled after 12 more commits (all bot snapshots). Is `edxzh/agent-wallet` a competition entry? Its README never says. If the author submits it to Topic F it is our closest rival; if not, it is still public proof against our novelty claim. [VERIFY]
 - How many Topic F teams exist? Only three repos are visible; most teams do not publish. Unknown. **(15 Oct)** Now six labelled plus one lookalike are visible; the real number is still unknown.
 - Do the rivals' hosted demos work from mainland China? Not tested; Vercel and Cloudflare reachability both [VERIFY].
 - Does the sucsage author keep submission documents outside the repo (a Drive folder, as OneGate does)? Not visible.
@@ -265,9 +366,13 @@ Avoid: "first", "nobody", "novel pocket", "ERC-1271 x402 is new", "only team wit
 - Whether Leash's real-LLM path was tested is not stated; its video and tests rely on the scripted agent.
 - **(15 Oct)** Has AgentVax published a live-model run or Base Sepolia hashes? `results/` holds only mock files; `evidence/hashes.json` was not readable through the API. [VERIFY]
 - **(15 Oct)** How far does xizo13's shop check the agent (signed requests, authenticated callbacks)? If it is a full seller-side check, our finals "seller trust layer" is not unique either. [VERIFY]
-- **(15 Oct)** Is the Mandate Wallet team (`Safius-Sifat`) still building? It was spec only on 14 Oct, with a target of 18 Oct.
+- **(15 Oct)** Is the Mandate Wallet team (`Safius-Sifat`) still building? It was spec only on 14 Oct, with a target of 18 Oct. **(19 Oct) Yes:** contracts and 126 tests exist, but no agent and no deployment. One git author despite a "four-person" README.
+- **(19 Oct)** Does a team-run FISCO chain count the same as WeBank's own network for the bonus? YINGLONG and ChainBrain both run their own node(s); xizo13 runs it locally. Worth asking the organisers with O1.
+- **(19 Oct)** Are judges likely to open FISCO hashes? There is no public FISCO explorer: YINGLONG serves a decoder page, and we serve `/explorer` on Railway. Make sure ours is linked from every hash in the docs.
 
 ## Sources
+
+- **(19 Oct)** GitHub search and README sweep (see section 1), clones listed in the [deep dive sources](competitor-deep-dive.md#sources), hash spot-checks on public RPCs (deep dive 0.4), and our own hosted chain re-checked (`eth_blockNumber`, five receipts, explorer and console HTTP 200).
 
 - GitHub searches and API calls on 2026-10-12 and 2026-10-13 (`gh search repos`, `gh search code`, `gh api repos/.../readme`, `.../commits`, `.../contributors`).
 - Local clones (data only, nothing run): `reference/repos/rivals/leash-finbase` (README, `docs/TECHNICAL.md`, `docs/SECURITY_SELF_ASSESSMENT.md`, `docs/EXECUTION_EVIDENCE.md`, `docs/SUBMISSION_CHECKLIST.md`), `reference/repos/rivals/sucsage-agentic-wallet` (README, contract test count), `reference/repos/rivals/edxzh-agent-wallet` (README, `contracts/src/PolicyWallet.sol` signature function, `specs/004-agent-hires-agent/spec.md`, test file list, `docs/articles/`), `reference/repos/rivals/onegate`, `.../finbuddy` (Sathi), `.../tuitionguard`, `.../tuition-fx-assistant`, `.../monara` (READMEs only).
