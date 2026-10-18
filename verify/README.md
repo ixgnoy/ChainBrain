@@ -16,7 +16,15 @@ python3 verify/verify_pocket.py --rpc ... --pocket ... --approved approved.json 
 python3 -m unittest verify/test_verify.py                                              # its own tests
 ```
 
-Exit codes: `0` every approved field matches (or no `--approved` given), `1` a mismatch, `2` an RPC or input error.
+Exit codes: `0` provenance holds and every approved field matches, `1` a mismatch, `2` an RPC or input error (or anything unexpected; never a traceback).
+
+**Provenance.** A lookalike contract could return the approved values from its getters while its `isValidSignature` does something else. So the verifier always checks two things, with or without `--approved`:
+- The pocket appears in a `PocketCreated` log of the ChainBrain factory. That is `--factory`, by default `0x03aB4C311eeE7C3295c63F910D79a07Ffa7A097A`, the committed address on every fresh chain.
+- The pocket's `token()` is the factory's `token()`.
+
+If either fails, the result is a MISMATCH and exit code 1.
+
+**Seller logs.** A pocket that has `sellerCap()` is the version that emits `SellerSet` from its constructor on. For such a pocket, missing seller logs or a failed `eth_getLogs` call is a MISMATCH ("sellers: cannot list from logs"), never a silent pass.
 
 ## What it reads
 
@@ -50,6 +58,7 @@ Every field is optional. Only the fields given are compared.
   "owner": "0x...",
   "agent": "0xb01096130a3b4c5a5d145309a4cb784b73d5accf",
   "guardian": "0x...",
+  "token": "0x0355c0c5afe2a35369056fbb854903a4af07781a",
   "sellers": ["0xdb0a6587928059b0d7512537d24b27395ed77e4d", "0xdf1c7931192088240430d28f9a7ce92397677545"],
   "cap": "15.00",
   "askAbove": "8.00",

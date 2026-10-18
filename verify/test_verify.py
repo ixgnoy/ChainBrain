@@ -10,6 +10,7 @@ POCKET = "0x" + "aa" * 20
 TOKEN = "0x0355c0c5afe2a35369056fbb854903a4af07781a"
 OWNER, AGENT, GUARD = "0x" + "01" * 20, "0x" + "02" * 20, "0x" + "03" * 20
 LITE, PRO, STRAY = "0x" + "11" * 20, "0x" + "22" * 20, "0x" + "99" * 20
+FACTORY = v.FACTORY.lower()
 
 
 def w(x) -> str:
@@ -19,8 +20,8 @@ def w(x) -> str:
 class FakeRpc:
     """A new-contract pocket: cap 2, ask 1, weekly 0.40 with 0.10 spent, DataLite + DataPro (cap 3), funded 5."""
 
-    def __init__(self, old=False):
-        self.old = old
+    def __init__(self, old=False, lookalike=False, factory_token=TOKEN, logs_error=False, drop=()):
+        self.old, self.lookalike, self.factory_token, self.logs_error = old, lookalike, factory_token, logs_error
         sel = v.selector
         self.views = {
             sel("token()"): w(TOKEN), sel("owner()"): w(OWNER), sel("agent()"): w(AGENT), sel("guardian()"): w(GUARD),
@@ -32,6 +33,8 @@ class FakeRpc:
         if old:
             for k in ("periodKind()", "periodLimit()", "spentThisPeriod()"):
                 del self.views[sel(k)]
+        for k in drop:  # getters this contract lacks
+            del self.views[sel(k)]
 
     def call(self, method, params):
         if method == "eth_getCode":
@@ -39,11 +42,19 @@ class FakeRpc:
         if method == "eth_blockNumber":
             return "0x9"  # two scan windows: the logs sit in the second one
         if method == "eth_getLogs":
-            if self.old or params[0]["fromBlock"] != "0x5":
+            f = params[0]
+            if f["address"].lower() == FACTORY:  # the factory's PocketCreated, in the first window
+                pc = v.topic("PocketCreated(address,address,address)")
+                return [] if self.lookalike or f["fromBlock"] != "0x0" else [{"topics": [pc, "0x" + w(POCKET), "0x" + w(OWNER), "0x" + w(AGENT)]}]
+            if self.logs_error:
+                raise v.Reverted("eth_getLogs failed")
+            if self.old or f["fromBlock"] != "0x5":
                 return []
             ss, cs = v.topic("SellerSet(address,bool)"), v.topic("SellerCapSet(address,uint256)")
             return [{"topics": [ss, "0x" + w(LITE)]}, {"topics": [ss, "0x" + w(PRO)]}, {"topics": [cs, "0x" + w(PRO)]}, {"topics": [v.topic("RulesChanged()")]}]
-        data = params[0]["data"][2:]
+        data, to = params[0]["data"][2:], params[0]["to"].lower()
+        if to == FACTORY:
+            return "0x" + w(self.factory_token) if data[:8] == v.selector("token()") else "0x"
         s, arg = data[:8], ("0x" + data[-40:]) if len(data) > 8 else None
         if s == v.selector("balanceOf(address)"):
             return "0x" + w(5_000_000)
@@ -149,6 +160,71 @@ class ReadAndCompare(unittest.TestCase):
         finally:
             v.Rpc = orig
             os.unlink(f.name)
+
+
+class Provenance(unittest.TestCase):
+    def run_main(self, rpc, *extra):
+        orig = v.Rpc
+        v.Rpc = lambda url: rpc
+        try:
+            return v.main(["--rpc", "x", "--pocket", POCKET, *extra])
+        finally:
+            v.Rpc = orig
+
+    def test_real_pocket_passes(self):
+        rpc = FakeRpc()
+        ok, detail = v.provenance(rpc, v.read_pocket(rpc, POCKET), FACTORY)
+        self.assertTrue(ok, detail)
+        self.assertEqual(self.run_main(FakeRpc()), 0)
+
+    def test_lookalike_contract_fails_even_when_every_rule_matches(self):
+        import json, tempfile
+        rpc = FakeRpc(lookalike=True)
+        ok, detail = v.provenance(rpc, v.read_pocket(rpc, POCKET), FACTORY)
+        self.assertFalse(ok)
+        self.assertIn("not created by the ChainBrain factory", detail)
+        self.assertEqual(self.run_main(FakeRpc(lookalike=True)), 1)  # no --approved: still exit 1
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+            json.dump(APPROVED, f)
+        try:
+            self.assertEqual(self.run_main(FakeRpc(lookalike=True), "--approved", f.name), 1)
+        finally:
+            os.unlink(f.name)
+
+    def test_token_mismatch(self):
+        rpc = FakeRpc(factory_token="0x" + "ee" * 20)
+        ok, detail = v.provenance(rpc, v.read_pocket(rpc, POCKET), FACTORY)
+        self.assertFalse(ok)
+        self.assertIn("is not the factory's token", detail)
+        rows = {f: ok for f, ok, _, _ in v.compare(v.read_pocket(FakeRpc(), POCKET), dict(APPROVED, token="0x" + "ee" * 20))}
+        self.assertFalse(rows["token"])
+
+    def test_logs_error_on_a_new_pocket_is_a_mismatch(self):
+        rpc = FakeRpc(logs_error=True)
+        s = v.read_pocket(rpc, POCKET)
+        self.assertTrue(s["newVersion"])
+        self.assertIn("cannot list from logs", s["sellersError"])
+        failed = [f for f, ok, _, _ in v.compare(s, APPROVED, rpc) if not ok]
+        self.assertTrue(any(f.startswith("sellers: cannot list from logs") for f in failed), failed)
+        self.assertEqual(self.run_main(FakeRpc(logs_error=True)), 1)
+
+    def test_missing_getter_does_not_crash(self):
+        s = v.read_pocket(FakeRpc(drop=("owner()", "agent()", "perPaymentCap()", "askAbove()", "guardian()")), POCKET)
+        text = "\n".join(v.explain(s))
+        self.assertIn(v.NOT_AVAILABLE, text)
+        self.assertIn(self.run_main(FakeRpc(drop=("owner()", "perPaymentCap()"))), (0, 1))
+
+    def test_unexpected_error_exits_2(self):
+        class Boom(FakeRpc):
+            def call(self, method, params):
+                if method == "eth_blockNumber":
+                    raise KeyError("boom")
+                return super().call(method, params)
+        self.assertEqual(self.run_main(Boom()), 2)
+
+    def test_headline_mentions_seller_caps(self):
+        text = "\n".join(v.explain(v.read_pocket(FakeRpc(), POCKET)))
+        self.assertIn("sellers with their own cap below use it instead, higher or lower", text)
 
 
 if __name__ == "__main__":

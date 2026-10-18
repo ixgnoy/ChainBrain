@@ -377,7 +377,56 @@ abstract contract PocketCases is Test {
         assertEq(token.balanceOf(dataLite), 0);
     }
 
+    /// The token's pre-check: too little gas for the hook reverts the whole payment (above); with enough gas the same
+    /// authorization settles and the pocket counts it, so no gas limit pays without being counted.
+    function test_spend_hook_counts_with_enough_gas() public {
+        _weekly(1e6);
+        Auth memory a = _auth(dataLite, 6e5, agentPk);
+        vm.prank(facilitator);
+        vm.expectRevert(bytes("EHKD: out of gas for the spend hook"));
+        token.transferWithAuthorization{gas: 160_000}(address(pocket), a.to, a.value, 0, a.validBefore, a.nonce, _env(a, ""));
+        vm.prank(facilitator);
+        token.transferWithAuthorization{gas: 400_000}(address(pocket), a.to, a.value, 0, a.validBefore, a.nonce, _env(a, ""));
+        assertEq(token.balanceOf(dataLite), 6e5);
+        assertEq(pocket.spentThisPeriod(), 6e5);
+    }
+
+    /// onSpend's worst case (month kind, first spend in a new period, every slot cold) stays far under the 100,000 gas the
+    /// token gives the hook, so the hook never runs out of gas inside a payment.
+    function test_onSpend_worst_case_gas_is_under_80k() public {
+        vm.startPrank(owner);
+        pocket.setPeriodLimit(3, 1e6);
+        pocket.setExpiresAt(type(uint64).max);
+        vm.stopPrank();
+        _warpBy(40 days); // a new month: the period index and the count are both rewritten
+        vm.cool(address(pocket));
+        vm.prank(address(token));
+        uint256 before = gasleft();
+        pocket.onSpend(dataLite, 6e5);
+        uint256 used = before - gasleft();
+        emit log_named_uint("onSpend worst-case gas", used);
+        assertLt(used, 80_000);
+        assertEq(pocket.spentThisPeriod(), 6e5);
+    }
+
     // ---- per-seller caps ----
+
+    /// Override semantics: a seller's own cap replaces the pocket cap for that seller, so lowering the pocket cap (setCap)
+    /// does NOT restrict a seller that has its own cap. To stop that seller, the owner changes its cap, removes it, or freezes.
+    function test_lowering_the_pocket_cap_does_not_restrict_a_seller_with_its_own_cap() public {
+        vm.startPrank(owner);
+        pocket.setSellerCap(dataPro, 3e6);
+        pocket.setCap(1e5); // emergency tightening of the pocket cap
+        vm.stopPrank();
+        assertEq(pocket.canPay(dataLite, 2e5), bytes32("OVER_CAP")); // the pocket cap holds for sellers without their own
+        assertEq(pocket.canPay(dataPro, 2.5e6), bytes32("OK")); // DataPro keeps its own cap of 3
+        Auth memory a = _auth(dataPro, 2.5e6, agentPk);
+        _submit(a, _sign(ownerPk, a.digest)); // above ask: the owner co-signs, the seller cap allows it
+        assertEq(token.balanceOf(dataPro), 2.5e6);
+        vm.prank(owner);
+        pocket.setSellerCap(dataPro, 0); // back to the pocket cap
+        assertEq(pocket.canPay(dataPro, 2e5), bytes32("OVER_CAP"));
+    }
 
     function test_seller_cap_overrides_the_pocket_cap() public {
         vm.startPrank(owner);

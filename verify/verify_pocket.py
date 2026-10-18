@@ -6,6 +6,10 @@ Python 3 standard library only, no code shared with the TypeScript stack: its ow
 Read-only: it never sends a transaction.
 
   python3 verify/verify_pocket.py --rpc https://fisco-node-production.up.railway.app --pocket 0x... [--approved approved.json] [--json]
+                                   [--factory 0x...]   (default: the committed ChainBrain factory)
+
+It also checks provenance: the pocket must appear in the factory's PocketCreated logs and use the factory's token, so a
+lookalike contract whose getters return the approved values does not pass.
 
 Exit code: 0 = every approved field matches (or nothing to compare), 1 = a mismatch, 2 = RPC or input error.
 """
@@ -140,6 +144,7 @@ THIS = {1: "today", 2: "this week", 3: "this month"}
 NOT_AVAILABLE = "not available on this pocket's contract version"
 MAX = (1 << 256) - 1
 HKT = datetime.timezone(datetime.timedelta(hours=8))
+FACTORY = "0x03aB4C311eeE7C3295c63F910D79a07Ffa7A097A"  # contracts/deployments/20200.json, the same on every fresh chain
 
 
 def hkd(units: int, decimals: int = 6) -> str:
@@ -209,20 +214,31 @@ def read_pocket(rpc: Rpc, pocket: str) -> dict:
         except Reverted:
             s["missing"].append("balance")
 
-    # the allowlist, rebuilt from the pocket's own logs (constructor on), each entry confirmed against current state
-    s["sellers"], s["sellerCaps"], s["sellersFromLogs"] = [], {}, True
+    # a pocket with sellerCap() is the version that emits SellerSet from its constructor on: for it, missing logs are an error
     try:
-        seen = []
+        eth_call(rpc, pocket, "sellerCap(address)", "0x" + "0" * 40)
+        s["newVersion"] = True
+    except Reverted:
+        s["newVersion"] = False
+
+    # the allowlist, rebuilt from the pocket's own logs (constructor on), each entry confirmed against current state
+    s["sellers"], s["sellerCaps"], s["sellersFromLogs"], s["sellersError"] = [], {}, True, None
+    seen = []
+    try:
         wanted = (topic("SellerSet(address,bool)"), topic("SellerCapSet(address,uint256)"))
-        for lg in pocket_logs(rpc, pocket):
-            if lg["topics"] and lg["topics"][0] in wanted:
+        for lg in logs_of(rpc, pocket):
+            if lg.get("topics") and lg["topics"][0] in wanted:
                 a = "0x" + lg["topics"][1][-40:]
                 if a not in seen:
                     seen.append(a)
-    except Reverted:
+    except Reverted as e:
         seen = []
+        if s["newVersion"]:
+            s["sellersError"] = f"cannot list from logs ({e})"
     if not seen:
         s["sellersFromLogs"] = False  # an older pocket emits no SellerSet events
+        if s["newVersion"] and not s["sellersError"]:
+            s["sellersError"] = "cannot list from logs (this pocket version must have SellerSet logs, none were found)"
     s["_candidates"] = seen
     confirm_sellers(rpc, s, seen)
     return s
@@ -231,14 +247,33 @@ def read_pocket(rpc: Rpc, pocket: str) -> dict:
 LOG_WINDOW = 5  # FISCO BCOS 3.x drops results from wide eth_getLogs ranges; windows of a few blocks return every log
 
 
-def pocket_logs(rpc: Rpc, pocket: str) -> list:
-    """Every log the pocket emitted, scanned in small block windows (FISCO quirk, see LOG_WINDOW)."""
+def logs_of(rpc: Rpc, address: str, topics: list = None) -> list:
+    """Every log the address emitted, scanned in small block windows (FISCO quirk, see LOG_WINDOW)."""
     latest = int(rpc.call("eth_blockNumber", []), 16)
     out = []
     for start in range(0, latest + 1, LOG_WINDOW):
         end = min(start + LOG_WINDOW - 1, latest)
-        out += rpc.call("eth_getLogs", [{"address": pocket, "fromBlock": hex(start), "toBlock": hex(end), "topics": []}]) or []
+        out += rpc.call("eth_getLogs", [{"address": address, "fromBlock": hex(start), "toBlock": hex(end), "topics": topics or []}]) or []
     return out
+
+
+def provenance(rpc: Rpc, s: dict, factory: str) -> tuple:
+    """(ok, detail): the pocket is in the factory's PocketCreated logs and uses the factory's token."""
+    want = "0x" + _addr_word(s["pocket"])
+    try:
+        created = any(len(lg.get("topics", [])) > 1 and lg["topics"][1].lower() == want
+                      for lg in logs_of(rpc, factory, [topic("PocketCreated(address,address,address)")]))
+    except Reverted as e:
+        return False, f"cannot read the factory's logs ({e})"
+    if not created:
+        return False, f"not created by the ChainBrain factory {factory}"
+    try:
+        ftoken = as_addr(eth_call(rpc, factory, "token()"))
+    except Reverted:
+        return False, f"factory {factory} has no token()"
+    if (s.get("token") or "").lower() != ftoken.lower():
+        return False, f"token {s.get('token')} is not the factory's token {ftoken}"
+    return True, f"created by the ChainBrain factory {factory}, token {ftoken}"
 
 
 def confirm_sellers(rpc: Rpc, s: dict, candidates: list) -> None:
@@ -275,35 +310,46 @@ def period_text(kind, limit, spent, dec=6) -> str:
             f"Beyond that a payment also needs the owner's signature.")
 
 
+def _amt(x, d) -> str:
+    return NOT_AVAILABLE if x is None else hkd(x, d)
+
+
+def _who(a) -> str:
+    return NOT_AVAILABLE if not a else short(a)
+
+
 def explain(s: dict) -> list:
     if not s["hasCode"]:
         return [f"{s['pocket']} has no contract code: not a pocket."]
-    d = s["decimals"]
+    d = s.get("decimals") or 6
     lines = []
-    if s["revoked"]:
+    if s.get("revoked"):
         lines.append("REVOKED: this pocket refuses every payment.")
-    if s["frozen"]:
+    if s.get("frozen"):
         lines.append("FROZEN: every payment is stopped until the owner unfreezes it.")
-    lines.append(f"The agent {short(s['agent'])} may pay at most {hkd(s['cap'], d)} per payment, from this pocket only.")
+    own = f" (sellers with their own cap below use it instead, higher or lower)" if s.get("sellerCaps") else ""
+    lines.append(f"The agent {_who(s.get('agent'))} may pay at most {_amt(s.get('cap'), d)} per payment{own}, from this pocket only.")
     if s["sellers"]:
         lines.append("Only to: " + ", ".join(
             f"{a}" + (f" (cap {hkd(s['sellerCaps'][a], d)})" if a in s["sellerCaps"] else "") for a in s["sellers"]))
+    elif s.get("sellersError"):
+        lines.append(f"Allowed sellers: {s['sellersError']}.")
     elif s["sellersFromLogs"]:
         lines.append("No seller is allowed: every payment is refused.")
     else:
         lines.append(f"Allowed sellers: the list from logs is {NOT_AVAILABLE}; checked only the sellers given.")
-    ask = s["askAbove"]
-    lines.append("Never asks the owner." if ask == MAX else
+    ask = s.get("askAbove")
+    lines.append(f"Ask-me limit: {NOT_AVAILABLE}." if ask is None else "Never asks the owner." if ask == MAX else
                  "Every payment also needs the owner's signature." if ask == 0 else
                  f"Payments above {hkd(ask, d)} also need the owner's signature.")
-    lines.append(period_text(s["periodKind"], s["periodLimit"], s["spentThisPeriod"], d))
-    if s["expiresAt"] is not None:
+    lines.append(period_text(s.get("periodKind"), s.get("periodLimit"), s.get("spentThisPeriod"), d))
+    if s.get("expiresAt") is not None:
         lines.append(f"Expires {when(s['expiresAt'])}." if s["expiresAt"] < 1 << 63 else "Never expires.")
-    g = s["guardian"]
-    lines.append("No guardian." if not g or int(g, 16) == 0 else
+    g = s.get("guardian")
+    lines.append(f"Guardian: {NOT_AVAILABLE}." if "guardian" in s["missing"] else "No guardian." if not g or int(g, 16) == 0 else
                  f"Guardian {short(g)} can only freeze it: it can never move money, unfreeze or change a rule.")
-    lines.append(f"Owner {short(s['owner'])} alone can change rules, unfreeze, revoke or take the money back.")
-    if s["balance"] is not None:
+    lines.append(f"Owner {_who(s.get('owner'))} alone can change rules, unfreeze, revoke or take the money back.")
+    if s.get("balance") is not None:
         lines.append(f"Balance: {hkd(s['balance'], d)} {s['symbol']} (the budget: the agent can never spend more).")
     return lines
 
@@ -321,7 +367,7 @@ def compare(s: dict, ap: dict, rpc: Rpc = None) -> list:
 
     if "pocket" in ap:
         add("pocket", ap["pocket"].lower(), s["pocket"])
-    for k in ("owner", "agent", "guardian"):
+    for k in ("owner", "agent", "guardian", "token"):
         if k in ap:
             add(k, (ap[k] or "0x" + "0" * 40).lower(), (s.get(k) or "").lower())
     if "cap" in ap:
@@ -339,8 +385,11 @@ def compare(s: dict, ap: dict, rpc: Rpc = None) -> list:
         got = sorted(s["sellers"])
         extra = [a for a in got if a not in want]
         # an older pocket has no SellerSet logs: the approved sellers are confirmed, but extra ones cannot be ruled out
-        field = "sellers" if s["sellersFromLogs"] else f"sellers (approved ones confirmed; extra sellers {NOT_AVAILABLE})"
-        add(field, want, got, ok=not extra and set(want) <= set(got))
+        if s.get("sellersError"):
+            add(f"sellers: {s['sellersError']}", want, got, ok=False)
+        else:
+            field = "sellers" if s["sellersFromLogs"] else f"sellers (approved ones confirmed; extra sellers {NOT_AVAILABLE})"
+            add(field, want, got, ok=not extra and set(want) <= set(got))
     if "period" in ap:
         p = ap["period"]
         if s.get("periodKind") is None:
@@ -371,32 +420,46 @@ def main(argv=None) -> int:
     ap.add_argument("--pocket", required=True)
     ap.add_argument("--approved", help="JSON of what the owner approved (see verify/README.md)")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument("--factory", default=FACTORY, help="the ChainBrain PocketFactory the pocket must come from")
     a = ap.parse_args(argv)
     rpc = Rpc(a.rpc)
     try:
         approved = json.load(open(a.approved)) if a.approved else None
         s = read_pocket(rpc, a.pocket)
-        rows = compare(s, approved, rpc) if approved and s["hasCode"] else []
+        rows = []
+        if s["hasCode"]:
+            prov_ok, prov = provenance(rpc, s, a.factory)
+            s["provenance"] = prov
+            rows.append(("provenance", prov_ok, "created by the ChainBrain factory", prov))
+            if s.get("sellersError") and not approved:
+                rows.append((f"sellers: {s['sellersError']}", False, "listed from SellerSet logs", "none"))
+            if approved:
+                rows += compare(s, approved, rpc)
+        rules = explain(s)
     except (RpcError, OSError, ValueError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
-    ok = all(r[1] for r in rows) and (s["hasCode"] or not approved)
+    except Exception as e:  # anything unexpected: say so, never a traceback
+        print(f"error: unexpected {type(e).__name__}: {e}", file=sys.stderr)
+        return 2
+    ok = all(r[1] for r in rows) and s["hasCode"]
     if a.json:
         s.pop("_candidates", None)
-        print(json.dumps({"state": s, "rules": explain(s),
+        print(json.dumps({"state": s, "rules": rules,
                           "compare": [{"field": f, "match": m, "approved": w, "onChain": g} for f, m, w, g in rows],
                           "ok": ok}, indent=2, default=str))
     else:
         print(f"Pocket {s['pocket']} (read from {a.rpc})")
-        for line in explain(s):
+        for line in rules:
             print("  - " + line)
         if s["missing"]:
             print(f"  ({', '.join(sorted(set(s['missing'])))}: {NOT_AVAILABLE})")
         if rows:
-            print("Against what the owner approved:")
+            print("Checks:" if not approved else "Provenance and what the owner approved:")
             for f, m, w, g in rows:
                 print(f"  {'MATCH   ' if m else 'MISMATCH'} {f}: approved {w}" + ("" if m else f", on chain {g}"))
-            print("All approved rules hold on chain." if ok else "MISMATCH: the chain does not hold what the owner approved.")
+            print(("All approved rules hold on chain." if approved else "Provenance holds.") if ok else
+                  "MISMATCH: the chain does not hold what the owner approved." if approved else "MISMATCH: see above.")
     return 0 if ok else 1
 
 
