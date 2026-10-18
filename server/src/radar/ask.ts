@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { createMessage, modelFor } from "../llm";
 import { isAddress } from "viem";
 import { directory } from "../wallet/directory";
 import { toJson } from "../wallet/events";
@@ -8,8 +9,7 @@ import { radar, screen, brief } from "./screen";
 type Msg = Anthropic.Messages.MessageParam;
 export type AskModel = (req: Anthropic.Messages.MessageCreateParamsNonStreaming) => Promise<Anthropic.Messages.Message>;
 
-let client: Anthropic | undefined;
-const defaultModel: AskModel = (req) => (client ??= new Anthropic()).messages.create(req);
+const defaultModel: AskModel = (req) => createMessage(req, "radar");
 
 const SYSTEM = `You are ChainBrain Radar, an on-chain risk analyst. Answer the owner's question about counterparties and fund flows.
 Use only your tools; every number in your answer must come from a tool result. Give the score, the verdict and the main reason, with the share of funds and hops.
@@ -66,7 +66,7 @@ export async function ask(question: string, deps: { model?: AskModel; maxSteps?:
   const evidence: { tool: string; input: unknown; result: unknown }[] = [];
   for (let step = 0; step < (deps.maxSteps ?? 6); step++) {
     const res = await model({
-      model: process.env.RADAR_MODEL ?? "claude-haiku-5-5",
+      model: modelFor("radar"),
       max_tokens: 2000,
       system: SYSTEM,
       tools: Object.entries(TOOLS).map(([name, t]) => ({ name, description: t.description, input_schema: t.input_schema as any })),

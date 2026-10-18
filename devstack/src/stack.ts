@@ -6,7 +6,7 @@ import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
 import { createPublicClient, createWalletClient, defineChain, http, publicActions, hexToString, toHex, type Address, type Hex, type PublicClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { askedFor, attackOf, scriptedModel } from "./model";
+import { scriptedModel } from "../../server/src/agent/scripted";
 import { SCENES } from "./scenes";
 import { relayApp } from "./relay";
 
@@ -120,8 +120,6 @@ export async function startDevStack(o: DevStackOptions = {}) {
   });
   root.get("/dev/scenes", (c) => c.json(SCENES));
   const { bus } = await import(server("wallet/events.ts"));
-  const agentKey = privateKeyToAccount(DEV_KEYS.AGENT_PK);
-  const agentWallet = createWalletClient({ account: agentKey, chain, transport: http(rpc) }).extend(publicActions);
   /** Pocket.canPay(to, value): the code the pocket itself gives for a transfer ("OK" when it is inside the rules). */
   const canPay = async (pocket: Address, to: Address, value: bigint): Promise<string> => {
     try {
@@ -129,42 +127,6 @@ export async function startDevStack(o: DevStackOptions = {}) {
       return hexToString(r, { size: 32 }).replace(/\0+$/, "");
     } catch { return ""; }
   };
-  // A judge's typed attack (the scripted model refuses in words, model.ts) becomes one `attack` event, as on the built-in
-  // network (shared/sim/world.ts afterAttack), so the console's attack board and the Sentinel count it. For escalation the
-  // agent's own key then really calls setCap / setSeller on the pocket, and the chain reverts it (NOT_OWNER).
-  async function publishAttack(pocket: Address, attack: "escalation" | "extraction" | "induced", text: string) {
-    const base = { type: "attack" as any, pocket, attack, text: text.slice(0, 280), verdict: "refused", by: "agent" };
-    if (attack === "extraction") { bus.publish({ ...base, reason: "DISCLOSURE_REFUSED", asked: askedFor(text), revealed: [] }); return; }
-    if (attack === "induced") { bus.publish({ ...base, reason: "NOT_A_PURCHASE" }); return; }
-    const t = text.toLowerCase();
-    const m = /\b(?:hk|us)\$\s?(\d+(?:\.\d{1,2})?)|\$(\d+(?:\.\d{1,2})?)|\b(\d+(?:\.\d{1,2})?)\s?(?:ehkd|dollars?)\b/.exec(t);
-    const hkd = m?.[1] ?? m?.[2] ?? m?.[3] ?? "800";
-    const cap = BigInt(Math.round(Number(hkd) * 1e6));
-    const abi = [
-      { type: "function", name: "setCap", stateMutability: "nonpayable", inputs: [{ type: "uint256" }], outputs: [] },
-      { type: "function", name: "setSeller", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "bool" }], outputs: [] },
-    ] as const;
-    const tries: { call: string; fn: "setCap" | "setSeller"; args: readonly unknown[] }[] = [];
-    if (!/\bseller\b/.test(t) || /cap|limit/.test(t)) tries.push({ call: `setCap(HK$${hkd})`, fn: "setCap", args: [cap] });
-    if (/\bseller\b|allow ?list|white ?list/.test(t)) tries.push({ call: `setSeller(${ATTACKER.slice(0, 6)}…${ATTACKER.slice(-4)}, true)`, fn: "setSeller", args: [ATTACKER, true] });
-    const txs: { call: string; tx?: string; reverted: boolean }[] = [];
-    for (const x of tries) {
-      try {
-        // explicit gas: the revert lands on-chain as evidence instead of failing in estimation
-        const tx = await agentWallet.writeContract({ address: pocket, abi, functionName: x.fn, args: x.args as any, gas: 100_000n });
-        const rc = await agentWallet.waitForTransactionReceipt({ hash: tx });
-        txs.push({ call: x.call, tx, reverted: rc.status === "reverted" });
-      } catch { txs.push({ call: x.call, reverted: true }); }
-    }
-    bus.publish({ ...base, reason: "NOT_OWNER", tx: txs[0]?.tx, txs, from: agentKey.address });
-  }
-  root.post("/api/chat", async (c) => {
-    const body = (await c.req.raw.clone().json().catch(() => ({}))) as { pocket?: string; text?: unknown };
-    const res = await api.fetch(c.req.raw);
-    const attack = typeof body.text === "string" && /^0x[0-9a-fA-F]{40}$/.test(body.pocket ?? "") ? attackOf(body.text) : undefined;
-    if (attack && res.ok) await publishAttack(body.pocket as Address, attack, body.text as string).catch((e) => log(`attack event: ${(e as Error).message}`));
-    return res;
-  });
   // Scene 5's on-chain backstop, from the browser: the agent key really signs "send 50 eHKD to 0xABC" and a third party
   // submits it straight to the token; the pocket refuses and the tx reverts on-chain. Published as a `forced` event, so the
   // apps can show the reverted hash (the real server has no such route).

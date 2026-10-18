@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { createMessage, modelFor } from "../llm";
 import { z } from "zod";
 import { bus, toJson, type WalletEvent } from "../wallet/events";
 import { memory, consolidate, Reflection, type Snapshot, type Applied, type Rejected } from "./memory";
@@ -7,8 +8,7 @@ import { evidenceFrom } from "./evidence";
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
 export type ReflectModel = (req: Anthropic.Messages.MessageCreateParamsNonStreaming) => Promise<Anthropic.Messages.Message>;
 
-let client: Anthropic | undefined;
-const defaultModel: ReflectModel = (req) => (client ??= new Anthropic()).messages.create(req);
+const defaultModel: ReflectModel = (req) => createMessage(req, "memory");
 let forced = true;
 
 const { $schema: _drop, ...schema } = z.toJSONSchema(Reflection) as Record<string, unknown>;
@@ -36,7 +36,7 @@ export async function reflect(pocket: string, history: Msg[], deps: { model?: Re
   const user = toJson({ currentMemory: { version: prev.version, summary: prev.summary, items: prev.items.map(({ id, kind, text, source }) => ({ id, kind, text, source })) }, evidence });
   const messages: Anthropic.Messages.MessageParam[] = [{ role: "user", content: user }];
   for (let attempt = 0; attempt < 2; attempt++) {
-    const req = { model: process.env.BRAIN_MEMORY_MODEL ?? "claude-haiku-5-5", max_tokens: 4000, system: SYSTEM, tools: [WRITE], messages };
+    const req = { model: modelFor("memory"), max_tokens: 4000, system: SYSTEM, tools: [WRITE], messages };
     // forced tool call; if this model refuses forced tools (400), ask with tool_choice auto and rely on the instruction + retry
     const res = await model({ ...req, tool_choice: forced ? { type: "tool", name: "write_memory" } : { type: "auto" } }).catch((e: unknown) => {
       if (!forced || !/tool_choice/i.test(String((e as Error)?.message ?? e))) throw e;

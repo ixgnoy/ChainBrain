@@ -1,10 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { createMessage, llmOn, modelFor } from "../llm";
 import { directory } from "../wallet/directory";
 import { parseSentence, proof, stricterDraft, type Compiled, type Draft, type Lifetime, type Proof, type Question } from "../../../shared/sim/speak";
 
 export type RulesModel = (req: Anthropic.Messages.MessageCreateParamsNonStreaming) => Promise<Anthropic.Messages.Message>;
-let client: Anthropic | undefined;
-const claude: RulesModel = (req) => (client ??= new Anthropic()).messages.create(req);
+const claude: RulesModel = (req) => createMessage(req, req.model === modelFor("rulesCheck") ? "rulesCheck" : "rules");
 
 const AMOUNT = /^\d{1,6}(\.\d{1,2})?$/;
 const LIFETIMES: Lifetime[] = ["one-task", "until-tonight", "ongoing"];
@@ -62,11 +62,11 @@ async function read(model: RulesModel, modelId: string, sentence: string, seller
 export async function compileRules(sentence: string, deps: { main?: RulesModel; check?: RulesModel } = {}): Promise<Compiled & { proof: Proof }> {
   const sellers = (await directory()).map((s) => ({ id: s.id, name: s.name }));
   const parsed = parseSentence(sentence, sellers);
-  const live = deps.main || process.env.ANTHROPIC_API_KEY;
+  const live = deps.main || llmOn();
   if (!live) return { ...parsed, proof: proof(parsed.draft, sellers) };
   const [a, b] = await Promise.all([
-    read(deps.main ?? claude, process.env.RULES_MODEL ?? "claude-sonnet-5-5", sentence, sellers, parsed.draft).catch(() => null),
-    read(deps.check ?? deps.main ?? claude, process.env.RULES_CHECK_MODEL ?? "claude-haiku-5-5", sentence, sellers, parsed.draft).catch(() => null),
+    read(deps.main ?? claude, modelFor("rules"), sentence, sellers, parsed.draft).catch(() => null),
+    read(deps.check ?? deps.main ?? claude, modelFor("rulesCheck"), sentence, sellers, parsed.draft).catch(() => null),
   ]);
   if (!a && !b) return { ...parsed, proof: proof(parsed.draft, sellers) };
   const merged = a && b ? stricterDraft(a.draft, b.draft) : { draft: (a ?? b)!.draft, disagreements: [] as string[] };

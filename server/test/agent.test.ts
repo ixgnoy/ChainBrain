@@ -15,6 +15,8 @@ const fakeTools = (impl: Record<string, (a: any) => object>, calls: string[] = [
   Object.fromEntries(Object.entries(impl).map(([k, f]) => [k, { description: k, input_schema: { type: "object" }, run: async (_c: unknown, a: any) => (calls.push(k), f(a)) }]));
 
 it("runs tools until the model ends its turn, feeding results back", async () => {
+  const was = process.env.LLM_PROVIDER;
+  process.env.LLM_PROVIDER = "anthropic"; // the Anthropic request shape (OpenRouter's is in llm.test.ts)
   const seen: any[] = [];
   const script = [msg([use("get_pocket")]), msg([{ type: "text", text: "Done." }], "end_turn")];
   const out = await runTurn(ctx, [], "buy", {
@@ -27,6 +29,28 @@ it("runs tools until the model ends its turn, feeding results back", async () =>
   expect(seen[0]).toMatchObject({ model: "claude-opus-5-5", max_tokens: 16000, fallbacks: "default", betas: ["server-side-fallback-2026-07-01"] });
   expect(seen[0].tools[0].input_schema).not.toHaveProperty("$schema");
   expect(seen[0].tools.map((t: any) => t.name)).toEqual(["get_pocket"]);
+  process.env.LLM_PROVIDER = was;
+});
+
+it("a model error falls back to the scripted agent for the rest of the turn, and says so", async () => {
+  const why: string[] = [];
+  let real = 0, scripted = 0;
+  const out = await runTurn(ctx, [], "buy", {
+    model: async () => { real++; throw new Error("503 provider overloaded"); },
+    fallback: async () => (scripted++, msg([{ type: "text", text: "Scripted reply." }], "end_turn")),
+    onFallback: (w) => why.push(w),
+  });
+  expect([out.reply, out.stopped, real, scripted]).toEqual(["Scripted reply.", undefined, 1, 1]);
+  expect(why).toEqual(["503 provider overloaded"]);
+});
+
+it("with no model configured the scripted agent runs from the start, announced", async () => {
+  const was = process.env.LLM_PROVIDER;
+  process.env.LLM_PROVIDER = "scripted";
+  const why: string[] = [];
+  const out = await runTurn(ctx, [], "buy", { fallback: async () => msg([{ type: "text", text: "Scripted." }], "end_turn"), onFallback: (w) => why.push(w) });
+  expect([out.reply, why]).toEqual(["Scripted.", ["no model is configured"]]);
+  process.env.LLM_PROVIDER = was;
 });
 
 it("LLM error mid-task stops without re-sending a payment, and reports it", async () => {

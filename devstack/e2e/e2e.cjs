@@ -212,6 +212,17 @@ async function webFlow(browser, _scenes, issues) {
     check("the agent paid DataLite from the card with an x402 settlement (receipt status 1)", (await receipt(pay.tx))?.status === "0x1", pay.tx);
     check("the card's balance on chain went down by the price", money(await ehkdOf(card)) === money(20 - Number(pay.amount) / 1e6), String(await ehkdOf(card)));
     await shot(p, "web-05-owner");
+    // the attack arena on the real chain: the card's own agent key signs a transfer to an attacker, the chain refuses it
+    const before = await ehkdOf(card);
+    const hit = await p.evaluate(async ([api, c]) => {
+      const t = Object.entries(localStorage).find(([k]) => k.startsWith("cb.visitor."))?.[1];
+      const r = await fetch(`${api}/api/arena/straight`, { method: "POST", headers: { "content-type": "application/json", "x-visitor-token": t }, body: JSON.stringify({ pocket: c }) });
+      return r.json();
+    }, [API, card]);
+    check("straight to the chain: a real reverted hash with the card's rule (SELLER_NOT_ALLOWED)", hit.reverted === true && hit.reason === "SELLER_NOT_ALLOWED" && (await receipt(hit.tx))?.status === "0x0", JSON.stringify(hit).slice(0, 200));
+    check("signed by the card's own agent key, nothing moved", hit.signedBy?.toLowerCase() === agent.toLowerCase() && (await ehkdOf(card)) === before);
+    const explained = await (await fetch(`${API}/api/tx/${hit.tx}`)).json();
+    check("the explorer explains the revert (decoded call and reason)", explained.call?.function === "transferWithAuthorization" && !!explained.revert?.name, JSON.stringify(explained.revert));
     await o.close();
   });
 

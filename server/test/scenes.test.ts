@@ -4,14 +4,15 @@ import { spawnSync } from "node:child_process";
 import { startStack } from "./helpers/stack";
 import { autoOwner } from "./helpers/owner";
 import { $, atom, f } from "./helpers/amounts";
+import { llmOn, modelInfo } from "../src/llm";
 
 /**
  * Demo scenes 1–8 end to end: agent loop → tools → x402 → pocket on the local FISCO chain.
- * With ANTHROPIC_API_KEY set: the real model decides (assertions are on outcomes, never on the path).
- * Without it (or SCENE_REPLAY=1): a scripted stand-in plays the model's part, so the harness, tools and chain
- * are still exercised; only the model's choices are not.
+ * With a model configured (LLM_PROVIDER + its key, src/llm.ts): the real model decides (assertions are on outcomes, never
+ * on the path). Without one (or SCENE_REPLAY=1): a scripted stand-in plays the model's part, so the harness, tools and
+ * chain are still exercised; only the model's choices are not. LLM_MODEL picks the preset.
  */
-const REAL = !!process.env.ANTHROPIC_API_KEY && !process.env.SCENE_REPLAY;
+const REAL = llmOn() && !process.env.SCENE_REPLAY;
 
 let s: Awaited<ReturnType<typeof startStack>>;
 let runTurn: typeof import("../src/agent/loop").runTurn;
@@ -54,7 +55,13 @@ beforeAll(async () => {
     if (e.type === "payment") record(`scene payment: ${e.sellerId} ${e.sku}${e.cosigned ? " (owner co-signed)" : ""}`, e.tx as string, "success", "AuthorizationUsed(address,bytes32)", s.token);
   });
 });
-afterAll(async () => { stopRecording(); stopOwner(); await s?.stop(); });
+afterAll(async () => {
+  // one line for the model table in docs/07-log/realchain-loop.md: which model, how many tool calls and replies
+  const t = bus?.recent().filter((e) => e.type === "trace") ?? [];
+  console.log(`SCENES_SUMMARY ${JSON.stringify({ ...modelInfo(), real: REAL, toolCalls: t.filter((e) => e.phase === "tool_call").length, replies: t.filter((e) => e.phase === "reply").length, fallbacks: t.filter((e) => e.phase === "model").length })}`);
+  if (process.env.SCENES_DEBUG) for (const e of t) console.log(`TRACE ${e.phase} ${JSON.stringify(e.tool ? { tool: e.tool, args: e.args, result: e.result } : { text: e.text, detail: e.detail }).slice(0, 400)}`);
+  stopRecording(); stopOwner(); await s?.stop();
+});
 
 describe.skipIf(!process.env.SCENES)(`scenes (${REAL ? "real model" : "replay model"})`, () => {
   it("scenes 1–3: one question, confirmed intent, DataLite paid, DataPro paid with the owner's co-sign", async () => {

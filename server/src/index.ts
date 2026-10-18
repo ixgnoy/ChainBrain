@@ -13,6 +13,8 @@ import { transferTypedData } from "./wallet/scheme";
 import { directory } from "./wallet/directory";
 import { agentAccount } from "./wallet/pay";
 import { runTurn, type ModelFn } from "./agent/loop";
+import { scriptedModel } from "./agent/scripted";
+import { modelInfo, llmOn } from "./llm";
 import { radarRoutes } from "./radar/api";
 import { startMonitor } from "./radar/monitor";
 import { startSentinel, sentinel } from "./sentinel";
@@ -28,6 +30,7 @@ import { faucetRoutes } from "./faucet";
 import { visitorRoutes, guard } from "./visitors";
 import { agentRoutes } from "./agentKeys";
 import { rpcProxyRoutes } from "./rpcProxy";
+import { arenaRoutes, publishAttack } from "./arena";
 import { rateLimit } from "./limits";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
@@ -43,14 +46,16 @@ export const chainInfo = () => {
 export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryModel?: ReflectModel; rulesModel?: RulesModel; /** pocket apps: compose_pocket_app (defaults to rulesModel) */ pocketAppModel?: RulesModel } = {}) {
   const app = new Hono();
   const chats = new Map<string, Msg[]>();
+  const scripted = scriptedModel() as ModelFn;
   const reflecting = new Map<string, Promise<unknown>>();
   // Memory is on with a model or a key; BRAIN_MEMORY=off turns it off (history is still trimmed).
-  const memoryOn = () => process.env.BRAIN_MEMORY !== "off" && (!!deps.memoryModel || !!process.env.ANTHROPIC_API_KEY);
+  const memoryOn = () => process.env.BRAIN_MEMORY !== "off" && (!!deps.memoryModel || llmOn());
   app.use("*", cors({ origin: "*", allowHeaders: ["content-type", "x-visitor-token"] }));
   app.use("/api/*", rateLimit());
   app.use("/v1/*", rateLimit());
   app.route("/", visitorRoutes()); // /v1/challenge, /v1/visitors, /v1/login, /v1/me
   app.route("/", agentRoutes()); // /v1/cards/agent: a new card's own agent address
+  app.route("/", arenaRoutes()); // /api/arena/straight: the fooled agent's transfer, refused by the chain
   app.route("/", rpcProxyRoutes()); // /rpc/fisco: read-only JSON-RPC (method allowlist, batch and log-range caps, per-IP limit)
 
   app.route("/api/radar", radarRoutes({ model: deps.radarModel }));
@@ -65,7 +70,7 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
   app.get("/api/config", async (c) =>
     c.json({
       agent: agentAccount().address, factory: factoryAddress(), token: cfg().token, chain: chainInfo(), sellersUrl: process.env.SELLERS_URL ?? "http://localhost:4021",
-      sellers: await directory(), abis: { pocket: pocketAbi, factory: factoryAbi, erc20: erc20Abi },
+      sellers: await directory(), abis: { pocket: pocketAbi, factory: factoryAbi, erc20: erc20Abi }, model: modelInfo(),
     }));
   // FISCO has no public explorer: the apps link here for a receipt.
   app.get("/api/tx/:hash", async (c) => {
@@ -105,8 +110,14 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
     if (denied) return denied;
     for (const q of approvals.pending(p).filter((x) => x.kind === "question")) approvals.resolve(q.id, { approved: true, answer: text });
     await reflecting.get(conversationId); // the last reflection lands before this turn reads memory
-    const out = await runTurn({ pocket: p }, chats.get(conversationId) ?? [], text, { model: deps.model, memory: render(memory.get(p)) });
+    // the configured model, else (an error, or none configured) the scripted agent, announced in the trace
+    const out = await runTurn({ pocket: p }, chats.get(conversationId) ?? [], text, {
+      model: deps.model, memory: render(memory.get(p)), fallback: scripted,
+      onFallback: (why) => bus.publish({ type: "trace", pocket: p, phase: "model", text: "model unavailable, using the scripted agent", detail: why }),
+    });
     chats.set(conversationId, trimHistory(out.history)); // only the last few raw turns stay; the rest lives in the snapshot
+    // an attack sentence becomes an attack event (escalation: the card's agent key tries the owner's controls on chain)
+    await publishAttack(p, text).catch(() => {});
     if (memoryOn()) reflecting.set(conversationId, reflect(p, out.history, { model: deps.memoryModel }).catch(() => null));
     return c.json({ reply: out.reply, stopped: out.stopped });
   });

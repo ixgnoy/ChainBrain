@@ -4,6 +4,7 @@
 // lower spend rate, the lower price limit, only items both chose). Anything that fails falls back to the picker, which is
 // what the built-in network uses. The model never sees seller content and never writes UI: it picks blocks.
 import Anthropic from "@anthropic-ai/sdk";
+import { createMessage, llmOn, modelFor } from "../llm";
 import { z } from "zod";
 import { directory } from "../wallet/directory";
 import { compileRules, type RulesModel } from "../rules/compile";
@@ -11,8 +12,7 @@ import { parseSentence, proof, stricterDraft } from "../../../shared/sim/speak";
 import { BLOCKS, catalogPrompt, pickApp, stricterRoutine, validateSpec, type AgentChoice, type PocketAppSpec, type Registry } from "../../../shared/sim/pocketApp";
 import { Spec } from "./schema";
 
-let client: Anthropic | undefined;
-const claude: RulesModel = (req) => (client ??= new Anthropic()).messages.create(req);
+const claude: RulesModel = (req) => createMessage(req, "pocketApp");
 
 /** The forced tool's input schema, from the zod schema (one source of truth for what a spec may contain). */
 const TOOL = () => ({ name: "compose_pocket_app", description: "Compose the pocket's app from the fixed block catalogue. Pick blocks; never write UI.", input_schema: z.toJSONSchema(Spec) as Anthropic.Messages.Tool.InputSchema });
@@ -34,11 +34,11 @@ export async function composeApp(sentence: string, deps: { model?: RulesModel } 
   const draft = compiled.by === "claude" ? stricterDraft(compiled.draft, parsed.draft).draft : compiled.draft;
   const picked = pickApp(sentence, draft, registry);
   const base = { ...compiled, draft, proof: proof(draft, named), agent: picked.agent as AgentChoice };
-  const live = deps.model || process.env.ANTHROPIC_API_KEY;
+  const live = deps.model || llmOn();
   if (!live) return { ...base, spec: picked.spec, specBy: "picker" as const };
   try {
     const res = await (deps.model ?? claude)({
-      model: process.env.POCKET_APP_MODEL ?? "claude-sonnet-5-5", max_tokens: 1500, tools: [TOOL()], tool_choice: { type: "tool", name: "compose_pocket_app" },
+      model: modelFor("pocketApp"), max_tokens: 1500, tools: [TOOL()], tool_choice: { type: "tool", name: "compose_pocket_app" },
       system: catalogPrompt(registry),
       messages: [{ role: "user", content: sentence.slice(0, 500) }],
     });

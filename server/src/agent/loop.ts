@@ -9,8 +9,10 @@ type Req = Anthropic.Beta.Messages.MessageCreateParamsNonStreaming;
 export type TurnResult = { history: Msg[]; reply: string; stopped?: "llm_error" | "max_steps" | "refusal" | "max_tokens" };
 export type ModelFn = (req: Req) => Promise<Anthropic.Beta.Messages.BetaMessage>;
 
-let client: Anthropic | undefined;
-const defaultModel: ModelFn = (req) => (client ??= new Anthropic()).beta.messages.create(req);
+import { createMessage, llmOn, modelFor } from "../llm";
+
+/** The configured provider (LLM_PROVIDER, llm.ts): OpenRouter by default, Claude Haiku 5.5. */
+const defaultModel: ModelFn = (req) => createMessage(req, "agent");
 
 /**
  * Request shape for the current models (Claude Opus 5.5 default): thinking is always on, so no `thinking` field;
@@ -19,7 +21,7 @@ const defaultModel: ModelFn = (req) => (client ??= new Anthropic()).beta.message
  */
 export function buildRequest(tools: ToolMap, messages: Msg[], memory = ""): Req {
   return {
-    model: process.env.AGENT_MODEL ?? "claude-opus-5-5",
+    model: modelFor("agent"),
     max_tokens: 16000,
     output_config: { effort: (process.env.AGENT_EFFORT as "low" | "medium" | "high") ?? "high" },
     betas: ["server-side-fallback-2026-07-01"],
@@ -35,9 +37,14 @@ ${memory}` : systemPrompt(), // the brain's current memory snapshot, never the o
   } as Req;
 }
 
-/** One owner message → as many model/tool steps as the model wants. No scripted fallback: the model decides. */
-export async function runTurn(ctx: { pocket: Address }, history: Msg[], userText: string, deps: { model?: ModelFn; tools?: ToolMap; maxSteps?: number; memory?: string } = {}): Promise<TurnResult> {
-  const model = deps.model ?? defaultModel;
+/**
+ * One owner message → as many model/tool steps as the model wants. With `fallback` (the scripted agent): when the model
+ * errors, or none is configured, the rest of the turn runs on the fallback and `onFallback` announces it. Never silent.
+ */
+export async function runTurn(ctx: { pocket: Address }, history: Msg[], userText: string, deps: { model?: ModelFn; tools?: ToolMap; maxSteps?: number; memory?: string; fallback?: ModelFn; onFallback?: (why: string) => void } = {}): Promise<TurnResult> {
+  let model = deps.model ?? (llmOn() || !deps.fallback ? defaultModel : undefined);
+  if (!model) { deps.onFallback?.("no model is configured"); model = deps.fallback!; }
+  let fellBack = model === deps.fallback;
   const tools = deps.tools ?? walletTools;
   const h: Msg[] = [...history, { role: "user", content: userText }];
   const paid: string[] = [];
@@ -50,7 +57,11 @@ export async function runTurn(ctx: { pocket: Address }, history: Msg[], userText
     try {
       res = await model(buildRequest(tools, h, deps.memory));
     } catch (e) {
-      return stop(`I stopped: the model is unavailable (${(e as Error).message}). ${done()}`, "llm_error");
+      if (!deps.fallback || fellBack) return stop(`I stopped: the model is unavailable (${(e as Error).message}). ${done()}`, "llm_error");
+      fellBack = true;
+      deps.onFallback?.(String((e as Error).message).split("\n")[0].slice(0, 200));
+      model = deps.fallback;
+      res = await model(buildRequest(tools, h, deps.memory));
     }
     h.push({ role: "assistant", content: res.content }); // append-only, whole content (thinking/fallback blocks kept)
     for (const b of res.content) if (b.type === "text" && b.text) trace("thinking", { text: b.text });

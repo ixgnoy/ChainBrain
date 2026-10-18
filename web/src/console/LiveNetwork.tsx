@@ -5,7 +5,7 @@ import { formatHkd, loadConfig, setChainInfo, txUrl, curSign, type Config } from
 import { detectDev } from "../dev";
 import { EventsProvider, useEvents } from "../useEvents";
 import { setSource } from "../source/source";
-import { visitorHeaders } from "../owner/wallet";
+import { hasSession, visitorHeaders } from "../owner/wallet";
 import { networkLabel } from "@sim/explorer";
 import { attemptsFrom } from "@sim/checks";
 import { toBig, clientFor, chainIndex, loadHistory, loadPockets, scanFrom, type ChainIndex, type ChainTx, type PocketState } from "./chain";
@@ -129,8 +129,20 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
         return { ok: true, text: String(j.reply ?? ""), pocket };
       } catch { return { ok: false, text: "Could not reach the server.", pocket }; }
     };
-    // "assume the AI is fooled" is what /dev/force-transfer does on the real chain: the agent's own key signs, the pocket reverts
-    if (actions.forceTransfer) actions.hijack = (pocket) => actions.forceTransfer!(pocket);
+    // "assume the AI is fooled": the card's own agent key signs a transfer to an attacker and it goes straight to the chain,
+    // which refuses it (POST /api/arena/straight, the owner's token). Without a session, the dev stack's shared-key route.
+    const devForce = actions.forceTransfer;
+    actions.hijack = async (pocket) => {
+      if (!hasSession()) return devForce ? devForce(pocket) : { ok: false, text: "Sign in first: open Your wallet (top right) and pick one of your own cards." };
+      try {
+        const r = await fetch(`${url}/api/arena/straight`, { method: "POST", headers: { "content-type": "application/json", ...visitorHeaders() }, body: JSON.stringify({ pocket }) });
+        const j = await r.json();
+        if (r.status === 403) return { ok: false, text: "That card isn't yours. Attack one of your own cards (make one in Your wallet)." };
+        if (!r.ok) return { ok: false, text: j.detail ?? j.error ?? `The server answered ${r.status}.` };
+        setTick((x) => x + 1);
+        return { ok: !!j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain${j.reason ? ` (${j.reason})` : ""}. The card still holds ${curSign()}${formatHkd(BigInt(j.balanceAfter))}.` : "The transfer was NOT refused." };
+      } catch (e) { return { ok: false, text: `Could not run it: ${(e as Error).message}` }; }
+    };
     const txDetail: Network["txDetail"] = (hash) => lookupTx(hash, txs, live.events, pockets, (id) => cfg.sellers.find((x) => x.id === id)?.payTo);
     return {
       dev, builtin: false, chainName: networkLabel({ builtin: false, dev, chainName: cfg.chain?.key === "fisco" ? "FISCO BCOS" : undefined }), cfg, events: live.events, pockets, txs, allTxs, attempts, chainError,
