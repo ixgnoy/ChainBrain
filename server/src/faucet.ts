@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { createWalletClient, http, isAddress, publicActions, type Address, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { isAddress, type Address, type Hex } from "viem";
 import { cfg } from "./chains";
+import { write } from "./ledger";
 import { pub } from "./wallet/chain";
 import { fundIfEmpty } from "./fund";
 import { parseAmount, formatAmount } from "./wallet/money";
@@ -15,7 +15,6 @@ const DAY = 86_400_000, HOUR = 3_600_000;
 // ponytail: in-memory limits, reset on restart; persist them if the faucet ever guards something of value
 const byAddress = new Map<string, number>();
 const byIp = new Map<string, number[]>();
-let queue: Promise<unknown> = Promise.resolve(); // OWNER's mints one at a time: FISCO does not order a sender's txs by nonce
 
 const mintAbi = [{ type: "function", name: "mint", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [] }] as const;
 const amount = () => process.env.FAUCET_AMOUNT ?? "100";
@@ -44,18 +43,11 @@ export function faucetRoutes() {
     byAddress.set(a, now);
     byIp.set(ip, [...recent, now]);
     try {
-      const job = queue.catch(() => {}).then(async () => {
-        const funded = await fundIfEmpty(pub(), [address as Address]);
-        const owner = privateKeyToAccount(process.env.OWNER_PK as Hex);
-        const w = createWalletClient({ account: owner, chain: cfg().chain, transport: http(cfg().rpc) }).extend(publicActions);
-        const value = parseAmount(amount());
-        const tx = await w.writeContract({ address: cfg().token, abi: mintAbi, functionName: "mint", args: [address as Address, value] });
-        const rc = await w.waitForTransactionReceipt({ hash: tx });
-        if (rc.status !== "success") throw new Error(`mint reverted: ${tx}`);
-        return { tx, minted: formatAmount(value), nativeFunded: funded.length > 0, explorer: `${publicApi()}/explorer#/tx/${tx}` };
-      });
-      queue = job;
-      const out = await job;
+      const funded = await fundIfEmpty(pub(), [address as Address]);
+      const value = parseAmount(amount());
+      // the ledger queues OWNER's mints one at a time (FISCO: one transaction per sender)
+      const { hash: tx } = await write(process.env.OWNER_PK as Hex, { address: cfg().token, abi: mintAbi, functionName: "mint", args: [address as Address, value] });
+      const out = { tx, minted: formatAmount(value), nativeFunded: funded.length > 0, explorer: `${publicApi()}/explorer#/tx/${tx}` };
       return c.json({ ok: true, ...out });
     } catch (e) {
       byAddress.delete(a); // a failed claim does not use up the address's allowance

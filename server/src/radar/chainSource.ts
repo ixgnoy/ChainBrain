@@ -1,11 +1,12 @@
 import { parseAbiItem } from "viem";
 import { pub } from "../wallet/chain";
 import { cfg } from "../chains";
+import { LOG_STEP } from "../ledger";
 import type { Transfer, TransferSource } from "./exposure";
 
 const TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
-// public RPCs often cap eth_getLogs at a few hundred blocks per call
-const STEP = BigInt(process.env.RADAR_LOG_STEP ?? 200);
+// FISCO nodes can silently drop logs past 10 blocks per eth_getLogs call (ledger.ts): walk in LOG_STEP chunks
+const STEP = process.env.RADAR_LOG_STEP ? BigInt(process.env.RADAR_LOG_STEP) : LOG_STEP;
 // ponytail: back-fill only this many recent blocks at start (~1 h on Base); a hosted indexer would give full history.
 const BACKFILL = BigInt(process.env.RADAR_BACKFILL_BLOCKS ?? 1_800);
 const MAX_TRANSFERS = 200_000;

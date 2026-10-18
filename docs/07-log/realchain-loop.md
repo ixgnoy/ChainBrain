@@ -7,7 +7,7 @@ Last updated: 2026-10-19
 
 **P0**
 - [x] 1. Environment: local FISCO node, `forge build`, server chain tests, FISCO 3.16.4 probe
-- [ ] 2. Ledger context on the server
+- [x] 2. Ledger context on the server
 - [ ] 3. Visitor accounts
 - [ ] 4. Per-card agent keys
 - [ ] 5. Signing guard
@@ -72,3 +72,39 @@ Last updated: 2026-10-19
 - Item 7: revert reasons come from the native receipt where the node is local (the hosted gateway gains a read-only `chainbrain_getRevertData` that calls the node's native RPC inside the container), else from an `eth_call` replay labelled "replayed (latest state)".
 
 **Next:** item 2, the ledger context.
+
+## Round 2 · 19 Oct 03:05–03:50 · Item 2, ledger context
+
+**What changed**
+- New `server/src/ledger.ts`, the one path for server-sent transactions:
+  - `write(pk, call, {fresh})`: simulate → send (legacy, gas price 0) → wait. It throws `RevertError` with `source: "simulate"` before sending, or with a hash and `source: "native" | "replay"` if a transaction was mined and reverted.
+  - `sendRaw(pk, {to, data})`: no simulation, never throws on a revert. It returns the hash, the receipt and the decoded reason (for the arena's "straight to the chain", item 9).
+  - Per-sender serial queue. `withNonce`: nonce = `max(count, last + 1)`, and on `NonceCheckFail` it moves past the refused nonce and retries (up to 6 times).
+  - `decodeRevert` against the Pocket, factory and Mock e-HKD error ABIs plus `Error(string)` / `Panic`. `revertDataOf` walks viem's error chain.
+  - `revertOf(hash)`: the native receipt when `FISCO_NATIVE_RPC` (+ `FISCO_SDK_DIR`) or `FISCO_REVERT_RPC` is set, else an `eth_call` replay labelled `replay`.
+  - `now()` = max(head, wall clock), in seconds. `freshHead(maxAgeSec = 30)`: a coalesced zero-value self-transfer from `TICK_PK` (default `FACILITATOR_PK`) when the head is stale.
+  - `scanLogs`: `getLogs` in `FISCO_LOG_STEP` (default 10) block chunks, 8 calls in flight. `queuedSigner(pk)`: an x402 facilitator signer whose writes use the queue.
+- Wired in:
+  - the faucet mint (dropped its own queue);
+  - the Sentinel's `freeze`;
+  - the x402 facilitator (every visitor's settlement shares `FACILITATOR_PK`, so the queue matters there);
+  - Radar's transfer index now walks in 10-block steps (it used 200, which the local node silently truncated);
+  - `settle()` ticks the head first, because `canPay` reads expiry at the head block's time.
+- `THIRD_PARTY.md` (new): Apache-2.0 credit to YINGLONG for the `LedgerContext` / native-receipt ideas.
+
+**Evidence**
+- `server/test/ledger-chain.test.ts`, 7 tests on local FISCO:
+  - write + receipt;
+  - a would-revert call refused before sending (nonce unchanged, `ERC20InsufficientBalance`);
+  - a raw reverting send gives a hash with status `reverted`, decoded by replay and then by the native receipt (`source: "native"`);
+  - 6 parallel writes from one sender all land;
+  - `NonceCheckFail` retry 7 → 8 → 9, then the next send starts at 10 even with a lagging count;
+  - a stale head ticks once for two concurrent callers, and the block number rises;
+  - `scanLogs` finds all 14 mints across 14 blocks.
+- `pnpm --dir server typecheck` clean; `pnpm --dir server test` **89 passed, 6 skipped** (18 files). `pnpm --dir devstack test` 21 passed (its scenes pay through the queued facilitator).
+- Not run this round: the Playwright e2e (no UI change). It runs in item 6, where it is extended.
+
+**Found for later**
+- The web console's `loadPockets` / `loadHistory` (`web/src/console/chain.ts`) read 20k-block `getLogs` windows. On a node that truncates, they miss pockets. Fix in item 6/7: read through the server (indexed with `scanLogs`) or chunk on the client.
+
+**Next:** item 3, visitor accounts.

@@ -8,6 +8,7 @@ import { PocketScheme, CbError, buildAuthorization, type Authorization } from ".
 import { state, type Quote, type QuoteRec } from "./state";
 import { bus } from "./events";
 import { isReason, type Reason } from "./reasons";
+import { freshHead } from "../ledger";
 
 const sellersUrl = () => process.env.SELLERS_URL ?? "http://localhost:4021";
 export const agentAccount = () => privateKeyToAccount(process.env.AGENT_PK as Hex);
@@ -53,6 +54,8 @@ export async function settle(pocket: Address, rec: QuoteRec, intentHash: Hex): P
     return { ok: false, reason, detail };
   };
   try {
+    // canPay reads expiry at the head block's time: on a quiet chain tick first, or an expired card looks payable
+    await freshHead().catch(() => null);
     const p = P(pocket);
     const info = await p.info();
     if (info.agent.toLowerCase() !== agentAccount().address.toLowerCase()) return fail("NOT_THIS_AGENT");

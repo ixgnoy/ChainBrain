@@ -1,6 +1,5 @@
-import { createWalletClient, http, stringToHex, type Address, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { cfg } from "../chains";
+import { stringToHex, type Address, type Hex } from "viem";
+import { write } from "../ledger";
 import { bus } from "../wallet/events";
 import { pocket as P, pocketAbi, pub } from "../wallet/chain";
 import { rules, ruleSeverity, gate, stateText, PROBE_REASONS, RANK, type AiAnswer, type Severity, type Signal } from "../../../shared/sim/sentinel";
@@ -15,11 +14,7 @@ const TRIGGERS = new Set(["refusal", "disclosure", "attack", "forced", "payment"
 export async function freezeOnChain(pocket: Address, reason: string): Promise<Hex> {
   const pk = process.env.SENTINEL_PK as Hex | undefined;
   if (!pk) throw new Error("SENTINEL_PK not set");
-  const w = createWalletClient({ account: privateKeyToAccount(pk), chain: cfg().chain, transport: http(cfg().rpc) });
-  const hash = await w.writeContract({ address: pocket, abi: pocketAbi, functionName: "freeze", args: [stringToHex(reason, { size: 32 })] } as any);
-  const rc = await pub().waitForTransactionReceipt({ hash });
-  if (rc.status !== "success") throw new Error(`freeze reverted: ${hash}`);
-  return hash;
+  return (await write(pk, { address: pocket, abi: pocketAbi, functionName: "freeze", args: [stringToHex(reason, { size: 32 })] })).hash;
 }
 
 export type SentinelDeps = {
