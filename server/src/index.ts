@@ -32,6 +32,7 @@ import { agentRoutes } from "./agentKeys";
 import { rpcProxyRoutes } from "./rpcProxy";
 import { arenaRoutes, publishAttack } from "./arena";
 import { rateLimit } from "./limits";
+import { table } from "./store";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
 
@@ -45,7 +46,7 @@ export const chainInfo = () => {
 /** Wallet tool layer + agent API for the app. The LLM only ever reaches the tools; keys stay in this process. */
 export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryModel?: ReflectModel; rulesModel?: RulesModel; /** pocket apps: compose_pocket_app (defaults to rulesModel) */ pocketAppModel?: RulesModel } = {}) {
   const app = new Hono();
-  const chats = new Map<string, Msg[]>();
+  const chats = table<Msg[]>("chats"); // each card's recent conversation, kept across restarts
   const scripted = scriptedModel() as ModelFn;
   const reflecting = new Map<string, Promise<unknown>>();
   // Memory is on with a model or a key; BRAIN_MEMORY=off turns it off (history is still trimmed).

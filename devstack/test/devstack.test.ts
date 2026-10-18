@@ -130,7 +130,8 @@ describe("dev routes", () => {
     expect(h).toMatchObject({ mode: "local-chain", chainId: 20200, rpcPath: "/dev/rpc", owner: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" });
     expect(typeof h.startedAt).toBe("number");
     expect(cfg.factory).toMatch(/^0x[0-9a-fA-F]{40}$/);
-    expect(cfg.sellers.map((s: any) => s.id).sort()).toEqual(["datalite", "datapro", "harbour-wines", "shadyfeed"]);
+    // one catalogue with the phone: the research sellers plus the mocked Exa, CoinGecko, Nansen and TradeWire (real x402)
+    expect(cfg.sellers.map((s: any) => s.id).sort()).toEqual(["coingecko", "datalite", "datapro", "exa", "harbour-wines", "nansen", "shadyfeed", "tradewire"]);
     expect(cfg.sellersUrl).toContain(`:${SELLERS_PORT}`);
   });
 

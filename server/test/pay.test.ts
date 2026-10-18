@@ -79,6 +79,16 @@ describe("settle (x402 facilitator code)", () => {
     expect(await M.settle(pocket, rec, intentHash)).toMatchObject({ ok: false, reason: "APPROVAL_EXPIRED" });
   });
 
+  it("one catalogue with the phone: Exa's HK$0.056 web search is a real x402 payment", async () => {
+    const card = await s.newPocket({ cap: "1", askAbove: "never", sellers: ["exa"], budget: "1" });
+    const q = await M.fetchQuote("exa", "durian-news");
+    if (q.kind !== "priced") throw new Error("expected a priced item");
+    const r = await M.settle(card, M.track(card, q.quote), intentHash);
+    expect(r).toMatchObject({ ok: true });
+    expect(await s.balance(card)).toBe(1_000_000n - 56_000n);
+    expect(await s.balance(s.payTo.exa)).toBeGreaterThanOrEqual(56_000n);
+  });
+
   it("scene 7: after revoke the next payment is refused", async () => {
     await s.ownerWrite(pocket, "revoke");
     expect(await M.settle(pocket, await quote("datalite", "durian-report"), intentHash)).toMatchObject({ ok: false, reason: "POCKET_REVOKED" });

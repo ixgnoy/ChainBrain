@@ -18,11 +18,13 @@ export const BUILTIN_PRESETS: typeof PRESETS = {
   onePurchase: { label: "One purchase", budget: "0.08", sellers: ["exa"], cap: "0.08", askAbove: "never", lifetime: "one-task" },
   askEveryTime: { label: "Ask every time", budget: "8", sellers: ["exa", "coingecko", "nansen"], cap: "0.40", askAbove: "0", lifetime: "ongoing" },
 };
-/** The presets that fit the sellers this network offers. */
-export const presetsFor = (sellerIds: string[]) => (sellerIds.includes("exa") ? BUILTIN_PRESETS : PRESETS);
+/** The presets that fit the sellers this network offers. DataLite is the server's alone (the server now also sells the mocked
+ *  Exa, CoinGecko and Nansen, so their presence no longer means the built-in network). */
+const onServer = (sellerIds: string[]) => sellerIds.includes("datalite");
+export const presetsFor = (sellerIds: string[]) => (onServer(sellerIds) ? PRESETS : BUILTIN_PRESETS);
 /** A pocket made for the dead-end scene (8): its cap is below every seller's price. HK$1.50 against the server's reports;
  *  HK$0.08 on the built-in network, where research pockets themselves have cent caps (Research data HK$0.40). */
-export const isTightCap = (cap: bigint, sellerIds: string[]) => cap <= (sellerIds.includes("exa") ? 80_000n : 1_500_000n);
+export const isTightCap = (cap: bigint, sellerIds: string[]) => cap <= (onServer(sellerIds) ? 1_500_000n : 80_000n);
 
 export function expiryFor(l: Lifetime, now = new Date()): bigint {
   const s = Math.floor(now.getTime() / 1000);

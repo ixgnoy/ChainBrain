@@ -19,8 +19,9 @@ import { parseAmount, formatAmount } from "./wallet/money";
 // /admin/* is a demo-only hook (red-team box, payTo lookup); it is not part of what a seller must run.
 const content = (f: string) => readFileSync(new URL(`./content/${f}`, import.meta.url), "utf8");
 
+/** Where each seller is paid: its key's address (SELLER_*_PK), or a fixed payTo for the mocked sellers that only receive. */
 export const sellerPayTo = (): Record<string, Address> =>
-  Object.fromEntries(sellers.map((s) => [s.id, privateKeyToAccount(process.env[s.keyEnv] as Hex).address]));
+  Object.fromEntries((sellers as { id: string; keyEnv?: string; payTo?: string }[]).map((s) => [s.id, (s.payTo ?? privateKeyToAccount(process.env[s.keyEnv!] as Hex).address) as Address]));
 
 export function sellersApp() {
   const payTo = sellerPayTo();

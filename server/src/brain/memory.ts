@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createMemory, KINDS, type Reflection as R } from "../../../shared/sim/memory";
+import { table } from "../store";
 
 export { KINDS, empty, consolidate, render, type Kind, type Item, type Snapshot, type Applied, type Rejected } from "../../../shared/sim/memory";
 
@@ -19,5 +20,22 @@ export const Reflection = z.object({
 });
 export type Reflection = R;
 
-// ponytail: in-memory per process like wallet/state.ts; persist to disk if the demo needs restarts.
-export const memory = createMemory();
+// kept across restarts (DATA_DIR, the Railway volume): every snapshot and its audit log
+const saved = table<{ current: [string, any][]; audit: [string, any][] }>("memory");
+const inner = createMemory();
+let ready = false;
+const load = () => {
+  if (ready) return;
+  ready = true;
+  const d = saved.get("all");
+  if (d) inner.load({ current: new Map(d.current), audit: new Map(d.audit) });
+};
+const persist = () => { const d = inner.dump(); saved.set("all", { current: [...d.current], audit: [...d.audit] }); };
+export const memory: typeof inner = {
+  ...inner,
+  get: (p) => (load(), inner.get(p)),
+  log: (p) => (load(), inner.log(p)),
+  set: (...a) => { load(); inner.set(...a); persist(); },
+  forget: (p, id) => { load(); const ok = inner.forget(p, id); if (ok) persist(); return ok; },
+  clear: () => { load(); inner.clear(); persist(); },
+};

@@ -8,5 +8,20 @@
   { "id": "harbour-wines", "name": "Harbour Wines", "category": "Food and drink", "keyEnv": "SELLER_HARBOUR_WINES_PK",
     "items": [ { "sku": "fruit-wine-trade-report", "description": "Fruit and wine trade report", "price": "3.10", "content": "harbour-report.md" } ] },
   { "id": "shadyfeed", "name": "ShadyFeed", "category": "Research data", "keyEnv": "SELLER_SHADYFEED_PK",
-    "items": [ { "sku": "preview", "description": "Free durian price preview", "price": null, "content": "shadyfeed.json" } ] }
+    "items": [ { "sku": "preview", "description": "Free durian price preview", "price": null, "content": "shadyfeed.json" } ] },
+  { "id": "exa", "name": "Exa", "category": "Research data", "payTo": "0x7a3e5b1c0d94f2a86b1e4c7d3f25a90b6c1d8e42",
+    "items": [
+      {"sku": "durian-news", "description": "Web search: durian export news (10 results)", "price": "0.056", "content": "exa-durian-news.md"},
+      {"sku": "fruit-news", "description": "Web search: SE Asia fruit trade news (10 results)", "price": "0.056", "content": "exa-fruit-news.md"} ] },
+  { "id": "coingecko", "name": "CoinGecko", "category": "Research data", "payTo": "0x4b8d2e71c9a03f56e1b7d4c2a9f80e3d6b1c5a27",
+    "items": [
+      {"sku": "eth-price", "description": "ETH price in HKD", "price": "0.08", "content": "coingecko-eth-price.md"} ] },
+  { "id": "nansen", "name": "Nansen", "category": "Research data", "payTo": "0x2c9b41e6f3a07d58b9c2e1f4a6d83b07e5c9a1f3",
+    "items": [
+      {"sku": "counterparties", "description": "Counterparties of the exporter's wallet", "price": "0.40", "content": "nansen-counterparties.md"},
+      {"sku": "wallet-balances", "description": "Exporter wallet balances", "price": "0.08", "content": "nansen-wallet-balances.md"},
+      {"sku": "smart-money", "description": "Smart-money flows: durian exporters", "price": "0.40", "content": "nansen-smart-money.md"} ] },
+  { "id": "tradewire", "name": "TradeWire", "category": "Research data", "payTo": "0x6f2a9c4e1b7d03a58e9c2b6d4f1a73e0c8b5d912",
+    "items": [
+      {"sku": "credit-report", "description": "Durian exporter credit report", "price": "0.40", "content": "tradewire-credit-report.md"} ] }
 ]
