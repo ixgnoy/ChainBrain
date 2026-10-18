@@ -12,11 +12,12 @@ import { Button, Chip, Field } from "../ui/kit";
 import { T } from "../ui/Text";
 import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
-import { NEVER, parseUsd } from "../lib/shared";
-import { money, usd } from "../lib/util";
+import { NEVER, parseHkd } from "../lib/shared";
+import { money, hkd } from "../lib/util";
 import { txError } from "./ActionSheet";
 import { SheetSuccess } from "./SheetSuccess";
 import { ErrorNote } from "./ErrorNote";
+import { curSign } from "../lib/runtime";
 
 export function RulesSheet() {
   const { rules, setRules } = useApp();
@@ -36,7 +37,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
   const { findPocket, wallet, refreshPockets, recordTx } = useApp();
   const pocket = findPocket(r.pocket);
   const isCap = r.field === "cap";
-  const initial = r.amount ?? (pocket ? (isCap ? usd(pocket.cap) : pocket.askAbove === NEVER ? "" : usd(pocket.askAbove)) : "");
+  const initial = r.amount ?? (pocket ? (isCap ? hkd(pocket.cap) : pocket.askAbove === NEVER ? "" : hkd(pocket.askAbove)) : "");
   const [text, setText] = useState(initial);
   const [never, setNever] = useState(!isCap && !!pocket && pocket.askAbove === NEVER);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +47,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
   useEffect(() => { setError(null); }, [text, never]);
 
   if (!pocket) return null;
-  const ok = isCap ? validAmount(text) && parseUsd(text) > 0n : never || validAmount(text);
+  const ok = isCap ? validAmount(text) && parseHkd(text) > 0n : never || validAmount(text);
   const topUp = isCap ? r.topUp ?? 0n : 0n;
   const name = cleanText(pocket.name, 30);
 
@@ -55,7 +56,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
     try {
       const txs: { label: string; hash: string }[] = [];
       if (isCap) {
-        const v = parseUsd(text);
+        const v = parseHkd(text);
         let capHash = capDone.current?.text === text ? capDone.current.hash : undefined;
         if (!capHash) {
           const a = await wallet.setCap(pocket.address, v);
@@ -70,7 +71,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
         }
         setDone({ title: topUp > 0n ? `Cap is ${money(v)} and ${money(topUp)} was added` : `Cap is now ${money(v)}`, txs });
       } else {
-        const v = never ? NEVER : parseUsd(text);
+        const v = never ? NEVER : parseHkd(text);
         const a = await wallet.setAskAbove(pocket.address, v);
         recordTx({ kind: "ask", pocket: pocket.address, hash: a.hash, amount: never ? undefined : v.toString(), note: never ? "never ask" : `above ${money(v)}` });
         txs.push({ label: "New ask-me limit", hash: a.hash });
@@ -98,7 +99,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
         ) : null}
         {!never ? (
           <View>
-            <Field label={isCap ? "Cap in US$" : "Ask above, in US$"} value={text} onChangeText={(t) => setText(t.replace(/[^0-9.]/g, "").slice(0, 12))} keyboardType="decimal-pad" inputMode="decimal" placeholder="0.00" accessibilityLabel={isCap ? "Cap in US$" : "Ask above in US$"} />
+            <Field label={isCap ? `Cap in ${curSign()}` : `Ask above, in ${curSign()}`} value={text} onChangeText={(t) => setText(t.replace(/[^0-9.]/g, "").slice(0, 12))} keyboardType="decimal-pad" inputMode="decimal" placeholder="0.00" accessibilityLabel={isCap ? "Cap in US$" : "Ask above in US$"} />
             {!isCap ? <T v="cap" color="muted" style={{ marginTop: 6 }}>Use 0 to be asked about every payment.</T> : null}
           </View>
         ) : <T v="sub" color="warning">With "Never ask" the agent spends freely up to the cap. The pocket balance is still its whole budget.</T>}

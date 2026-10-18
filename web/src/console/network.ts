@@ -52,7 +52,7 @@ export type Network = {
   allTxs: ChainTx[];
   /** Every attempt (payment, refusal, attack) in the events, computed once per change of the events. */
   attempts: Attempt[];
-  /** BaseScan link for a transaction; only on a public chain (the in-app explorer is always there for every hash). */
+  /** Server explorer link for a transaction; only against a real server (the in-app explorer is always there for every hash). */
   explorer?: (hash: string) => string;
   scenes: Scene[];
   /** The pocket the story is on, when the source knows (Live follows it unless one is picked). */

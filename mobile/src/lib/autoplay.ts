@@ -153,7 +153,7 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     await wait(3000);
 
     // ---- scene 11 (haggler) on Premium reports: DataPro (fictional) prices in dollars, so it has its own pocket. The agent
-    // negotiates its premium report down, numbers only (1.50 -> 1.10); still above that pocket's US$1 ask-me, so the owner co-signs
+    // negotiates its premium report down, numbers only (12.00 -> 8.80); still above that pocket's HK$8 ask-me, so the owner co-signs
     await must("picker.open");
     await wait(900);
     await must("picker.pocket", "Premium reports");
@@ -254,7 +254,7 @@ export function createAutoplay(host: AutoplayHost, press: (name: TargetName, arg
     }
 
     // ---- scene 12, pocket apps: one sentence makes a pocket with a routine. The proof card, then the app builds itself; slide
-    // to create and the card flies into its app. Its routine runs now, twice, inside the week's US$0.05 (the second run's Exa
+    // to create and the card flies into its app. Its routine runs now, twice, inside the week's HK$0.40 (the second run's Exa
     // delivery tries to rewrite the routine: reported, nothing changes); the third would pass it, so its cheque is co-signed.
     host.navigate("/");
     await wait(2200);

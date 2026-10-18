@@ -9,8 +9,9 @@ import { PocketAppView } from "./PocketApp";
 import { Explorer } from "./Explorer";
 import { Evidence } from "./Evidence";
 import { Brain } from "./Brain";
+import { Faucet } from "./Faucet";
 import SellerView from "../seller/SellerView";
-import { PhoneTag, TestnetChip, usd } from "./parts";
+import { PhoneTag, TestnetChip, hkd } from "./parts";
 import { Stepper } from "./Stepper";
 import { Kbd } from "./kit";
 import { eventPocket, samePocket } from "../lib/events";
@@ -20,8 +21,8 @@ import { PageTitle, PillSelect } from "../seller/ui";
 import { cn } from "../lib/cn";
 import { parseExplorer, splitHash, type ExplorerRoute } from "./route";
 
-type Tab = "live" | "brain" | "pockets" | "sellers" | "explorer" | "evidence" | "judges";
-const TABS: [Tab, string][] = [["live", "Live"], ["brain", "Brain"], ["pockets", "Pockets"], ["sellers", "Sellers"], ["explorer", "Explorer"], ["evidence", "Evidence"], ["judges", "Judges"]];
+type Tab = "live" | "brain" | "pockets" | "sellers" | "explorer" | "evidence" | "judges" | "faucet";
+const TABS: [Tab, string][] = [["live", "Live"], ["brain", "Brain"], ["pockets", "Pockets"], ["sellers", "Sellers"], ["explorer", "Explorer"], ["evidence", "Evidence"], ["judges", "Judges"], ["faucet", "Faucet"]];
 const ADDR = /^0x[0-9a-fA-F]{40}$/;
 type Route = { tab: Tab; pocket?: string; present: boolean; explorer: ExplorerRoute };
 const HOME: ExplorerRoute = { kind: "home" };
@@ -61,8 +62,8 @@ function PocketPicker({ value, onChange }: { value?: string; onChange(a: string)
   const shownPockets = listed([value]);
   return (
     <PillSelect label="Pocket" value={cur?.address ?? ""} onChange={onChange}
-      shown={cur ? <>{nameOf(cur.address)}{isPhone(cur.address) && <PhoneTag />}<span className="num ml-2 font-medium text-ink2">{usd(cur.balance)}</span></> : "Choose a pocket"}>
-      {shownPockets.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {usd(p.balance)}</option>)}
+      shown={cur ? <>{nameOf(cur.address)}{isPhone(cur.address) && <PhoneTag />}<span className="num ml-2 font-medium text-ink2">{hkd(cur.balance)}</span></> : "Choose a pocket"}>
+      {shownPockets.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {hkd(p.balance)}</option>)}
     </PillSelect>
   );
 }
@@ -142,6 +143,7 @@ function Shell() {
         {!present && tab === "sellers" && <div className="mx-auto max-w-[1040px]"><PageTitle title="Sellers" sub="The other side of every payment: what each shop sees when an agent buys or gets refused." /><SellerView /></div>}
         {!present && tab === "explorer" && <Explorer route={route.explorer} watch={watchLive} />}
         {!present && tab === "evidence" && <div className="mx-auto max-w-[1180px]"><Evidence /></div>}
+        {!present && tab === "faucet" && <div className="mx-auto max-w-[720px]"><Faucet /></div>}
         {!present && tab === "judges" && <div className="mx-auto max-w-[1040px]"><Judges pocket={pocket} open={watchLive} /></div>}
         {!present && <div className="mt-12 text-center xl:hidden"><TestnetChip /></div>}
       </main>

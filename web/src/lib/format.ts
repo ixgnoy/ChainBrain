@@ -1,11 +1,11 @@
-import { formatUsd } from "../shared";
+import { formatHkd } from "../shared";
 
-/** Money is always rendered from numbers via formatUsd, never from text the agent or a seller wrote. */
-export const usd = (atomic: bigint | string | number | undefined | null): string => {
+/** Money is always rendered from numbers via formatHkd, never from text the agent or a seller wrote. */
+export const hkd = (atomic: bigint | string | number | undefined | null): string => {
   if (atomic == null || atomic === "") return "–";
-  try { return formatUsd(BigInt(atomic)); } catch { return "–"; }
+  try { return formatHkd(BigInt(atomic)); } catch { return "–"; }
 };
-export const usdNumber = (atomic: bigint | string | number): number => Number(BigInt(atomic)) / 1_000_000;
+export const hkdNumber = (atomic: bigint | string | number): number => Number(BigInt(atomic)) / 1_000_000;
 
 export const shortHex = (h?: string, head = 8, tail = 6) => (h ? (h.length > head + tail + 1 ? `${h.slice(0, head)}…${h.slice(-tail)}` : h) : "–");
 export const isTxHash = (h: unknown): h is string => typeof h === "string" && /^0x[0-9a-fA-F]{64}$/.test(h);

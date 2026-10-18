@@ -12,7 +12,7 @@ import { useReduceMotion } from "./motion";
 const DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 // Display faces (Clash Display) have proportional figures, so a reel measures its ten digits once and springs its width to the
-// digit it shows: "1" stays narrow, and the number never gets gaps.
+// digit it shows: "8" stays narrow, and the number never gets gaps.
 const Reel = memo(function Reel({ digit, lineHeight, style, delay, reduce, animateIn }: { digit: number; lineHeight: number; style: StyleProp<TextStyle>; delay: number; reduce: boolean; animateIn: boolean }) {
   const y = useSharedValue(animateIn ? 0 : -digit * lineHeight);
   const width = useSharedValue(-1);
@@ -44,7 +44,7 @@ const Reel = memo(function Reel({ digit, lineHeight, style, delay, reduce, anima
 
 /**
  * @param value  the formatted amount, e.g. "3.40" or "1,234.50" (digits roll, everything else is static)
- * @param prefix  e.g. "US$" (static)
+ * @param prefix  e.g. "HK$" (static)
  * @param countIn  roll up from 0 on first mount (use once per screen, e.g. the Home balance)
  */
 export function RollingNumber({ value, prefix = "", style, lineHeight, countIn = false, accessibilityLabel }: {

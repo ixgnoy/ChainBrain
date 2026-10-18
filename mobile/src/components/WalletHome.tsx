@@ -19,13 +19,14 @@ import { useTilt } from "../ui/tilt";
 import { useReduceMotion } from "../ui/motion";
 import { startFlight } from "../ui/cardFlight";
 import { cleanText } from "../lib/sanitize";
-import { money, usd } from "../lib/util";
+import { money, hkd } from "../lib/util";
 import { faceOf, toneFor } from "./PocketFace";
 import type { Pocket } from "../store";
 import { agentInfo } from "../../../shared/sim/agents";
 import { USAGE_LABEL, USAGE_ORDER, usageOf, type Routine, type Usage } from "../../../shared/sim/pocketApp";
 import { USAGE_FACE } from "./app/theme";
 import type { Glyph } from "../../../shared/sim/pocketAppData";
+import { curSign, tokenSymbol } from "../lib/runtime";
 
 export const JOB_ICON: Record<string, IconName> = { research: "file", deal: "target", subscriptions: "refresh", haggle: "arrowDown" };
 
@@ -37,7 +38,7 @@ export function jobLine(p: Pocket, rt: Routine | null | undefined, sellerName: (
   if (p.revoked) return "Revoked · the agent is locked out";
   if (!app) return names || "Any seller on its list";
   const r = rt ?? app.routine;
-  if (app.layout === "deal" && r?.items[0]) return `Buys ${itemName(r.items[0].sellerId, r.items[0].sku)} at ≤ US$${r.limitPrice}`;
+  if (app.layout === "deal" && r?.items[0]) return `Buys ${itemName(r.items[0].sellerId, r.items[0].sku)} at ≤ ${curSign()}${r.limitPrice}`;
   if (app.layout === "haggle") return p.allowed.some(negotiable) ? `Haggles ${p.allowed.filter(negotiable).map(sellerName)[0]} down first` : `Buys once from ${names}`;
   if (r && app.layout === "subscriptions") return `Renews ${r.items.length} feeds`;
   return names || "Any seller on its list";
@@ -90,7 +91,7 @@ export function UsageTabs({ pockets, value, onChange }: { pockets: Pocket[]; val
   );
 }
 
-export function WalletHero({ usdc, out, pockets, all }: { usdc?: bigint; out: bigint; pockets: Pocket[]; all: Pocket[] }) {
+export function WalletHero({ main, out, pockets, all }: { /** the main wallet's balance (eHKD units) */ main?: bigint; out: bigint; pockets: Pocket[]; all: Pocket[] }) {
   const reduce = useReduceMotion();
   const t = useTilt();
   const lean = useAnimatedStyle(() => ({ transform: [{ perspective: 900 }, { rotateX: `${reduce ? 0 : -t.y.value * 5}deg` }, { rotateY: `${reduce ? 0 : t.x.value * 5}deg` }] }));
@@ -98,7 +99,7 @@ export function WalletHero({ usdc, out, pockets, all }: { usdc?: bigint; out: bi
   return (
     <View style={{ marginHorizontal: 16 }}>
       <Animated.View style={lean}>
-        <View accessible accessibilityLabel={`Main wallet ${usdc != null ? money(usdc) : ""}. Only your key moves it. ${money(out)} out in ${pockets.length} pockets.`}
+        <View accessible accessibilityLabel={`Main wallet ${main != null ? money(main) : ""}. Only your key moves it. ${money(out)} out in ${pockets.length} pockets.`}
           style={{ borderRadius: 22, backgroundColor: c.card, overflow: "hidden", borderCurve: "continuous", ...level3, shadowOpacity: 0.12 } as object}>
           <View style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 64, overflow: "hidden" }}><Hatch color={c.ink} pitch={7} stroke={2} opacity={0.9} /></View>
           <View style={{ padding: 20, paddingRight: 84, gap: 14 }}>
@@ -110,7 +111,7 @@ export function WalletHero({ usdc, out, pockets, all }: { usdc?: bigint; out: bi
                 <T v="tab" w="bold" color="ink2">Only your key</T>
               </View>
             </View>
-            {usdc != null ? <Money v="balance" value={usd(usdc)} label={`Main wallet ${money(usdc)}`} /> : <T v="balance" color="muted">—</T>}
+            {main != null ? <Money v="balance" value={hkd(main)} label={`Main wallet ${money(main)}`} /> : <T v="balance" color="muted">—</T>}
             <View style={{ gap: 6 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <Icon name="arrowDown" size={13} color={c.ink2} stroke={2.2} />
@@ -173,7 +174,7 @@ function Row({ p, tone, glyph, spent, job }: { p: Pocket; tone: number; glyph: G
     : glyph?.kind === "price" ? `${money(glyph.price)}${glyph.below ? " ✓" : ""}` : glyph?.kind === "paused" ? "Paused" : glyph?.kind === "running" ? "Running" : glyph?.kind === "saved" ? `Saved ${money(glyph.saved)}` : null;
   return (
     <Press kind="row" haptics="light" onPress={open} accessibilityRole="button"
-      accessibilityLabel={`${name} pocket, ${usd(p.balance)} USDC${p.revoked ? ", revoked" : ""}. ${agentInfo(p.agentId ?? "")?.name ?? "Your"} pocket: ${job}`} accessibilityHint="Opens the pocket"
+      accessibilityLabel={`${name} pocket, ${hkd(p.balance)} ${tokenSymbol()}${p.revoked ? ", revoked" : ""}. ${agentInfo(p.agentId ?? "")?.name ?? "Your"} pocket: ${job}`} accessibilityHint="Opens the pocket"
       style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8, minHeight: 72, opacity: p.revoked ? 0.55 : 1 }}>
       {/* the mini card, its job's icon on it and the agent's mark on its corner */}
       <View>
@@ -192,7 +193,7 @@ function Row({ p, tone, glyph, spent, job }: { p: Pocket; tone: number; glyph: G
         </View>
       </View>
       <View style={{ alignItems: "flex-end", gap: 2 }}>
-        <Money v="row" value={usd(p.balance)} decorative />
+        <Money v="row" value={hkd(p.balance)} decorative />
         {sign ? <T v="cap" color="mutedOnCanvas" numberOfLines={1} style={{ fontVariant: ["tabular-nums"] }}>{sign}</T> : null}
       </View>
     </Press>

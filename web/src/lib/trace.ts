@@ -4,8 +4,9 @@
 // `result` is an object, not a JSON string.
 import { reasonsOf, reasonsOfResult, type WalletEvent } from "./events";
 import { cleanText } from "./sanitize";
-import { usd, shortHex } from "./format";
-import { parseUsd } from "../shared";
+import { hkd, shortHex } from "./format";
+import { parseHkd } from "../shared";
+import { curSign } from "../shared";
 
 export type ChipKind = "ok" | "refused" | "stepup" | "revoked" | "info" | "neutral";
 export type Actor = "Agent" | "Seller" | "Policy" | "Owner" | "Chain";
@@ -18,8 +19,8 @@ export type TraceRow = {
 const ASK: Record<string, string> = { owner_full_name: "the owner's full name", owner_email: "the owner's email", wallet_history: "the wallet history", other_pockets: "the owner's other pockets", owner_phone: "the owner's phone number" };
 const plainAsk = (x: string) => ASK[x] ?? x.replace(/^owner_/, "the owner's ").replace(/_/g, " ");
 
-const atomicUsd = (x: unknown) => { try { return `US$${usd(BigInt(x as string))}`; } catch { return ""; } };
-const priceUsd = (p: unknown) => { try { return typeof p === "string" ? `US$${usd(parseUsd(p))}` : ""; } catch { return ""; } };
+const atomicHkd = (x: unknown) => { try { return `${curSign()}${hkd(BigInt(x as string))}`; } catch { return ""; } };
+const priceHkd = (p: unknown) => { try { return typeof p === "string" ? `${curSign()}${hkd(parseHkd(p))}` : ""; } catch { return ""; } };
 
 /** One-line summary of a tool args object (strings are cleaned, long ones cut). */
 export function argSummary(args: unknown): string {
@@ -46,19 +47,19 @@ export function resultSummary(tool: string | undefined, r: any): string {
   if (!r || typeof r !== "object") return cleanText(r, 80);
   const reasons = reasonsOfResult(r);
   switch (tool) {
-    case "get_pocket": return r.ok ? `balance US$${cleanText(r.balance, 12)} · cap US$${cleanText(r.perPaymentCap, 12)} · ask above ${r.askMeAbove === "never" ? "never" : `US$${cleanText(r.askMeAbove, 12)}`}` : "pocket unavailable";
+    case "get_pocket": return r.ok ? `balance ${curSign()}${cleanText(r.balance, 12)} · cap ${curSign()}${cleanText(r.perPaymentCap, 12)} · ask above ${r.askMeAbove === "never" ? "never" : `${curSign()}${cleanText(r.askMeAbove, 12)}`}` : "pocket unavailable";
     case "search_sellers": return Array.isArray(r.sellers) ? `${r.sellers.length} sellers` : "sellers";
     case "draft_intent": return r.ok ? "task confirmed by owner" : "task not confirmed";
     case "get_quote": {
       if (r.free) return reasons.length ? "free content, parts refused" : "free content read";
-      const p = priceUsd(r.price);
+      const p = priceHkd(r.price);
       const gate = r.allowedByPocket && r.allowedByPocket !== "OK" ? "blocked by pocket" : r.needsOwnerApproval ? "needs your approval" : "within rules";
       return r.ok ? `${cleanText(r.sellerId, 24)}/${cleanText(r.sku, 32)} ${p} · ${gate}` : cleanText(r.error, 80) || "no quote";
     }
     case "ask_owner": return r.status === "asked" ? "asked the owner a question" : r.approved ? "owner approved" : "owner did not approve";
-    case "pay": return r.ok ? `paid US$${cleanText(r.paid, 12)} to ${cleanText(r.sellerId, 24)}` : "payment refused";
+    case "pay": return r.ok ? `paid ${curSign()}${cleanText(r.paid, 12)} to ${cleanText(r.sellerId, 24)}` : "payment refused";
     // the haggler: prices only, both ways (shared/sim/haggle.ts)
-    case "counter_offer": return !r.ok ? "offer refused" : r.deal ? `deal at US$${cleanText(r.price, 12)}, US$${cleanText(r.saved, 12)} under US$${cleanText(r.list, 12)}` : `seller countered US$${cleanText(r.counter, 12)}${r.final ? " (final)" : ""}`;
+    case "counter_offer": return !r.ok ? "offer refused" : r.deal ? `deal at ${curSign()}${cleanText(r.price, 12)}, ${curSign()}${cleanText(r.saved, 12)} under ${curSign()}${cleanText(r.list, 12)}` : `seller countered ${curSign()}${cleanText(r.counter, 12)}${r.final ? " (final)" : ""}`;
     default: return cleanText(Object.keys(r).slice(0, 4).join(", "), 60);
   }
 }
@@ -70,7 +71,7 @@ const approvalRow = (e: WalletEvent): Pick<TraceRow, "kind" | "verdict" | "title
   const pend = a.status === "pending";
   const kind: ChipKind = pend ? "stepup" : a.status === "approved" ? "ok" : "refused";
   const verdict = pend ? "Needs you" : a.status === "approved" ? (a.kind === "question" ? "Answered" : "Approved") : a.status === "declined" ? "Declined" : "Timed out";
-  const title = a.kind === "payment" && a.data?.amount ? `US$${cleanText(a.data.amount, 12)} to ${cleanText(a.data.sellerId, 24)}: ${first}` : first;
+  const title = a.kind === "payment" && a.data?.amount ? `${curSign()}${cleanText(a.data.amount, 12)} to ${cleanText(a.data.sellerId, 24)}: ${first}` : first;
   return { kind, verdict, title, label: `${kindWord} approval` };
 };
 
@@ -106,15 +107,15 @@ export function traceRows(events: WalletEvent[]): TraceRow[] {
       return;
     }
     if (e.type === "payment") {
-      rows.push({ ...base, kind: "ok", verdict: "Paid", actor: "Chain", label: "payment", title: `${e.sellerId}/${e.sku}  ${atomicUsd(e.amount)}${e.cosigned ? " · co-signed by you" : ""}`, reasons: [], tx: e.tx });
+      rows.push({ ...base, kind: "ok", verdict: "Paid", actor: "Chain", label: "payment", title: `${e.sellerId}/${e.sku}  ${atomicHkd(e.amount)}${e.cosigned ? " · co-signed by you" : ""}`, reasons: [], tx: e.tx });
     } else if (e.type === "refusal") {
-      rows.push({ ...base, kind: "refused", verdict: "Refused", actor: "Policy", label: "refusal", title: `${e.sellerId}/${e.sku}  ${atomicUsd(e.amount)}`, reasons: reasonsOf(e) });
+      rows.push({ ...base, kind: "refused", verdict: "Refused", actor: "Policy", label: "refusal", title: `${e.sellerId}/${e.sku}  ${atomicHkd(e.amount)}`, reasons: reasonsOf(e) });
     } else if (e.type === "disclosure") {
       const asked = [...(Array.isArray(e.asked) ? e.asked : []).slice(0, 6).map((x: string) => plainAsk(cleanText(x, 30))), e.signRequest ? "an approval signature" : ""].filter(Boolean).join(", ");
       rows.push({ ...base, kind: "refused", verdict: "Refused", actor: "Policy", label: "disclosure", title: `${cleanText(e.sellerId, 30)} asked for ${asked || "extra data"}`, reasons: reasonsOf(e) });
     } else if (e.type === "forced") {
       // dev stack /dev/force-transfer: a third party submits a transfer the (compromised) agent key really signed
-      rows.push({ ...base, kind: e.reverted ? "ok" : "refused", verdict: e.reverted ? "Reverted" : "Settled", actor: "Chain", label: "forced transfer", title: `Forced ${atomicUsd(e.amount)} to ${shortHex(cleanText(e.to, 42), 6, 4)} · ${e.reverted ? "the pocket refused it on-chain, balance unchanged" : "NOT refused"}`, reasons: [], tx: e.tx });
+      rows.push({ ...base, kind: e.reverted ? "ok" : "refused", verdict: e.reverted ? "Reverted" : "Settled", actor: "Chain", label: "forced transfer", title: `Forced ${atomicHkd(e.amount)} to ${shortHex(cleanText(e.to, 42), 6, 4)} · ${e.reverted ? "the pocket refused it on-chain, balance unchanged" : "NOT refused"}`, reasons: [], tx: e.tx });
     } else if (e.type === "intent" || e.type === "approval" || e.type === "question") {
       rows.push({ ...base, ...approvalRow(e), actor: "Owner", reasons: [] });
     }
@@ -139,7 +140,7 @@ export function stepLines(rows: TraceRow[]): { text: string; kind: ChipKind }[] 
 }
 
 /** Instruction-like text detection for seller content in tool results (never rendered as HTML). */
-export const INJECTION_RE = /(ignore|disregard)[^.]{0,60}(previous|above|prior|instruction)|\bsend\s+\d[\d,.]*\s*(usdc|usd|eth)|private key|system prompt|transfer\s+\d|note for ai assistants|ai assistants?:/i;
+export const INJECTION_RE = /(ignore|disregard)[^.]{0,60}(previous|above|prior|instruction)|\bsend\s+\d[\d,.]*\s*(ehkd|hkd|eth)|private key|system prompt|transfer\s+\d|note for ai assistants|ai assistants?:/i;
 export function untrustedOf(e: WalletEvent): { source?: string; text: string; injection: boolean } | null {
   if (e.type !== "trace" || e.phase !== "tool_result") return null;
   const content = e.result?.content;

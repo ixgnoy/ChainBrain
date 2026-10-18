@@ -32,7 +32,7 @@ import { txError } from "../../components/ActionSheet";
 import { cleanText } from "../../lib/sanitize";
 import { sameAddr, sentinelEvents, type LedgerRow } from "../../lib/events";
 import { visibleRows } from "../../lib/plain";
-import { contractTail, money, usd } from "../../lib/util";
+import { contractTail, money, hkd } from "../../lib/util";
 import { NEVER } from "../../lib/shared";
 import { haptic } from "../../haptics";
 import { agentInfo } from "../../../../shared/sim/agents";
@@ -40,6 +40,7 @@ import { runningNow } from "../../../../shared/sim/pocketAppData";
 import { AppHeader, PocketApp, type AppCtx } from "../../components/app/PocketApp";
 import { appOf } from "../../components/app/theme";
 import * as api from "../../lib/api";
+import { curSign } from "../../lib/runtime";
 
 /** A rule chip: white pill with a muted label and a bold value; editable ones open the rule sheet. */
 /** A rule as VaultBank's category tile: a coloured dot, the figure big, what it means under it; a pencil when you can edit it. */
@@ -183,7 +184,7 @@ export default function PocketDetail() {
           </Rise>
         ) : null}
         {/* the same card as Home's deck; it takes over from the flying card the moment that lands */}
-        <Animated.View style={[{ alignItems: "center", opacity: flight?.pocket === pocket.address.toLowerCase() ? 0 : 1 }, flight?.pocket === pocket.address.toLowerCase() ? null : settle]} accessibilityLabel={`${cleanText(pocket.name, 30)} card, ${usd(pocket.balance)} USDC`} accessible>
+        <Animated.View style={[{ alignItems: "center", opacity: flight?.pocket === pocket.address.toLowerCase() ? 0 : 1 }, flight?.pocket === pocket.address.toLowerCase() ? null : settle]} accessibilityLabel={`${cleanText(pocket.name, 30)} card, ${hkd(pocket.balance)} eHKD`} accessible>
           {W ? <PocketFace pocket={pocket} width={W} tone={toneFor(pockets, pocket.address)} buzz shadow tilt /> : <View style={{ height: 200 }} />}
         </Animated.View>
 
@@ -278,14 +279,14 @@ export default function PocketDetail() {
                 </View>
               </Press>
               {/* the worst case, as one figure against nothing from the main wallet */}
-              <View accessible accessibilityLabel={`Worst case ${money(off ? 0n : pocket.balance)} if the agent is fooled. Main wallet exposure US$0.00`} style={{ flexDirection: "row", gap: 8 }}>
+              <View accessible accessibilityLabel={`Worst case ${money(off ? 0n : pocket.balance)} if the agent is fooled. Main wallet exposure ${curSign()}0.00`} style={{ flexDirection: "row", gap: 8 }}>
                 <View style={{ flex: 1, borderRadius: radius.tile, backgroundColor: c.vermillionSoft, padding: 12, gap: 2 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Icon name="shieldCheck" size={14} color={c.vermillionInk} stroke={2.2} /><T v="cap" w="semi" style={{ color: c.vermillionInk }}>Worst case</T></View>
                   <T v="head" style={{ color: c.vermillionInk, fontVariant: ["tabular-nums"] }}>{money(off ? 0n : pocket.balance)}</T>
                 </View>
                 <View style={{ flex: 1, borderRadius: radius.tile, backgroundColor: c.tile, padding: 12, gap: 2 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Icon name="vault" size={14} color={c.ink2} stroke={2.2} /><T v="cap" w="semi" color="ink2">Main wallet</T></View>
-                  <T v="head" style={{ fontVariant: ["tabular-nums"] }}>US$0.00</T>
+                  <T v="head" style={{ fontVariant: ["tabular-nums"] }}>{`${curSign()}0.00`}</T>
                 </View>
               </View>
               {rulesOpen ? (

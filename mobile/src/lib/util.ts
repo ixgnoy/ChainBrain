@@ -1,14 +1,15 @@
-import { formatUsd, NEVER } from "./shared";
+import { formatHkd, NEVER } from "./shared";
+import { curSign } from "./runtime";
 import type { PocketView } from "./wallet";
 
-/** USDC from atomic units, at least 2 decimals. */
-export const usd = (n: bigint | undefined | null) => (n == null ? "0.00" : formatUsd(n));
-/** Micro-USDC as a JS number, for animation and meters only. */
+/** eHKD from atomic units, at least 2 decimals. */
+export const hkd = (n: bigint | undefined | null) => (n == null ? "0.00" : formatHkd(n));
+/** Micro-eHKD as a JS number, for animation and meters only. */
 export const num = (n: bigint) => Number(n > 10n ** 15n ? 0n : n);
 /** A count-up frame as money: whole cents while it moves, the exact amount once it lands on `target`. */
-export const usdFrame = (shown: number, target: number) => usd(BigInt(shown === target ? Math.round(target) : Math.round(shown / 10_000) * 10_000));
+export const hkdFrame = (shown: number, target: number) => hkd(BigInt(shown === target ? Math.round(target) : Math.round(shown / 10_000) * 10_000));
 export const isNever = (n: bigint) => n === NEVER;
-export const askText = (askAbove: bigint, cap: bigint) => (askAbove === NEVER || askAbove > cap ? "Never" : askAbove === 0n ? "Every payment" : `Above ${usd(askAbove)}`);
+export const askText = (askAbove: bigint, cap: bigint) => (askAbove === NEVER || askAbove > cap ? "Never" : askAbove === 0n ? "Every payment" : `Above ${hkd(askAbove)}`);
 
 export { sameAddr } from "./events";
 /** A pocket is its own contract: "0x…a57a" (never card-style digits). */
@@ -28,8 +29,8 @@ export const timeLabel = (at: number) => new Date(at).toLocaleTimeString("en-GB"
 export const dateLabel = (unixSec: number) => new Date(unixSec * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 export const money2 = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
 
-/** "US$3.20" from atomic USDC. */
-export const money = (n: bigint | undefined | null) => `US$${usd(n)}`;
+/** "HK$3.20" from atomic eHKD units. */
+export const money = (n: bigint | undefined | null) => `${curSign()}${hkd(n)}`;
 /** "14 Oct, 1:32 PM". */
 export const stamp = (at: number) => {
   const d = new Date(at);

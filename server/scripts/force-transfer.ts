@@ -1,23 +1,23 @@
 // Scene 5's on-chain backstop. The agent key is treated as fully compromised: it really signs the injected
-// "send 50 USDC to 0xABC" transfer, and we submit it straight to USDC. The pocket is what refuses it.
+// "send 50 eHKD to 0xABC" transfer, and we submit it straight to the token. The pocket is what refuses it.
 // Usage: pnpm tsx scripts/force-transfer.ts <pocket> [attacker]
 import "dotenv/config";
 import { createWalletClient, http, publicActions, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
+import { cfg } from "../src/chains";
+import { record } from "./evidence";
 import { randomBytes } from "node:crypto";
 import { buildAuthorization, transferTypedData, envelope } from "../src/wallet/scheme";
-import { USDC } from "../src/wallet/chain";
 
 const [pocket, attacker = "0x000000000000000000000000000000000000ABC0"] = process.argv.slice(2) as [Address, Address?];
 if (!pocket) throw new Error("usage: force-transfer.ts <pocket> [attacker]");
 const agent = privateKeyToAccount(process.env.AGENT_PK as Hex);
-const sender = createWalletClient({ account: privateKeyToAccount(process.env.FORCE_PK as Hex), chain: baseSepolia, transport: http(process.env.BASE_SEPOLIA_RPC) }).extend(publicActions);
+const sender = createWalletClient({ account: privateKeyToAccount(process.env.FORCE_PK as Hex), chain: cfg().chain, transport: http(cfg().rpc) }).extend(publicActions);
 
 const auth = buildAuthorization(pocket, attacker as Address, 50_000_000n, `0x${randomBytes(32).toString("hex")}`, 0n);
 const sig = envelope(auth, await agent.signTypedData(transferTypedData(auth)), "0x");
 const hash = await sender.writeContract({
-  address: USDC,
+  address: cfg().token,
   abi: [{ type: "function", name: "transferWithAuthorization", stateMutability: "nonpayable",
     inputs: [{ type: "address" }, { type: "address" }, { type: "uint256" }, { type: "uint256" }, { type: "uint256" }, { type: "bytes32" }, { type: "bytes" }], outputs: [] }],
   functionName: "transferWithAuthorization",
@@ -25,5 +25,6 @@ const hash = await sender.writeContract({
   gas: 200_000n, // explicit gas skips estimateGas, so the revert lands on-chain as evidence
 });
 const rc = await sender.waitForTransactionReceipt({ hash });
+record("scene 5 backstop: compromised agent key forces the injected transfer straight to the token", hash, "reverted", undefined, cfg().token);
 console.log(rc.status === "reverted" ? `REVERTED (expected) ${hash}` : `!!! SUCCEEDED ${hash}`);
 process.exit(rc.status === "reverted" ? 0 : 1);

@@ -1,0 +1,40 @@
+{
+  "chain": "fisco",
+  "chainId": 20200,
+  "entries": [
+    {
+      "label": "spike: create research pocket",
+      "tx": "0xe3190aa2e17860497013a44b35f339d58fad6dc6e950cad28cb7985f0b5e990f",
+      "expect": "success",
+      "event": "PocketCreated(address,address,address)",
+      "contract": "0x03aB4C311eeE7C3295c63F910D79a07Ffa7A097A"
+    },
+    {
+      "label": "spike: fund research pocket",
+      "tx": "0x84d74efed56af8e0a90592193948906f77ee85c1f7796eb1333d59e7c5cbb2ca",
+      "expect": "success",
+      "event": "Transfer(address,address,uint256)",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "spike: DataLite paid by the agent key alone (x402, EIP-3009 + ERC-1271)",
+      "tx": "0x43cab25d106af65015627652aa8b7a5b097ee3d8cbc968cc964cc85c3650cd4d",
+      "expect": "success",
+      "event": "AuthorizationUsed(address,bytes32)",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "spike: DataPro above ask-me, owner co-signed",
+      "tx": "0xfb13de15eeb8ee0bae77c0b95d33afb51dfae9cb1888242a67eab38ed4dfdb59",
+      "expect": "success",
+      "event": "AuthorizationUsed(address,bytes32)",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "scene 5 backstop: compromised agent key forces the injected transfer straight to the token",
+      "tx": "0xc57568ce3b4d12050bf82e14cef3007c57665a7e98245dcb39c62c7e2ca4a529",
+      "expect": "reverted",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    }
+  ]
+}

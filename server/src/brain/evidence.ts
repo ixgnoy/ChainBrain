@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type Anthropic from "@anthropic-ai/sdk";
-import { formatUsd } from "../wallet/money";
+import { formatAmount } from "../wallet/money";
+import { cfg } from "../chains";
 import type { WalletEvent } from "../wallet/events";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
@@ -11,7 +12,7 @@ const mid = (s: string) => `m:${createHash("sha256").update(s).digest("hex").sli
 
 /** One fixed line per event type, built from typed fields only (no seller-provided or agent-written text). */
 function line(e: WalletEvent): string | undefined {
-  const usd = (v: unknown) => `US$${formatUsd(BigInt(String(v ?? 0)))}`;
+  const usd = (v: unknown) => `${cfg().currency}${formatAmount(BigInt(String(v ?? 0)))}`;
   switch (e.type) {
     case "payment": return `paid ${e.sellerId} ${e.sku} ${usd(e.amount)}${e.cosigned ? " (owner co-signed)" : ""}`;
     case "refusal": return `refused ${e.sellerId} ${e.sku}: ${e.reason}`;

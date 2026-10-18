@@ -126,5 +126,5 @@ test("radar: latest screen per seller, alerts per pocket once, narrative head st
   assert.equal(radarAlerts(evs).length, 1); // only the global copy
   const blocked = ledgerFrom(evs, P).filter((r) => r.kind === "blocked");
   assert.deepEqual(blocked.map((r) => r.reasons), [["COUNTERPARTY_HIGH_RISK"]]);
-  assert.equal(summarizeTool("get_quote", evs[5].result), "US$1.50, Radar 9/10");
+  assert.equal(summarizeTool("get_quote", evs[5].result), "HK$1.50, Radar 9/10");
 });

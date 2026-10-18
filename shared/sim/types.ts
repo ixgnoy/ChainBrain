@@ -26,7 +26,7 @@ export type SimSeller = {
   items: { sku: string; /** a few words, for rows */ short?: string; description: string; price: string | null; /** the seller takes offers (the haggler); its floor stays private */ negotiable?: boolean }[];
 };
 
-export type SimConfig = { agent: Hex; factory: Hex; usdc: Hex; sellersUrl: string; sellers: SimSeller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
+export type SimConfig = { agent: Hex; factory: Hex; token: Hex; sellersUrl: string; sellers: SimSeller[]; abis: { pocket: any[]; factory: any[]; erc20: any[] } };
 
 /** What `readPocket` returns on the phone (mobile/src/lib/wallet.ts PocketView), with bigints. */
 export type SimPocketView = {

@@ -10,7 +10,7 @@
 // scripted version the built-in network uses, and the server's model is held to the same guards.
 
 export const MAX_ROUNDS = 3;
-const STEP = 50_000n; // US$0.05 in USDC base units
+const STEP = 400_000n; // HK$0.40 in eHKD base units
 
 const down = (v: bigint) => (v / STEP) * STEP;
 
@@ -18,7 +18,7 @@ export type SellerReply = { kind: "accept"; price: bigint } | { kind: "counter";
 
 /**
  * The seller's answer to an offer. It accepts anything at or above its floor; otherwise it meets the buyer halfway
- * (rounded down to 5 cents), never below the floor, and says "final" once it is at the floor.
+ * (rounded down to HK$0.40), never below the floor, and says "final" once it is at the floor.
  */
 export function sellerReply(ask: bigint, offer: bigint, floor: bigint): SellerReply {
   if (offer >= ask) return { kind: "accept", price: ask };
@@ -46,7 +46,7 @@ export function checkOffer(o: { offer: bigint; ask: bigint; list: bigint; maxPer
 
 /**
  * The scripted buyer (built-in network): open at about 60% of the ask, then offer halfway between our last offer and
- * the seller's counter, and take a final counter or one within 5 cents. Walk away above `walkAway`.
+ * the seller's counter, and take a final counter or one within HK$0.40. Walk away above `walkAway`.
  */
 export const buyerPlan = {
   anchor: (ask: bigint) => down((ask * 60n) / 100n),

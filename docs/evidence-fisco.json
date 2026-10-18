@@ -1,0 +1,120 @@
+{
+  "chain": "fisco",
+  "chainId": 20200,
+  "entries": [
+    {
+      "label": "deploy: MockEHKD",
+      "tx": "0x4d853a1cb0395e4b7c10ca3576471bbe1d16ced14f5f58e36f3ac842698a1692",
+      "expect": "success"
+    },
+    {
+      "label": "deploy: PocketFactory",
+      "tx": "0x19788f92ce22c973d78ed47c424dd8ea5da8311b228ee559416f212643d2661d",
+      "expect": "success"
+    },
+    {
+      "label": "deploy: MockEHKD.mint(address,uint256)",
+      "tx": "0x7447c15d653459b30da3603a1f42eaee63441347dab859ec9ee3e023169f8510",
+      "expect": "success",
+      "event": "Transfer(address,address,uint256)",
+      "contract": "0x0355c0c5afe2a35369056fbb854903a4af07781a"
+    },
+    {
+      "label": "spike: create research pocket",
+      "tx": "0x5815b9b1e1c5a3dd17637e4e758168d5bf1597865067896feb2970765912a206",
+      "expect": "success",
+      "event": "PocketCreated(address,address,address)",
+      "contract": "0x03aB4C311eeE7C3295c63F910D79a07Ffa7A097A"
+    },
+    {
+      "label": "spike: fund research pocket",
+      "tx": "0x84d74efed56af8e0a90592193948906f77ee85c1f7796eb1333d59e7c5cbb2ca",
+      "expect": "success",
+      "event": "Transfer(address,address,uint256)",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "spike: DataLite paid by the agent key alone (x402, EIP-3009 + ERC-1271)",
+      "tx": "0x441912edbb0810f8d5e1b0c916be6fbc3e5c9524249e592ea8be998ad01dfb40",
+      "expect": "success",
+      "event": "AuthorizationUsed(address,bytes32)",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "spike: DataPro above ask-me, owner co-signed",
+      "tx": "0x813dcca1d88c6974a44bda79ecfb16c7db188490de0169eb411753eedd5e4538",
+      "expect": "success",
+      "event": "AuthorizationUsed(address,bytes32)",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "new-pocket research: create",
+      "tx": "0x97b0456a7e9dcfef318578e32f1e8f7224d83dbcc52280fd77d686e6b60142fe",
+      "expect": "success",
+      "event": "PocketCreated(address,address,address)",
+      "contract": "0x03aB4C311eeE7C3295c63F910D79a07Ffa7A097A"
+    },
+    {
+      "label": "new-pocket research: fund",
+      "tx": "0xcda66ce3f744f286cedba507cb443f799b87c02285900cc168ca38e8d1175a64",
+      "expect": "success",
+      "event": "Transfer(address,address,uint256)",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "new-pocket tight: create",
+      "tx": "0x46aee1032f4415b4332410a89ba3aa407aeb2f78025e01bc77acab8f212f1f9f",
+      "expect": "success",
+      "event": "PocketCreated(address,address,address)",
+      "contract": "0x03aB4C311eeE7C3295c63F910D79a07Ffa7A097A"
+    },
+    {
+      "label": "new-pocket tight: fund",
+      "tx": "0xe54093094916ffa18a99fbfa7619eb5e1d5582ce1ad4ae07fcbd0e9ac00146a5",
+      "expect": "success",
+      "event": "Transfer(address,address,uint256)",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "scene payment: datalite durian-report",
+      "tx": "0x1fbf9744d6728eedc9b1763c6e4b5132afdd1e204d52a1956fc60adabd355132",
+      "expect": "success",
+      "event": "AuthorizationUsed(address,bytes32)",
+      "contract": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
+    },
+    {
+      "label": "scene payment: datapro premium-report (owner co-signed)",
+      "tx": "0x50f4c40bcc160d30368cb0764faf21580eb836c8350bd5dc71ff52a10132dfe8",
+      "expect": "success",
+      "event": "AuthorizationUsed(address,bytes32)",
+      "contract": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
+    },
+    {
+      "label": "scene payment: datalite fruit-trade-report",
+      "tx": "0x19ba48ed197a35ee4208ec920e83a5ac952bf0f266b14ff4fe043e9a36ffbbcc",
+      "expect": "success",
+      "event": "AuthorizationUsed(address,bytes32)",
+      "contract": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
+    },
+    {
+      "label": "scene payment: datalite durian-report",
+      "tx": "0xa4900dc45a951e9f2a188c99822e99d390c4ac2bf355903aa819f2afdd621321",
+      "expect": "success",
+      "event": "AuthorizationUsed(address,bytes32)",
+      "contract": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
+    },
+    {
+      "label": "scene 5 backstop: compromised agent key forces the injected transfer straight to the token",
+      "tx": "0xd5e3f8f6329bb6e4b1096f8d6e2686cfac8bd7342af315e21582ce327a119a38",
+      "expect": "reverted",
+      "contract": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
+    },
+    {
+      "label": "scene payment: datalite durian-report",
+      "tx": "0xf851d3da16bd4f25d34c61334e1d1a918173088b28edd0e40dc86c5b3bb8ac82",
+      "expect": "success",
+      "event": "AuthorizationUsed(address,bytes32)",
+      "contract": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
+    }
+  ]
+}

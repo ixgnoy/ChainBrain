@@ -18,18 +18,19 @@ import { SheetSuccess } from "./SheetSuccess";
 import { ErrorNote } from "./ErrorNote";
 import { txError } from "./ActionSheet";
 import { agentInfo, CAN, CANNOT, type AgentId } from "../../../shared/sim/agents";
-import { parseUsd } from "../lib/shared";
+import { parseHkd } from "../lib/shared";
 import { uniqueName } from "../app/create";
 import { useCoverDock } from "./AskDock";
+import { curSign } from "../lib/runtime";
 
-// the built-in network's sellers charge per request (Exa US$0.007, CoinGecko US$0.01, Nansen up to US$0.05)
-const BUDGETS = ["0.20", "0.50", "1"];
-const CAP = "0.05", ASK = "0.02", DAYS = 7;
+// the built-in network's sellers charge per request (Exa HK$0.056, CoinGecko HK$0.08, Nansen up to HK$0.40)
+const BUDGETS = ["1.60", "4.00", "8"];
+const CAP = "0.40", ASK = "0.16", DAYS = 7;
 
 export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: AgentId; visible: boolean; onClose: () => void; onAllowed: (pocket: Address) => void }) {
   const { pockets, wallet, cfg, addPocket, recordTx, refreshPockets, balances } = useApp();
   const info = agentInfo(agent)!;
-  const [budget, setBudget] = useState("0.50");
+  const [budget, setBudget] = useState("4.00");
   const research = useMemo(() => (cfg?.sellers ?? []).filter((s) => s.category === "Research data" && s.id !== "shadyfeed"), [cfg]);
   const [sellers, setSellers] = useState<string[]>(["exa", "coingecko", "nansen"]);
   const names = sellers.map((id) => cfg?.sellers.find((s) => s.id === id)?.name ?? id);
@@ -38,7 +39,7 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
   const [error, setError] = useState<string | null>(null);
   const others = pockets.filter((p) => !p.revoked);
   const name = useMemo(() => uniqueName(`${info.name} research`, pockets.map((p) => p.name)), [info.name, pockets]);
-  const short = balances ? balances.usdc < parseUsd(budget) : false;
+  const short = balances ? balances.ehkd < parseHkd(budget) : false;
 
   const allow = async () => {
     setError(null);
@@ -47,15 +48,15 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
       if (!wallet || !cfg) throw new Error("not connected");
       const payTo = Object.fromEntries(cfg.sellers.map((s) => [s.id, s.payTo]));
       const made = await wallet.createPocket({
-        agent: info.address as Address, cap: parseUsd(CAP), askAbove: parseUsd(ASK),
+        agent: info.address as Address, cap: parseHkd(CAP), askAbove: parseHkd(ASK),
         expiresAt: BigInt(Math.floor(Date.now() / 1000) + DAYS * 86_400), sellers: sellers.map((s) => payTo[s] as Address),
       });
       recordTx({ kind: "create", pocket: made.pocket, hash: made.tx });
       await addPocket(made.pocket, { name: label, style: "custom" }, { activate: false });
-      const f = await wallet.fund(made.pocket, parseUsd(budget));
-      recordTx({ kind: "fund", pocket: made.pocket, hash: f.hash, amount: parseUsd(budget).toString() });
+      const f = await wallet.fund(made.pocket, parseHkd(budget));
+      recordTx({ kind: "fund", pocket: made.pocket, hash: f.hash, amount: parseHkd(budget).toString() });
       await refreshPockets();
-      setDone({ pocket: made.pocket, name: label, txs: [{ label: "Create pocket", hash: made.tx }, { label: `Add US$${budget}`, hash: f.hash }] });
+      setDone({ pocket: made.pocket, name: label, txs: [{ label: "Create pocket", hash: made.tx }, { label: `Add ${curSign()}${budget}`, hash: f.hash }] });
     } catch (e) {
       setError(txError(e));
       throw e;
@@ -67,7 +68,7 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
     <Sheet visible={visible} onClose={onClose}>
       {done ? (
         <View style={{ paddingHorizontal: 20, paddingBottom: 12, gap: 16 }}>
-          <SheetSuccess title={`${info.name} can use ${done.name}`} sub={`US$${budget} in the pocket. ${info.name} pays only ${sellerList}, asks you above US$${ASK}, and stops when you disconnect it.`} txs={done.txs} />
+          <SheetSuccess title={`${info.name} can use ${done.name}`} sub={`${curSign()}${budget} in the pocket. ${info.name} pays only ${sellerList}, asks you above ${curSign()}${ASK}, and stops when you disconnect it.`} txs={done.txs} />
           <Button label={`See ${info.name}`} onPress={() => onAllowed(done.pocket)} auto="consent.done" />
         </View>
       ) : (
@@ -89,12 +90,12 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
                 <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}><View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.white }} /></View>
                 <View style={{ flex: 1 }}>
                   <T v="row" w="bold">{`New pocket: ${name}`}</T>
-                  <T v="cap" color="muted">{`Cap US$${CAP} a payment · asks you above US$${ASK} · ${DAYS} days`}</T>
+                  <T v="cap" color="muted">{`Cap ${curSign()}${CAP} a payment · asks you above ${curSign()}${ASK} · ${DAYS} days`}</T>
                 </View>
               </View>
               <View style={{ gap: 8 }}>
                 <T v="cap" w="semi" color="ink2">Budget from your main wallet</T>
-                <View style={{ flexDirection: "row", gap: 8 }}>{BUDGETS.map((b) => <Chip key={b} label={`US$${b}`} on={budget === b} onPress={() => setBudget(b)} />)}</View>
+                <View style={{ flexDirection: "row", gap: 8 }}>{BUDGETS.map((b) => <Chip key={b} label={`${curSign()}${b}`} on={budget === b} onPress={() => setBudget(b)} />)}</View>
                 {short ? <T v="cap" color="vermillionInk">Not enough in your main wallet for this budget.</T> : null}
               </View>
               <View style={{ gap: 8 }}>
@@ -136,7 +137,7 @@ export function ConsentSheet({ agent, visible, onClose, onAllowed }: { agent: Ag
         // the decision stays in view while the details scroll
         <View style={{ paddingHorizontal: 20, paddingTop: 12, gap: 6, borderTopWidth: 1, borderTopColor: c.fill }}>
           {error ? <ErrorNote text={error} /> : null}
-          <SlideToConfirm label={`Allow · add US$${budget}`} doneLabel="Allowed" disabled={!sellers.length || short} onConfirm={allow} auto="consent.allow" />
+          <SlideToConfirm label={`Allow · add ${curSign()}${budget}`} doneLabel="Allowed" disabled={!sellers.length || short} onConfirm={allow} auto="consent.allow" />
           <Press haptics="select" onPress={onClose} accessibilityRole="button" accessibilityLabel="Deny" style={{ alignItems: "center", paddingVertical: 8 }}>
             <T v="label" color="ink2" style={{ fontSize: 15 }}>Deny</T>
           </Press>

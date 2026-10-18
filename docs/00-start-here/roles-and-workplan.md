@@ -1,13 +1,15 @@
 # Roles and workplan, 14-20 Oct
-Last updated: 2026-10-14
+Last updated: 2026-10-17
 
 > **Status (14 Oct, v2):** rewritten for the consumer-wallet build. The 13 Oct roles were built around a seller gateway, seven guards and MCP; the hour table assumed a build that has since landed on main. Hours are not re-estimated: most build work is done, so what is left is mainly live runs, evidence, deck, video and submission. Owners are still blank.
+>
+> **17 Oct:** the project now runs only on FISCO BCOS (chain id 20200) with a Mock e-HKD token. The rows below are updated to match.
 
 ## In one minute
 
 - **Four roles cover what is left:** (1) Contracts and live chain, (2) Wallet tool layer and agent, (3) Owner apps (web, Expo, Android), (4) Docs, evidence, deck, video and submission. A team of 4-5 takes one each; a team of 2-3 merges them.
 - **Owners are blank.** The team writes names in the Owner column today. Nothing here is decided.
-- **The critical path is short:** fund the wallets, deploy the factory, run the live gate (`pnpm spike`), then run scenes 1-8 live and collect every hash into [evidence](../evidence.md), then freeze on Sun 18, then deck and video, then submit by noon on Tue 20 Oct.
+- **The critical path is short:** start the FISCO node, deploy Mock e-HKD and the factory (`scripts/fisco/deploy.sh`), fund the wallets (`scripts/fisco/fund.sh`), then run scenes 1-8 and collect every hash into [FISCO evidence](../evidence-fisco.md), then freeze on Sun 18, then deck and video, then submit by noon on Tue 20 Oct.
 - **Two jobs only people can do:** send the organiser email, and check eligibility (overseas university and at least 60% non-Chinese nationals). Both are people questions, not code.
 - **Every role has one named backup.** Do not let a single person hold a gate alone.
 
@@ -15,7 +17,7 @@ Last updated: 2026-10-14
 
 | Role | Owns | Main docs to read |
 | --- | --- | --- |
-| **R1 Contracts and live chain** | Pocket and factory (`contracts/`), fork tests, factory deploy to Base Sepolia, wallet funding, live gate (`pnpm spike`), `force-transfer.ts` for scene 5, optional Base mainnet rerun | [technical document](../technical-document.md) section 2, [feasibility](../04-build/x402-pocket-feasibility.md), [security self-assessment](../security-self-assessment.md) |
+| **R1 Contracts and live chain** | Pocket, factory and Mock e-HKD (`contracts/`), contract tests, deploy to the FISCO node (local and Railway), wallet funding, `force-transfer.ts` for scene 5 | [technical document](../technical-document.md) section 2, [feasibility](../04-build/x402-pocket-feasibility.md), [security self-assessment](../security-self-assessment.md) |
 | **R2 Wallet tool layer and agent** | `server/`: six tools, intent template, reason codes, x402 scheme, agent loop and prompt, test sellers, red-team inject route, the real-model scene run | [technical document](../technical-document.md) sections 3-5, [agent model choice](../04-build/agent-model-choice.md) |
 | **R3 Owner apps** | `web/` (MetaMask), `mobile/` (Expo Go), `android/` (native Kotlin): live runs on real devices, approval sheet signing, red-team box, screenshots for the video | [spec app screens](../02-product/product-design.md), [README](../../README.md) deployment guide |
 | **R4 Docs, evidence, deck, video, submission** | Organiser email and registration, evidence file with real hashes, deck (10 minutes at most), video (5 minutes at most), submission package, secret scan, fresh-clone test | [submission checklist](../06-pitch/submission-checklist.md), [demo script](../06-pitch/demo-script.md), [how to win](../06-pitch/how-to-win.md) |
@@ -35,10 +37,10 @@ The 60% rule: at least ceil(0.6 x team size) members must be non-Chinese nationa
 
 | Day | Gate at end of day |
 | --- | --- |
-| Wed 14 | Organiser email sent; wallets funded; factory deployed; live gate run (or `FACILITATOR=local` recorded) |
+| Wed 14 | Organiser email sent; wallets funded; factory deployed |
 | Thu 15 | Scenes 1-2 live with hashes; MetaMask live run; real-model run of scenes 1-8 |
 | Fri 16 | Phone apps run on real devices; scene 3 co-signed live |
-| Sat 17 | Scenes 4-8 live; every hash in [evidence](../evidence.md) |
+| Sat 17 | Scenes 4-8 live; every hash in [FISCO evidence](../evidence-fisco.md) |
 | Sun 18 | Draft video exists; feature freeze at night |
 | Mon 19 | Deck done; fresh-clone test and secret scan pass; package complete |
 | Tue 20, until 12:00 | **Submitted by noon** |
@@ -47,12 +49,12 @@ The 60% rule: at least ceil(0.6 x team size) members must be non-Chinese nationa
 
 | Needs | From | Why | Fallback if late |
 | --- | --- | --- | --- |
-| Funded OWNER, FORCE (and FACILITATOR if local) wallets | R1 | Every live scene ([README](../../README.md) "Fund the wallets") | Faucet limits are unverified; try several |
-| Factory address in `contracts/deployments/84532.json` | R1 | Server and apps read it | Set `FACTORY_ADDRESS` |
+| Funded OWNER and FORCE wallets (native balance plus eHKD) | R1 | Every live scene ([README](../../README.md)) | `scripts/fisco/fund.sh` locally, the node gateway's /admin/fund on Railway, or the server faucet |
+| Token and factory addresses in `contracts/deployments/20200.json` | R1 | Server and apps read it | Set `FACTORY_ADDRESS` |
 | `ANTHROPIC_API_KEY` | Whole team | Real-model scenes | Replay mode (`SCENE_REPLAY=1`) for tests only; the video needs the real model |
-| Real hashes from live runs | R1, R2, R3 | [Evidence](../evidence.md) and the video | Never retype a hash; record from real runs only |
+| Real hashes from live runs | R1, R2, R3 | [FISCO evidence](../evidence-fisco.md) and the video | Never retype a hash; record from real runs only |
 | Passports and English enrolment proofs | Every member to R4 | Registration; disqualification risk | None. Collect today |
-| Organiser answer | R4 sends; whole team reads | Testnet-hash rule, submission channel, deck format | Defaults in [open questions](open-questions.md) |
+| Organiser answer | R4 sends; whole team reads | Whether team-hosted chain hashes count, submission channel, deck format | Defaults in [open questions](open-questions.md) |
 
 ## 4. Owner assignment (fill in today)
 
@@ -82,4 +84,4 @@ The old R2 "Gateway and MCP" (seller gateway, seven guards, MCP server, SKILL.md
 
 ## Sources
 
-- [Spec v2](../02-product/product-design.md), [prelim wallet plan](../superpowers/plans/2026-10-14-chainbrain-prelim-wallet.md), [README](../../README.md). Read 2026-10-14.
+- [Spec v2](../02-product/product-design.md), [README](../../README.md). Read 2026-10-17. History: the 14 Oct prelim wallet plan in `docs/superpowers/plans/`.

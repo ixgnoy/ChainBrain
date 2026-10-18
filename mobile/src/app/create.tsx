@@ -25,9 +25,10 @@ import { worstCase } from "../lib/plain";
 import { cleanText } from "../lib/sanitize";
 import { presetsFor, toPocketArgs, expiryFor, type Lifetime, type PresetValues } from "../lib/presets";
 import { styleForPreset } from "../lib/pocketNames";
-import { parseUsd } from "../lib/shared";
-import { money2, usd } from "../lib/util";
+import { parseHkd } from "../lib/shared";
+import { money2, hkd } from "../lib/util";
 import { haptic } from "../haptics";
+import { curSign } from "../lib/runtime";
 
 /** Sellers under their category (Research data, Food and drink), in the order the API lists them. */
 export function groupSellers<S extends { category: string }>(list: S[]): [string, S[]][] {
@@ -145,7 +146,7 @@ function Done({ name, budget, createTx, fundTx, first, onOpen }: { name: string;
             <Money v="balance" value={budget} countIn />
           </View>
           <View style={{ alignSelf: "stretch", gap: 6 }}>
-            {([["Create pocket", createTx], ["Add US$" + budget, fundTx]] as const).map(([l, h], i) => h ? (
+            {([["Create pocket", createTx], ["Add " + curSign() + budget, fundTx]] as const).map(([l, h], i) => h ? (
               <Reveal key={l} index={i} step={90} base={620} dy={8}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: c.canvas, borderRadius: 14, paddingLeft: 14, paddingRight: 8 }}>
                   <T v="sub" color="muted">{l}</T><TxLink tx={h} />
@@ -209,7 +210,7 @@ export default function Create() {
     if (p.askAbove === "never") setAskMode("never"); else if (p.askAbove === "0") setAskMode("always"); else { setAskMode("above"); setAsk(Number(p.askAbove)); }
   };
   const capMax = Math.max(0.05, Math.min(funds, 5));
-  // one-cent steps at any budget: the sellers charge per request (US$0.007 to US$0.05), so a cap or ask-me limit below
+  // one-cent steps at any budget: the sellers charge per request (HK$0.056 to HK$0.40), so a cap or ask-me limit below
   // five cents must stay reachable when the budget is over a dollar
   const tick = 0.01;
   const capV = Math.min(cap, capMax);
@@ -265,7 +266,7 @@ export default function Create() {
       const id = prog.pocket;
       setFin({ createTx: prog.createTx, fundTx: prog.fundTx, id });
       setStage("done");
-      setNotice({ title: `${values.label} created and funded`, pocket: id, txs: [{ label: "Create pocket", hash: prog.createTx! }, { label: `Add US$${values.budget}`, hash: prog.fundTx! }] });
+      setNotice({ title: `${values.label} created and funded`, pocket: id, txs: [{ label: "Create pocket", hash: prog.createTx! }, { label: `Add ${curSign()}${values.budget}`, hash: prog.fundTx! }] });
       done.current = { createTx: prog.createTx, fundTx: prog.fundTx };
       progress.current = {};
       setTimeout(() => open(id), first.current ? 2600 : 2200);
@@ -286,7 +287,7 @@ export default function Create() {
     go(STEPS.length - 1);
   };
   const toggle = (id: string) => { haptic.select(); setSellers((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); };
-  const askLabel = askMode === "always" ? "Every payment" : askMode === "never" ? "Never" : `Above US$${money2(askV)}`;
+  const askLabel = askMode === "always" ? "Every payment" : askMode === "never" ? "Never" : `Above ${curSign()}${money2(askV)}`;
 
   const page = (() => {
     switch (step) {
@@ -297,7 +298,7 @@ export default function Create() {
           <View style={{ gap: 10 }}>
             {(Object.keys(PRESETS) as (keyof typeof PRESETS)[]).map((k) => {
               const p = PRESETS[k];
-              return <Option key={k} on={preset === k} tapRef={presetTap(k)} onPress={() => choose(k)} title={p.label} sub={`US$${p.budget} budget · up to US$${p.cap} each · ${p.askAbove === "never" ? "never asks" : p.askAbove === "0" ? "asks every time" : `asks above US$${p.askAbove}`}`} />;
+              return <Option key={k} on={preset === k} tapRef={presetTap(k)} onPress={() => choose(k)} title={p.label} sub={`${curSign()}${p.budget} budget · up to ${curSign()}${p.cap} each · ${p.askAbove === "never" ? "never asks" : p.askAbove === "0" ? "asks every time" : `asks above ${curSign()}${p.askAbove}`}`} />;
             })}
             <Option on={preset === "custom"} onPress={() => choose("custom")} title="Custom" sub="Set every limit yourself." />
           </View>
@@ -307,9 +308,9 @@ export default function Create() {
         <View style={{ gap: 20 }}>
           <Title h="How much goes in?" sub="This is the agent's whole budget. When it is gone, the agent stops." />
           <BigNumber value={money2(funds)} />
-          <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>{fundPresets(small).map((v) => <PickChip key={v} on={funds === v} label={`US$${money2(v)}`} onPress={() => setFunds(v)} />)}</View>
+          <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>{fundPresets(small).map((v) => <PickChip key={v} on={funds === v} label={`${curSign()}${money2(v)}`} onPress={() => setFunds(v)} />)}</View>
           <Slider min={0.05} max={10} step={0.05} value={funds} onChange={setFunds} />
-          {balances && <T v="cap" color="muted" style={{ textAlign: "center" }}>Main wallet: US${usd(balances.usdc)}{balances.usdc < parseUsd(money2(funds)) ? ". Not enough for this budget." : ""}</T>}
+          {balances && <T v="cap" color="muted" style={{ textAlign: "center" }}>Main wallet: {curSign()}{hkd(balances.ehkd)}{balances.ehkd < parseHkd(money2(funds)) ? ". Not enough for this budget." : ""}</T>}
         </View>);
       case 2: return (
         <View style={{ gap: 16 }}>
@@ -319,17 +320,17 @@ export default function Create() {
             <View key={cat} style={{ gap: 10 }}>
               <T v="sub" w="semi" color="muted" accessibilityRole="header" style={{ marginTop: 6 }}>{cleanText(cat, 30)}</T>
               {list.map((s) => (
-                <Option key={s.id} on={sellers.includes(s.id)} onPress={() => toggle(s.id)} title={cleanText(s.name, 40)} sub={[...new Set(s.items.map((i) => (i.price ? `US$${cleanText(i.price, 8)}` : "free")))].join(", ")} />
+                <Option key={s.id} on={sellers.includes(s.id)} onPress={() => toggle(s.id)} title={cleanText(s.name, 40)} sub={[...new Set(s.items.map((i) => (i.price ? `${curSign()}${cleanText(i.price, 8)}` : "free")))].join(", ")} />
               ))}
             </View>
           ))}
         </View>);
       case 3: return (
         <View style={{ gap: 20 }}>
-          <Title h="Biggest single payment" sub={`The budget is US$${money2(funds)}. This caps each payment so one mistake cannot take it all.`} />
+          <Title h="Biggest single payment" sub={`The budget is ${curSign()}${money2(funds)}. This caps each payment so one mistake cannot take it all.`} />
           <BigNumber value={money2(capV)} suffix="per payment" />
           <Slider min={tick} max={capMax} step={tick} value={capV} onChange={(v) => { setCap(v); if (ask > v) setAsk(v); }} />
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}><T v="cap" color="muted">{`US$${money2(tick)}`}</T><T v="cap" color="muted">US${money2(capMax)}</T></View>
+          <View style={{ flexDirection: "row", justifyContent: "space-between" }}><T v="cap" color="muted">{`${curSign()}${money2(tick)}`}</T><T v="cap" color="muted">{curSign()}{money2(capMax)}</T></View>
         </View>);
       case 4: return (
         <View style={{ gap: 20 }}>
@@ -338,7 +339,7 @@ export default function Create() {
             {([["always", "Every time"], ["above", "Above an amount"], ["never", "Never"]] as const).map(([k, l]) => <PickChip key={k} label={l} on={askMode === k} onPress={() => setAskMode(k)} />)}
           </View>
           {askMode === "above" && (<><BigNumber value={money2(askV)} /><Slider min={tick} max={capV} step={tick} value={askV} onChange={setAsk} /></>)}
-          <T v="sub" color="ink2">{askMode === "always" ? "You approve every payment." : askMode === "never" ? "The agent never asks. It spends freely up to the cap." : `Up to US$${money2(askV)} it pays alone. Above that, up to US$${money2(capV)}, it asks you.`}</T>
+          <T v="sub" color="ink2">{askMode === "always" ? "You approve every payment." : askMode === "never" ? "The agent never asks. It spends freely up to the cap." : `Up to ${curSign()}${money2(askV)} it pays alone. Above that, up to ${curSign()}${money2(capV)}, it asks you.`}</T>
         </View>);
       case 5: return (
         <View style={{ gap: 14 }}>
@@ -352,9 +353,9 @@ export default function Create() {
           <View style={{ backgroundColor: c.accentSoft, borderRadius: radius.tile, borderCurve: "continuous", padding: 16, gap: 4 }} accessibilityLiveRegion="polite">
             <T v="cap" w="semi" color="accent">Most the agent can lose</T>
             <Money v="balance" value={values.budget} color="ink" />
-            <T v="sub" color="ink2">{worstCase(parseUsd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
+            <T v="sub" color="ink2">{worstCase(parseHkd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
           </View>
-          <EditableSummary onEdit={stage === "idle" && !progress.current.pocket ? edit : undefined} rows={[[0, "Name", values.label], [1, "Money in", `US$${values.budget}`], [2, "Sellers", sellers.map((s) => cleanText(cfg?.sellers.find((x) => x.id === s)?.name ?? s, 24)).join(", ")], [3, "Per payment", `up to US$${values.cap}`], [4, "Asks you", askLabel], [5, "Ends", new Date(Number(expiryFor(life)) * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })]]} />
+          <EditableSummary onEdit={stage === "idle" && !progress.current.pocket ? edit : undefined} rows={[[0, "Name", values.label], [1, "Money in", `${curSign()}${values.budget}`], [2, "Sellers", sellers.map((s) => cleanText(cfg?.sellers.find((x) => x.id === s)?.name ?? s, 24)).join(", ")], [3, "Per payment", `up to ${curSign()}${values.cap}`], [4, "Asks you", askLabel], [5, "Ends", new Date(Number(expiryFor(life)) * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })]]} />
           {stage !== "idle" || progress.current.pocket || done.current.createTx ? (
             <Card style={{ gap: 10 }}>
               {([["create", "1. Create the pocket", !!progress.current.pocket || !!done.current.createTx, progress.current.createTx ?? done.current.createTx], ["fund", "2. Add the money", !!progress.current.funded || !!done.current.fundTx, progress.current.fundTx ?? done.current.fundTx]] as const).map(([k, l, ok, hash]) => (
@@ -378,7 +379,7 @@ export default function Create() {
   const worstNote = step > 0 && step < STEPS.length - 1 ? (
     <View accessibilityLiveRegion="polite" style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", padding: 12, marginBottom: big ? 0 : 6, borderRadius: 16, backgroundColor: c.accentSoft }}>
       <Icon name="shield" size={16} color={c.accent} />
-      <T v="cap" color="ink2" style={{ flex: 1 }}>{worstCase(parseUsd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
+      <T v="cap" color="ink2" style={{ flex: 1 }}>{worstCase(parseHkd(money2(funds)), sellers.map((id) => cleanText(cfg?.sellers.find((x) => x.id === id)?.name ?? id, 24)))}</T>
     </View>
   ) : null;
 

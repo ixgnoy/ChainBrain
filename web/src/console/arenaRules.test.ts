@@ -26,11 +26,11 @@ it("a fooled-then-blocked hijack counts as blocked; the board line reads like th
   const attempts = attemptsFrom([hijack(P, 1), esc(P, 2)]);
   const line = boardLine(attackBoard(attempts));
   expect(line.blocked).toBe(2);
-  expect(line.text).toBe("2 of 4 attacks blocked · US$0.00 lost");
+  expect(line.text).toBe("2 of 4 attacks blocked · HK$0.00 lost");
   expect(line.untried).toEqual(["extraction", "injection"]);
   const lost = boardLine(attackBoard(attemptsFrom([hijack(P, 1, false)])));
   expect(lost.blocked).toBe(0);
-  expect(lost.lost).toBe("US$50.00");
+  expect(lost.lost).toBe("HK$50.00");
 });
 
 it("an answered attack moved nothing unless a payment left the pocket or a rule changed after it was fired", async () => {

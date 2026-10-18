@@ -25,7 +25,7 @@ import { biometricKind, confirmOwner } from "../lib/biometric";
 import * as api from "../lib/api";
 import { cleanText } from "../lib/sanitize";
 import { expiryFor } from "../lib/presets";
-import { NEVER, parseUsd } from "../lib/shared";
+import { NEVER, parseHkd } from "../lib/shared";
 import { haptic } from "../haptics";
 import { PocketFace, cardHeight, toneFor } from "../components/PocketFace";
 import { SellerMark } from "../ui/SellerMark";
@@ -44,13 +44,14 @@ import { uniqueName } from "./create";
 import { answer, proof, type Draft } from "../../../shared/sim/speak";
 import { AGENTS, CAN, CANNOT } from "../../../shared/sim/agents";
 import { BLOCK_TYPES, type Layout } from "../../../shared/sim/pocketApp";
+import { curSign } from "../lib/runtime";
 
 type Composed = Awaited<ReturnType<typeof api.composeApp>>;
 const EXAMPLES: { icon: IconName; label: string; text: string; layout: Layout; agent: string }[] = [
-  { icon: "file", label: "Morning brief", layout: "research", agent: "chainbrain", text: "Every morning, get me durian export news from Exa and the USDC price from CoinGecko. Max US$0.05 a week." },
-  { icon: "chart", label: "Claude watches a price", layout: "deal", agent: "claude", text: "Let Claude buy Nansen's smart-money flows every morning when the price drops below US$0.04. Max US$0.20 a week." },
-  { icon: "refresh", label: "ChatGPT renews feeds", layout: "subscriptions", agent: "chatgpt", text: "Have ChatGPT renew Exa durian news and the CoinGecko USDC price every Monday, max US$0.10 a month." },
-  { icon: "target", label: "Haggle a report", layout: "haggle", agent: "chainbrain", text: "Get DataPro's premium report, but negotiate the price down first, at most US$2 each, ask me above US$1, one-off." },
+  { icon: "file", label: "Morning brief", layout: "research", agent: "chainbrain", text: "Every morning, get me durian export news from Exa and the ETH price from CoinGecko. Max HK$0.40 a week." },
+  { icon: "chart", label: "Claude watches a price", layout: "deal", agent: "claude", text: "Let Claude buy Nansen's smart-money flows every morning when the price drops below HK$0.32. Max HK$1.60 a week." },
+  { icon: "refresh", label: "ChatGPT renews feeds", layout: "subscriptions", agent: "chatgpt", text: "Have ChatGPT renew Exa durian news and the CoinGecko ETH price every Monday, max HK$0.80 a month." },
+  { icon: "target", label: "Haggle a report", layout: "haggle", agent: "chainbrain", text: "Get DataPro's premium report, but negotiate the price down first, at most HK$16 each, ask me above HK$8 one-off." },
 ];
 const ZERO = "0x0000000000000000000000000000000000000000" as Address;
 const cap1 = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -84,8 +85,8 @@ export default function Compose() {
   const spec = res?.spec;
   // fixed once composed: the new pocket itself must not turn it into "… · 17 Oct"
   const title = useMemo(() => (spec ? uniqueName(spec.title, pockets.map((x) => x.name)).slice(0, 28) : ""), [spec]); // eslint-disable-line react-hooks/exhaustive-deps
-  const budget = draft ? parseUsd(draft.budget) : 0n;
-  const short = balances ? balances.usdc < budget : false;
+  const budget = draft ? parseHkd(draft.budget) : 0n;
+  const short = balances ? balances.ehkd < budget : false;
   const [signer, setSigner] = useState<string | null>(null);
   useEffect(() => { void biometricKind().then(setSigner); }, []);
 
@@ -143,7 +144,7 @@ export default function Compose() {
       { key: "deploy", icon: "layers", status: "wait", title: "Deploying the pocket contract" },
       { key: "rules", icon: "key", status: "wait", title: "Writing your rules into it" },
       { key: "key", icon: "bot", status: "wait", title: outside ? `Handing ${who} its own key` : `Setting ${who} as its agent` },
-      { key: "fund", icon: "arrowIn", status: "wait", title: `Moving US$${draft.budget} from your main wallet` },
+      { key: "fund", icon: "arrowIn", status: "wait", title: `Moving ${curSign()}${draft.budget} from your main wallet` },
       { key: "arrange", icon: "squarePlus", status: "wait", title: "Arranging your pocket app" },
       { key: "live", icon: "bolt", status: "wait", title: "Live" },
     ]);
@@ -153,8 +154,8 @@ export default function Compose() {
       const payTo = Object.fromEntries(cfg.sellers.map((s) => [s.id, s.payTo]));
       const m = await step("deploy", 1700, async () => {
         const r = await wallet.createPocket({
-          agent: (outside ? agent.address : cfg.agent) as Address, cap: parseUsd(draft.cap),
-          askAbove: draft.askAbove === "never" ? NEVER : parseUsd(draft.askAbove), expiresAt: expiryFor(draft.lifetime),
+          agent: (outside ? agent.address : cfg.agent) as Address, cap: parseHkd(draft.cap),
+          askAbove: draft.askAbove === "never" ? NEVER : parseHkd(draft.askAbove), expiresAt: expiryFor(draft.lifetime),
           sellers: draft.sellers.map((s) => payTo[s] as Address),
         });
         recordTx({ kind: "create", pocket: r.pocket, hash: r.tx });
@@ -178,7 +179,7 @@ export default function Compose() {
       await step("live", 500, () => null, () => "Created and funded on-chain");
       haptic.success();
       if (!outside) setActive(m.pocket);
-      setNotice({ title: `${title} created and funded`, pocket: m.pocket, txs: [{ label: "Create pocket", hash: m.tx }, { label: `Add US$${draft.budget}`, hash: f.hash }] });
+      setNotice({ title: `${title} created and funded`, pocket: m.pocket, txs: [{ label: "Create pocket", hash: m.tx }, { label: `Add ${curSign()}${draft.budget}`, hash: f.hash }] });
       setMade({ pocket: m.pocket });
       setTimeout(() => open(m.pocket), 2200);
     } catch (e) { setSteps(null); setErr(txError(e)); throw e; }
@@ -200,8 +201,8 @@ export default function Compose() {
 
   // the live preview: the pocket as it will be, before it exists (no address yet: the card says Draft)
   const preview: Pocket | null = spec && draft ? {
-    address: made?.pocket ?? ZERO, owner: (wallet?.address ?? ZERO) as Address, agent: agent.address as Address, cap: parseUsd(draft.cap),
-    askAbove: draft.askAbove === "never" ? NEVER : parseUsd(draft.askAbove), expiresAt: expiryFor(draft.lifetime), revoked: false,
+    address: made?.pocket ?? ZERO, owner: (wallet?.address ?? ZERO) as Address, agent: agent.address as Address, cap: parseHkd(draft.cap),
+    askAbove: draft.askAbove === "never" ? NEVER : parseHkd(draft.askAbove), expiresAt: expiryFor(draft.lifetime), revoked: false,
     balance: budget, allowed: draft.sellers, name: title, style: "custom", owned: true, agentId: agent.id, app: spec,
   } as Pocket : null;
   const ctx: AppCtx | null = spec && draft && preview ? {
@@ -316,9 +317,9 @@ export default function Compose() {
                   </Card>
                 ) : (
                   <>
-                    {canvas ? null : <SlideToConfirm label={`Slide to create · US$${draft?.budget ?? ""}`} doneLabel="Created" auto="compose.create" disabled={!draft?.sellers.length || short || !wallet} onConfirm={create} />}
+                    {canvas ? null : <SlideToConfirm label={`Slide to create · ${curSign()}${draft?.budget ?? ""}`} doneLabel="Created" auto="compose.create" disabled={!draft?.sellers.length || short || !wallet} onConfirm={create} />}
                     <T v="cap" color="mutedOnCanvas" style={{ textAlign: "center" }}>
-                      {short ? "Not enough in your main wallet for this budget." : !draft?.sellers.length ? "Name at least one seller in the sentence." : `${cap1(signer ?? "Your key")} signs 2 transactions: create, then fund US$${draft?.budget}`}
+                      {short ? "Not enough in your main wallet for this budget." : !draft?.sellers.length ? "Name at least one seller in the sentence." : `${cap1(signer ?? "Your key")} signs 2 transactions: create, then fund ${curSign()}${draft?.budget}`}
                     </T>
                   </>
                 )}
@@ -343,7 +344,7 @@ export default function Compose() {
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}><Icon name="shieldCheck" size={18} color={c.white} stroke={2} /></View>
                 <View style={{ flex: 1 }}>
-                  <T v="head">{`Worst case ${p.worstCase.startsWith("US$") ? p.worstCase : `US$${p.worstCase}`}`}</T>
+                  <T v="head">{`Worst case ${/^[A-Z]{2}\$/.test(p.worstCase) ? p.worstCase : `${curSign()}${p.worstCase}`}`}</T>
                   <T v="cap" color="muted">even if the agent is fooled</T>
                 </View>
                 <Press haptics="select" onPress={() => { setCanvas(false); setTimeout(() => scroller.current?.scrollTo({ y: Math.max(0, proofY.current - 12), animated: true }), 250); }}
@@ -352,7 +353,7 @@ export default function Compose() {
                 </Press>
               </View>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                {[`Cap US$${draft.cap}`, draft.askAbove === "never" ? "Never asks" : `Asks above US$${draft.askAbove}`, ...(spec.routine ? [`US$${spec.routine.allowance.amount}/${spec.routine.allowance.period}`] : [])].map((t) => (
+                {[`Cap ${curSign()}${draft.cap}`, draft.askAbove === "never" ? "Never asks" : `Asks above ${curSign()}${draft.askAbove}`, ...(spec.routine ? [`${curSign()}${spec.routine.allowance.amount}/${spec.routine.allowance.period}`] : [])].map((t) => (
                   <View key={t} style={{ height: 28, paddingHorizontal: 10, borderRadius: 14, backgroundColor: c.fill, justifyContent: "center" }}><T v="cap" w="semi">{t}</T></View>
                 ))}
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 28, paddingLeft: 4, paddingRight: 10, borderRadius: 14, backgroundColor: c.fill }}>
@@ -360,9 +361,9 @@ export default function Compose() {
                   <T v="cap" w="semi">only</T>
                 </View>
               </View>
-              <SlideToConfirm label={`Slide to create · US$${draft.budget}`} doneLabel="Created" auto="compose.create" disabled={!draft.sellers.length || short || !wallet} onConfirm={create} />
+              <SlideToConfirm label={`Slide to create · ${curSign()}${draft.budget}`} doneLabel="Created" auto="compose.create" disabled={!draft.sellers.length || short || !wallet} onConfirm={create} />
               {err ? <T v="sub" color="negative">{err}</T> : (
-                <T v="cap" color="muted" style={{ textAlign: "center" }}>{short ? "Not enough in your main wallet for this budget." : `${cap1(signer ?? "Your key")} signs 2 transactions: create, then fund US$${draft.budget}`}</T>
+                <T v="cap" color="muted" style={{ textAlign: "center" }}>{short ? "Not enough in your main wallet for this budget." : `${cap1(signer ?? "Your key")} signs 2 transactions: create, then fund ${curSign()}${draft.budget}`}</T>
               )}
             </View>
           } />
@@ -371,7 +372,7 @@ export default function Compose() {
         <BuildStage steps={steps} title={title} width={winW} agentId={agent.id} sellers={draft.sellers} solid={!!stage.address} blocks={spec.blocks.map((b) => b.type)}
           pocket={{ ...preview, address: (stage.address ?? ZERO) as Address, balance: stage.funded ? budget : 0n }}
           tone={toneFor([{ address: preview.address, app: spec }], preview.address)}
-          chips={[`Cap US$${draft.cap}`, draft.askAbove === "never" ? "Never asks" : `Asks above US$${draft.askAbove}`, `${draft.sellers.length} ${draft.sellers.length === 1 ? "seller" : "sellers"} only`, ...(spec.routine ? [`US$${spec.routine.allowance.amount}/${spec.routine.allowance.period}`] : [])]}
+          chips={[`Cap ${curSign()}${draft.cap}`, draft.askAbove === "never" ? "Never asks" : `Asks above ${curSign()}${draft.askAbove}`, `${draft.sellers.length} ${draft.sellers.length === 1 ? "seller" : "sellers"} only`, ...(spec.routine ? [`${curSign()}${spec.routine.allowance.amount}/${spec.routine.allowance.period}`] : [])]}
           onOpen={made ? () => open(made.pocket) : undefined} />
       ) : null}
     </View>
@@ -428,18 +429,18 @@ function ProofCard({ worst, lines, tests, never, by, sellers, cap, per, limit, s
     <Card pad={18} style={{ marginHorizontal: PAGE_MARGIN, gap: 14 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
         <View style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: c.ink, alignItems: "center", justifyContent: "center" }}><Icon name="shieldCheck" size={24} color={c.white} stroke={1.8} /></View>
-        <View style={{ flex: 1 }} accessible accessibilityLabel={`Worst case, even if the agent is fooled: US$${worst}`}>
+        <View style={{ flex: 1 }} accessible accessibilityLabel={`Worst case, even if the agent is fooled: ${curSign()}${worst}`}>
           <T v="cap" color="muted">Worst case, even if the agent is fooled</T>
-          <T v="amount">{`US$${worst}`}</T>
+          <T v="amount">{`${curSign()}${worst}`}</T>
         </View>
       </View>
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Fact a11y={`Pays only ${sellers.length} seller${sellers.length === 1 ? "" : "s"}`} label={sellers.length === 1 ? `${cleanText(sellerLabel(sellers[0]), 14)} only` : `only these ${sellers.length}`}>
           <View style={{ flexDirection: "row" }}>{sellers.slice(0, 3).map((id, k) => <View key={id} style={{ marginLeft: k ? -8 : 0, borderRadius: 9, borderWidth: 2, borderColor: c.tile }}><SellerMark id={id} size={24} radius={7} /></View>)}</View>
         </Fact>
-        <Fact a11y={`At most US$${cap} per payment`} label={limit ? "price limit" : "per payment"}><T v="head" numberOfLines={1} adjustsFontSizeToFit>{`US$${limit ?? cap}`}</T></Fact>
-        <Fact a11y={per ? `Up to US$${per.amount} a ${per.period} on its own` : "Asks before paying above its limit"} label={per ? `a ${per.period}, on its own` : "then it asks"}>
-          <T v="head" numberOfLines={1} adjustsFontSizeToFit>{per ? `US$${per.amount}` : "You"}</T>
+        <Fact a11y={`At most ${curSign()}${cap} per payment`} label={limit ? "price limit" : "per payment"}><T v="head" numberOfLines={1} adjustsFontSizeToFit>{`${curSign()}${limit ?? cap}`}</T></Fact>
+        <Fact a11y={per ? `Up to ${curSign()}${per.amount} a ${per.period} on its own` : "Asks before paying above its limit"} label={per ? `a ${per.period}, on its own` : "then it asks"}>
+          <T v="head" numberOfLines={1} adjustsFontSizeToFit>{per ? `${curSign()}${per.amount}` : "You"}</T>
         </Fact>
       </View>
       <Press haptics="select" onPress={() => setOpen((o) => !o)} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${tests.length} payments tried against these rules: ${pays} pays, ${refused} refused${asks ? `, ${asks} asks you` : ""}`}

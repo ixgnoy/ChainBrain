@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ShieldAlert, ShieldCheck, Check, Minus, Wallet, Clock, Timer, Bot } from "lucide-react";
 import { useNetwork } from "./useNetwork";
-import { Expected, PhoneTag, Reason, TxHash, Verdict, clock, pocketStatus, usd, NEVER, AgentTag, SellerLogo } from "./parts";
+import { Expected, PhoneTag, Reason, TxHash, Verdict, clock, pocketStatus, hkd, NEVER, AgentTag, SellerLogo } from "./parts";
 import { argsOf, evidenceOf, injectionOf, plainSummary, type Injection } from "./story";
 import { txLabel } from "./network";
 import { orList, worstCase, worstSegments } from "./worst";
@@ -137,7 +137,7 @@ function TurnHeader({ t, expected }: { t: Turn; expected: boolean }) {
   );
 }
 
-/** "Can lose at most US$X, only to A or B", with a meter split into what was spent and what could still be lost. */
+/** "Can lose at most HK$X, only to A or B", with a meter split into what was spent and what could still be lost. */
 function WorstCase({ w, refused, ignored }: { w: ReturnType<typeof worstCase>; refused: number; ignored: number }) {
   const segs = worstSegments(w);
   const total = segs.reduce((n, s) => n + s.value, 0n);
@@ -150,14 +150,14 @@ function WorstCase({ w, refused, ignored }: { w: ReturnType<typeof worstCase>; r
         <div className="min-w-0"><p className="text-[18px] font-bold leading-6 tracking-[-0.02em]">Worst case</p><p className="text-[12px] leading-4 text-muted">The most this pocket can ever lose</p></div>
       </div>
       <p className="t-body tile mt-3.5 px-4 py-3.5 text-[15px] leading-6 text-ink2">
-        {w.stopped ? <b className="font-bold text-ink" data-testid="worst-max">Stopped: the agent can't spend.</b> : <>If the agent is hijacked, it can lose at most <b className="num font-extrabold text-ink" data-testid="worst-max">{usd(w.max)}</b>, only to {orList(w.to)}.</>}
+        {w.stopped ? <b className="font-bold text-ink" data-testid="worst-max">Stopped: the agent can't spend.</b> : <>If the agent is hijacked, it can lose at most <b className="num font-extrabold text-ink" data-testid="worst-max">{hkd(w.max)}</b>, only to {orList(w.to)}.</>}
       </p>
       <div className="mt-3"><SegmentBar label="Share of the funding still at risk" barTestId="worst-bar" segments={segs.map((s) => ({ key: s.key, share: share(s.value) }))} /></div>
       <div className="num mt-2 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-[12px] leading-4 text-muted">
         <span className="inline-flex flex-wrap items-center gap-x-3">
-          {w.stopped ? <span>{w.fundedKnown ? `${usd(w.funded)} was funded in total` : "Stopped"}</span> : <>
-            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-vermillion" aria-hidden />Can still be lost {usd(w.max)}</span>
-            {spent ? <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-ink" aria-hidden />Spent so far {usd(spent.value)}</span> : <span>Nothing spent yet</span>}
+          {w.stopped ? <span>{w.fundedKnown ? `${hkd(w.funded)} was funded in total` : "Stopped"}</span> : <>
+            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-vermillion" aria-hidden />Can still be lost {hkd(w.max)}</span>
+            {spent ? <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-ink" aria-hidden />Spent so far {hkd(spent.value)}</span> : <span>Nothing spent yet</span>}
           </>}
         </span>
         {(refused > 0 || ignored > 0) && <span>{[refused > 0 && `${refused} refused`, ignored > 0 && `${ignored} injected ${ignored === 1 ? "order" : "orders"} ignored`].filter(Boolean).join(", ")}, nothing moved</span>}
@@ -193,7 +193,7 @@ function EvidenceStrip({ ev, decisions }: { ev: ReturnType<typeof evidenceOf>; d
  *  white hatch face. Owner and holder under the card. */
 function PocketCard({ p, name, phone, stopped, status, present }: { p: PocketState; name: string; phone: boolean; stopped: boolean; status?: ReturnType<typeof pocketStatus>; present?: boolean }) {
   const { cfg } = useNetwork();
-  const ask = p.askAbove === NEVER ? "never asks" : p.askAbove === 0n ? "asks every time" : `asks above ${usd(p.askAbove)}`;
+  const ask = p.askAbove === NEVER ? "never asks" : p.askAbove === 0n ? "asks every time" : `asks above ${hkd(p.askAbove)}`;
   const ends = new Date(p.expiresAt * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   return (
     <div>
@@ -211,11 +211,11 @@ function PocketCard({ p, name, phone, stopped, status, present }: { p: PocketSta
         </div>
         <div className="px-5 pt-3">
           <div className={cn("eyebrow", stopped ? "text-muted" : "text-blue-ink")}>{stopped ? (p.frozen && !p.revoked ? "Held in a frozen pocket" : "Held in a stopped pocket") : "Available"}</div>
-          <div className={cn("figure mt-0.5 text-[48px] leading-[52px]", stopped && "text-ink2")} data-testid="pocket-balance" data-stopped={stopped ? "true" : undefined}><Fig text={usd(p.balance)} />{stopped && !(p.frozen && !p.revoked) && p.balance > 0n && <span className="ml-2 font-sans text-[16px] font-bold tracking-normal"> to return</span>}</div>
+          <div className={cn("figure mt-0.5 text-[48px] leading-[52px]", stopped && "text-ink2")} data-testid="pocket-balance" data-stopped={stopped ? "true" : undefined}><Fig text={hkd(p.balance)} />{stopped && !(p.frozen && !p.revoked) && p.balance > 0n && <span className="ml-2 font-sans text-[16px] font-bold tracking-normal"> to return</span>}</div>
         </div>
         <div className="flex items-end justify-between gap-3 px-5 pb-4 pt-4">
           <div className="min-w-0">
-            {!present && <div className="text-[13px] font-medium leading-5 text-ink2"><ShieldCheck className="mr-1 inline size-3.5 align-[-2px]" {...I} aria-hidden />Cap {usd(p.cap)} · {ask}</div>}
+            {!present && <div className="text-[13px] font-medium leading-5 text-ink2"><ShieldCheck className="mr-1 inline size-3.5 align-[-2px]" {...I} aria-hidden />Cap {hkd(p.cap)} · {ask}</div>}
             <div className="flex items-center gap-2"><span className="font-extrabold num whitespace-nowrap text-[24px] leading-8" aria-label={`Pocket contract ending ${p.address.slice(-4)}`}>0x…{p.address.slice(-4).toLowerCase()}</span><span className="shrink-0 rounded-[5px] bg-ink/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink2">Contract</span></div>
           </div>
           <span className="num inline-flex shrink-0 items-center gap-1.5 pb-1 text-[13px] font-semibold"><Timer className="size-3.5" {...I} aria-hidden />Until {ends}</span>
@@ -322,7 +322,7 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
           <ul>{(present ? history.slice(0, 1) : history).map((h) => (
             <li key={h.key} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-b border-line py-2.5 last:border-0">
               <span className={cn("t-body min-w-0 flex-1 break-words text-[14px] font-semibold", h.bad ? "text-vermillion-ink" : "text-ink")}>{h.label}{h.label === "Blocked transfer" && <> <Expected className="align-middle" /></>}</span>
-              {h.amount != null && h.amount > 0n && <span className="num shrink-0 text-[14px] font-bold text-ink2">{usd(h.amount)}</span>}
+              {h.amount != null && h.amount > 0n && <span className="num shrink-0 text-[14px] font-bold text-ink2">{hkd(h.amount)}</span>}
               <span className="shrink-0"><TxHash hash={h.hash} /></span>
             </li>
           ))}</ul>
@@ -338,11 +338,11 @@ export function Live({ pocket, present, goJudges }: { pocket?: string; present?:
         const got = rs.filter((r) => r.outcome === "paid").reduce((n, r) => n + (r.amount ?? 0n), 0n);
         return (
           <section key={s.id} className="border-b border-line py-3.5 last:border-0">
-            <div className="flex items-center gap-3"><SellerLogo id={s.id} name={s.name} /><div className="min-w-0 flex-1 truncate text-[15px] font-bold tracking-[-0.01em]">{s.name}</div>{got > 0n ? <span className="num shrink-0 text-[14px] font-bold text-green-ink">+{usd(got)}</span> : <span className="shrink-0 text-[13px] text-muted">Nothing paid</span>}</div>
+            <div className="flex items-center gap-3"><SellerLogo id={s.id} name={s.name} /><div className="min-w-0 flex-1 truncate text-[15px] font-bold tracking-[-0.01em]">{s.name}</div>{got > 0n ? <span className="num shrink-0 text-[14px] font-bold text-green-ink">+{hkd(got)}</span> : <span className="shrink-0 text-[13px] text-muted">Nothing paid</span>}</div>
             <ul className="mt-2 space-y-1.5 pl-12">{dedupe(rs).map(({ r, n }) => (
               <li key={r.key} className="t-body text-[13px] leading-5">
                 {r.outcome === "paid"
-                  ? <span className="text-ink2">Paid {usd(r.amount)}{r.cosigned ? " · owner co-signed" : ""}</span>
+                  ? <span className="text-ink2">Paid {hkd(r.amount)}{r.cosigned ? " · owner co-signed" : ""}</span>
                   : <span><span className="font-bold text-vermillion-ink">Refused</span><span className="text-ink2"> · {r.why}</span>{n > 1 && <span className="num ml-1 font-semibold text-ink2">×{n}</span>}</span>}
                 <span className="num ml-2 text-[12px] text-muted">{clock(r.at)}</span>
               </li>
@@ -381,7 +381,7 @@ function SellerStrip({ perSeller }: { perSeller: { s: { id: string; name: string
       <ul>{perSeller.map(({ s, rows }) => {
         const got = rows.filter((r) => r.outcome === "paid").reduce((n, r) => n + (r.amount ?? 0n), 0n);
         const no = rows.filter((r) => r.outcome === "refused").length;
-        return <li key={s.id} className="t-body flex items-center justify-between gap-3 border-b border-line py-2 text-[14px] last:border-0"><span className="flex items-center gap-2 font-medium"><SellerLogo id={s.id} name={s.name} className="size-6 rounded-[7px] text-[11px]" />{s.name}</span><span className="num text-ink2">{got > 0n ? <span className="font-bold text-green-ink">+{usd(got)}</span> : "Nothing paid"}{no > 0 && <span className="text-muted"> · {no} refused</span>}</span></li>;
+        return <li key={s.id} className="t-body flex items-center justify-between gap-3 border-b border-line py-2 text-[14px] last:border-0"><span className="flex items-center gap-2 font-medium"><SellerLogo id={s.id} name={s.name} className="size-6 rounded-[7px] text-[11px]" />{s.name}</span><span className="num text-ink2">{got > 0n ? <span className="font-bold text-green-ink">+{hkd(got)}</span> : "Nothing paid"}{no > 0 && <span className="text-muted"> · {no} refused</span>}</span></li>;
       })}</ul>
     </>
   );

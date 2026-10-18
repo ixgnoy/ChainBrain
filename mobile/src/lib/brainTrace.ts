@@ -4,6 +4,7 @@
 // event said; a stage with no event says so ("—"), it is never filled in. Pure: Node tests load it.
 import type { WalletEvent } from "./events";
 import { plainReason } from "./plain";
+import { curSign } from "./runtime";
 
 export type StageKey = "task" | "quote" | "rules" | "radar" | "owner" | "preflight" | "settle" | "sentinel" | "memory";
 /** ok: passed. stop: this stage refused it. info: ran, nothing to pass or fail. skip: never reached, or no event. wait: not yet. */
@@ -20,7 +21,7 @@ const OWNER_REASONS = new Set(["NEEDS_OWNER_APPROVAL", "APPROVAL_EXPIRED", "OWNE
 const RADAR_REASONS = new Set(["COUNTERPARTY_HIGH_RISK", "COUNTERPARTY_REVIEW"]);
 
 const same = (a?: unknown, b?: unknown) => !!a && !!b && String(a).toLowerCase() === String(b).toLowerCase();
-const usd = (units: unknown) => { try { const n = Number(BigInt(String(units ?? 0))) / 1e6; return `US$${n.toFixed(n < 0.1 ? 3 : 2).replace(/0$/, "")}`; } catch { return ""; } };
+const usd = (units: unknown) => { try { const n = Number(BigInt(String(units ?? 0))) / 1e6; return `${curSign()}${n.toFixed(n < 0.1 ? 3 : 2).replace(/0$/, "")}`; } catch { return ""; } };
 const tail = (h?: unknown) => (h ? `${String(h).slice(0, 6)}…${String(h).slice(-4)}` : "");
 const isQuote = (e: WalletEvent) => e.type === "trace" && e.phase === "tool_result" && e.tool === "get_quote" && e.result?.ok;
 
@@ -58,7 +59,7 @@ const wait = (key: StageKey): Stage => ({ key, label: STAGE_LABEL[key], value: "
 const none = (key: StageKey, value = "—"): Stage => ({ key, label: STAGE_LABEL[key], value, state: "skip" });
 
 function quoteStage(q: WalletEvent, sellerName: (id?: string) => string): Stage {
-  return { key: "quote", label: STAGE_LABEL.quote, value: `${sellerName(q.result.sellerId)} · US$${q.result.price}`, state: "ok", at: q.at };
+  return { key: "quote", label: STAGE_LABEL.quote, value: `${sellerName(q.result.sellerId)} · ${curSign()}${q.result.price}`, state: "ok", at: q.at };
 }
 function rulesStage(q: WalletEvent): Stage {
   const a = q.result.allowedByPocket;

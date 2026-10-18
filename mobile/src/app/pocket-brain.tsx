@@ -18,7 +18,8 @@ import { Rise } from "../ui/Rise";
 import { useLargeText } from "../ui/fontScale";
 import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
-import { money, usd } from "../lib/util";
+import { money } from "../lib/util";
+import { curSign } from "../lib/runtime";
 import { plainReason } from "../lib/plain";
 import { isExpired } from "../components/PocketCard";
 import { brainOf, MEMORY_KIND, sourceWords, type MemoryItem, type MemorySnapshot } from "../lib/brain";
@@ -103,14 +104,14 @@ function Ring({ share, size = 56 }: { share: number; size?: number }) {
 
 /** A remembered item you can remove. A purchase reads as the seller's logo, what was bought and the price. */
 function MemoryChip({ m, onForget, idOf }: { m: MemoryItem; onForget(): void; idOf(name: string): string | undefined }) {
-  // shared/sim/reflect.ts writes: Bought "<item>" from <seller> for US$<amount>[, co-signed by the owner]
-  const buy = /^Bought "(.+)" from (.+) for (US\$[\d.]+)(, co-signed by the owner)?$/.exec(m.text);
+  // shared/sim/reflect.ts writes: Bought "<item>" from <seller> for <amount>[, co-signed by the owner] (older notes say US$<amount>)
+  const buy = /^Bought "(.+)" from (.+) for ((?:[A-Z]{2}\$)?[\d.]+)(, co-signed by the owner)?$/.exec(m.text);
   const big = useLargeText();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: buy ? 6 : 12, paddingRight: 4, paddingVertical: 4, minHeight: 40, borderRadius: 20, backgroundColor: c.fill, maxWidth: "100%" }}>
       {buy ? <Face id={idOf(buy[2])} name={buy[2]} size={28} /> : null}
       <T v="sub" numberOfLines={big ? 2 : 1} style={{ flexShrink: 1 }}>{cleanText(buy ? buy[1] : m.text, 90)}</T>
-      {buy ? <Figure text={buy[3]} size={13} color="muted" /> : null}
+      {buy ? <Figure text={buy[3].includes("$") ? buy[3] : `${curSign()}${buy[3]}`} size={13} color="muted" /> : null}
       <Press kind="icon" haptics="select" onPress={onForget} accessibilityRole="button" accessibilityLabel={`Forget: ${m.text}`} hitSlop={8}
         style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: c.card, alignItems: "center", justifyContent: "center" }}>
         <Icon name="x" size={14} color={c.muted} stroke={2.2} />

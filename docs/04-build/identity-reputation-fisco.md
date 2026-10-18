@@ -1,35 +1,35 @@
-# Identity, Credentials, Reputation and the FISCO BCOS Bonus
-Last updated: 2026-10-14
+# Identity, Credentials, Reputation and FISCO BCOS
+Last updated: 2026-10-17
 
-> **Status (14 Oct, v2):** ERC-8004 identity, reputation and FISCO BCOS are not in the prelim demo. They are the finals roadmap ("Roadmap, not in prelim demo"); FISCO BCOS is planned only, and nothing has been deployed there. The prelim is a consumer wallet; the seller trust layer is deferred. Research below is kept for the finals. Spec: [product design](../02-product/product-design.md).
+> **Status (17 Oct):** FISCO BCOS is no longer a bonus: the whole project runs on it (FISCO BCOS 3.16.4, web3 RPC, chain id 20200) with our Mock e-HKD token (eHKD), the Pocket and the PocketFactory. Addresses are in `contracts/deployments/20200.json`. ERC-8004 identity and reputation are still not in the prelim demo; they are the finals roadmap ("Roadmap, not in prelim demo"), and on our private chain the public registries do not exist, so the finals would deploy the reference contracts on FISCO. The prelim is a consumer wallet; the seller trust layer is deferred. Research below is kept for the finals. Spec: [product design](../02-product/product-design.md).
 Last updated: 2026-10-13
 
 ## In one minute
 
-- **Use the real ERC-8004 registry that already exists on Base Sepolia. Do not write our own agent registry from scratch.** The reference contracts are live at fixed addresses (list in "ERC-8004" below). Registering our agents costs one transaction each, and the tx hashes are visible on a public explorer. This is our cheapest "real on-chain" proof for the identity guard.
-- **Do not trust ERC-8004 reputation as it is.** A July 2026 study of Ethereum, BSC and Base found 59-91% of reviewers look like coordinated Sybil accounts (fake accounts run by one party), and faking a good score costs under US$0.06. So our reputation must be our own signed attestation, built only from feedback that points to a settled x402 payment. This is a real, citable reason for ChainBrain to exist.
-- **Fake the issuers, build the checks.** The KYC issuer and the business-registrar (KYB) issuer are simulated, and we say so on stage. The signature checks, expiry, revocation and selective disclosure ("age 18+", not a birth date) must be real code. Recommended format: an EAS attestation on Base Sepolia (on-chain, checkable by anyone) plus an SD-JWT credential for the privacy story.
+- **Reuse the ERC-8004 reference contracts. Do not write our own agent registry from scratch.** They are live on public chains at fixed addresses (list in "ERC-8004" below); for us they would be deployed on our FISCO chain next to the pocket, and registrations shown in our read-only explorer.
+- **Do not trust ERC-8004 reputation as it is.** A July 2026 study of three public chains (Ethereum, BSC, Base) found 59-91% of reviewers look like coordinated Sybil accounts (fake accounts run by one party), and faking a good score costs under US$0.06 (the study's figure). So our reputation must be our own signed attestation, built only from feedback that points to a settled x402 payment. This is a real, citable reason for ChainBrain to exist.
+- **Fake the issuers, build the checks.** The KYC issuer and the business-registrar (KYB) issuer are simulated, and we say so on stage. The signature checks, expiry, revocation and selective disclosure ("age 18+", not a birth date) must be real code. Recommended format: an EAS attestation on our FISCO chain (on-chain, checkable by anyone with the RPC) plus an SD-JWT credential for the privacy story.
 - **Hong Kong is already testing exactly this.** On 27 Aug 2026 the Hong Kong regulators admitted HKT Payment's "Agentic ID" (DIDs and verifiable credentials that tie each payment agent to a verified person or business) into the GenA.I. Sandbox++. Trials start later in 2026. Good evidence that the problem is real; it also means we are not alone, so the pitch must stress the merchant side.
-- **FISCO BCOS is a bonus, not a dependency.** Version 3.17.1 (15 Sep 2026, flagged pre-release on GitHub) speaks Ethereum JSON-RPC, so ordinary tools can target it. A 2-4 hour minimal deployment (our contracts plus one tx hash) is realistic but unverified: nobody on the team has run it yet. Run a 60-minute dry run first and decide go/no-go from that.
-- **Biggest unknown, and we must not guess it:** whether a tx hash from our own FISCO chain counts as "real on-chain" for Topic F. Ask the organisers (draft email below). Until they answer, our scored tx hashes stay on Base Sepolia.
+- **FISCO BCOS is the chain.** We run 3.16.4 (the latest non-pre-release; 3.17.1 is flagged pre-release). It speaks Ethereum JSON-RPC, so Foundry and viem target it with legacy transactions at gas price 0. The dry run planned here worked and grew into the full build (section 5).
+- **Biggest unknown, and we must not guess it:** whether a tx hash from our own FISCO chain counts as "real on-chain" for Topic F. Ask the organisers (draft email below). Meanwhile judges can check our hashes themselves: the node is hosted on Railway with a public JSON-RPC, and the server has a read-only explorer at `/explorer`.
 - **Be honest about WeIdentity.** WeBank's identity software (WeIdentity) follows the same W3C model we use, but it is Java-based and its last tagged release is a 2023 release candidate. We do not run it. We say "same data model, deployable on WeBank's stack", never "built on WeIdentity".
-- **What to do this week:** (1) register agents in ERC-8004 on Base Sepolia, (2) issue demo credentials as EAS attestations, (3) write the payment-grounded reputation attester, (4) timebox the FISCO dry run to Saturday morning, (5) send the organiser question today.
+- **What to do for the finals:** (1) deploy the ERC-8004 reference registries on FISCO and register agents, (2) issue demo credentials as EAS attestations, (3) write the payment-grounded reputation attester, (4) send the organiser question.
 
 ## 1. Recommended build for the week: build, fake or cut (old design, deferred to finals)
 
 | Piece | Decision | What exactly | Time guess | Helps |
 |---|---|---|---|---|
-| Agent ID registry | **Build thin, reuse the standard** | Register each demo agent in the canonical ERC-8004 Identity Registry on Base Sepolia. Host a registration file (JSON) listing the MCP endpoint and `x402Support`. Keep session key, owner binding and revoke status in our own small contract or EAS attestation, because ERC-8004 has no session-key or revoked-agent field (see section 2). | 4-6 h | Task 40, Innovation 30 |
+| Agent ID registry | **Build thin, reuse the standard** | Deploy the ERC-8004 Identity Registry reference contract on our FISCO chain and register each demo agent. Host a registration file (JSON) listing the MCP endpoint and `x402Support`. Keep session key, owner binding and revoke status in our own small contract or EAS attestation, because ERC-8004 has no session-key or revoked-agent field (see section 2). | 4-6 h | Task 40, Innovation 30 |
 | Guard 1 (prove you hold the key) | **Build** | Challenge nonce rides in the x402 402 response, agent signs it. Sign with the registered session key. Optionally format it as an RFC 9421 HTTP Message Signature (section 4). | already in product design | Security 30 |
 | Principal KYC credential | **Fake the issuer, build the verifier** | A "Demo KYC Issuer" key signs an EAS attestation (tier, region, over-18 flag, expiry) for the owner address. Gateway checks: attester is on our allowlist, not revoked, not expired. | 3-4 h | Security 30, Innovation 30 |
 | Seller KYB credential | **Same as above** | Same schema family: legal entity, licence type, permitted categories, expiry. | 1-2 h on top | Security 30 |
 | Selective disclosure (age 18+ only) | **Build small, or cut to a label** | SD-JWT credential via the OpenWallet `@sd-jwt/sd-jwt-vc` package; the MCP server reveals only the claims the seller's policy lists. If time runs out, keep the on-chain attestation and show "age_over_18 = true" as the only field. | 3 h | Security 30 (information-extraction scene) |
 | Reputation | **Build, grounded in payments** | Attester reads our own x402 settlement history, counts only feedback that references a settled payment, caps one reviewer's weight, filters reviewers funded by the same wallet, signs a band ("established", "new", "flagged"). Seed history on Saturday and label it seeded. | 6-8 h | Innovation 30, Security 30 |
 | ERC-8004 Validation Registry | **Cut** | Not deployed on mainnets in the study window and the repo README says it is still being revised with the TEE community. Mention as future work. | 0 | - |
-| DID method | **Keep trivial** | Use an address-based DID (for example `did:pkh` on the Base Sepolia chain) and say nothing fancy. Do not build a DID resolver. [VERIFY exact did:pkh string against the spec before printing it on a slide] | 1 h | - |
+| DID method | **Keep trivial** | Use an address-based DID (for example `did:pkh` on our chain, id 20200) and say nothing fancy. Do not build a DID resolver. [VERIFY exact did:pkh string against the spec before printing it on a slide] | 1 h | - |
 | WeIdentity | **Cut from the build, keep in the pitch** | Do not install. Map our objects to its model in one slide (section 6). | 0 | Bonus (honesty) |
 | Visa TAP / Web Bot Auth interoperability | **Could** | A gateway option that also accepts RFC 9421 signed requests in the Web Bot Auth shape, using Cloudflare's Apache-2.0 TypeScript packages (reference only; read before using). | 3-4 h | Innovation 30 |
-| FISCO deployment | **Bonus, timeboxed** | Section 5. | 2-4 h plus 1 h dry run | Bonus 0-5 |
+| FISCO deployment | **Done** (now the only chain) | Section 5. | done | Bonus 0-5 |
 
 ## 2. ERC-8004 (Trustless Agents): what it is and what it gives us (finals roadmap)
 
@@ -39,13 +39,13 @@ Plain English: ERC-8004 is a proposed Ethereum standard that gives every AI agen
 |---|---|---|---|
 | Identity | One NFT per agent (`agentId`), pointing to a registration file. Optional `agentWallet` linked by an EIP-712 or ERC-1271 signature, so a smart-account pocket can be the agent's wallet | `register`, `setAgentURI`, `setMetadata`, `setAgentWallet`, `getAgentWallet` | Deployed on mainnets and testnets (below) |
 | Reputation | Signed fixed-point feedback per agent, tags, revoke, append response. Self-feedback by owner blocked. `getSummary` needs a list of reviewer addresses | `giveFeedback`, `revokeFeedback`, `appendResponse`, `getSummary`, `readAllFeedback` | Deployed |
-| Validation | Validator requests and 0-100 responses keyed by request hash | `validationRequest`, `validationResponse` | Source exists; the 2026 study found no mainnet deployment [VERIFY on Base Sepolia] |
+| Validation | Validator requests and 0-100 responses keyed by request hash | `validationRequest`, `validationResponse` | Source exists; the 2026 study found no mainnet deployment [VERIFY testnets] |
 
 Key facts (all from pages or files we opened):
 
 - **Status is still Draft** on eips.ethereum.org (created 2025-08-13; authors include Marco De Rossi, Davide Crapis, Jordan Ellis, Erik Reppel). A Taiko guide says the same and mentions a v2 in development (snippet); a Quicknode FAQ says "finalized" (snippet). The EIP page wins: Draft. Build against it knowing the API may change.
 - **Mainnet launch:** 29 Jan 2026 per the empirical study.
-- **Addresses (from the reference repo README, read locally; not verified on-chain by us):** Base Sepolia Identity `0x8004A818BFB912233c491871b3d84c89A494BD9e`, Reputation `0x8004B663056A597Dffe9eCcC1965A193B7388713`. The same two addresses are used on all listed testnets; mainnets use `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` and `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`. Base docs and Pinata's quickstart agree on the Base Sepolia identity address (snippet). One Filecoin docs draft shows a different Base Sepolia address (`0x7177...`); treat as wrong unless proven. [VERIFY by reading the contract on sepolia.basescan.org before first use]
+- **Addresses on public chains (from the reference repo README, read locally; not verified on-chain by us):** testnets use Identity `0x8004A818BFB912233c491871b3d84c89A494BD9e` and Reputation `0x8004B663056A597Dffe9eCcC1965A193B7388713`; mainnets use `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` and `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`. Third-party docs (Coinbase's Base docs, Pinata) agree on the testnet identity address (snippet). None of these exist on our FISCO chain; we would deploy our own copy.
 - **Reference repo:** last commit 2026-08-15, licence CC0, Solidity 0.8.24 with EVM target "shanghai", UUPS proxies (OpenZeppelin upgradeable). That EVM target is old enough to deploy on FISCO BCOS too (section 5).
 - **Spec hook for payments:** the feedback file format in the spec has a `proofOfPayment` field "that can be used for x402 proof of payment" (read in `ERC8004SPEC.md`). It is optional and unchecked on-chain.
 
@@ -72,7 +72,7 @@ Plain English: a verifiable credential (VC) is a digitally signed statement from
 | `@sd-jwt/sd-jwt-vc` (OpenWallet Foundation) | TypeScript, SD-JWT VC draft 15, Apache-2.0, about 16.9k weekly downloads, updated 2026-06-29 (all aggregator snippet, check with `npm view`) | Best fit for selective disclosure; small API |
 | `did-jwt-vc` | JWT-form credentials, README for v4.0.16 (snippet) | Simple fallback; no selective disclosure |
 | Veramo, credo-ts | Larger frameworks; Veramo has no official SD-JWT plugin, only a community one (snippet) | Too heavy for one week |
-| EAS (Ethereum Attestation Service) | Contracts are a predeploy on OP-stack chains: Base Sepolia EAS at `0x4200000000000000000000000000000000000021`, version 1.2.0 per the repo README (read locally; MIT licence; last commit 2026-07-17) | Best fit for on-chain checkable credentials; verifier reads `getAttestation(uid)` |
+| EAS (Ethereum Attestation Service) | Contracts are a predeploy on OP-stack chains at `0x4200000000000000000000000000000000000021`, version 1.2.0 per the repo README (read locally; MIT licence; last commit 2026-07-17) | Best fit for on-chain checkable credentials; verifier reads `getAttestation(uid)`. On FISCO we would deploy it ourselves |
 
 Recommended split: **EAS for "is this credential on-chain valid right now" (revocation, expiry, issuer) and SD-JWT for "reveal only age 18+"**. If time is short, do EAS only. Neither needs a DID resolver.
 
@@ -93,13 +93,13 @@ Conflict to keep visible: a self-published GitHub comparison (snippet) says no a
 
 Practical line for the pitch: "Visa and Cloudflare prove who the agent is. ERC-8004 gives a public ID card. Nobody checks, at the merchant, whether this agent's owner is KYC-anchored, whether this pocket may buy this item, and whether payment will settle. That is ChainBrain."
 
-## 5. FISCO BCOS bonus: facts, 2-4 hour recipe, risks (planned only, not built)
+## 5. FISCO BCOS: facts, recipe, risks (built; now the only chain)
 
 ### 5.1 State of FISCO BCOS in Oct 2026 (re-checked)
 
 | Topic | What we found | Confidence |
 |---|---|---|
-| Versions | v3.17.1 published 2026-09-15, GitHub pre-release flag true (release page via API, opened). Earlier notes: v3.16.4 (2026-01-14) is the latest non-pre-release; README calls v3.7.3 "stable". Both statements kept; use v3.17.1 for the Web3 features | high |
+| Versions | v3.17.1 published 2026-09-15, GitHub pre-release flag true (release page via API, opened). v3.16.4 (2026-01-14) is the latest non-pre-release; README calls v3.7.3 "stable". **We run 3.16.4**; its Web3 RPC was enough | high |
 | Release files | build_chain.sh plus binaries for Linux x86_64 and aarch64 and macOS x86_64 and Apple Silicon (arm) in 3.17.1 (asset list opened via API). Debug variants are 100+ MB; the normal macOS arm file is about 17 MB | high |
 | Web3 JSON-RPC | Since 3.9.0. Docs page (opened) lists 44 methods in 3.17.0: 39 `eth_*`, 3 `net_*`, 2 `web3_*`. Includes `eth_sendRawTransaction`, `eth_getTransactionByHash`, `eth_getTransactionReceipt`, `eth_getLogs`, `eth_call`, `eth_estimateGas`. No `debug_*` or `trace_*` | high |
 | Off by default | `[web3_rpc] enable=false` in generated config; `build_chain.sh` has no flag for it (we read the script: it only has a parameter inside the config generator, default false), so edit `config.ini` per node. Default Web3 chain id 20200, RPC port 8545 | high (source read) |
@@ -108,27 +108,25 @@ Practical line for the pitch: "Visa and Cloudflare prove who the agent is. ERC-8
 | ECDSA mode | Default mode is secp256k1 + keccak; `-s` turns on national-crypto (SM2/SM3). Web3 tools need the default mode. We do not use `-s` | high |
 | Precompiles 0x01-0x0a | Source (snapshot): ecrecover, sha256, ripemd160, identity, modexp, alt_bn128 add/mul/pairing, blake2, point_evaluation registered. No P-256 (secp256r1) verifier seen | medium, snapshot |
 | Block context | Source (snapshot): `block.coinbase`, `prevrandao` and `basefee` are set to zero; chain id comes from the chain | medium, snapshot |
-| Gas | If `tx_gas_price` is "0" or "0x0" the validator skips the balance check (source). Otherwise sender balance must cover value plus gas, and native balance needs `feature_balance` | medium; what the default `tx_gas_price` is: [VERIFY] |
-| Native balance | `setSystemConfigByKey feature_balance 1` and `feature_balance_precompiled 1`; coins are minted by a governor through precompile 0x1011 (prior notes). Who counts as governor when auth mode is off: [VERIFY] | medium |
+| Gas | Source reading suggested a zero gas price skips the balance check. **In practice** gas price is 0 but the web3 RPC still needs the sender to have a non-zero native balance | checked in our build |
+| Native balance | We credit it with the console's `addBalance` (`scripts/fisco/fund.sh` locally; the node gateway's `/admin/fund` on Railway; the server faucet for users) | checked in our build |
 | ERC-4337 | Nothing official. No bundler support seen (needs tracing methods we do not see). Canonical EntryPoint address needs a CREATE2 deployer we cannot assume exists. [VERIFY all] | low |
-| Foundry / viem / ethers | Docs page covers Hardhat and MetaMask only. Foundry's `forge create` has `--legacy`, `--gas-price`, `--gas-limit` flags (ctx7 docs), which is the safe starting point; viem `defineChain` accepts any chain id and RPC URL (ctx7 docs). Nobody has tested them against v3.17.1 here | untested |
-| Explorer | No Web3 explorer found. WeBASE and the old browser repo are stale or for 2.x (prior notes; our search found nothing new). Blockscout compatibility untested; it likely needs tracing methods FISCO lacks [VERIFY] | high that none is official |
+| Foundry / viem / ethers | Docs page covers Hardhat and MetaMask only. Foundry's `forge create` has `--legacy`, `--gas-price`, `--gas-limit` flags (ctx7 docs), which is the safe starting point; viem `defineChain` accepts any chain id and RPC URL (ctx7 docs). Our build deploys with Foundry (`contracts/script/DeployFisco.s.sol`) and runs every client on viem with legacy transactions at gas price 0, on 3.16.4 | checked in our build |
+| Explorer | No Web3 explorer found. WeBASE and the old browser repo are stale or for 2.x (prior notes; our search found nothing new). Blockscout compatibility untested; it likely needs tracing methods FISCO lacks. We built our own read-only explorer in the server at `/explorer` | high that none is official |
 | Activity | Main repo pushed 2026-10-12; 3.17.0 (2026-08-24) was a security-hardening release; WASM/Liquid deprecated, removal planned in 3.18.0; an OP-Stack execution-client effort is open and unreleased | high |
 | Docker | Docker Hub images looked old (newest tag seen v3.12.1, 2024-11-25). Use the release binary, not Docker | medium |
 
-### 5.2 What should we deploy there?
+### 5.2 What we deployed there
 
-Keep it tiny so the dry run decides everything:
+1. `MockEHKD` ("Mock e-HKD", symbol eHKD, 6 decimals, EIP-3009 `transferWithAuthorization` including the bytes-signature overload with ERC-1271 for contract payers). It is a test token, not the HKMA e-HKD and not money.
+2. `Pocket` and `PocketFactory` (factory constructor `(token, guardian)`), unchanged in logic except that `Clock.nowSec()` handles FISCO's millisecond `block.timestamp`.
+3. The x402 facilitator runs in-process in the server and settles on FISCO. Every demo payment and refusal is a real FISCO transaction.
 
-1. The pocket policy contract (allowlist, per-payment cap, revoke), written as an ordinary Solidity contract.
-2. A tiny agent registry (a plain mapping, not the whole UUPS ERC-8004 stack) and a mock USDC with transfer-with-authorisation.
-3. One real transaction: the agent pays a demo seller through the policy contract, and one refused payment emits a revert reason.
+Not tried: ERC-4337 EntryPoint, a bundler, or the ERC-8004 registries. Contract tests: `cd contracts && forge test` = 55 passed.
 
-Do not try ERC-4337 EntryPoint, a bundler, the x402 facilitator on FISCO, or native-balance minting in the first pass. If gas price is zero, native balance is not needed at all; the pocket spends the mock USDC token.
+### 5.3 Recipe (the original research plan; now done by `scripts/fisco`)
 
-### 5.3 Recipe (2-4 hours, unverified; written from docs and script text, nothing was run)
-
-Do this on one laptop or a small cloud VM. All of it is the team's own run, not copied from our reference clones.
+The working version is `scripts/fisco/setup.sh`, `start.sh`, `deploy.sh` and `fund.sh`. The steps below are the plan we wrote before running anything; differences: we used 3.16.4, and the sender needs a non-zero native balance even at gas price 0.
 
 1. **Fetch** `build_chain.sh` and the binary for your OS from the v3.17.1 release page (assets listed above). Check file sizes against the list. (10 min)
 2. **Generate one chain**: `bash build_chain.sh -l 127.0.0.1:1 -p 30300,20200`. The script's own examples use 4 nodes; whether one node is accepted is [VERIFY]. If it refuses, use `-l 127.0.0.1:4` and expect several GB of RAM. (15 min)
@@ -140,34 +138,34 @@ Do this on one laptop or a small cloud VM. All of it is the team's own run, not 
 8. **Capture proof**: tx hash, block number, `eth_getTransactionByHash` and receipt JSON, a screenshot, and the exact node version string. Save in `docs/05-security` evidence folder or the team's evidence log. (15 min)
 9. **Tiny explorer page** (optional, 1-2 h): a static page that takes a hash and calls `eth_getTransactionByHash` and `eth_getTransactionReceipt` through a read-only proxy. This beats telling judges to "trust our node".
 
-Hard stop: if step 4 or 6 fails after 90 minutes, drop FISCO to a slide labelled "Production path, not in demo".
 
 ### 5.4 Risks
 
 | Risk | Effect | Mitigation |
 |---|---|---|
-| Judges cannot verify a private chain's hash | Zero Task score from it, perhaps a hit to credibility | Keep scored hashes on Base Sepolia; present FISCO as extra. Ask organisers (below) |
-| 3.17.1 is flagged pre-release; 3.17.0 and 3.17.1 contain many hardening fixes | Odd bugs | Pin 3.17.1; note the version on the slide |
-| Open Web3 issues (eth_call with args returned code 16 on 3.11.0, no gas cap on eth_call) | Failed reads | Test early; use 3.17.1 |
-| No EIP-7702, no ERC-4337 tooling, no P-256 verifier | Pocket design differs from the Base version | Keep FISCO contracts plain; do not promise parity |
+| Judges cannot verify a private chain's hash | Zero Task score from it, perhaps a hit to credibility | Public JSON-RPC on Railway (MetaMask can add it), the server's read-only `/explorer`, evidence files `docs/evidence-fisco.md` and `docs/evidence-fisco-railway.json`. Ask organisers (below) |
+| 3.17.1 is flagged pre-release; 3.17.0 and 3.17.1 contain many hardening fixes | Odd bugs | We pin 3.16.4; note the version on the slide |
+| Open Web3 issues (eth_call with args returned code 16 on 3.11.0, no gas cap on eth_call) | Failed reads | Covered by our tests on 3.16.4 |
+| No EIP-7702, no ERC-4337 tooling, no P-256 verifier | No smart-account upgrades on this chain | Keep FISCO contracts plain |
+| Millisecond `block.timestamp` inside contracts | Expiry checks off by 1000x | `Clock.nowSec()` in the contracts; tested on a millisecond clock |
 | Apple Silicon build problems (issues reported for source builds) | Lost hours | Use the prebuilt macOS arm binary, not a source build |
-| Chain unreachable on demo day | Embarrassing | Record the run; keep the same node log and receipts in the repo |
+| Chain unreachable on demo day | Embarrassing | Hosted node plus the local node; built-in network in web and phone; evidence files in the repo |
 | Foreign student team on a Chinese consortium stack | Compliance questions | Say plainly: simulated money, test data only, no crypto trading |
 
 ### 5.5 Question for the organisers (do not guess the answer)
 
 Draft (contact address: see the rules page):
 
-> For Topic F, the rules say the task score uses on-chain transaction hashes. (1) Is a public EVM testnet (Base Sepolia) accepted? (2) Is a team-hosted FISCO BCOS 3.x chain accepted, and if yes how should judges verify hashes (public read-only RPC, explorer, snapshot)? (3) Does using FISCO BCOS or other WeBank open source earn extra credit under the +0-5 bonus? (4) Is there an organiser-hosted chain we may use? Please also tell us if international teams may reach a mainland-hosted endpoint from Hong Kong.
+> For Topic F, the rules say the task score uses on-chain transaction hashes. (1) Is a team-hosted FISCO BCOS 3.x chain accepted, and if yes how should judges verify hashes (public read-only RPC, explorer, snapshot)? (2) Does using FISCO BCOS or other WeBank open source earn extra credit under the +0-5 bonus? (3) Is there an organiser-hosted chain we may use? Please also tell us if international teams may reach a mainland-hosted endpoint from Hong Kong.
 
-Prior notes found no public FISCO testnet and found BSN's FISCO-based chains require a China-registered legal entity as of a June 2024 manual [VERIFY current rule]. Until we have the answer, assume the hash must be checkable by a stranger.
+Prior notes found no public FISCO testnet and found BSN's FISCO-based chains require a China-registered legal entity as of a June 2024 manual [VERIFY current rule]. Until we have the answer, assume the hash must be checkable by a stranger (hence the public RPC and `/explorer`).
 
 ## 6. How to pitch WeBank technology honestly
 
 | Say | Do not say |
 |---|---|
 | "ChainBrain's credential model follows the W3C DID and VC standards that WeBank's WeIdentity also implements. The same credentials could be issued on WeIdentity." | "Built on WeIdentity" |
-| "Our contracts are ordinary Solidity; we ran a minimal version on FISCO BCOS 3.17.1 in ECDSA mode" (only if step 8 above produced a hash) | "Runs on FISCO BCOS" if it was not run |
+| "Our contracts are ordinary Solidity and run on FISCO BCOS 3.16.4 in ECDSA mode; every payment is a FISCO transaction" | Any claim about national-crypto (SM2/SM3) mode, which we do not use |
 | "FISCO BCOS adds chain-level controls public chains lack: contract call ACL, account freeze, transfer whitelist" (from the docs and prior notes) | Any throughput figure as our result. The "200,000 TPS" is a vendor claim; we measured nothing |
 | "WeBank's blockchain stack is maintained: the main repo was updated this week, but the identity middleware is quiet" | "WeIdentity is actively developed" |
 | "Hong Kong regulators are already piloting DID/VC agent IDs; ChainBrain is the merchant-side check" | That WeBank or HKMA endorse us |
@@ -176,23 +174,21 @@ WeIdentity facts (GitHub API and release list opened): Apache-2.0; about 1,150 s
 
 ## What this means for winning
 
-- **[must] Register every demo agent in the canonical ERC-8004 Identity Registry on Base Sepolia and put the tx hashes in the evidence log.** (Task 40, Innovation 30). Read the registry contract on the explorer first to confirm the address.
+- **[must, finals] Deploy the ERC-8004 Identity Registry on our FISCO chain, register every demo agent and put the tx hashes in the evidence log.** (Task 40, Innovation 30)
 - **[must] Make reputation grounded in settled payments, cap per-reviewer weight, and never use the raw on-chain average.** Cite the Xiong et al. study on the slide. (Security 30, Innovation 30)
 - **[must] Fake issuers, real verification, and say "simulated issuer" on screen.** Verification must check allowlisted issuer, expiry and revocation in code. (Security 30)
 - **[must] Send the organiser question today.** The answer decides whether FISCO hashes count. (Task 40, Bonus)
 - **[should] Show selective disclosure in the information-extraction scene:** the seller asks for a full name, the MCP server presents only "age 18+" and logs `DISCLOSURE_NOT_IN_POLICY`. (Security 30)
 - **[should] Add a one-slide comparison to Visa TAP, Web Bot Auth, KYAPay and Alipay APASS** using section 4, plus the HKT Agentic ID pilot as local validation. (Innovation 30)
-- **[should] Run the FISCO dry run (steps 1-4, 60 minutes) on Saturday morning; continue only if it passes.** (Bonus)
 - **[could] Accept RFC 9421 signed requests in the gateway using the Cloudflare Apache-2.0 TypeScript packages as a reference.** (Innovation 30)
-- **[could] Static tx-hash explorer for FISCO via `eth_getTransactionByHash`.** (Bonus, credibility)
+- **[done] Read-only tx-hash explorer for FISCO at the server's `/explorer`.** (Bonus, credibility)
 - **[could] Mention AgentValve-style trust graphs as the path beyond level-1 reputation.** (Innovation 30)
 
 ## Open questions
 
 - Does a team-hosted FISCO BCOS chain count as "real on-chain tx hashes" for Topic F? Is FISCO mandatory, optional, or bonus? (organisers)
-- Is the ERC-8004 Validation Registry deployed on Base Sepolia, and at which address? [VERIFY]
-- Does a single-node `build_chain.sh` chain start, and what is the default `tx_gas_price` and who can mint balance with auth mode off?
-- Do Foundry and viem work against v3.17.1 as written (legacy tx, gas price, receipt address)? Does EIP-712 `ecrecover` and ERC-1271 behave the same as on Base?
+- Is the ERC-8004 Validation Registry deployed on any public testnet, and at which address? [VERIFY]
+- Do Foundry and viem work against v3.17.1 the same way they do on our 3.16.4 node?
 - Is the canonical ERC-4337 EntryPoint deployable on FISCO, and can a bundler run without tracing methods?
 - Which chain does HKT Payment and Red Date's Agentic ID use? Any link to BSN or FISCO? [VERIFY; not stated in sources we opened]
 - Exact `did:pkh` string and DID-document needs for the demo, and current `@sd-jwt/sd-jwt-vc` version (`npm view`).

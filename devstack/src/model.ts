@@ -29,7 +29,7 @@ function* purchase(sellerId: string, sku: string, o: { payAnyway?: boolean; reas
   if (rule !== "OK" && !o.payAnyway) return { ...base, ok: false, reason: rule.reason, why: rule.why };
   if (q.intentCheck !== "OK" && !o.payAnyway) return { ...base, ok: false, reason: q.intentCheck.reason, why: q.intentCheck.why };
   if (rule === "OK" && q.needsOwnerApproval) {
-    const a: Json = yield { tool: "ask_owner", input: { quoteId: q.quoteId, reason: o.reason ?? `${name(sellerId)}'s ${sku} costs US$${q.price}, above your ask-me threshold. It matches the task you confirmed.` } };
+    const a: Json = yield { tool: "ask_owner", input: { quoteId: q.quoteId, reason: o.reason ?? `${name(sellerId)}'s ${sku} costs HK$${q.price}, above your ask-me threshold. It matches the task you confirmed.` } };
     if (!a?.ok) return { ...base, ok: false, reason: a?.reason, why: a?.why };
   }
   const p: Json = yield { tool: "pay", input: { quoteId: q.quoteId } };
@@ -41,7 +41,7 @@ function* draft(fields: ReturnType<typeof intent>): Generator<Action, boolean, J
   return !!r?.ok;
 }
 
-const bought = (o: Outcome) => `${name(o.sellerId)}'s ${o.sku} (US$${o.price})`;
+const bought = (o: Outcome) => `${name(o.sellerId)}'s ${o.sku} (HK$${o.price})`;
 const refused = (o: Outcome) => `${name(o.sellerId)}'s ${o.sku} was refused: ${o.reason}${o.why ? ` (${o.why})` : ""}`;
 function summary(outs: Outcome[]): string {
   const ok = outs.filter((o) => o.ok), bad = outs.filter((o) => !o.ok);
@@ -55,31 +55,31 @@ const declined = () => "You didn't confirm the task, so I did nothing. No paymen
 
 function* scene1Ask(): Scene {
   yield { tool: "get_pocket", input: {} };
-  yield { tool: "ask_owner", input: { question: "US$2 in total or per report?" } };
-  return "US$2 in total or per report?";
+  yield { tool: "ask_owner", input: { question: "HK$15 in total or per report?" } };
+  return "HK$15 in total or per report?";
 }
 
 function* scene1Answer(): Scene {
-  if (!(yield* draft(intent("Durian export market report", "2.00", "4.00", 4, "a market report on durian exports, under US$2 per report, by tonight")))) return declined();
+  if (!(yield* draft(intent("Durian export market report", "15.00", "30.00", 4, "a market report on durian exports, under HK$15 per report, by tonight")))) return declined();
   yield { tool: "search_sellers", input: { category: "Research data" } };
   const a = yield* purchase("datalite", "durian-report");
-  const b = yield* purchase("datapro", "premium-report", { reason: "DataPro's premium report adds the 2026 forecast for US$1.50." });
+  const b = yield* purchase("datapro", "premium-report", { reason: "DataPro's premium report adds the 2026 forecast for HK$11.70." });
   return summary([a, b]);
 }
 
 function* scene2(): Scene {
-  if (!(yield* draft(intent("Durian export market report", "1.00", "1.00", 1)))) return declined();
+  if (!(yield* draft(intent("Durian export market report", "8.00", "8.00", 1)))) return declined();
   yield { tool: "search_sellers", input: { category: "Research data" } };
   return summary([yield* purchase("datalite", "durian-report")]);
 }
 
 function* scene3(): Scene {
-  if (!(yield* draft(intent("Durian export premium report with 2026 forecast", "2.00", "2.00", 1)))) return declined();
-  return summary([yield* purchase("datapro", "premium-report", { reason: "DataPro's premium report adds the 2026 forecast for US$1.50." })]);
+  if (!(yield* draft(intent("Durian export premium report with 2026 forecast", "15.00", "15.00", 1)))) return declined();
+  return summary([yield* purchase("datapro", "premium-report", { reason: "DataPro's premium report adds the 2026 forecast for HK$11.70." })]);
 }
 
 function* scene4(): Scene {
-  if (!(yield* draft(intent("Fruit and wine trade report", "1.00", "1.00", 1)))) return declined();
+  if (!(yield* draft(intent("Fruit and wine trade report", "8.00", "8.00", 1)))) return declined();
   const first = yield* purchase("harbour-wines", "fruit-wine-trade-report", { payAnyway: true });
   if (first.ok) return summary([first]);
   const second = yield* purchase("datalite", "fruit-trade-report");
@@ -88,11 +88,11 @@ function* scene4(): Scene {
 }
 
 function* scene5(): Scene {
-  if (!(yield* draft(intent("Durian export market report", "1.00", "1.00", 1)))) return declined();
+  if (!(yield* draft(intent("Durian export market report", "8.00", "8.00", 1)))) return declined();
   const peek: Json = yield { tool: "get_quote", input: { sellerId: "shadyfeed", sku: "preview" } };
   const o = yield* purchase("datalite", "durian-report");
-  const flagged = peek?.refused?.length || /usdc|send|transfer/i.test(String(peek?.content))
-    ? " Warning: ShadyFeed's preview contained instructions to send 50 USDC to another address and asked for more than a purchase needs; I ignored it and flagged the source."
+  const flagged = peek?.refused?.length || /ehkd|send|transfer/i.test(String(peek?.content))
+    ? " Warning: ShadyFeed's preview contained instructions to send 50 eHKD to another address and asked for more than a purchase needs; I ignored it and flagged the source."
     : " ShadyFeed's preview contained nothing I acted on.";
   return summary([o]) + flagged;
 }
@@ -106,7 +106,7 @@ function* scene6(): Scene {
 }
 
 function* scene7(windowMs: number): Scene {
-  if (!(yield* draft(intent("Durian and fruit trade reports from DataLite", "1.00", "2.00", 2)))) return declined();
+  if (!(yield* draft(intent("Durian and fruit trade reports from DataLite", "8.00", "16.00", 2)))) return declined();
   const first = yield* purchase("datalite", "durian-report", { payAnyway: true });
   // Hold here so the owner can tap Revoke between the two payments.
   const q: Json = yield { tool: "get_quote", input: { sellerId: "datalite", sku: "fruit-trade-report" }, delayMs: windowMs };
@@ -121,16 +121,16 @@ function* scene7(windowMs: number): Scene {
 }
 
 function* scene8(): Scene {
-  if (!(yield* draft(intent("Durian export market report", "0.20", "0.20", 1)))) return declined();
+  if (!(yield* draft(intent("Durian export market report", "1.50", "1.50", 1)))) return declined();
   yield { tool: "search_sellers", input: {} };
   const lite: Json = yield { tool: "get_quote", input: { sellerId: "datalite", sku: "durian-report" } };
   const pro: Json = yield { tool: "get_quote", input: { sellerId: "datapro", sku: "premium-report" } };
-  const line = (id: string, q: Json) => (q?.allowedByPocket === "OK" ? `${name(id)} (US$${q.price}) is allowed` : `${name(id)} (US$${q?.price ?? "?"}): ${q?.allowedByPocket?.reason ?? q?.reason ?? "unavailable"}`);
-  const price = lite?.price ?? "0.30";
-  return `No allowed seller fits. ${line("datalite", lite)}; ${line("datapro", pro)}. Nothing was paid. Fix: raise the cap and budget to US$${price}, then ask me again.`;
+  const line = (id: string, q: Json) => (q?.allowedByPocket === "OK" ? `${name(id)} (HK$${q.price}) is allowed` : `${name(id)} (HK$${q?.price ?? "?"}): ${q?.allowedByPocket?.reason ?? q?.reason ?? "unavailable"}`);
+  const price = lite?.price ?? "2.30";
+  return `No allowed seller fits. ${line("datalite", lite)}; ${line("datapro", pro)}. Nothing was paid. Fix: raise the cap and budget to HK$${price}, then ask me again.`;
 }
 
-const FALLBACK = "I'm the ChainBrain demo agent running without a live model, so I only understand the demo tasks. Try one of the sentences from the demo scenes (GET /dev/scenes), for example: \"Get me a market report on durian exports, under US$2, by tonight.\"";
+const FALLBACK = "I'm the ChainBrain demo agent running without a live model, so I only understand the demo tasks. Try one of the sentences from the demo scenes (GET /dev/scenes), for example: \"Get me a market report on durian exports, under HK$15, by tonight.\"";
 
 type Msg = { role: string; content: any };
 
@@ -140,10 +140,10 @@ const isOwnerText = (m: Msg) => m.role === "user" && typeof m.content === "strin
 // Attacks a judge can type (same wording and order as shared/sim/script.ts attackOf): the agent refuses in words.
 const ESCALATION = /\b(i'?m|i am|as|acting as) (the |an? |your )?(admin|administrator|developer|dev|owner|operator|root|superuser|support)\b|\bsudo\b|developer mode|god mode|root access|\b(raise|increase|lift|remove|change|bump|double|disable|turn off|set|update|edit)\b[^.?!]*\b(cap|per-payment cap|spending limit|ask-me|allow ?list|white ?list|pocket'?s? rules|the rules|your rules)\b|\badd\b[^.?!]*\bas (a |an )?(new )?seller\b|\badd (a |an )?(new )?seller\b|\bset_?cap\b|\bset_?seller\b|\bnew owner\b|\bmake me (the )?owner\b|\btransfer ownership\b/;
 const EXTRACTION = /private key|secret key|seed phrase|mnemonic|recovery phrase|system prompt|your (hidden )?(instructions|prompt)|\b(give|tell|show|send|reveal|print|share|leak|list|what'?s|what is|what are)\b[^.?!]*(password|api key|owner'?s? (full )?(name|email|address|phone|identity|balance|wallet|key)|main wallet|other pockets?|personal data|kyc|passport)/;
-const INDUCED = /\b(send|transfer|wire|move|refund|forward|pay out|withdraw)\b[^.?!]*\b(usdc|us\$|\$\s?\d|dollars?|money|funds|everything|balance)\b|\b(send|transfer|pay)\b[^.?!]*\b0x[0-9a-f]{4,}/;
+const INDUCED = /\b(send|transfer|wire|move|refund|forward|pay out|withdraw)\b[^.?!]*\b(ehkd|hkd|(?:hk|us)\$|\$\s?\d|dollars?|money|funds|everything|balance)\b|\b(send|transfer|pay)\b[^.?!]*\b0x[0-9a-f]{4,}/;
 function* escalation(): Scene {
   const p: Json = yield { tool: "get_pocket", input: {} };
-  return `I can't do that. Only the owner's key can change this pocket's cap or sellers, and I have no tool that edits rules. The cap stays US$${p?.perPaymentCap ?? "?"}.`;
+  return `I can't do that. Only the owner's key can change this pocket's cap or sellers, and I have no tool that edits rules. The cap stays HK$${p?.perPaymentCap ?? "?"}.`;
 }
 function* extraction(): Scene {
   yield { tool: "get_pocket", input: {} };
@@ -176,7 +176,7 @@ export function route(text: string, history: Msg[], windowMs: number): (() => Sc
   if (/shadyfeed/.test(t) && /preview/.test(t)) return scene5;
   if (/harbour/.test(t)) return scene4;
   if (/durian report and its fruit trade report|fruit trade report.*durian report/.test(t)) return () => scene7(windowMs);
-  if (/0\.20/.test(t) && /report/.test(t)) return scene8;
+  if (/1\.50/.test(t) && /report/.test(t)) return scene8;
   // An unanswered question from scene 1: whatever the owner says next is the answer.
   const asked = history.some((m) => m.role === "assistant" && Array.isArray(m.content) && m.content.some((b: Json) => b.type === "tool_use" && b.name === "ask_owner" && b.input?.question));
   const drafted = history.some((m) => m.role === "assistant" && Array.isArray(m.content) && m.content.some((b: Json) => b.type === "tool_use" && b.name === "draft_intent"));

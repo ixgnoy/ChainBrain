@@ -19,14 +19,15 @@ import { useAutoplayTarget } from "../lib/autoplayTargets";
 import { approvalsFrom, type Approval } from "../lib/events";
 import { ago } from "../lib/agents";
 import { cleanText } from "../lib/sanitize";
-import { parseUsd, NEVER } from "../lib/shared";
-import { money, usd } from "../lib/util";
+import { parseHkd, NEVER } from "../lib/shared";
+import { money, hkd } from "../lib/util";
 import { agentInfo } from "../../../shared/sim/agents";
 import { parseIntent } from "../components/IntentCard";
 import { describeApprovalError } from "../components/ApprovalSheet";
 import { haptic } from "../haptics";
+import { curSign } from "../lib/runtime";
 
-const amountOf = (a: Approval) => { try { return parseUsd(String(a.data?.amount ?? "0")); } catch { return 0n; } };
+const amountOf = (a: Approval) => { try { return parseHkd(String(a.data?.amount ?? "0")); } catch { return 0n; } };
 const leftOf = (a: Approval, now: number) => {
   const until = a.data?.auth?.validBefore ? Number(a.data.auth.validBefore) * 1000 : a.expiresAt;
   return until ? Math.max(0, Math.floor((until - now) / 1000)) : undefined;
@@ -87,7 +88,7 @@ export default function Approvals() {
               <Eyebrow>{`Co-signed · ${span} ${span === 1 ? "day" : "days"}`}</Eyebrow>
               <Icon name="circleCheck" size={16} stroke={2} />
             </View>
-            <Money v="amount" value={usd(cosigned.reduce((n, a) => n + amountOf(a), 0n))} decorative />
+            <Money v="amount" value={hkd(cosigned.reduce((n, a) => n + amountOf(a), 0n))} decorative />
             <T v="cap" color="muted">{`${cosigned.length} ${cosigned.length === 1 ? "payment" : "payments"} you signed`}</T>
           </Card>
           <Card style={{ flex: 1, gap: 8, overflow: "hidden" }}>
@@ -132,7 +133,7 @@ function Waiting({ a, now, onOpen }: { a: Approval; now: number; onOpen: () => v
   const pay = a.kind === "payment";
   const seller = cleanText(sellerName(a.data?.sellerId), 40);
   const left = leftOf(a, now);
-  const limit = pocket ? (pocket.askAbove === NEVER ? "Above the ask-me limit" : pocket.askAbove === 0n ? "Asks about every payment" : `Ask limit US$${usd(pocket.askAbove)} exceeded`) : "Above the ask-me limit";
+  const limit = pocket ? (pocket.askAbove === NEVER ? "Above the ask-me limit" : pocket.askAbove === 0n ? "Asks about every payment" : `Ask limit ${curSign()}${hkd(pocket.askAbove)} exceeded`) : "Above the ask-me limit";
   const task = !pay ? parseIntent(a.text) : [];
   const decline = async () => { setBusy(true); setErr(null); const r = await answer(a, false); setBusy(false); if (!r.ok && r.error !== "NOT_PENDING") setErr(describeApprovalError(r.error)); else haptic.light(); };
   return (
@@ -159,7 +160,7 @@ function Waiting({ a, now, onOpen }: { a: Approval; now: number; onOpen: () => v
             <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 10 }}>
               <View>
                 <Eyebrow>Requested</Eyebrow>
-                <Money v="amount" value={usd(amountOf(a))} decorative />
+                <Money v="amount" value={hkd(amountOf(a))} decorative />
               </View>
               <View style={{ alignItems: "flex-end", flexShrink: 1 }}>
                 <Eyebrow color="vermillionInk">Policy trigger</Eyebrow>
@@ -217,7 +218,7 @@ function Decision({ a, at, last }: { a: Approval; at: number; last: boolean }) {
         <T v="cap" color="muted">{`${ok ? "Approved by you" : a.status === "timeout" ? "Expired without your signature" : "Declined"} · ${when}`}</T>
       </View>
       <View style={{ alignItems: "flex-end", gap: 4 }}>
-        <T v="row" w="bold" color={ok ? "ink" : "muted"} style={{ textDecorationLine: ok ? "none" : "line-through" }}>{`US$${usd(amountOf(a))}`}</T>
+        <T v="row" w="bold" color={ok ? "ink" : "muted"} style={{ textDecorationLine: ok ? "none" : "line-through" }}>{`${curSign()}${hkd(amountOf(a))}`}</T>
         <StatusPill label={label} tone={ok ? "green" : "fill"} />
       </View>
     </View>

@@ -9,7 +9,8 @@ import { Hatch } from "../ui/Hatch";
 import { EASE_OUT, useReduceMotion } from "../ui/motion";
 import { startOfDay, DAY } from "../lib/agents";
 import type { LedgerRow } from "../lib/events";
-import { usd } from "../lib/util";
+import { hkd } from "../lib/util";
+import { curSign } from "../lib/runtime";
 
 const H = 120;
 const SEG = [c.vermillion, c.green, c.blue, c.ink];
@@ -35,8 +36,8 @@ export function SpendBars({ rows, name }: { rows: LedgerRow[]; name: (sellerId?:
   return (
     <View style={{ gap: 12 }}>
       <View style={{ height: H + 30, flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}
-        accessible accessibilityLabel={days.map((d) => `${new Date(d.day).toLocaleDateString("en-GB", { weekday: "short" })} US$${usd(d.total)}`).join(", ")}>
-        {days.map((d, i) => <Bar key={d.day} i={i} h={max > 0n ? Math.max(6, (Number(d.total) / Number(max)) * H) : 6} peak={i === peak} parts={i === peak ? sellers.map(([, v]) => Number(v) / Number(d.total)) : []} tag={i === peak ? `US$${usd(d.total)}` : undefined} />)}
+        accessible accessibilityLabel={days.map((d) => `${new Date(d.day).toLocaleDateString("en-GB", { weekday: "short" })} ${curSign()}${hkd(d.total)}`).join(", ")}>
+        {days.map((d, i) => <Bar key={d.day} i={i} h={max > 0n ? Math.max(6, (Number(d.total) / Number(max)) * H) : 6} peak={i === peak} parts={i === peak ? sellers.map(([, v]) => Number(v) / Number(d.total)) : []} tag={i === peak ? `${curSign()}${hkd(d.total)}` : undefined} />)}
       </View>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         {days.map((d, i) => <T key={d.day} v="cap" w={i === 6 ? "bold" : "medium"} color={i === 6 ? "ink" : "muted"} style={{ flex: 1, textAlign: "center" }}>{LETTER[new Date(d.day).getDay()]}</T>)}
@@ -46,7 +47,7 @@ export function SpendBars({ rows, name }: { rows: LedgerRow[]; name: (sellerId?:
           {sellers.map(([id, v], k) => (
             <View key={id} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: SEG[k % SEG.length] }} />
-              <T v="cap" color="ink2">{`${name(id)} US$${usd(v)}`}</T>
+              <T v="cap" color="ink2">{`${name(id)} ${curSign()}${hkd(v)}`}</T>
             </View>
           ))}
         </View>

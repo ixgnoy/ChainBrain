@@ -28,12 +28,12 @@ export function understand(text: string, sellers: Seller[]): Understood {
   const t = text;
 
   // the price limit and the allowance first: their amounts are not the loose "in total or each?" kind
-  for (const [a, b, g] of all(t, /\b(?:drops?|falls?|dips?|goes|gets|is)\s+(?:below|under|to)\s+US?\$\s?(\d+(?:\.\d{1,3})?)/i)) add({ start: a, end: b, kind: "limit", label: `Buys at US$${fmt(g[0])} or less` });
-  for (const [a, b, g] of all(t, /(?:max(?:imum)?\s+|at most\s+|up to\s+|no more than\s+)?US?\$\s?(\d+(?:\.\d{1,2})?)\s*(?:a|per|each|every)\s+(day|week|month)\b/i)) add({ start: a, end: b, kind: "period", label: `US$${fmt(g[0])} a ${g[1].toLowerCase()}` });
-  for (const [a, b, g] of all(t, /ask (?:me )?(?:above|over|for anything over|if (?:it'?s )?(?:more|over) than)\s+US?\$\s?(\d+(?:\.\d{1,2})?)/i)) add({ start: a, end: b, kind: "ask", label: `Asks you above US$${fmt(g[0])}` });
+  for (const [a, b, g] of all(t, /\b(?:drops?|falls?|dips?|goes|gets|is)\s+(?:below|under|to)\s+(?:HK|US)?\$\s?(\d+(?:\.\d{1,3})?)/i)) add({ start: a, end: b, kind: "limit", label: `Buys at HK$${fmt(g[0])} or less` });
+  for (const [a, b, g] of all(t, /(?:max(?:imum)?\s+|at most\s+|up to\s+|no more than\s+)?(?:HK|US)?\$\s?(\d+(?:\.\d{1,2})?)\s*(?:a|per|each|every)\s+(day|week|month)\b/i)) add({ start: a, end: b, kind: "period", label: `HK$${fmt(g[0])} a ${g[1].toLowerCase()}` });
+  for (const [a, b, g] of all(t, /ask (?:me )?(?:above|over|for anything over|if (?:it'?s )?(?:more|over) than)\s+(?:HK|US)?\$\s?(\d+(?:\.\d{1,2})?)/i)) add({ start: a, end: b, kind: "ask", label: `Asks you above HK$${fmt(g[0])}` });
   for (const [a, b] of all(t, /\b(?:never ask|don'?t ask|without asking)\b/i)) add({ start: a, end: b, kind: "ask", label: "Never asks you" });
-  for (const [a, b, g] of all(t, /(?:at most|up to|max(?:imum)?|no more than|under)?\s*US?\$\s?(\d+(?:\.\d{1,2})?)\s*(each|per (?:payment|report|item|purchase))/i)) add({ start: a, end: b, kind: "money", label: `US$${fmt(g[0])} each` });
-  for (const [a, b, g] of all(t, /US?\$\s?(\d+(?:\.\d{1,2})?)/i)) add({ start: a, end: b, kind: "money", label: `US$${fmt(g[0])}` });
+  for (const [a, b, g] of all(t, /(?:at most|up to|max(?:imum)?|no more than|under)?\s*(?:HK|US)?\$\s?(\d+(?:\.\d{1,2})?)\s*(each|per (?:payment|report|item|purchase))/i)) add({ start: a, end: b, kind: "money", label: `HK$${fmt(g[0])} each` });
+  for (const [a, b, g] of all(t, /(?:HK|US)?\$\s?(\d+(?:\.\d{1,2})?)/i)) add({ start: a, end: b, kind: "money", label: `HK$${fmt(g[0])}` });
 
   // the schedule, in the owner's own words
   const sched = /\b(?:every|each)\s+(?:day|morning|evening|night|weekday|week|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b|\b(?:daily|weekly|monthly|on weekdays)\b/i;

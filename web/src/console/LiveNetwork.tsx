@@ -1,7 +1,7 @@
 // The network as a real server shows it: config, the event stream (every pocket) and the chain (pockets, rules,
-// on-chain history). Read-only. The dev stack adds /dev routes (local fork, forced transfer, scene list).
+// on-chain history). Read-only. The dev stack adds /dev routes (chain proxy, forced transfer, scene list).
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { formatUsd, loadConfig, type Config } from "../shared";
+import { formatHkd, loadConfig, setChainInfo, txUrl, curSign, type Config } from "../shared";
 import { detectDev } from "../dev";
 import { EventsProvider, useEvents } from "../useEvents";
 import { setSource } from "../source/source";
@@ -10,7 +10,7 @@ import { attemptsFrom } from "@sim/checks";
 import { toBig, clientFor, loadHistory, loadPockets, scanFrom, type ChainTx, type PocketState } from "./chain";
 import { NetworkCtx, lookupTx, pocketLookups, type Actions, type Network, type Scene } from "./network";
 
-const PUBLIC_RPC = import.meta.env.VITE_RPC_URL ?? "https://sepolia.base.org";
+const ENV_RPC: string | undefined = import.meta.env.VITE_RPC_URL;
 
 export function LiveNetwork({ url, children }: { url: string; children: ReactNode }) {
   return <EventsProvider api={url}><Inner url={url}>{children}</Inner></EventsProvider>;
@@ -52,11 +52,12 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
       if (!alive) return;
       const d = await detectDev(url);
       if (!alive) return;
+      setChainInfo(d ? null : c.chain ?? null); // the server's RPC and explorer; dev-stack hashes get no explorer link
       setDev(!!d); setCfg(c); setFailed(false);
       if (d) fetch(`${url}/dev/scenes`).then((r) => r.json()).then((s) => alive && Array.isArray(s) && setScenes(s)).catch(() => {});
     }).catch(() => { if (!alive) return; setFailed(true); timer = setTimeout(attempt, 5000); });
     attempt();
-    return () => { alive = false; if (timer) clearTimeout(timer); };
+    return () => { alive = false; setChainInfo(null); if (timer) clearTimeout(timer); };
   }, [url, tries]);
 
   // chain reads: on start, every 8 s, and shortly after new payment / refusal events
@@ -70,7 +71,7 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
   useEffect(() => {
     if (!cfg) return;
     let alive = true;
-    const client = clientFor(dev ? `${url}/dev/rpc` : PUBLIC_RPC);
+    const client = clientFor(dev ? `${url}/dev/rpc` : ENV_RPC ?? cfg.chain?.rpc ?? "https://fisco-node-production.up.railway.app");
     (async () => {
       try {
         fromRef.current ??= await scanFrom(client, dev);
@@ -105,7 +106,7 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
           const j = await r.json();
           if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
           setTick((x) => x + 1);
-          return { ok: !!j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds US$${formatUsd(BigInt(j.balanceAfter))}.` : "The transfer was NOT refused." };
+          return { ok: !!j.reverted, tx: j.tx, text: j.reverted ? `Reverted on-chain. The pocket still holds ${curSign()}${formatHkd(BigInt(j.balanceAfter))}.` : "The transfer was NOT refused." };
         } catch (e) { return { ok: false, text: `Could not run it: ${(e as Error).message}` }; }
       };
     }
@@ -123,8 +124,8 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
     if (actions.forceTransfer) actions.hijack = (pocket) => actions.forceTransfer!(pocket);
     const txDetail: Network["txDetail"] = (hash) => lookupTx(hash, txs, live.events, pockets, (id) => cfg.sellers.find((x) => x.id === id)?.payTo);
     return {
-      dev, builtin: false, chainName: networkLabel({ builtin: false, dev }), cfg, events: live.events, pockets, txs, allTxs, attempts, chainError,
-      explorer: dev ? undefined : (h: string) => `https://sepolia.basescan.org/tx/${h}`,
+      dev, builtin: false, chainName: networkLabel({ builtin: false, dev, chainName: cfg.chain?.key === "fisco" ? "FISCO BCOS" : undefined }), cfg, events: live.events, pockets, txs, allTxs, attempts, chainError,
+      explorer: dev ? undefined : txUrl,
       scenes, txDetail, actions, linked: false, ...pocketLookups(pockets, [], live.events), refresh: () => setTick((x) => x + 1),
     };
   }, [cfg, dev, url, live.events, pockets, txs, allTxs, attempts, chainError, scenes]);

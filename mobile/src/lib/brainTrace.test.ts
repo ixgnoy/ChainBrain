@@ -15,7 +15,7 @@ test("brain trace: a seeded payment, stage by stage, from its own events", async
   const t = traceOf(ev, { pocket: pay.pocket!, tx: pay.tx, at: pay.at });
   assert.equal(t?.outcome, "paid");
   assert.equal(st(t, "rules").state, "ok");
-  assert.match(st(t, "quote").value, /US\$0\.0/);
+  assert.match(st(t, "quote").value, /HK\$0\.\d+/);
   assert.match(st(t, "radar").value, /^Risk \d+\/10/);
   assert.match(st(t, "preflight").value, /Predicted it pays · matched/);
   assert.ok(st(t, "settle").value.includes(String(pay.tx).slice(-4)), "settlement names its tx");

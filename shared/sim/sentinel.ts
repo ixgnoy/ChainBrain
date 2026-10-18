@@ -16,7 +16,7 @@ export const PROBE_REASONS = new Set(["SELLER_NOT_ALLOWED", "SIGNATURE_TYPE_NOT_
 export type RuleInput = {
   events: Ev[];
   now: number;
-  /** USDC that left the pocket with no matching payment event (server: from the transfer index; built-in: the chain log). */
+  /** eHKD that left the pocket with no matching payment event (server: from the transfer index; built-in: the chain log). */
   ghosts?: { tx: string; to: string; amount: bigint }[];
   /** Spent and lifetime used, 0..1, for the burn-rate check. */
   spentRatio?: number;

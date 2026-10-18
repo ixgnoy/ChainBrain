@@ -40,4 +40,4 @@ Written fresh for ChainBrain; no code copied. Patterns only, from public product
 ### Round 4 research notes (ideas only, no code copied)
 - Stripe Radar docs (rule order and short-circuiting, "Not evaluated" kept apart from "Normal", per-signal explanations, rule-impact "what would have happened"): the checks path shows skipped gates as "Not needed" / "Bypassed" and each blocked transfer says how much would have left the pocket.
 - Etherscan transaction page and its Transaction Debugger write-up (verdict first, status banner, the native "Value" field misleading for token transfers, decoded input and logs behind progressive disclosure): the explorer tx page leads with the amount and "Did not move".
-- Datadog TV mode and large-screen dashboard guidance (one screen, no scrolling, primary indicator large, red means act): the presenter fits one screen, with a persistent "N attacks stopped · US$0.00 lost" and keyboard control.
+- Datadog TV mode and large-screen dashboard guidance (one screen, no scrolling, primary indicator large, red means act): the presenter fits one screen, with a persistent "N attacks stopped · HK$0.00 lost" and keyboard control.

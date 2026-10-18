@@ -76,9 +76,9 @@ Figures: the currency symbol is set at 75 % on the same baseline (`Money`, web `
 - **Card** (level 1), **ListCard** with transaction rows (40 px squircle, bold title, muted line, amount and a status pill).
 - **StatusPill**: neutral (Paid), blue (needs you), vermillion soft (Refused, Revoked), green soft (Co-signed, Paid in ledgers), ink (Confirmed).
 - **AgentAvatar / AgentChip**: ChainBrain's mark on ink; the official Claude Spark (clay) and OpenAI Blossom (black) on white, unaltered, at avatar size only (`shared/brand/`).
-- **Pocket card** (`PocketFace`, 2.5D): four faces by creation order (black, vermillion, blue, white hatch). VaultBank anatomy: the pocket name, a black stripe across the card with the holding agent on a white pill, the balance, the rules in one line ("Cap US$2.00 · asks above US$1.00"), the short number big (`*C3A5`) and `Exp. 30/10` (or "Ends 23:59"). Depth: the card's side shows 4 pt under the face; a Skia material (grain, a top light, a specular band that follows the tilt; web: a CSS gradient); the card in focus leans up to 7° with the phone (`ui/tilt.tsx`, one rotation sensor on the UI thread). Revoked, frozen or ended: white hatch with a lock and a vermillion state chip. The same card on Home, the pocket page, an agent's page, the intro and the console.
+- **Pocket card** (`PocketFace`, 2.5D): four faces by creation order (black, vermillion, blue, white hatch). VaultBank anatomy: the pocket name, a black stripe across the card with the holding agent on a white pill, the balance, the rules in one line ("Cap HK$16.00 · asks above HK$8.00"), the short number big (`*C3A5`) and `Exp. 30/10` (or "Ends 23:59"). Depth: the card's side shows 4 pt under the face; a Skia material (grain, a top light, a specular band that follows the tilt; web: a CSS gradient); the card in focus leans up to 7° with the phone (`ui/tilt.tsx`, one rotation sensor on the UI thread). Revoked, frozen or ended: white hatch with a lock and a vermillion state chip. The same card on Home, the pocket page, an agent's page, the intro and the console.
 - **Wallet stack** (`PocketWallet`): every pocket as a card in a vertical stack, each showing its name row, a sliver of its stripe and a live sign in the corner; the front card whole. Neighbouring cards differ in face. Cards drop in on launch (tipping flat as they land), a pull fans the strips, a tap flies the card into its page. Positions are transforms from the scroll offset; 3D tips sit on an inner view (iOS makes `zIndex` a layer depth, so tipped siblings would cut through each other).
-- **Ask dock** (`AskDock`): an outside agent's ask as a black bar above the tab bar on every tab: the agent's mark, "Claude asks US$1.50", "To DataPro · needs your co-sign", a vermillion countdown ring, "+2" when more wait; screens add room for it. Tap: the cheque.
+- **Ask dock** (`AskDock`): an outside agent's ask as a black bar above the tab bar on every tab: the agent's mark, "Claude asks HK$12.00", "To DataPro · needs your co-sign", a vermillion countdown ring, "+2" when more wait; screens add room for it. Tap: the cheque.
 - **Cheque** (`Cheque.tsx` in the approval sheet): who asks and why you are asked (the rule) beside the countdown; the pocket's card turns over to its back: pay, to, for, what is left after; then the wallet's other checks, the agent's note (not checked), details. Slide, then Face ID / Touch ID. Opt-in local notification when the app is in the background.
 - **Brand mark** (`BrandMark`): four tiles, hatch, vermillion, ink, hatch (pockets walled off from each other); its tiles lock into place on the intro. App icon, splash, favicon and the console header use the same drawing (`mobile/assets/src/gen.py`). The brain stays the ChainBrain agent's avatar.
 - **Pill tab bar**: floating white capsule; the active tab is a black pill (white icon and label) that slides; inactive tabs muted.
@@ -90,7 +90,7 @@ Figures: the currency symbol is set at 75 % on the same baseline (`Money`, web `
 
 ## Language
 
-Plain words: "Paid DataLite US$0.30", "Refused: seller not on your list", "Waiting for your OK", "Claude asks to pay". Reason codes, tool names and hashes only in Details, Why and the explorer sheet. The network chip says "Test network" on the built-in network and the local fork.
+Plain words: "Paid DataLite HK$2.40", "Refused: seller not on your list", "Waiting for your OK", "Claude asks to pay". Reason codes, tool names and hashes only in Details, Why and the explorer sheet. The network chip says "Test network" on the built-in network and the dev stack.
 
 ## Screens
 
@@ -102,7 +102,7 @@ Phone: Intro, Home (pool, tiles, deck, spending, activity), Agents, Agent detail
 - [ ] Clash Display text fits at 375 pt (wide letterforms: titles one line, tags may outgrow their column)
 - [ ] Every number traced to a contract read or an event; nothing shown that the data can't support
 - [ ] Vermillion text under 18 px uses `vermillionInk`; green text uses `greenInk`; metadata on canvas uses `mutedOnCanvas`
-- [ ] Hashes open the in-app explorer; BaseScan only against a real public-chain server
+- [ ] Hashes open the in-app explorer; a link to the server's `/explorer` only against a real server
 - [ ] 44-48 px targets, safe areas, keyboard never covers inputs (phone)
 - [ ] 390 px without horizontal scroll; 1440 px desktop and presenter mode (web)
 - [ ] Reduce Motion honoured

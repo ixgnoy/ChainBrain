@@ -1,6 +1,6 @@
 // Wallet API client (real v2 routes only). No React Native imports.
 import type { Address } from "viem";
-import { fetchTimeout, getApi, isBuiltin, normalizeUrl } from "./runtime";
+import { fetchTimeout, getApi, getChain, isBuiltin, normalizeUrl } from "./runtime";
 import type { Approval, WalletEvent } from "./events";
 import { builtin } from "./builtin";
 import { SCENES } from "../../../shared/sim";
@@ -67,9 +67,15 @@ export async function devScenes(): Promise<Scene[]> {
   return Array.isArray(j) ? j.filter((s) => s && typeof s.text === "string") : [];
 }
 
-/** Dev stack only: 1 ETH + 20 USDC on the local fork for this address. */
-export async function devFund(address: string): Promise<{ eth: string; usdc: string }> {
+/** Test money: the dev stack's /dev/fund, or the server's faucet (native balance + Mock e-HKD, once a day). */
+export async function devFund(address: string): Promise<{ eth: string; ehkd: string }> {
   if (isBuiltin()) return builtin().fundTestMoney(address as Address);
+  if (getChain()?.key === "fisco") {
+    const r = await fetchTimeout(`${getApi()}/api/faucet`, { method: "POST", headers: json, body: JSON.stringify({ address }) }, 30000);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error === "ALREADY_CLAIMED" ? "Already claimed today" : j.error ?? `HTTP ${r.status}`);
+    return { eth: j.nativeFunded ? "native" : "0", ehkd: String(j.minted) };
+  }
   const r = await fetchTimeout(`${getApi()}/dev/fund`, { method: "POST", headers: json, body: JSON.stringify({ address }) }, 15000);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();

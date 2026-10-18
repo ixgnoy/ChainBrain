@@ -5,6 +5,7 @@ import type { WalletEvent } from "../lib/events";
 import { cleanText } from "../lib/sanitize";
 import { REASONS } from "../shared";
 import { injectionsIn } from "./story";
+import { curSign } from "../shared";
 
 // ------------------------------------------------------------------ turns
 export type Turn = { key: string; at: number; end: number; rows: TraceRow[]; calls: number; task?: string };
@@ -83,10 +84,10 @@ export function headlineOf(rows: TraceRow[], injections: { at: number; seller: s
     if (r.label === "forced transfer") best = { at: r.at, kind: r.verdict === "Reverted" ? "ok" : "refused", text: r.verdict === "Reverted" ? "Reverted: the pocket refused the forced transfer and the balance did not move" : "The forced transfer was not refused" };
     else if (code) best = { at: r.at, kind: "refused", text: `Refused: ${REASONS[code] ?? "the wallet said no"}`, code };
     else if (r.verdict === "Paid") {
-      // "Paid Exa US$0.007": the seller's name and the amount, not the item code
+      // "Paid Exa HK$0.056": the seller's name and the amount, not the item code
       const e = r.event as any;
       let amount = "";
-      try { amount = e.type === "payment" ? ` US$${(Number(BigInt(e.amount)) / 1e6).toFixed(2)}` : ""; } catch { /* no amount */ }
+      try { amount = e.type === "payment" ? ` ${curSign()}${(Number(BigInt(e.amount)) / 1e6).toFixed(2)}` : ""; } catch { /* no amount */ }
       best = { at: r.at, kind: "ok", text: e.type === "payment" && e.sellerId ? `Paid ${cleanText(nameOf(String(e.sellerId)), 40)}${amount}${e.cosigned ? ", co-signed by the owner" : ""}` : `Paid: ${cleanText(r.title, 90)}` };
     }
     else if (r.verdict === "Needs you") best = { at: r.at, kind: "stepup", text: `Needs you: ${cleanText(r.title, 90)}` };

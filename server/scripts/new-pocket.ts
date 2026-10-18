@@ -1,24 +1,24 @@
 // Create and fund a pocket from OWNER without the app (CLI scenes, rehearsals).
-// Usage: pnpm tsx scripts/new-pocket.ts research|tight      research = US$5, cap 2, ask above 1, DataLite + DataPro, until tonight
-//                                                           tight    = US$0.20, cap 0.20, never ask, DataLite (scene 8)
+// Usage: pnpm tsx scripts/new-pocket.ts research|tight   (amounts in src/chains.ts presets)
+//   research = HK$40, cap 15, ask above 8; DataLite + DataPro, until tonight
+//   tight    = HK$1.50, cap = budget, never ask, DataLite only (scene 8)
 import "dotenv/config";
 import { createWalletClient, http, publicActions, parseEventLogs, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
-import { factoryAbi, factoryAddress, erc20Abi, USDC, usdcBalance } from "../src/wallet/chain";
+import { cfg, presets } from "../src/chains";
+import { record } from "./evidence";
+import { factoryAbi, factoryAddress, erc20Abi, tokenBalance } from "../src/wallet/chain";
 import { sellerPayTo } from "../src/sellers";
 
 const kind = process.argv[2] ?? "research";
-const presets = {
-  research: { budget: 5_000_000n, cap: 2_000_000n, askAbove: 1_000_000n, sellers: ["datalite", "datapro"] },
-  tight: { budget: 200_000n, cap: 200_000n, askAbove: 2n ** 256n - 1n, sellers: ["datalite"] },
-} as const;
-const p = presets[kind as keyof typeof presets];
-if (!p) throw new Error("usage: new-pocket.ts research|tight");
+const sellers = { research: ["datalite", "datapro"], tight: ["datalite"] };
+const all = presets();
+if (!(kind in all)) throw new Error("usage: new-pocket.ts research|tight");
+const p = { ...all[kind as keyof typeof all], sellers: sellers[kind as keyof typeof sellers] };
 
 const owner = privateKeyToAccount(process.env.OWNER_PK as Hex);
 const agent = privateKeyToAccount(process.env.AGENT_PK as Hex).address;
-const w = createWalletClient({ account: owner, chain: baseSepolia, transport: http(process.env.BASE_SEPOLIA_RPC) }).extend(publicActions);
+const w = createWalletClient({ account: owner, chain: cfg().chain, transport: http(cfg().rpc) }).extend(publicActions);
 const payTo = sellerPayTo();
 const tonight = new Date();
 tonight.setHours(23, 59, 0, 0);
@@ -28,7 +28,9 @@ const create = await w.writeContract({
   args: [agent, p.cap, p.askAbove, BigInt(Math.floor(tonight.getTime() / 1000)), p.sellers.map((s) => payTo[s])],
 } as any);
 const [ev] = parseEventLogs({ abi: factoryAbi, logs: (await w.waitForTransactionReceipt({ hash: create })).logs, eventName: "PocketCreated" }) as any[];
-const fund = await w.writeContract({ address: USDC, abi: erc20Abi, functionName: "transfer", args: [ev.args.pocket, p.budget] });
+const fund = await w.writeContract({ address: cfg().token, abi: erc20Abi, functionName: "transfer", args: [ev.args.pocket, p.budget] });
 await w.waitForTransactionReceipt({ hash: fund });
-console.log(`create https://sepolia.basescan.org/tx/${create}\nfund   https://sepolia.basescan.org/tx/${fund}`);
-console.log(`POCKET=${ev.args.pocket} balance=${await usdcBalance(ev.args.pocket)}`);
+record(`new-pocket ${kind}: create`, create, "success", "PocketCreated(address,address,address)", factoryAddress());
+record(`new-pocket ${kind}: fund`, fund, "success", "Transfer(address,address,uint256)", cfg().token);
+console.log(`create ${cfg().txUrl(create)}\nfund   ${cfg().txUrl(fund)}`);
+console.log(`POCKET=${ev.args.pocket} balance=${await tokenBalance(ev.args.pocket)}`);

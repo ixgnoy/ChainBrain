@@ -7,6 +7,7 @@
 import type { WalletEvent } from "./events";
 import { sentinelEvents, toolResultOf } from "./events";
 import { plainReason } from "./plain";
+import { curSign } from "./runtime";
 
 export type LiveKind = "paid" | "cosigned" | "refused" | "ignored" | "attack" | "freeze" | "watched" | "run";
 export type LiveCard = {
@@ -15,7 +16,7 @@ export type LiveCard = {
   /** what the seller or the chat said (quoted, never obeyed) */ quote?: string; tx?: string; reason?: string;
 };
 
-const usd = (units: unknown) => { try { const n = Number(BigInt(String(units ?? 0))) / 1e6; return `US$${n.toFixed(n < 0.1 ? 3 : 2).replace(/0$/, "")}`; } catch { return ""; } };
+const usd = (units: unknown) => { try { const n = Number(BigInt(String(units ?? 0))) / 1e6; return `${curSign()}${n.toFixed(n < 0.1 ? 3 : 2).replace(/0$/, "")}`; } catch { return ""; } };
 
 export function liveCards(events: WalletEvent[], o: { agentOf(pocket?: string): string | undefined; sellerName(id?: string): string; days?: number; now?: number }): LiveCard[] {
   const since = (o.now ?? Date.now()) - (o.days ?? 14) * 86_400_000;
@@ -44,7 +45,7 @@ export function liveCards(events: WalletEvent[], o: { agentOf(pocket?: string): 
     if (e.at < since || e.type !== "trace" || e.phase !== "tool_result" || e.tool !== "get_quote") continue;
     const r = toolResultOf(e);
     const content = typeof r?.content === "string" ? r.content : typeof r?.text === "string" ? r.text : "";
-    const m = /(ignore (?:all |your |previous )?(?:instructions|rules)[^.<"]*|send \d+ ?USDC[^.<"]*)/i.exec(content);
+    const m = /(ignore (?:all |your |previous )?(?:instructions|rules)[^.<"]*|send \d+ ?(?:USDC|eHKD|HKD)[^.<"]*)/i.exec(content);
     if (m) out.push({ at: e.at, pocket: e.pocket, agent: o.agentOf(e.pocket), sellerId: e.args?.sellerId, key: `inj:${e.at}`, kind: "ignored", quote: m[1].slice(0, 140),
       title: `${sn(e.args?.sellerId)}'s page tried to give orders`, why: "Ignored: seller text is data, never an instruction" });
   }

@@ -1,7 +1,8 @@
 // Plain-language wording for the owner UI. Reason codes, tool names and hashes stay out of the main screens (they live in "Details").
 import type { LedgerRow } from "./events";
-import { usd, shortHex } from "./util";
+import { hkd, shortHex } from "./util";
 import { cleanText } from "./sanitize";
+import { curSign } from "./runtime";
 
 export const PLAIN_REASONS: Record<string, string> = {
   SELLER_NOT_ALLOWED: "seller not on your list",
@@ -68,7 +69,7 @@ const OWNER_ICON = { create: "layers", fund: "plus", return: "undo", revoke: "lo
 function describeBase(row: LedgerRow, seller: string, when: string, where?: string): Omit<RowView, "codes" | "foot"> {
   const bad = row.outcome === "refused" || row.outcome === "declined";
   const tail = [where, when].filter(Boolean).join(" · ");
-  const money = row.amount != null ? `US$${usd(row.amount)}` : undefined;
+  const money = row.amount != null ? `${curSign()}${hkd(row.amount)}` : undefined;
   if (row.kind === "owner") {
     const k = (row.ownerKind ?? "fund") as keyof typeof OWNER_ICON;
     const rev = k === "revoke";
@@ -104,5 +105,5 @@ export function worstCase(balance: bigint, sellers: string[], dead = false): str
   if (dead) return "This pocket is switched off. The agent can't spend anything from it.";
   if (balance === 0n) return "The pocket is empty, so a hijacked agent could not lose anything.";
   const to = sellers.length === 0 ? "to no one: no seller is allowed" : `only to ${sellers.length === 1 ? sellers[0] : `${sellers.slice(0, -1).join(", ")} and ${sellers.at(-1)}`}`;
-  return `If the agent is hijacked, the most it can lose is US$${usd(balance)}, ${to}.`;
+  return `If the agent is hijacked, the most it can lose is ${curSign()}${hkd(balance)}, ${to}.`;
 }

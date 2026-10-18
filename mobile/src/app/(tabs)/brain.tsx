@@ -23,7 +23,8 @@ import { SellerMark, hasSellerMark } from "../../ui/SellerMark";
 import { Rise } from "../../ui/Rise";
 import { useReduceMotion } from "../../ui/motion";
 import { cleanText } from "../../lib/sanitize";
-import { usd } from "../../lib/util";
+import { hkd } from "../../lib/util";
+import { tokenSymbol } from "../../lib/runtime";
 import { initials } from "../../components/ActivityRow";
 import { faceOf, toneFor } from "../../components/PocketFace";
 import { RING, brainGraph, pulsesOf, trafficOf, type GEdge, type GNode, type Pulse, type PulseTone } from "../../lib/brainGraph";
@@ -249,7 +250,7 @@ function FocusPanel({ id, byId, edges, events, pockets, onOpen, onClose }: {
     const p = pockets.find((x) => x.address === n.ref);
     const pays = recent.filter((e) => e.type === "payment" && e.pocket?.toLowerCase() === n.ref!.toLowerCase());
     const refused = recent.filter((e) => e.type === "refusal" && e.pocket?.toLowerCase() === n.ref!.toLowerCase()).length;
-    sub = `${p ? `${usd(p.balance)} USDC left · ` : ""}${pays.length} paid · ${refused} refused in 14 days`;
+    sub = `${p ? `${hkd(p.balance)} ${tokenSymbol()} left · ` : ""}${pays.length} paid · ${refused} refused in 14 days`;
     action = { label: "Its brain", go: () => onOpen(n.ref!) };
   } else if (n.kind === "seller") {
     const pays = recent.filter((e) => e.type === "payment" && e.sellerId === n.ref);

@@ -10,9 +10,10 @@ import { firstTime } from "../ui/Rise";
 import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
 import { deadEndOf, retryText, whyText } from "../lib/deadend";
-import { usd } from "../lib/util";
+import { hkd } from "../lib/util";
 import type { WalletEvent } from "../lib/events";
 import { EventCard } from "./EventCard";
+import { curSign } from "../lib/runtime";
 
 export function DeadEndCard({ id, evs, pocket, sellerName, onRetry, resolved, task }: { id: string; evs: WalletEvent[]; /** the owner's sentence that ran into the dead end */ task: string; pocket: { address: string; cap: bigint; balance: bigint; owned: boolean; revoked: boolean }; sellerName: (id?: string) => string; /** after the fix: ask the agent again with a price limit that now fits */ onRetry?: (text: string) => void;
   /** a later turn bought it: the card stays as history, without a fix to apply */ resolved?: boolean }) {
@@ -20,8 +21,8 @@ export function DeadEndCard({ id, evs, pocket, sellerName, onRetry, resolved, ta
   const d = deadEndOf(evs, pocket);
   if (!d) return null;
   const fixed = !!d.fix && d.fix.cap === pocket.cap && d.fix.topUp === 0n;
-  const label = d.fix ? `Raise cap${d.fix.topUp > 0n ? " and budget" : ""} to US$${usd(d.fix.cap)}` : "Open pocket to allow a seller";
-  const again = d.minPrice != null ? `Then ask again with a price limit of at least US$${usd(d.minPrice)}.` : "Then ask your agent again.";
+  const label = d.fix ? `Raise cap${d.fix.topUp > 0n ? " and budget" : ""} to ${curSign()}${hkd(d.fix.cap)}` : "Open pocket to allow a seller";
+  const again = d.minPrice != null ? `Then ask again with a price limit of at least ${curSign()}${hkd(d.minPrice)}.` : "Then ask your agent again.";
   const codes = [...new Set(d.tried.flatMap((t) => t.reasons))];
   return (
     <EventCard
@@ -31,7 +32,7 @@ export function DeadEndCard({ id, evs, pocket, sellerName, onRetry, resolved, ta
     >
       {d.tried.map((t) => (
         <View key={`${t.sellerId}${t.sku}`} style={{ gap: 2 }}>
-          <T v="sub" w="semi">{cleanText(sellerName(t.sellerId), 40)}{t.price != null ? ` · US$${usd(t.price)}` : ""}</T>
+          <T v="sub" w="semi">{cleanText(sellerName(t.sellerId), 40)}{t.price != null ? ` · ${curSign()}${hkd(t.price)}` : ""}</T>
           <T v="sub" color="muted">{whyText(t).replace(/^./, (x) => x.toUpperCase())}</T>
         </View>
       ))}
@@ -39,11 +40,11 @@ export function DeadEndCard({ id, evs, pocket, sellerName, onRetry, resolved, ta
         fixed ? (
           <View style={{ gap: 10 }}>
             <T v="sub" color="positive">Your rules now allow this.</T>
-            {onRetry && d.minPrice != null ? <Button label={`Ask again, max US$${usd(d.minPrice)}`} small auto="deadend.askAgain" onPress={() => onRetry(retryText(task, usd(d.minPrice!)))} /> : <T v="sub" color="ink2">{again}</T>}
+            {onRetry && d.minPrice != null ? <Button label={`Ask again, max ${curSign()}${hkd(d.minPrice)}`} small auto="deadend.askAgain" onPress={() => onRetry(retryText(task, hkd(d.minPrice!)))} /> : <T v="sub" color="ink2">{again}</T>}
           </View>
         )
         : !d.fix && !d.needsSeller ? <T v="sub" color="ink2">{again}</T>
-        : <><Button label={label} small auto="deadend.fix" onPress={() => (d.fix ? setRules({ pocket: pocket.address, field: "cap", amount: usd(d.fix.cap), topUp: d.fix.topUp }) : router.push({ pathname: "/pocket/[id]", params: { id: pocket.address } }))} /><T v="cap" color="ink2">{again}</T></>
+        : <><Button label={label} small auto="deadend.fix" onPress={() => (d.fix ? setRules({ pocket: pocket.address, field: "cap", amount: hkd(d.fix.cap), topUp: d.fix.topUp }) : router.push({ pathname: "/pocket/[id]", params: { id: pocket.address } }))} /><T v="cap" color="ink2">{again}</T></>
       ) : null}
     </EventCard>
   );

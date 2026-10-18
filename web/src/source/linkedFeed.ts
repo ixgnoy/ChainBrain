@@ -8,6 +8,7 @@ import { eventPocket, type WalletEvent } from "../lib/events";
 import type { FeedSnapshot, NetworkFeed } from "./feed";
 import type { LocalFeed } from "./localFeed";
 import { DEFAULT_API } from "./source";
+import { curSign } from "../shared";
 
 type Wire = Record<string, any>;
 type Phone = { events: WalletEvent[]; pockets: PocketState[]; txs: ChainTx[]; names: Record<string, string>; lastSeen: number };
@@ -128,7 +129,7 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
           const r = await command({ type: "force", pocket });
           if (typeof r?.reverted !== "boolean") return { ok: false, text: r?.text ?? "The phone could not run it" }; // an error is not a verdict
           const left = r?.balanceAfter ? (Number(BigInt(r.balanceAfter)) / 1e6).toFixed(2) : undefined;
-          return { ok: !!r?.reverted, tx: r?.tx, text: r?.reverted ? `Reverted on-chain. The pocket still holds US$${left}.` : "The transfer was NOT refused." };
+          return { ok: !!r?.reverted, tx: r?.tx, text: r?.reverted ? `Reverted on-chain. The pocket still holds ${curSign()}${left}.` : "The transfer was NOT refused." };
         } catch (e) { return { ok: false, text: (e as Error).message }; }
       },
       runScene: local.actions.runScene,
@@ -150,7 +151,7 @@ export function createLinkedFeed(local: LocalFeed, base = DEFAULT_API): LinkedFe
           const r = await command({ type: "hijack", pocket, ...(text ? { text } : {}) });
           if (typeof r?.reverted !== "boolean") return { ok: false, text: r?.text ?? "The phone could not run it" };
           const left = r?.balanceAfter ? (Number(BigInt(r.balanceAfter)) / 1e6).toFixed(2) : undefined;
-          return { ok: !!r?.reverted, tx: r?.tx, text: r?.reverted ? `Reverted on-chain. The pocket still holds US$${left}.` : "The transfer was NOT refused." };
+          return { ok: !!r?.reverted, tx: r?.tx, text: r?.reverted ? `Reverted on-chain. The pocket still holds ${curSign()}${left}.` : "The transfer was NOT refused." };
         } catch (e) { return { ok: false, text: (e as Error).message }; }
       },
       async say(text, preset) {

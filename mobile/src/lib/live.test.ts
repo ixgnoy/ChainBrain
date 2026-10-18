@@ -24,6 +24,6 @@ test("live: the seeded week as decision cards, newest first, every card from an 
 
 test("live: the now line says who is doing what", () => {
   const name = (id?: string) => (id === "claude" ? "Claude" : "ChainBrain");
-  assert.equal(nowLine({ asks: [{ agent: "claude", amount: "US$0.05" }], busy: false, running: [], watching: 7, agentName: name }).text, "Claude is waiting for your co-signature · US$0.05");
+  assert.equal(nowLine({ asks: [{ agent: "claude", amount: "HK$0.40" }], busy: false, running: [], watching: 7, agentName: name }).text, "Claude is waiting for your co-signature · HK$0.40");
   assert.equal(nowLine({ asks: [], busy: false, running: [], watching: 7, next: { name: "Durian watch", when: "08:00" }, agentName: name }).text, "Watching 7 pockets · next: Durian watch 08:00");
 });

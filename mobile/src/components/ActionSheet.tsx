@@ -19,11 +19,12 @@ import { Icon } from "../ui/Icon";
 import { haptic } from "../haptics";
 import { autoplayRunning } from "../lib/autoplayTargets";
 import { cleanText } from "../lib/sanitize";
-import { parseUsd } from "../lib/shared";
-import { contractTail, usd, money } from "../lib/util";
+import { parseHkd } from "../lib/shared";
+import { contractTail, hkd, money } from "../lib/util";
 import { c } from "../tokens";
 import { SheetSuccess } from "./SheetSuccess";
 import { ErrorNote } from "./ErrorNote";
+import { curSign } from "../lib/runtime";
 
 type Mode = "fund" | "return" | "revoke";
 const COPY: Record<Mode, { title: string; hint: string }> = {
@@ -31,11 +32,11 @@ const COPY: Record<Mode, { title: string; hint: string }> = {
   return: { title: "Return funds", hint: "Send everything left in the pocket back to your main wallet. The pocket stays active." },
   revoke: { title: "Revoke this pocket", hint: "Two transactions, both signed here." },
 };
-const AMOUNTS = ["0.50", "1.00", "2.00", "5.00"];
+const AMOUNTS = ["4.00", "8.00", "16.00", "40.00"];
 
 export const txError = (e: unknown) => {
   const m = String((e as Error)?.message ?? e);
-  if (/insufficient funds|exceeds the balance|gas/i.test(m)) return "Your main wallet needs a little ETH for fees and enough USDC. On the test network, Settings can add test funds.";
+  if (/insufficient funds|exceeds the balance|gas/i.test(m)) return "Your main wallet needs a little native balance and enough eHKD. Settings, Get test funds (the wallet server's faucet) adds both.";
   if (/reverted/i.test(m)) return "The transaction reverted on chain. Nothing changed.";
   if (/User rejected|denied/i.test(m)) return "Cancelled.";
   return "That did not go through. Check the connection and try again.";
@@ -58,7 +59,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
   const scoped = !!initial; // opened from a pocket: about that pocket only
   const [done, setDone] = useState<{ title: string; hash: string; txs?: { label?: string; hash: string }[] } | null>(null);
   const [sel, setSel] = useState<string | undefined>(initial);
-  const [amount, setAmount] = useState("1.00");
+  const [amount, setAmount] = useState("8.00");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const formH = useRef(0);
@@ -90,9 +91,9 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
   // fund and return stay open on success so the owner reads the transaction hash; revoke closes and the pocket page shows it
   const doFund = async () => {
     try {
-      const v = parseUsd(amount); const r = await wallet!.fund(chosen!.address, v);
+      const v = parseHkd(amount); const r = await wallet!.fund(chosen!.address, v);
       recordTx({ kind: "fund", pocket: chosen!.address, hash: r.hash, amount: v.toString() });
-      setDone({ title: `Moved US$${amount} to ${cleanText(chosen!.name, 30)}`, hash: r.hash }); await refreshPockets();
+      setDone({ title: `Moved ${curSign()}${amount} to ${cleanText(chosen!.name, 30)}`, hash: r.hash }); await refreshPockets();
     } catch (e) { fail(e); }
   };
   const doReturn = async () => {
@@ -132,7 +133,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
         <View style={{ gap: 4 }}>
           <T v="section">{COPY[mode].title}</T>
           <T v="body" color="ink2">{mode === "revoke" && chosen && chosen.balance === 0n ? "One transaction, signed here." : COPY[mode].hint}</T>
-          {mode === "fund" && balances ? <T v="sub" color="muted">Main wallet: {money(balances.usdc)}</T> : null}
+          {mode === "fund" && balances ? <T v="sub" color="muted">Main wallet: {money(balances.ehkd)}</T> : null}
         </View>
         {scoped && chosen ? <OnePocket p={chosen} tone={toneFor(pockets, chosen.address)} /> : null}
         {mode === "revoke" && chosen ? <RevokeOutcome p={chosen} /> : null}
@@ -154,7 +155,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
         )}
         {mode === "fund" && (
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-            {AMOUNTS.map((a) => <Chip key={a} label={`US$${a}`} on={amount === a} onPress={() => setAmount(a)} />)}
+            {AMOUNTS.map((a) => <Chip key={a} label={`${curSign()}${a}`} on={amount === a} onPress={() => setAmount(a)} />)}
           </View>
         )}
         {mode === "return" && chosen && <T v="sub" color="ink2">{money(chosen.balance)} comes back to your main wallet.</T>}
@@ -167,7 +168,7 @@ function Body({ mode, initial, close }: { mode: Mode; initial?: string; close: (
     <View style={{ flexShrink: 1 }}>
       {done ? <SheetSuccess key="ok" minHeight={formH.current} title={done.title} txs={done.txs ?? [{ hash: done.hash }]} /> : form}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}>
-        {mode === "fund" && <SlideToConfirm key={`f${sel}${amount}${error}`} label={`Slide to move US$${amount}`} doneLabel="Moved" disabled={!chosen || !wallet} onConfirm={doFund} />}
+        {mode === "fund" && <SlideToConfirm key={`f${sel}${amount}${error}`} label={`Slide to move ${curSign()}${amount}`} doneLabel="Moved" disabled={!chosen || !wallet} onConfirm={doFund} />}
         {mode === "return" && <SlideToConfirm key={`r${sel}${error}`} auto="return.slide" label="Slide to return funds" doneLabel="Returned" disabled={!chosen || !wallet || chosen.balance === 0n} onConfirm={doReturn} />}
         {mode === "revoke" && (done ? <View style={{ height: 64 }} /> : <HoldToRevoke auto="revoke.hold" label={chosen && chosen.balance > 0n ? `Hold to revoke and return ${money(chosen.balance)}` : "Hold to revoke"} disabled={!chosen || !wallet} busy={busy} onComplete={doRevoke} />)}
         <Button label={done ? "Done" : "Cancel"} kind={done ? "secondary" : "text"} auto={done ? "sheet.close" : undefined} onPress={close} />

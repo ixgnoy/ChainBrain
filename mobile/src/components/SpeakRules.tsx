@@ -14,6 +14,7 @@ import { haptic } from "../haptics";
 import { cleanText } from "../lib/sanitize";
 import * as api from "../lib/api";
 import { answer, proof, type Compiled, type Draft } from "../../../shared/sim/speak";
+import { curSign } from "../lib/runtime";
 
 const HOSTILE = ["shadyfeed", "tradewire"];
 
@@ -24,7 +25,7 @@ export function exampleFor(sellers: { id: string; name: string; category?: strin
   const research = sellers.filter((s) => s.category === "Research data" && !HOSTILE.includes(s.id)).map((s) => s.name);
   const names = research.length ? research.slice(0, 3) : sellers.slice(0, 2).map((s) => s.name);
   const from = names.length ? ` from ${names.length > 1 ? `${names.slice(0, -1).join(", ")} or ${names.at(-1)}` : names[0]}` : "";
-  return `US$1 for durian research${from}, at most US$0.05 each, ask me above US$0.02, until tonight`;
+  return `HK$8 for durian research${from}, at most HK$0.40 each, ask me above HK$0.16, until tonight`;
 }
 
 export function SpeakRules({ onUse }: { onUse(d: Draft): void }) {
@@ -69,9 +70,9 @@ export function SpeakRules({ onUse }: { onUse(d: Draft): void }) {
       {err ? <T v="sub" color="negative">{err}</T> : null}
       {res && p ? (
         <Rise dy={8} style={{ gap: 12 }}>
-          <View style={{ gap: 2, padding: 14, borderRadius: 16, backgroundColor: c.canvas }} accessible accessibilityLabel={`Worst case: US$${p.worstCase}`}>
+          <View style={{ gap: 2, padding: 14, borderRadius: 16, backgroundColor: c.canvas }} accessible accessibilityLabel={`Worst case: ${curSign()}${p.worstCase}`}>
             <T v="cap" color="muted">Worst case, even if your agent is fooled</T>
-            <T v="section">US${p.worstCase}</T>
+            <T v="section">{curSign()}{p.worstCase}</T>
             <T v="cap" color="muted">The pocket holds this and nothing else.</T>
           </View>
           <View style={{ gap: 6 }}>{p.lines.map((l, i) => <View key={i} style={{ flexDirection: "row", gap: 8 }}><Icon name="check" size={16} color={c.accent} /><T v="sub" style={{ flex: 1 }}>{cleanText(l, 120)}</T></View>)}</View>

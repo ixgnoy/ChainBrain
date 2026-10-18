@@ -32,20 +32,21 @@ import { devScenes, type Scene } from "../lib/api";
 import { sameAddr, sliceTurn, replyOf, toolResultOf, summarizeTool, traceLines, radarScreens, radarAlerts, sentinelEvents, haggles, type WalletEvent } from "../lib/events";
 import { HaggleCard } from "../components/HaggleCard";
 import { deadEndOf } from "../lib/deadend";
-import { money, usd } from "../lib/util";
+import { money, hkd } from "../lib/util";
 import { isTightCap } from "../lib/presets";
 import { plainAsks } from "../lib/plain";
 import { haptic } from "../haptics";
 import { useGrowCap } from "../ui/fontScale";
+import { curSign } from "../lib/runtime";
 
 type ChipItem = { label: string; text: string };
 // a server without /dev/scenes: tasks that name no seller (real provider names belong to the built-in network only)
 const DEFAULTS: ChipItem[] = [
-  { label: "A durian market report", text: "Get me a market report on durian exports, under US$2, by tonight." },
-  { label: "Research a durian deal", text: "Research a durian import deal for me: export news, the USDC price and a check on the exporter's wallet. Under US$0.10, by tonight." },
+  { label: "A durian market report", text: "Get me a market report on durian exports, under HK$16 by tonight." },
+  { label: "Research a durian deal", text: "Research a durian import deal for me: export news, the ETH price and a check on the exporter's wallet. Under HK$0.80, by tonight." },
 ];
 
-/** "US$2 in total or per report?" -> ["US$2 in total", "US$2 per report"]: the two answers a one-tap reply needs. */
+/** "HK$16 in total or per report?" -> ["HK$16 in total", "HK$16 per report"]: the two answers a one-tap reply needs. */
 export function answerOptions(q: string): string[] {
   const m = /^(.+?)\s+or\s+(.+?)\?$/i.exec(q.trim());
   if (!m) return [];
@@ -110,14 +111,14 @@ function AgentCardBlock({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** "Paid Exa US$0.007" or "Asked for a price: US$0.007": the latest finished step in the pocket's events. */
+/** "Paid Exa HK$0.056" or "Asked for a price: HK$0.056": the latest finished step in the pocket's events. */
 export function lastStepText(events: WalletEvent[], sellerName: (id?: string) => string): string | null {
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
-    if (e.type === "payment") return `Paid ${cleanText(sellerName(e.sellerId), 30)} US$${usd(BigInt(e.amount ?? 0))}`;
+    if (e.type === "payment") return `Paid ${cleanText(sellerName(e.sellerId), 30)} ${curSign()}${hkd(BigInt(e.amount ?? 0))}`;
     if (e.type === "trace" && e.phase === "tool_result" && e.tool === "pay") {
       const p = events.slice(0, i + 2).reverse().find((x) => x.type === "payment");
-      if (p) return `Paid ${cleanText(sellerName(p.sellerId), 30)} US$${usd(BigInt(p.amount ?? 0))}`;
+      if (p) return `Paid ${cleanText(sellerName(p.sellerId), 30)} ${curSign()}${hkd(BigInt(p.amount ?? 0))}`;
     }
     if (e.type === "trace" && e.phase === "tool_result" && e.tool) {
       const sum = summarizeTool(e.tool, toolResultOf(e));
@@ -245,7 +246,7 @@ export default function AgentChat() {
   const HOLD_MS = 1500;
 
   const follow: ChipItem[] = question ? scenes.filter((s) => s.followUp).map((s) => ({ label: s.followChip ?? s.followUp!, text: s.followUp! })) : [];
-  // a tight pocket (cap US$0.20 or less) leads with the dead-end task; otherwise the scenes in story order
+  // a tight pocket (cap HK$1.60 or less) leads with the dead-end task; otherwise the scenes in story order
   const tight = !!active && isTightCap(active.cap, (cfg?.sellers ?? []).map((s) => s.id));
   const ordered = tight ? [...scenes.filter((s) => s.preset === "one-purchase"), ...scenes.filter((s) => s.preset !== "one-purchase")] : scenes;
   // used suggestions go away; while the agent works only the answer to its question is offered
@@ -400,7 +401,7 @@ export default function AgentChat() {
             <StoppedCard codes={["POCKET_REVOKED"]} last={stopped} tx={stopTx?.hash} canReturn={active.owned && active.balance > 0n} onReturn={() => setAction({ mode: "return", pocket: active.address })} />
           ) : null}
           {pay && (
-            <EventCard tone="waiting" title="Waiting for your OK" body={`${cleanText(sellerName(pay.data?.sellerId), 40)} · US$${cleanText(pay.data?.amount, 10)}`}>
+            <EventCard tone="waiting" title="Waiting for your OK" body={`${cleanText(sellerName(pay.data?.sellerId), 40)} · ${curSign()}${cleanText(pay.data?.amount, 10)}`}>
               <Button label="Review and approve" small onPress={() => openApproval(pay.id)} />
             </EventCard>
           )}

@@ -14,10 +14,11 @@ import { SellerMark, hasSellerMark } from "../ui/SellerMark";
 import { useReduceMotion } from "../ui/motion";
 import { TextScaleCap } from "../ui/fontScale";
 import { haptic } from "../haptics";
-import { contractTail, usd } from "../lib/util";
+import { contractTail, hkd } from "../lib/util";
 import { cleanText } from "../lib/sanitize";
 import type { Pocket } from "../store";
 import { PocketFace, cardHeight, expiryText } from "./PocketFace";
+import { curSign } from "../lib/runtime";
 
 const R = 18;
 
@@ -37,7 +38,7 @@ export function ChequeCard({ pocket, tone, width, amount, seller, sellerId, item
   const back = useAnimatedStyle(() => ({ transform: [{ perspective: 1100 }, { rotateY: `${turn.value - 180}deg` }] }));
   const after = amount != null ? pocket.balance - amount : null;
   return (
-    <View style={{ width, height: h + 4 }} accessible accessibilityLabel={`Cheque from ${cleanText(pocket.name, 30)}: pay US$${amount != null ? usd(amount) : "?"} to ${seller}, for ${item}.${after != null && after >= 0n ? ` US$${usd(after)} left after this.` : ""}`}>
+    <View style={{ width, height: h + 4 }} accessible accessibilityLabel={`Cheque from ${cleanText(pocket.name, 30)}: pay ${curSign()}${amount != null ? hkd(amount) : "?"} to ${seller}, for ${item}.${after != null && after >= 0n ? ` ${curSign()}${hkd(after)} left after this.` : ""}`}>
       <Animated.View style={[{ position: "absolute", left: 0, top: 0, backfaceVisibility: "hidden" }, front]}>
         <PocketFace pocket={pocket} width={width} tone={tone} still />
       </Animated.View>
@@ -70,7 +71,7 @@ function Back({ pocket, width, height, amount, seller, sellerId, item, after, un
           <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
             <View>
               <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>Pay</T>
-              <Money v={k >= 0.9 ? "amount" : "section"} value={amount != null ? usd(amount) : "?"} label={`Pay US$${amount != null ? usd(amount) : "?"}`} decorative />
+              <Money v={k >= 0.9 ? "amount" : "section"} value={amount != null ? hkd(amount) : "?"} label={`Pay ${curSign()}${amount != null ? hkd(amount) : "?"}`} decorative />
             </View>
             <T v="cap" w="semi" color="muted" style={{ marginBottom: 6 }}>{time ? `Valid until ${time}` : expiryText(pocket.expiresAt)}</T>
           </View>
@@ -86,7 +87,7 @@ function Back({ pocket, width, height, amount, seller, sellerId, item, after, un
         </View>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: pad, paddingTop: 6, paddingBottom: pad - 4 }}>
           <T v="cap" color="muted">Your key signs this one payment</T>
-          {after != null && after >= 0n ? <T v="cap" w="semi">{`US$${usd(after)} left after`}</T> : null}
+          {after != null && after >= 0n ? <T v="cap" w="semi">{`${curSign()}${hkd(after)} left after`}</T> : null}
         </View>
       </View>
     </View>

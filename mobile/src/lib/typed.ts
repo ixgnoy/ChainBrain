@@ -1,13 +1,15 @@
-// The exact EIP-712 message an owner co-signs (USDC TransferWithAuthorization), shared by the wallet and the built-in network.
+// The exact EIP-712 message an owner co-signs (eHKD TransferWithAuthorization), shared by the wallet and the built-in network.
 import { hashTypedData, hexToBigInt, parseSignature, type Address, type Hex } from "viem";
 import { publicKeyToAddress } from "viem/accounts";
 import { secp256k1 } from "@noble/curves/secp256k1";
+import { getChain } from "./runtime";
 
-const USDC: Address = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+const EHKD: Address = "0x0355c0c5Afe2A35369056FBB854903A4aF07781A";
 
 export type Authorization = { from: Address; to: Address; value: string; validAfter: string; validBefore: string; nonce: Hex };
 export const transferTypedData = (a: Authorization) => ({
-  domain: { name: "USDC", version: "2", chainId: 84532, verifyingContract: USDC },
+  // the live server's Mock e-HKD; the built-in network models the same token
+  domain: ((c) => (c ? { ...c.domain, chainId: c.id, verifyingContract: c.token } : { name: "Mock e-HKD", version: "1", chainId: 20200, verifyingContract: EHKD }))(getChain()),
   types: {
     TransferWithAuthorization: [
       { name: "from", type: "address" }, { name: "to", type: "address" }, { name: "value", type: "uint256" },

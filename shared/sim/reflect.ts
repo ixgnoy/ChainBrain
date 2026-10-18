@@ -5,7 +5,7 @@
 import { sellerById, sellerName } from "./catalog";
 import type { Op, Reflection, Snapshot } from "./memory";
 import type { SimEvent } from "./types";
-import { formatUsd } from "./util";
+import { formatHkd } from "./util";
 
 export type Evidence = { id: string; who: "owner" | "wallet"; text: string };
 export const FIXED_QUESTIONS = ["What did the owner ask for that is still open?", "Which memory item is now wrong, stale or unused?"] as const;
@@ -13,7 +13,7 @@ export const FIXED_QUESTIONS = ["What did the owner ask for that is still open?"
 const hash8 = (s: string) => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(16).padStart(8, "0"); };
 export const ownerEvidence = (text: string): Evidence => ({ id: `m:${hash8(text)}`, who: "owner", text: text.slice(0, 500) });
 const eid = (e: SimEvent) => `e:${e.at}`;
-const usd = (v: unknown) => { try { return `US$${formatUsd(BigInt(String(v ?? 0)))}`; } catch { return "US$?"; } };
+const hkd = (v: unknown) => { try { return `HK$${formatHkd(BigInt(String(v ?? 0)))}`; } catch { return "HK$?"; } };
 const itemOf = (sellerId: string, sku: string) => sellerById(sellerId)?.items.find((i) => i.sku === sku)?.description ?? sku;
 const SELLERS = /\b(exa|coingecko|nansen|tradewire|harbour wines|shadyfeed)\b/i;
 
@@ -39,7 +39,7 @@ export function scriptedReflection(prev: Snapshot, owner: Evidence[], events: Si
   for (const e of events) {
     if (e.type === "payment") {
       paid = true;
-      const text = `Bought "${itemOf(e.sellerId, e.sku)}" from ${sellerName(e.sellerId)} for ${usd(e.amount)}${e.cosigned ? ", co-signed by the owner" : ""}`;
+      const text = `Bought "${itemOf(e.sellerId, e.sku)}" from ${sellerName(e.sellerId)} for ${hkd(e.amount)}${e.cosigned ? ", co-signed by the owner" : ""}`;
       wallet.push({ id: eid(e), who: "wallet", text });
       ops.push({ op: "add", kind: "fact", text, source: eid(e), effect: "neutral" });
     } else if (e.type === "radar" && e.kind === "screen" && typeof e.counterparty === "string") {

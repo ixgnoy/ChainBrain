@@ -18,7 +18,7 @@ import { agentInfo } from "../../shared/sim/agents";
 import { router } from "expo-router";
 import { notify } from "./lib/toast";
 import { haptic } from "./haptics";
-import { sameView, usd } from "./lib/util";
+import { sameView, hkd } from "./lib/util";
 import { loadMeta, saveMeta, type PocketMeta } from "./lib/pocketNames";
 import { isTightCap } from "./lib/presets";
 import * as api from "./lib/api";
@@ -28,6 +28,7 @@ import {
 } from "./lib/events";
 import { getItem, setItem, deleteItem } from "./storage";
 import { addOwnerTx, ownerRows, parseOwnerTxs, type OwnerTx } from "./lib/ownerTxs";
+import { curSign, getChain } from "./lib/runtime";
 
 export type Turn = { id: string; pocket: string; text: string; fromAt: number; toAt?: number; /** the last event when the turn finished: anything later happened after it */ endAt?: number; reply?: string; stopped?: string; error?: string; done: boolean };
 export type Pocket = PocketView & { name: string; style: PocketMeta["style"]; owned: boolean; /** the agent that holds it (immutable agent key) */ agentId?: AgentId; /** its pocket app, when it has one */ app?: PocketMeta["app"] };
@@ -50,7 +51,7 @@ type Ctx = {
   keyState: "loading" | "none" | "ready"; wallet: OwnerWallet | null; importKey(pk: string): Promise<void>; newKey(): Promise<void>;
   /** Where data comes from: the network built into the app (default) or the wallet server at `apiUrl`. */
   source: Source; setSource(s: Source): Promise<void>;
-  balances: { usdc: bigint; eth: bigint } | null;
+  balances: { ehkd: bigint; eth: bigint } | null;
   // pockets
   pockets: Pocket[]; pocketsLoaded: boolean; active?: Pocket; setActive(a: string): void;
   addPocket(a: Address, meta?: PocketMeta, o?: { activate?: boolean }): Promise<void>; refreshPockets(): Promise<void>; findPocket(a?: string): Pocket | undefined;
@@ -258,7 +259,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       Promise.all(list.map((a) => readPocket(a).catch(() => null))),
     ]);
     // keep the same objects when nothing changed: a new object re-renders every screen (and Hermes in dev is slow)
-    if (bal) setBalances((old) => (old && old.usdc === bal.usdc && old.eth === bal.eth ? old : bal));
+    if (bal) setBalances((old) => (old && old.ehkd === bal.ehkd && old.eth === bal.eth ? old : bal));
     setViews((old) => {
       let changed = false;
       const next = { ...old };
@@ -272,10 +273,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { if (!local) return; const t = setInterval(() => void builtin().tickRoutines().catch(() => {}), 20_000); return () => clearInterval(t); }, [local]);
   useEffect(() => { const t = setInterval(() => void refreshPockets(), 10000); return () => clearInterval(t); }, [refreshPockets]);
 
-  // dev stack and an empty phone key: ask /dev/fund for test money once per launch
+  // dev stack (or a FISCO server's faucet) and an empty phone key: ask for test money once per launch
   const autoFunded = useRef<string>("");
   useEffect(() => {
-    if (!dev || !wallet || !balances || balances.usdc > 0n || autoFunded.current === wallet.address) return;
+    if (!(dev || getChain()?.key === "fisco") || !wallet || !balances || balances.ehkd > 0n || autoFunded.current === wallet.address) return;
     autoFunded.current = wallet.address;
     api.devFund(wallet.address).then(() => refreshPockets()).catch(() => { autoFunded.current = ""; });
   }, [dev, wallet, balances, refreshPockets]);
@@ -373,7 +374,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (forcedSeen.current.has(String(e.tx))) continue;
       forcedSeen.current.add(String(e.tx));
       const name = meta[String(e.pocket).toLowerCase()]?.name ?? "your pocket";
-      if (e.reverted) { let a = 0n; try { a = BigInt(e.amount ?? 0); } catch { /* shown without an amount */ } notify(a > 0n ? `Blocked a US$${usd(a)} transfer` : `Blocked a transfer out of ${name}`); haptic.warning(); }
+      if (e.reverted) { let a = 0n; try { a = BigInt(e.amount ?? 0); } catch { /* shown without an amount */ } notify(a > 0n ? `Blocked a ${curSign()}${hkd(a)} transfer` : `Blocked a transfer out of ${name}`); haptic.warning(); }
     }
   }, [myEvents, events.length, meta]);
   const pending = useMemo(() => livePending(myEvents, { pendingIds }).filter((a) => !answered.has(a.id)), [myEvents, pendingIds, answered]);
@@ -440,7 +441,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return r;
   }, []);
 
-  /** Co-sign the exact USDC TransferWithAuthorization the wallet tool layer built, then POST it. */
+  /** Co-sign the exact eHKD TransferWithAuthorization the wallet tool layer built, then POST it. */
   const signApprove = useCallback(async (a: Approval): Promise<api.ApprovalAnswer> => {
     if (!wallet) return { ok: false, error: "NO_KEY" };
     const auth = authOf(a);
@@ -477,7 +478,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (agent === "chainbrain" || a.kind === "question" || notified.current.has(a.id)) continue;
       notified.current.add(a.id);
       const name = agentInfo(agent)?.name ?? "An agent";
-      const title = a.kind === "payment" ? `${name} asks to pay${a.data?.amount ? ` US$${cleanText(String(a.data.amount), 10)}` : ""}` : `${name} has a task for you`;
+      const title = a.kind === "payment" ? `${name} asks to pay${a.data?.amount ? ` ${curSign()}${cleanText(String(a.data.amount), 10)}` : ""}` : `${name} has a task for you`;
       const body = a.kind === "payment" ? `To ${cleanText(sellerName(a.data?.sellerId), 40)}. It needs your co-signature.` : cleanText(a.text ?? "Confirm it before it starts.", 120);
       void notifyAsk(a.id, title, body);
     }
@@ -534,7 +535,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const newKey = useCallback(async () => { setPk(await createKey()); }, []);
   const setSource = useCallback(async (s: Source) => {
     resetConfig(); setCfg(null); setConn("connecting"); setPocketsLoaded(false); setBalances(null); setViews({}); setAnswered(new Set()); setTurnsBy({});
-    // nothing from the other network may linger on screen (a stale notice could link its hash to BaseScan)
+    // nothing from the other network may linger on screen (a stale notice could link its hash to the server explorer)
     setNotice(null); setReceipt(null); setAction(null); setRules(null); setApprovalOpen(false); setQuestionOpen(false); setPickerOpen(false); forcedSeen.current = null;
     setExplorerTx(null); autoplayRef.current?.stop();
     setRuntimeSource(s);

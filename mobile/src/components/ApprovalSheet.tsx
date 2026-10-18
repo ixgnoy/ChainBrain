@@ -1,7 +1,7 @@
 // Owner approvals. A payment above the ask-me threshold is drawn as a cheque (components/Cheque.tsx): who asks and why you
 // are asked (the rule that triggered it) with the countdown, then the pocket's card turning over to the cheque (pay, to, for,
 // what is left after), the wallet's other checks (Radar's seller check, the paying pocket), the agent's own note set apart as
-// unchecked words, and the details. Slide to co-sign, then Face ID: the phone signs the exact USDC
+// unchecked words, and the details. Slide to co-sign, then Face ID: the phone signs the exact eHKD
 // TransferWithAuthorization the wallet built (POST /api/approvals/:id {approved, signature}). Intent: confirm the
 // fixed-template task card.
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -29,12 +29,13 @@ import { toneFor } from "./PocketFace";
 import { biometricKind, confirmOwner, type OwnerCheck } from "../lib/biometric";
 import { askNotifyPermission, notifyPermission, type NotifyPermission } from "../lib/notify";
 import { NEVER } from "../lib/shared";
-import { parseUsd } from "../lib/shared";
-import { contractTail, usd, shortAddr } from "../lib/util";
+import { parseHkd } from "../lib/shared";
+import { contractTail, hkd, shortAddr } from "../lib/util";
 import { IntentCard, parseIntent } from "./IntentCard";
 import { SheetSuccess } from "./SheetSuccess";
 import { notify as toast } from "../lib/toast";
 import { ErrorNote } from "./ErrorNote";
+import { curSign } from "../lib/runtime";
 
 export function describeApprovalError(code: string): string {
   switch (code) {
@@ -52,8 +53,8 @@ export function describeApprovalError(code: string): string {
   }
 }
 /** Below this, a co-sign is one press plus Face ID; at or above it, slide first. */
-const QUICK_MAX = 5_000_000n; // US$5.00 in USDC units
-const safeUsd = (s: unknown) => { try { return typeof s === "string" ? usd(parseUsd(s)) : null; } catch { return null; } };
+const QUICK_MAX = 40_000_000n; // HK$40.00 in eHKD units
+const safeHkd = (s: unknown) => { try { return typeof s === "string" ? hkd(parseHkd(s)) : null; } catch { return null; } };
 
 export function ApprovalSheet() {
   const { pending, approvalOpen, setApprovalOpen, approvalFocus } = useApp();
@@ -98,10 +99,10 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const risky = !!radar && radar.verdict !== "ok";
   const owned = pocket ? pocket.owned : true;
   const seller = cleanText(sellerName(a.data?.sellerId), 60);
-  const amount = safeUsd(a.data?.amount);
+  const amount = safeHkd(a.data?.amount);
   const limitText = !pocket || pocket.askAbove === NEVER ? "Above your ask-me limit"
     : pocket.askAbove === 0n ? "This pocket asks about every payment"
-    : `Above your US$${usd(pocket.askAbove)} ask-me limit`;
+    : `Above your ${curSign()}${hkd(pocket.askAbove)} ask-me limit`;
   const item = cleanText(cfg?.sellers.find((x) => x.id === a.data?.sellerId)?.items.find((i) => i.sku === a.data?.sku)?.description ?? a.data?.description, 120) || "Seller payment";
 
   const [cardW, setCardW] = useState(0);
@@ -111,7 +112,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const [notify, setNotify] = useState<NotifyPermission>("unsupported");
   useEffect(() => { void notifyPermission().then(setNotify); }, []);
   const outside = (a.agent ?? "chainbrain") !== "chainbrain";
-  const amountUnits = (() => { try { return typeof a.data?.amount === "string" ? parseUsd(a.data.amount) : null; } catch { return null; } })();
+  const amountUnits = (() => { try { return typeof a.data?.amount === "string" ? parseHkd(a.data.amount) : null; } catch { return null; } })();
   // why the wallet asks (server/src/wallet/tools.ts): over the ask-me limit, a Sentinel hold (until the owner co-signs), or
   // Radar wanting a review of the seller; the last two can ask about a payment under the limit
   const overLimit = !pocket || amountUnits == null || pocket.askAbove === 0n || (pocket.askAbove !== NEVER && amountUnits > pocket.askAbove);
@@ -123,12 +124,12 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   }, [events, pocket]);
   // a routine run past its period allowance (shared/sim/world.ts runRoutine): the runner asks, not the contract
   const allowance = a.data?.allowance as { period: string; allowance: string; spent: string; after: string; run: number } | undefined;
-  const why = allowance ? `Run ${allowance.run} would pass this ${allowance.period}'s US$${allowance.allowance}` : overLimit ? limitText : held ? "The Sentinel wants your OK on this payment" : risky ? "Radar wants your OK on this seller" : limitText;
+  const why = allowance ? `Run ${allowance.run} would pass this ${allowance.period}'s ${curSign()}${allowance.allowance}` : overLimit ? limitText : held ? "The Sentinel wants your OK on this payment" : risky ? "Radar wants your OK on this seller" : limitText;
   const whyCode = !overLimit && held ? "SENTINEL_HOLD" : risky ? "COUNTERPARTY_REVIEW" : "NEEDS_OWNER_APPROVAL";
 
-  // "Claude pays Nansen US$0.05 from Market news. US$0.362 stays in the pocket."
+  // "Claude pays Nansen HK$0.40 from Market news. HK$2.896 stays in the pocket."
   const left = pocket && amountUnits != null && pocket.balance >= amountUnits ? pocket.balance - amountUnits : null;
-  const moneyLine = `${who} pays ${seller} US$${amount ?? "?"}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}.${left != null ? ` US$${usd(left)} stays in the pocket.` : ""}`;
+  const moneyLine = `${who} pays ${seller} ${curSign()}${amount ?? "?"}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}.${left != null ? ` ${curSign()}${hkd(left)} stays in the pocket.` : ""}`;
   const until = auth ? new Date(Number(auth.validBefore) * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : null;
 
   // small payments: Face ID alone signs (it is the deliberate act); large ones keep the slide first, then Face ID. Without
@@ -139,7 +140,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
   const approve = async () => {
     setError(null);
     // the slide says "I mean it"; Face ID says "it's me"
-    const me = await confirmOwner(`Co-sign US$${amount ?? ""} to ${seller}`);
+    const me = await confirmOwner(`Co-sign ${curSign()}${amount ?? ""} to ${seller}`);
     if (me === "cancel") { setError(`Nothing was signed: ${bio ?? "Face ID"} didn't confirm it's you.`); throw new Error("BIOMETRIC"); }
     hold(true);
     const r = await signApprove(a);
@@ -173,7 +174,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
     if (row) setReceipt(row); else router.navigate("/activity");
   };
   if (phase === "success") {
-    return <SheetSuccess minHeight={formH.current} title={`Paid US$${amount ?? "?"}`} sub={`To ${seller}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}`} action={{ label: "View receipt", onPress: viewReceipt }} />;
+    return <SheetSuccess minHeight={formH.current} title={`Paid ${curSign()}${amount ?? "?"}`} sub={`To ${seller}${pocket ? ` from ${cleanText(pocket.name, 30)}` : ""}`} action={{ label: "View receipt", onPress: viewReceipt }} />;
   }
   return (
     <Animated.View style={{ flexShrink: 1 }} onLayout={(e) => { formH.current = e.nativeEvent.layout.height; }}>
@@ -197,7 +198,7 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
                 <ChequeCard pocket={pocket} tone={toneFor(pockets, pocket.address)} width={cardW} amount={amountUnits} seller={seller} sellerId={a.data?.sellerId} item={item} until={auth ? Number(auth.validBefore) : undefined} />
               ) : !pocket ? (
                 <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                  <T v="balance" accessibilityLabel={`US$${amount ?? "unknown"}`}>US${amount ?? "?"}</T>
+                  <T v="balance" accessibilityLabel={`${curSign()}${amount ?? "unknown"}`}>{curSign()}{amount ?? "?"}</T>
                   <T v="section" color="ink2" numberOfLines={1}>to {seller}</T>
                 </View>
               ) : null}
@@ -268,10 +269,10 @@ function Body({ a, queue, hold }: { a: Approval; queue: number; hold: (b: boolea
               {quick ? (
                 // one press, Face ID confirms it is you, then the phone signs exactly this payment (Face ID gates the app's use of
                 // the key; the key itself is not locked behind it)
-                <Button label={`Approve US$${amount ?? ""} with ${bio}`} icon={bio === "Face ID" ? "faceId" : bio === "your passcode" ? "lock" : "fingerprint"} auto="approval.slide" loading={signing} disabled={busy || expired}
+                <Button label={`Approve ${curSign()}${amount ?? ""} with ${bio}`} icon={bio === "Face ID" ? "faceId" : bio === "your passcode" ? "lock" : "fingerprint"} auto="approval.slide" loading={signing} disabled={busy || expired}
                   onPress={async () => { setSigning(true); try { await approve(); setPhase("success"); } catch { /* the error note says why */ } finally { setSigning(false); } }} />
               ) : (
-                <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label={`Slide to approve US$${amount ?? ""}`} doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
+                <SlideToConfirm key={a.id + (error ?? "")} auto="approval.slide" label={`Slide to approve ${curSign()}${amount ?? ""}`} doneLabel="Approved" onConfirm={approve} onDone={() => setPhase("success")} disabled={busy || expired} />
               )}
               <Button label="Decline" kind="text" onPress={decline} loading={busy} />
               <T v="cap" color="muted" style={{ textAlign: "center" }}>{bio
@@ -302,10 +303,10 @@ function AllowanceStrip({ period, allowance, spent, after, amount }: { period: s
   const scale = Math.max(af, lim) || 1;
   return (
     <View style={{ gap: 10, padding: 14, borderRadius: 16, backgroundColor: c.fill }} accessible
-      accessibilityLabel={`This ${period}: US$${spent} spent, plus this US$${amount}, makes US$${after}, past your US$${allowance} a ${period}`}>
+      accessibilityLabel={`This ${period}: ${curSign()}${spent} spent, plus this ${curSign()}${amount}, makes ${curSign()}${after}, past your ${curSign()}${allowance} a ${period}`}>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <T v="tab" color="muted" style={{ textTransform: "uppercase", letterSpacing: 1 }}>{`This ${period}`}</T>
-        <T v="cap" w="bold">{`US$${after} of US$${allowance}`}</T>
+        <T v="cap" w="bold">{`${curSign()}${after} of ${curSign()}${allowance}`}</T>
       </View>
       <View style={{ height: 14, borderRadius: 5, backgroundColor: c.card, flexDirection: "row", overflow: "hidden" }}>
         <View style={{ width: `${(sp / scale) * 100}%`, backgroundColor: c.ink }} />
@@ -314,7 +315,7 @@ function AllowanceStrip({ period, allowance, spent, after, amount }: { period: s
       <View style={{ position: "absolute", left: 14 + 0, right: 14, top: 38, height: 22 }} pointerEvents="none">
         <View style={{ position: "absolute", left: `${(lim / scale) * 100}%`, width: 2, height: 22, marginLeft: -1, backgroundColor: c.ink }} />
       </View>
-      <T v="cap" color="ink2">{`US$${spent} spent + US$${amount} now. Your routine runs on its own up to US$${allowance} a ${period}; this one needs you.`}</T>
+      <T v="cap" color="ink2">{`${curSign()}${spent} spent + ${curSign()}${amount} now. Your routine runs on its own up to ${curSign()}${allowance} a ${period}; this one needs you.`}</T>
     </View>
   );
 }

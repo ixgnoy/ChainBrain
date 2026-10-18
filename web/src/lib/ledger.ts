@@ -2,7 +2,7 @@
 // Refusal events exist only when the agent actually calls `pay`; a seller refused at get_quote time shows its reason
 // only inside the tool result (api spec quirk 7), so those are added here as source "quote".
 import { approvalStates, samePocket, type WalletEvent } from "./events";
-import { parseUsd } from "../shared";
+import { parseHkd } from "../shared";
 
 export type LedgerRow = {
   key: string; at: number; pocket: string; sellerId: string; sku: string; amount?: bigint;
@@ -33,7 +33,7 @@ export function buildLedger(events: WalletEvent[]): LedgerRow[] {
       const dup = refusalEvents.some((r) => samePocket(r.pocket, pocket) && r.sellerId === e.result.sellerId && r.sku === e.result.sku && reasons.includes(r.reason) && r.at >= e.at && r.at - e.at < QUOTE_DEDUPE_MS);
       if (dup) return;
       let amount: bigint | undefined;
-      try { amount = parseUsd(String(e.result.price)); } catch { amount = undefined; }
+      try { amount = parseHkd(String(e.result.price)); } catch { amount = undefined; }
       rows.push({ key: `q-${i}-${e.at}`, at: e.at, pocket, sellerId: String(e.result.sellerId ?? ""), sku: String(e.result.sku ?? ""), amount, outcome: "refused", source: "quote", reasons, task: taskFor(pocket, e.at) });
     }
   });

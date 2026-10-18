@@ -7,7 +7,7 @@ import { GATES, attackBoard, type Attempt } from "@sim/checks";
 import { useNetwork } from "./useNetwork";
 import { playScene } from "./play";
 import { GateStrip } from "./ChecksPath";
-import { TxHash, PhoneTag, usd } from "./parts";
+import { TxHash, PhoneTag, hkd } from "./parts";
 import { ARENA_KEYS, CARDS, ESCALATION_TEXT, EXTRACTION_TEXT, INJECTION_TEXT, arenaVerdict, arrivedSince, baseline, boardLine, movedSince, ruleShot, type ArenaCard, type ArenaKey, type RuleShot } from "./arenaRules";
 import { Button, Card, PillSelect } from "../seller/ui";
 import { cn } from "../lib/cn";
@@ -112,7 +112,7 @@ export function Arena({ aim, setAim, watch }: { aim: string; setAim(a: string): 
       <Scoreboard attempts={attempts} />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <span className="text-[15px] font-bold tracking-[-0.01em]">Attack this pocket</span>
-        <PillSelect tone="fill" className="min-w-[240px]" label="Pocket to attack" value={aim} onChange={setAim} shown={aim ? <>{nameOf(aim)}{isPhone(aim) && <PhoneTag />}</> : "No pocket"}>{names.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {usd(p.balance)}</option>)}</PillSelect>
+        <PillSelect tone="fill" className="min-w-[240px]" label="Pocket to attack" value={aim} onChange={setAim} shown={aim ? <>{nameOf(aim)}{isPhone(aim) && <PhoneTag />}</> : "No pocket"}>{names.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {hkd(p.balance)}</option>)}</PillSelect>
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {cards.map((c) => {

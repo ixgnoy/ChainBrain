@@ -12,13 +12,14 @@ import { T } from "../ui/Text";
 import { Icon } from "../ui/Icon";
 import { AgentAvatar } from "../ui/AgentAvatar";
 import { activityLine, ago, type AgentView } from "../lib/agents";
-import { usd } from "../lib/util";
+import { hkd } from "../lib/util";
 import { cleanText } from "../lib/sanitize";
 import { useApp, type Pocket } from "../store";
 import { PocketFace, cardHeight, toneFor } from "./PocketFace";
 import { byUsage, jobLine } from "./WalletHome";
 import { startFlight } from "../ui/cardFlight";
 import * as api from "../lib/api";
+import { curSign, tokenSymbol } from "../lib/runtime";
 
 const DOT = { live: c.green, idle: c.faint, off: c.faint, wait: c.blue } as const;
 const GAP = 12;
@@ -31,7 +32,7 @@ export function AgentCard({ a, busy }: { a: AgentView; busy?: boolean }) {
   const total = a.spent + a.balance;
   const name = a.kind === "builtin" ? "ChainBrain" : a.name;
   const since = a.kind === "builtin" ? "Built into ChainBrain" : off ? `Disconnected ${a.disconnectedAt ? ago(a.disconnectedAt) : ""}`.trim() : a.connectedAt ? `Connected ${ago(a.connectedAt)}` : "Connected";
-  const status = total > 0n && (line.tone === "idle" || line.tone === "off") ? `${a.payments} paid · US$${usd(a.spent)} · ${line.text.replace(/^Last active /, "")}` : line.text;
+  const status = total > 0n && (line.tone === "idle" || line.tone === "off") ? `${a.payments} paid · ${curSign()}${hkd(a.spent)} · ${line.text.replace(/^Last active /, "")}` : line.text;
   const open = () => router.push({ pathname: "/agents/[id]", params: { id: a.id } });
   return (
     <View style={{ opacity: off ? 0.6 : 1 }}>
@@ -127,7 +128,7 @@ function AgentPocket({ p, w, tone, job }: { p: Pocket; w: number; tone: number; 
   };
   return (
     <View ref={ref} collapsable={false}>
-      <Press kind="row" haptics="light" scale={0.98} onPress={open} accessibilityRole="button" accessibilityLabel={`${cleanText(p.name, 30)}, ${usd(p.balance)} USDC${p.revoked ? ", revoked" : ""}${job ? `. ${job}` : ""}. Opens the pocket`}>
+      <Press kind="row" haptics="light" scale={0.98} onPress={open} accessibilityRole="button" accessibilityLabel={`${cleanText(p.name, 30)}, ${hkd(p.balance)} ${tokenSymbol()}${p.revoked ? ", revoked" : ""}${job ? `. ${job}` : ""}. Opens the pocket`}>
         <PocketFace pocket={p} width={w} tone={tone} job={job} still />
       </Press>
     </View>

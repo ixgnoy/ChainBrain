@@ -7,7 +7,8 @@ import { recoverTypedDataAddress, type Address, type Hex } from "viem";
 import type Anthropic from "@anthropic-ai/sdk";
 import { sse, bus, toJson } from "./wallet/events";
 import { approvals } from "./wallet/approvals";
-import { pocket, factoryAddress, pocketAbi, factoryAbi, erc20Abi, USDC } from "./wallet/chain";
+import { pocket, pub, factoryAddress, pocketAbi, factoryAbi, erc20Abi } from "./wallet/chain";
+import { cfg } from "./chains";
 import { transferTypedData } from "./wallet/scheme";
 import { directory } from "./wallet/directory";
 import { agentAccount } from "./wallet/pay";
@@ -22,8 +23,18 @@ import { reflect, type ReflectModel } from "./brain/reflect";
 import { trimHistory } from "./brain/window";
 import { composeApp } from "./pocketApp/compose";
 import { compileRules, type RulesModel } from "./rules/compile";
+import { explorerRoutes } from "./explorer";
+import { faucetRoutes } from "./faucet";
 
 type Msg = Anthropic.Beta.Messages.BetaMessageParam;
+
+/** What the apps need to sign and link: never keys. */
+export const chainInfo = () => {
+  const c = cfg();
+  // The server's own RPC URL can carry a provider API key: the apps get PUBLIC_RPC_URL or the chain's public default.
+  const rpc = process.env.PUBLIC_RPC_URL || c.chain.rpcUrls.default.http[0];
+  return { key: c.key, id: c.chain.id, name: c.chain.name, rpc, network: c.network, domain: c.domain, currency: c.currency, txUrl: c.txUrl("") };
+};
 
 /** Wallet tool layer + agent API for the app. The LLM only ever reaches the tools; keys stay in this process. */
 export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryModel?: ReflectModel; rulesModel?: RulesModel; /** pocket apps: compose_pocket_app (defaults to rulesModel) */ pocketAppModel?: RulesModel } = {}) {
@@ -45,9 +56,19 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
   });
   app.get("/api/config", async (c) =>
     c.json({
-      agent: agentAccount().address, factory: factoryAddress(), usdc: USDC, sellersUrl: process.env.SELLERS_URL ?? "http://localhost:4021",
+      agent: agentAccount().address, factory: factoryAddress(), token: cfg().token, chain: chainInfo(), sellersUrl: process.env.SELLERS_URL ?? "http://localhost:4021",
       sellers: await directory(), abis: { pocket: pocketAbi, factory: factoryAbi, erc20: erc20Abi },
     }));
+  // FISCO has no public explorer: the apps link here for a receipt.
+  app.get("/api/tx/:hash", async (c) => {
+    const hash = c.req.param("hash");
+    if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return c.json({ error: "BAD_HASH" }, 400);
+    const rc = await pub().getTransactionReceipt({ hash: hash as Hex }).catch(() => undefined);
+    if (!rc) return c.json({ error: "NOT_FOUND" }, 404);
+    return c.body(toJson({ chain: cfg().key, chainId: cfg().chain.id, hash, status: rc.status, blockNumber: rc.blockNumber, from: rc.from, to: rc.to, logs: rc.logs.length }), 200, { "content-type": "application/json" });
+  });
+  app.route("/", explorerRoutes()); // /explorer page + /api/explorer/* (read-only)
+  app.route("/", faucetRoutes()); // /faucet page + POST /api/faucet (Mock e-HKD, FISCO only)
   app.get("/api/pending", (c) => c.json(approvals.pending(c.req.query("pocket") ?? "")));
 
   app.post("/api/approvals/:id", async (c) => {
@@ -106,7 +127,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT ?? 8787);
   serve({ fetch: apiApp().fetch, port });
   startMonitor();
-  // ghost transfers: USDC that left a pocket (seen by Radar's transfer index) with no payment event, not back to the owner
+  // ghost transfers: eHKD that left a pocket (seen by Radar's transfer index) with no payment event, not back to the owner
   startSentinel({
     ghosts: async (p, paid) => {
       const owner = (await pocket(p).info()).owner.toLowerCase();

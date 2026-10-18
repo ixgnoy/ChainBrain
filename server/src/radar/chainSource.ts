@@ -1,16 +1,17 @@
 import { parseAbiItem } from "viem";
-import { pub, USDC } from "../wallet/chain";
+import { pub } from "../wallet/chain";
+import { cfg } from "../chains";
 import type { Transfer, TransferSource } from "./exposure";
 
 const TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
-// sepolia.base.org answers eth_getLogs for at most 200 blocks per call
+// public RPCs often cap eth_getLogs at a few hundred blocks per call
 const STEP = BigInt(process.env.RADAR_LOG_STEP ?? 200);
 // ponytail: back-fill only this many recent blocks at start (~1 h on Base); a hosted indexer would give full history.
 const BACKFILL = BigInt(process.env.RADAR_BACKFILL_BLOCKS ?? 1_800);
 const MAX_TRANSFERS = 200_000;
 
 /**
- * Radar's own index of USDC transfers, so tracing never depends on an RPC's log-range limit.
+ * Radar's own index of eHKD transfers, so tracing never depends on an RPC's log-range limit.
  * Back-fills recent blocks once, then each read first pulls any new blocks (one in-flight sync at a time).
  */
 const byTo = new Map<string, Transfer[]>();
@@ -34,7 +35,7 @@ async function pull(): Promise<void> {
   while (at <= latest) {
     const to: bigint = at + STEP - 1n < latest ? at + STEP - 1n : latest;
     try {
-      const ls = await pub().getLogs({ address: USDC, event: TRANSFER, fromBlock: at, toBlock: to });
+      const ls = await pub().getLogs({ address: cfg().token, event: TRANSFER, fromBlock: at, toBlock: to });
       for (const l of ls) add({ from: l.args.from!, to: l.args.to!, value: l.args.value!, tx: l.transactionHash!, block: l.blockNumber! });
     } catch {
       gaps++; // a skipped range: screens report themselves partial from now on

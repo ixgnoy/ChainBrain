@@ -1,31 +1,30 @@
 # ChainBrain in one page
-Last updated: 2026-10-14
+Last updated: 2026-10-17
 
 > **Status (14 Oct, v2):** rewritten for the team's [Prelim Product Spec v2](../02-product/product-design.md) (consumer wallet). The 13 Oct version described a seller trust layer with seven guards. That design is now a finals roadmap item. The older text is in git history (commit 42a41f2).
 
 ## In one minute
 
 - **ChainBrain (链AI脑)** is a consumer wallet where you open **pockets** for your AI agent. Pitch line: **Give your AI a pocket, not your wallet.**
-- A pocket is a small smart contract that holds its own USDC and its own rules. The agent spends from it on-chain by itself over x402. The pocket checks every payment, so even a hijacked agent can lose at most the pocket's balance, and only to sellers the owner approved.
-- **Entry:** FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Chain: Base Sepolia testnet, test USDC.
-- **Prelim scope:** main wallet, pockets, an in-house agent that plans and pays, and defences against the four attacks the scoring names. On top, an **AI brain** of ten features (Radar, Sentinel, memory, Speak your rules, Pre-flight, the haggler and more) that only ever tightens what the agent may do ([ai-brain.md](../ai-brain.md), 16 Oct). **Finals roadmap (not in the prelim demo):** seller trust layer, attested seller categories, reputation, bring-your-own-agent, the pocket on FISCO BCOS (planned), production money, privacy.
-- **Status:** built and tested locally; live on-chain run, deck, video and submission are still to do. See [status and plan](status-and-plan.md).
-- **Do first:** ask the organisers whether testnet hashes count; run the live gate; fund the demo wallets.
+- A pocket is a small smart contract that holds its own Mock e-HKD (eHKD) and its own rules. The agent spends from it on-chain by itself over x402. The pocket checks every payment, so even a hijacked agent can lose at most the pocket's balance, and only to sellers the owner approved.
+- **Entry:** FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Chain: FISCO BCOS 3.16.4 (chain id 20200), with a Mock e-HKD test token. Mock e-HKD is not the HKMA e-HKD and is not money.
+- **Prelim scope:** main wallet, pockets, an in-house agent that plans and pays, and defences against the four attacks the scoring names. On top, an **AI brain** of ten features (Radar, Sentinel, memory, Speak your rules, Pre-flight, the haggler and more) that only ever tightens what the agent may do ([ai-brain.md](../ai-brain.md), 16 Oct). **Finals roadmap (not in the prelim demo):** seller trust layer, attested seller categories, reputation, bring-your-own-agent, production money, privacy.
+- **Status:** built and tested on FISCO BCOS, locally and on Railway ([evidence](../evidence-fisco.md)); deck, video and submission are still to do. See [status and plan](status-and-plan.md).
+- **Do first:** ask the organisers whether hashes from a team-hosted FISCO chain count; rehearse the demo on the Railway stack.
 
 ## Plain-English words (defined once)
 
 | Word | Meaning |
 | --- | --- |
 | Agent | An AI program that acts for a person, such as buying a data report |
-| Pocket | A small contract wallet (ERC-1271) holding USDC for one agent, with rules: allowed sellers, per-payment cap, ask-me threshold, expiry, revoke |
+| Pocket | A small contract wallet (ERC-1271) holding Mock e-HKD for one agent, with rules: allowed sellers, per-payment cap, ask-me threshold, expiry, revoke |
 | Ask me above | Payments over this amount also need the owner's signature. 0 means ask every time |
 | x402 | A way for websites to say "pay first" (HTTP 402) and take a payment inside the same web request |
-| USDC | A US-dollar token. On the test network it is free test money |
+| Mock e-HKD (eHKD) | Our test token in Hong Kong dollars (6 decimals, EIP-3009). Free test money, not the HKMA e-HKD |
 | Wallet tool layer | The server code that holds the agent key and signs only in-rule payments. The AI model never sees a key |
 | Intent | What the owner confirmed the agent may buy: item, max price, quantity, deadline. Shown from a fixed template, not AI wording |
 | Reason code | A short refusal reason (for example `SELLER_NOT_ALLOWED`) the agent reads and re-plans from |
-| Base Sepolia | A public test blockchain where the demo transactions live |
-| FISCO BCOS | WeBank's blockchain. Planned for finals only |
+| FISCO BCOS | WeBank's blockchain. The demo transactions live on a FISCO BCOS 3.16.4 node (chain id 20200) |
 
 ## The story
 
@@ -39,11 +38,11 @@ Last updated: 2026-10-14
 
 > **16 Oct:** the built-in network now uses real x402 providers (Exa, CoinGecko, Nansen) and scenes 9 (Radar), 10 (Sentinel) and 11 (haggler); the current table is in the [README](../../README.md) "Demo scenes". The list below is the 14 Oct v2 core.
 
-Four test sellers, all stock x402 endpoints: DataLite (US$0.30 and US$0.35), DataPro (US$1.50), Harbour Wines (US$0.40, not allowed), ShadyFeed (free preview, the attacker).
+Four test sellers, all stock x402 endpoints: DataLite (HK$2.30 and HK$2.70), DataPro (HK$11.70), Harbour Wines (HK$3.10, not allowed), ShadyFeed (free preview, the attacker).
 
-1. Create and fund the Research pocket (US$5, cap US$2, ask above US$1); one sentence; one clarifying question; intent card.
-2. Agent buys DataLite's report (US$0.30).
-3. DataPro's report (US$1.50) is above ask-me; the owner co-signs on web or phone.
+1. Create and fund the Research pocket (HK$40, cap HK$15, ask above HK$8); one sentence; one clarifying question; intent card.
+2. Agent buys DataLite's report (HK$2.30).
+3. DataPro's report (HK$11.70) is above ask-me; the owner co-signs on web or phone.
 4. Harbour Wines is refused (`SELLER_NOT_ALLOWED`); the agent re-plans to DataLite.
 5. Injection ignored; a forced transfer reverts on-chain; judges can type their own attack in the red-team box.
 6. ShadyFeed asks for personal data and an "approval" signature; refused.
@@ -52,13 +51,12 @@ Four test sellers, all stock x402 endpoints: DataLite (US$0.30 and US$0.35), Dat
 
 ## What is real and what is simulated
 
-| Real (on Base Sepolia, locally verified on a fork) | Simulated or not yet proven |
+| Real (on FISCO BCOS, chain 20200) | Simulated or not yet proven |
 | --- | --- |
 | Pocket contract rules, x402 payments, revoke, owner co-sign | Sellers (four demo endpoints from one template) |
-| Agent loop re-planning from reason codes | Money (test USDC; not a licensed Hong Kong token) |
-| Web, Expo and native Android owner apps | Live public-facilitator run and live tx hashes (pending, [evidence](../evidence.md)) |
+| Agent loop re-planning from reason codes | Money (Mock e-HKD; not a licensed Hong Kong token) |
+| Web, Expo and native Android owner apps | The chain is team-hosted (a local node and one on Railway), not a public network |
 | | Real-model run of scenes 1-8 (needs an API key; replay mode verified) |
-| | FISCO BCOS: planned, not built |
 
 Budget means the pocket's balance, not a running counter.
 
@@ -70,8 +68,8 @@ Budget means the pocket's balance, not a running counter.
 
 ## Open questions
 
-See [open questions](open-questions.md). The biggest: do testnet hashes count for Topic F?
+See [open questions](open-questions.md). The biggest: do hashes from a team-hosted FISCO chain count for Topic F?
 
 ## Sources
 
-- [Spec v2](../02-product/product-design.md), [technical document](../technical-document.md), [security self-assessment](../security-self-assessment.md), [evidence](../evidence.md), [README](../../README.md). Read 2026-10-14.
+- [Spec v2](../02-product/product-design.md), [technical document](../technical-document.md), [security self-assessment](../security-self-assessment.md), [FISCO evidence](../evidence-fisco.md), [README](../../README.md). Read 2026-10-17.

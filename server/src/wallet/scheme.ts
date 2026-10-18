@@ -1,6 +1,5 @@
 import { encodeAbiParameters, getAddress, keccak256, type Address, type Hex, type LocalAccount } from "viem";
-import { ExactEvmScheme } from "@x402/evm";
-import { USDC } from "./chain";
+import { cfg } from "../chains";
 import type { Reason } from "./reasons";
 
 export class CbError extends Error {
@@ -31,7 +30,7 @@ export function buildAuthorization(pocket: Address, to: Address, value: bigint, 
 
 /** The exact typed data the agent key signs, and the owner co-signs above the ask-me threshold. */
 export const transferTypedData = (a: Authorization) => ({
-  domain: { name: "USDC", version: "2", chainId: 84532, verifyingContract: USDC },
+  domain: { ...cfg().domain, chainId: cfg().chain.id, verifyingContract: cfg().token },
   types: TYPES,
   primaryType: "TransferWithAuthorization" as const,
   message: { from: a.from, to: a.to, value: BigInt(a.value), validAfter: BigInt(a.validAfter), validBefore: BigInt(a.validBefore), nonce: a.nonce },
@@ -50,15 +49,12 @@ export const envelope = (a: Authorization, agentSig: Hex, ownerSig: Hex) =>
  */
 export class PocketScheme {
   scheme = "exact";
-  // keeps @x402/fetch spend controls on (default asset = USDC only); without it every requirement is rejected
-  findDefaultAsset = (new ExactEvmScheme({} as any) as any).findDefaultAsset;
-
   constructor(private o: { auth: Authorization; agent: LocalAccount; ownerSig: Hex }) {}
 
   async createPaymentPayload(x402Version: number, req: any) {
     const a = this.o.auth;
     if ((req.extra?.assetTransferMethod ?? "eip3009") !== "eip3009") throw new CbError("SIGNATURE_TYPE_NOT_ALLOWED", "seller asked for permit2");
-    if (req.network !== "eip155:84532" || getAddress(req.asset) !== getAddress(USDC)) throw new CbError("QUOTE_MISMATCH", "asset or network changed");
+    if (req.network !== cfg().network || getAddress(req.asset) !== getAddress(cfg().token)) throw new CbError("QUOTE_MISMATCH", "asset or network changed");
     if (getAddress(req.payTo) !== a.to || String(req.amount) !== a.value) throw new CbError("QUOTE_MISMATCH", `402 now asks ${req.amount} to ${req.payTo}`);
     const agentSig = await this.o.agent.signTypedData(transferTypedData(a));
     return { x402Version, payload: { authorization: a, signature: envelope(a, agentSig, this.o.ownerSig) } };

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createWorld, seedOwner, SIM_AGENT, CLAUDE_AGENT, CATALOG, parseUsd, NEVER, factsFrom, sellerName, errand, firstRun, type Hex } from "../../../shared/sim";
+import { createWorld, seedOwner, SIM_AGENT, CLAUDE_AGENT, CATALOG, parseHkd, NEVER, factsFrom, sellerName, errand, firstRun, type Hex } from "../../../shared/sim";
 import { createAutoplay, type HostState } from "./autoplay";
 import { registerTarget, resetTargets, autoplayRunning, typeOut, type TargetName } from "./autoplayTargets";
 
@@ -29,8 +29,8 @@ test("auto-play: wizard, scenes 1-11, Claude via Connect and the ask dock, then 
   on("compose.text", ({ text }) => { composed = w.composeApp(text); assert.equal(composed.spec.layout, "research"); assert.ok(composed.spec.routine); });
   on("compose.create", () => {
     const d = composed.draft;
-    const { pocket } = w.chain.createPocket(OWNER, { agent: SIM_AGENT, cap: parseUsd(d.cap), askAbove: NEVER, expiresAt: BigInt(Math.floor(Date.now() / 1000) + 365 * 86_400), sellers: payTo(...d.sellers) });
-    w.chain.transfer(OWNER, pocket, parseUsd(d.budget));
+    const { pocket } = w.chain.createPocket(OWNER, { agent: SIM_AGENT, cap: parseHkd(d.cap), askAbove: NEVER, expiresAt: BigInt(Math.floor(Date.now() / 1000) + 365 * 86_400), sellers: payTo(...d.sellers) });
+    w.chain.transfer(OWNER, pocket, parseHkd(d.budget));
     w.setRoutine(pocket, composed.spec.routine);
     active = routinePocket = pocket;
   });
@@ -38,14 +38,14 @@ test("auto-play: wizard, scenes 1-11, Claude via Connect and the ask dock, then 
   on("routine.runNow", () => { void w.runRoutineNow(active); });
   on("wizard.preset", (p) => assert.equal(p, "research"));
   on("wizard.continue", () => { if (++continues === 1) on("wizard.create", async () => { // a preset goes straight to Review
-    const { pocket } = w.chain.createPocket(OWNER, { agent: SIM_AGENT, cap: parseUsd("0.05"), askAbove: parseUsd("0.02"), expiresAt: BigInt(Math.floor(Date.now() / 1000) + 6 * 3600), sellers: payTo("exa", "coingecko", "nansen") });
-    w.chain.transfer(OWNER, pocket, parseUsd("1"));
+    const { pocket } = w.chain.createPocket(OWNER, { agent: SIM_AGENT, cap: parseHkd("0.40"), askAbove: parseHkd("0.16"), expiresAt: BigInt(Math.floor(Date.now() / 1000) + 6 * 3600), sellers: payTo("exa", "coingecko", "nansen") });
+    w.chain.transfer(OWNER, pocket, parseHkd("8"));
     active = created = pocket;
   }); });
   on("wizard.open", () => {});
   let typed = "";
   on("composer", async ({ text }) => { await typeOut(text, (s) => { typed = s; }, { sleep: async () => {} }); void w.chat(active, typed); });
-  on("question.answer", (a) => { assert.equal(a, "in total"); void w.chat(active, "US$0.10 in total."); });
+  on("question.answer", (a) => { assert.equal(a, "in total"); void w.chat(active, "HK$0.80 in total."); });
   let claudePocket: Hex | undefined;
   let focus: string | undefined; // the ask dock opened this approval (an outside agent's)
   const answerPending = (kind: string) => {
@@ -73,19 +73,19 @@ test("auto-play: wizard, scenes 1-11, Claude via Connect and the ask dock, then 
   on("connect.agent", (a) => assert.equal(a, "claude"));
   on("connect.copy", () => {});
   on("consent.allow", () => {
-    const { pocket } = w.chain.createPocket(OWNER, { agent: CLAUDE_AGENT, cap: parseUsd("0.05"), askAbove: parseUsd("0.02"), expiresAt: BigInt(Math.floor(Date.now() / 1000) + 7 * 86_400), sellers: payTo("exa", "coingecko", "nansen") });
-    w.chain.transfer(OWNER, pocket, parseUsd("0.5"));
+    const { pocket } = w.chain.createPocket(OWNER, { agent: CLAUDE_AGENT, cap: parseHkd("0.40"), askAbove: parseHkd("0.16"), expiresAt: BigInt(Math.floor(Date.now() / 1000) + 7 * 86_400), sellers: payTo("exa", "coingecko", "nansen") });
+    w.chain.transfer(OWNER, pocket, parseHkd("4.0"));
     claudePocket = pocket;
     w.connect("claude");
-    void (async () => { await w.act("claude", pocket, firstRun()); await w.act("claude", pocket, errand({ what: "A check on the exporter's wallet", maxPrice: "0.05", maxTotal: "0.05", buys: [["nansen", "counterparties"]] })); })();
+    void (async () => { await w.act("claude", pocket, firstRun()); await w.act("claude", pocket, errand({ what: "A check on the exporter's wallet", maxPrice: "0.40", maxTotal: "0.40", buys: [["nansen", "counterparties"]] })); })();
   });
   on("consent.done", () => {});
   on("dock.open", (arg) => { focus = w.approvals().filter((a) => a.status === "pending" && a.agent === arg?.agent && a.kind === arg?.kind).sort((x, y) => (y.createdAt ?? 0) - (x.createdAt ?? 0))[0]?.id; });
   on("radar.open", () => {});
   on("deadend.fix", () => {});
-  on("rules.slide", () => { w.chain.setCap(OWNER, active, parseUsd("0.007")); w.chain.transfer(OWNER, active, parseUsd("0.002")); });
+  on("rules.slide", () => { w.chain.setCap(OWNER, active, parseHkd("0.056")); w.chain.transfer(OWNER, active, parseHkd("0.016")); });
   on("sheet.close", () => {});
-  on("deadend.askAgain", () => { void w.chat(active, "Search Exa for durian export news. Max US$0.007, by tonight."); });
+  on("deadend.askAgain", () => { void w.chat(active, "Search Exa for durian export news. Max HK$0.056, by tonight."); });
 
   const state = (): HostState => ({
     pending: w.pending(active).map((a) => ({ id: a.id, kind: a.kind })),
@@ -110,8 +110,8 @@ test("auto-play: wizard, scenes 1-11, Claude via Connect and the ask dock, then 
   const f = factsFrom(w.events(0), w.txs(), { sellerName, pockets: mine, since: Date.now() - 60_000 });
   for (const id of ["pocketCreated", "onchainPayment", "cosigned", "clarifyingQuestion", "refusedReplanned", "injectionIgnored", "dataRefused", "forcedReverted", "escalationBlocked", "killSwitch", "safeStop", "fixApplied"] as const) assert.ok(f[id], `${id} (pressed: ${pressed.join(", ")})`);
   assert.ok(w.events(0).some((e) => e.type === "refusal" && e.reason === "POCKET_REVOKED"), "scene 7: the second payment was refused after the revoke");
-  assert.equal(w.chain.view(seeded[1].address).cap, parseUsd("0.007"));
-  assert.equal(pressed.filter((p) => p === "approval.slide").length, 4, "Nansen in scene 1, DataPro's negotiated US$1.10 in scene 11, Claude's counterparty check, then the routine's cheque in scene 12");
+  assert.equal(w.chain.view(seeded[1].address).cap, parseHkd("0.056"));
+  assert.equal(pressed.filter((p) => p === "approval.slide").length, 4, "Nansen in scene 1, DataPro's negotiated HK$8.80 in scene 11, Claude's counterparty check, then the routine's cheque in scene 12");
   // scene 12: three runs this week, two on their own, one co-signed past the allowance; the rewrite attempt ignored
   assert.ok(routinePocket, "scene 12 made its pocket app");
   const rp = w.events(0, routinePocket).filter((e) => e.type === "payment");
@@ -135,7 +135,7 @@ test("auto-play: wizard, scenes 1-11, Claude via Connect and the ask dock, then 
   assert.equal(w.chain.view(seeded[0].address).revoked, true, "scene 7 revoked the lived-in Research data pocket");
   const premium = seeded.find((p) => p.name === "Premium reports")!.address;
   const deal = w.events(0, premium).find((e) => e.type === "payment" && e.list);
-  assert.deepEqual([deal?.amount, deal?.list, deal?.cosigned], ["1100000", "1500000", true], "scene 11: the haggler's deal on Premium reports, co-signed");
+  assert.deepEqual([deal?.amount, deal?.list, deal?.cosigned], ["8800000", "12000000", true], "scene 11: the haggler's deal on Premium reports, co-signed");
 });
 
 test("auto-play: stop() ends it at the next step and clears the running flag", async () => {

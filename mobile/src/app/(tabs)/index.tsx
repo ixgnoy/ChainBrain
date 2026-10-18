@@ -35,10 +35,11 @@ import { useIntroDone } from "../../ui/intro";
 import { ActivityRow } from "../../components/ActivityRow";
 import { cleanText } from "../../lib/sanitize";
 import { visibleRows } from "../../lib/plain";
-import { usd, money } from "../../lib/util";
+import { hkd, money } from "../../lib/util";
 import { Rise as RiseIn } from "../../ui/Rise";
 import { GLASS_TAB_SPACE as TAB_SPACE } from "../../ui/glass/GlassTabBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { curSign } from "../../lib/runtime";
 
 /** Network chip: a quiet grey pill with a vermillion dot (DESIGN.md chips). */
 export function NetworkChip({ label = "Test network" }: { label?: string }) {
@@ -149,7 +150,7 @@ function LiveStrip() {
   const text = !waiting ? "ChainBrain is working"
     : first.kind === "question" ? `${who} has a question`
     : first.kind === "intent" ? `Confirm ${who}'s task`
-    : `${who} asks to pay ${cleanText(sellerName(first.data?.sellerId), 24)}${first.data?.amount ? ` · US$${cleanText(first.data.amount, 10)}` : ""}`;
+    : `${who} asks to pay ${cleanText(sellerName(first.data?.sellerId), 24)}${first.data?.amount ? ` · ${curSign()}${cleanText(first.data.amount, 10)}` : ""}`;
   const open = () => {
     if (!waiting) return router.navigate("/agent");
     if (first.kind === "question") { setQuestionOpen(true); return; }
@@ -244,7 +245,7 @@ function Home({ ready }: { ready: boolean }) {
       <HomeHeader />
       <Rise play={play} index={0}>
         <Animated.View style={pulseStyle}>
-          <WalletHero usdc={balances?.usdc} out={sumAll} pockets={live} all={pockets} />
+          <WalletHero main={balances?.ehkd} out={sumAll} pockets={live} all={pockets} />
         </Animated.View>
       </Rise>
 

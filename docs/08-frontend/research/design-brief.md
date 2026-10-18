@@ -228,8 +228,8 @@ Global: dark default, user toggle + system. Floating glass tab bar with 4 tabs: 
 ### 3.1 Home
 Top to bottom:
 1. **Header row** (glass chips): avatar "M" left; centre: "Mei's agent" + AgentOrb state dot; right: bell + AI sparkle button (Ryt-style entry to Chat).
-2. **Pending step-up banner** (only when >0): full-width amber glass card, radius 20, left amber shield icon, "Agent wants to pay HK$ - 120 USDC to Acme Data. Needs you", chevron; tap opens Step-up sheet. Pulsing dot. Sticks under header while scrolling.
-3. **Total balance**: label "Agent funds" (caption, text-3), display-xl number `1,240.00` with currency suffix "USDC" in text-2 (smaller), and below: "~ HK$9,670" (text-2) + delta chip "-12.40 today" in refused/ok colour. Count-up animation.
+2. **Pending step-up banner** (only when >0): full-width amber glass card, radius 20, left amber shield icon, "Agent wants to pay HK$120 to Acme Data. Needs you", chevron; tap opens Step-up sheet. Pulsing dot. Sticks under header while scrolling.
+3. **Total balance**: label "Agent funds" (caption, text-3), display-xl number `9,670.00` with currency prefix "HK$" in text-2 (smaller), and below: "eHKD" (text-2) + delta chip "-12.40 today" in refused/ok colour. Count-up animation.
 4. **Action row** (Revolut circular buttons, 56 circle, label under): Fund, Move, Revoke-all (magenta ring), More. Circles use `--bg-elev-2` with 24 icons.
 5. **Pocket rail** (horizontal snap, card 280x168, radius 28): gradient per pocket (Research violet, Gifts pink, Tight teal). Content: pocket name + emoji-free glyph, balance display-lg, caption "Cap HK$50 / pay · Ask above HK$20", 3-segment meter bottom, KYB count chip "4 sellers". Last card: dashed "+ New pocket" tile. Revoked pocket: desaturated + hatch + magenta "Revoked" chip.
 6. **Live activity** section: "Right now" 3-row list; each row = verdict chip + seller + amount + time; refused rows show reason code mono. "See all" -> Activity.
@@ -240,7 +240,7 @@ Top to bottom:
 - **Big Revoke**: full-width 56h pill, magenta outline at rest ("Hold to revoke"), hold 600ms fills magenta; after revoke becomes "Re-enable" ghost button. Placed directly under the balance, not at bottom.
 - **Settings summary** (6 rows, tap to edit): Per-payment cap, Daily cap, Ask-me-above, Expiry, Categories/purpose, Seller policy.
 - **Allowlist**: list rows 64h: seller logo circle (initial), name, domain mono, KYB badge, per-seller cap if any, toggle/swipe to remove (react-bits `SwipeRow` pattern). "Add seller" opens search sheet; unverified sellers show amber "Unverified, will block" notice.
-- **Activity chain** (vertical rail): each payment is an expandable card: header = verdict chip + amount + seller; body = four nodes Intent (what/why, agent's sentence) -> Quote (price, expiry) -> Payment (tx hash, Base Sepolia, link) -> Receipt (hash, signed). Failed nodes stop the rail in red with reason code and "What can I do?" CTA (Ryt-style recovery). Use `StatusMark`/`ThoughtLine` ideas.
+- **Activity chain** (vertical rail): each payment is an expandable card: header = verdict chip + amount + seller; body = four nodes Intent (what/why, agent's sentence) -> Quote (price, expiry) -> Payment (tx hash, FISCO BCOS, link) -> Receipt (hash, signed). Failed nodes stop the rail in red with reason code and "What can I do?" CTA (Ryt-style recovery). Use `StatusMark`/`ThoughtLine` ideas.
 - Footer: "Export CSV" link.
 
 ### 3.3 Create pocket (6 settings, stepper in a full sheet)
@@ -256,7 +256,7 @@ Summary card previews the pocket card live. (If the product's six settings diffe
 ### 3.4 Chat with the agent
 - Ryt-style: message bubbles, suggested prompt chips above the keyboard ("Buy 10 market reports", "Pay Acme from Research"), attachment button (receipt/image), voice optional/out of scope.
 - User bubble: accent fill, radius 20 (tail corner 6). Agent message: no bubble, left aligned plain text on canvas with AgentOrb avatar (avoid glass here).
-- **Compact live trace under each agent reply**: a collapsed one-line `ThoughtLine`: "Checking policy... 3 steps" with chevron; expanded shows 3-6 mono lines: `intent.create`, `quote 0.25 USDC`, `policy ALLOWED`, `pay 0x9f..2c`, or `policy REFUSED SELLER_NOT_ALLOWED`. Each line has a verdict dot. Running line breathes cyan; auto-collapses on settle.
+- **Compact live trace under each agent reply**: a collapsed one-line `ThoughtLine`: "Checking policy... 3 steps" with chevron; expanded shows 3-6 mono lines: `intent.create`, `quote HK$2.00`, `policy ALLOWED`, `pay 0x9f..2c`, or `policy REFUSED SELLER_NOT_ALLOWED`. Each line has a verdict dot. Running line breathes cyan; auto-collapses on settle.
 - Inline action cards inside chat (not links): "Approval needed" card with Review button; payment receipt card.
 - Composer: glass pill, send button accent circle; keyboard-avoiding.
 
@@ -270,7 +270,7 @@ Presented as modal sheet (28 radius, glass-strong). Contents:
 - A11y: both buttons also tappable without slide when VoiceOver is on.
 
 ### 3.6 Activity / receipts
-Revolut transaction list style: sticky date headers ("Today"), row 64h: leading circle icon (seller initial), title seller, subtitle pocket + time, trailing amount (text) with verdict chip below for non-allowed. Filter chips: All / Allowed / Refused / Needs you. Tap -> receipt sheet: amount, tx hash (copy), network "Base Sepolia (testnet)", chain of four steps, "Share receipt", "Dispute". Search at top of tab (Revolut 8.0 pattern). A testnet ribbon appears globally.
+Revolut transaction list style: sticky date headers ("Today"), row 64h: leading circle icon (seller initial), title seller, subtitle pocket + time, trailing amount (text) with verdict chip below for non-allowed. Filter chips: All / Allowed / Refused / Needs you. Tap -> receipt sheet: amount, tx hash (copy), network "FISCO BCOS (test network)", chain of four steps, "Share receipt", "Dispute". Search at top of tab (Revolut 8.0 pattern). A testnet ribbon appears globally.
 
 ### 3.7 Settings
 Grouped inset lists (radius 20): Profile & business (KYB status), Security (biometrics, signing key, device list), Agent (name, default policy, notification rules), Appearance (theme, haptics, reduce motion), Testnet info (network, faucet link), Legal, Log out. Big magenta "Revoke everything" row at the top of Security.
@@ -281,7 +281,7 @@ Grouped inset lists (radius 20): Profile & business (KYB status), Security (biom
 
 Aesthetic: Revolut Business / Stripe Dashboard. Dark default with light toggle. Glass only on top bar, drawers, command palette. Content panes = flat `--bg-elev-1` with hairline.
 
-Shell: left sidebar (Operate, Bank/Compliance), top bar 56h glass (workspace switcher "Mei Trading Ltd", environment pill "Base Sepolia · testnet", command palette Cmd-K, role switcher Owner / Auditor / Regulator, theme toggle).
+Shell: left sidebar (Operate, Bank/Compliance), top bar 56h glass (workspace switcher "Mei Trading Ltd", environment pill "FISCO BCOS · test network", command palette Cmd-K, role switcher Owner / Auditor / Regulator, theme toggle).
 
 ### 4.1 Operate tab: 2x2 panes
 ```
@@ -309,7 +309,7 @@ Shell: left sidebar (Operate, Bank/Compliance), top bar 56h glass (workspace swi
 Header strip: role chip, "Read-only (Regulator)" banner when role = Regulator (all mutating controls hidden/disabled, subtle diagonal-stripe banner `--info`).
 Layout (12-col grid):
 1. **KPI strip** (4 cards): Payments allowed, Refused, Step-ups pending/approved, Revocations. Each with sparkline (Recharts) and delta.
-2. **Ledger table** (col 8): columns Time, Intent ID (mono), Pocket, Seller, Amount (USDC), Verdict chip, Reason code, Approver, Tx hash (link to Base Sepolia explorer), Receipt. Sticky header, column filters, saved views, density toggle, row click -> drawer. TanStack Table.
+2. **Ledger table** (col 8): columns Time, Intent ID (mono), Pocket, Seller, Amount (HK$), Verdict chip, Reason code, Approver, Tx hash (link to the server's `/explorer`), Receipt. Sticky header, column filters, saved views, density toggle, row click -> drawer. TanStack Table.
 3. **Refusals by reason code** (col 4): horizontal bar chart, bars coloured `--refused`, each labelled with code (mono) and count; click filters ledger.
 4. **Controls in force**: table/cards of active policies: per-pocket caps, ask-above, allowlist size, expiry, revoked flags, with "last changed by / when".
 5. **Security events**: timeline (key rotation, new device, revoke, failed approval, signature mismatch) with severity dots.
@@ -321,7 +321,7 @@ Layout (12-col grid):
 - Buttons: pill, 40h default / 32h compact; primary accent, secondary `--bg-elev-2` hairline, destructive `--refused` ghost, revoke `--revoked`.
 - Tables: row 44h, hairline separators only, hover `--bg-elev-2`, header caption uppercase 11px text-3 tracking 0.06em.
 - Inputs: 40h, radius 12, focus ring `0 0 0 3px rgba(110,86,255,.35)`.
-- Number formatting: `Intl.NumberFormat`, tabular nums, USDC 2 dp (6 dp in detail view).
+- Number formatting: `Intl.NumberFormat`, tabular nums, HK$ 2 dp (eHKD has 6 decimals; 6 dp in detail view).
 
 ---------------------------------------------------------------------------
 

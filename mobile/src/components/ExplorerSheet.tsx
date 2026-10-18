@@ -1,6 +1,6 @@
 // The in-app ChainBrain explorer: every transaction hash on the phone opens here. On the built-in network (and a local fork) the
 // hash exists on no public chain, so it is explained here and never linked out; the chain is labelled "Test network". Only a real
-// public-chain server (explorerEnabled) also offers "View on BaseScan". Payments, refusals and attacks show the checks path they
+// real server (explorerEnabled) also offers "Open in the explorer". Payments, refusals and attacks show the checks path they
 // travelled (shared/sim attemptsFrom), the gate that stopped them, and the reason codes under "Why".
 import React, { useMemo, useRef } from "react";
 import { Linking, View } from "react-native";
@@ -86,7 +86,7 @@ function Body({ hash, close }: { hash: string; close: () => void }) {
       if (own) t = { hash, kind: own.kind === "cap" || own.kind === "ask" || own.kind === "seller" || own.kind === "unfreeze" ? "rules" : own.kind, pocket: own.pocket, at: own.at, amount: own.amount, status: "success", from: wallet?.address, counterparty: own.kind === "return" ? wallet?.address : undefined, label: own.kind === "unfreeze" ? "unfrozen" : own.note };
       else if (row) t = { hash, kind: row.kind === "forced" ? "out" : "payment", pocket: row.pocket, at: row.at, amount: row.amount, status: row.outcome === "refused" ? "reverted" : "success", counterparty: cfg.sellers.find((s) => s.id === row.sellerId)?.payTo, reason: row.reasons[0], args: row.cosigned ? { cosigned: "true" } : undefined };
     }
-    return t ? explainTx(t, { usdc: cfg.usdc, factory: cfg.factory, nameOf }, all) : null;
+    return t ? explainTx(t, { ehkd: cfg.token, factory: cfg.factory, nameOf }, all) : null;
   }, [hash, cfg, isBuiltin, ledger, ownerTxs, pockets]); // eslint-disable-line react-hooks/exhaustive-deps
   const attempt = useMemo(() => attemptsFrom(events, { sellerName: (id) => sellerName(id) }).find((a) => a.tx === hash || a.txs?.includes(hash)), [events, hash, sellerName]);
   const net = networkLabel({ builtin: isBuiltin, dev: !!dev });
@@ -148,7 +148,7 @@ function Body({ hash, close }: { hash: string; close: () => void }) {
           <T v="cap" color="muted">Hash</T>
           <TxLink tx={hash} inline />
         </View>
-        {explorerEnabled() && url ? <Button label="View on BaseScan" kind="outline" small onPress={() => Linking.openURL(url)} /> : null}
+        {explorerEnabled() && url ? <Button label="Open in the explorer" kind="outline" small onPress={() => Linking.openURL(url)} /> : null}
       </SheetScroll>
       <View style={{ paddingHorizontal: 20, paddingTop: 10 }}><Button label="Done" kind="secondary" onPress={close} /></View>
     </View>

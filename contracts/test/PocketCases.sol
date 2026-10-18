@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {Pocket} from "../src/Pocket.sol";
 import {PocketFactory} from "../src/PocketFactory.sol";
 
-interface IUSDC {
+interface IToken {
     function balanceOf(address) external view returns (uint256);
     function DOMAIN_SEPARATOR() external view returns (bytes32);
     function authorizationState(address, bytes32) external view returns (bool);
@@ -14,9 +14,9 @@ interface IUSDC {
     ) external;
 }
 
-/// Runs against real USDC v2.2 on a Base Sepolia fork: this is the on-chain half of the day-1 spike.
-contract PocketForkTest is Test {
-    IUSDC constant USDC = IUSDC(0x036CbD53842c5426634e7929541eC2318f3dCF7e);
+/// The pocket cases against the Mock e-HKD (Pocket.ehkd.t.sol runs them on a seconds clock and on FISCO's millisecond clock).
+abstract contract PocketCases is Test {
+    IToken token; // the payment token: MockEHKD (Mock e-HKD), as deployed on FISCO BCOS
     bytes32 constant TRANSFER_TYPEHASH = keccak256(
         "TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
     );
@@ -35,29 +35,40 @@ contract PocketForkTest is Test {
     address facilitator = makeAddr("facilitator");
     address sentinel = makeAddr("sentinel");
     uint256 salt;
+    bool msClock; // FISCO BCOS: contracts see block.timestamp in milliseconds
+
+    function _now() internal view returns (uint256) {
+        return msClock ? block.timestamp / 1000 : block.timestamp;
+    }
+
+    function _warpBy(uint256 secs) internal {
+        vm.warp(block.timestamp + (msClock ? secs * 1000 : secs));
+    }
 
     function setUp() public {
-        vm.createSelectFork(vm.envOr("BASE_SEPOLIA_RPC", string("https://sepolia.base.org")));
+        token = _setUpToken();
         (owner, ownerPk) = makeAddrAndKey("owner");
         (agent, agentPk) = makeAddrAndKey("agent");
         address[] memory sellers = new address[](2);
         sellers[0] = dataLite;
         sellers[1] = dataPro;
-        PocketFactory factory = new PocketFactory(address(USDC), sentinel);
+        PocketFactory factory = new PocketFactory(address(token), sentinel);
         vm.prank(owner);
         // Research preset from the spec: budget 5, cap 2, ask above 1
-        pocket = Pocket(factory.create(agent, 2e6, 1e6, uint64(block.timestamp + 1 days), sellers));
-        // ponytail: deal() writes USDC v2.2's packed balance slot; if it ever fails, fund from a faucet-funded address
-        deal(address(USDC), address(pocket), 5e6);
+        pocket = Pocket(factory.create(agent, 2e6, 1e6, uint64(_now() + 1 days), sellers));
+        deal(address(token), address(pocket), 5e6);
     }
+
+    /// Deploy the token (deal() must work on it).
+    function _setUpToken() internal virtual returns (IToken);
 
     function _auth(address to, uint256 value, uint256 pk) internal returns (Auth memory a) {
         a.to = to;
         a.value = value;
-        a.validBefore = block.timestamp + 600;
+        a.validBefore = _now() + 600;
         a.nonce = keccak256(abi.encode(keccak256("intent"), salt++)); // nonce = hash(intentHash, seq)
         a.digest = keccak256(abi.encodePacked(
-            "\x19\x01", USDC.DOMAIN_SEPARATOR(),
+            "\x19\x01", token.DOMAIN_SEPARATOR(),
             keccak256(abi.encode(TRANSFER_TYPEHASH, address(pocket), to, value, uint256(0), a.validBefore, a.nonce))
         ));
         a.agentSig = _sign(pk, a.digest);
@@ -74,26 +85,26 @@ contract PocketForkTest is Test {
 
     function _submit(Auth memory a, bytes memory ownerSig) internal {
         vm.prank(facilitator);
-        USDC.transferWithAuthorization(address(pocket), a.to, a.value, 0, a.validBefore, a.nonce, _env(a, ownerSig));
+        token.transferWithAuthorization(address(pocket), a.to, a.value, 0, a.validBefore, a.nonce, _env(a, ownerSig));
     }
 
     // ---- what a pocket allows ----
 
     function test_scene2_small_payment_settles_without_owner() public {
         _submit(_auth(dataLite, 3e5, agentPk), "");
-        assertEq(USDC.balanceOf(dataLite), 3e5);
-        assertEq(USDC.balanceOf(address(pocket)), 5e6 - 3e5);
+        assertEq(token.balanceOf(dataLite), 3e5);
+        assertEq(token.balanceOf(address(pocket)), 5e6 - 3e5);
     }
 
     function test_scene3_above_ask_settles_with_owner_cosign() public {
         Auth memory a = _auth(dataPro, 1.5e6, agentPk);
         _submit(a, _sign(ownerPk, a.digest));
-        assertEq(USDC.balanceOf(dataPro), 1.5e6);
+        assertEq(token.balanceOf(dataPro), 1.5e6);
     }
 
     function test_payment_exactly_at_ask_needs_no_owner() public {
         _submit(_auth(dataPro, 1e6, agentPk), "");
-        assertEq(USDC.balanceOf(dataPro), 1e6);
+        assertEq(token.balanceOf(dataPro), 1e6);
     }
 
     // ---- what a pocket stops ----
@@ -154,7 +165,7 @@ contract PocketForkTest is Test {
     }
 
     function test_expired_reverts() public {
-        vm.warp(block.timestamp + 2 days);
+        _warpBy(2 days);
         Auth memory a = _auth(dataLite, 3e5, agentPk);
         vm.expectRevert();
         _submit(a, "");
@@ -163,7 +174,7 @@ contract PocketForkTest is Test {
     function test_replay_reverts() public {
         Auth memory a = _auth(dataLite, 3e5, agentPk);
         _submit(a, "");
-        assertTrue(USDC.authorizationState(address(pocket), a.nonce));
+        assertTrue(token.authorizationState(address(pocket), a.nonce));
         vm.expectRevert();
         _submit(a, "");
     }
@@ -176,7 +187,7 @@ contract PocketForkTest is Test {
     function test_garbage_signature_reverts_cleanly() public {
         vm.expectRevert();
         vm.prank(facilitator);
-        USDC.transferWithAuthorization(address(pocket), dataLite, 1, 0, block.timestamp + 60, bytes32(uint256(1)), hex"deadbeef");
+        token.transferWithAuthorization(address(pocket), dataLite, 1, 0, _now() + 60, bytes32(uint256(1)), hex"deadbeef");
     }
 
     // ---- rules, reasons, owner-only edits ----
@@ -201,7 +212,7 @@ contract PocketForkTest is Test {
         pocket.setAskAbove(type(uint256).max); // "never ask"
         vm.stopPrank();
         _submit(_auth(wines, 1.5e6, agentPk), "");
-        assertEq(USDC.balanceOf(wines), 1.5e6);
+        assertEq(token.balanceOf(wines), 1.5e6);
     }
 
     function test_only_owner_edits() public {
@@ -218,17 +229,17 @@ contract PocketForkTest is Test {
     function test_scene7_return_funds() public {
         vm.prank(owner);
         pocket.returnFunds();
-        assertEq(USDC.balanceOf(owner), 5e6);
-        assertEq(USDC.balanceOf(address(pocket)), 0);
+        assertEq(token.balanceOf(owner), 5e6);
+        assertEq(token.balanceOf(address(pocket)), 0);
     }
 
     function test_scene8_one_purchase_preset_budget_is_exact_price() public {
         address[] memory one = new address[](1);
         one[0] = dataLite;
-        PocketFactory f = new PocketFactory(address(USDC), sentinel);
+        PocketFactory f = new PocketFactory(address(token), sentinel);
         vm.prank(owner);
-        Pocket p = Pocket(f.create(agent, 2e5, type(uint256).max, uint64(block.timestamp + 1 days), one));
-        deal(address(USDC), address(p), 2e5);
+        Pocket p = Pocket(f.create(agent, 2e5, type(uint256).max, uint64(_now() + 1 days), one));
+        deal(address(token), address(p), 2e5);
         assertEq(p.canPay(dataLite, 3e5), bytes32("OVER_CAP")); // every seller costs more: dead end
         assertEq(p.canPay(dataPro, 2e5), bytes32("SELLER_NOT_ALLOWED"));
     }
@@ -243,12 +254,12 @@ contract PocketForkTest is Test {
         Auth memory a = _auth(dataLite, 3e5, agentPk);
         vm.prank(facilitator);
         vm.expectRevert();
-        USDC.transferWithAuthorization(address(pocket), a.to, a.value, 0, a.validBefore, a.nonce, _env(a, ""));
-        assertEq(USDC.balanceOf(address(pocket)), 5e6);
+        token.transferWithAuthorization(address(pocket), a.to, a.value, 0, a.validBefore, a.nonce, _env(a, ""));
+        assertEq(token.balanceOf(address(pocket)), 5e6);
         vm.prank(owner);
         pocket.unfreeze();
         _submit(_auth(dataLite, 3e5, agentPk), "");
-        assertEq(USDC.balanceOf(dataLite), 3e5);
+        assertEq(token.balanceOf(dataLite), 3e5);
     }
 
     function test_guardian_can_only_freeze() public {
@@ -277,7 +288,7 @@ contract PocketForkTest is Test {
     }
 
     function test_no_guardian_factory() public {
-        PocketFactory f = new PocketFactory(address(USDC), address(0));
+        PocketFactory f = new PocketFactory(address(token), address(0));
         address[] memory one = new address[](1);
         one[0] = dataLite;
         vm.prank(owner);

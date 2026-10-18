@@ -1,7 +1,7 @@
 # Licences and Reuse Check
 Last updated: 2026-10-17 (pocket apps: section "Pocket apps, 17 Oct" at the end)
 
-> **Status (14 Oct, v2):** This is the research-time licence check. The real dependencies (OpenZeppelin 5.4, viem, Hono, x402, Expo, React Native, Vite, Phosphor Icons, Geist fonts, plus web3j and OkHttp on Android) are listed in the [top README licences section](../../README.md). Repos in `reference/` are read-only and git-ignored, so links into it only work in a local clone. Spec: [product design](../02-product/product-design.md).
+> **Status (14 Oct, v2):** This is the research-time licence check. The real dependencies (OpenZeppelin 5.4, viem, Hono, x402, Expo, React Native, Vite, Phosphor Icons, Geist fonts, plus web3j and OkHttp on Android) are listed in the [top README licences section](../../README.md). Repos in `reference/` are read-only and git-ignored, so links into it only work in a local clone. Since 17 Oct the project runs only on our own FISCO BCOS chain (chain id 20200) with our own Mock e-HKD token, so the public-testnet services in section 3 are no longer used; their rows are kept as research notes. Spec: [product design](../02-product/product-design.md).
 
 Competition rule 6 says every piece of data, code, open-source component and API we use must be "legally authorised" and follow its open-source licence and data-use terms; the team carries the liability (see [hackathon rules](../01-competition/hackathon-rules.md), rule 6). This page is the team's answer: what we may copy, what we may only depend on, what we only read, and what to write in the submission.
 
@@ -15,8 +15,8 @@ This is a practical engineering check, not legal advice. Licence facts for repos
 - **Visa Trusted Agent Protocol repos** (three clones) are under Visa Developer Center terms, not an open-source licence. Learn only; do not copy.
 - **Repos with no licence file** (for example `x402-guard`, `intent-binding`, `FinVault`, `x402-zkid` apart from its README, `skyfire-kyapay` code) default to "all rights reserved" in law. Treat as read-only ideas unless a README says otherwise.
 - **Our own contracts: write them ourselves** on top of OpenZeppelin (MIT). Do not start from the GPL or AGPL files. Choose our own repo licence (suggest MIT or Apache-2.0) and ship a `THIRD_PARTY_NOTICES.md` (outline in section 5).
-- **APIs:** the `x402.org` facilitator is for testnet and development; CDP faucet and facilitator need Coinbase terms and (for the facilitator) API keys; LLM providers restrict by region and forbid some uses. The LLM and region question needs a team decision before the video demo (see Open questions).
-- **Testnet funds have no value and the faucet has daily caps** (USDC: 10 claims of 1 per 24 hours). Plan faucet use early; do not rely on a last-day top-up.
+- **APIs:** we use no hosted chain service: the x402 facilitator runs in-process in our server, and the chain, faucet and explorer are our own. LLM providers restrict by region and forbid some uses. The LLM and region question needs a team decision before the video demo (see Open questions).
+- **Test funds have no value.** Mock e-HKD is our own test token (not the HKMA e-HKD, not money). Our server faucet gives native balance plus HK$100 eHKD once per address per day.
 
 ## 1. Licence table: reference repos on disk
 
@@ -25,8 +25,8 @@ Path is under `reference/repos/`. "Copy" means pasting source into our repo. "De
 | Repo (path) | Licence (evidence) | Copy code? | Depend? | Attribution / notes | Traps |
 | --- | --- | --- | --- | --- | --- |
 | `from-prior/x402` (official SDK, specs) | Apache-2.0 (LICENSE + NOTICE, "Copyright 2026 x402 Foundation"); a few MIT SPDX headers in contracts tests | Yes, small snippets with notice | Yes (`@x402/*` 2.28.0) | Keep NOTICE and licence text; mark changed files | None found. Old `x402` v1 npm package also Apache-2.0 but not used |
-| `build/stablecoin-evm` (Circle USDC) | Apache-2.0 (LICENSE; package.json) | Read-first. Copying not needed | Interface only | If a snippet is copied, keep header | Do not imply Circle endorsement; "USDC" is Circle's mark |
-| `build/erc-8004-contracts` (also `identity/`, `industry/` copies) | Contracts MIT (SPDX), README says CC0 for spec, package.json says ISC, no LICENSE file | Interfaces yes; check file header first | Call the deployed contracts | Cite as ERC-8004 | Three licence statements disagree (MIT / CC0 / ISC); all permissive. [VERIFY] before copying any file. Three duplicate clones, use one |
+| `build/stablecoin-evm` (Circle USDC) | Apache-2.0 (LICENSE; package.json) | Read-first. Copying not needed (our `MockEHKD` is written from scratch) | No | If a snippet is copied, keep header | Do not imply Circle endorsement; "USDC" is Circle's mark |
+| `build/erc-8004-contracts` (also `identity/`, `industry/` copies) | Contracts MIT (SPDX), README says CC0 for spec, package.json says ISC, no LICENSE file | Interfaces yes; check file header first | Deploy on FISCO (finals roadmap) | Cite as ERC-8004 | Three licence statements disagree (MIT / CC0 / ISC); all permissive. [VERIFY] before copying any file. Three duplicate clones, use one |
 | `build/delegation-framework` and `from-prior/delegation-framework` (MetaMask) | MIT (LICENSE-MIT.md, "Copyright (c) 2022 ConsenSys Software Inc.") and Apache-2.0 (LICENSE-APACHE2.md); SPDX in `src/` mostly MIT | Yes, with notice (good template for our enforcer) | Yes (deployed DelegationManager; Path B) | Keep ConsenSys copyright | A few SPDX `GPL-3.0` / `LGPL-3.0-only` / `UNLICENSED` lines exist in the tree (grep found them under `src/`, `test/` or libs). Check each file header before copying any file |
 | `build/smart-accounts-kit` (MetaMask) | MIT-0 OR Apache-2.0 (LICENSE.MIT0, LICENSE.APACHE2; package.json) | Yes | Yes (`@metamask/smart-accounts-kit` 2.0.0, `@metamask/x402` 1.0.0) | MIT-0 needs no attribution; Apache-2.0 does | `x402` client entry is experimental |
 | `build/kernel` (ZeroDev) | README "MIT"; ~498 MIT SPDX headers; **no LICENSE file** | Own `src/` files only after header check | Prefer npm SDK (`@zerodev/sdk` MIT) | Keep headers | `dependencies/` folder has vendored eth-infinitism 0.9.0 (28 GPL-3.0 and 2 AGPL-3.0 headers found) and a16z halmos cheatcodes. Never copy from `dependencies/` |
@@ -37,13 +37,13 @@ Path is under `reference/repos/`. "Copy" means pasting source into our repo. "De
 | `build/account-abstraction` (eth-infinitism) | LICENSE file is GNU GPL; SPDX 28 GPL-3.0, 28 MIT; package.json says ISC (conflicts) | **No** (the core EntryPoint files are GPL) | Use the deployed EntryPoint v0.7 on-chain only | Interfaces labelled MIT may be copyable per file | GPL-3.0 copyleft would pull our whole contract set. Conflicting licence statements: trust the per-file SPDX header |
 | `build/permissionless.js` (Pimlico) | MIT (LICENSE) | Yes | Yes (npm 0.4.1) | Keep notice | None |
 | `build/agent-chain` (Dosbox420) | MIT (LICENSE; package.json says ISC) | Learn only | No | Do not present its claims as verified | Self-reported results; do not trust. Licence statements disagree (MIT vs ISC), both permissive |
-| `identity/eas-contracts` | MIT (LICENSE; package.json) | Not needed (deployed predeploys) | Yes via `eas-sdk` 2.10.0 (MIT) | Keep notice | None |
+| `identity/eas-contracts` | MIT (LICENSE; package.json) | Deploy as-is on FISCO if used (finals roadmap) | Yes via `eas-sdk` 2.10.0 (MIT) | Keep notice | None |
 | `identity/console` | Apache-2.0 (LICENSE) but SPDX shows 23 Apache-2.0, 6 UNLICENSED, 1 MIT | Learn only | No | | Mixed headers; low value for us |
 | `identity/web-bot-auth`, `industry/cloudflare-web-bot-auth`, `prior-art/cloudflare-web-bot-auth` | Apache-2.0 (LICENSE; package.json) | Snippets with notice | Possible (HTTP message signatures idea) | Keep notice; mark changes | Three duplicate clones |
 | `identity/trusted-agent-protocol`, `industry/visa-trusted-agent-protocol`, `prior-art/visa-trusted-agent-protocol` (Visa) | LICENSE.md is **Visa Developer Center Terms of Use**, not open source | **No** | No | Using or downloading means you agree to Visa terms ("By using, downloading, or installing this code, you agree...") | Do not copy; cite the idea only. [VERIFY] terms if we want to demo anything similar |
 | `industry/catena-ack` | MIT (LICENSE; package.json) | Learn / snippets with notice | No | Keep notice | None found |
 | `from-prior/AP2` (Google) | Apache-2.0 | Snippets with notice | No | Keep notice | None found |
-| `from-prior/FISCO-BCOS` | Apache-2.0 | Only if we add the bonus | Yes for bonus deployment | Keep notice | Large (36 MB); chain code, not used on the core path |
+| `from-prior/FISCO-BCOS` | Apache-2.0 | No (we run the release binary) | **Yes**: the chain everything runs on | Keep notice | Large (36 MB); we use the release binary, not this source |
 | `from-prior/WeIdentity` | Apache-2.0 | Bonus only | Bonus only | Keep notice | Old Java project; check maintenance [VERIFY] |
 | `from-prior/camel-prompt-injection` (Google) | Apache-2.0 | Snippets with notice | No | Cite paper | None |
 | `from-prior/progent` | MIT | Learn / snippets with notice | No | Keep notice | None |
@@ -82,16 +82,16 @@ Versions and licences from the npm registry or GitHub licence API, read 2026-10-
 | `erc7579/smartsessions` | AGPL-3.0 / LGPL / MIT mixed | **No** | Not planned | |
 | MetaMask delegation framework | MIT and Apache-2.0 | Yes with notice (check headers) | Yes (Path B, deployed) | |
 | `@metamask/smart-accounts-kit` 2.0.0, `@metamask/x402` 1.0.0 | MIT-0 OR Apache-2.0 | Yes | Yes | Pick MIT-0 (no attribution duty) and say so |
-| ERC-8004 contracts and spec | Contracts MIT / spec CC0 (README), ISC in package.json | Interfaces yes | Call deployed registries | [VERIFY] which file we copy |
-| EAS contracts (MIT) and `eas-sdk` 2.10.0 (MIT) | MIT | Yes | Yes | Predeploys at `0x4200...0021` / `...0020` |
+| ERC-8004 contracts and spec | Contracts MIT / spec CC0 (README), ISC in package.json | Interfaces yes | Deploy on FISCO (finals roadmap) | [VERIFY] which file we copy |
+| EAS contracts (MIT) and `eas-sdk` 2.10.0 (MIT) | MIT | Yes | Yes | Predeploys on OP-stack chains only; on FISCO we would deploy them |
 | WeIdentity | Apache-2.0 | Bonus only | Bonus only | |
-| FISCO BCOS | Apache-2.0 | Bonus only | Bonus only | |
+| FISCO BCOS 3.16.4 | Apache-2.0 | No | **Yes** (the chain; release binary) | |
 | Foundry | Apache-2.0 per GitHub licence API (project is commonly described as dual MIT/Apache-2.0) [VERIFY] | n/a | **Yes** (dev tool, not shipped) | Build tool, not shipped in the product |
 | Vercel AI SDK `ai` 7.0.138 | Apache-2.0 | Snippets with notice | Yes if chosen | |
 | `@anthropic-ai/sdk` 0.133.0 | MIT | Yes | Yes if chosen | SDK licence is separate from the API terms (section 3) |
 | wagmi 3.7.7, RainbowKit 2.2.11, zod 4.6.7, jose 6.2.12, Express 5.3.0, Vitest 5.0.4, Next.js 16.4.0 | MIT | Yes | Yes | |
 | `did-jwt` 9.0.2 | Apache-2.0 | Snippets with notice | Yes | |
-| Circle USDC (stablecoin-evm) and Base Sepolia USDC `0x036C...F7e` | Apache-2.0 code; testnet token has no value | n/a | Use deployed contract | Do not call it "official Circle product" |
+| Our `MockEHKD` token | Our own code (EIP-3009 standard, written from scratch on OpenZeppelin) | n/a | n/a | Test token; do not call it the HKMA e-HKD or money |
 
 Transitive dependencies are not checked here. Run a licence report (for example `npx license-checker --production --summary`, once `package.json` exists) and read the result before the submission zip is made. Do this in our own repo only, never inside `reference/repos/`.
 
@@ -101,16 +101,15 @@ What we found, with how sure we are. Terms change; the team member who actually 
 
 | Service | What we confirmed (access date 2026-10-13) | What matters | Not confirmed |
 | --- | --- | --- | --- |
-| **x402.org public facilitator** | The x402 docs say it is "intended for development and testnet workflows" and advise against making it the default for production mainnet routes (docs.x402.org). A search summary (snippet) says it supports Base Sepolia and Solana Devnet and needs no setup (docs.cdp.coinbase.com) | Fine for a Base Sepolia demo and smoke test. Do not describe it as production | Rate limits and terms of use; uptime guarantee [VERIFY] |
-| **Self-hosted facilitator** (our plan) | Uses the Apache-2.0 SDK; we hold the gas wallet key | We control logs and hooks. Keep the gas wallet a throwaway testnet key, never committed | None |
-| **Coinbase CDP facilitator** | Snippet: supports Base and Base Sepolia, needs a CDP account and API keys, has KYT/OFAC screening (docs.cdp.coinbase.com/x402/network-support) | Using it means accepting CDP terms and giving a team member's account details. Keep API keys out of the repo and the submission | Pricing and free tier (a search for "1000 transactions" free tier was not confirmed); CDP Terms of Service text not read [VERIFY]; whether students outside the US can open an account [VERIFY] |
-| **MetaMask hosted x402 facilitator** (ERC-7710 path) | Snippet: docs list a Base Sepolia endpoint (eip155:84532) used with no key in the seller example (docs.metamask.io/smart-accounts-kit/guides/x402/seller.md). A third-party hackathon write-up (unverified) says it rejects non-7702-upgraded delegators | Path B only. Treat as a hosted dependency we do not control | Terms, rate limits, uptime |
-| **CDP faucet (Base Sepolia)** | Per 24 hours: ETH 1,000 claims of 0.0001; USDC 10 claims of 1; EURC 10 claims of 1; cbBTC 100 claims of 0.0001 (docs.cdp.coinbase.com/faucets). The page does not mention an API key | USDC is the tight one: at most 10 USDC per address per day. Spread across several team addresses early. Testnet tokens have no value; the scoring wants tx hashes, not value | Terms text (not shown on the page); whether a CDP account is needed in the portal [VERIFY] |
-| **Circle faucet** and other Base Sepolia faucets | Not checked | | [VERIFY] Circle faucet limits and terms before relying on it |
+| **x402.org public facilitator** (not used) | The x402 docs say it is "intended for development and testnet workflows" (docs.x402.org). It serves public testnets only, not our FISCO chain | Not used | n/a |
+| **In-process facilitator** (what we run) | Uses the Apache-2.0 SDK inside our server; we hold the submitting key (gas price is 0 on FISCO, but it needs a native balance) | We control logs and hooks. Keep the key a throwaway test key, never committed | None |
+| **Coinbase CDP facilitator** (not used) | Snippet: supports Coinbase's public chains only, needs a CDP account and API keys, has KYT/OFAC screening (docs.cdp.coinbase.com/x402/network-support) | Not used; does not serve our chain | n/a |
+| **MetaMask hosted x402 facilitator** (ERC-7710 path, not used) | Snippet: docs list public-testnet endpoints only (docs.metamask.io/smart-accounts-kit/guides/x402/seller.md) | Path B only; does not serve our chain | Terms, rate limits, uptime |
+| **Faucet** | Our own: `POST /api/faucet` on the server (native balance plus HK$100 eHKD, once per address per day) | No third-party terms | None |
 | **LLM providers: Anthropic** | Commercial Terms (anthropic.com/legal/commercial-terms): business use only; must follow the Usage Policy and the Supported Regions Policy; no building competing products or training competing models; outputs owned by customer; Anthropic says it does not train on customer content from the Services; may ask for identity verification; sanctions and export limits apply. Separate news reports (snippet) say Anthropic's September 2025 policy bars entities controlled from unsupported regions including China | Team members in or relying on access from unsupported regions may not be allowed to use the API directly. Our product is not a competing AI model, so that clause does not bite | Whether student or competition use has special terms: not found. Current supported-regions list not read [VERIFY] |
 | **LLM providers: OpenAI, Google, DeepSeek, Qwen and others** | Not checked | A WeBank defence in Shenzhen may prefer a model available in mainland China | [VERIFY] each provider's terms on region, students, and competition use if chosen |
-| **Hosting / RPC** (`sepolia.base.org` public RPC) | Used for `eth_getCode` checks | Public RPC is rate limited and for light use | Terms [VERIFY] |
-| **Block explorer** (Basescan) | Not checked | Judges will open tx hashes there; links in docs are fine | [VERIFY] API key terms if we call the API |
+| **Hosting / RPC** (Railway: `fisco-node`, `fisco-api`, `fisco-sellers`) | Our own services on Railway | Railway's terms apply to the hosting account | Terms [VERIFY] |
+| **Block explorer** | Our own read-only explorer in the server at `/explorer` (FISCO has no public explorer) | Judges open tx hashes there | None |
 
 Plain rule of thumb for LLM keys: each person uses their own account and region-legal access; never share one key in the repo; the demo should be able to run from one key stored in an environment variable that is not in the submission.
 
@@ -125,7 +124,7 @@ Plain rule of thumb for LLM keys: each person uses their own account and region-
 7. **Competitor repos are not a code source.** `competitors/*` are MIT but copying a rival entry's logic is a plagiarism and fairness risk, whatever the licence.
 8. **Data: no real personal data.** Use made-up credentials and seller identities. Do not include FinVault data or other research-use datasets in the submission; cite them in the security self-assessment instead.
 9. **Secrets stay out.** No API keys, gas wallet keys or seed phrases in the repo, the zip or the demo video. Use `.env.example` with placeholders.
-10. **Brand names.** Say "built on x402", "uses USDC on Base Sepolia", "ERC-8004". Do not use the Coinbase, Circle, MetaMask, Visa or WeBank logos as if endorsed. WeBank and FinTechathon naming follows the organiser's rules.
+10. **Brand names.** Say "built on x402", "runs on FISCO BCOS", "Mock e-HKD (a test token)". Never call the token the HKMA e-HKD. Do not use the Coinbase, Circle, MetaMask, Visa or WeBank logos as if endorsed. WeBank and FinTechathon naming follows the organiser's rules.
 11. **Run a licence report** on the final `package.json` and `foundry.toml` dependencies on 18 October, and fix any GPL, AGPL, BUSL or "UNLICENSED" result.
 12. **Our own licence.** Rule 7 says IP stays with participants and the organiser may use entries in promotion; confirm the licence we publish (MIT or Apache-2.0) does not conflict with that [VERIFY with organiser if we want a stricter licence].
 
@@ -148,8 +147,8 @@ Generated 2026-10-DD. Our own code: <licence>, Copyright (c) 2026 <team>.
 
 3. On-chain components we call (deployed by others, not copied)
    | Name | Network | Address | Licence of source | Note |
-   USDC (Base Sepolia), ERC-8004 Identity/Reputation registries, EAS and schema registry,
-   ERC-4337 EntryPoint v0.7, MetaMask DelegationManager (Path B), Permit2
+   None: on our FISCO chain (chain id 20200) every contract is ours (MockEHKD, Pocket, PocketFactory).
+   Finals roadmap: our own deployments of the ERC-8004 registries and EAS (MIT source)
 
 4. Code copied or adapted (must stay short and permissive)
    | Our file | Upstream repo + commit | Upstream file | Licence | Change made |
@@ -164,7 +163,7 @@ Generated 2026-10-DD. Our own code: <licence>, Copyright (c) 2026 <team>.
 
 7. Services and APIs used
    | Service | Purpose | Terms link | Key held by | In the submission? |
-   Base Sepolia RPC, x402 facilitator (self-hosted or x402.org), CDP faucet, LLM provider, block explorer
+   FISCO BCOS node (ours, Railway), x402 facilitator (in-process), LLM provider, Railway hosting
 
 8. Trademarks
    Names and marks belong to their owners; no endorsement implied.
@@ -180,9 +179,8 @@ Generated 2026-10-DD. Our own code: <licence>, Copyright (c) 2026 <team>.
 | [must] | Ship `THIRD_PARTY_NOTICES.md` and a one-paragraph "licence and compliance" section in the technical doc; rule 6 puts liability on us. | Security 30 (compliance) |
 | [must] | Do not copy anything from `account-abstraction`, `safe7579`, `smartsessions`, `kernel/dependencies`, `Should-AI-Buy` or the Visa TAP repos. | Security 30 |
 | [must] | Decide the LLM provider and who holds the key by 15 Oct, checking regional availability for every teammate and for the WeBank defence setting. | Task 40 |
-| [must] | Fund the demo wallets early: USDC faucet cap is 10 USDC per address per day; spread over several addresses on 14-15 Oct. | Task 40 |
 | [should] | Run a licence report on the final dependency set on 18 Oct. | Security 30 |
-| [should] | Say in the demo and docs that the x402.org facilitator is testnet only and that production would use a self-hosted or managed facilitator (this matches the docs). | Innovation 30 |
+| [should] | Say in the demo and docs that the x402 facilitator runs in-process on our test chain and that production would use a managed facilitator. | Innovation 30 |
 | [should] | Keep one dedicated throwaway gas wallet and never commit its key. | Security 30 |
 | [could] | Show a "licence and supply-chain" row in the security self-assessment (pinned versions, lock file, no copyleft). | Security 30 / Bonus |
 | [could] | If we upgrade to Nexus or Safe7579 for the bonus, confirm per-file headers first; avoid Safe7579 source. | Bonus |
@@ -190,9 +188,7 @@ Generated 2026-10-DD. Our own code: <licence>, Copyright (c) 2026 <team>.
 ## Open questions
 
 - Which LLM provider and region does each teammate actually have access to? Anthropic's Supported Regions Policy and any student terms must be read live [VERIFY].
-- CDP Terms of Service, CDP facilitator pricing, and whether non-US students can register: not read.
-- MetaMask hosted facilitator terms and rate limits: not published in what we found.
-- x402.org facilitator rate limits and terms: not found.
+- Railway's terms for the hosting account: not read.
 - Which licence do we publish for our own code, and does it fit rule 7 (organiser may use entries for promotion)? Ask the organiser if unsure.
 - Exact licence per file of the ERC-8004 contracts (MIT vs CC0 vs ISC statements) and of any MetaMask file we might copy (GPL/LGPL/UNLICENSED SPDX lines were found in the tree).
 - Does the organiser require source disclosure or a private repo for review? Not in the rules we read.
@@ -239,7 +235,7 @@ Licences were checked against each cloned repo's `LICENSE` file on 2026-10-17.
 
 **Brand marks:** the Claude, OpenAI, Exa, CoinGecko and Nansen marks are shown unaltered, at avatar size, never recoloured (`shared/brand/SOURCES.md`). Anthropic's trademark guidelines and OpenAI's brand page are cited in `docs/08-frontend/pocket-apps-research.md`.
 
-**One data note:** Nansen's "smart-money flows" quote on the built-in network moves by day around Nansen's published US$0.05. This was the owner's call, for the deal watcher, and is said in `shared/sim/catalog.ts`. It is never shown as a live Nansen price.
+**One data note:** Nansen's "smart-money flows" quote on the built-in network moves by day around HK$0.40 (Nansen's published premium price, US$0.05, at 8 HKD per USD). This was the owner's call, for the deal watcher, and is said in `shared/sim/catalog.ts`. It is never shown as a live Nansen price.
 
 ## The live canvas, 18 Oct: what was read and what was reused
 

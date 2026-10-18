@@ -1,46 +1,54 @@
-// Day-1 gate on the LIVE chain: create + fund a pocket from OWNER, then pay twice through the hosted facilitator.
-//   1) US$0.30 with the agent key alone      → must settle
-//   2) US$1.50 above ask-me, owner co-signs  → must settle
-// Prints tx hashes for docs/evidence.md. Requires: Deploy.s.sol done, OWNER funded with ETH + ≥2 USDC.
+// Day-1 gate on the live chain (FISCO): create + fund the research pocket from OWNER, then pay twice.
+//   1) DataLite durian report with the agent key alone       → must settle
+//   2) DataPro premium report above ask-me, owner co-signs   → must settle
+// Prints tx hashes for the evidence file. Requires: factory deployed, OWNER funded (gas + token).
 import "dotenv/config";
 import { serve } from "@hono/node-server";
 import { createWalletClient, http, publicActions, parseEventLogs, keccak256, toHex, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
+import { cfg, presets } from "../src/chains";
+import { record } from "./evidence";
 import { sellersApp, sellerPayTo } from "../src/sellers";
-import { factoryAbi, factoryAddress, erc20Abi, USDC, usdcBalance } from "../src/wallet/chain";
+import { factoryAbi, factoryAddress, erc20Abi, tokenBalance } from "../src/wallet/chain";
 
-process.env.SELLERS_URL = "http://127.0.0.1:4599";
-const server = serve({ fetch: sellersApp().fetch, port: 4599 });
+// SPIKE_SELLERS_URL: pay deployed sellers (their facilitator settles); otherwise run the sellers in-process on :4599
+const remote = process.env.SPIKE_SELLERS_URL;
+process.env.SELLERS_URL = remote ?? "http://127.0.0.1:4599";
+const server = remote ? undefined : serve({ fetch: sellersApp().fetch, port: 4599 });
 const { fetchQuote, track, settle, prepareApproval, agentAccount } = await import("../src/wallet/pay");
 const { transferTypedData } = await import("../src/wallet/scheme");
 
 const owner = privateKeyToAccount(process.env.OWNER_PK as Hex);
-const w = createWalletClient({ account: owner, chain: baseSepolia, transport: http(process.env.BASE_SEPOLIA_RPC) }).extend(publicActions);
+const w = createWalletClient({ account: owner, chain: cfg().chain, transport: http(cfg().rpc) }).extend(publicActions);
 const payTo = sellerPayTo();
+const p = presets().research;
 
 const create = await w.writeContract({
   address: factoryAddress(), abi: factoryAbi, functionName: "create",
-  args: [agentAccount().address, 2_000_000n, 1_000_000n, BigInt(Math.floor(Date.now() / 1000) + 86_400), [payTo.datalite, payTo.datapro]],
+  args: [agentAccount().address, p.cap, p.askAbove, BigInt(Math.floor(Date.now() / 1000) + 86_400), [payTo.datalite, payTo.datapro]],
 } as any);
 const [ev] = parseEventLogs({ abi: factoryAbi, logs: (await w.waitForTransactionReceipt({ hash: create })).logs, eventName: "PocketCreated" }) as any[];
 const pocket = ev.args.pocket;
-const fund = await w.writeContract({ address: USDC, abi: erc20Abi, functionName: "transfer", args: [pocket, 2_000_000n] });
+const fund = await w.writeContract({ address: cfg().token, abi: erc20Abi, functionName: "transfer", args: [pocket, p.budget] });
 await w.waitForTransactionReceipt({ hash: fund });
 console.log("pocket", pocket, "\n create", create, "\n fund  ", fund);
+record("spike: create research pocket", create, "success", "PocketCreated(address,address,address)", factoryAddress());
+record("spike: fund research pocket", fund, "success", "Transfer(address,address,uint256)", cfg().token);
 
 const intentHash = keccak256(toHex(`spike-${Date.now()}`));
 const q1 = await fetchQuote("datalite", "durian-report");
 if (q1.kind !== "priced") throw new Error("expected 402");
 const r1 = await settle(pocket, track(pocket, q1.quote), intentHash);
-console.log("0.30 agent-only    →", r1);
+console.log("agent-only    →", r1);
+if (r1.ok) record("spike: DataLite paid by the agent key alone (x402, EIP-3009 + ERC-1271)", r1.tx, "success", "AuthorizationUsed(address,bytes32)", cfg().token);
 
 const q2 = await fetchQuote("datapro", "premium-report");
 if (q2.kind !== "priced") throw new Error("expected 402");
 const rec = track(pocket, q2.quote);
 rec.ownerSig = await owner.signTypedData(transferTypedData(prepareApproval(pocket, rec, intentHash)));
 const r2 = await settle(pocket, rec, intentHash);
-console.log("1.50 owner co-sign →", r2);
-console.log("pocket balance", await usdcBalance(pocket));
-server.close();
+console.log("owner co-sign →", r2);
+if (r2.ok) record("spike: DataPro above ask-me, owner co-signed", r2.tx, "success", "AuthorizationUsed(address,bytes32)", cfg().token);
+console.log("pocket balance", await tokenBalance(pocket));
+server?.close();
 process.exit(r1.ok && r2.ok ? 0 : 1);

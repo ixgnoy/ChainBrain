@@ -10,6 +10,7 @@ import { runTurn, type TurnResult } from "../src/agent/loop";
 import { bus } from "../src/wallet/events";
 import { approvals, type Approval } from "../src/wallet/approvals";
 import { transferTypedData } from "../src/wallet/scheme";
+import { cfg } from "../src/chains";
 
 const pocket = process.argv[2] as Address;
 if (!pocket) throw new Error("usage: pnpm chat <pocket>");
@@ -21,7 +22,7 @@ rl.on("close", () => (busy ? (closed = true) : process.exit(0))); // end of inpu
 bus.subscribe(async (e) => {
   if (e.type === "trace" && e.phase === "tool_call") console.log(`  → ${e.tool} ${JSON.stringify(e.args)}`);
   if (e.type === "trace" && e.phase === "tool_result") console.log(`  ← ${JSON.stringify(e.result).slice(0, 220)}`);
-  if (e.type === "payment") console.log(`  ✓ paid ${e.sellerId} tx https://sepolia.basescan.org/tx/${e.tx}`);
+  if (e.type === "payment") console.log(`  ✓ paid ${e.sellerId} tx ${cfg().txUrl(e.tx as string)}`);
   const a = e.approval as Approval | undefined;
   if (!a || a.status !== "pending") return;
   if (a.kind === "intent") {

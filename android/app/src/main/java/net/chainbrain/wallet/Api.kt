@@ -28,7 +28,13 @@ class Api(private val base: String) {
     suspend fun config(): Config {
         val j = JSONObject(get("/api/config"))
         val s = j.getJSONArray("sellers")
-        return Config(j.getString("agent"), j.getString("factory"), j.getString("usdc"),
+        val c = j.getJSONObject("chain")
+        val d = c.getJSONObject("domain")
+        // tx links go to this API's explorer (the server's own PUBLIC_API_URL may say localhost, which on a phone is the phone)
+        val txUrl = "$base/explorer#/tx/"
+        val chain = ChainInfo(c.getString("key"), c.getLong("id"), c.getString("name"), c.getString("rpc"), d.getString("name"), d.getString("version"), c.getString("currency"), txUrl, j.getString("token"))
+        ChainInfo.current = chain
+        return Config(j.getString("agent"), j.getString("factory"), j.getString("token"), chain,
             (0 until s.length()).map { s.getJSONObject(it).let { x -> Seller(x.getString("id"), x.getString("name"), x.getString("category"), x.getString("payTo")) } })
     }
     suspend fun chat(pocket: String, text: String): String =

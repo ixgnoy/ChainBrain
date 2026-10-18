@@ -15,3 +15,5 @@ reference/
 
 # Private research notes
 /research/
+.fisco/
+contracts/deployments/*.bak

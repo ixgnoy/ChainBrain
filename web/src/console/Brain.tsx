@@ -12,7 +12,7 @@ import { brainGraph, trafficOf, type GEdge, type GNode } from "@sim/brainGraph";
 import { CLAUDE_SPARK, OPENAI_BLOSSOM, type Mark } from "../../../shared/brand/marks";
 import { useNetwork, type TestMode } from "./network";
 import { AttemptHeadline, ChecksPath, useReducedMotion } from "./ChecksPath";
-import { SellerLogo, usd } from "./parts";
+import { SellerLogo, hkd } from "./parts";
 import { PageTitle } from "../seller/ui";
 import { cn } from "../lib/cn";
 
@@ -135,15 +135,15 @@ export function Brain() {
                 {testable.length > 1 && (
                   <select aria-label="Test pocket" value={tp!.address} disabled={running} onChange={(e) => setTestPocket(e.target.value)}
                     className="h-10 max-w-[200px] rounded-full bg-fill px-3 text-[13px] font-semibold">
-                    {testable.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {usd(p.balance)}</option>)}
+                    {testable.map((p) => <option key={p.address} value={p.address}>{nameOf(p.address)} · {hkd(p.balance)}</option>)}
                   </select>
                 )}
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2">
-                <button type="button" disabled={running} onClick={() => void run("pay")} aria-label={`Test a payment: pay ${plan.pay.seller} US$${plan.pay.price} from ${nameOf(tp!.address)}`}
+                <button type="button" disabled={running} onClick={() => void run("pay")} aria-label={`Test a payment: pay ${plan.pay.seller} HK$${plan.pay.price} from ${nameOf(tp!.address)}`}
                   className="pressable flex min-h-14 items-center gap-3 rounded-[16px] bg-ink px-4 text-left text-white disabled:opacity-60">
                   {running && test?.mode === "pay" ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-                  <span><span className="block text-[15px] font-bold">{running && test?.mode === "pay" ? "Running…" : `Pay ${plan.pay.seller}`}</span><span className="block text-[12px] text-white/60">US${plan.pay.price} · on its list</span></span>
+                  <span><span className="block text-[15px] font-bold">{running && test?.mode === "pay" ? "Running…" : `Pay ${plan.pay.seller}`}</span><span className="block text-[12px] text-white/60">HK${plan.pay.price} · on its list</span></span>
                 </button>
                 <button type="button" disabled={running} onClick={() => void run("refuse")} aria-label={`Test a refusal: try ${plan.refuse.seller}, not on ${nameOf(tp!.address)}'s list`}
                   className="pressable flex min-h-14 items-center gap-3 rounded-[16px] bg-card px-4 text-left shadow-[inset_0_0_0_1.5px_var(--color-vermillion)] disabled:opacity-60">
@@ -175,7 +175,7 @@ function liveSteps(events: { type: string; at: number; pocket?: string; [k: stri
   for (const e of events) {
     if (e.at < since || String(e.pocket).toLowerCase() !== pocket.toLowerCase()) continue;
     if (e.type === "trace" && e.phase === "tool_call" && e.tool === "get_quote") out.push(`Asking ${sellerName(e.args?.sellerId)} for a quote`);
-    else if (e.type === "trace" && e.phase === "tool_result" && e.tool === "get_quote" && e.result?.ok) out.push(e.result.allowedByPocket === "OK" ? `Pocket rules: allowed, US$${e.result.price}` : `Pocket rules: ${e.result.allowedByPocket?.reason ?? "refused"}`);
+    else if (e.type === "trace" && e.phase === "tool_result" && e.tool === "get_quote" && e.result?.ok) out.push(e.result.allowedByPocket === "OK" ? `Pocket rules: allowed, HK$${e.result.price}` : `Pocket rules: ${e.result.allowedByPocket?.reason ?? "refused"}`);
     else if (e.type === "radar" && e.kind === "screen") out.push(`Radar: risk ${Number(e.score) || 0}/10`);
     else if (e.type === "preflight" && e.kind === "predict") out.push(`Pre-flight predicts ${e.predicted?.outcome === "pays" ? "it pays" : "a refusal"}`);
   }

@@ -5,7 +5,7 @@
 import { useMemo, useState } from "react";
 import { ArrowLeft, Ban, Check, ChevronRight, Clock, Radio, ShieldCheck } from "lucide-react";
 import { useNetwork } from "./useNetwork";
-import { AgentTag, SellerLogo, agentOfKey, pocketStatus, usd, NEVER } from "./parts";
+import { AgentTag, SellerLogo, agentOfKey, pocketStatus, hkd, NEVER } from "./parts";
 import { Card, Empty } from "../seller/ui";
 import { cn } from "../lib/cn";
 import { cleanText } from "../lib/sanitize";
@@ -15,6 +15,7 @@ import {
   appFromEvents, budgetOf, haggleOf, monthBySeller, priceChanges, priceSeries, purchasesOf, renewalsOf, routineFromEvents, runsOf, savingsOf, sourcesOf, upcoming,
 } from "@sim/pocketAppData";
 import type { PocketState } from "./chain";
+import { curSign } from "../shared";
 
 const I = { strokeWidth: 1.75 } as const;
 const LAYOUT_NAME: Record<Layout, string> = { research: "Research desk", deal: "Deal watcher", subscriptions: "Subscriptions", haggle: "Haggler" };
@@ -53,17 +54,17 @@ function FaceCard({ p, spec, agentId, agentName }: { p: PocketState; spec: Pocke
   const off = st.label !== "Active";
   return (
     <div className="relative aspect-[1.586] w-full overflow-hidden rounded-[18px] shadow-[0_12px_32px_-4px_rgba(17,18,21,0.16)]" style={{ background: off ? "#FFFFFF" : f.bg, color: off ? "#777781" : f.ink }}
-      aria-label={`${cleanText(p.name ?? spec.title, 30)} card, ${usd(p.balance)}`}>
+      aria-label={`${cleanText(p.name ?? spec.title, 30)} card, ${hkd(p.balance)}`}>
       {(f.hatch || off) && <span aria-hidden className="hatch hatch-soft absolute inset-0 opacity-70" />}
       <div className="relative flex h-full flex-col">
         <div className="flex items-center justify-between px-5 pt-4"><span className="flex min-w-0 items-center gap-2"><span className="truncate font-display text-[18px] font-semibold">{cleanText(p.name ?? spec.title, 28)}</span>{!off && <span className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: f.chip }}>{usageChip(spec)}</span>}</span>{off && <span className="rounded-full bg-vermillion-soft px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-vermillion-ink">{st.label}</span>}</div>
         <div className="mt-2 flex h-10 items-center px-5" style={{ background: off ? "#3A3B41" : f.band }}>
           <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-white pl-0.5 pr-3 text-[12px] font-semibold text-ink"><AgentMark id={agentId} size={24} />{agentName} · {LAYOUT_NAME[spec.layout].toLowerCase()}</span>
         </div>
-        <div className="px-5 pt-3"><span className="eyebrow" style={{ color: off ? "#777781" : f.sub }}>Available</span><div className="num font-display text-[30px] font-medium leading-9 tracking-[-0.02em]">{usd(p.balance)}</div></div>
+        <div className="px-5 pt-3"><span className="eyebrow" style={{ color: off ? "#777781" : f.sub }}>Available</span><div className="num font-display text-[30px] font-medium leading-9 tracking-[-0.02em]">{hkd(p.balance)}</div></div>
         <div className="mt-auto flex items-end justify-between px-5 pb-4">
           <div>
-            <div className="text-[12px]" style={{ color: off ? "#777781" : f.sub }}>Cap {usd(p.cap)} · {p.askAbove === NEVER || p.askAbove > p.cap ? "never asks" : p.askAbove === 0n ? "asks every time" : `asks above ${usd(p.askAbove)}`}</div>
+            <div className="text-[12px]" style={{ color: off ? "#777781" : f.sub }}>Cap {hkd(p.cap)} · {p.askAbove === NEVER || p.askAbove > p.cap ? "never asks" : p.askAbove === 0n ? "asks every time" : `asks above ${hkd(p.askAbove)}`}</div>
             <div className="num font-display text-[19px] font-semibold">{`0x…${p.address.slice(-4).toLowerCase()}`}</div>
           </div>
           <span className="text-[12px] font-semibold" style={{ color: off ? "#777781" : f.sub }}>{new Date(p.expiresAt * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" })}</span>
@@ -92,7 +93,7 @@ function Shelf({ c, i }: { c: Ctx; i: number }) {
   const all = purchasesOf(c.events, c.p.address);
   const list = [...all].reverse().slice(0, 8);
   return (
-    <Block i={i} wide label="Library" right={all.length ? `${usd(all.reduce((n, x) => n + x.amount, 0n))} in all` : undefined}>
+    <Block i={i} wide label="Library" right={all.length ? `${hkd(all.reduce((n, x) => n + x.amount, 0n))} in all` : undefined}>
       <div className="mb-4 flex items-baseline gap-2"><span className="num font-display text-[44px] font-medium leading-none">{all.length}</span><span className="text-[14px] text-ink2">{all.length === 1 ? "report bought" : "reports bought"}</span></div>
       {list.length ? (
         <div className="chip-row -mx-5 flex gap-2.5 overflow-x-auto px-5 pb-1">
@@ -101,7 +102,7 @@ function Shelf({ c, i }: { c: Ctx; i: number }) {
               <div className="relative flex h-[72px] items-end p-3"><span aria-hidden className={cn("hatch absolute inset-0", k === 0 ? "hatch-white opacity-40" : "hatch-soft")} /><SellerLogo id={x.sellerId} name={c.seller(x.sellerId)} className="relative" /></div>
               <div className="flex min-h-[100px] flex-col justify-between gap-2 p-3 pt-2">
                 <span className="text-[14px] font-semibold leading-[18px]">{short(c.item(x.sellerId, x.sku))}</span>
-                <span><span className={cn("block text-[12px]", k === 0 ? "text-white/65" : "text-muted")}>{day(x.at)}{x.run ? ` · run ${x.run}` : ""}</span><span className="num font-display text-[17px] font-semibold">{usd(x.amount)}</span></span>
+                <span><span className={cn("block text-[12px]", k === 0 ? "text-white/65" : "text-muted")}>{day(x.at)}{x.run ? ` · run ${x.run}` : ""}</span><span className="num font-display text-[17px] font-semibold">{hkd(x.amount)}</span></span>
               </div>
             </div>
           ))}
@@ -148,12 +149,12 @@ function PriceHero({ c, block, i }: { c: Ctx; block: Block; i: number }) {
   return (
     <Block i={i} wide label={item ? `${c.seller(item.sellerId)} · quoted prices` : "Quoted prices"} right={`${days} days`}>
       <div className="mb-3 flex items-end justify-between gap-3">
-        <div><div className="num font-display text-[32px] font-medium leading-9">{s.last ? usd(s.last.price) : "—"}</div><div className="text-[12px] text-muted">{s.last ? `Last quote · ${day(s.last.at)} ${hm(s.last.at)}` : "No quotes yet"}</div></div>
+        <div><div className="num font-display text-[32px] font-medium leading-9">{s.last ? hkd(s.last.price) : "—"}</div><div className="text-[12px] text-muted">{s.last ? `Last quote · ${day(s.last.at)} ${hm(s.last.at)}` : "No quotes yet"}</div></div>
         {s.quotes.length > 1 && <span className={cn("rounded-full px-2.5 py-1 text-[12px] font-bold", s.change > 0 ? "bg-vermillion-soft text-vermillion-ink" : "bg-green-soft text-green-ink")}>{pct(s.change)} in {days} days</span>}
       </div>
       {plot ? (
         <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full cursor-crosshair rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ink" role="img" tabIndex={0}
-          onMouseMove={onMove} onMouseLeave={() => setAt(null)} onKeyDown={onKey} onBlur={() => setAt(null)} aria-label={`Quoted prices: ${s.quotes.map((q) => `${day(q.at)} ${usd(q.price)}`).join(", ")}${limit != null ? `. Limit ${usd(limit)}` : ""}. ${s.buys.length} bought.`}>
+          onMouseMove={onMove} onMouseLeave={() => setAt(null)} onKeyDown={onKey} onBlur={() => setAt(null)} aria-label={`Quoted prices: ${s.quotes.map((q) => `${day(q.at)} ${hkd(q.price)}`).join(", ")}${limit != null ? `. Limit ${hkd(limit)}` : ""}. ${s.buys.length} bought.`}>
           <defs><pattern id="pa-lines" patternUnits="userSpaceOnUse" width="5" height="8"><line x1="2.5" x2="2.5" y1="0" y2="8" stroke="#111215" strokeWidth="1.2" /></pattern></defs>
           {plot.ly != null && <rect x="0" y={plot.ly} width={W - R} height={H - B - plot.ly} fill="#D1E4FF" opacity="0.75" />}
           <line x1="0" x2={W - R} y1={H - B} y2={H - B} stroke="#D3D3D1" />
@@ -169,13 +170,13 @@ function PriceHero({ c, block, i }: { c: Ctx; block: Block; i: number }) {
               <g transform={`translate(${Math.min(Math.max(plot.pts[at][0] - 80, 0), W - R - 160)}, 0)`}>
                 <rect width="160" height="28" rx="9" fill="#111215" />
                 <text x="10" y="18" fontSize="12" fill="rgba(255,255,255,0.72)">{day(q.at)}</text>
-                <text x="150" y="18" fontSize="12" fontWeight="700" textAnchor="end" fill={inZone ? "#9DCAFF" : "#fff"}>{usd(q.price)}</text>
+                <text x="150" y="18" fontSize="12" fontWeight="700" textAnchor="end" fill={inZone ? "#9DCAFF" : "#fff"}>{hkd(q.price)}</text>
               </g>
             </g>
           )}
-          {plot.ly != null && limit != null && <g><rect x={W - R + 8} y={plot.ly - 12} width="58" height="24" rx="7" fill="#124977" /><text x={W - R + 37} y={plot.ly + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">≤ {usd(limit).replace("US$", "")}</text></g>}
+          {plot.ly != null && limit != null && <g><rect x={W - R + 8} y={plot.ly - 12} width="58" height="24" rx="7" fill="#124977" /><text x={W - R + 37} y={plot.ly + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">≤ {hkd(limit).replace(curSign(), "")}</text></g>}
         </svg>
-      ) : <EmptyHatch text={limit != null ? `Every quote lands here. It buys at ${usd(limit)} or less.` : "Every quote lands here."} />}
+      ) : <EmptyHatch text={limit != null ? `Every quote lands here. It buys at ${hkd(limit)} or less.` : "Every quote lands here."} />}
       {plot && <div className="mt-1 flex justify-between pr-[11%] text-[12px]"><span className="text-muted">{day(s.quotes[0].at)}</span><span className="font-bold">{day(s.quotes.at(-1)!.at)}</span></div>}
       {plot && <div className="mt-2 flex flex-wrap gap-4 text-[12px] text-ink2"><span className="inline-flex items-center gap-1.5"><span className="w-4 border-t-2 border-dashed border-blue-ink" />Your limit</span><span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-ink" />{s.buys.length} bought</span><span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full border-[2.5px] border-vermillion" />{s.quotes.length} quotes</span></div>}
     </Block>
@@ -188,12 +189,12 @@ function MonthSpend({ c, i }: { c: Ctx; i: number }) {
   const month = new Date(c.now).toLocaleDateString("en-GB", { month: "long" });
   return (
     <Block i={i} wide label={`Spent in ${month}`} right={c.routine?.status === "active" ? `Renews ${day(c.routine.nextAt)}` : undefined}>
-      <div className="num mb-4 font-display text-[32px] font-medium leading-9">{usd(m.total)}</div>
-      <div className="flex h-6 overflow-hidden rounded-lg bg-fill" role="img" aria-label={m.rows.map((r) => `${c.seller(r.sellerId)} ${usd(r.amount)}`).join(", ") || "Nothing spent this month"}>
+      <div className="num mb-4 font-display text-[32px] font-medium leading-9">{hkd(m.total)}</div>
+      <div className="flex h-6 overflow-hidden rounded-lg bg-fill" role="img" aria-label={m.rows.map((r) => `${c.seller(r.sellerId)} ${hkd(r.amount)}`).join(", ") || "Nothing spent this month"}>
         {m.rows.length ? m.rows.map((r, k) => <span key={r.sellerId} style={{ flex: Number(r.amount), background: SEG[k % SEG.length] }} className="border-r-2 border-card last:border-r-0" />) : <span className="hatch hatch-soft flex-1" />}
       </div>
       <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-        {m.rows.map((r, k) => <li key={r.sellerId} className="flex items-center gap-2.5 text-[14px]"><span className="size-2.5 rounded-[3px]" style={{ background: SEG[k % SEG.length] }} /><SellerLogo id={r.sellerId} name={c.seller(r.sellerId)} className="size-6 rounded-[8px]" /><span className="flex-1 truncate">{c.seller(r.sellerId)}</span><span className="num font-semibold">{usd(r.amount)}</span></li>)}
+        {m.rows.map((r, k) => <li key={r.sellerId} className="flex items-center gap-2.5 text-[14px]"><span className="size-2.5 rounded-[3px]" style={{ background: SEG[k % SEG.length] }} /><SellerLogo id={r.sellerId} name={c.seller(r.sellerId)} className="size-6 rounded-[8px]" /><span className="flex-1 truncate">{c.seller(r.sellerId)}</span><span className="num font-semibold">{hkd(r.amount)}</span></li>)}
       </ul>
     </Block>
   );
@@ -215,7 +216,7 @@ function Ladder({ c, i }: { c: Ctx; i: number }) {
       <ol className="grid gap-2">
         {rows.map((r, k) => (
           <li key={k}>
-            <div className="mb-1 flex justify-between text-[12px]"><span className={r.who === "paid" ? "font-bold" : "text-ink2"}>{r.label}</span><span className="num font-bold">{usd(r.price)}</span></div>
+            <div className="mb-1 flex justify-between text-[12px]"><span className={r.who === "paid" ? "font-bold" : "text-ink2"}>{r.label}</span><span className="num font-bold">{hkd(r.price)}</span></div>
             <div className="h-3.5 overflow-hidden rounded-[5px] bg-tile"><div className={cn("h-full rounded-[5px]", r.who === "paid" ? "bg-vermillion" : r.who === "agent" ? "bg-ink" : "hatch bg-fill")} style={{ width: `${Math.max(8, (Number(r.price) / max) * 100)}%` }} /></div>
           </li>
         ))}
@@ -231,12 +232,12 @@ function Budget({ c, i }: { c: Ctx; i: number }) {
   const over = b.kind === "period" && b.spent > b.limit;
   return (
     <Block i={i} label={b.kind === "period" ? `This ${b.period}` : "Budget"} right={b.window ? `resets ${day(b.window.end).split(",")[0]}` : undefined}>
-      <div className="flex items-end gap-2"><span className="num font-display text-[24px] font-semibold leading-7">{usd(b.kind === "period" ? b.spent : b.left)}</span><span className="pb-0.5 text-[14px] text-ink2">{b.kind === "period" ? `of ${usd(b.limit)} a ${b.period}` : `left of ${usd(b.limit)} put in`}</span></div>
+      <div className="flex items-end gap-2"><span className="num font-display text-[24px] font-semibold leading-7">{hkd(b.kind === "period" ? b.spent : b.left)}</span><span className="pb-0.5 text-[14px] text-ink2">{b.kind === "period" ? `of ${hkd(b.limit)} a ${b.period}` : `left of ${hkd(b.limit)} put in`}</span></div>
       <div className="relative mt-6" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((Number(b.spent) / Math.max(Number(b.limit), 1)) * 100)} aria-label={b.kind === "period" ? `Spent this ${b.period}` : "Budget used"}>
         <div className="relative flex h-[18px] overflow-hidden rounded-md bg-fill"><span aria-hidden className="hatch hatch-soft absolute inset-0" /><span className="relative bg-ink" style={{ width: `${(over ? tick : fill) * 100}%` }} />{over && <span className="relative bg-vermillion" style={{ width: `${(fill - tick) * 100}%` }} />}</div>
-        {b.kind === "period" && <><span aria-hidden className="absolute -bottom-1.5 -top-1.5 w-0.5 bg-ink" style={{ left: `calc(${tick * 100}% - 1px)` }} /><span className="num absolute -top-6 text-[12px] font-bold" style={{ left: `${tick * 100}%`, transform: tick > 0.75 ? "translateX(-100%)" : undefined }}>{usd(b.limit)}</span></>}
+        {b.kind === "period" && <><span aria-hidden className="absolute -bottom-1.5 -top-1.5 w-0.5 bg-ink" style={{ left: `calc(${tick * 100}% - 1px)` }} /><span className="num absolute -top-6 text-[12px] font-bold" style={{ left: `${tick * 100}%`, transform: tick > 0.75 ? "translateX(-100%)" : undefined }}>{hkd(b.limit)}</span></>}
       </div>
-      <p className="mt-3 text-[12px] text-muted">{over ? `${usd(b.spent - b.limit)} over, co-signed by the owner on its cheque.` : b.kind === "period" ? `Above ${usd(b.limit)} a ${b.period}, ${c.agent} stops and sends the owner a cheque.` : "The contract holds the pocket to its balance."}</p>
+      <p className="mt-3 text-[12px] text-muted">{over ? `${hkd(b.spent - b.limit)} over, co-signed by the owner on its cheque.` : b.kind === "period" ? `Above ${hkd(b.limit)} a ${b.period}, ${c.agent} stops and sends the owner a cheque.` : "The contract holds the pocket to its balance."}</p>
     </Block>
   );
 }
@@ -255,7 +256,7 @@ function NextRun({ c, i }: { c: Ctx; i: number }) {
           </div>
         ))}
       </div>
-      <p className="mt-3 text-[12px] text-muted">{cadenceText(rs.cadence)}{rs.kind === "price-watch" ? ` · buys at US$${rs.limitPrice} or less` : ""}</p>
+      <p className="mt-3 text-[12px] text-muted">{cadenceText(rs.cadence)}{rs.kind === "price-watch" ? ` · buys at ${curSign()}${rs.limitPrice} or less` : ""}</p>
     </Block>
   );
 }
@@ -271,7 +272,7 @@ function Runs({ c, block, i }: { c: Ctx; block: Block; i: number }) {
           <li key={r.run} className="grid gap-2">
             <div className="flex items-center gap-3">
               <span className={cn("grid size-10 place-items-center rounded-xl font-display text-[17px] font-semibold", r.asked ? "bg-vermillion-soft text-vermillion-ink" : "bg-fill")}>{r.run}</span>
-              <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold">{paid.length ? `Paid ${usd(r.paid)}` : watching ? `Watched · US$${watching.amount}` : "Nothing paid"}</span><span className="block text-[12px] text-muted">{day(r.at)} {hm(r.at)}{r.early ? " · ran early" : ""}{r.asked ? " · asked the owner" : ""}</span></span>
+              <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold">{paid.length ? `Paid ${hkd(r.paid)}` : watching ? `Watched · ${curSign()}${watching.amount}` : "Nothing paid"}</span><span className="block text-[12px] text-muted">{day(r.at)} {hm(r.at)}{r.early ? " · ran early" : ""}{r.asked ? " · asked the owner" : ""}</span></span>
               <span className="flex -space-x-2">{paid.slice(0, 3).map((o, k) => <SellerLogo key={k} id={o.sellerId} name={c.seller(o.sellerId)} className="size-6 rounded-[8px] ring-2 ring-card" />)}</span>
             </div>
             {r.ignored.map((x, k) => <div key={k} className="flex gap-2.5 rounded-xl bg-tile p-3 text-[12px]"><ShieldCheck className="size-4 shrink-0 text-green-ink" {...I} aria-hidden /><span><b>{c.seller(x.sellerId)} tried to change this routine. Nothing changed.</b>{x.excerpt && <span className="block text-muted">“{cleanText(x.excerpt, 110)}”</span>}</span></div>)}
@@ -293,8 +294,8 @@ function WhatNext({ c }: { c: Ctx }) {
     [`First ${watch ? "check" : "run"} ${day(at)} · ${hm(at)}`, cadenceText(rs.cadence)],
     [`${c.agent} ${watch ? "checks" : "buys"} ${rs.items.length === 1 ? c.item(rs.items[0].sellerId, rs.items[0].sku) : `${rs.items.length} items`}`, sellers.map((x) => c.seller(x)).join(" · "),
       <span className="flex -space-x-2">{sellers.slice(0, 3).map((x) => <SellerLogo key={x} id={x} name={c.seller(x)} className="size-6 rounded-[8px] ring-2 ring-card" />)}</span>],
-    watch ? [`Buys only at US$${rs.limitPrice} or less`, "Above that, it only logs the price"] : [`Pays US$${total.toFixed(3).replace(/0$/, "")}`, "The sellers' listed prices"],
-    [`Past US$${rs.allowance.amount} a ${rs.allowance.period}, ${c.agent} asks its owner`, "A co-signature, or it doesn't pay"],
+    watch ? [`Buys only at ${curSign()}${rs.limitPrice} or less`, "Above that, it only logs the price"] : [`Pays ${curSign()}${total.toFixed(3).replace(/0$/, "")}`, "The sellers' listed prices"],
+    [`Past ${curSign()}${rs.allowance.amount} a ${rs.allowance.period}, ${c.agent} asks its owner`, "A co-signature, or it doesn't pay"],
   ];
   return (
     <ol aria-label="What happens next" className="grid">
@@ -314,7 +315,7 @@ function Library({ c, block, i }: { c: Ctx; block: Block; i: number }) {
   const list = [...purchasesOf(c.events, c.p.address)].reverse().slice(0, param(block, "limit"));
   return (
     <Block i={i} label={c.spec.layout === "deal" ? "Bought below the limit" : "Bought"}>
-      {list.length ? <ul className="divide-y divide-line">{list.map((x, k) => <li key={k} className="flex items-center gap-3 py-2.5"><SellerLogo id={x.sellerId} name={c.seller(x.sellerId)} /><span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">{short(c.item(x.sellerId, x.sku))}</span><span className="block text-[12px] text-muted">{c.seller(x.sellerId)} · {day(x.at)} {hm(x.at)}{x.cosigned ? " · co-signed" : ""}</span></span><span className="num text-[14px] font-semibold">{usd(x.amount)}</span></li>)}</ul> : <EmptyHatch text="Nothing bought yet." />}
+      {list.length ? <ul className="divide-y divide-line">{list.map((x, k) => <li key={k} className="flex items-center gap-3 py-2.5"><SellerLogo id={x.sellerId} name={c.seller(x.sellerId)} /><span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">{short(c.item(x.sellerId, x.sku))}</span><span className="block text-[12px] text-muted">{c.seller(x.sellerId)} · {day(x.at)} {hm(x.at)}{x.cosigned ? " · co-signed" : ""}</span></span><span className="num text-[14px] font-semibold">{hkd(x.amount)}</span></li>)}</ul> : <EmptyHatch text="Nothing bought yet." />}
     </Block>
   );
 }
@@ -323,7 +324,7 @@ function Sources({ c, i }: { c: Ctx; i: number }) {
   const s = sourcesOf(c.events, c.p.address);
   return (
     <Block i={i} label="Sources" right={`${c.p.allowed.length} allowed`}>
-      {s.length ? <ul className="grid gap-3">{s.map((x) => <li key={x.sellerId}><div className="mb-1.5 flex items-center gap-2.5 text-[14px]"><SellerLogo id={x.sellerId} name={c.seller(x.sellerId)} className="size-7 rounded-[9px]" /><span className="flex-1">{c.seller(x.sellerId)}</span><span className="text-[12px] text-muted">{x.count}×</span><span className="num font-semibold">{usd(x.amount)}</span></div><div className="relative h-2 overflow-hidden rounded-full bg-fill"><span aria-hidden className="hatch hatch-soft absolute inset-0" /><span className="relative block h-full rounded-full bg-ink" style={{ width: `${x.share * 100}%` }} /></div></li>)}</ul> : <p className="text-[14px] text-ink2">Nothing paid yet.</p>}
+      {s.length ? <ul className="grid gap-3">{s.map((x) => <li key={x.sellerId}><div className="mb-1.5 flex items-center gap-2.5 text-[14px]"><SellerLogo id={x.sellerId} name={c.seller(x.sellerId)} className="size-7 rounded-[9px]" /><span className="flex-1">{c.seller(x.sellerId)}</span><span className="text-[12px] text-muted">{x.count}×</span><span className="num font-semibold">{hkd(x.amount)}</span></div><div className="relative h-2 overflow-hidden rounded-full bg-fill"><span aria-hidden className="hatch hatch-soft absolute inset-0" /><span className="relative block h-full rounded-full bg-ink" style={{ width: `${x.share * 100}%` }} /></div></li>)}</ul> : <p className="text-[14px] text-ink2">Nothing paid yet.</p>}
     </Block>
   );
 }
@@ -332,7 +333,7 @@ function Renewals({ c, i }: { c: Ctx; i: number }) {
   const rows = c.routine ? renewalsOf(c.events, c.p.address, c.routine) : [];
   return (
     <Block i={i} label="Renewals" right={c.routine ? cadenceText(c.routine.cadence) : undefined}>
-      <ul className="divide-y divide-line">{rows.map((r, k) => <li key={k} className="flex items-center gap-3 py-2.5"><SellerLogo id={r.sellerId} name={c.seller(r.sellerId)} /><span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">{short(c.item(r.sellerId, r.sku))}</span><span className="block text-[12px] text-muted">{c.seller(r.sellerId)} · renews {day(r.nextAt)}</span></span>{r.last ? <span className="text-right"><span className="num block text-[14px] font-semibold">{usd(r.last.amount)}</span><span className="block text-[12px] text-muted">last time</span></span> : <span className="text-[12px] text-muted">first renewal</span>}</li>)}</ul>
+      <ul className="divide-y divide-line">{rows.map((r, k) => <li key={k} className="flex items-center gap-3 py-2.5"><SellerLogo id={r.sellerId} name={c.seller(r.sellerId)} /><span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">{short(c.item(r.sellerId, r.sku))}</span><span className="block text-[12px] text-muted">{c.seller(r.sellerId)} · renews {day(r.nextAt)}</span></span>{r.last ? <span className="text-right"><span className="num block text-[14px] font-semibold">{hkd(r.last.amount)}</span><span className="block text-[12px] text-muted">last time</span></span> : <span className="text-[12px] text-muted">first renewal</span>}</li>)}</ul>
     </Block>
   );
 }
@@ -341,7 +342,7 @@ function PriceChanges({ c, i }: { c: Ctx; i: number }) {
   const ch = priceChanges(c.events, c.p.address).slice(0, 4);
   return (
     <Block i={i} label="Price changes">
-      {ch.length ? <ul className="grid gap-3">{ch.map((x, k) => { const up = x.to > x.from; return <li key={k} className="flex items-center gap-3"><SellerLogo id={x.sellerId} name={c.seller(x.sellerId)} /><span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">{short(c.item(x.sellerId, x.sku))}</span><span className="block text-[12px] text-muted">{usd(x.from)} → {usd(x.to)} · {day(x.at)}</span></span><span className={cn("rounded-full px-2.5 py-1 text-[12px] font-bold", up ? "bg-vermillion-soft text-vermillion-ink" : "bg-green-soft text-green-ink")}>{up ? "↑" : "↓"} {pct(x.pct).replace(/^[+−]/, "")}</span></li>; })}</ul> : <p className="text-[14px] text-ink2">No price has moved yet.</p>}
+      {ch.length ? <ul className="grid gap-3">{ch.map((x, k) => { const up = x.to > x.from; return <li key={k} className="flex items-center gap-3"><SellerLogo id={x.sellerId} name={c.seller(x.sellerId)} /><span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">{short(c.item(x.sellerId, x.sku))}</span><span className="block text-[12px] text-muted">{hkd(x.from)} → {hkd(x.to)} · {day(x.at)}</span></span><span className={cn("rounded-full px-2.5 py-1 text-[12px] font-bold", up ? "bg-vermillion-soft text-vermillion-ink" : "bg-green-soft text-green-ink")}>{up ? "↑" : "↓"} {pct(x.pct).replace(/^[+−]/, "")}</span></li>; })}</ul> : <p className="text-[14px] text-ink2">No price has moved yet.</p>}
     </Block>
   );
 }
@@ -350,7 +351,7 @@ function Savings({ c, i }: { c: Ctx; i: number }) {
   const s = savingsOf(c.events, c.p.address);
   return (
     <Block i={i} label="Saved">
-      {s.count ? <><div className="flex items-end gap-2"><span className="num font-display text-[32px] font-medium leading-9 text-green-ink">{usd(s.saved)}</span><span className="pb-1 text-[14px] text-ink2">{Math.round((Number(s.saved) / Number(s.list)) * 100)}% off the first price</span></div><p className="mt-2 text-[12px] text-muted">{s.count === 1 ? "First price" : "First prices"} {usd(s.list)} · paid {usd(s.paid)}</p></> : <p className="text-[14px] text-ink2">{`Whatever ${c.agent} talks the price down by shows here.`}</p>}
+      {s.count ? <><div className="flex items-end gap-2"><span className="num font-display text-[32px] font-medium leading-9 text-green-ink">{hkd(s.saved)}</span><span className="pb-1 text-[14px] text-ink2">{Math.round((Number(s.saved) / Number(s.list)) * 100)}% off the first price</span></div><p className="mt-2 text-[12px] text-muted">{s.count === 1 ? "First price" : "First prices"} {hkd(s.list)} · paid {hkd(s.paid)}</p></> : <p className="text-[14px] text-ink2">{`Whatever ${c.agent} talks the price down by shows here.`}</p>}
     </Block>
   );
 }
@@ -359,8 +360,8 @@ function Guard({ c, i }: { c: Ctx; i: number }) {
   const rs = c.spec.routine!;
   const rows: [string, "Contract" | "ChainBrain"][] = [
     [`Pay anyone but ${c.p.allowed.map((id) => c.seller(id)).join(", ")}`, "Contract"],
-    [`Pay more than ${usd(c.p.cap)} at once`, "Contract"],
-    [`Spend past US$${rs.allowance.amount} a ${rs.allowance.period} without the owner's cheque`, "ChainBrain"],
+    [`Pay more than ${hkd(c.p.cap)} at once`, "Contract"],
+    [`Spend past ${curSign()}${rs.allowance.amount} a ${rs.allowance.period} without the owner's cheque`, "ChainBrain"],
     ["Change its own schedule, sellers or limits, whatever a seller says", "ChainBrain"],
     ["Pay anything after the owner revokes the pocket", "Contract"],
   ];
@@ -409,7 +410,7 @@ export function PocketAppView({ address, back, watch }: { address: string; back(
   };
   const rs = app.routine;
   const line = rs
-    ? rs.kind === "price-watch" ? `Checks ${cadenceText(rs.cadence).replace(/^Every /, "every ").toLowerCase()} · buys at US$${rs.limitPrice} or less` : `${cadenceText(rs.cadence)} · on its own inside US$${rs.allowance.amount} a ${rs.allowance.period}`
+    ? rs.kind === "price-watch" ? `Checks ${cadenceText(rs.cadence).replace(/^Every /, "every ").toLowerCase()} · buys at ${curSign()}${rs.limitPrice} or less` : `${cadenceText(rs.cadence)} · on its own inside ${curSign()}${rs.allowance.amount} a ${rs.allowance.period}`
     : app.layout === "haggle" ? "Negotiates first, pays only what the owner allows" : "Buys when asked, inside the pocket's rules";
   return (
     <div className="fade-up">
@@ -425,8 +426,8 @@ export function PocketAppView({ address, back, watch }: { address: string; back(
           <Card className="p-4">
             <h3 className="mb-3 font-display text-[17px] font-semibold">Rules the owner signed</h3>
             <dl className="grid grid-cols-3 gap-2 text-[13px]">
-              <div><dt className="text-muted">Cap</dt><dd className="num font-semibold">{usd(p.cap)}</dd></div>
-              <div><dt className="text-muted">Asks above</dt><dd className="num font-semibold">{p.askAbove === NEVER || p.askAbove > p.cap ? "Never" : p.askAbove === 0n ? "Every time" : usd(p.askAbove)}</dd></div>
+              <div><dt className="text-muted">Cap</dt><dd className="num font-semibold">{hkd(p.cap)}</dd></div>
+              <div><dt className="text-muted">Asks above</dt><dd className="num font-semibold">{p.askAbove === NEVER || p.askAbove > p.cap ? "Never" : p.askAbove === 0n ? "Every time" : hkd(p.askAbove)}</dd></div>
               <div><dt className="text-muted">Ends</dt><dd className="num font-semibold">{new Date(p.expiresAt * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</dd></div>
             </dl>
             <div className="mt-3 flex flex-wrap items-center gap-1.5">{p.allowed.map((id) => <SellerLogo key={id} id={id} name={c.seller(id)} className="size-7 rounded-[9px]" />)}<span className="ml-1 text-[12px] text-muted">allowed</span></div>

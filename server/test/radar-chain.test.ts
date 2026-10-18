@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createWalletClient, http, publicActions, toHex, type Address } from "viem";
+import { createWalletClient, http, publicActions, type Address } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
-import { startStack } from "./helpers/fork";
+import { startStack } from "./helpers/stack";
 import { autoOwner } from "./helpers/owner";
+import { $, atom } from "./helpers/amounts";
 
 let s: Awaited<ReturnType<typeof startStack>>;
 let tools: typeof import("../src/wallet/tools").tools;
@@ -20,25 +20,26 @@ beforeAll(async () => {
   process.env.RADAR_ADMIN = "1";
   ({ tools } = await import("../src/wallet/tools"));
   api = (await import("../src/index")).apiApp();
-  pocket = await s.newPocket({ cap: "2", askAbove: "never", sellers: ["datalite", "datapro"], budget: "5" });
+  pocket = await s.newPocket({ cap: $.cap, askAbove: "never", sellers: ["datalite", "datapro"], budget: $.budget });
   stopOwner = autoOwner({ api, sign: s.ownerSignTransfer });
 });
 afterAll(async () => { stopOwner?.(); await s?.stop(); });
 
-describe("Radar on the fork: a real USDC transfer from a drainer to DataPro", () => {
+describe("Radar on the chain: a real eHKD transfer from a drainer to DataPro", () => {
   it("clean sellers pass; after a labelled drainer pays DataPro, paying DataPro is refused and an alert opens", async () => {
-    expect(await call("draft_intent", { request: "durian report", description: "Durian export market data", maxPricePerItem: "2.00", maxTotal: "4.00", maxItems: 3, deadline: tonight() })).toMatchObject({ ok: true });
+    expect(await call("draft_intent", { request: "durian report", description: "Durian export market data", maxPricePerItem: $.perItem, maxTotal: $.total, maxItems: 3, deadline: tonight() })).toMatchObject({ ok: true });
 
     const q1 = await call("get_quote", { sellerId: "datapro", sku: "premium-report" });
     expect(q1.counterpartyRisk).toMatchObject({ verdict: "ok" });
 
-    // a drainer wallet sends 9 USDC to DataPro's payTo, on-chain
+    // a drainer wallet sends 9 eHKD to DataPro's payTo, on-chain
     const drainer = privateKeyToAccount(generatePrivateKey());
-    const w = createWalletClient({ account: drainer, chain: baseSepolia, transport: http(s.rpc) }).extend(publicActions);
-    await w.request({ method: "anvil_setBalance" as any, params: [drainer.address, toHex(10n ** 18n)] as any });
-    await s.setUsdc(drainer.address, 9_000_000n);
-    const { erc20Abi, USDC } = await import("../src/wallet/chain");
-    await w.waitForTransactionReceipt({ hash: await w.writeContract({ address: USDC, abi: erc20Abi, functionName: "transfer", args: [s.payTo.datapro, 9_000_000n] }) });
+    const { cfg } = await import("../src/chains");
+    const w = createWalletClient({ account: drainer, chain: cfg().chain, transport: http(s.rpc) }).extend(publicActions);
+    await s.gas(drainer.address);
+    await s.fundToken(drainer.address, 9_000_000n);
+    const { erc20Abi } = await import("../src/wallet/chain");
+    await w.waitForTransactionReceipt({ hash: await w.writeContract({ address: s.token, abi: erc20Abi, functionName: "transfer", args: [s.payTo.datapro, 9_000_000n] }) });
 
     const lab = await api.request("/api/radar/admin/labels", { method: "POST", body: JSON.stringify({ address: drainer.address, category: "drainer", name: "Demo drainer" }), headers: { "content-type": "application/json" } });
     expect(lab.status).toBe(200);
@@ -48,7 +49,7 @@ describe("Radar on the fork: a real USDC transfer from a drainer to DataPro", ()
     const r = await call("pay", { quoteId: q2.quoteId });
     expect(r).toMatchObject({ ok: false, reason: "COUNTERPARTY_HIGH_RISK" });
     expect(r.radar).toContain("traces back to Demo drainer (drainer), directly");
-    expect(await s.usdcBalance(pocket)).toBe(5_000_000n);
+    expect(await s.balance(pocket)).toBe(atom($.budget));
 
     const scr = await (await api.request("/api/radar/screen/datapro")).json();
     expect(scr).toMatchObject({ counterparty: "DataPro", verdict: "block" });
@@ -58,7 +59,7 @@ describe("Radar on the fork: a real USDC transfer from a drainer to DataPro", ()
     // DataLite is unaffected and still pays
     const q3 = await call("get_quote", { sellerId: "datalite", sku: "durian-report" });
     expect(q3.counterpartyRisk).toMatchObject({ verdict: "ok" });
-    expect(await call("pay", { quoteId: q3.quoteId })).toMatchObject({ ok: true, paid: "0.30" });
+    expect(await call("pay", { quoteId: q3.quoteId })).toMatchObject({ ok: true, paid: $.durian });
   });
 
   it("planting a benign label through the admin route is rejected (it could only loosen)", async () => {

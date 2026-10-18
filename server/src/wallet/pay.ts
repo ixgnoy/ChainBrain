@@ -3,7 +3,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { wrapFetchWithPaymentFromConfig, decodePaymentResponseHeader } from "@x402/fetch";
 import { decodePaymentRequiredHeader } from "@x402/core/http";
 import { pocket as P } from "./chain";
-import { formatUsd } from "./money";
+import { cfg } from "../chains";
 import { PocketScheme, CbError, buildAuthorization, type Authorization } from "./scheme";
 import { state, type Quote, type QuoteRec } from "./state";
 import { bus } from "./events";
@@ -63,8 +63,9 @@ export async function settle(pocket: Address, rec: QuoteRec, intentHash: Hex): P
     const auth = prepareApproval(pocket, rec, intentHash);
 
     const pay = wrapFetchWithPaymentFromConfig(fetch, {
-      schemes: [{ network: "eip155:84532", client: new PocketScheme({ auth, agent: agentAccount(), ownerSig: rec.ownerSig ?? "0x" }) as any }],
-      spendControls: { maxAmountPerPayment: `$${formatUsd(info.cap)}` }, // @x402/fetch defaults to $1; the pocket's cap is the real limit
+      schemes: [{ network: cfg().network, client: new PocketScheme({ auth, agent: agentAccount(), ownerSig: rec.ownerSig ?? "0x" }) as any }],
+      // @x402/fetch defaults to $1 of known USD tokens only; allow our token, capped atomically at the pocket's cap (the real limit)
+      spendControls: { allowedAssets: [{ network: cfg().network, asset: cfg().token, maxAmountPerPayment: info.cap.toString() }] },
     } as any);
 
     // Network failure: retry once with the identical authorization (same nonce), so it can never pay twice.

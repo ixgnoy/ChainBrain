@@ -20,6 +20,7 @@ import { cleanText } from "../lib/sanitize";
 import { liveCards, nowLine, type LiveCard, type LiveKind } from "../lib/live";
 import { agentInfo } from "../../../shared/sim/agents";
 import * as api from "../lib/api";
+import { curSign } from "../lib/runtime";
 
 const LOOK: Record<LiveKind, { edge: string; icon: IconName; tone: string; bg: string; label: string }> = {
   paid: { edge: c.ink, icon: "check", tone: c.ink, bg: c.card, label: "Paid" },
@@ -53,7 +54,7 @@ export function LiveFeed({ onLedger }: { /** no ledger row for a card: show the 
   const running = events.filter((e) => e.type === "routine" && (e.kind === "run-start" || e.kind === "run")).reduce((m, e) => m.set(String(e.pocket), e.kind), new Map<string, string>());
   const runningNow = [...running.entries()].filter(([, k]) => k === "run-start").map(([pk]) => ({ agent: agentOf(pk), pocket: cleanText(findPocket(pk)?.name ?? "a pocket", 24) }));
   const line = nowLine({
-    asks: asks.map((a) => ({ agent: a.agent, amount: a.data?.amount ? `US$${cleanText(String(a.data.amount), 10)}` : undefined })),
+    asks: asks.map((a) => ({ agent: a.agent, amount: a.data?.amount ? `${curSign()}${cleanText(String(a.data.amount), 10)}` : undefined })),
     busy: chatBusy, running: runningNow, watching: pockets.filter((p) => !p.revoked).length,
     next: next ? { name: cleanText(next.p.name, 20), when: new Date(next.rt!.nextAt).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }) } : undefined,
     agentName: (id) => agentInfo(id ?? "chainbrain")?.name ?? "ChainBrain",
@@ -77,11 +78,11 @@ export function LiveFeed({ onLedger }: { /** no ledger row for a card: show the 
       {/* waiting for you, on top */}
       {asks.map((a) => (
         <Animated.View key={a.id} entering={FadeInDown.duration(220)} style={{ marginHorizontal: 16, marginTop: 10 }}>
-          <Press kind="row" haptics="medium" onPress={() => openApproval(a.id)} accessibilityRole="button" accessibilityLabel={`${agentInfo(a.agent ?? "")?.name ?? "Your agent"} asks you to co-sign US$${a.data?.amount ?? ""}. Opens the cheque`}
+          <Press kind="row" haptics="medium" onPress={() => openApproval(a.id)} accessibilityRole="button" accessibilityLabel={`${agentInfo(a.agent ?? "")?.name ?? "Your agent"} asks you to co-sign ${curSign()}${a.data?.amount ?? ""}. Opens the cheque`}
             style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: radius.card, backgroundColor: c.blue }}>
             <AgentAvatar kind={a.agent ?? "chainbrain"} size={36} badge={c.vermillion} />
             <View style={{ flex: 1 }}>
-              <T v="row" w="bold" numberOfLines={1}>{`Needs you · US$${cleanText(String(a.data?.amount ?? ""), 10)}`}</T>
+              <T v="row" w="bold" numberOfLines={1}>{`Needs you · ${curSign()}${cleanText(String(a.data?.amount ?? ""), 10)}`}</T>
               <T v="cap" color="ink2" numberOfLines={1}>{`To ${cleanText(sellerName(a.data?.sellerId), 24)} · above its limit`}</T>
             </View>
             <View style={{ height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: c.ink, justifyContent: "center" }}><T v="cap" w="bold" style={{ color: c.white }}>Review</T></View>
