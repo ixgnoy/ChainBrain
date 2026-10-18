@@ -26,7 +26,9 @@ import { cardHeight, faceOf, toneFor } from "../../components/PocketFace";
 import type { Pocket } from "../../store";
 import * as api from "../../lib/api";
 import { glyphKey, glyphOf, weekDigest, type Glyph } from "../../../../shared/sim/pocketAppData";
-import { UsageLegend, WalletHero, jobLine } from "../../components/WalletHome";
+import { UsageTabs, WalletHero, homeCards, jobLine } from "../../components/WalletHome";
+import { BrainStrip } from "../../components/BrainStrip";
+import type { Usage } from "../../../../shared/sim/pocketApp";
 import { WeekBought } from "../../components/WeekDigest";
 import { SpendChart } from "../../components/SpendChart";
 import { useIntroDone } from "../../ui/intro";
@@ -198,6 +200,15 @@ function Home({ ready }: { ready: boolean }) {
     const neg = (id: string) => !!cfg?.sellers.find((x) => x.id === id)?.items.some((i) => (i as { negotiable?: boolean }).negotiable);
     return Object.fromEntries(pockets.map((p) => [p.address.toLowerCase(), jobLine(p, routines.get(p.address.toLowerCase()), sellerLabel, itemName, neg)]));
   }, [pockets, routines, cfg, sellerLabel, itemName]);
+  // at most three cards unless opened out, filtered by the usage tabs
+  const [tab, setTab] = useState<Usage | "all">("all");
+  const [open, setOpen] = useState(false);
+  const lastAt = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const e of events) if (e.pocket) m.set(String(e.pocket).toLowerCase(), e.at);
+    return (a: string) => m.get(a.toLowerCase()) ?? 0;
+  }, [moneyN]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cards = useMemo(() => homeCards(pockets, lastAt, tab, open), [pockets, lastAt, tab, open]);
   const upcoming = useMemo(() => nextRuns(pockets, (a) => routines.get(a.toLowerCase()) ?? null, events, cfg?.sellers ?? [], now), [pockets, routines, events, cfg, now]);
   const reduce = useReduceMotion();
   const big = useLargeText();
@@ -238,6 +249,7 @@ function Home({ ready }: { ready: boolean }) {
       </Rise>
 
 
+      <BrainStrip />
       <LiveStrip />
 
       <View style={{ marginTop: 16 }}>
@@ -247,8 +259,15 @@ function Home({ ready }: { ready: boolean }) {
           <EmptyPockets />
         ) : (
           <>
-            <UsageLegend pockets={pockets} />
-            <PocketWallet pockets={pockets} play={play} scrollY={scrollY} glyphs={glyphs} jobs={jobs} grouped />
+            <UsageTabs pockets={pockets} value={tab} onChange={(v) => { setTab(v); setOpen(false); }} />
+            <PocketWallet pockets={cards.shown} play={play} scrollY={scrollY} glyphs={glyphs} jobs={jobs} grouped />
+            {cards.total > cards.shown.length || open ? (
+              <Press haptics="select" onPress={() => setOpen((o) => !o)} accessibilityRole="button" accessibilityLabel={open ? "Show fewer cards" : `See all ${cards.total} cards`}
+                style={{ alignSelf: "center", marginTop: 2, marginBottom: 14, minHeight: 40, paddingHorizontal: 16, borderRadius: 20, backgroundColor: c.card, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <T v="cap" w="semi">{open ? "Show fewer" : `See all ${cards.total} cards`}</T>
+                <Icon name={open ? "chevronUp" : "chevronDown"} size={14} color={c.ink2} stroke={2.2} />
+              </Press>
+            ) : null}
           </>
         )}
       </View>

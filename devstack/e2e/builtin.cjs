@@ -84,7 +84,10 @@ async function until(what, fn, ms = 30000, step = 200) {
 
   await run("launch: straight to a lived-in Home, nothing says demo", async () => {
     await visible("Main wallet").waitFor({ timeout: 60000 });
-    // Home shows every pocket as a card in the stack under the wallet, each strip with its job line
+    // Home shows three cards by default (one of each usage), the rest behind "See all"; the Brain strip under the wallet
+    await visible(/Brain is watching \d+ pockets/).waitFor({ timeout: 20000 });
+    check("the Brain strip says what it watches, and Home shows at most three cards", (await page.getByRole("button", { name: / pocket, [\d.]+ USDC/ }).count()) <= 3);
+    await page.getByRole("button", { name: /See all \d+ cards/ }).click(); await sleep(600);
     await visible("Research data").waitFor();
     const t = await body();
     check("four seeded pockets", /Research data/.test(t) && /One purchase/.test(t) && /Market news/.test(t) && /Trade quotes/.test(t));

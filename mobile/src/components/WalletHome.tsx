@@ -49,26 +49,43 @@ export function byUsage<P extends Pocket>(pockets: P[]): P[] {
   return pockets.map((p, i) => ({ p, i })).sort((a, b) => rank(a.p) - rank(b.p) || a.i - b.i).map((x) => x.p);
 }
 
-/** The stack's legend: how many pockets spend daily, weekly, once or only when asked, each in its card's own colour. */
-export function UsageLegend({ pockets }: { pockets: Pocket[] }) {
+/** Which cards Home shows: at most three unless opened out. Under "All", one of each usage, the kinds used most recently
+ *  first; under one usage, its three used most recently. Opened out, everything in the tab (revoked ones too under All). */
+export function homeCards(pockets: Pocket[], lastAt: (address: string) => number, tab: Usage | "all", open: boolean, max = 3): { shown: Pocket[]; total: number } {
+  const recent = (a: Pocket, b: Pocket) => lastAt(b.address) - lastAt(a.address);
+  const pool = tab === "all" ? pockets : pockets.filter((p) => !p.revoked && usageOf(p.app) === tab);
+  if (open || pool.length <= max) return { shown: pool, total: pool.length };
+  const live = pool.filter((p) => !p.revoked).sort(recent);
+  const pick: Pocket[] = [];
+  if (tab === "all") for (const p of live) if (pick.length < max && !pick.some((x) => usageOf(x.app) === usageOf(p.app))) pick.push(p);
+  for (const p of live) if (pick.length < max && !pick.includes(p)) pick.push(p);
+  return { shown: pick, total: pool.length };
+}
+
+/** The stack's tabs, one per usage in its card's own colour, with how many pockets spend that way. They filter the stack. */
+export function UsageTabs({ pockets, value, onChange }: { pockets: Pocket[]; value: Usage | "all"; onChange(v: Usage | "all"): void }) {
   const n = new Map<Usage, number>();
   for (const p of pockets) if (!p.revoked) n.set(usageOf(p.app), (n.get(usageOf(p.app)) ?? 0) + 1);
-  const shown = USAGE_ORDER.filter((u) => n.get(u));
-  if (shown.length < 2) return null;
+  const kinds = USAGE_ORDER.filter((u) => n.get(u));
+  if (kinds.length < 2) return null;
+  const live = pockets.filter((p) => !p.revoked).length;
+  const tab = (key: Usage | "all", label: string, count: number) => {
+    const on = value === key;
+    const f = key === "all" ? null : deck[USAGE_FACE[key]];
+    return (
+      <Press key={key} haptics="select" scale={0.96} onPress={() => onChange(key)} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={`${label}, ${count} ${count === 1 ? "pocket" : "pockets"}`}
+        style={{ flexDirection: "row", alignItems: "center", gap: 5, height: 32, paddingLeft: f ? 7 : 12, paddingRight: 11, borderRadius: 16, backgroundColor: on ? c.ink : c.card }}>
+        {f ? <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: f.face, borderWidth: 1, borderColor: on ? "rgba(255,255,255,0.5)" : f.edge }} /> : null}
+        <T v="cap" w="semi" style={{ color: on ? c.white : c.ink }}>{label}</T>
+        <T v="cap" w="bold" style={{ color: on ? c.white : f ? f.usage : c.ink2, fontVariant: ["tabular-nums"] }}>{String(count)}</T>
+      </Press>
+    );
+  };
+  // one line whatever the text size: it scrolls sideways rather than wrapping
   return (
-    // one line whatever the text size: it scrolls sideways rather than wrapping
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} accessible accessibilityLabel={`Your pockets: ${shown.map((u) => `${n.get(u)} ${USAGE_LABEL[u].toLowerCase()}`).join(", ")}`}
-      style={{ marginBottom: 10, flexGrow: 0 }} contentContainerStyle={{ gap: 5, paddingHorizontal: 16 }}>
-      {shown.map((u) => {
-        const f = deck[USAGE_FACE[u]];
-        return (
-          <View key={u} style={{ flexDirection: "row", alignItems: "center", gap: 5, height: 28, paddingLeft: 6, paddingRight: 9, borderRadius: 14, backgroundColor: c.card }}>
-            <View style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: f.face, borderWidth: 1, borderColor: f.edge }} />
-            <T v="cap" w="semi">{USAGE_LABEL[u]}</T>
-            <T v="cap" w="bold" style={{ color: f.usage, fontVariant: ["tabular-nums"] }}>{String(n.get(u))}</T>
-          </View>
-        );
-      })}
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="tablist" style={{ marginBottom: 10, flexGrow: 0 }} contentContainerStyle={{ gap: 6, paddingHorizontal: 16 }}>
+      {tab("all", "All", live)}
+      {kinds.map((u) => tab(u, USAGE_LABEL[u], n.get(u)!))}
     </ScrollView>
   );
 }

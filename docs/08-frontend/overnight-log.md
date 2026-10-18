@@ -12,6 +12,13 @@ Phone first, then the web console. Each slice goes research → implement → va
 - [ ] VoiceOver pass on the chart scrub and the edit sheet's stepper (needs a device or Accessibility Inspector)
 - [ ] Console: the Evidence and Sellers pages
 
+## A calmer Home: three cards, tabs, and a Brain strip (18 Oct)
+
+The owner found Home cramped with seven cards and asked whether the Brain graph belonged on Home.
+- At most three cards (one per usage, most recently used kinds first), "See all 7 cards" to open the rest in place; the legend became filter tabs. Not a scrolling box inside the page (it traps the thumb, clips the stack).
+- Not the full graph on Home (it would add to the crowding): a slim dark Brain strip under the wallet with a tiny live graph, the latest real decision and "Brain is watching 7 pockets", opening the Brain tab.
+- e2e: Home now opens "See all" before checking every pocket, and checks the strip and the three-card cap (62/62). Auto-play ran every scene and ended on Activity at 427 s with no errors; iOS screenshot `ios-61-home-calm.png`.
+
 ## Run a test leaves the phone (18 Oct)
 
 The owner agreed: the phone's Brain tab only watches; "Run a test" stays on the console's Brain page for judges. The phone's test UI, its state and the `api.runTest` / `testPlan` wrappers are gone (the world's `runTest` stays for the console). The e2e Brain step now checks the graph's counts and a real decision's stages (rules, Radar, pre-flight, settlement) and that no test button is on the phone.
