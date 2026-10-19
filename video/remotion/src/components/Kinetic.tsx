@@ -17,6 +17,7 @@ export const Reveal: React.FC<{
   out?: number; // seconds from the start of the sequence when the words leave (optional)
   highlight?: Record<string, string>; // word -> colour
   maxWidth?: number;
+  w?: number; // settle stiffness: higher lands harder (attacks), lower lands softer
 }> = ({
   text,
   delay = 0,
@@ -29,6 +30,7 @@ export const Reveal: React.FC<{
   letterSpacing = "-0.02em",
   align = "left",
   out,
+  w = 11,
   highlight = {},
   maxWidth,
 }) => {
@@ -54,7 +56,7 @@ export const Reveal: React.FC<{
         <div key={li} style={{ display: "block", whiteSpace: "nowrap" }}>
           {line.split(" ").map((word, wi) => {
             const i = idx++;
-            const p = settle(t - delay - i * stagger, 11);
+            const p = settle(t - delay - i * stagger, w);
             const q = out !== undefined ? settle(t - out - i * stagger * 0.5, 13) : 0;
             const y = (1 - p) * 1.05 + q * -1.05;
             const clean = word.replace(/[.,:;!?]/g, "");

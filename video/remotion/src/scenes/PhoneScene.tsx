@@ -89,7 +89,8 @@ export const PhoneScene: React.FC<{
   cams?: Cam[];
   tint?: number;
   rail?: React.ReactNode;
-}> = ({ segs, word, beats, cams = [], tint = 0, rail }) => {
+  snap?: number; // headline settle stiffness (the attack scene lands harder)
+}> = ({ segs, word, beats, cams = [], tint = 0, rail, snap = 11 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
@@ -112,7 +113,7 @@ export const PhoneScene: React.FC<{
         <div style={{ position: "absolute", left: 120, top: 330, width: 860 }}>
           <Sequence key={ci} from={Math.round(current.t * fps)} layout="none">
             {current.tag ? <RubricTag text={current.tag} /> : null}
-            <Reveal text={current.head} size={82} delay={0} stagger={0.045} />
+            <Reveal text={current.head} size={82} delay={0} stagger={snap > 11 ? 0.03 : 0.045} w={snap} />
             {current.cap ? <Caption {...current.cap} /> : null}
           </Sequence>
         </div>

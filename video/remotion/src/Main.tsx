@@ -164,6 +164,7 @@ export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) =
           <PhoneScene
             word="Break"
             tint={1}
+            snap={17}
             segs={segs("attack")}
             beats={beatsAttack}
             cams={cams("attack", [
