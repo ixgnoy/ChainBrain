@@ -4,11 +4,13 @@ Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`). Last up
 
 ## If you have two hours before the deadline, do these
 
-Pick the whole chain in this order on `main` (tested clean on `9bcd289`):
+The branch is a straight line on `main` at `9bcd289`, and every commit is meant to ship. Picking the whole range is tested clean, and the subtitles stay English-only until someone turns the Chinese on:
 
 ```bash
-git cherry-pick 9e4ef9b d3c6f87 056dd8c 81546ed 860094b 0bb1084 399a15a 77d4822 fd0c90f 281dd3a
+git cherry-pick 9bcd289..video-overnight
 ```
+
+To pick commits one at a time instead, use the commit column below. Pick them in branch order and include the report commits (`1916e95`, `13e670a`, …), which carry the kit HTML. `b366b98` (QC), `6edcc66` (mix peak) and `fd0c90f` (voice clean-up) each apply alone.
 
 | # | Change | Commits | Effect on judges | Minutes | Risk |
 |---|---|---|---|---|---|
@@ -16,8 +18,9 @@ git cherry-pick 9e4ef9b d3c6f87 056dd8c 81546ed 860094b 0bb1084 399a15a 77d4822 
 | 2 | **Clean the phone recording at its real noise floor.** The old chain assumed a −28 dBFS room. Phones in a quiet room sit near −50, so the denoiser barely worked. | `fd0c90f` | A voice that sounds like a room, not a phone, is the first thing a judge hears | 5, plus one A/B listen of the first file | Low. Listen once with both chains. |
 | 3 | **Hold the real hash full screen for 2.2 s** after "a hash anyone can open": the full hash, "success", the explorer address, and a note that every hash in the film is in the execution-evidence PDF (checked: all nine are). | `77d4822` | Topic F's 40 task points are judged on transaction hashes. In v4 the only legible hash was a 2 s screenshot. | 5 | Low. Adds 2.2 s; v4.1 runs 4:41 with the preview voice. |
 | 4 | **Name the rubric's own words on screen.** Prompt injection, data extraction, privilege escalation and induced transfer label the four attacks. Clarification and fallback label the two phone beats that show them. | `056dd8c`, `81546ed`, `281dd3a` | Makes 60 of the 100 points easy to tick for a judge with the rubric open | 5 | Very low |
-| 5 | **Verify two numbers before the final render.** Re-run the test suites: 462 may now be 463+, since a server test landed after the PDFs. Confirm `SENTINEL_PK` is set on Railway; without it, "freezes the card" is only a hold. | none | Avoids a provable mismatch between the video and the documents | 20 | None |
-| 6 | **Chinese subtitles, only if a team member who reads Chinese checks all 43 lines today.** Then set `"enabled": true` in `remotion/src/subs-zh.json`. | in the chain, off by default | Mainland and Hong Kong judges can follow the fast X-ray. English stays primary, as the rules require. | 30 to check | Medium if unchecked, which is why it ships off |
+| 5 | **Confirm `SENTINEL_PK` is set on Railway.** Without it, "freezes the card" is only a hold, and the voice line w2 would need "holds". (The 462 tests are now dated "passed on 19 Oct", as the PDFs say, in `789349f`.) | `789349f` | Avoids a provable mismatch between the video and the documents | 20 | None |
+| 6 | **Keep the delivered MP4 under −1 dBTP and check it before upload.** v4 measures −0.6 dBTP true peak. `tools/qc.py` (also run at the end of `build.sh`) checks length, format, loudness, peak, black, freezes, silence and subtitle speed. | `b366b98`, `6edcc66` | A portal that normalises or rejects hot audio won't touch ours | 5 | None |
+| 7 | **Chinese subtitles, only if a team member who reads Chinese checks all 43 lines today.** Then set `"enabled": true` in `remotion/src/subs-zh.json`. | in the chain, off by default | Mainland and Hong Kong judges can follow the fast X-ray. English stays primary, as the rules require. | 30 to check | Medium if unchecked, which is why it ships off |
 
 **Conflicts if you pick only some.** `timeline.json` and `vo-words.json` are generated. On a conflict, take either side, then re-run `tools/layout.py` and `tools/cues.py`; `tools/voice.py` rewrites them anyway when the owner's takes are imported. The branch's preview voice for the 12 changed lines is Kokoro, because the ElevenLabs free quota has 178 characters left.
 
@@ -38,7 +41,7 @@ Effect × confidence ÷ effort, under the 5:00 cap. B = before the deadline, A =
 | 9 | Phone scenes: drop headlines that repeat the subtitle word for word | to prototype | A | Redundancy principle; keep subtitles for non-native viewers (Toh 2010) ([academic.md](research/academic.md)) | M | Medium (the approved look) |
 | 10 | "Live and deployed" said once near the end, for the 0-5 bonus | to prototype | B | Bonus rewards "demonstrated real-world deployment" (rules) | S | Low |
 | 11 | "test" next to e-HKD in the attack order | to prototype | B | The HKMA has not decided on a retail e-HKD ([judges.md](research/judges.md) §2) | S | None |
-| 12 | Render QC script (black, freeze, silence, loudness) | to build | B | [github.md](research/github.md) #1 | M | None |
+| 12 | Render QC script (black, freeze, silence, loudness) | **built**, `b366b98` | B | [github.md](research/github.md) #1 | M | None |
 | 13 | 90 s finals cut | idea | A | [practice.md](research/practice.md) #10 | L | — |
 | 14 | Last frame rhymes with the first (Morse dots resolve into the mark) | idea | A | [practice.md](research/practice.md) #4 | M | Low |
 
@@ -80,3 +83,6 @@ Effect × confidence ÷ effort, under the 5:00 cap. B = before the deadline, A =
 | P4 | Script v4.1 and captions | `860094b`, `0bb1084`, `281dd3a` | `v4-acc-*` / `acc-*` (9 pairs), `r1-*` | kept | KEEP WITH FIX, fixed in `281dd3a` (plainer u1, k3, m2, r1) |
 | P5 | Real hash held full screen | `77d4822` | v4-129 / hash-129 | kept | the reviewer's "bigger gain than any of these" |
 | P6 | Phone-voice clean chain | `fd0c90f` | (audio; synthetic test in clean-chain.txt) | kept | — |
+| P7 | 462 tests "passed on 19 Oct" | `789349f` | v4-264 / tests-262 | kept | — |
+| P8 | Render QC script | `b366b98` | (text) | kept | Found v4's −0.6 dBTP peak |
+| P9 | Mix true peak under −1 dBTP | `6edcc66` | (audio: AAC −1.7 dBTP, −14.4 LUFS) | kept | — |
