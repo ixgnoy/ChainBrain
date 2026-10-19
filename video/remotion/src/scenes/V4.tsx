@@ -211,7 +211,7 @@ function camAt(keys: Cam[], t: number): Cam {
 
 const CHECKS = ["Exact payment", "Agent signed", "Not frozen or cancelled", "Seller on your list", "Under the limit", "Enough balance", "Within the allowance", "Your signature, if above ask-me"];
 const SERVER_CHECKS: { name: string; icon: React.ReactNode; note: string }[] = [
-  { name: "Task check", icon: <ClipboardCheck size={26} />, note: "what you confirmed" },
+  { name: "Task check", icon: <ClipboardCheck size={26} />, note: "your task" },
   { name: "Radar", icon: <Radar size={26} />, note: "risk 0/10" },
   { name: "Sentinel", icon: <Eye size={26} />, note: "no hijack" },
   { name: "Pre-flight", icon: <Gauge size={26} />, note: "test run first" },
