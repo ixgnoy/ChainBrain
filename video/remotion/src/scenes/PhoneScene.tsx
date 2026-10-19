@@ -43,7 +43,7 @@ const Screen: React.FC<{ segs: Seg[] }> = ({ segs }) => {
         const len = Math.round(segLen(s) * FPS);
         at += segLen(s);
         const local = frame - start;
-        const snap = i === 0 ? 1 : 1 + 0.03 * (1 - easeOut(clamp(local / 7)));
+        const snap = i === 0 ? 1 : 1 + 0.016 * (1 - easeOut(clamp(local / 9)));
         const style: React.CSSProperties = { width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 };
         return (
           <Sequence key={i} from={start} durationInFrames={len} layout="none">

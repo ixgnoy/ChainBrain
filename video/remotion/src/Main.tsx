@@ -160,7 +160,7 @@ export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) =
         <ActTitle title="Let’s break it." />
       </At>
       <At id="attack">
-        <Whip id="attack">
+        <Whip id="attack" dir={-1}>
           <PhoneScene
             word="Break"
             tint={1}
@@ -187,7 +187,7 @@ export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) =
         <Stolen />
       </At>
       <At id="watch">
-        <Whip id="watch">
+        <Whip id="watch" frames={12}>
           <PhoneScene
             word="Watch"
             segs={segs("watch")}

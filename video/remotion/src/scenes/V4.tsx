@@ -716,13 +716,13 @@ export const Hkma: React.FC = () => {
       <div style={{ position: "absolute", left: 120, top: 120, fontFamily: F.body, fontWeight: 500, fontSize: 24, color: C.muted, opacity: settle(t - 0.5, 8) }}>
         Remarks by Carmen Chu, Executive Director (Banking Supervision), on governing AI agents
       </div>
-      <div style={{ position: "absolute", left: 120, right: 120, top: 230 }}>
+      <div style={{ position: "absolute", left: 120, right: 120, top: 280, transform: `scale(${1 + 0.02 * clamp(t / 17)})`, transformOrigin: "left top" }}>
         {PRINCIPLES.map((p) => {
           const at = r.word("h1", p.word) - 0.1;
           const k = settle(t - at, 10);
           const done = settle(t - four - 0.1, 12);
           return (
-            <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 40, padding: "26px 0", borderTop: `1.5px solid rgba(255,255,255,${0.1 * k})`, opacity: 0.15 + 0.85 * k, transform: `translateX(${(1 - k) * -30}px)` }}>
+            <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 40, padding: "31px 0", borderTop: `1.5px solid rgba(255,255,255,${0.1 * k})`, opacity: 0.15 + 0.85 * k, transform: `translateX(${(1 - k) * -30}px)` }}>
               <div style={{ width: 560, fontFamily: F.display, fontWeight: 600, fontSize: 60, letterSpacing: "-0.02em", color: C.text }}>{p.name}</div>
               <Badge kind="ok" size={54} on={done} />
               <div style={{ flex: 1, fontFamily: F.body, fontWeight: 500, fontSize: 32, color: k > 0.5 ? C.blue : C.muted, lineHeight: 1.25 }}>{p.ours}</div>
@@ -730,7 +730,7 @@ export const Hkma: React.FC = () => {
           );
         })}
       </div>
-      <div style={{ position: "absolute", left: 120, top: 860, fontFamily: F.mono, fontSize: 24, color: C.muted, opacity: settle(t - four - 0.6, 6), fontVariantLigatures: "none" }}>
+      <div style={{ position: "absolute", left: 120, top: 890, fontFamily: F.mono, fontSize: 24, color: C.muted, opacity: settle(t - four - 0.6, 6), fontVariantLigatures: "none" }}>
         Our mapping of four ideas from the speech, not a regulatory approval. Source: hkma.gov.hk, speech of 16 Oct 2026.
       </div>
     </Stage>
