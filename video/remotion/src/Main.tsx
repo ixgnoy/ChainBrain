@@ -128,7 +128,7 @@ export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) =
         />
       </At>
       <At id="attackTitle">
-        <ActTitle title="Now we attack it." />
+        <ActTitle title="Let’s attack it." />
       </At>
       <At id="act3">
         <Whip id="act3">

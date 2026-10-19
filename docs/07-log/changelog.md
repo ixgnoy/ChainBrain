@@ -7,7 +7,7 @@ Last updated: 2026-10-19
   - **Pills and eyebrows:** replaced by plain captions.
 - **New act, "Why it held" (52 s):** sells how ChainBrain works using only real material, with no code on screen. It shows:
   - the app's own screens (UI crops cut from the recordings by `video/tools/crops.py`);
-  - brand marks as app-icon tiles;
+  - third-party marks as small avatars beside the name, and the official FISCO BCOS and x402 logos on white plaques;
   - two real transaction pages from the hosted explorer: block 11 (success) and block 13 (the reverted forced transfer).
 - **Problem section:** rebuilt the same way, showing the real wallet, cheques, card stack, Brain map and card.
 - **Voice:** ElevenLabs `eleven_v4`, voice Sarah (`video/tts/eleven.py`).
