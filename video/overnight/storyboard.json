@@ -356,5 +356,23 @@
     "hkma-244.jpg"
    ]
   ]
+ },
+ {
+  "title": "P16 The Morse decodes into SEND ALL (illustration)",
+  "when": "before the deadline (optional)",
+  "status": "kept",
+  "commits": [
+   "ccee08c"
+  ],
+  "pairs": [
+   [
+    "v4-5.5.jpg",
+    "morse-5.6.jpg"
+   ],
+   [
+    "v4-5.5.jpg",
+    "morse-3.jpg"
+   ]
+  ]
  }
 ]

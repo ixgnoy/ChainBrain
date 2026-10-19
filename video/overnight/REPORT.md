@@ -42,7 +42,7 @@ What that buys, most important first:
 Sarah's audio says the v4 words, and the ElevenLabs free quota has 178 characters left, so it can't voice v4.1. Don't pick the script commits; two voices in one film sound odd. Pick the screen and audio set instead (tested on `9bcd289`):
 
 ```bash
-git cherry-pick 9e4ef9b 056dd8c 81546ed b366b98 6edcc66 fd0c90f 32eb822 d5c9359 c854df2
+git cherry-pick 9e4ef9b 056dd8c 81546ed b366b98 6edcc66 fd0c90f 32eb822 d5c9359 c854df2 ccee08c
 ```
 
 Then decide on `20a7efd` (legibility) and `da320ef` (motion). Both conflict only on text lines the script commits changed, so keep main's text in the conflicting lines. `77d4822` (the hash hold) conflicts only on the generated `timeline.json`. To resolve it, keep main's side, re-run `tools/layout.py` and `tools/cues.py`, and change `cues.py`'s `"pullback"` to `end("x7") + 2.2 + 0.6` as in `3bca10a`.
@@ -65,7 +65,7 @@ B means before the deadline; A means after, for the finals. Ranked by effect × 
 | 10 | Peak fix + QC | **built** | B | v4 measures −0.6 dBTP |
 | 11 | FISCO detail on screen: Clock.sol's millisecond-to-second conversion | idea | A | [review-fisco.md](research/review-fisco.md). Strong for WeBank engineers, but needs a new shot. |
 | 12 | X-ray: one idea at a time, a 2 s lane legend before the voice | idea | A | Contiguity and signalling (Ginns 2006, d ≈ 0.85) ([academic.md](research/academic.md)) |
-| 13 | Morse decoded into letters under the dots | idea | A | [review-motion.md](research/review-motion.md) B-list |
+| 13 | Morse decoded into "SEND ALL" under the dots | **built**, `ccee08c` | B (optional) | [review-motion.md](research/review-motion.md) B-list; labelled as an illustration |
 | 14 | Varied Reveal settle and camera travel per act | idea | A | [review-motion.md](research/review-motion.md) items 7 and 9 |
 | 15 | 90 s finals cut from existing scenes | plan | A | [finals-cut.md](research/finals-cut.md) |
 | 16 | Say "Mock e-HKD" aloud once; "test eHKD" in the planted order | idea | A | [review-fisco.md](research/review-fisco.md). The proof footer already says it. |
@@ -132,3 +132,4 @@ These are approved decisions. Reviewers questioned them; the evidence is noted, 
 | P13 | Laptop legibility | `20a7efd` | v4-20 / leg-20, leg-129.6, leg-243, leg-259 | kept |
 | P14 | Opening and ending | `c854df2` | v4-5.5 / open-5.5, v4-284 / end-283 | kept |
 | P15 | Motion variety | `da320ef` | v4-246 / hkma-244 | kept |
+| P16 | Morse decodes into "SEND ALL" | `ccee08c` | v4-5.5 / morse-5.6, morse-3 | kept (optional) |
