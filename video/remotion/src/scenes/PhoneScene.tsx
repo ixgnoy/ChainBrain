@@ -255,7 +255,7 @@ export const SimTag: React.FC<{ what?: string; style?: React.CSSProperties }> = 
       gap: 12,
       fontFamily: F.body,
       fontWeight: 500,
-      fontSize: 20,
+      fontSize: 24,
       color: C.muted,
       zIndex: 5,
       ...style,

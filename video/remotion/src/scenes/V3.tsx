@@ -117,18 +117,18 @@ export const Stat: React.FC = () => {
   const shrink = easeInOut(clamp((t - nine + 0.1) / 0.45));
   return (
     <Stage>
-      <div style={{ position: "absolute", left: 160, top: 250 - 40 * shrink, transform: `scale(${1 - 0.45 * shrink})`, transformOrigin: "left top", opacity: p74 * (1 - 0.55 * shrink) }}>
-        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 300, lineHeight: 0.9, letterSpacing: "-0.05em", color: C.text, fontVariantNumeric: "tabular-nums" }}>{n74}%</div>
-        <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 40, color: C.muted, marginTop: 18 }}>would let an agent handle routine tasks</div>
+      <div style={{ position: "absolute", left: 160, top: 250 - 40 * shrink, opacity: p74 }}>
+        <div style={{ opacity: 1 - 0.55 * shrink, fontFamily: F.display, fontWeight: 600, fontSize: 300 * (1 - 0.45 * shrink), lineHeight: 0.9, letterSpacing: "-0.05em", color: C.text, fontVariantNumeric: "tabular-nums" }}>{n74}%</div>
+        <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 40 - 6 * shrink, color: C.muted, marginTop: 18, opacity: 1 - 0.3 * shrink, maxWidth: 700 }}>would let an agent handle routine tasks</div>
       </div>
       {t >= nine - 0.05 ? (
         <div style={{ position: "absolute", left: 960, top: 300, opacity: p9, transform: `translateY(${(1 - p9) * 40}px)` }}>
           <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 380, lineHeight: 0.9, letterSpacing: "-0.05em", color: C.vermillion }}>9%</div>
-          <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 40, color: C.text, marginTop: 18 }}>would let it buy on its own</div>
+          <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 40, color: C.text, marginTop: 18 }}>would let it buy on its own, within set limits</div>
         </div>
       ) : null}
-      <Small p={settle(t - a - 1.2, 7)} style={{ left: 160, top: 880, fontSize: 21 }}>
-        Accenture, “Talk to My AI Agent”, June 2026: 25,590 people in 16 countries, including Hong Kong
+      <Small p={settle(t - a - 1.2, 7)} style={{ left: 160, top: 860, fontSize: 25 }}>
+        Accenture, “Talk to My AI Agent”, 2026: 25,590 consumers in 16 markets (Hong Kong with mainland China)
       </Small>
     </Stage>
   );
@@ -417,8 +417,10 @@ export const ProofV3: React.FC = () => {
         <Globe size={26} />
         Try it: fintechathon-lian-ai-nao.vercel.app
       </div>
-      <Small p={settle(t - 3.5, 6)} style={{ left: 120, top: 850, fontSize: 19 }}>
-        Mock e-HKD is test money, not the HKMA's e-HKD. Our team hosts the chain, and the phone shots were recorded on our test setup. Details: ChainBrain-security-self-assessment.pdf
+      <Small p={settle(t - 3.5, 6)} style={{ left: 120, top: 830, fontSize: 23, lineHeight: 1.4 }}>
+        Mock e-HKD is test money, not the HKMA's e-HKD. Our team hosts the chain, and the phone shots were recorded on our test setup.
+        <br />
+        Details: ChainBrain-security-self-assessment.pdf
       </Small>
     </Stage>
   );

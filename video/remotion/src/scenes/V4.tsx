@@ -306,8 +306,8 @@ export const XRay: React.FC = () => {
           ))}
           {/* the line between helping and holding */}
           <div style={{ position: "absolute", left: 2009, top: 130, width: 0, height: 1180, borderLeft: `3px dashed ${C.vermillion}`, opacity: 0.55 }} />
-          <div style={{ position: "absolute", left: 1770, top: 1330, width: 220, textAlign: "right", fontFamily: F.body, fontWeight: 600, fontSize: 21, color: C.blue }}>helps the agent behave</div>
-          <div style={{ position: "absolute", left: 2030, top: 1330, width: 300, fontFamily: F.body, fontWeight: 600, fontSize: 21, color: C.vermillion }}>holds without our server</div>
+          <div style={{ position: "absolute", left: 1700, top: 1302, width: 290, textAlign: "right", fontFamily: F.body, fontWeight: 600, fontSize: 26, color: C.blue }}>helps the agent behave</div>
+          <div style={{ position: "absolute", left: 2030, top: 1302, width: 330, fontFamily: F.body, fontWeight: 600, fontSize: 26, color: C.vermillion }}>holds without our server</div>
 
           {/* phone */}
           <Node x={100} y={230} w={360} h={220} on={on(T.owner - 0.1)} title="Your phone" sub="ChainBrain app" icon={<BrandMark size={30} />} tone={C.vermillion}>
@@ -730,7 +730,7 @@ export const Hkma: React.FC = () => {
           );
         })}
       </div>
-      <div style={{ position: "absolute", left: 120, top: 960, fontFamily: F.mono, fontSize: 20, color: C.muted, opacity: settle(t - four - 0.6, 6), fontVariantLigatures: "none" }}>
+      <div style={{ position: "absolute", left: 120, top: 860, fontFamily: F.mono, fontSize: 24, color: C.muted, opacity: settle(t - four - 0.6, 6), fontVariantLigatures: "none" }}>
         Our mapping of four ideas from the speech, not a regulatory approval. Source: hkma.gov.hk, speech of 16 Oct 2026.
       </div>
     </Stage>
