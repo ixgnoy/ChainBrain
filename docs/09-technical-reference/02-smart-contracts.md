@@ -1,6 +1,6 @@
 # 02 Smart Contracts: Pocket, PocketFactory, MockEHKD
 
-ChainBrain has four Solidity sources in `contracts/src`: `Pocket` (an ERC-1271 contract wallet that approves token transfers only inside the owner's rules), `PocketFactory` (deploys pockets), `MockEHKD` (a demo ERC-20 with EIP-3009, the payment token) and `Clock` (a library that turns FISCO BCOS's millisecond timestamps into seconds). A pocket never sends a transaction to pay. The token asks it "is this signature valid?" at settlement, and the pocket answers only for an in-rule transfer out of itself. After the transfer the token reports the spend back to the pocket, which is how the pocket counts its period allowance. This document lists every contract's state, functions, access rules, events and reason codes, the signature envelope and its check order, the period allowance and per-seller caps, the guardian freeze, the design limits, the deploy script, the deployment record and the tests. The owner-facing apps call a pocket a "card"; the code and this document say "pocket".
+ChainBrain has four Solidity sources in `contracts/src`: `Pocket` (an ERC-1271 contract wallet that approves token transfers only inside the owner's rules), `PocketFactory` (deploys pockets), `MockEHKD` (a demo ERC-20 with EIP-3009, the payment token) and `Clock` (a library that turns FISCO BCOS's millisecond timestamps into seconds). A pocket never sends a transaction to pay. The token asks it "is this signature valid?" at settlement, and the pocket answers only for an in-rule transfer out of itself. After the transfer the token reports the spend back to the pocket, which is how the pocket counts its period allowance. This document lists every contract's state, functions, access rules, events and reason codes, the signature envelope and its check order, the period allowance and per-seller caps, the guardian freeze, the design limits, the deploy script, the deployment record and the tests. The owner-facing apps call a pocket a "card"; the code and this document say "pocket". Checked against commit `57d965a`: the four contracts, their tests and the deploy script are byte-for-byte the same as at `7b48a2c` (`git diff 7b48a2c 57d965a -- contracts/ verify/` is empty), so every `contracts/` line citation below still holds. What changed is the callers: the apps now sign through a signing guard, each card gets its own derived agent key, and new accounts get two funded starter cards (section 4.1).
 
 ## 1. Overview
 
@@ -141,7 +141,7 @@ Notes from the code:
 - `OVER_PERIOD` is reached only when every earlier check passes.
 - `OVER_PERIOD` is the only code the owner's co-signature can lift (section 3.6).
 
-The same strings exist in the tool layer's reason table, so a refusal from the chain reaches the model with a plain-English meaning (`server/src/wallet/reasons.ts:3-8`, `:26`). The `OVER_PERIOD` text tells the model to call `ask_owner` (`server/src/wallet/reasons.ts:6`). The tool layer calls `canPay` and `needsOwner` before it signs (`server/src/wallet/pay.ts:59-63`). It treats `OVER_PERIOD` as payable only with an owner signature (`server/src/wallet/pay.ts:60-62`).
+The same strings exist in the tool layer's reason table, so a refusal from the chain reaches the model with a plain-English meaning (`server/src/wallet/reasons.ts:3-8`, `:26`). The `OVER_PERIOD` text tells the model to call `ask_owner` (`server/src/wallet/reasons.ts:6`). The tool layer calls `canPay` and `needsOwner` before it signs (`server/src/wallet/pay.ts:72-76`). It treats `OVER_PERIOD` as payable only with an owner signature (`server/src/wallet/pay.ts:73-75`). Before reading the rules it first refreshes the chain head (`freshHead()`, `server/src/wallet/pay.ts:67`), because `canPay` judges expiry by the head block's time and on a quiet chain an expired pocket would otherwise look payable.
 
 ### 3.6 The ERC-1271 signature envelope and check order
 
@@ -151,7 +151,7 @@ The `signature` argument of `isValidSignature` is not a signature. It is an ABI-
 abi.encode(address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce, bytes agentSig, bytes ownerSig)
 ```
 
-The server builds it in `server/src/wallet/scheme.ts:40-44`. `ownerSig` is empty (`0x`) when no co-signature is needed (`server/src/wallet/pay.ts:68`).
+The server builds it in `server/src/wallet/scheme.ts:40-44`. `ownerSig` is empty (`0x`) when no co-signature is needed (`server/src/wallet/pay.ts:81`).
 
 Check order inside `isValidSignature` (`Pocket.sol:124-139`):
 
@@ -222,7 +222,7 @@ The token's side of the hook is in section 5.4.
 | Allowlist | Independent: a seller cap does not allow a seller; `sellerAllowed` still must be true (`Pocket.sol:81`) |
 | Ask threshold | Independent: a payment above `askAbove` still needs the owner even under the seller's cap (test `test_seller_cap_overrides_the_pocket_cap`) |
 | Override, not minimum | Lowering the pocket cap with `setCap` does not restrict a seller that has its own cap; that seller keeps its cap. To stop it, the owner changes or clears (`0`) that seller's cap, removes the seller, or freezes the pocket (test `test_lowering_the_pocket_cap_does_not_restrict_a_seller_with_its_own_cap`, `PocketCases.sol:414-429`) |
-| Server use | The x402 client's `maxAmountPerPayment` is the seller's cap, or the pocket's cap if the seller has none (`server/src/wallet/pay.ts:70`, `server/src/wallet/chain.ts:51-52`) |
+| Server use | The x402 client's `maxAmountPerPayment` is the seller's cap, or the pocket's cap if the seller has none (`server/src/wallet/pay.ts:83`, `server/src/wallet/chain.ts:52`). `capFor` treats a pocket without `sellerCap` (an older contract version) as having no seller cap, so it falls back to `perPaymentCap` |
 
 ### 3.9 Design limits
 
@@ -253,8 +253,8 @@ The token's side of the hook is in section 5.4.
 
 - `freeze` requires `msg.sender == owner || (guardian != address(0) && msg.sender == guardian)` (`Pocket.sol:160`). The zero-address guard stops a call from `address(0)` from passing when there is no guardian.
 - A frozen pocket returns `POCKET_FROZEN` from `canPay`, so step 4 of section 3.6 refuses every payment (`Pocket.sol:79`).
-- `Frozen(by, reason)` records who froze it and a `bytes32` reason (`Pocket.sol:47`). The server's Sentinel sends the reason as `stringToHex(reason, { size: 32 })` (`server/src/sentinel/index.ts:19`).
-- The guardian is fixed per factory (section 4). Without `SENTINEL_PK` the server's Sentinel does not freeze on-chain (`server/src/sentinel/index.ts:14-17`).
+- `Frozen(by, reason)` records who froze it and a `bytes32` reason (`Pocket.sol:47`). The server's Sentinel sends the reason as `stringToHex(reason, { size: 32 })` (`server/src/sentinel/index.ts:17`).
+- The guardian is fixed per factory (section 4). Without `SENTINEL_PK` the server's Sentinel does not freeze on-chain (`server/src/sentinel/index.ts:14-16`); the freeze is sent through the server's ledger writer (`write` in `server/src/ledger.ts`).
 
 ### 3.11 Events
 
@@ -280,9 +280,33 @@ A payment emits `Spent` from the pocket only when an allowance is on. Every paym
 | Event | `PocketCreated(address indexed pocket, address indexed owner, address indexed agent)` (`PocketFactory.sol:11`) |
 
 - The caller always becomes the owner. Nobody can create a pocket for someone else.
-- `create` does not fund the pocket. Funding is a separate eHKD `transfer` from the owner (`PocketFactory.sol:18`; for example `devstack/src/seed.ts:37`).
+- `create` does not fund the pocket. Funding is a separate eHKD `transfer` from the owner (`PocketFactory.sol:18`; for example `devstack/src/seed.ts:45`).
 - `create` takes no allowance or seller caps. The owner sets them afterwards with `setPeriodLimit` and `setSellerCap` (for example `server/scripts/allowance.ts:39`).
 - Every pocket from one factory shares its guardian.
+
+### 4.1 How the apps and server create and fund pockets now
+
+No contract changed, but the callers did. Creating a card is still two transactions from the owner's key: `PocketFactory.create`, then a plain eHKD `transfer` to the new pocket. The server never holds the owner key.
+
+| Step | Where | Detail |
+| --- | --- | --- |
+| 1. Ask for an agent | `POST /v1/cards/agent` (`server/src/agentKeys.ts:91-95`) | Needs a visitor token. Returns the agent address for the visitor's next card. The key is `keccak256(AGENT_MASTER_KEY ‖ cardId) mod n` with `cardId = "<visitorId>#<n>"`, derived on use and never stored (`server/src/agentKeys.ts:42-51`, `deriveAgentKey`). Without `AGENT_MASTER_KEY` it answers 503 `PER_CARD_KEYS_OFF` |
+| 2. `create` | Web `createCard` (`web/src/owner/wallet.ts:84-91`); phone `createPocket` (`mobile/src/lib/wallet.ts:80-89`) | The device signs `create(agent, cap, askAbove, expiresAt, sellers)`. The pocket's `agent` is that derived address, so only this server can sign payments for it. The phone swaps in its own derived agent only when it was handed the shared one, and keeps the shared one on an older server |
+| 3. Fund | Web (`web/src/owner/wallet.ts:92`); phone `fund` (`mobile/src/lib/wallet.ts:91`) | A plain `token.transfer(pocket, budget)` from the owner. The budget is the balance (section 3.9) |
+| 4. Rules after creation | `setPeriodLimit`, `setSellerCap`, `setCap`, `setAskAbove`, `setSeller`, `setExpiresAt` | Owner transactions, for example `mobile/src/lib/wallet.ts:101` |
+| Which key signs a payment | `agentKeyFor(agent, owner)` (`server/src/agentKeys.ts:60`), used by `settle` (`server/src/wallet/pay.ts:70-71`) | A derived key counts only if it was issued to the owner's own visitor (a card cannot borrow another visitor's agent). The old shared `AGENT_PK` still signs for pockets created before per-card keys. If neither matches, the payment is refused `NOT_THIS_AGENT` |
+| Starter cards | `POST /v1/starter` (`server/src/starter.ts:21-44`); called by the phone after sign-up (`mobile/src/store.tsx:252`) | Right after sign-up the device creates two small cards itself and sends them as `{cards: [brief, watch]}`. Each must belong to the visitor (`guard`). Once per visitor, claimed before paying. The brief's agent buys Exa's durian news and CoinGecko's ETH price; the watch's agent buys Nansen's wallet balances (`PLAN`, `server/src/starter.ts:17`). Each purchase goes through `settle`, so the contract rules apply as to any payment |
+| Evidence and dev | `devstack/src/seed.ts:38-46`; `server/scripts/allowance.ts:36-39` | Scripts still create pockets and fund them the same two-step way; the dev seed now signs in with a Login signature first |
+
+The signing guard (`shared/chain/guard.ts`) sits in front of the owner key on the web and phone (`web/src/owner/wallet.ts:6,47`; `mobile/src/lib/wallet.ts:9`). `checkTx` decodes a transaction and signs only these (`shared/chain/guard.ts:57-103`):
+
+| Allowed transaction | Contract rule behind it |
+| --- | --- |
+| `PocketFactory.create(address,uint256,uint256,uint64,address[])` | Section 4 |
+| Mock e-HKD `transfer(to, value)` where `to` is one of the owner's own pockets (`Pocket.owner()` read from the chain) | Funding; any other recipient is refused `NOT_YOUR_CARD` |
+| On the owner's own pocket: `revoke`, `returnFunds`, `unfreeze`, `setCap`, `setAskAbove`, `setSeller`, `setSellerCap`, `setPeriodLimit`, `setExpiresAt` | Every `onlyOwner` function in section 3.4 |
+
+`freeze` and `onSpend` are not on the list: the owner key never needs them through the app (the guardian freezes; the token counts spend). `checkTypedData` signs a `Login` message and a `TransferWithAuthorization` only when it matches a pending approval field for field and its `from` is the owner's pocket (`shared/chain/guard.ts:108-125`); that co-sign is the `ownerSig` of section 3.6. Anything else is refused with a plain sentence (`UNKNOWN_CONTRACT`, `METHOD_NOT_ALLOWED`, `SENDS_VALUE`, `NOT_YOUR_CARD`, `WRONG_CHAIN`, `UNKNOWN_MESSAGE`, `NOT_A_PENDING_APPROVAL`, `NOT_YOU`, `UNDECODABLE`). The guard is client-side: the contracts themselves still accept any call from the owner.
 
 ## 5. MockEHKD
 
@@ -369,7 +393,7 @@ Why this order instead of OpenZeppelin's `SignatureChecker.isValidSignatureNow`:
 
 `scripts/fisco/deploy.sh` runs it with `--broadcast --slow --legacy --with-gas-price 0` against `http://127.0.0.1:8545` (`scripts/fisco/deploy.sh:15`). The chain-side details are in [08-chain-and-deployment.md](08-chain-and-deployment.md).
 
-A second deploy path exists for the hosted chain: `server/scripts/bootstrap-fisco.ts` deploys the same two contracts with viem and mints the same HK$10,000. It takes the guardian from `SENTINEL_PK` instead of `SENTINEL_ADDRESS` (`server/scripts/bootstrap-fisco.ts:39-42`).
+A second deploy path exists for the hosted chain: `server/scripts/bootstrap-fisco.ts` deploys the same two contracts with viem and mints the same HK$10,000. It takes the guardian from `SENTINEL_PK` instead of `SENTINEL_ADDRESS` (`server/scripts/bootstrap-fisco.ts:40`).
 
 ### 6.2 `contracts/deployments/20200.json`
 
@@ -380,13 +404,13 @@ A second deploy path exists for the hosted chain: `server/scripts/bootstrap-fisc
 
 - These are the OWNER key's first two deployments (nonce 0 and 1), so they are the same on every fresh chain deployed with the same key (`docs/fisco-ehkd-chain.md:21`).
 - `bootstrap-fisco.ts` throws if a fresh deploy lands at different addresses (`server/scripts/bootstrap-fisco.ts:44-45`).
-- The server reads this file unless `TOKEN_ADDRESS` or `FACTORY_ADDRESS` is set (`server/src/chains.ts:28`, `server/src/wallet/chain.ts:18-19`).
+- The server reads this file unless `TOKEN_ADDRESS` or `FACTORY_ADDRESS` is set (`server/src/chains.ts:28`, `server/src/wallet/chain.ts:18-21`).
 - The file does not record the guardian. The factory address does not depend on constructor arguments, so the file alone does not say which guardian a deployed factory has; read `PocketFactory.guardian()` on the chain.
-- The address does not depend on the bytecode either. The file alone does not say whether a chain holds the contract version with the period allowance; a pocket from an older version has no `periodKind()` (`verify/README.md:36-39`).
+- The address does not depend on the bytecode either. The file alone does not say whether a chain holds the contract version with the period allowance; a pocket from an older version has no `periodKind()` (`verify/README.md:37`, `:44`).
 
 ## 7. Tests
 
-Run: `cd contracts && forge test`. Measured on `7b48a2c` (19 Oct 2026): 79 passed, 0 failed. Foundry counts the invariant suite as one test (7 + 33 + 33 + 5 + 1); it holds 6 invariants, so 84 checks run. The repo README still reports 73 with 30 pocket cases per clock (`README.md:84`), the count before the three cases added in `2afbf1a`. `docs/technical-document.md:110` still reports the older 55.
+Run: `cd contracts && forge test`. Measured on `7b48a2c` (19 Oct 2026): 79 passed, 0 failed. Foundry counts the invariant suite as one test (7 + 33 + 33 + 5 + 1); it holds 6 invariants, so 84 checks run. The repo README still reports 73 with 30 pocket cases per clock (`README.md:113`), the count before the three cases added in `2afbf1a`. `docs/technical-document.md:110` still reports the older 55.
 
 | File | Contract(s) | Test functions | Runs |
 | --- | --- | --- | --- |
@@ -502,5 +526,5 @@ The handler keeps its own week counter and resets it when `periodOf` changes (`P
 | `afterInvariant` | Each run settled at least one payment, so the invariants are not vacuous (`PocketInvariant.t.sol:221-223`) |
 
 - Run count and depth are Foundry's defaults, because `foundry.toml` sets neither.
-- The README's "128k random calls" (`README.md:84`) matches Foundry's default of 256 runs × 500 calls; not confirmed against the Foundry version's defaults.
+- The README's "128k random calls" (`README.md:113`) matches Foundry's default of 256 runs × 500 calls; not confirmed against the Foundry version's defaults.
 - The fuzz and invariant tests run on a seconds clock only, not on FISCO's millisecond clock.
