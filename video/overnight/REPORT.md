@@ -46,7 +46,7 @@ cd video && python3 tools/layout.py remotion/src/edit.json remotion/src/vo-words
 git add video/remotion/src/timeline.json && git cherry-pick --continue
 ```
 
-Without the new voice, the worst v4 overstatements stay in the audio. The least bad option is still recording just the twelve changed lines in the owner's voice; the clean-up chain makes a phone take sit well beside Sarah.
+Without the new voice, the v4 overstatements stay in the audio. Two different voices in one film would sound odd, so a full recording of the v4.1 kit is still the real fix. The kit runs about 4:40, and with practice it takes about an hour to record.
 
 **Conflicts if you pick only some.** `timeline.json` and `vo-words.json` are generated. On a conflict, take either side, then re-run `tools/layout.py` and `tools/cues.py`; `tools/voice.py` rewrites them anyway when the owner's takes are imported. The branch's preview voice for the 12 changed lines is Kokoro, because the ElevenLabs free quota has 178 characters left.
 
