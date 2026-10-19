@@ -4,7 +4,7 @@ import java.math.BigInteger
 
 // Same rules as mobile/src/lib/shared.ts: Mock e-HKD has 6 decimals; "never" = max uint256.
 object Money {
-    val NEVER: BigInteger = BigInteger.TWO.pow(256) - BigInteger.ONE
+    val NEVER: BigInteger = BigInteger.valueOf(2).pow(256) - BigInteger.ONE // not BigInteger.TWO: that field is API 33+, the app runs on 28+
     private val UNIT = BigInteger.valueOf(1_000_000)
     private val amount = Regex("""^(\d+)(?:\.(\d{1,6}))?$""")
 
