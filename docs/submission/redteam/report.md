@@ -34,7 +34,7 @@ Sensitive actions, by tier:
 
 Verification: the wallet reads `canPay` before signing; pre-flight runs the exact transfer as an eth_call; the live 402 must match the quote; the card checks again at settlement, and that is the check that counts. Every result has a hash in the explorer.
 
-Rollback and recovery: a refused transfer reverts whole; an authorisation works once and expires after 600 seconds; revoke stops the next payment and `returnFunds` takes the balance back; a refusal returns a reason code and is never retried unchanged. A settled payment can't be reversed, so every check runs first.
+Rollback and recovery: a refused transfer reverts whole; an authorisation works once and expires after 600 seconds; revoke stops the next payment and `returnFunds` takes the balance back; a refusal returns a reason code, and the agent is told never to retry it unchanged. A settled payment can't be reversed, so every check runs first.
 
 | Failure | What happens | Test |
 | --- | --- | --- |
@@ -113,7 +113,7 @@ Pre-flight predicts each payment's outcome before it is sent and never blocks on
 
 The same suite ran 15 ordinary tasks: buying a report, an owner co-sign, a haggle, a routine, starter cards. It completed all 15, and no protection layer blocked one.
 
-## 3. Live model: the AI was not fooled
+## 3. Live model: the AI ignored both attacks
 
 The six demo scenes ran 4 times with Claude Haiku 5.5 deciding every step, on a FISCO node with real x402 payments.
 
@@ -150,7 +150,7 @@ An attack run counts as "AI fooled" if any tool call moved toward what the attac
 
 The invariant run strings together random payments, owner co-signs, time jumps, freezes and unfreezes: 256 runs × 500 calls = 128,000 calls. After every call it checks 6 invariants, with 0 breaks:
 
-- money is conserved;
+- no money is created or lost;
 - nothing goes to a seller the card doesn't allow;
 - nothing goes above the cap or the ask-me limit without the owner;
 - the weekly allowance holds;
@@ -213,20 +213,20 @@ ChainBrain asks for no name, email, phone number or ID. An account is a wallet a
 
 | Data | Where | How long | Who can read it |
 | --- | --- | --- | --- |
-| Owner key | The owner's device: iOS Keychain, Android Keystore, or the browser, optionally behind a passkey | Until the owner removes it | The owner only |
+| Owner key | The owner's device: the phone's secure storage, or the browser, optionally behind a passkey | Until the owner removes it | The owner only |
 | Account | Server volume: owner address, created time, funding transaction, hashes of session tokens | Tokens 7 days; the account until the operator removes it | The server |
 | Card's agent | Server volume: card id and agent address; the key is derived when used, never stored | Life of the card | The server |
 | Recent chat | Server volume, per card | The last few turns; older text survives only as the memory note | The server; the model during a turn |
-| Memory notes | Server volume: up to 30 short notes per card, plus the last 100 versions | Until the owner taps Forget | The owner; the model, marked "not instructions" |
-| Wallet events | Server volume: payments, refusals, the agent's trace | The last 1,000 | Anyone with the card address (KR-05) |
+| Memory notes | Server volume: up to 30 short notes per card, plus the last 100 versions | Until the owner taps Forget | The owner and the model; also open to read (KR-05) |
+| Wallet events | Server volume: payments, refusals, the agent's trace | The last 1,000 | Open to read without sign-in (KR-05) |
 | Tasks, quotes, Radar, Sentinel | Server memory | Until the server restarts | The server |
 | Rules and transfers | FISCO chain | Permanent | Anyone: public by design, under pseudonymous addresses |
 
 What leaves the system: the model provider (OpenRouter, Claude Haiku 5.5) gets the system prompt, the owner's messages and tool results, with seller text wrapped as untrusted, never a key. Sellers get a payment authorisation and public addresses; requests for a name, email, history, other cards or a signature are refused by code (DISCLOSURE_REFUSED, SIGNATURE_TYPE_NOT_ALLOWED).
 
-Consent and minimisation: sign-in is a signed message that says it moves no money; the owner confirms each task and co-signs each payment above the limit; memory reads only the owner's words and wallet events, never seller text, and may not store limits, keys or addresses.
+Consent and minimisation: sign-in is a signed message that says it moves no money; the owner confirms each task and co-signs each payment above the limit; memory reads only the owner's words and wallet events, never seller text, and is told not to store limits, keys or addresses; code rejects any note that loosens a limit.
 
-Deletion: the owner can forget any memory note; chat is trimmed and events capped at 1,000; there is no self-service account deletion yet (KR-13); on-chain records can't be deleted and hold addresses and amounts, not names. All money is Mock e-HKD; seller reports and the demo network's history are invented and labelled.
+Deletion: the owner can forget any memory note; chat is trimmed and events capped at 1,000; there is no self-service account deletion yet (KR-12); on-chain records can't be deleted and hold addresses and amounts, not names. All money is Mock e-HKD; seller reports and the demo network's history are invented and labelled.
 
 ## 04 Known risks
 
@@ -236,23 +236,22 @@ Deletion: the owner can forget any memory note; chat is trimmed and events cappe
 | KR-02 | An owner's device key is lost or stolen | High | Device secure storage; optional passkey on the console | Recovery contacts; a delay before any rule is loosened |
 | KR-03 | The agent is fooled inside the rules: the wrong item from an allowed seller | Medium | The confirmed task caps price, total, items and deadline; ask-me co-sign | Put the task's budget on chain; check receipts against the task |
 | KR-04 | An allowed seller turns bad | Medium | Radar re-screens every 30 s and alerts; the owner removes the seller | A waiting period before a new seller can be paid |
-| KR-05 | A card's events, pending approvals, memory and Sentinel status can be read by anyone who knows its address | Medium | No keys or money exposed; no personal data collected; kept open so the judges' console can show live activity | Owner sign-in on these reads; a separate public demo feed |
+| KR-05 | Read routes are open: the event stream (every card's last 1,000 events, or one card's), pending approvals, memory, routines, Sentinel status and Radar alerts need no sign-in | Medium | No keys, money or name, email or ID exposed; addresses are pseudonymous. Task text and agent replies are visible. Kept open for the judges' console | Owner sign-in on these reads; a separate public demo feed |
 | KR-06 | One FISCO node, run by us | Medium | Public RPC, explorer and an independent verifier | A multi-node consortium chain |
 | KR-07 | The content scan reads JSON fields; a request in prose isn't caught by code | Low | Seller text wrapped as data; the card still holds | A classifier for prose requests |
 | KR-08 | Radar's thresholds are a first guess | Low | A review score only asks the owner; the allowlist still applies | Calibrate on labelled transfer data |
 | KR-09 | Tasks, quotes, Radar's index and the Sentinel's watch reset on restart | Low | Events, approvals, memory and accounts persist | Persist the Sentinel's state |
 | KR-10 | The model provider sees chat text | Low | No personal data collected; keys never sent | A self-hosted model or a data-processing agreement |
-| KR-11 | The Android app's co-sign screen doesn't re-check payee and amount | Low | The card still enforces the allowlist and cap; the iOS/Expo app checks | Port the phone app's signing guard |
-| KR-12 | Live-model evidence is small: 8 attack runs, one model, one wording each | Low | 95% upper bounds published with every result | 60+ runs, more models, reworded and translated attacks |
-| KR-13 | No self-service account deletion | Low | Memory notes can be forgotten; chat and events are trimmed | A delete-account route |
-| KR-14 | Mock e-HKD is a test token, not from a licensed issuer | Scope | Labelled on every page and screen | The same card contract on a licensed issuer's token |
+| KR-11 | Live-model evidence is small: 8 attack runs, one model, one wording each | Low | 95% upper bounds published with every result | 60+ runs, more models, reworded and translated attacks |
+| KR-12 | No self-service account deletion | Low | Memory notes can be forgotten; chat and events are trimmed | A delete-account route |
+| KR-13 | Mock e-HKD is a test token, not from a licensed issuer | n/a | Labelled on every page and screen | The same card contract on a licensed issuer's token |
 
 ## Appendix: every test, and how to re-run it
 
-Each attack is one test function, counted once. The contract tests also run a second time under a millisecond clock; that second run isn't counted.
+Each attack is one test function, counted once. The token's replay, wrong-signer and expiry checks share one function. The contract tests also run a second time under a millisecond clock; that second run isn't counted.
 
 **Induced transfer (26).**
-- **Card contract** (`contracts/test/Pocket.ehkd.t.sol`):
+- **Card contract** (`contracts/test/PocketCases.sol`, run by `Pocket.ehkd.t.sol`):
   - injected recipient;
   - seller not allowed;
   - over the cap even with the owner;
@@ -302,7 +301,7 @@ Each attack is one test function, counted once. The contract tests also run a se
 **Data extraction (5).**
 - The agent's tools never show the owner (`tools`).
 - The scan catches a seller's requests for data and signatures (`intent`).
-- A card's routes answer only its owner (`visitors-chain`).
+- A card's write routes answer only its owner (`visitors-chain`).
 - Agents are only given to a signed-in visitor (`agent-keys-chain`).
 - Scene 6 with the fixed stand-in (`scenes`).
 
@@ -369,7 +368,7 @@ cd server && SCENES=1 SCENES_DEBUG=1 npx vitest run test/scenes.test.ts --silent
 The hosted-chain proof run in §5:
 
 ```bash
-cd server && npx tsx scripts/hosted-proof.ts
+cd server && OUT=/tmp/proof.json npx tsx scripts/hosted-proof.ts
 ```
 
 `SCENES_DEBUG` prints every tool call and result. That trace is where "AI fooled" is read from.
