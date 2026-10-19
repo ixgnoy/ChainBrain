@@ -1,7 +1,7 @@
 {
  "fps": 30,
  "bpm": 120,
- "total": 281.0,
+ "total": 280.0,
  "scenes": [
   {
    "id": "hook",
@@ -230,17 +230,17 @@
   {
    "id": "proof",
    "start": 244.5,
-   "end": 263.5
+   "end": 262.5
   },
   {
    "id": "team",
-   "start": 263.5,
-   "end": 273.0
+   "start": 262.5,
+   "end": 272.0
   },
   {
    "id": "close",
-   "start": 273.0,
-   "end": 281.0
+   "start": 272.0,
+   "end": 280.0
   }
  ],
  "vo": [
@@ -410,11 +410,11 @@
   },
   {
    "id": "t1",
-   "at": 264.4
+   "at": 263.4
   },
   {
    "id": "z1",
-   "at": 273.7
+   "at": 272.7
   }
  ],
  "cues": {
@@ -596,13 +596,13 @@
   "proof": 244.5,
   "rejected": 249.46,
   "attacks": 250.9,
-  "tests": 259.94,
+  "tests": 259.74,
   "intro": null,
-  "team": 263.5,
+  "team": 262.5,
   "closeface": null,
-  "close": 273.0,
-  "line": 273.7,
-  "end": 281.0,
+  "close": 272.0,
+  "line": 272.7,
+  "end": 280.0,
   "punch": [
    [
     8.4,

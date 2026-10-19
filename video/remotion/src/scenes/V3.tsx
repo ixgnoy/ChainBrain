@@ -404,7 +404,7 @@ export const ProofV3: React.FC = () => {
         <div style={{ position: "absolute", left: 120, top: 220, width: 800 }}>
           <Big n="63" label="attacks on our own wallet" sub="HK$0 lost" p={settle(t - f2 + 0.2, 10)} />
           <div style={{ height: 70 }} />
-          <Big n="462" label="automated tests, 7 suites" sub="all passing" p={settle(t - f3 + 0.1, 10)} />
+          <Big n="462" label="automated tests, 7 suites, on 19 Oct" sub="all passed" p={settle(t - f3 + 0.1, 10)} />
         </div>
       ) : null}
       {/* right: the real explorer */}
