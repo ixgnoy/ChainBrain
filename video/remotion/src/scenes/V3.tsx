@@ -87,18 +87,19 @@ export const Hook: React.FC = () => {
       </AbsoluteFill>
     );
   }
-  // hard cut: the wallet's balance runs out
+  // hard cut: what the agent sent away counts up (OECD: 3 billion DRB tokens, worth US$150,000 to 200,000)
   const k = easeInOut(clamp((t - cut - 0.2) / 2.4));
-  const v = Math.round(150000 * (1 - k));
+  const v = Math.round(150000 * k);
   const zero = k >= 1;
   return (
     <AbsoluteFill style={{ background: "#000", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
-      <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 30, color: C.muted, marginBottom: 18 }}>an AI agent's wallet</div>
+      <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 30, color: C.muted, marginBottom: 18 }}>sent away by one AI agent</div>
       <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 210, letterSpacing: "-0.04em", color: zero ? C.vermillion : C.text, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
         US${v.toLocaleString("en-US")}
+        {zero ? "+" : ""}
       </div>
       <div style={{ marginTop: 34, fontFamily: F.mono, fontSize: 24, color: C.muted, opacity: settle(t - cut - 3.0, 7), fontVariantLigatures: "none" }}>
-        about US$150,000 in tokens (source: OECD AI Incidents Monitor)
+        US$150,000 to 200,000 in tokens, reports vary (source: OECD AI Incidents Monitor)
       </div>
     </AbsoluteFill>
   );
@@ -238,7 +239,7 @@ export const Money: React.FC = () => {
             </div>
             <div>
               <div style={{ fontFamily: F.body, fontWeight: 600, fontSize: 32, color: C.text }}>AI agent</div>
-              <div style={{ fontFamily: F.mono, fontSize: 20, color: C.vermillion, opacity: fooled, fontVariantLigatures: "none" }}>fooled on purpose</div>
+              <div style={{ fontFamily: F.mono, fontSize: 20, color: C.vermillion, opacity: fooled, fontVariantLigatures: "none" }}>we play it fooled</div>
             </div>
           </div>
           <div style={{ marginTop: 26, padding: "18px 22px", borderRadius: 16, background: "rgba(240,78,35,0.12)", boxShadow: `inset 0 0 0 1.5px ${C.vermillion}`, opacity: fooled }}>
@@ -312,7 +313,7 @@ export const Money: React.FC = () => {
             <Plaque src="brand/fisco-bcos-logo.svg" h={30} p={1} pad={10} />
             <div style={{ fontFamily: F.mono, fontSize: 23, color: C.vermillion, fontVariantLigatures: "none" }}>reverted in block 13, balance unchanged</div>
           </div>
-          <div style={{ position: "absolute", left: 110, top: 640, width: 780, fontFamily: F.display, fontWeight: 600, fontSize: 56, lineHeight: 1.1, color: C.text, letterSpacing: "-0.02em", opacity: pop(t, r.word("k5", "card") - 0.1) }}>
+          <div style={{ position: "absolute", left: 110, top: 640, width: 780, fontFamily: F.display, fontWeight: 600, fontSize: 56, lineHeight: 1.1, color: C.text, letterSpacing: "-0.02em", opacity: pop(t, r.word("k5", "agent") - 0.1) }}>
             The card still
             <br />
             <span style={{ color: C.vermillion }}>won't pay.</span>
@@ -381,7 +382,7 @@ export const ProofV3: React.FC = () => {
         <div style={{ display: "flex", alignItems: "baseline", gap: 26, opacity: settle(t - seven + 0.1, 10) }}>
           <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 200, lineHeight: 0.9, letterSpacing: "-0.05em", color: C.text, fontVariantNumeric: "tabular-nums" }}>7/7</div>
           <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 34, color: C.muted, lineHeight: 1.2 }}>
-            forbidden payments
+            forbidden attempts
             <br />
             <span style={{ color: C.vermillion }}>rejected</span>
           </div>

@@ -9,7 +9,7 @@
   "id": "m2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "tricked an AI agent into emptying its wallet."
+  "text": "tricked an AI agent into giving away over a hundred and fifty thousand dollars."
  },
  {
   "id": "m3",
@@ -63,13 +63,13 @@
   "id": "u0",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "If the job is unclear, it asks one question first."
+  "text": "When the job is unclear, it can ask you one question first."
  },
  {
   "id": "u1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It pays small amounts on its own. Right now that's Exa for search and CoinGecko for prices, over x402."
+  "text": "It pays small amounts on its own. In the demo, test versions of Exa and CoinGecko sell it search and prices, over x402."
  },
  {
   "id": "x1",
@@ -81,7 +81,7 @@
   "id": "x2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The owner key stays on your phone, and our server keeps one agent key for each card. The AI never holds a key."
+  "text": "The owner key stays on your phone, and our server makes a separate agent key for each card. The AI never holds a key."
  },
  {
   "id": "x3",
@@ -99,13 +99,13 @@
   "id": "x5",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Then the agent key signs one exact payment from the card, and the seller's facilitator sends it to the chain."
+  "text": "Then the agent key signs one exact payment from the card, and a facilitator sends it to the chain."
  },
  {
   "id": "x6a",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Many agent wallets check their limits on the wallet company's server."
+  "text": "Some agent wallets check their limits on the wallet company's server."
  },
  {
   "id": "x6",
@@ -129,19 +129,19 @@
   "id": "u4",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "A seller that isn't on your list gets refused, and the agent finds another way."
+  "text": "A seller that isn't on your list gets refused, and the agent re-plans or asks you."
  },
  {
   "id": "u3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The agent negotiates the price down, from twelve Hong Kong dollars to eight eighty."
+  "text": "The agent negotiates the price down, from twelve Hong Kong dollars to eight dollars eighty."
  },
  {
   "id": "r1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It's your card, so you can cancel it mid-task and the money comes back."
+  "text": "It's your card, so you can cancel it mid-task and take back what's left."
  },
  {
   "id": "k1",
@@ -159,7 +159,7 @@
   "id": "k3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Worst case, we fool the agent on purpose and it tries to send the money."
+  "text": "Worst case, we act as a fooled agent and use its key to send the money."
  },
  {
   "id": "k4",
@@ -171,7 +171,7 @@
   "id": "k5",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The agent was fooled. The card still won't pay outside its rules."
+  "text": "Even a fooled agent can't pay outside the card's rules."
  },
  {
   "id": "y1",
@@ -231,7 +231,7 @@
   "id": "f1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "On our hosted FISCO BCOS chain, all seven forbidden payments were rejected."
+  "text": "On our hosted FISCO BCOS chain, all seven forbidden attempts were rejected."
  },
  {
   "id": "f2",

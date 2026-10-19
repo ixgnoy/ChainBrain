@@ -338,7 +338,7 @@ export const XRay: React.FC = () => {
             <KeyChip label="AGENT KEY" color={C.blue} on={lit(t, T.agentKey)} style={{ right: 26, top: 26 }} />
           </Node>
           {/* seller */}
-          <Node x={1540} y={230} w={380} h={220} on={on(T.picks + 0.4)} title="Exa" sub="answers HTTP 402 with a price" logo="brand/exa-icon-square.svg">
+          <Node x={1540} y={230} w={380} h={220} on={on(T.picks + 0.4)} title="Exa" sub="test seller, answers HTTP 402 with a price" logo="brand/exa-icon-square.svg">
             <div style={{ position: "absolute", left: 26, bottom: 24, display: "flex", alignItems: "center", gap: 12, opacity: lit(t, T.price) }}>
               <div style={{ padding: "6px 12px", borderRadius: 10, background: "#fff" }}>
                 <Img src={staticFile("brand/x402-logo-dark.png")} style={{ height: 22, display: "block" }} />
@@ -469,7 +469,7 @@ const Contrast: React.FC<{ t: number; T: Record<string, number>; p: number }> = 
     <AbsoluteFill style={{ opacity: p, background: "rgba(10,11,13,0.95)" }}>
       <div style={{ position: "absolute", left: 80, right: 80, top: 260, display: "flex", gap: 56 }}>
         <div style={{ flex: 1, opacity: 0.25 + 0.75 * left, transform: `translateY(${(1 - left) * 30}px)` }}>
-          <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 62, color: C.muted, marginBottom: 40, height: 74 }}>Many agent wallets</div>
+          <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 62, color: C.muted, marginBottom: 40, height: 74 }}>Some agent wallets</div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Mini label="AI agent" k={left} />
             <Arrow />
@@ -703,7 +703,7 @@ export const Hkma: React.FC = () => {
         })}
       </div>
       <div style={{ position: "absolute", left: 120, top: 960, fontFamily: F.mono, fontSize: 20, color: C.muted, opacity: settle(t - four - 0.6, 6), fontVariantLigatures: "none" }}>
-        Our mapping of the four principles, not a regulatory approval. Source: hkma.gov.hk, speech of 16 Oct 2026.
+        Our mapping of four ideas from the speech, not a regulatory approval. Source: hkma.gov.hk, speech of 16 Oct 2026.
       </div>
     </Stage>
   );

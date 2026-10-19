@@ -58,13 +58,13 @@ const beatsGet: Beat[] = [
 ];
 const beatsUse1: Beat[] = [
   { t: 0, tag: "clarification", head: "It asks one\nquestion first.", cap: { text: "HK$0.80 in total, or per lookup?", tone: "plain" } },
-  { t: segAt("use1", 2), head: "It pays small amounts\non its own.", cap: { text: "Exa and CoinGecko, over x402", tone: "blue", logos: [["exa-icon-square.svg", "#0143D9"], ["coingecko-symbol.svg", "#FFFFFF"], ["x402-logo-dark.png", "#FFFFFF"]] } },
+  { t: segAt("use1", 2), head: "It pays small amounts\non its own.", cap: { text: "test sellers at Exa and CoinGecko prices", tone: "blue", logos: [["exa-icon-square.svg", "#0143D9"], ["coingecko-symbol.svg", "#FFFFFF"], ["x402-logo-dark.png", "#FFFFFF"]] } },
 ];
 const beatsUse2: Beat[] = [
   { t: 0, head: "Above your limit,\nyou co-sign.", cap: { text: "Nansen charges HK$0.40. Slide to approve.", tone: "plain", logos: [["nansen-icon-black.svg", "#FFFFFF"]] } },
-  { t: segAt("use2", 2), tag: "fallback", head: "Unlisted sellers\nget refused.", cap: { text: "the agent finds another way", tone: "red" } },
-  { t: segAt("use2", 4), head: "It negotiates\nthe price down.", cap: { text: "from HK$12.00 to HK$8.80", tone: "blue" } },
-  { t: segAt("use2", 6), head: "Cancel any time,\neven mid-task.", cap: { text: "the money comes back", tone: "plain" } },
+  { t: segAt("use2", 2), tag: "fallback", head: "Unlisted sellers\nget refused.", cap: { text: "the agent re-plans or asks you", tone: "red" } },
+  { t: segAt("use2", 4), head: "It negotiates\nthe price down.", cap: { text: "from HK$12.00 to HK$8.80, with a test seller", tone: "blue" } },
+  { t: segAt("use2", 6), head: "Cancel any time,\neven mid-task.", cap: { text: "take back what's left", tone: "plain" } },
 ];
 const beatsAttack: Beat[] = [
   { t: 0, head: "A hidden order.", cap: { text: "it reads it as data and ignores it", tone: "red" } },
