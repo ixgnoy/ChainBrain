@@ -49,7 +49,6 @@ SECTIONS = {
     "09": ["t1"],
 }
 CLIPS = {"intro": "i1", "close": "z1", "team": "t1"}
-# cleaning: rumble and hiss out, a gentle compressor so quiet words carry (the mix levels each line afterwards)
 # Phone-voice clean-up (video/overnight/research/clean-chain.txt): rumble cut, FFT denoise at the file's own measured
 # noise floor, a gentle expander for the pauses, less mud, a little presence, de-ess, levelling and a peak limiter.
 # No loudnorm here: tools/mix.py levels each line and the final mix is normalised to -14 LUFS.
