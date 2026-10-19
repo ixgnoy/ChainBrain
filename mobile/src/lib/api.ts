@@ -4,6 +4,7 @@ import { fetchTimeout, getApi, getChain, isBuiltin, normalizeUrl } from "./runti
 import type { Approval, WalletEvent } from "./events";
 import { builtin } from "./builtin";
 import { SCENES } from "../../../shared/sim";
+import { routineFromEvents } from "../../../shared/sim/pocketAppData";
 import { visitorHeaders } from "./visitor";
 
 /** JSON headers plus the visitor's session token (the server's visitor-only routes need it). */
@@ -120,18 +121,47 @@ export async function composeApp(sentence: string): Promise<Composed> {
 }
 type Routine = import("../../../shared/sim/pocketApp").Routine;
 type RoutineSpec = import("../../../shared/sim/pocketApp").RoutineSpec;
-/** Routines run on the built-in network; a wallet server keeps none yet, so these answer null / false there. */
-export const routineOf = (pocket: string): Routine | null => (isBuiltin() ? builtin().routine(pocket) : null);
-export const setRoutine = (pocket: Address, spec: RoutineSpec): Routine | null => (isBuiltin() ? builtin().setRoutine(pocket, spec) : null);
+/**
+ * Routines: on the demo network the built-in world runs them; on a server, the server does (with real payments) and the
+ * routine is read back from the events this phone already polls (the same `routine` events), so these stay synchronous.
+ * Setting, pausing, editing and "run now" go to the server's owner-only routes.
+ */
+let serverEvents: () => { type: string; pocket?: string; [k: string]: unknown }[] = () => [];
+/** The store hands over its event list (it polls /api/events.json). */
+export const setEventSource = (f: typeof serverEvents) => { serverEvents = f; };
+const post = async (path: string, body: unknown) => {
+  const r = await fetchTimeout(`${getApi()}${path}`, { method: "POST", headers: hdrs(), body: JSON.stringify(body) }, 90_000);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
+  return j;
+};
+export const routineOf = (pocket: string): Routine | null => (isBuiltin() ? builtin().routine(pocket) : routineFromEvents(serverEvents() as any, pocket));
+export const setRoutine = (pocket: Address, spec: RoutineSpec): Routine | null => {
+  if (isBuiltin()) return builtin().setRoutine(pocket, spec);
+  void post("/api/routine", { pocket, spec }).catch(() => {}); // it shows once the server's "set" event arrives
+  return null;
+};
 export async function runRoutineNow(pocket: Address) {
-  if (!isBuiltin()) return { ok: false as const, reason: "NOT_ON_THIS_NETWORK" };
-  return builtin().runRoutineNow(pocket);
+  if (isBuiltin()) return builtin().runRoutineNow(pocket);
+  try { return await post("/api/routine/run", { pocket }); } catch (e) { return { ok: false as const, reason: (e as Error).message }; }
 }
 /** Publishes the pocket's app on the built-in network, so the console's pocket view shows it too. */
 export const setApp = (pocket: Address, spec: import("../../../shared/sim/pocketApp").PocketAppSpec) => { if (isBuiltin()) builtin().setApp(pocket, spec); };
 /** The owner's edit of when a routine runs and its allowance (the same routine: its spend this period still counts). */
-export const editRoutine = (pocket: string, change: { cadence?: import("../../../shared/sim/pocketApp").Cadence; allowance?: { amount: string; period: import("../../../shared/sim/pocketApp").Period } }) => {
-  if (!isBuiltin()) throw new Error("NOT_ON_THIS_NETWORK");
-  return builtin().editRoutine(pocket, change);
+export const editRoutine = async (pocket: string, change: { cadence?: import("../../../shared/sim/pocketApp").Cadence; allowance?: { amount: string; period: import("../../../shared/sim/pocketApp").Period } }) => {
+  if (isBuiltin()) return builtin().editRoutine(pocket, change);
+  return post("/api/routine/edit", { pocket, ...change });
 };
-export const pauseRoutine = (pocket: string, paused: boolean) => (isBuiltin() ? builtin().pauseRoutine(pocket, paused) : false);
+/** "Assume the AI is fooled", on a server: the card's own agent key signs a transfer to an attacker and the chain refuses
+ *  it (POST /api/arena/straight, owner's token): a real reverted hash. */
+export const arenaStraight = (pocket: string) => post("/api/arena/straight", { pocket }) as Promise<{ tx: string; reverted: boolean; reason?: string }>;
+/** The red-team box on a server: the sellers' demo hook (/admin/inject) puts text in that seller's next delivery. */
+export async function injectSeller(sellersUrl: string, sellerId: string, text: string) {
+  const r = await fetchTimeout(`${normalizeUrl(sellersUrl)}/admin/inject`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sellerId, text }) }, 10_000);
+  return r.ok;
+}
+export const pauseRoutine = (pocket: string, paused: boolean) => {
+  if (isBuiltin()) return builtin().pauseRoutine(pocket, paused);
+  void post("/api/routine/pause", { pocket, paused }).catch(() => {});
+  return true;
+};

@@ -60,7 +60,7 @@ function Body({ routine, agentId, onClose, onSaved }: { routine: Routine; agentI
     // a looser allowance is signed with Face ID (or the passcode); a stricter one or a new time can only lower the risk
     if (looser && (await confirmOwner(`Let ${who} spend up to ${curSign()}${amount.toFixed(2)} a ${period} on its own`)) === "cancel") { setBusy(false); return; }
     try {
-      api.editRoutine(routine.pocket, { cadence, allowance: { amount: amount.toFixed(2), period } });
+      await api.editRoutine(routine.pocket, { cadence, allowance: { amount: amount.toFixed(2), period } });
       haptic.success(); onSaved?.(); onClose();
     } catch { haptic.error(); setErr("That change didn't save."); }
     finally { setBusy(false); }

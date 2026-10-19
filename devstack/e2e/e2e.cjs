@@ -386,6 +386,20 @@ async function phoneFlow(browser, scenes, issues) {
     await shot(page, "phone-02-funded");
   });
 
+  await stp("phone: a routine on a starter card runs on the server with real payments, and the phone shows it", async () => {
+    const all = await (await fetch(`${API}/api/events.json`)).json();
+    const brief = payments(all).find((e) => e.sellerId === "exa")?.pocket;
+    const token = await page.evaluate(() => Object.entries(localStorage).find(([k]) => k.startsWith("cb.visitor."))?.[1]);
+    const call = async (path, body) => (await fetch(`${API}${path}`, { method: "POST", headers: { "content-type": "application/json", "x-visitor-token": token }, body: JSON.stringify(body) })).json();
+    const spec = { kind: "schedule", cadence: { every: "day", hour: 8, minute: 0 }, items: [{ sellerId: "exa", sku: "durian-news" }, { sellerId: "coingecko", sku: "eth-price" }], allowance: { amount: "1.00", period: "week" } };
+    const set = await call("/api/routine", { pocket: brief, spec });
+    check("the owner's routine is set on their card (server-side)", set.status === "active", JSON.stringify(set).slice(0, 160));
+    const run = await call("/api/routine/run", { pocket: brief });
+    check("routine run 1 paid Exa and CoinGecko from the card (receipts status 1)", run.ok && run.outs.length === 2 && (await Promise.all(run.outs.map((o) => rpc("eth_getTransactionReceipt", [o.tx])))).every((r) => r?.status === "0x1"), JSON.stringify(run).slice(0, 200));
+    await until("the phone shows the routine", async () => /Next up/.test(await body()) && /Daily brief/.test(await body()), 30000);
+    check("the phone reads the routine back from the server's events (Next up)", true);
+  });
+
   const createViaWizard = async (preset) => {
     await tab("Home");
     await page.getByRole("button", { name: "New card" }).first().click();

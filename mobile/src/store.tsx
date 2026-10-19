@@ -158,6 +158,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const local = source === "builtin"; // nothing from the built-in network is written to the device's storage
 
   const eventsRef = useRef<WalletEvent[]>([]);
+  api.setEventSource(() => eventsRef.current); // routines on a server are read back from these events
   const seen = useRef(new Set<string>());
   const cursor = useRef(0);
   const addrRef = useRef<Address[]>([]);
@@ -584,12 +585,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       navigate: (path) => { try { router.navigate(path); } catch { /* not mounted yet */ } },
       state: () => hostState.current,
       subscribe: (f) => { hostSubs.current.add(f); return () => void hostSubs.current.delete(f); },
-      forceTransfer: async (p) => {
-        if (getSource() !== "builtin") { console.warn("auto-play: the forced transfer runs from the console on a server (Judges tab)"); return; }
-        await builtin().forceTransfer(p as Address);
-      },
+      // on a server these are real: the card's own agent key signs the fooled transfer and the chain refuses it; the
+      // sellers' demo hook carries the injected text
+      forceTransfer: async (p) => (getSource() === "builtin" ? builtin().forceTransfer(p as Address) : api.arenaStraight(p).catch(() => undefined)),
       sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
-      inject: (sellerId, text) => { if (getSource() === "builtin") builtin().inject(sellerId, text); },
+      inject: (sellerId, text) => {
+        if (getSource() === "builtin") builtin().inject(sellerId, text);
+        else void loadConfig().then((c) => api.injectSeller(c.sellersUrl, sellerId, text)).catch(() => {});
+      },
     };
     autoplayRef.current = createAutoplay(host);
   }

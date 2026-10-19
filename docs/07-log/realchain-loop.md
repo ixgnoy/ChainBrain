@@ -21,7 +21,7 @@ Last updated: 2026-10-19
 - [x] 11. Starter seed on chain
 - [x] 12. Persistence
 - [x] 13. Evidence and judge path (the script and README; the hosted evidence file is regenerated after deploy, see the deploy order)
-- [ ] 14. Routines and auto-play on the real chain (not started: only if everything else is green and time allows)
+- [x] 14. Routines and auto-play on the real chain
 
 ## Acceptance checklist (brief section 7)
 
@@ -466,6 +466,7 @@ Last updated: 2026-10-19
 | `LLM_PROVIDER` | API | `openrouter` | `openrouter` / `anthropic` / `scripted` |
 | `OPENROUTER_API_KEY` | API | none | the OpenRouter key (secret) |
 | `LLM_MODEL` | API | `claude-haiku-5.5` | or `glm-5.3-flash`, `deepseek-v4.1-flash`, `mimo-v2.6-pro`, `mimo-v2.6-flash` |
+| `ROUTINE_TICK_MS` | API | `30000` | how often due routines run |
 | `ARENA_PER_IP_DAY` | API | `20` | straight-to-the-chain attempts per IP per day |
 | `AGENT_MASTER_KEY` | API | none | 0x + 64 hex (`0x$(openssl rand -hex 32)`). **Generate once, keep secret, never change** (changing it orphans every card's agent) |
 
@@ -510,7 +511,7 @@ Last updated: 2026-10-19
 ### What's left
 - **Deploy** (yours): nothing here is on Railway or Vercel yet. The hosted API still runs the old code; the hosted chain was reset (block ~21), so the old `docs/evidence-fisco-railway.json` hashes are gone.
 - Regenerate `docs/evidence-fisco-railway.json` from a real visitor flow on the hosted stack (step 5 below).
-- Item 14 (routines and auto-play on the real chain): not started. Routines still run only on the demo network.
+- Item 14 (routines and auto-play on the real chain): done in round 13 below.
 - The real-model scenes pass 2–4 of 6 depending on the model. These are task choices, not safety failures (round 8). If a demo needs Opus-like behaviour, the scene prompts or tests can be tuned to Haiku.
 - The phone's passkey path doesn't apply (SecureStore). The console's passkey-PRF path is unit-tested with a fake authenticator, not with a real one.
 
@@ -552,3 +553,33 @@ Last updated: 2026-10-19
    - `cd server && API=https://fisco-api-production-85c5.up.railway.app EVIDENCE_FILE=../docs/evidence-fisco-railway.json FISCO_RPC=https://fisco-node-production.up.railway.app pnpm tsx scripts/visitor-evidence.ts`
    - then `FISCO_RPC=https://fisco-node-production.up.railway.app pnpm tsx scripts/verify-evidence.ts ../docs/evidence-fisco-railway.json`.
    - Move the old file aside first; its hashes are from the chain before the reset.
+
+---
+
+## Round 13 · 19 Oct 12:56–21:20 (paused while the app was closed) · Item 14, routines and auto-play on the real chain
+
+**What changed**
+- New `server/src/routines.ts`: a card's standing order, run by the server.
+  - Routes: `GET /api/routine?pocket=`, plus owner-only `POST /api/routine` (set), `/api/routine/pause`, `/api/routine/edit` and `/api/routine/run` (the next run, now).
+  - Specs are validated by the same `validateRoutine` as the demo network, with the same `nextRun` and allowance windows (`available`). Routines persist in `DATA_DIR`.
+  - **Each run uses the server's own wallet tools:** `get_quote`, the card's own derived agent key, Radar, pre-flight and x402. The routine counts as the owner's confirmed standing intent, bounded by the card's cap.
+  - A run that would pass the period's allowance, or the card's ask-me limit, **waits for the owner's co-sign** (an approval carrying `allowance {run, period, spent, after}`, which the phone's cheque already shows). Otherwise it isn't paid.
+  - Seller text that tries to rewrite the routine is ignored and reported. A revoked card's due run is skipped and the schedule moves on.
+  - It publishes the same `routine` / `quote` events as the demo network, so `routineFromEvents` reads it back.
+  - The scheduler runs in the API process every `ROUTINE_TICK_MS` (30 s); the dev stack starts it too.
+- Phone:
+  - `routineOf` reads the routine from the event feed the store already polls (on the demo network it still uses the built-in world);
+  - set, pause, edit and run-now call the server routes; the edit sheet awaits the server and shows "That change didn't save" on a refusal.
+  - **Auto-play on the real chain:** its taps already drive real actions. The two demo-only steps are now real on a server: scene 5's forced transfer is `POST /api/arena/straight` (the card's own key, a real reverted hash), and scene 12's injection uses the sellers' `/admin/inject`.
+- The console's story autopilot (`shared/sim/autopilot.ts`) still plays the demo network only. On live, the console's actions are the owner panel and the arena.
+
+**Evidence**
+- `server/test/routines-chain.test.ts`, 3 tests on local FISCO:
+  - another visitor gets 403; run 1 pays Exa and CoinGecko (HK$0.136 total, both receipts `success`);
+  - run 2 passes the HK$0.20/week allowance, so the approval carries `{run: 2, spent: 0.192, after: 0.272}`. The owner's key co-signs, and the outcomes are `paid` and `cosigned` with the receipt `success`;
+  - pause makes run-now answer `ROUTINE_PAUSED`; after resume, the scheduler tick runs run 3; `routineFromEvents` over the server's events gives runs 3, active, and `GET /api/routine` agrees.
+- e2e (fresh dev stack): **69/69**. New phone step: from the phone's signed-in session, a routine on the "Daily brief" starter card is set and run, both payment receipts are status 1, and the phone's Home shows it under "Next up".
+- Server **123 passed, 6 skipped** (26 files); web 90; mobile 61; devstack 21.
+- Note for local runs: after the app restarted, the shell defaulted to Node 16 and Playwright needs 20+. The e2e above ran on Node 24 (`~/.nvm/versions/node/v24.15.0`).
+
+**Env:** `ROUTINE_TICK_MS` (API, default 30000). Nothing else new.

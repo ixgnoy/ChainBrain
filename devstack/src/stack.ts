@@ -158,12 +158,15 @@ export async function startDevStack(o: DevStackOptions = {}) {
   root.all("*", (c) => api.fetch(c.req.raw));
 
   const apiServer = serve({ fetch: root.fetch, port: apiPort, hostname: "0.0.0.0" });
+  // routines run on schedule, as in the hosted API (src/index.ts)
+  const stopRoutines = (await import(server("routines.ts"))).startRoutines();
 
   return {
     apiUrl: `http://localhost:${apiPort}`, lanApiUrl: lan ? `http://${lan}:${apiPort}` : undefined,
     sellersUrl: process.env.SELLERS_URL!, rpc, token, factory, owner: owner.address, lan, apiPort, sellersPort,
     async stop() {
       sentinel.stop();
+      stopRoutines();
       await Promise.all([apiServer, sellersServer].map((s) => new Promise<void>((r) => { (s as any).closeAllConnections?.(); s.close(() => r()); })));
     },
   };

@@ -4,7 +4,7 @@ import type { Context } from "hono";
 import { table } from "../store";
 
 export type WalletEvent = {
-  type: "trace" | "intent" | "approval" | "payment" | "refusal" | "disclosure" | "question" | "radar" | "sentinel" | "preflight" | "haggle" | "attack" | "forced";
+  type: "trace" | "intent" | "approval" | "payment" | "refusal" | "disclosure" | "question" | "radar" | "sentinel" | "preflight" | "haggle" | "attack" | "forced" | "routine" | "quote";
   pocket?: string;
   at?: number;
   [k: string]: unknown;
