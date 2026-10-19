@@ -204,3 +204,11 @@ Unverified or needing a human:
 - Whether extra files (a Chinese `.srt`) are accepted, and the file size and naming rules; the organisers' email is the only way to settle both.
 - The Chinese official name of Carmen Chu and the HKMA's wording of "kill switch" in Chinese.
 - Whether any HKMA or SFC release appeared on 20 Oct.
+
+## Addendum, 20 Oct early morning (main overnight session)
+
+- **HKMA press releases.** The press-release index (https://www.hkma.gov.hk/eng/news-and-media/press-releases/) lists nothing after 15 Oct 2026 and was last revised that day. The latest AI item is still the "ART" Framework (https://www.hkma.gov.hk/eng/news-and-media/press-releases/2026/10/20261015-3/).
+- **Other regulators.** A web search found no HKMA or SFC statement on AI agents dated 16–20 Oct. The nearest items are older:
+  - the GenAI Sandbox++ first cohort, focused on agentic AI (https://www.fow.com/insights/sfc-hkma-launch-first-cohort-of-ai-sandbox-focused-on-agents, Aug 2026)
+  - Linklaters' September 2026 bulletin (https://techinsights.linklaters.com/post/102o0io/asia-fintech-payments-regulatory-bulletin-september-2026)
+- **What it means for the video.** The HKMA beat needs no update for new statements. Re-check on 21–22 Oct for the finals deck.
