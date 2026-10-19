@@ -11,3 +11,5 @@ Config.setRspack(true);
 Config.setVideoImageFormat("jpeg");
 Config.setOverwriteOutput(true);
 Config.setDefaultPremountInSeconds(2);
+// ANGLE: ~30% faster for these DOM-heavy scenes on Apple Silicon, visually identical (measured on this project)
+Config.setChromiumOpenGlRenderer("angle");

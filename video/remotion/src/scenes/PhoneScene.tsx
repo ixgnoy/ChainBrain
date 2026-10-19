@@ -1,17 +1,17 @@
 import React from "react";
 import { AbsoluteFill, Img, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { Eyebrow, Reveal } from "../components/Kinetic";
+import { Reveal } from "../components/Kinetic";
 import { Stage } from "../components/Stage";
-import { C, F, FPS, clamp, easeInOut, settle } from "../theme";
+import { C, F, FPS, clamp, easeOut, settle } from "../theme";
 
-export type Seg = { src: string; from: number; to: number; rate?: number }; // footage seconds [from, to)
+export type Seg = { src: string; from: number; to: number; rate?: number; tag?: string }; // footage seconds [from, to)
 export type Cam = { t: number; s: number; fx: number; fy: number }; // scene time (s), scale, focus x/y on the screen (0..1)
-export type Beat = { t: number; head: string; sub?: string; chip?: { text: string; tone: "red" | "blue" | "plain" } };
+export type Beat = { t: number; head: string; cap?: { text: string; tone: "red" | "blue" | "plain"; logos?: [string, string][] } };
 
-export const PH = 860; // phone screen height on the stage
+export const PH = 880; // phone screen height on the stage
 export const PW = PH * (1206 / 2622);
-const PX = 1190; // phone screen left
-const PY = 46;
+const PX = 1200; // phone screen left
+const PY = 40;
 const BEZ = PW * 0.034;
 const R = PW * 0.14;
 
@@ -24,19 +24,18 @@ function camAt(cams: Cam[], t: number): Cam {
     const a = cams[i];
     const b = cams[i + 1];
     if (t < b.t) {
-      // each keyframe is where the camera arrives; it travels during the 0.8 s before it
-      const k = easeInOut(clamp((t - (b.t - 0.8)) / 0.8));
+      // each keyframe is where the camera arrives; it travels during the 0.7 s before it (exponential ease-out)
+      const k = easeOut(clamp((t - (b.t - 0.7)) / 0.7));
       return { t, s: a.s + (b.s - a.s) * k, fx: a.fx + (b.fx - a.fx) * k, fy: a.fy + (b.fy - a.fy) * k };
     }
   }
   return cams[cams.length - 1];
 }
 
-// The phone's screen: real recordings cut back to back, with a 4-frame dissolve between segments.
+// The phone's screen: real recordings, hard-cut back to back; each cut lands on a small settle (1.03 → 1).
 const Screen: React.FC<{ segs: Seg[] }> = ({ segs }) => {
   const frame = useCurrentFrame();
   let at = 0;
-  const xf = 4;
   return (
     <AbsoluteFill>
       {segs.map((s, i) => {
@@ -44,12 +43,12 @@ const Screen: React.FC<{ segs: Seg[] }> = ({ segs }) => {
         const len = Math.round(segLen(s) * FPS);
         at += segLen(s);
         const local = frame - start;
-        const opacity = i === 0 ? 1 : clamp(local / xf);
+        const snap = i === 0 ? 1 : 1 + 0.03 * (1 - easeOut(clamp(local / 7)));
         const style: React.CSSProperties = { width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 };
         return (
-          <Sequence key={i} from={start} durationInFrames={len + (i < segs.length - 1 ? xf : 0)} layout="none">
-            <AbsoluteFill style={{ opacity }}>
-              {s.src.endsWith(".png") ? (
+          <Sequence key={i} from={start} durationInFrames={len} layout="none">
+            <AbsoluteFill style={{ transform: `scale(${snap})` }}>
+              {s.src.endsWith(".png") || s.src.endsWith(".jpg") ? (
                 <Img src={staticFile(s.src)} style={style} />
               ) : (
                 <OffthreadVideo src={staticFile(s.src)} trimBefore={Math.round(s.from * FPS)} playbackRate={s.rate ?? 1} muted style={style} />
@@ -62,16 +61,35 @@ const Screen: React.FC<{ segs: Seg[] }> = ({ segs }) => {
   );
 };
 
-// A real phone recording on the right, the beat's headline on the left; camera keyframes push in on what matters.
+// A speed tag for time-lapsed segments ("×30"), shown while that segment plays.
+const SpeedTag: React.FC<{ segs: Seg[] }> = ({ segs }) => {
+  const frame = useCurrentFrame();
+  const t = frame / FPS;
+  let at = 0;
+  for (const s of segs) {
+    const len = segLen(s);
+    if (t >= at && t < at + len && s.tag) {
+      return (
+        <div style={{ position: "absolute", left: PX + PW + BEZ + 26, top: PY + 40, fontFamily: F.mono, fontSize: 26, color: C.muted, fontVariantLigatures: "none" }}>
+          {s.tag}
+        </div>
+      );
+    }
+    at += len;
+  }
+  return null;
+};
+
+// A real phone recording on the right in a gently tilted 3D frame; the beat's headline on the left over a huge,
+// cropped, low-contrast act word. Camera keyframes push in on what matters.
 export const PhoneScene: React.FC<{
   segs: Seg[];
-  eyebrow: string;
+  word: string;
   beats: Beat[];
   cams?: Cam[];
   tint?: number;
-  eyebrowColor?: string;
   rail?: React.ReactNode;
-}> = ({ segs, eyebrow, beats, cams = [], tint = 0, eyebrowColor, rail }) => {
+}> = ({ segs, word, beats, cams = [], tint = 0, rail }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
@@ -79,22 +97,22 @@ export const PhoneScene: React.FC<{
   const zoomed = clamp((cam.s - 1) / 0.5);
   const focusX = PX + cam.fx * PW;
   const focusY = PY + cam.fy * PH;
-  // as the camera pushes in, slide the focus point toward a spot right of centre (keeps the headline column readable)
-  const targetX = focusX + (1340 - focusX) * zoomed;
-  const targetY = focusY + (500 - focusY) * zoomed;
-  const enter = settle(t - 0.02, 7);
+  // as the camera pushes in, slide the focus point right of centre (keeps the headline column readable)
+  const targetX = focusX + (1360 - focusX) * zoomed;
+  const targetY = focusY + (520 - focusY) * zoomed;
+  const enter = settle(t - 0.02, 9);
+  // 3D: the phone arrives turned in, settles near-frontal, then drifts slightly; flattens while zoomed for legibility
+  const ry = (-16 * (1 - easeOut(clamp(t / 1.1))) - 5 + Math.sin(t * 0.35) * 2) * (1 - zoomed);
+  const rx = (4 * (1 - easeOut(clamp(t / 1.1))) + 1.5) * (1 - zoomed);
   const current = [...beats].reverse().find((b) => t >= b.t) ?? beats[0];
   const ci = beats.indexOf(current);
   return (
     <Stage tint={tint}>
       <AbsoluteFill>
-        <div style={{ position: "absolute", left: 140, top: 250, width: 820 }}>
-          <Eyebrow text={eyebrow} color={eyebrowColor ?? C.muted} delay={0.05} />
-          <div style={{ height: 30 }} />
+        <div style={{ position: "absolute", left: 120, top: 330, width: 860 }}>
           <Sequence key={ci} from={Math.round(current.t * fps)} layout="none">
-            <Reveal text={current.head} size={80} delay={0} />
-            {current.sub ? <Sub text={current.sub} /> : null}
-            {current.chip ? <Chip {...current.chip} /> : null}
+            <Reveal text={current.head} size={82} delay={0} stagger={0.045} />
+            {current.cap ? <Caption {...current.cap} /> : null}
           </Sequence>
         </div>
         {rail}
@@ -104,109 +122,131 @@ export const PhoneScene: React.FC<{
           position: "absolute",
           inset: 0,
           transformOrigin: `${focusX}px ${focusY}px`,
-          transform: `translate(${targetX - focusX}px, ${targetY - focusY + (1 - enter) * 50}px) scale(${cam.s})`,
-          opacity: enter,
+          transform: `translate(${targetX - focusX}px, ${targetY - focusY + (1 - enter) * 40}px) scale(${cam.s})`,
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            left: PX - BEZ,
-            top: PY - BEZ,
-            width: PW + BEZ * 2,
-            height: PH + BEZ * 2,
-            borderRadius: R + BEZ,
-            background: "linear-gradient(145deg, #3A3B41 0%, #1A1B1F 40%, #26272C 100%)",
-            padding: BEZ,
-            boxShadow: "0 0 0 1.5px rgba(255,255,255,0.10) inset, 0 40px 120px rgba(0,0,0,0.65), 0 8px 24px rgba(0,0,0,0.5)",
-          }}
-        >
-          <div style={{ position: "relative", width: PW, height: PH, borderRadius: R, overflow: "hidden", background: C.canvas }}>
-            <Screen segs={segs} />
+        <div style={{ position: "absolute", inset: 0, perspective: 2600, perspectiveOrigin: `${PX + PW / 2}px 540px` }}>
+          <div
+            style={{
+              position: "absolute",
+              left: PX - BEZ,
+              top: PY - BEZ,
+              width: PW + BEZ * 2,
+              height: PH + BEZ * 2,
+              borderRadius: R + BEZ,
+              background: "linear-gradient(145deg, #3A3B41 0%, #1A1B1F 40%, #26272C 100%)",
+              padding: BEZ,
+              boxShadow: "0 0 0 1.5px rgba(255,255,255,0.10) inset, 0 50px 120px rgba(0,0,0,0.7), 0 10px 30px rgba(0,0,0,0.5)",
+              transform: `rotateY(${ry}deg) rotateX(${rx}deg)`,
+            }}
+          >
+            <div style={{ position: "relative", width: PW, height: PH, borderRadius: R, overflow: "hidden", background: C.canvas }}>
+              <Screen segs={segs} />
+            </div>
           </div>
         </div>
       </div>
+      <SpeedTag segs={segs} />
       <SimTag />
     </Stage>
   );
 };
 
-const Sub: React.FC<{ text: string }> = ({ text }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const p = settle(frame / fps - 0.45, 8);
+// One huge cropped word behind the headline: the act's subject, low contrast, off the left edge.
+export const ActWord: React.FC<{ word: string; t: number; color?: string }> = ({ word, t, color = "rgba(255,255,255,0.045)" }) => {
+  const p = easeOut(clamp(t / 0.9));
   return (
     <div
       style={{
-        marginTop: 28,
-        fontFamily: F.body,
-        fontWeight: 500,
-        fontSize: 32,
-        lineHeight: 1.4,
-        color: C.muted,
-        opacity: p,
-        transform: `translateY(${(1 - p) * 12}px)`,
-        maxWidth: 760,
+        position: "absolute",
+        left: -60 - (1 - p) * 80,
+        bottom: -70,
+        fontFamily: F.display,
+        fontWeight: 700,
+        fontSize: 420,
+        lineHeight: 0.8,
+        letterSpacing: "-0.05em",
+        color,
+        whiteSpace: "nowrap",
+        pointerEvents: "none",
       }}
     >
-      {text}
+      {word}
     </div>
   );
 };
 
-export const Chip: React.FC<{ text: string; tone: "red" | "blue" | "plain"; delay?: number }> = ({ text, tone, delay = 0.7 }) => {
+// The beat's caption: a short rule in the tone colour, then mono text. No pill.
+export const Caption: React.FC<{ text: string; tone: "red" | "blue" | "plain"; delay?: number; logos?: [string, string][] }> = ({ text, tone, delay = 0.55, logos }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const p = settle(frame / fps - delay, 10);
+  const t = frame / fps - delay;
+  const line = easeOut(clamp(t / 0.3));
+  const txt = easeOut(clamp((t - 0.12) / 0.35));
   const color = tone === "red" ? C.vermillion : tone === "blue" ? C.blue : C.text;
   return (
-    <div
-      style={{
-        display: "inline-flex",
-        marginTop: 32,
-        padding: "12px 20px",
-        borderRadius: 12,
-        fontFamily: F.mono,
-        fontWeight: 500,
-        fontSize: 27,
-        color,
-        background: tone === "red" ? C.vermillionSoft : tone === "blue" ? C.blueSoft : "rgba(255,255,255,0.06)",
-        boxShadow: `inset 0 0 0 1.5px ${color}`,
-        opacity: p,
-        transform: `scale(${0.94 + 0.06 * p})`,
-        transformOrigin: "left center",
-        fontVariantLigatures: "none",
-      }}
-    >
-      {text}
+    <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: 36 }}>
+      <div style={{ width: 44 * line, height: 3, background: color }} />
+      {logos?.map(([src, bg], i) => {
+        const p = easeOut(clamp((t - 0.05 - i * 0.08) / 0.3));
+        return (
+          <div
+            key={src}
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 13,
+              background: bg,
+              boxShadow: "0 8px 20px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.16)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+              opacity: p,
+              transform: `translateY(${(1 - p) * 10}px)`,
+              flex: "none",
+            }}
+          >
+            <Img src={staticFile(`brand/${src}`)} style={{ width: bg === "#0143D9" ? 52 : 36, height: bg === "#0143D9" ? 52 : 36, objectFit: "contain" }} />
+          </div>
+        );
+      })}
+      <div
+        style={{
+          fontFamily: F.mono,
+          fontWeight: 500,
+          fontSize: 27,
+          color,
+          fontVariantLigatures: "none",
+          clipPath: `inset(0 ${100 - txt * 100}% 0 0)`,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {text}
+      </div>
     </div>
   );
 };
 
-// Honest label: the phone and console footage ran on the app's built-in network, not the FISCO chain.
+// Honest label, small corner text: the phone and console footage ran on the app's built-in network.
 export const SimTag: React.FC<{ what?: string; style?: React.CSSProperties }> = ({ what = "Phone", style }) => (
   <div
     style={{
       position: "absolute",
-      left: 140,
-      top: 56,
+      left: 120,
+      top: 64,
       display: "flex",
       alignItems: "center",
-      gap: 10,
-      padding: "9px 16px",
-      borderRadius: 999,
-      background: "rgba(10,11,13,0.78)",
-      boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.14)",
+      gap: 12,
       fontFamily: F.body,
-      fontWeight: 600,
-      fontSize: 18,
+      fontWeight: 500,
+      fontSize: 20,
       color: C.muted,
-      letterSpacing: "0.03em",
       zIndex: 5,
       ...style,
     }}
   >
-    <div style={{ width: 8, height: 8, borderRadius: 4, background: C.blue }} />
+    <div style={{ width: 8, height: 8, background: C.blue }} />
     {what} on the built-in network · simulated chain
   </div>
 );

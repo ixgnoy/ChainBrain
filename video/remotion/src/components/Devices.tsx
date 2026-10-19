@@ -82,13 +82,9 @@ export const Browser: React.FC<{
       }}
     >
       <div style={{ height: bar, display: "flex", alignItems: "center", gap: 9, padding: "0 18px" }}>
-        {["#FF5F57", "#FEBC2E", "#28C840"].map((c) => (
-          <div key={c} style={{ width: 13, height: 13, borderRadius: 7, background: c, opacity: 0.9 }} />
-        ))}
         {url ? (
           <div
             style={{
-              marginLeft: 18,
               flex: 1,
               height: 28,
               borderRadius: 8,

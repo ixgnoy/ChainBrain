@@ -16,7 +16,17 @@ sh video/build.sh setup
 sh video/build.sh
 ```
 
-`setup` installs the Python venv (Kokoro, faster-whisper), the Kokoro model, the CC0 orchestral samples and the Remotion packages. The second command rebuilds everything after the recordings: voice, word timings, score, mix, picture, subtitles and the final MP4.
+`setup` installs the Python venv (Kokoro, faster-whisper), the Kokoro model, the CC0 orchestral samples and the Remotion packages. The second command rebuilds everything after the recordings: UI stills and crops, voice, word timings, music cues, score, mix, picture, subtitles and the final MP4.
+
+## Voice (ElevenLabs)
+
+The narration uses ElevenLabs (`eleven_v4`, voice Sarah; settings in `tts/eleven.json`).
+
+- Put your key in `video/.env` as one line, `ELEVENLABS_API_KEY=...` (git-ignored), or export it in the shell.
+- `.venv/bin/python tts/eleven.py check` shows the plan, characters used and the models the key can use.
+- `.venv/bin/python tts/eleven.py voices` lists voices; `tts/eleven.py audition OUT_DIR id,id,...` reads one line in each.
+- Lines are cached by what was sent, so a rebuild only spends characters on lines that changed.
+- Without a key, the build falls back to Kokoro (offline) with Whisper word timings.
 
 ## Recordings (not in git; `video/footage/`)
 
@@ -41,7 +51,10 @@ ffmpeg -i raw.mp4 -vf fps=30 -c:v libx264 -crf 17 -pix_fmt yuv420p out.mp4
 - Recorded with `node tools/console-rec.mjs tools/shots/<shot>.json <out.mp4>`.
 - The console used demo mode (`?server=builtin`). The explorer is the real hosted FISCO chain.
 
+**Explorer stills** (`footage/probe/ex-*.png`): `node tools/console-rec.mjs tools/shots/explorer-stills.json` screenshots the hosted explorer at 2x; `tools/crops.py` cuts the transaction panels.
+
 ## Honesty rules the edit follows
 
 - Phone and console shots carry a "built-in network · simulated chain" tag, and the video never zooms in on a demo hash.
 - Every hash the video points at is a real transaction on the hosted chain, from `docs/evidence-fisco-railway.json`.
+- No code is shown and no UI is invented: the story scenes use crops of the app's real screens and the explorer's real pages.

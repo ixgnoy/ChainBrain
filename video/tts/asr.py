@@ -28,22 +28,30 @@ for L in lines:
     ratio = SequenceMatcher(None, norm(said), norm(L.get("say", L["text"]))).ratio()
     if ratio < 0.92:
         bad.append((L["id"], round(ratio, 2), said))
-    # map the script's words onto Whisper's timings proportionally by character position
+    # align the script's words to Whisper's words: matched words take Whisper's times, the rest are interpolated
     script = L["text"].split()
     if heard:
-        t0, t1 = heard[0].start, heard[-1].end
-        total = sum(len(w) for w in script) or 1
-        acc, words = 0, []
-        hs = [(h.start, h.end) for h in heard]
-        for w in script:
-            a = acc / total
-            acc += len(w)
-            b = acc / total
-            # nearest heard word boundaries for the start and end fractions
-            i = min(int(a * len(hs)), len(hs) - 1)
-            j = min(max(int(b * len(hs)) - 1, i), len(hs) - 1)
-            words.append({"w": w, "s": round(hs[i][0], 3), "e": round(hs[j][1], 3)})
-        result[L["id"]] = words
+        key = lambda w: re.sub(r"[^a-z0-9]", "", w.lower())
+        hk = [key(h.word) for h in heard]
+        sk = [key(w) for w in script]
+        times = [None] * len(script)
+        for a, b, n in SequenceMatcher(None, sk, hk, autojunk=False).get_matching_blocks():
+            for k in range(n):
+                times[a + k] = (heard[b + k].start, heard[b + k].end)
+        t_end = heard[-1].end
+        known = [i for i, t in enumerate(times) if t]
+        for i in range(len(script)):
+            if times[i]:
+                continue
+            prev = max([k for k in known if k < i], default=None)
+            nxt = min([k for k in known if k > i], default=None)
+            s0 = times[prev][1] if prev is not None else heard[0].start
+            e0 = times[nxt][0] if nxt is not None else t_end
+            gap = [k for k in range(len(script)) if (prev is None or k > prev) and (nxt is None or k < nxt)]
+            j = gap.index(i)
+            step = (e0 - s0) / max(1, len(gap))
+            times[i] = (s0 + step * j, s0 + step * (j + 1))
+        result[L["id"]] = [{"w": w, "s": round(t[0], 3), "e": round(t[1], 3)} for w, t in zip(script, times)]
     print(f"{L['id']}\t{ratio:.2f}\t{said}")
 json.dump(result, open(out, "w"), indent=0)
 print("\nlines to check:", bad if bad else "none")

@@ -34,17 +34,29 @@ for f in footage/cfr/autoplay.mp4 footage/cfr/brain.mp4 footage/raw/console-judg
   [ -f "$f" ] || { echo "missing $f: record it first (README.md)"; exit 1; }
   ln -f "$f" "remotion/public/footage/$(basename "$f")"
 done
-# voice: Kokoro, then Whisper word timings for the subtitles
-$PY tts/tts.py tts/lines.json remotion/public/audio/vo
-$PY tts/asr.py tts/lines.json remotion/public/audio/vo remotion/src/vo-words.json
+# brand marks (shared/brand + official files under reference/), then real app UI stills and crops for the story
+# scenes (from the phone recordings and the hosted explorer)
+sh tools/brand.sh
+sh tools/ui-stills.sh
+[ -f footage/probe/ex-success.png ] || node tools/console-rec.mjs tools/shots/explorer-stills.json
+$PY tools/crops.py
+# voice: ElevenLabs when a key is set (shell or video/.env, see README), else offline Kokoro + Whisper word timings
+if [ -n "${ELEVENLABS_API_KEY:-}" ] || grep -qsE '^[[:space:]]*(export[[:space:]]+)?ELEVENLABS_API_KEY=' .env; then
+  $PY tts/eleven.py lines tts/lines.json remotion/public/audio/vo remotion/src/vo-words.json
+else
+  $PY tts/tts.py tts/lines.json remotion/public/audio/vo
+  $PY tts/asr.py tts/lines.json remotion/public/audio/vo remotion/src/vo-words.json
+fi
 cp tts/lines.json remotion/src/vo-lines.json
+# music hit points follow the voice, then the score and the mix
+python3 tools/cues.py remotion/src/timeline.json remotion/src/vo-words.json
 # music and mix
 $PY music/score.py remotion/src/timeline.json remotion/public/audio/score.wav
 $PY tools/mix.py remotion/src/timeline.json remotion/public/audio remotion/public/audio/mix.wav
 # picture (muted), then mux with the mix
-(cd remotion && npx remotion render Main ../out/video-muted.mp4 --codec=h264 --crf=18 --concurrency=8 --muted)
-ffmpeg -v error -y -i out/video-muted.mp4 -i remotion/public/audio/mix.wav -map 0:v -map 1:a -c:v copy -c:a aac -b:a 256k -movflags +faststart -shortest "$OUT"
+(cd remotion && npx remotion render Main ../out/video-muted.mp4 --codec=h264 --crf=16 --concurrency=8 --muted)
+ffmpeg -v error -y -i out/video-muted.mp4 -i remotion/public/audio/mix.wav -map 0:v -map 1:a -vf "noise=alls=2:allf=t" -c:v libx264 -crf 21 -preset slow -pix_fmt yuv420p -c:a aac -b:a 256k -movflags +faststart -shortest "$OUT"
 python3 tools/srt.py remotion/src out/InternationalAI-ChainBrain-DemoVideo.srt
-ffmpeg -v error -y -ss 20 -i "$OUT" -frames:v 1 -q:v 2 out/poster.jpg
+ffmpeg -v error -y -ss 13.5 -i "$OUT" -frames:v 1 -q:v 2 out/poster.jpg
 ffprobe -v error -show_entries format=duration -of csv=p=0 "$OUT"
 echo "done: $OUT"

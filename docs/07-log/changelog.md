@@ -1,6 +1,22 @@
 # Changelog
 Last updated: 2026-10-19
 
+## 2026-10-19 (demo video v2)
+
+- **Video v2 (4:04):** re-cut on a 120 BPM grid (one beat = 15 frames), with shorter shots, hard cuts that settle on motion, a gently tilted 3D phone and whip entrances at act changes.
+  - **Pills and eyebrows:** replaced by plain captions.
+- **New act, "Why it held" (52 s):** sells how ChainBrain works using only real material, with no code on screen. It shows:
+  - the app's own screens (UI crops cut from the recordings by `video/tools/crops.py`);
+  - brand marks as app-icon tiles;
+  - two real transaction pages from the hosted explorer: block 11 (success) and block 13 (the reverted forced transfer).
+- **Problem section:** rebuilt the same way, showing the real wallet, cheques, card stack, Brain map and card.
+- **Voice:** ElevenLabs `eleven_v4`, voice Sarah (`video/tts/eleven.py`).
+  - The key goes in `video/.env`, which is git-ignored.
+  - Lines are cached by what was sent.
+  - Subtitle timing comes from the API's character timestamps.
+  - Kokoro remains the offline fallback.
+- **Score:** a 120 BPM hybrid trailer cue. Its hit points are derived from the voice's word timings (`video/tools/cues.py`).
+
 ## 2026-10-19 (demo video)
 
 - **New:** `video/`, the 3:58 demo video for the submission (`video/out/InternationalAI-ChainBrain-DemoVideo.mp4`, git-ignored; rebuild with `sh video/build.sh`). Script and shot list are in [video/SCRIPT.md](../../video/SCRIPT.md); credits are in [video/CREDITS.md](../../video/CREDITS.md).

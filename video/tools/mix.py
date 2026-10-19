@@ -59,10 +59,10 @@ tmp = out + ".pre.wav"
 sf.write(tmp, mix, SR, subtype="FLOAT")
 
 # two-pass loudnorm
-p1 = subprocess.run(["ffmpeg", "-hide_banner", "-i", tmp, "-af", "loudnorm=I=-14:TP=-1.0:LRA=11:print_format=json", "-f", "null", "-"], capture_output=True, text=True).stderr
+p1 = subprocess.run(["ffmpeg", "-hide_banner", "-i", tmp, "-af", "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"], capture_output=True, text=True).stderr
 j = json.loads(p1[p1.rindex("{"): p1.rindex("}") + 1])
 af = (
-    "loudnorm=I=-14:TP=-1.0:LRA=11:linear=true:"
+    "loudnorm=I=-14:TP=-1.5:LRA=11:linear=true:"
     f"measured_I={j['input_i']}:measured_TP={j['input_tp']}:measured_LRA={j['input_lra']}:measured_thresh={j['input_thresh']}:offset={j['target_offset']}"
 )
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp, "-af", af, "-ar", str(SR), "-c:a", "pcm_s16le", out], check=True)

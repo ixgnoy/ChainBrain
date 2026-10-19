@@ -1,6 +1,5 @@
 import React from "react";
 import { OffthreadVideo, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { Eyebrow } from "../components/Kinetic";
 import { Stage } from "../components/Stage";
 import { C, F, FPS, clamp, easeInOut, settle } from "../theme";
 import { SimTag } from "./PhoneScene";
@@ -26,13 +25,13 @@ export const BrowserScene: React.FC<{
   src: string;
   from: number;
   rate?: number;
-  eyebrow: string;
-  eyebrowColor?: string;
+  label: string;
+  labelColor?: string;
   url: string;
   zooms?: Zoom[];
   tint?: number;
   sim?: boolean;
-}> = ({ src, from, rate = 1, eyebrow, eyebrowColor, url, zooms = [], tint = 0, sim = true }) => {
+}> = ({ src, from, rate = 1, label, labelColor, url, zooms = [], tint = 0, sim = true }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
@@ -42,8 +41,8 @@ export const BrowserScene: React.FC<{
   const Hc = W * (1080 / 1920);
   return (
     <Stage tint={tint}>
-      <div style={{ position: "absolute", left: 210, top: 50 }}>
-        <Eyebrow text={eyebrow} color={eyebrowColor ?? C.muted} delay={0.05} />
+      <div style={{ position: "absolute", left: 210, top: 46, fontFamily: F.body, fontWeight: 600, fontSize: 24, color: labelColor ?? C.muted, opacity: settle(t - 0.05, 9) }}>
+        {label}
       </div>
       {sim ? <SimTag what="Console" style={{ left: "auto", right: 210, top: 42 }} /> : null}
       <div
@@ -61,12 +60,8 @@ export const BrowserScene: React.FC<{
         }}
       >
         <div style={{ height: 40, display: "flex", alignItems: "center", gap: 9, padding: "0 18px" }}>
-          {["#FF5F57", "#FEBC2E", "#28C840"].map((c) => (
-            <div key={c} style={{ width: 12, height: 12, borderRadius: 6, background: c, opacity: 0.9 }} />
-          ))}
           <div
             style={{
-              marginLeft: 18,
               flex: 1,
               height: 26,
               borderRadius: 8,
