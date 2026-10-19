@@ -3,10 +3,32 @@ import { useCurrentFrame, useVideoConfig } from "remotion";
 import lines from "../vo-lines.json";
 import timeline from "../timeline.json";
 import words from "../vo-words.json";
+import zhSubs from "../subs-zh.json";
 import { C, F } from "../theme";
 
 type Word = { w: string; s: number; e: number };
-export type Page = { text: string; start: number; end: number };
+export type Page = { text: string; start: number; end: number; zh?: string };
+
+// Optional Simplified Chinese line under each English page: one entry per English sentence (subs-zh.json).
+const ZH = zhSubs as { enabled: boolean; lines: Record<string, string[]> };
+// a word ends a sentence on . ? ! (but not inside an initialism such as "A.I.")
+const endsSentence = (w: string) => /[.?!]$/.test(w) && !/^([A-Z]\.)+$/.test(w);
+
+// A Chinese sentence may carry "|" split points: when it spans as many English pages as it has parts, each page
+// shows its part; otherwise (a new voice moves the page breaks) every page shows the whole sentence.
+function assignZh(linePages: { p: Page; ks: number[] }[], zh: string[]) {
+  linePages.forEach(({ p, ks }, j) => {
+    const text = ks
+      .map((k) => {
+        const parts = (zh[k] ?? "").split("|");
+        const span = linePages.filter((x) => x.ks.includes(k));
+        if (parts.length > 1 && span.length === parts.length && ks.length === 1) return parts[span.findIndex((x) => x === linePages[j])];
+        return parts.join("");
+      })
+      .join("");
+    p.zh = text || undefined;
+  });
+}
 
 // Burned-in English subtitles: the script's words, timed by Whisper, at most two lines a page.
 export function buildPages(): Page[] {
@@ -16,10 +38,20 @@ export function buildPages(): Page[] {
     const t0 = at.get(line.id);
     const ws = (words as Record<string, Word[]>)[line.id];
     if (t0 === undefined || !ws) continue;
+    const zh = ZH.enabled ? ZH.lines[line.id] : undefined;
+    // sentence index of each word, so a page shows the Chinese of the sentences it covers
+    const sent: number[] = [];
+    ws.reduce((k, w) => (sent.push(k), endsSentence(w.w) ? k + 1 : k), 0);
     let cur: Word[] = [];
+    let first = 0;
+    const linePages: { p: Page; ks: number[] }[] = [];
     const flush = () => {
       if (!cur.length) return;
-      pages.push({ text: cur.map((w) => w.w).join(" "), start: t0 + cur[0].s - 0.05, end: t0 + cur[cur.length - 1].e + 0.3 });
+      const ks = [...new Set(sent.slice(first, first + cur.length))];
+      const p: Page = { text: cur.map((w) => w.w).join(" "), start: t0 + cur[0].s - 0.05, end: t0 + cur[cur.length - 1].e + 0.3 };
+      linePages.push({ p, ks });
+      pages.push(p);
+      first += cur.length;
       cur = [];
     };
     ws.forEach((w, i) => {
@@ -31,6 +63,7 @@ export function buildPages(): Page[] {
       if ((end && chars >= 20 && rest > 0) || (punct && chars >= 45 && rest >= 3) || chars >= 84) flush();
     });
     flush();
+    if (zh) assignZh(linePages, zh);
   }
   // readable for non-native viewers (at most ~17 characters a second), but never overlapping the next page
   for (let i = 0; i < pages.length; i++) {
@@ -46,10 +79,19 @@ export const Subtitles: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
-  const p = PAGES.find((x) => t >= x.start && t < x.end);
-  if (!p) return null;
+  const i = PAGES.findIndex((x) => t >= x.start && t < x.end);
+  if (i < 0) return null;
+  const p = PAGES[i];
   const fadeIn = Math.min(1, (t - p.start) / 0.12);
   const fadeOut = Math.min(1, (p.end - t) / 0.12);
+  // the Chinese line holds steady when the next page continues the same sentence
+  const prev = PAGES[i - 1];
+  const next = PAGES[i + 1];
+  const zhIn = prev && prev.zh === p.zh && p.start - prev.end < 0.2 ? 1 : fadeIn;
+  const zhOut = next && next.zh === p.zh && next.start - p.end < 0.2 ? 1 : fadeOut;
+  const zhOpacity = p.zh ? Math.min(zhIn, zhOut) : 0;
+  const en = Math.min(fadeIn, fadeOut);
+  const box = Math.max(en, zhOpacity);
   return (
     <div
       style={{
@@ -60,7 +102,7 @@ export const Subtitles: React.FC = () => {
         display: "flex",
         justifyContent: "center",
         pointerEvents: "none",
-        opacity: Math.min(fadeIn, fadeOut),
+        opacity: box,
         zIndex: 20,
       }}
     >
@@ -79,7 +121,12 @@ export const Subtitles: React.FC = () => {
           letterSpacing: "0.005em",
         }}
       >
-        {p.text}
+        <div style={{ opacity: en / box }}>{p.text}</div>
+        {p.zh ? (
+          <div style={{ opacity: zhOpacity / box, fontFamily: F.cjk, fontWeight: 500, fontSize: 33, lineHeight: 1.35, color: "rgba(242,241,238,0.86)", marginTop: 4, letterSpacing: "0.02em" }}>
+            {p.zh}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -95,5 +142,5 @@ export function srt(): string {
     const r = ms % 1000;
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")},${String(r).padStart(3, "0")}`;
   };
-  return PAGES.map((p, i) => `${i + 1}\n${ts(p.start)} --> ${ts(p.end)}\n${p.text}\n`).join("\n");
+  return PAGES.map((p, i) => `${i + 1}\n${ts(p.start)} --> ${ts(p.end)}\n${p.text}${p.zh ? `\n${p.zh}` : ""}\n`).join("\n");
 }
