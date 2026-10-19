@@ -10,7 +10,7 @@ v6, 20 Oct 2026, as built (v4 edit: the AI Card with a "how it works" X-ray); vo
 
 | Time | Section | Picture | Voice-over |
 |---|---|---|---|
-| 0:00.0–0:12.0 | **Hook** | Black. 4 May 2026, one post on X. Dots and dashes light with the Morse key (an illustration). Hard cut: a counter runs up to US$150,000+ sent away by one AI agent (source: OECD AI Incidents Monitor). | Back in May, one post written in Morse code tricked an AI agent into giving away over a hundred and fifty thousand US dollars. |
+| 0:00.0–0:12.0 | **Hook** | Black. 4 May 2026, one post on X. Dots and dashes light with the Morse key and decode into "SEND ALL" (labelled an illustration). Hard cut: a counter runs up to US$150,000+ sent away by one AI agent (source: OECD AI Incidents Monitor). | Back in May, one post written in Morse code tricked an AI agent into giving away over a hundred and fifty thousand US dollars. |
 | 0:12.0–0:21.0 | **The trust gap** | 74% would let an agent handle routine tasks; then 9%, in vermillion, would let it buy on its own (Accenture, June 2026). | Most people would let an agent handle routine tasks. Only nine percent would let it buy on its own. |
 | 0:21.0–0:28.5 | **The AI Card** | The ChainBrain mark, then the AI Card rises out of the dark. | This is ChainBrain. We give your AI its own card. |
 | 0:28.5–0:46.5 | **What it is** | Three cards fan out on the names (Claude, ChatGPT, ours), fold into one and flip to the contract's rules; the FISCO BCOS logo lands; the real Brain map arrives: a second AI watches. | Every agent, Claude, ChatGPT, or ours, gets its own AI Card. Its limits live in the card's own smart contract, on FISCO BCOS. And a second AI watches every payment. |
