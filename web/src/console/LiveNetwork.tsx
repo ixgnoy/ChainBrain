@@ -5,7 +5,7 @@ import { formatHkd, loadConfig, setChainInfo, txUrl, curSign, type Config } from
 import { detectDev } from "../dev";
 import { EventsProvider, useEvents } from "../useEvents";
 import { setSource } from "../source/source";
-import { hasSession, visitorHeaders } from "../owner/wallet";
+import { clearSession, hasSession, visitorHeaders } from "../owner/wallet";
 import { networkLabel } from "@sim/explorer";
 import { attemptsFrom } from "@sim/checks";
 import { toBig, clientFor, chainIndex, loadHistory, loadPockets, scanFrom, type ChainIndex, type ChainTx, type PocketState } from "./chain";
@@ -43,6 +43,8 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
   const [dev, setDev] = useState(false);
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [pockets, setPockets] = useState<PocketState[]>([]);
+  const pocketsRef = useRef<PocketState[]>([]);
+  pocketsRef.current = pockets;
   const [txs, setTxs] = useState<ChainTx[]>([]);
   const [chainError, setChainError] = useState<string>();
   const [tick, setTick] = useState(0);
@@ -83,7 +85,7 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
         fromRef.current ??= await scanFrom(client, dev);
         await index.sync(fromRef.current);
         const seen = [...new Set(live.events.map((e) => e.pocket).filter((p): p is string => typeof p === "string" && /^0x[0-9a-fA-F]{40}$/.test(p)))];
-        const ps = await loadPockets(client, cfg, index, seen);
+        const ps = await loadPockets(client, cfg, index, seen, pocketsRef.current);
         const hist = loadHistory(cfg, ps, index);
         if (alive) { setPockets(ps); setTxs(hist); setChainError(undefined); }
       } catch (e) { if (alive) setChainError((e as Error).message.split("\n")[0]); }
@@ -120,8 +122,8 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
     // the chat route exists on every ChainBrain server: an attack sentence goes to the agent like the owner's own message
     actions.chat = async (pocket, text) => {
       try {
-        const r = await fetch(`${url}/api/chat`, { method: "POST", headers: { "content-type": "application/json", ...visitorHeaders() }, body: JSON.stringify({ pocket, text }) });
-        if (r.status === 401) return { ok: false, text: "Sign in first: open Your wallet (top right). Only a card's owner can talk to its agent.", pocket };
+        const r = await fetch(`${url}/api/chat`, { method: "POST", headers: { "content-type": "application/json", ...visitorHeaders(url) }, body: JSON.stringify({ pocket, text }) });
+        if (r.status === 401) { clearSession(); return { ok: false, text: "Sign in first: open Your wallet (top right). Only a card's owner can talk to its agent.", pocket }; }
         if (r.status === 403) return { ok: false, text: "That card isn't yours. Pick one of your own cards (make one in Your wallet).", pocket };
         if (!r.ok) return { ok: false, text: `The server answered ${r.status}.`, pocket };
         const j = await r.json();
@@ -133,10 +135,12 @@ function Inner({ url, children }: { url: string; children: ReactNode }) {
     // which refuses it (POST /api/arena/straight, the owner's token). Without a session, the dev stack's shared-key route.
     const devForce = actions.forceTransfer;
     actions.hijack = async (pocket) => {
-      if (!hasSession()) return devForce ? devForce(pocket) : { ok: false, text: "Sign in first: open Your wallet (top right) and pick one of your own cards." };
+      if (!hasSession(url)) return devForce ? devForce(pocket) : { ok: false, text: "Sign in first: open Your wallet (top right) and pick one of your own cards." };
       try {
-        const r = await fetch(`${url}/api/arena/straight`, { method: "POST", headers: { "content-type": "application/json", ...visitorHeaders() }, body: JSON.stringify({ pocket }) });
-        const j = await r.json();
+        const r = await fetch(`${url}/api/arena/straight`, { method: "POST", headers: { "content-type": "application/json", ...visitorHeaders(url) }, body: JSON.stringify({ pocket }) });
+        const j = await r.json().catch(() => ({}));
+        if (r.status === 401) { clearSession(); return { ok: false, text: "Your sign-in expired: signing in again. Try once more in a moment." }; }
+        if (r.status === 429) return { ok: false, text: "That's the day's limit of attacks from this address (20). Try again tomorrow." };
         if (r.status === 403) return { ok: false, text: "That card isn't yours. Attack one of your own cards (make one in Your wallet)." };
         if (!r.ok) return { ok: false, text: j.detail ?? j.error ?? `The server answered ${r.status}.` };
         setTick((x) => x + 1);

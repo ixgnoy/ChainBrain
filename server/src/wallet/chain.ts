@@ -49,7 +49,7 @@ export function pocket(address: Address) {
     needsOwner: (v: bigint) => r("needsOwner", [v]) as Promise<boolean>,
     sellerAllowed: (s: Address) => r("sellerAllowed", [s]) as Promise<boolean>,
     /** The seller's own per-payment cap, or the pocket's when it has none. */
-    capFor: async (s: Address): Promise<bigint> => ((await r("sellerCap", [s])) as bigint) || ((await r("perPaymentCap")) as bigint),
+    capFor: async (s: Address): Promise<bigint> => ((await (r("sellerCap", [s]) as Promise<bigint>).catch(() => 0n)) as bigint) || ((await r("perPaymentCap")) as bigint), // older pockets have no sellerCap
     /** Pocket.frozen (Sentinel guardian or owner). Pockets from an older factory have no freeze: false. */
     frozen: () => (r("frozen") as Promise<boolean>).catch(() => false),
   };

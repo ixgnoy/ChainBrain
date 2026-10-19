@@ -60,7 +60,8 @@ function decode(log: Log) {
 }
 
 async function labels(): Promise<Record<string, string>> {
-  const l: Record<string, string> = { [cfg().token.toLowerCase()]: "Mock e-HKD token", [agentAccount().address.toLowerCase()]: "Agent key (shared, legacy)" };
+  const l: Record<string, string> = { [cfg().token.toLowerCase()]: "Mock e-HKD token" };
+  if (process.env.AGENT_PK) l[agentAccount().address.toLowerCase()] = "Agent key (shared, legacy)";
   for (const [a, cardId] of Object.entries(agentLabels())) l[a] = `Agent key, card ${cardId}`;
   try { l[factoryAddress().toLowerCase()] = "Pocket factory"; } catch { /* no factory yet */ }
   for (const s of await directory().catch(() => [])) l[s.payTo.toLowerCase()] = `Seller: ${s.name}`;

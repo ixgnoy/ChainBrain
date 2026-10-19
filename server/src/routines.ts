@@ -89,6 +89,7 @@ export async function runRoutine(pocket: Address, o: { early?: boolean } = {}) {
     // the routine is the owner's standing, signed-off intent: each run is a confirmed task bounded by the card's cap
     newTask(pocket);
     const s = state(pocket);
+    s.routine = { id: rt.id, run }; // the run's payments carry it, so the apps' period meter and renewals count them
     s.intent = {
       request: "routine", description: `Routine run ${run}`, maxPricePerItem: formatAmount(info.cap), maxTotal: formatAmount(info.cap * BigInt(rt.items.length)),
       maxItems: rt.items.length, deadline: new Date(Date.now() + 3_600_000).toISOString(), intentHash: keccak256(toHex(`routine:${rt.id}:${run}`)) as Hex, status: "confirmed",
@@ -105,10 +106,12 @@ export async function runRoutine(pocket: Address, o: { early?: boolean } = {}) {
         bus.publish({ type: "quote", pocket, routineId: rt.id, run, sellerId: it.sellerId, sku: it.sku, price: amount, limit, below: amount <= limit });
         if (amount > limit) { outs.push({ ...it, outcome: "watching", amount: q.price }); continue; }
       }
-      if (q.allowedByPocket !== "OK") { outs.push({ ...it, outcome: "refused", amount: q.price, reason: q.allowedByPocket.reason }); continue; }
+      // past the card's on-chain allowance (OVER_PERIOD) the card itself wants the owner's co-sign: ask, don't refuse
+      const overPeriod = q.allowedByPocket !== "OK" && q.allowedByPocket.reason === "OVER_PERIOD";
+      if (q.allowedByPocket !== "OK" && !overPeriod) { outs.push({ ...it, outcome: "refused", amount: q.price, reason: q.allowedByPocket.reason }); continue; }
       const left = available(allowance, rt.payments.map((p) => ({ at: p.at, amount: parseAmount(p.amount) })), rt.allowance.period, Date.now());
       let cosign = false;
-      if (amount > left.left || q.needsOwnerApproval) {
+      if (amount > left.left || q.needsOwnerApproval || overPeriod) {
         // over the period's allowance (or the card's ask-me limit): the owner co-signs this exact payment, or it isn't made
         const rec = s.quotes.get(q.quoteId)!;
         const after = left.spent + amount;
@@ -117,6 +120,7 @@ export async function runRoutine(pocket: Address, o: { early?: boolean } = {}) {
           pocket, kind: "payment",
           text: amount > left.left
             ? `Run ${run} of your routine: ${seller} costs ${"HK$"}${q.price}. That takes this ${rt.allowance.period} to HK$${formatAmount(after)}, past your HK$${formatAmount(allowance)} a ${rt.allowance.period}.`
+            : overPeriod ? `Run ${run} of your routine: ${seller} costs HK$${q.price}, past the allowance this card holds on-chain.`
             : `Run ${run} of your routine: ${seller} costs HK$${q.price}, above your ask-me limit.`,
           data: {
             auth: prepareApproval(pocket, rec, s.intent!.intentHash), sellerId: it.sellerId, sku: it.sku, description: rec.description, amount: formatAmount(amount), intent: renderIntent(s.intent!),

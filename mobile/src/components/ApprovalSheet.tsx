@@ -49,6 +49,8 @@ export function describeApprovalError(code: string): string {
     case "AUTH_WRONG_SELLER":
     case "AUTH_WRONG_AMOUNT": return "This request doesn't match what you're approving (card, seller or amount), so nothing was signed.";
     case "SIGN_FAILED": return "Could not sign on this phone. Try again.";
+    case "VISITOR_TOKEN_REQUIRED": case "HTTP 401": return "Signing you in again. Try once more in a moment.";
+    case "NOT_YOUR_CARD": case "HTTP 403": return "That card belongs to another key, so this phone can't answer for it.";
     case "GUARD_REFUSED": return "Your phone refused to sign: this isn't exactly the payment waiting for you.";
     case "NETWORK": return "Could not reach the server. Check the connection and try again.";
     default: return "Could not send your answer. Check the connection and try again.";

@@ -11,7 +11,7 @@ import { clientFor } from "./chain";
 import { explorerHref } from "./route";
 import { formatHkd, parseHkd, curSign } from "../shared";
 import { createBrowserKey, createPasskeyKey, loadStored, markBackedUp, passkeysAvailable, unlock, type StoredKey } from "../owner/key";
-import { ownerWallet, type OwnerWallet, type Pending, type SignUp } from "../owner/wallet";
+import { onSessionLost, ownerWallet, type OwnerWallet, type Pending, type SignUp } from "../owner/wallet";
 import { cn } from "../lib/cn";
 
 let unlocked: Hex | null = null; // this tab only, never stored in the clear for a passkey key
@@ -48,6 +48,9 @@ export function Owner() {
     [pk, live?.api, live?.rpc, live?.chainId, net.cfg.factory, net.cfg.token]); // eslint-disable-line react-hooks/exhaustive-deps
   const mine = useMemo(() => (wallet ? net.pockets.filter((p) => p.owner.toLowerCase() === wallet.address.toLowerCase()) : []), [net.pockets, wallet]);
 
+  // a 401 anywhere (an expired or forgotten token): sign in again
+  const [again, setAgain] = useState(0);
+  useEffect(() => onSessionLost(() => setAgain((n) => n + 1)), []);
   // signed in as soon as there is a key: one Login signature (or a saved token)
   useEffect(() => {
     if (!wallet) return;
@@ -55,7 +58,7 @@ export function Owner() {
     setSession("signing"); setError("");
     wallet.session().then((r) => { if (!alive) return; setSignedUp(r); setSession("ready"); net.refresh(); }, (e) => { if (alive) { setSession("none"); setError((e as Error).message); } });
     return () => { alive = false; };
-  }, [wallet]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [wallet, again]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!wallet || session !== "ready") return;
     let have = false; // one failed read between good ones is noise; no balance at all is worth saying
@@ -104,7 +107,7 @@ export function Owner() {
                 <summary className="cursor-pointer text-muted">Import a key</summary>
                 <div className="mt-2 flex gap-2">
                   <input value={importing} onChange={(e) => setImporting(e.target.value)} placeholder="0x… (64 hex characters)" spellCheck={false} className="num h-11 min-w-0 flex-1 rounded-[14px] bg-tile px-3 text-[14px] outline-none focus:ring-2 focus:ring-ink" />
-                  <button type="button" disabled={!/^0x[0-9a-fA-F]{64}$/.test(importing.trim())} onClick={() => { const k = createBrowserKey(importing.trim() as Hex); setStored({ ...k, backedUp: true }); markBackedUp(); setPk(k.pk); setImporting(""); }} className={cn(btn, "bg-ink text-on-accent")}>Import</button>
+                  <button type="button" disabled={!/^0x[0-9a-fA-F]{64}$/.test(importing.trim())} onClick={() => { try { const k = createBrowserKey(importing.trim() as Hex); setStored({ ...k, backedUp: true }); markBackedUp(); setPk(k.pk); setImporting(""); } catch { setError("That isn't a valid private key."); } }} className={cn(btn, "bg-ink text-on-accent")}>Import</button>
                 </div>
               </details>
             </div>
@@ -155,7 +158,7 @@ export function Owner() {
               {mine.length > 0 && (
                 <div className="grid gap-2">
                   <h3 className="eyebrow text-muted">Your cards</h3>
-                  {mine.map((p) => <CardRow key={p.address} wallet={wallet} p={p} />)}
+                  {mine.map((p) => <CardRow key={p.address} wallet={wallet} p={p} close={() => setOpen(false)} />)}
                 </div>
               )}
             </div>
@@ -167,12 +170,25 @@ export function Owner() {
   );
 }
 
-function CardRow({ wallet, p }: { wallet: OwnerWallet; p: { address: Address; balance: bigint; revoked: boolean; frozen?: boolean } }) {
+function CardRow({ wallet, p, close }: { wallet: OwnerWallet; p: { address: Address; balance: bigint; revoked: boolean; frozen?: boolean }; close(): void }) {
   const net = useNetwork();
   const [text, setText] = useState("");
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
-  const [tx, setTx] = useState<{ hash: string; label: string } | null>(null);
+  const [txs, setTxs] = useState<{ hash: string; label: string }[]>([]);
+  /** An owner transaction from this row (guarded, signed by the browser's key), with its hash shown. */
+  const act = async (f: () => Promise<{ hash: string; label: string }[]>) => {
+    setBusy(true); setReply("");
+    try { const out = await f(); setTxs((t) => [...t, ...out]); net.refresh(); } catch (e) { setReply((e as Error).message.split("\n")[0]); }
+    setBusy(false);
+  };
+  // revoke stops the agent; what is left goes back to the main wallet in the same press (a second transaction)
+  const revoke = () => act(async () => {
+    const r = await wallet.revoke(p.address);
+    const out = [{ hash: r.hash, label: "Card revoked" }];
+    if (p.balance > 0n) out.push({ hash: (await wallet.returnFunds(p.address)).hash, label: `${curSign()}${formatHkd(p.balance)} back to your main wallet` });
+    return out;
+  });
   const [waiting, setWaiting] = useState<Pending[]>([]);
   useEffect(() => {
     if (p.revoked) return;
@@ -198,16 +214,18 @@ function CardRow({ wallet, p }: { wallet: OwnerWallet; p: { address: Address; ba
   return (
     <div className="tile grid gap-2 px-4 py-3">
       <div className="flex items-center justify-between gap-3 text-[14px]">
-        <a href={explorerHref.address(p.address)} className="font-medium hover:underline">{net.nameOf(p.address)} <span className="num text-muted">{short(p.address)}</span></a>
-        <span className="num font-bold">{p.revoked ? "Revoked" : p.frozen ? "Frozen" : `${curSign()}${formatHkd(p.balance)}`}</span>
+        <a href={explorerHref.address(p.address)} onClick={close} className="font-medium hover:underline">{net.nameOf(p.address)} <span className="num text-muted">{short(p.address)}</span></a>
+        <span className="num font-bold">{p.revoked ? <span className="mr-2 text-[12px] font-medium text-muted">Revoked</span> : p.frozen ? <span className="mr-2 text-[12px] font-medium text-vermillion-ink">Frozen</span> : null}{curSign()}{formatHkd(p.balance)}</span>
       </div>
       {!p.revoked && (
         <div className="flex gap-2">
           <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void say(); }} placeholder="Ask its agent, e.g. buy the durian report" className="h-10 min-w-0 flex-1 rounded-[12px] bg-card px-3 text-[14px] outline-none focus:ring-2 focus:ring-ink" />
           <button type="button" disabled={busy || !text.trim()} onClick={() => void say()} className={cn(btn, "h-10 bg-ink text-on-accent")}>{busy ? "…" : "Send"}</button>
-          <button type="button" disabled={busy} onClick={async () => { setBusy(true); try { const r = await wallet.revoke(p.address); setTx({ hash: r.hash, label: "Card revoked" }); net.refresh(); } catch (e) { setReply((e as Error).message.split("\n")[0]); } setBusy(false); }} className={cn(btn, "h-10 bg-card text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)]")}>Revoke</button>
+          <button type="button" disabled={busy} onClick={() => void revoke()} className={cn(btn, "h-10 bg-card text-ink shadow-[inset_0_0_0_1.5px_var(--color-tile-stroke)]")}>Revoke</button>
         </div>
       )}
+      {p.frozen && !p.revoked && <button type="button" disabled={busy} onClick={() => void act(async () => [{ hash: (await wallet.unfreeze(p.address)).hash, label: "Card unfrozen" }])} className={cn(btn, "h-10 bg-ink text-on-accent")}>Unfreeze (only you can)</button>}
+      {p.revoked && p.balance > 0n && <button type="button" disabled={busy} onClick={() => void act(async () => [{ hash: (await wallet.returnFunds(p.address)).hash, label: `${curSign()}${formatHkd(p.balance)} back to your main wallet` }])} className={cn(btn, "h-10 bg-ink text-on-accent")}>Return {curSign()}{formatHkd(p.balance)} to my wallet</button>}
       {waiting.map((a) => (
         <div key={a.id} className="rounded-[12px] bg-blue-soft p-3 text-[14px]">
           <p className="font-medium">{a.kind === "payment" ? `Co-sign ${curSign()}${a.data?.amount ?? "?"} to ${net.cfg.sellers.find((s) => s.id === a.data?.sellerId)?.name ?? "a seller"}?` : a.kind === "intent" ? "Confirm this task?" : "Your agent asks"}</p>
@@ -219,7 +237,7 @@ function CardRow({ wallet, p }: { wallet: OwnerWallet; p: { address: Address; ba
         </div>
       ))}
       {reply && <p className="text-[14px] text-ink2">{reply}</p>}
-      {tx && <TxLink hash={tx.hash} label={tx.label} />}
+      {txs.map((t) => <TxLink key={t.hash} hash={t.hash} label={t.label} />)}
     </div>
   );
 }

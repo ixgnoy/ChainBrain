@@ -83,7 +83,7 @@ function Body({ r, close }: { r: NonNullable<ReturnType<typeof useApp>["rules"]>
         // a card with a routine (built-in network) keeps the routine's allowance equal to the card's, so the runner and
         // the card agree on where to stop and ask; the chain already holds it, so this writes nothing on-chain
         const rt = never ? null : api.routineOf(pocket.address);
-        if (rt) { try { api.editRoutine(pocket.address, { allowance: { amount: text.trim(), period: PERIOD[kind] as "day" | "week" | "month" } }); } catch { /* the card's rule is set; the routine view catches up on its next read */ } }
+        if (rt) { try { await api.editRoutine(pocket.address, { allowance: { amount: text.trim(), period: PERIOD[kind] as "day" | "week" | "month" } }); } catch { /* the card's rule is set; the routine view catches up on its next read */ } }
         setDone({ title: never ? "No allowance: only the cap and the balance limit your agent" : `Your agent can spend ${money(v)} a ${PERIOD[kind]} on its own`, txs });
       } else {
         const v = never ? NEVER : parseHkd(text);

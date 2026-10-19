@@ -52,7 +52,7 @@ export default function Settings() {
     const url = normalizeUrl(draft);
     if (url && !isHttpUrl(url)) { setTest({ state: "fail", text: "Use a full address, for example http://192.168.1.10:8787." }); haptic.error(); return; }
     setTest({ state: "busy" });
-    if (!demo && url && url !== apiUrl) await setApiUrl(url);
+    // Test only checks the address; Save is what switches to it
     try {
       const r = await api.ping(url || ENV_API);
       const d = await detectDev(url || ENV_API);
@@ -67,7 +67,7 @@ export default function Settings() {
     if (!wallet) return;
     setFunds({ state: "busy" });
     try { await api.devFund(wallet.address); await refreshPockets(); setFunds({ state: "ok", text: "Added test money to your wallet." }); haptic.success(); }
-    catch { setFunds({ state: "fail", text: "The test network did not accept that. Is it running?" }); haptic.error(); }
+    catch (e) { setFunds({ state: "fail", text: (e as Error).message || "The network did not accept that." }); haptic.error(); }
   };
   /** The demo network is the app's built-in simulation; off is the real FISCO chain through the server below. */
   const toggleDemo = async (v: boolean) => {

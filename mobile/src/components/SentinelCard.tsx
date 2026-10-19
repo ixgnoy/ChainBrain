@@ -60,7 +60,7 @@ export function SentinelCard({ v }: { v: SentinelView }) {
     <EventCard
       tone={freeze ? "blocked" : "waiting"} alert={v.key}
       title={freeze ? "Sentinel froze this card" : "Sentinel wants your OK"}
-      body={freeze ? `${reason(v)}. ${movedMoney(v) ? "Nothing more can leave the pocket" : "No money moved"}. Only you can unfreeze it.` : `${reason(v)}. Your next payment needs your signature.`}
+      body={freeze ? `${reason(v)}. ${movedMoney(v) ? "Nothing more can leave the card" : "No money moved"}. Only you can unfreeze it.` : `${reason(v)}. Your next payment needs your signature.`}
       why={{
         title: "Why", rows, codes: v.signals.map((s) => s.id),
         children: <View style={{ gap: 6 }}>
@@ -105,7 +105,7 @@ export function SentinelActivityRow({ v, last, delay = 0 }: { v: SentinelView; l
         sub={[pocket ? cleanText(pocket.name, 24) : undefined, new Date(v.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })].filter(Boolean).join(" · ")}
         rightSub={v.kind === "freeze" ? (v.tx ? "On chain" : "Held") : "Needs you"} rightSubTone={v.kind === "freeze" ? "ink2" : "blueInk"}
         onPress={v.tx ? () => setExplorerTx(v.tx!) : undefined} last={last}
-        a11y={v.tx ? `Sentinel froze ${pocket?.name ?? "the pocket"}. Open transaction` : title} />
+        a11y={v.tx ? `Sentinel froze ${pocket?.name ?? "the card"}. Open transaction` : title} />
     </Rise>
   );
 }

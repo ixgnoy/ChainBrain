@@ -7,9 +7,15 @@ import { checkTx, checkTypedData, GuardRefused, type GuardContext } from "../../
 import { loginTypedData, VISITOR_HEADER, type LoginChallenge } from "../../../shared/chain/login";
 
 const tokenKey = (api: string, owner: string) => `cb.visitor.${api.replace(/\/+$/, "")}.${owner.toLowerCase()}`;
-let token: string | null = null;
-export const visitorHeaders = (): Record<string, string> => (token ? { [VISITOR_HEADER]: token } : {});
-export const hasSession = () => !!token;
+// the session belongs to one server: it is never sent to another one after a switch in Settings
+let session: { api: string; token: string } | null = null;
+const norm = (u: string) => u.replace(/\/+$/, "");
+export const visitorHeaders = (api?: string): Record<string, string> => (session && (!api || norm(api) === session.api) ? { [VISITOR_HEADER]: session.token } : {});
+export const hasSession = (api?: string) => !!session && (!api || norm(api) === session.api);
+const lost = new Set<() => void>();
+/** A 401 from a card route: the token expired or the server forgot it. The owner panel signs in again. */
+export function clearSession() { session = null; for (const f of lost) f(); }
+export const onSessionLost = (f: () => void) => { lost.add(f); return () => void lost.delete(f); };
 let signedIn: string | null = null;
 /** The signed-in owner's address (the console aims its arena at this owner's own cards). */
 export const ownerAddress = () => signedIn;
@@ -50,9 +56,15 @@ export function ownerWallet(pk: Hex, o: { api: string; rpc: string; cfg: Config;
     address: account.address,
     /** Back in with a saved token, or sign up / in with one Login signature (the server funds a new visitor). */
     async session(): Promise<SignUp | null> {
+      if (session && session.api !== norm(o.api)) session = null;
       const saved = localStorage.getItem(tokenKey(o.api, account.address));
-      if (saved && (await fetch(`${o.api}/v1/me`, { headers: { [VISITOR_HEADER]: saved } }).then((r) => r.ok, () => false))) { token = saved; signedIn = account.address; return null; }
-      const ch = (await (await fetch(`${o.api}/v1/challenge`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ owner: account.address }) })).json()) as LoginChallenge;
+      const me = saved ? await fetch(`${o.api}/v1/me`, { headers: { [VISITOR_HEADER]: saved } }).then((r) => (r.ok ? r.json() : null), () => null) : null;
+      // a saved session whose funding went through: reuse it. Funding that failed is retried by signing in again.
+      if (saved && me && me.funding?.mintTx) { session = { api: norm(o.api), token: saved }; signedIn = account.address; return { visitorId: me.visitorId, created: false, funding: me.funding }; }
+      const cr = await fetch(`${o.api}/v1/challenge`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ owner: account.address }) });
+      if (cr.status === 404) throw new Error("This server has no visitor accounts yet (an older build). Sign-in needs the updated server; the chain can still be read.");
+      if (!cr.ok) throw new Error(cr.status === 429 ? "The network is busy. Try again in a moment." : `The server answered ${cr.status}.`);
+      const ch = (await cr.json()) as LoginChallenge;
       const td = loginTypedData(ch);
       const verdict = await checkTypedData(ctx, td as any);
       if (!verdict.ok) throw new GuardRefused(verdict);
@@ -60,7 +72,7 @@ export function ownerWallet(pk: Hex, o: { api: string; rpc: string; cfg: Config;
       const r = await fetch(`${o.api}/v1/visitors`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ owner: account.address, nonce: ch.nonce, issuedAt: ch.issuedAt, signature }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error === "SIGNUPS_FULL" ? "Too many new accounts this hour: try again later, or use the demo network." : j.error ?? `sign-up ${r.status}`);
-      token = j.token;
+      session = { api: norm(o.api), token: j.token };
       signedIn = account.address;
       try { localStorage.setItem(tokenKey(o.api, account.address), j.token); } catch { /* private window */ }
       return j;

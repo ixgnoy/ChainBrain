@@ -53,7 +53,7 @@ export async function straightToChain(pocket: Address, amount = 50_000_000n) {
   const out = {
     tx: r.hash, reverted, to: ATTACKER, amount: amount.toString(), balanceBefore: before.toString(), balanceAfter: after.toString(),
     ...(reverted && reason && reason !== "OK" ? { reason } : {}), ...(r.revert ? { revert: r.revert.message, revertName: r.revert.name, revertSource: r.revertSource } : {}),
-    signedBy: info.agent, explorer: cfg().txUrl(r.hash),
+    signedBy: info.agent, via: "agent", explorer: cfg().txUrl(r.hash),
   };
   bus.publish({ type: "forced", pocket, ...out });
   return out;

@@ -11,7 +11,7 @@ import { pocket, pub, factoryAddress, pocketAbi, factoryAbi, erc20Abi } from "./
 import { cfg, publicRpc } from "./chains";
 import { transferTypedData } from "./wallet/scheme";
 import { directory } from "./wallet/directory";
-import { agentAccount } from "./wallet/pay";
+import { legacyAgent } from "./wallet/pay";
 import { runTurn, type ModelFn } from "./agent/loop";
 import { scriptedModel } from "./agent/scripted";
 import { modelInfo, llmOn } from "./llm";
@@ -74,7 +74,7 @@ export function apiApp(deps: { model?: ModelFn; radarModel?: AskModel; memoryMod
   });
   app.get("/api/config", async (c) =>
     c.json({
-      agent: agentAccount().address, factory: factoryAddress(), token: cfg().token, chain: chainInfo(), sellersUrl: process.env.SELLERS_URL ?? "http://localhost:4021",
+      agent: legacyAgent(), factory: factoryAddress(), token: cfg().token, chain: chainInfo(), sellersUrl: process.env.SELLERS_URL ?? "http://localhost:4021",
       sellers: await directory(), abis: { pocket: pocketAbi, factory: factoryAbi, erc20: erc20Abi }, model: modelInfo(),
     }));
   // FISCO has no public explorer: the apps link here for a receipt.

@@ -190,6 +190,7 @@ type ServerTx = { status: "success" | "reverted"; blockNumber: string; from: str
 function useServerTx(hash: string, api?: string): ServerTx | null {
   const [v, setV] = useState<ServerTx | null>(null);
   useEffect(() => {
+    setV(null); // never show the previous hash's record under this one
     if (!api) return;
     let alive = true;
     fetch(`${api}/api/tx/${hash}`).then((r) => (r.ok ? r.json() : null)).then((j) => alive && setV(j), () => {});

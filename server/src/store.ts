@@ -25,7 +25,8 @@ export function table<T>(name: string) {
     timer = undefined;
     if (mem() || !rows) return;
     mkdirSync(dir(), { recursive: true });
-    writeFileSync(`${file()}.tmp`, JSON.stringify(rows));
+    // events carry bigint amounts: written as strings (the readers parse both), never a throw in this timer
+    writeFileSync(`${file()}.tmp`, JSON.stringify(rows, (_, v) => (typeof v === "bigint" ? v.toString() : v)));
     renameSync(`${file()}.tmp`, file());
   };
   return {

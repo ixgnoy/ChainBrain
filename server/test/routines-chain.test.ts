@@ -86,4 +86,28 @@ describe("routines on the real chain", () => {
     expect([rt?.runs, rt?.status]).toEqual([3, "active"]);
     expect((await (await api.request(`/api/routine?pocket=${pocket}`)).json()).runs).toBe(3);
   });
+
+  it("past the card's on-chain allowance (OVER_PERIOD) a run asks the owner instead of refusing, and pays once co-signed", async () => {
+    const key2 = generatePrivateKey(), owner2 = privateKeyToAccount(key2);
+    const t2 = await signUp(owner2);
+    const card2 = await card(key2, t2, ["exa", "coingecko"]);
+    const { cfg } = await import("../src/chains");
+    const { pocketAbi } = await import("../src/wallet/chain");
+    const w = createWalletClient({ account: owner2, chain: cfg().chain, transport: http(s.rpc) }).extend(publicActions);
+    // the card itself allows HK$0.10 a week (kind 2); the routine's own allowance is a roomy HK$1.00
+    await w.waitForTransactionReceipt({ hash: await w.writeContract({ address: card2, abi: pocketAbi, functionName: "setPeriodLimit", args: [2, 100_000n], type: "legacy", gasPrice: 0n } as any) });
+    expect((await post("/api/routine", { pocket: card2, spec: { ...spec, allowance: { amount: "1.00", period: "week" } } }, { [VISITOR_HEADER]: t2 })).status).toBe(200);
+    const running = Promise.resolve(post("/api/routine/run", { pocket: card2 }, { [VISITOR_HEADER]: t2 })).then((x: Response) => x.json());
+    let ask: any;
+    for (let i = 0; i < 80 && !ask; i++) { ask = (await (await api.request(`/api/pending?pocket=${card2}`)).json()).find((a: any) => a.kind === "payment"); if (!ask) await new Promise((r) => setTimeout(r, 250)); }
+    expect(ask?.text).toMatch(/past the allowance this card holds on-chain/);
+    const { transferTypedData } = await import("../src/wallet/scheme");
+    expect((await post(`/api/approvals/${ask.id}`, { approved: true, signature: await owner2.signTypedData(transferTypedData(ask.data.auth) as any) }, { [VISITOR_HEADER]: t2 })).status).toBe(200);
+    const r = await running;
+    expect(r.outs.map((o: any) => o.outcome)).toEqual(["paid", "cosigned"]);
+    expect((await pub().getTransactionReceipt({ hash: r.outs[1].tx })).status).toBe("success");
+    const { bus } = await import("../src/wallet/events");
+    const pays = bus.recent().filter((e: any) => e.type === "payment" && e.pocket?.toLowerCase() === card2.toLowerCase());
+    expect(pays.every((e: any) => e.routine?.run === 1)).toBe(true); // the apps' period meter counts these
+  });
 });

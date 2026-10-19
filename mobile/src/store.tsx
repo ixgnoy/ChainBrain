@@ -226,6 +226,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ---- visitor account: once connected to a server, sign up or back in (one Login signature, checked by the signing guard).
   // A new account is funded by the server with real transactions; the notice shows the hash.
   const [visitor, setVisitor] = useState<Visitor>({ state: "none" });
+  const [visitorRetry, setVisitorRetry] = useState(0); // bumped to sign in again (a 401, or a failed sign-up retried)
   const refreshRef = useRef<() => Promise<void>>(async () => {});
   const addRef = useRef<(a: Address, m?: PocketMeta, o?: { activate?: boolean }) => Promise<void>>(async () => {});
   /**
@@ -247,10 +248,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       };
       const brief = await make("Daily brief", ["exa", "coingecko"]);
       const watch = await make("Market watch", ["nansen"]);
-      const r = await fetchTimeout(`${getApi()}/v1/starter`, { method: "POST", headers: { "content-type": "application/json", ...visitorHeaders() }, body: JSON.stringify({ cards: [brief.pocket, watch.pocket] }) }, 90_000);
-      const j = r.ok ? await r.json() : { payments: [] };
-      const paid = (j.payments as { tx?: string; sellerId: string }[]).filter((x) => x.tx);
-      setNotice({ title: "Two starter cards are ready, and their agents bought something small", txs: [
+      // the cards are real either way: their hashes show even if the starter purchases don't happen
+      const j = await fetchTimeout(`${getApi()}/v1/starter`, { method: "POST", headers: { "content-type": "application/json", ...visitorHeaders() }, body: JSON.stringify({ cards: [brief.pocket, watch.pocket] }) }, 90_000)
+        .then((r) => (r.ok ? r.json() : { payments: [] }), () => ({ payments: [] }));
+      const paid = ((j.payments ?? []) as { tx?: string; sellerId: string }[]).filter((x) => x.tx);
+      setNotice({ title: paid.length ? "Two starter cards are ready, and their agents bought something small" : "Two starter cards are ready", txs: [
         { label: "Create Daily brief", hash: brief.tx }, { label: `Add ${curSign()}2.00`, hash: brief.fundTx },
         { label: "Create Market watch", hash: watch.tx }, { label: `Add ${curSign()}2.00`, hash: watch.fundTx },
         ...paid.map((x) => ({ label: `Paid ${c.sellers.find((y) => y.id === x.sellerId)?.name ?? x.sellerId}`, hash: x.tx! })),
@@ -278,11 +280,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         void refreshRef.current();
         if (r.created && r.funding.mintTx) void seedStarter(wallet);
       } catch (e) {
-        if (alive) setVisitor({ state: "error", error: (e as Error).message });
+        if (!alive) return;
+        const msg = (e as Error).message;
+        setVisitor({ state: "error", error: msg });
+        // a busy hour, a timeout or a flaky network: try again on its own (an older server has no accounts at all)
+        if (!/older build/.test(msg)) retryTimer.current = setTimeout(() => setVisitorRetry((n) => n + 1), 20_000);
       }
     })();
-    return () => { alive = false; };
-  }, [local, conn, wallet, cfg, apiUrl]);
+    return () => { alive = false; clearTimeout(retryTimer.current); };
+  }, [local, conn, wallet, cfg, apiUrl, visitorRetry]);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // a 401 from any card route: the token expired or the server forgot it; drop it and sign in again (one Login signature)
+  useEffect(() => api.setOnUnauthorized(() => {
+    if (!wallet) return;
+    setVisitorToken(null);
+    void deleteItem(tokenKey(apiUrl, wallet.address)).then(() => setVisitorRetry((n) => n + 1));
+  }), [wallet, apiUrl]);
 
   // ---- pockets for this owner
   useEffect(() => {
@@ -323,6 +336,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const refreshPockets = useCallback(async () => {
     if (!wallet || !cfg) return;
     const list = addrRef.current;
+    void api.refreshRoutines(list); // routines the event window no longer covers (once a minute per card)
     const [bal, reads] = await Promise.all([
       wallet.balances().catch(() => null),
       Promise.all(list.map((a) => readPocket(a).catch(() => null))),
@@ -380,22 +394,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   addRef.current = addPocket;
 
   // ---- event stream: poll /api/events.json (React Native has no EventSource), then reconcile with /api/pending
+  const pollTick = useRef(0);
+  const pollFails = useRef(0);
   const poll = useCallback(async () => {
     if (!cfg) return;
     try {
       const fresh = await api.fetchEvents(cursor.current);
       const next = mergeEvents(eventsRef.current, fresh, seen.current);
-      if (next !== eventsRef.current) { eventsRef.current = next; setEvents(next); cursor.current = nextCursor(next, cursor.current); }
-      // events first, pending second: anything seen in events that is still pending server-side must be in this list
+      const changed = next !== eventsRef.current;
+      if (changed) { eventsRef.current = next; setEvents(next); cursor.current = nextCursor(next, cursor.current); }
+      // events first, pending second: anything seen in events that is still pending server-side must be in this list.
+      // Pending is read every other tick unless something happened (a venue's phones share one IP and its read budget).
       const list = addrRef.current;
+      if (!changed && pollTick.current++ % 2 === 1 && !local) { pollFails.current = 0; setConn("online"); return; }
       if (list.length) {
         const res = await Promise.all(list.map((a) => api.fetchPending(a).catch(() => null)));
         const ids = res.some((r) => r === null) ? null : new Set(res.flatMap((r) => (r ?? []).map((x) => x.id)));
         setPendingIds((old) => (sameIds(old, ids) ? old : ids));
       } else setPendingIds((old) => (old && old.size === 0 ? old : new Set()));
+      pollFails.current = 0;
       setConn("online");
-    } catch { /* keep polling; connect effect reports offline when config fails */ }
-  }, [cfg]);
+    } catch {
+      // a server that goes away mid-session: after three failed polls in a row, say so (Home offers the demo network)
+      if (++pollFails.current >= 3 && !local) { setConn("offline"); setConnError(`Can't reach the ChainBrain network at ${getApi().replace(/^https?:\/\//, "")}.`); }
+    }
+  }, [cfg, local]);
   const pollRef = useRef(poll);
   pollRef.current = poll;
 
@@ -484,7 +507,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       await pollRef.current();
       const late = replyOf(sliceTurn(eventsRef.current, fromAt));
-      patchTurn(key, turn.id, late ? { reply: late, done: true, endAt: eventsRef.current.at(-1)?.at } : { error: "Lost the connection while the agent was working. It may still finish: check Activity.", done: true });
+      // a network failure may still finish server-side; a server answer (not your card, sign in again, busy) says what it is
+      const answered = !(e instanceof TypeError) && !/Bad reply|Server error 5/.test((e as Error).message);
+      patchTurn(key, turn.id, late ? { reply: late, done: true, endAt: eventsRef.current.at(-1)?.at } : { error: answered ? (e as Error).message : "Lost the connection while the agent was working. It may still finish: check Activity.", done: true });
     }
     void refreshPockets();
   }, [active, pockets, turnsBy, refreshPockets]);
@@ -621,6 +646,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (u.trim() && !isHttpUrl(u)) return; // the Settings form says why
     if (u.trim()) await setItem(API_KEY, u.trim().replace(/\/+$/, "")); else await deleteItem(API_KEY);
     resetConfig(); setCfg(null); setConn("connecting");
+    // nothing from the old server may linger: its balances, card reads, answers, chat and notices
+    setBalances(null); setViews({}); setAnswered(new Set()); setTurnsBy({}); setNotice(null); setReceipt(null); setExplorerTx(null);
     setRuntimeApi(u);
     setRetry((n) => n + 1);
   }, []);

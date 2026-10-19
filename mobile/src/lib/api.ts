@@ -7,6 +7,16 @@ import { SCENES } from "../../../shared/sim";
 import { routineFromEvents } from "../../../shared/sim/pocketAppData";
 import { visitorHeaders } from "./visitor";
 
+/** Called on a 401 from a card route (an expired or forgotten token): the store signs in again. */
+let onUnauthorized: () => void = () => {};
+export const setOnUnauthorized = (f: () => void) => { onUnauthorized = f; return () => { onUnauthorized = () => {}; }; };
+/** A server error code in words (never shown raw). */
+export const plainError = (code: string) => ({
+  VISITOR_TOKEN_REQUIRED: "Signing you in again. Try once more in a moment.",
+  NOT_YOUR_CARD: "That card belongs to another key, so this phone can't act on it.",
+  RATE_LIMITED: "The network is busy. Try again in a moment.",
+  SIGNUPS_FULL: "Too many new accounts this hour. Try again later, or use the demo network.",
+} as Record<string, string>)[code] ?? code;
 /** JSON headers plus the visitor's session token (the server's visitor-only routes need it). */
 const hdrs = () => ({ "content-type": "application/json", ...visitorHeaders() });
 
@@ -34,6 +44,7 @@ export async function answerApproval(id: string, body: { approved: boolean; sign
   try {
     const r = await fetchTimeout(`${getApi()}/api/approvals/${id}`, { method: "POST", headers: hdrs(), body: JSON.stringify(body) }, 15000);
     if (r.ok) return { ok: true };
+    if (r.status === 401) onUnauthorized();
     let error = `HTTP ${r.status}`;
     try { const j = await r.json(); if (j?.error) error = String(j.error); } catch { /* plain text error */ }
     return { ok: false, error };
@@ -46,10 +57,12 @@ export async function answerApproval(id: string, body: { approved: boolean; sign
 export async function chat(pocket: Address, text: string): Promise<{ reply: string; stopped?: string }> {
   if (isBuiltin()) return builtin().chat(pocket, text);
   const r = await fetch(`${getApi()}/api/chat`, { method: "POST", headers: hdrs(), body: JSON.stringify({ pocket, text }) });
+  if (r.status === 401) onUnauthorized();
   const raw = await r.text();
   let j: any;
   try { j = JSON.parse(raw); } catch { throw new Error(r.ok ? "Bad reply from the server" : `Server error ${r.status}`); }
-  return { reply: String(j.reply ?? j.error ?? "(no reply)"), stopped: j.stopped };
+  if (!r.ok) throw new Error(plainError(String(j.error ?? `Server error ${r.status}`)));
+  return { reply: String(j.reply ?? "(no reply)"), stopped: j.stopped };
 }
 
 /** Test connection: reaches /api/config and tells whether it is the dev stack. */
@@ -135,10 +148,26 @@ const post = async (path: string, body: unknown) => {
   if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
   return j;
 };
-export const routineOf = (pocket: string): Routine | null => (isBuiltin() ? builtin().routine(pocket) : routineFromEvents(serverEvents() as any, pocket));
+/** The server's own record of each card's routine (GET /api/routine): the events show changes live, but the server keeps
+ *  only its last 1000 events, so an older routine's "set" event can be gone. Refreshed at most once a minute per card. */
+const routineCache = new Map<string, { at: number; rt: Routine | null }>();
+export async function refreshRoutines(pockets: string[], force = false) {
+  if (isBuiltin()) return;
+  await Promise.all(pockets.map(async (p) => {
+    const k = p.toLowerCase(), c = routineCache.get(k);
+    if (!force && c && Date.now() - c.at < 60_000) return;
+    const r = await fetchTimeout(`${getApi()}/api/routine?pocket=${p}`, {}, 8000).catch(() => null);
+    if (r?.ok) routineCache.set(k, { at: Date.now(), rt: (await r.json().catch(() => null)) as Routine | null });
+  }));
+}
+export const routineOf = (pocket: string): Routine | null => {
+  if (isBuiltin()) return builtin().routine(pocket);
+  // the events win when they tell the whole story (they are newer); else the server's record
+  return routineFromEvents(serverEvents() as any, pocket) ?? routineCache.get(pocket.toLowerCase())?.rt ?? null;
+};
 export const setRoutine = (pocket: Address, spec: RoutineSpec): Routine | null => {
   if (isBuiltin()) return builtin().setRoutine(pocket, spec);
-  void post("/api/routine", { pocket, spec }).catch(() => {}); // it shows once the server's "set" event arrives
+  void post("/api/routine", { pocket, spec }).then(() => refreshRoutines([pocket], true), () => {}); // it shows once the server's "set" event arrives
   return null;
 };
 export async function runRoutineNow(pocket: Address) {

@@ -26,10 +26,11 @@ function* purchase(sellerId: string, sku: string, o: { payAnyway?: boolean; reas
   const base = { sellerId, sku, price: q?.price };
   if (!q?.ok) return { ...base, ok: false, reason: q?.reason ?? "QUOTE_UNKNOWN", why: q?.error ?? q?.why };
   const rule = q.allowedByPocket;
-  if (rule !== "OK" && !o.payAnyway) return { ...base, ok: false, reason: rule.reason, why: rule.why };
+  const overPeriod = rule !== "OK" && rule?.reason === "OVER_PERIOD"; // past the card's on-chain allowance: the owner co-signs
+  if (rule !== "OK" && !overPeriod && !o.payAnyway) return { ...base, ok: false, reason: rule.reason, why: rule.why };
   if (q.intentCheck !== "OK" && !o.payAnyway) return { ...base, ok: false, reason: q.intentCheck.reason, why: q.intentCheck.why };
-  if (rule === "OK" && q.needsOwnerApproval) {
-    const a: Json = yield { tool: "ask_owner", input: { quoteId: q.quoteId, reason: o.reason ?? `${name(sellerId)}'s ${sku} costs HK$${q.price}, above your ask-me threshold. It matches the task you confirmed.` } };
+  if ((rule === "OK" && q.needsOwnerApproval) || overPeriod) {
+    const a: Json = yield { tool: "ask_owner", input: { quoteId: q.quoteId, reason: o.reason ?? (overPeriod ? `${name(sellerId)}'s ${sku} costs HK$${q.price}, past this card's allowance. It matches the task you confirmed.` : `${name(sellerId)}'s ${sku} costs HK$${q.price}, above your ask-me threshold. It matches the task you confirmed.`) } };
     if (!a?.ok) return { ...base, ok: false, reason: a?.reason, why: a?.why };
   }
   const p: Json = yield { tool: "pay", input: { quoteId: q.quoteId } };

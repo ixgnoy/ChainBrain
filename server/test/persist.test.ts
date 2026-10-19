@@ -15,7 +15,7 @@ it("events, approvals, memory and visitors come back after a restart; a pending 
   const { bus } = await import("../src/wallet/events");
   const { approvals } = await import("../src/wallet/approvals");
   const { memory } = await import("../src/brain/memory");
-  bus.publish({ type: "payment", pocket: "0xabc", sellerId: "datalite", tx: "0x1" });
+  bus.publish({ type: "payment", pocket: "0xabc", sellerId: "datalite", tx: "0x1", amount: 2_300_000n }); // bigint, as settle() publishes
   const done = approvals.create({ pocket: "0xabc", kind: "intent", text: "Buy a report" });
   approvals.resolve(done.id, { approved: true });
   const open = approvals.create({ pocket: "0xabc", kind: "question", text: "Per report?" });
@@ -28,7 +28,7 @@ it("events, approvals, memory and visitors come back after a restart; a pending 
   const again = await import("../src/wallet/events");
   const a2 = await import("../src/wallet/approvals");
   const m2 = await import("../src/brain/memory");
-  expect(again.bus.recent().some((e) => e.type === "payment" && e.tx === "0x1")).toBe(true);
+  expect(again.bus.recent().some((e) => e.type === "payment" && e.tx === "0x1" && String(e.amount) === "2300000")).toBe(true);
   expect(a2.approvals.get(done.id)?.status).toBe("approved");
   expect(a2.approvals.get(open.id)?.status).toBe("timeout"); // the agent turn that waited for it is gone
   expect(a2.approvals.pending("0xabc")).toEqual([]);

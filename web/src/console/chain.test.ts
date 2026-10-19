@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { chainIndex, loadHistory } from "./chain";
 
 // A fake FISCO node: returns logs only within 10 blocks of fromBlock (like the local 3.16.4 node), and records every call.
-function fakeNode(logs: { block: bigint; kind: "created" | "transfer" | "revoked"; args?: any; address?: string }[], head: { n: bigint }) {
+function fakeNode(logs: { block: bigint; kind: "created" | "transfer" | "revoked"; args?: any; address?: string }[], head: { n: bigint }, failAt?: { block: bigint; times: number }) {
   const calls: { address: unknown; from: bigint; to: bigint; event?: string }[] = [];
   const client = {
     getBlockNumber: async () => head.n,
     getLogs: async (q: any) => {
+      if (failAt && failAt.times > 0 && q.fromBlock === failAt.block) { failAt.times--; throw new Error("429 busy"); }
       calls.push({ address: q.address, from: q.fromBlock, to: q.toBlock, event: q.event?.name ?? "many" });
       const to = q.toBlock < q.fromBlock + 9n ? q.toBlock : q.fromBlock + 9n; // the node's silent truncation
       return logs.filter((l) => l.block >= q.fromBlock && l.block <= to).filter((l) =>
@@ -53,5 +54,29 @@ describe("the console's chain index", () => {
     const before = calls.length;
     await idx.sync(0n); // nothing new: no calls
     expect(calls.length).toBe(before);
+  });
+
+  it("a failed call resumes from the chunk it was in, without indexing anything twice", async () => {
+    const head = { n: 600n };
+    const logs = [{ block: 5n, kind: "transfer" as const, args: { from: OWNER, to: P, value: 1n } }, { block: 595n, kind: "transfer" as const, args: { from: OWNER, to: P, value: 2n } }];
+    const { client } = fakeNode(logs, head, { block: 590n, times: 1 }); // a busy RPC in the second chunk of 50 ranges
+    const idx = chainIndex(client, cfg);
+    await expect(idx.sync(0n)).rejects.toThrow("429");
+    expect(idx.transfers.length).toBe(1); // the first chunk is kept
+    await idx.sync(0n);
+    expect(idx.transfers.map((l: any) => l.args.value)).toEqual([1n, 2n]); // resumed; block 5 not indexed again
+  });
+
+  it("starts over when the chain is reset (its head is behind what was indexed)", async () => {
+    const head = { n: 30n };
+    const logs = [{ block: 25n, kind: "transfer" as const, args: { from: OWNER, to: P, value: 1n } }];
+    const { client } = fakeNode(logs, head);
+    const idx = chainIndex(client, cfg);
+    await idx.sync(0n);
+    expect(idx.transfers.length).toBe(1);
+    logs.length = 0; logs.push({ block: 3n, kind: "transfer", args: { from: OWNER, to: P, value: 9n } });
+    head.n = 5n; // a fresh chain
+    await idx.sync(0n);
+    expect(idx.transfers.map((l: any) => l.args.value)).toEqual([9n]);
   });
 });

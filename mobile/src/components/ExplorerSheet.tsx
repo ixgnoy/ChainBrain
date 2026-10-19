@@ -75,6 +75,7 @@ function Body({ hash, close }: { hash: string; close: () => void }) {
   // on a server, the chain's own record (the demo network has none)
   const [chain, setChain] = useState<ChainView | null>(null);
   useEffect(() => {
+    setChain(null); // never show the previous hash's record under this one
     if (isBuiltin) return;
     let alive = true;
     fetchTimeout(`${getApi()}/api/tx/${hash}`, {}, 10_000).then((r) => (r.ok ? r.json() : null)).then((j) => alive && setChain(j), () => {});

@@ -66,20 +66,26 @@ export function chainIndex(client: PublicClient, cfg: Pick<Config, "factory" | "
     for (let i = 0; i < ranges.length; i += 50) {
       const part = ranges.slice(i, i + 50);
       // pockets first: a new pocket's own events can only come after its creation, so they join the next calls' address list
-      const made = await Promise.all(part.map(([fromBlock, toBlock]) => client.getLogs({ address: cfg.factory, event: CREATED, fromBlock, toBlock })));
-      for (const ls of made) for (const l of ls) { idx.created.push(l as Log); known.add((l as any).args.pocket.toLowerCase()); }
-      const pockets = [...known] as Address[];
+      const made = (await Promise.all(part.map(([fromBlock, toBlock]) => client.getLogs({ address: cfg.factory, event: CREATED, fromBlock, toBlock })))).flat() as Log[];
+      const pockets = [...new Set([...known, ...made.map((l) => (l as any).args.pocket.toLowerCase())])] as Address[];
       const [tr, pe] = await Promise.all([
         Promise.all(part.map(([fromBlock, toBlock]) => client.getLogs({ address: cfg.token, event: TRANSFER, fromBlock, toBlock }))),
         pockets.length ? Promise.all(part.map(([fromBlock, toBlock]) => client.getLogs({ address: pockets, events: POCKET_EVENTS, fromBlock, toBlock } as any))) : Promise.resolve([]),
       ]);
+      // commit the chunk only once all of its calls answered, and move on: a failed call later retries from here, not
+      // from the start, and nothing is indexed twice
+      idx.created.push(...made);
+      for (const l of made) known.add((l as any).args.pocket.toLowerCase());
       for (const ls of tr) idx.transfers.push(...(ls as Log[]));
       for (const ls of pe as Log[][]) idx.pocketLogs.push(...ls);
+      next = part[part.length - 1][1] + 1n;
     }
   }
   function sync(fromBlock: bigint) {
     running ??= (async () => {
       const head = await client.getBlockNumber({ cacheTime: 0 });
+      // the chain was reset (its head is behind what we indexed): start over
+      if (next !== undefined && head + 1n < next) { idx.created.length = 0; idx.transfers.length = 0; idx.pocketLogs.length = 0; known.clear(); next = undefined; }
       const from = next ?? fromBlock;
       if (from <= head) await scan(from, head);
       next = head + 1n;
@@ -89,7 +95,10 @@ export function chainIndex(client: PublicClient, cfg: Pick<Config, "factory" | "
   return idx;
 }
 
-export async function loadPockets(client: PublicClient, cfg: Config, index: ChainIndex, extra: string[] = []): Promise<PocketState[]> {
+/** Every pocket the index knows, read from the chain. `prev`: the last good reads; a pocket whose read fails this time (a
+ *  timeout, a busy RPC) keeps its last state instead of vanishing from the screen. */
+export async function loadPockets(client: PublicClient, cfg: Config, index: ChainIndex, extra: string[] = [], prev: PocketState[] = []): Promise<PocketState[]> {
+  const last = new Map(prev.map((p) => [p.address.toLowerCase(), p]));
   const logs = index.created as unknown as { args: { pocket?: Address }; transactionHash: Hex | null; blockNumber: bigint | null }[];
   const created = new Map(logs.map((l) => [l.args.pocket!.toLowerCase(), l]));
   const addrs = [...new Set([...created.keys(), ...extra.map((a) => a.toLowerCase())])] as Address[];
@@ -105,7 +114,7 @@ export async function loadPockets(client: PublicClient, cfg: Config, index: Chai
       ]);
       const log = created.get(address.toLowerCase());
       return { address: (log?.args.pocket ?? address) as Address, owner, agent, cap, askAbove, expiresAt: Number(expiresAt), revoked, frozen: !!frozen, periodKind: Number(periodKind), periodLimit: toBig(periodLimit), spentThisPeriod: toBig(spentThisPeriod), balance, allowed: cfg.sellers.filter((_, i) => allowedFlags[i]).map((s) => s.id), createdTx: log?.transactionHash ?? undefined, createdBlock: log?.blockNumber ?? undefined } as PocketState;
-    } catch { return null; } // not a pocket (or not readable on this chain)
+    } catch { return last.get(address.toLowerCase()) ?? null; } // not a pocket, or not readable this time (then its last state)
   }));
   return states.filter((s): s is PocketState => !!s).sort((a, b) => Number((b.createdBlock ?? 0n) - (a.createdBlock ?? 0n)));
 }

@@ -583,3 +583,48 @@ Last updated: 2026-10-19
 - Note for local runs: after the app restarted, the shell defaulted to Node 16 and Playwright needs 20+. The e2e above ran on Node 24 (`~/.nvm/versions/node/v24.15.0`).
 
 **Env:** `ROUTINE_TICK_MS` (API, default 30000). Nothing else new.
+
+---
+
+## Round 14 · 19 Oct 13:28–13:50 · Review: the phone and the console against the real chain
+
+Three reviewers covered the phone, the web console and the contract between the apps and the server. After that came a hands-on pass in the console against the local FISCO dev stack.
+
+**Fixed**
+- **Server:**
+  - the JSON store wrote events through a plain `JSON.stringify`, so a payment's bigint `amount` threw inside the flush timer. It now writes amounts as strings, and `persist.test.ts` covers a bigint payment across a restart;
+  - routines and the scripted agent refused a run the chain stopped with `OVER_PERIOD` (the team's on-chain period allowance). Both now ask for the owner's co-sign, as the server-side allowance already did;
+  - payment events now carry `routine {id, run}`;
+  - the shared `AGENT_PK` is optional: without it the legacy agent is the zero address and the explorer gives it no label;
+  - `capFor` reads 0 on older cards.
+- **Phone:**
+  - an expired or rejected visitor token (401) clears the token and signs in again; sign-up retries after 20 s on errors, and three failed polls show the connection as offline;
+  - the starter cards' failure no longer blocks Home;
+  - switching servers clears every per-server view;
+  - chat shows the server's message;
+  - routines are also read from `GET /api/routine` (cached 60 s), so a routine shows even when its events have scrolled off the feed;
+  - Settings' "Run a test" no longer resets the server;
+  - the explorer clears the old transaction first;
+  - the approval sheet explains 401 and 403;
+  - "pocket" is now "card" in the Sentinel card.
+- **Console:**
+  - the visitor session is scoped to the server it came from. A 401 clears it and the owner panel signs in again. A saved token is reused only if its funding was minted;
+  - an older server with no `/v1/challenge` gets a plain sentence, not a JSON parse error;
+  - revoke now also returns the card's balance (the funds were stranded before). Revoked or frozen cards keep their balance and badge, with Unfreeze and "Return HK$x to my wallet" buttons;
+  - the chain index commits a chunk only after all of its reads succeed, and it rescans after a chain reset;
+  - a failed read keeps the last pockets on screen;
+  - the explorer clears the old transaction first.
+
+**Evidence**
+- Hands-on in the console (local FISCO):
+  - sign-up, a card created and funded, chat, confirm, a co-signed payment, both arena attacks (reverted, decoded), and the Demo switch;
+  - after the fix, revoke gave two receipts: "Card revoked" `0xf38b…6300` and "HK$20.00 back to your main wallet" `0xf4f5…5397`; the card shows Revoked HK$0.00.
+- New tests:
+  - `routines-chain.test.ts` has a 4th test: a card with `setPeriodLimit(2, 100000)` on chain → the routine asks → co-signed → outcomes `paid`, `cosigned`, payments carry `routine.run`;
+  - `chain.test.ts` covers resume-after-failure with no duplicates, and a reset rescan.
+- Server **126 passed, 6 skipped**; web 92; mobile tsc clean, 61; devstack 21; web build and Expo export OK; e2e (fresh dev stack) **69/69**.
+
+**Left as is (lower severity):**
+- the phone polls every 4 s with no backoff beyond the offline mark;
+- the console's chain index lives in memory per tab;
+- the hosted API still runs the old build, so sign-up there needs the deploy in "When stopping".

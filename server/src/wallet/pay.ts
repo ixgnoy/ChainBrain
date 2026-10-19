@@ -14,6 +14,8 @@ import { agentKeyFor } from "../agentKeys";
 const sellersUrl = () => process.env.SELLERS_URL ?? "http://localhost:4021";
 /** The legacy shared agent (pockets created before per-card keys, and the dev stack). */
 export const agentAccount = () => privateKeyToAccount(process.env.AGENT_PK as Hex);
+/** Its address, or the zero address on a server that only has per-card keys (AGENT_MASTER_KEY): never a throw. */
+export const legacyAgent = (): Address => (process.env.AGENT_PK ? agentAccount().address : "0x0000000000000000000000000000000000000000");
 /** The account this server signs with for a pocket's agent, or undefined when it holds no such key. */
 export const agentFor = (info: { agent: Address; owner: Address }) => {
   const pk = agentKeyFor(info.agent, info.owner);
@@ -98,7 +100,7 @@ export async function settle(pocket: Address, rec: QuoteRec, intentHash: Hex): P
     const s = state(pocket);
     s.spent += rec.amount;
     s.items += 1;
-    bus.publish({ type: "payment", pocket, sellerId: rec.sellerId, sku: rec.sku, amount: rec.amount, tx: settled.transaction, nonce: auth.nonce, intentHash, cosigned: !!rec.ownerSig, ...(rec.amount < rec.list ? { list: rec.list } : {}) });
+    bus.publish({ type: "payment", pocket, sellerId: rec.sellerId, sku: rec.sku, amount: rec.amount, tx: settled.transaction, nonce: auth.nonce, intentHash, cosigned: !!rec.ownerSig, ...(rec.amount < rec.list ? { list: rec.list } : {}), ...(s.routine ? { routine: s.routine } : {}) });
     return { ok: true, tx: settled.transaction, body: await r.text() };
   } catch (e) {
     return fail(reasonOf(e) ?? "SETTLEMENT_FAILED", String(e));
