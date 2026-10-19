@@ -38,6 +38,8 @@ export function ownerWallet(pk: Hex, opts: { /** tests: a fixed guard context in
       sellerName: (a) => c.sellers.find((s: Seller) => s.payTo.toLowerCase() === a.toLowerCase())?.name,
       isOwnCard: async (a) => {
         const k = a.toLowerCase();
+        // the built-in network's cards live in the in-app chain, not on the FISCO RPC
+        if (isBuiltin()) { const w = builtin(); return w.chain.isPocket(a) && w.chain.view(a).owner.toLowerCase() === account.address.toLowerCase(); }
         if (!cardOwners.has(k)) {
           const o = await pub().readContract({ address: a, abi: c.abis.pocket, functionName: "owner" }).catch(() => undefined);
           if (!o) return false; // not a card (no owner())
