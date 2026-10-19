@@ -9,7 +9,7 @@ import { Plaque, UiCard, pop } from "../components/Real";
 import { Stage } from "../components/Stage";
 import { C, F, clamp, easeInOut, easeOut, settle } from "../theme";
 import timeline from "../timeline.json";
-import { sceneStart, voAt, voEnd, wordAt } from "../vo";
+import { sceneEnd, sceneStart, voAt, voEnd, wordAt } from "../vo";
 
 // v3 story scenes (video/STORYBOARD-v3.md). Every time below is relative to the scene's start, taken from the
 // voice-over's word timings, so a re-recorded line moves its picture with it.
@@ -46,7 +46,7 @@ export const Hook: React.FC = () => {
     // dots and dashes light up in time with the beeps, on one line; the line turns vermillion as the sentence lands
     const last = MORSE.length ? MORSE[MORSE.length - 1][0] + MORSE[MORSE.length - 1][1] : r.end("m1");
     const turn = easeOut(clamp((t - (last - 0.1)) / 0.4));
-    const unit = 30;
+    const unit = 36;
     let x = 0;
     const marks = MORSE.map(([s, d, dash]) => {
       const m = { x, wd: dash ? unit * 3 : unit, s };
@@ -56,13 +56,15 @@ export const Hook: React.FC = () => {
     const total = x;
     return (
       <AbsoluteFill style={{ background: "#000" }}>
-        <Small p={settle(t - 0.3, 8)} style={{ left: 120, top: 100, color: C.text, fontSize: 26 }}>
+        <Small p={settle(t - 0.1, 8)} style={{ left: 120, top: 100, color: C.text, fontSize: 34 }}>
           4 MAY 2026
         </Small>
-        <Small p={settle(t - 0.6, 8)} style={{ left: 120, top: 140 }}>
+        <Small p={settle(t - 0.4, 8)} style={{ left: 120, top: 150, fontSize: 28 }}>
           one post on X
         </Small>
-        <div style={{ position: "absolute", left: (1920 - total) / 2, top: 525, height: 30 }}>
+        {/* a hairline time-base under the dots, growing as the post is "typed" */}
+        <div style={{ position: "absolute", left: (1920 - total) / 2, top: 540 + unit * 0.5 + 30, width: total * clamp(t / cut), height: 1, background: "rgba(255,255,255,0.12)" }} />
+        <div style={{ position: "absolute", left: (1920 - total) / 2, top: 540 - unit / 2, height: unit, transform: `scale(${1 + 0.04 * clamp(t / cut)})`, transformOrigin: `${total / 2}px ${unit / 2}px` }}>
           {marks.map((m, i) => {
             const on = t >= m.s;
             const flash = on ? Math.exp(-(t - m.s) * 6) : 0;
@@ -476,8 +478,12 @@ export const Ending: React.FC = () => {
   const t = useT();
   const r = rel("close");
   const foot = settle(t - r.end("z1") - 0.3, 7);
+  const len = sceneEnd("close") - sceneStart("close");
+  const drift = 1 + 0.025 * clamp(t / len);
+  const out = 1 - easeOut(clamp((t - (len - 0.5)) / 0.5)); // fade to black over the last half second
   return (
     <Stage>
+      <AbsoluteFill style={{ transform: `scale(${drift})`, opacity: out }}>
       <div style={{ position: "absolute", left: 0, right: 0, top: 260 }}>
         <Sequence from={Math.max(0, Math.round(r.vo("z1") * 30) - 6)} layout="none">
           <Reveal text={"Give your AI a card,\nnot your wallet."} size={128} align="center" stagger={0.08} highlight={{ card: C.vermillion }} />
@@ -488,21 +494,24 @@ export const Ending: React.FC = () => {
         <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 52, color: C.text }}>ChainBrain</div>
         <div style={{ fontFamily: F.cjk, fontWeight: 700, fontSize: 30, color: C.muted }}>链AI脑</div>
       </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 750, display: "flex", justifyContent: "center", gap: 56, opacity: settle(t - r.end("z1") - 0.8, 7) }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 740, display: "flex", justifyContent: "center", opacity: settle(t - r.end("z1") - 0.8, 7) }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {[
-          { icon: <Globe size={26} />, label: "Try it", value: "fintechathon-lian-ai-nao.vercel.app" },
-          { icon: <CodeXml size={26} />, label: "Code", value: "github.com/ixgnoy/Fintechathon-LianAiNao" },
+          { icon: <Globe size={32} />, label: "Try it", value: "fintechathon-lian-ai-nao.vercel.app" },
+          { icon: <CodeXml size={32} />, label: "Code", value: "github.com/ixgnoy/Fintechathon-LianAiNao" },
         ].map((l) => (
           <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ color: C.blue, display: "flex" }}>{l.icon}</div>
-            <div style={{ fontFamily: F.body, fontWeight: 600, fontSize: 26, color: C.muted }}>{l.label}</div>
-            <div style={{ fontFamily: F.mono, fontSize: 25, color: C.text, fontVariantLigatures: "none" }}>{l.value}</div>
+            <div style={{ fontFamily: F.body, fontWeight: 600, fontSize: 30, color: C.muted, width: 84 }}>{l.label}</div>
+            <div style={{ fontFamily: F.mono, fontSize: 34, color: C.text, fontVariantLigatures: "none" }}>{l.value}</div>
           </div>
         ))}
+        </div>
       </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 830, textAlign: "center", fontFamily: F.body, fontWeight: 500, fontSize: 22, color: C.faint, opacity: settle(t - r.end("z1") - 1.2, 7) }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 900, textAlign: "center", fontFamily: F.body, fontWeight: 500, fontSize: 26, color: C.muted, opacity: settle(t - r.end("z1") - 1.2, 7) }}>
         FinTechathon 2026, International AI Track, Topic F
       </div>
+      </AbsoluteFill>
     </Stage>
   );
 };
