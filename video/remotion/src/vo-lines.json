@@ -153,7 +153,7 @@
   "id": "k2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "We try hidden orders, data requests, even a fake admin. None of it works."
+  "text": "We try hidden orders, data requests, even a fake admin. Nothing gets through."
  },
  {
   "id": "k3",
@@ -183,7 +183,7 @@
   "id": "y2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The last two are on-chain, and they hold even if our whole server is taken over."
+  "text": "The last two are on-chain, and they keep every card inside its rules even if our whole server is taken over."
  },
  {
   "id": "y3",

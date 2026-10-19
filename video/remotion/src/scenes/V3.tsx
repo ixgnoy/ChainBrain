@@ -339,7 +339,7 @@ export const Money: React.FC = () => {
           <UiCard name="ex-reverted" w={820} x={1400} y={420} p={pop(t, split + 0.5, 9)} from={[80, 0]} tone={C.vermillion} />
           <div style={{ position: "absolute", left: 990, top: 720, display: "flex", alignItems: "center", gap: 18, opacity: pop(t, split + 1.1) }}>
             <Plaque src="brand/fisco-bcos-logo.svg" h={30} p={1} pad={10} />
-            <div style={{ fontFamily: F.mono, fontSize: 23, color: C.vermillion, fontVariantLigatures: "none" }}>reverted in block 13, balance unchanged</div>
+            <div style={{ fontFamily: F.mono, fontSize: 23, color: C.vermillion, fontVariantLigatures: "none" }}>the same forced transfer, reverted on our hosted chain in block 13</div>
           </div>
           <div style={{ position: "absolute", left: 110, top: 640, width: 780, fontFamily: F.display, fontWeight: 600, fontSize: 56, lineHeight: 1.1, color: C.text, letterSpacing: "-0.02em", opacity: pop(t, r.word("k5", "agent") - 0.1) }}>
             The card still
