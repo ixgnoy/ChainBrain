@@ -4,7 +4,7 @@ usage: .venv/bin/python tools/mix.py remotion/src/timeline.json remotion/public/
 - each VO line (remotion/public/audio/vo/<id>.wav, 24 kHz) is levelled to the same loudness and placed at its cue;
 - the score (remotion/public/audio/score.wav) is ducked under the voice so it never sits closer than 14 dB to it,
   except on the key hits listed in timeline cues.punch;
-- the result is normalised to -14 LUFS integrated, -1.0 dBTP, with ffmpeg's two-pass loudnorm.
+- the result is normalised to -14 LUFS integrated, -2.5 dBTP (AAC adds up to ~1 dB of overshoot; the delivered file must stay under -1), with ffmpeg's two-pass loudnorm.
 """
 import json
 import os
@@ -72,12 +72,15 @@ tmp = out + ".pre.wav"
 sf.write(tmp, mix, SR, subtype="FLOAT")
 
 # two-pass loudnorm
-p1 = subprocess.run(["ffmpeg", "-hide_banner", "-i", tmp, "-af", "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"], capture_output=True, text=True).stderr
+p1 = subprocess.run(["ffmpeg", "-hide_banner", "-i", tmp, "-af", "loudnorm=I=-14:TP=-2.5:LRA=11:print_format=json", "-f", "null", "-"], capture_output=True, text=True).stderr
 j = json.loads(p1[p1.rindex("{"): p1.rindex("}") + 1])
 af = (
-    "loudnorm=I=-14:TP=-1.5:LRA=11:linear=true:"
+    "loudnorm=I=-14:TP=-2.5:LRA=11:linear=true:"
     f"measured_I={j['input_i']}:measured_TP={j['input_tp']}:measured_LRA={j['input_lra']}:measured_thresh={j['input_thresh']}:offset={j['target_offset']}"
 )
+# loudnorm can't always reach its peak target in linear mode, and the AAC encode then adds about 1.3 dB of
+# overshoot: a limiter at -4 dBFS, run at 4x the sample rate so it sees inter-sample peaks, keeps the MP4 under -1 dBTP
+af += f",aresample={SR * 4},alimiter=limit=0.63:attack=1:release=60:level=disabled,aresample={SR}"
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp, "-af", af, "-ar", str(SR), "-c:a", "pcm_s16le", out], check=True)
 os.remove(tmp)
 print("mix", out, "input", j["input_i"], "LUFS ->", "-14 target")
