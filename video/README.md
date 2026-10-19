@@ -29,6 +29,17 @@ The narration uses ElevenLabs (`eleven_v4`, voice Sarah; settings in `tts/eleven
 - Lines are cached by what was sent, so a rebuild only spends characters on lines that changed.
 - Without a key, the build falls back to Kokoro (offline) with Whisper word timings.
 
+## The team's own voice (optional)
+
+- `out/recording-kit.html` lists every line with a target length, how to record, and the file names.
+- Put the section files in `footage/voice/` (01-hook.m4a to 09-team.m4a) and the on-camera clips in `footage/face/` (`intro.mov`, `close.mov`, optional `team.mov`).
+- `.venv/bin/python tools/voice.py --dry` reports what it found; without `--dry` it does three things:
+  - splits each file into its lines (a retaken line keeps its last reading) and cleans the audio;
+  - times every word with Whisper, and trims the clips to their words;
+  - writes the clips' lines (`i1`, `z1`, `t1`) into `tts/lines.json`.
+- `build.sh` then uses these recordings instead of the synthetic voice.
+- The edit adds the clip scenes by itself (`face` scenes in `remotion/src/edit.json`). Without clips, the video is unchanged.
+
 ## Recordings (not in git; `video/footage/`)
 
 **Phone (`footage/cfr/autoplay.mp4`, `footage/cfr/brain.mp4`)**

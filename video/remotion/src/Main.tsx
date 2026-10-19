@@ -6,6 +6,7 @@ import { ActTitle, AttackRail } from "./scenes/Closing";
 import { PhoneScene, type Beat, type Cam, type Seg } from "./scenes/PhoneScene";
 import { CardReveal, Ending, Hook, Money, OnlyStricter, ProofV3, Stat, TeamSlide, WhatCard } from "./scenes/V3";
 import { Hkma, Stolen, WhyHeld, XRay } from "./scenes/V4";
+import { FaceScene } from "./scenes/Face";
 import { C, FPS } from "./theme";
 import timeline from "./timeline.json";
 import { wordAt } from "./vo";
@@ -30,6 +31,7 @@ const relW = (id: string, line: string, w: string, lead = 0) => wordAt(line, w) 
 // camera keyframes anchored to segment starts: [segment, offset, scale, focusY]
 const cams = (id: string, ks: [number, number, number, number][]): Cam[] => ks.map(([i, o, s, fy]) => ({ t: Math.max(0, segAt(id, i) + o), s, fx: 0.5, fy }));
 
+const has = (id: string) => SCENES.some((x) => x.id === id);
 const At: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => {
   const sc = scene(id);
   return (
@@ -85,6 +87,11 @@ export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) =
       <At id="stat">
         <Stat />
       </At>
+      {has("intro") ? (
+        <At id="intro">
+          <FaceScene clip="intro" />
+        </At>
+      ) : null}
       <At id="card">
         <CardReveal />
       </At>
@@ -208,9 +215,21 @@ export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) =
       <At id="proof">
         <ProofV3 />
       </At>
-      <At id="team">
-        <TeamSlide />
-      </At>
+      {has("teamclip") ? (
+        <At id="teamclip">
+          <FaceScene clip="team" />
+        </At>
+      ) : null}
+      {has("team") ? (
+        <At id="team">
+          <TeamSlide />
+        </At>
+      ) : null}
+      {has("closeface") ? (
+        <At id="closeface">
+          <FaceScene clip="close" />
+        </At>
+      ) : null}
       <At id="close">
         <Ending />
       </At>

@@ -108,9 +108,11 @@ c = {
     "rejected": word("f1", "rejected"),
     "attacks": at["f2"],
     "tests": word("f3", "tests"),
-    "team": sc["team"]["start"],
+    "intro": sc["intro"]["start"] if "intro" in sc else None,
+    "team": (sc.get("teamclip") or sc["team"])["start"],
+    "closeface": sc["closeface"]["start"] if "closeface" in sc else None,
     "close": sc["close"]["start"],
-    "line": at["z1"],
+    "line": at.get("z1"),
     "end": tl["total"],
 }
 # hits that cut through the voice ducking (tools/mix.py)

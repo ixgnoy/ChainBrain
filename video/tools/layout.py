@@ -13,18 +13,25 @@ Keeping the picture on the words (so what is said is what is shown)
   seconds before that word (the segment before it is trimmed or extended to meet it). Lines used by cuts must be
   placed with `at` / `after`;
 - `fit`: the first segments are trimmed so each cut lands on a word of one line (one beat of picture per phrase).
+On-camera clips (remotion/src/face.json, from tools/voice.py): a scene with `face: <clip>` lasts as long as the clip
+and is dropped when the clip isn't there; `unless_face: <clip>` drops a scene or a line when that clip is there.
 Keeps the existing `cues` block (tools/cues.py rewrites it).
 
 usage: python3 tools/layout.py remotion/src/edit.json remotion/src/vo-words.json remotion/src/timeline.json
 """
 import json
 import math
+import os
 import re
 import sys
 
 edit_path, words_path, tl_path = sys.argv[1:4]
 edit = json.load(open(edit_path))
 words = json.load(open(words_path))
+try:  # on-camera clips imported by tools/voice.py: {clip: {src, len, line}}
+    face = json.load(open(os.path.join(os.path.dirname(edit_path), "face.json")))
+except FileNotFoundError:
+    face = {}
 try:
     old = json.load(open(tl_path))
 except FileNotFoundError:
@@ -63,6 +70,14 @@ def starts_of(segs):
 
 scenes, vo, t = [], [], 0.0
 for sc in edit["scenes"]:
+    if "face" in sc:  # an on-camera clip: its length is the clip's, its line starts with the picture
+        if sc["face"] not in face:
+            continue
+        clip = face[sc["face"]]
+        sc = {**sc, "len": clip["len"] + sc.get("tail", 0.0), "vo": [{"id": clip["line"], "at": 0.0}]}
+    if sc.get("unless_face") in face:  # e.g. the portrait slide when the team filmed a clip
+        continue
+    sc = {**sc, "vo": [v for v in sc["vo"] if v.get("unless_face") not in face]}
     segs = [list(s) for s in sc.get("segs", [])]
     if segs and sc.get("fit"):
         f = sc["fit"]

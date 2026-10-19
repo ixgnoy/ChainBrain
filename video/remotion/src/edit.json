@@ -1,5 +1,5 @@
 {
- "_": "v4 edit decision list (video/STORYBOARD-v4.md). tools/layout.py turns it into timeline.json. Phone scenes list footage segments [src, from, to, rate?, tag?]. Voice anchors: at (s into the scene), after (+gap), or picture-led seg+word+off (the word lands on a cut). cuts: voice-led, a segment starts on a word. fit: segments trimmed to a line's words.",
+ "_": "v4 edit decision list (video/STORYBOARD-v4.md). tools/layout.py turns it into timeline.json. Phone scenes list footage segments [src, from, to, rate?, tag?]. Voice anchors: at (s into the scene), after (+gap), or picture-led seg+word+off (the word lands on a cut). cuts: voice-led, a segment starts on a word. fit: segments trimmed to a line's words. face: an on-camera clip scene (tools/voice.py), dropped when the clip is missing; unless_face drops a scene or line when that clip exists.",
  "scenes": [
   {
    "id": "hook",
@@ -24,6 +24,11 @@
      "at": 0.5
     }
    ]
+  },
+  {
+   "id": "intro",
+   "face": "intro",
+   "tail": 0.3
   },
   {
    "id": "card",
@@ -460,6 +465,11 @@
    ]
   },
   {
+   "id": "teamclip",
+   "face": "team",
+   "tail": 0.3
+  },
+  {
    "id": "team",
    "len": "auto",
    "tail": 1.2,
@@ -468,7 +478,13 @@
      "id": "t1",
      "at": 0.9
     }
-   ]
+   ],
+   "unless_face": "team"
+  },
+  {
+   "id": "closeface",
+   "face": "close",
+   "tail": 0.2
   },
   {
    "id": "close",
@@ -476,7 +492,8 @@
    "vo": [
     {
      "id": "z1",
-     "at": 0.7
+     "at": 0.7,
+     "unless_face": "close"
     }
    ]
   }

@@ -41,8 +41,11 @@ if [ -d footage/teammate ]; then $PY tools/team.py footage/teammate remotion/pub
 sh tools/ui-stills.sh
 [ -f footage/probe/ex-success.png ] || node tools/console-rec.mjs tools/shots/explorer-stills.json
 $PY tools/crops.py
-# voice: ElevenLabs when a key is set (shell or video/.env, see README), else offline Kokoro + Whisper word timings
-if [ -n "${ELEVENLABS_API_KEY:-}" ] || grep -qsE '^[[:space:]]*(export[[:space:]]+)?ELEVENLABS_API_KEY=' .env; then
+# voice: the team's own recordings when they're there (footage/voice, footage/face; tools/voice.py), else ElevenLabs
+# when a key is set (shell or video/.env, see README), else offline Kokoro + Whisper word timings
+if [ -n "$(ls footage/voice footage/face 2>/dev/null | grep -v ':$' | grep -v '^$')" ]; then
+  $PY tools/voice.py
+elif [ -n "${ELEVENLABS_API_KEY:-}" ] || grep -qsE '^[[:space:]]*(export[[:space:]]+)?ELEVENLABS_API_KEY=' .env; then
   $PY tts/eleven.py lines tts/lines.json remotion/public/audio/vo remotion/src/vo-words.json
 else
   $PY tts/tts.py tts/lines.json remotion/public/audio/vo

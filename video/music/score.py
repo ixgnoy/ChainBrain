@@ -359,6 +359,8 @@ for i in range(8):
     place(tick(0.7, 2600 + 120 * i), cue["stat"] + 0.5 + i * 0.13, 0.5, 0.2 if i % 2 else -0.2)
 impact(cue["nine"] - 0.03, 0.85)
 place(swell(1.6, 1.0), cue["card"] - 1.6, 0.6)
+if cue.get("intro") is not None:  # the founder's intro on camera: a soft held chord, nothing rhythmic
+    place(pad([73.42, 110.0, 146.83], cue["card"] - cue["intro"] + 0.5, 0.6, 900), cue["intro"], 0.5)
 
 # 0:21 the card: the theme begins, filtered; a hit as the card arrives.
 k_c = drums(cue["card"], cue["what"], "pulse", 0.7)
@@ -527,10 +529,14 @@ impact(cue["tests"] - 0.03, 0.5)
 # 4:29 the team: lift to D major, lighter and warmer.
 tm = cue["team"]
 place(pad([73.42, 92.5, 110.0, 146.83], cue["close"] - tm + 1.0, 0.85, 1700), tm, 0.6)
-k_t = drums(tm + BAR, cue["close"] - 0.5, "pulse", 0.55)
-arp(tm, cue["close"] - 0.5, LIFT, 4, 0.5, k_t, bright=2000, step=BEAT / 2, gain=0.45)
-brass_swell(cue["close"] - 2 * BAR, 2, "A", 0.4)
-place(riser(2.0, 0.9), cue["close"] - 2.0, 0.55)
+team_end = cue.get("closeface") or cue["close"]  # the closing line on camera gets a bare bed
+k_t = drums(tm + BAR, team_end - 0.5, "pulse", 0.55)
+arp(tm, team_end - 0.5, LIFT, 4, 0.5, k_t, bright=2000, step=BEAT / 2, gain=0.45)
+brass_swell(team_end - 2 * BAR, 2, "A", 0.4)
+if cue.get("closeface") is not None:
+    place(swell(1.4, 1.0), cue["close"] - 1.4, 0.45)
+else:
+    place(riser(2.0, 0.9), cue["close"] - 2.0, 0.55)
 
 # 4:38 close: the last hit, a full D major chord and a long tail.
 cl = cue["close"]
