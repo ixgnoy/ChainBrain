@@ -1,0 +1,1 @@
+{ "url": "http://localhost:5174/?server=builtin#judges", "settle": 4, "steps": [ {"probe": "judges-top"}, {"scroll": 700, "smooth": false}, {"wait": 0.5}, {"probe": "judges-700"} ] }

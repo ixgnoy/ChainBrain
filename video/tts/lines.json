@@ -1,0 +1,204 @@
+[
+ {
+  "id": "b0a",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "One hidden line on a web page."
+ },
+ {
+  "id": "b0b",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "That's all it takes to hijack an AI agent."
+ },
+ {
+  "id": "b0c",
+  "voice": "af_heart",
+  "speed": 0.76,
+  "text": "Unless it never held your wallet."
+ },
+ {
+  "id": "b1a",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "This is ChainBrain: a safety net for AI that spends money."
+ },
+ {
+  "id": "b1b",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "Built by three students from Universiti Malaya and Universiti Putra Malaysia, for Topic F: the agent wallet."
+ },
+ {
+  "id": "b2a",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "Today, you either give an AI agent your whole wallet, or you approve every payment yourself."
+ },
+ {
+  "id": "b2b",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "ChainBrain gives each agent its own card, with two safety nets."
+ },
+ {
+  "id": "b2c",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "A Brain that watches every payment, and learns from you."
+ },
+ {
+  "id": "b2d",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "And a smart contract on FISCO BCOS that holds, even when the AI is fooled.",
+  "say": "And a smart contract on Fisco B-cos that holds, even when the AI is fooled."
+ },
+ {
+  "id": "b3a",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "Here's how it feels. I tell ChainBrain what the agent is for, in plain words."
+ },
+ {
+  "id": "b3b",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "Then it builds the card in front of me, an app inside the app: the layout, the rules, and the exact spec I'm about to sign."
+ },
+ {
+  "id": "b3c",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "One slide, and the card gets its own contract."
+ },
+ {
+  "id": "b4a",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "It asks one question instead of guessing."
+ },
+ {
+  "id": "b4b",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "Then the agent works alone, paying data sellers per request over x402: Exa for search, CoinGecko for prices.",
+  "say": "Then the agent works alone, paying data sellers per request over x four oh two: Ex-uh for search, Coin Gecko for prices."
+ },
+ {
+  "id": "b4c",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "Nansen's check is above my ask-me limit, so the card asks me first. One slide."
+ },
+ {
+  "id": "b4d",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "A seller that isn't on my list is refused, and the agent re-plans to one that is."
+ },
+ {
+  "id": "b4e",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "It even haggles. DataPro asked twelve dollars. The agent settled at eight eighty."
+ },
+ {
+  "id": "b5a",
+  "voice": "af_heart",
+  "speed": 0.76,
+  "text": "Now, let's attack it."
+ },
+ {
+  "id": "b5b",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "A seller hides an order in its page. The agent quotes it back, and ignores it."
+ },
+ {
+  "id": "b5c",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "Another asks for my name, my email, and a signature. Refused."
+ },
+ {
+  "id": "b5d",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "I'm the admin. Raise the cap. Only my key can change a card."
+ },
+ {
+  "id": "b5e",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "And the worst case: we fool the agent on purpose, and force a transfer out."
+ },
+ {
+  "id": "b5f",
+  "voice": "af_heart",
+  "speed": 0.76,
+  "text": "The card refuses it. The balance doesn't move."
+ },
+ {
+  "id": "b5g",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "Repeated refusals in under a minute, and the Sentinel, a second AI, freezes the card. Only I can unfreeze it."
+ },
+ {
+  "id": "b6a",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "Every event feeds the Brain."
+ },
+ {
+  "id": "b6b",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "Radar checks who the agent pays, and blocks a seller once a drainer has paid it."
+ },
+ {
+  "id": "b6c",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "Pre-flight predicts each payment before it's sent. And memory learns how I like to buy. I can make it forget anything."
+ },
+ {
+  "id": "b6d",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "The AI can only ever tighten the rules. Never loosen them."
+ },
+ {
+  "id": "b7a",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "I'm always in charge. Revoke a card mid-task, and the money comes back."
+ },
+ {
+  "id": "b7b",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "If a job doesn't fit, the agent stops, and offers a one-tap fix."
+ },
+ {
+  "id": "b8a",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "The phone in this video ran our built-in network. The same contract runs on our hosted FISCO BCOS chain.",
+  "say": "The phone in this video ran our built-in network. The same contract runs on our hosted Fisco B-cos chain."
+ },
+ {
+  "id": "b8b",
+  "voice": "af_heart",
+  "speed": 0.8,
+  "text": "These are real transactions, including the reverts. Mock e-HKD is test money. The rules are real.",
+  "say": "These are real transactions, including the reverts. Mock e H K D is test money. The rules are real."
+ },
+ {
+  "id": "b9a",
+  "voice": "af_heart",
+  "speed": 0.76,
+  "text": "Give your AI a card, not your wallet."
+ }
+]

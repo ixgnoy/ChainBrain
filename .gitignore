@@ -21,3 +21,16 @@ contracts/deployments/*.bak
 # server state (visitors, approvals) when run locally
 server/.data/
 __pycache__/
+
+# Demo video: heavy, generated or downloaded media (rebuild with video/build.sh)
+video/.venv/
+video/out/
+video/footage/
+video/tts/models/
+video/tts/audition/
+video/music/.packs/
+video/music/lib/instruments/
+video/remotion/public/footage/
+video/remotion/public/audio/
+video/remotion/out/
+video/remotion/public/fonts/

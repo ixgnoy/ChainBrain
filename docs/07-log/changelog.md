@@ -1,5 +1,16 @@
 # Changelog
-Last updated: 2026-10-16
+Last updated: 2026-10-19
+
+## 2026-10-19 (demo video)
+
+- **New:** `video/`, the 3:58 demo video for the submission (`video/out/InternationalAI-ChainBrain-DemoVideo.mp4`, git-ignored; rebuild with `sh video/build.sh`). Script and shot list are in [video/SCRIPT.md](../../video/SCRIPT.md); credits are in [video/CREDITS.md](../../video/CREDITS.md).
+  - **Style:** dark keynote stage around real recordings.
+  - **Phone:** the app on its built-in network, labelled on screen, filmed in one take of the app's own auto-play in the iOS Simulator.
+  - **Console:** the Judges arena and the Brain page.
+  - **Real chain:** the hosted explorer showing the 11 real FISCO transactions from `docs/evidence-fisco-railway.json`.
+  - **Voice:** Kokoro `af_heart`, offline, with burned-in subtitles and a matching `.srt`.
+  - **Score:** composed in code from CC0 orchestral samples, mastered to -14 LUFS.
+- **Fixed (phone):** co-signing in demo mode. Since the 19 Oct signing guard, the phone checked that a card is the owner's by reading the real FISCO RPC. For a built-in network card that read fails, so every co-sign showed "Your phone refused to sign" (`GUARD_REFUSED`). On the built-in network the guard now reads the card's owner from the in-app chain (`mobile/src/lib/wallet.ts`).
 
 ## 2026-10-16 (docs layout)
 

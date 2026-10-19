@@ -1,0 +1,1 @@
+{ "url": "http://localhost:5174/?server=builtin#brain", "settle": 6, "steps": [ {"probe": "brain-top"}, {"scroll": 600, "smooth": false}, {"wait": 0.6}, {"probe": "brain-600"} ] }
