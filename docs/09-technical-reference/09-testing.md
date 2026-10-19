@@ -84,8 +84,8 @@ ChainBrain has 394 automated tests across contracts (including fuzz and invarian
 ## 7. Device testing and a known issue
 
 - The native Android app was run on a physical Xiaomi Poco X3 Pro (Android 11, API 30).
-- On `main`, the wallet home screen crashes on Android 9–12: `Money.kt` uses `BigInteger.TWO`, which Android only provides from API 33, while `minSdk` is 28. The one-line fix is in pull request #15 (`fix/android-biginteger-two`). With that change the home screen loads on the test phone.
-- The unit tests do not catch this, because they run on the desktop JVM, where `BigInteger.TWO` exists.
+- Before pull request #15 (merged as `1095037`), the wallet home screen crashed on Android 9–12: `Money.kt` used `BigInteger.TWO`, which Android only provides from API 33, while `minSdk` is 28. With the fix the home screen loads on the test phone.
+- The unit tests did not catch this, because they run on the desktop JVM, where `BigInteger.TWO` exists.
 
 ## 8. Gaps
 

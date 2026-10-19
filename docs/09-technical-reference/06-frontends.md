@@ -407,7 +407,7 @@ These ids are the real server's sellers (`server/src/sellers.json`: datalite, da
 
 | Issue | Where | Status |
 | --- | --- | --- |
-| The Android app crashes on Android 9–12 at start of the wallet home. `Money.NEVER` uses `BigInteger.TWO`, a field added in Android API 33; `minSdk` is 28. | `android/app/src/main/java/net/chainbrain/wallet/Money.kt:7`, on `main` at `7b48a2c` | Fixed in pull request #15 (`fix/android-biginteger-two`): `BigInteger.valueOf(2).pow(256) - BigInteger.ONE`; not yet merged into `main`. Found on a Poco X3 Pro, Android 11. |
+| Before the fix, the Android app crashed on Android 9–12 at start of the wallet home: `Money.NEVER` used `BigInteger.TWO`, a field added in Android API 33, while `minSdk` is 28. | `android/app/src/main/java/net/chainbrain/wallet/Money.kt:7` | Fixed on `main` by pull request #15 (merge `1095037`): `BigInteger.valueOf(2).pow(256) - BigInteger.ONE`. Found on a Poco X3 Pro, Android 11; with the fix the home screen loads there. |
 | The web console cannot sign owner transactions or co-signatures. | `web/src` (section 2.4) | By design in code; `docs/technical-document.md` §6 says otherwise. |
 | The Android cursor may skip events that share a millisecond. | `android/.../ui/App.kt:83` | Inferred from code (section 4.6). |
 | The Android approval sheet signs without checking payee and amount against the screen. | `android/.../ui/Screens.kt:309-340` | Inferred from code; the server still recovers the signer. |
