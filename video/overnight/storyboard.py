@@ -36,6 +36,17 @@ for p in P:
             out.append(f"<tr><td>{html.escape(lid)}</td><td class=old>{html.escape(old)}</td><td class=new>{html.escape(new)}</td></tr>")
         out.append("</table>")
     out.append("</section>")
+# contact sheets of the whole branch preview (1 frame every 3 s, half resolution)
+out.append("<section><h2>The whole branch preview, one frame every 3 s</h2>")
+for i in range(4):
+    out.append(f"<figure><img loading=lazy src='frames/preview-sheet{i}.jpg'></figure>")
+out.append("</section>")
+# the full current voice-over, for the owner's approval of the script with the frames
+lines = json.load(open(os.path.join(HERE, "..", "tts", "lines.json"), encoding="utf-8"))
+out.append("<section><h2>The full voice-over on this branch</h2><p class=meta>Read this with the frames above before the final render. Changed lines are marked in the recording kit.</p><table class=lines>")
+for l in lines:
+    out.append(f"<tr><td>{html.escape(l['id'])}</td><td class=new>{html.escape(l['text'])}</td></tr>")
+out.append("</table></section>")
 out.append("</main>")
 open(os.path.join(HERE, "storyboard.html"), "w", encoding="utf-8").write("\n".join(out))
 print("storyboard.html:", len(P), "prototypes")
