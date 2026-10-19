@@ -8,13 +8,9 @@ FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Runs on **FIS
 
 > **Mock e-HKD is not the HKMA e-HKD and not money.** `MockEHKD` ("Mock e-HKD", symbol `eHKD`, 6 decimals) is a demo ERC-20 with EIP-3009 that we deploy on our FISCO BCOS chain; its owner can mint at will.
 
-<a href="docs/media/chainbrain-brag.mp4"><img src="docs/media/chainbrain-brag.gif" alt="ChainBrain in 22 seconds: a hijacked agent, a pocket that refuses off-list sellers on-chain, and the Sentinel freezing the pocket" width="100%"></a>
+<a href="docs/media/chainbrain-brag.mp4"><img src="docs/media/chainbrain-brag.gif" alt="ChainBrain in 41 seconds, recorded from the phone app: a hidden order ignored, a price haggled down, Radar blocking a seller paid by a drainer, and the Sentinel freezing the card" width="100%"></a>
 
-<sub>22-second tour (silent loop). Click it for the MP4 with sound.</sub>
-
-<a href="docs/media/chainbrain-brag.mp4"><img src="docs/media/chainbrain-brag.gif" alt="ChainBrain in 22 seconds: a hijacked agent, a pocket that refuses off-list sellers on-chain, and the Sentinel freezing the pocket" width="100%"></a>
-
-<sub>22-second tour (silent loop). Click it for the MP4 with sound.</sub>
+<sub>41-second tour of the phone app (silent loop). Click it for the MP4 with sound.</sub>
 
 - Technical document: [`docs/technical-document.md`](docs/technical-document.md)
 - AI brain (ten features): [`docs/ai-brain.md`](docs/ai-brain.md)
