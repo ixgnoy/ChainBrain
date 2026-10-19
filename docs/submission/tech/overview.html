@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ChainBrain technical documentation</title>
+<style>
+@font-face { font-family: "Clash"; src: url("../../../mobile/assets/fonts/ClashDisplay-Semibold.ttf"); font-weight: 600; }
+@font-face { font-family: "Clash"; src: url("../../../mobile/assets/fonts/ClashDisplay-Medium.ttf"); font-weight: 500; }
+@font-face { font-family: "General"; src: url("../../../mobile/assets/fonts/GeneralSans-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "General"; src: url("../../../mobile/assets/fonts/GeneralSans-Medium.ttf"); font-weight: 500; }
+@font-face { font-family: "General"; src: url("../../../mobile/assets/fonts/GeneralSans-Semibold.ttf"); font-weight: 600; }
+@page { size: A4; margin: 0; }
+:root { --ink:#111215; --ink2:#3A3B41; --muted:#5E5F68; --line:#D3D3D1; --tile:#F5F4F1; --canvas:#E7E6E2; --ver:#F04E23; --verInk:#B32A00; --verSoft:#FFDBD2; --blue:#9DCAFF; --blueInk:#124977; --blueSoft:#D1E4FF; --green:#15803D; --greenSoft:#DCFCE7; --sage:#CBD9C4; --wheat:#E9D6AE; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: "General", -apple-system, sans-serif; color: var(--ink); font-size: 9.4pt; line-height: 1.42; font-variant-numeric: tabular-nums; }
+.page { width: 210mm; height: 297mm; padding: 15mm 16mm 13mm; position: relative; page-break-after: always; overflow: hidden; display: flex; flex-direction: column; }
+.page:last-child { page-break-after: auto; }
+.top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--ink); padding-bottom: 7px; margin-bottom: 16px; }
+.mark { display: grid; grid-template-columns: 7px 7px; gap: 2px; }
+.mark span { width: 7px; height: 7px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 9.5pt; }
+.meta { font-size: 8pt; color: var(--muted); }
+.foot { position: absolute; left: 16mm; right: 16mm; bottom: 9mm; display: flex; justify-content: space-between; font-size: 7.5pt; color: var(--muted); border-top: 0.5px solid var(--line); padding-top: 5px; }
+.eyebrow { font-size: 8pt; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--verInk); margin-bottom: 6px; }
+h1 { font-family: "Clash"; font-weight: 600; font-size: 27pt; line-height: 1.08; letter-spacing: -0.2px; }
+h2 { font-family: "Clash"; font-weight: 600; font-size: 18pt; line-height: 1.15; margin-bottom: 4px; }
+h3 { font-size: 10pt; font-weight: 600; margin-bottom: 6px; }
+.lede { font-size: 10.4pt; color: var(--ink2); margin: 8px 0 14px; max-width: 160mm; }
+.sub { color: var(--ink2); margin-bottom: 12px; max-width: 165mm; }
+.cap { font-size: 7.8pt; color: var(--muted); margin-top: 5px; }
+.tiles { display: grid; gap: 7px; }
+.tile { background: var(--tile); border-radius: 6px; padding: 10px 11px; }
+.tile .n { font-family: "Clash"; font-weight: 600; font-size: 19pt; line-height: 1; margin-bottom: 5px; }
+.tile .l { font-size: 7.7pt; color: var(--muted); line-height: 1.3; }
+.tile.dark { background: var(--ink); color: #fff; }
+.tile.dark .l { color: #C9C8C3; }
+.box { border: 0.5px solid var(--line); border-radius: 6px; padding: 10px 12px; }
+.box.dark { background: var(--ink); color: #fff; border: 0; }
+.box.dark p { color: #D9D8D3 !important; }
+.box.blue { background: var(--blueSoft); border: 0; }
+.box.ver { border: 1px solid var(--ver); }
+.box p { font-size: 8.4pt; color: var(--ink2); }
+.row { display: grid; gap: 10px; }
+.mono { font-family: "SF Mono", Menlo, monospace; font-size: 7.3pt; }
+a { color: var(--blueInk); text-decoration: none; }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font-size: 7.6pt; color: var(--muted); font-weight: 500; padding: 4px 6px; border-bottom: 1px solid var(--ink); }
+td { padding: 4px 6px; border-bottom: 0.5px solid var(--line); vertical-align: top; font-size: 8.2pt; }
+td.k { font-weight: 600; white-space: nowrap; }
+.pill { display: inline-block; font-size: 7.2pt; padding: 1px 6px; border-radius: 9px; font-weight: 500; white-space: nowrap; }
+.ok { background: var(--greenSoft); color: var(--green); }
+.no { background: var(--verSoft); color: var(--verInk); }
+.bl { background: var(--blueSoft); color: var(--blueInk); }
+.gr { background: var(--tile); color: var(--ink2); border: 0.5px solid var(--line); }
+ul.plain { list-style: none; }
+ul.plain li { padding: 4px 0; border-bottom: 0.5px solid var(--line); font-size: 8.3pt; }
+ul.plain li:last-child { border-bottom: 0; }
+ul.dots { padding-left: 13px; }
+ul.dots li { font-size: 8.3pt; color: var(--ink2); margin-bottom: 3px; }
+code, .code { font-family: "SF Mono", Menlo, monospace; font-size: 7.3pt; background: var(--tile); padding: 1px 4px; border-radius: 3px; }
+pre { font-family: "SF Mono", Menlo, monospace; font-size: 7.3pt; background: var(--tile); padding: 8px 10px; border-radius: 5px; line-height: 1.6; white-space: pre-wrap; }
+.toc { display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; }
+.toc a { display: flex; justify-content: space-between; color: var(--ink); font-size: 8.6pt; padding: 3px 0; border-bottom: 0.5px solid var(--line); }
+.toc a span:last-child { color: var(--muted); }
+.shots { display: grid; gap: 8px; }
+.shot { text-align: center; }
+.shot img { width: 100%; border-radius: 10px; border: 0.5px solid var(--line); display: block; }
+.shot .c { font-size: 7.6pt; color: var(--muted); margin-top: 4px; line-height: 1.25; }
+.shot .c b { color: var(--ink); font-weight: 600; display: block; }
+.wide img { width: 100%; border-radius: 6px; border: 0.5px solid var(--line); display: block; }
+.k2 { display: grid; grid-template-columns: 28mm 1fr; gap: 2px 8px; font-size: 8.2pt; }
+.k2 div:nth-child(odd) { color: var(--muted); }
+svg text { font-family: "General", sans-serif; }
+svg .mono, svg tspan.mono { font-family: "SF Mono", Menlo, monospace; font-size: 7.6px; }
+</style>
+</head>
+<body>
+
+<!-- 1 · summary -->
+<section class="page">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">19 October 2026 · FISCO BCOS · Mock e-HKD</div></div>
+
+  <div class="eyebrow">FinTechathon 2026 · International AI Track · Topic F, Agent Wallet</div>
+  <h1>Give your AI a card,<br>not your wallet.</h1>
+  <p class="lede">ChainBrain gives each AI agent its own card: a smart contract on FISCO BCOS that holds Mock e-HKD and the owner's spending rules. The agent finds sellers and pays them. The card checks every payment against the owner's rules at the moment the money moves, so a fooled agent still can't pay outside them.</p>
+
+  <div class="tiles" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 14px;">
+    <div class="tile dark"><div class="n">8</div><div class="l">checks the card runs before any money moves</div></div>
+    <div class="tile"><div class="n">4</div><div class="l">Solidity contracts, 356 lines in total</div></div>
+    <div class="tile"><div class="n">7</div><div class="l">agent tools; only <b>pay</b> moves money, and none takes an address</div></div>
+    <div class="tile"><div class="n">462</div><div class="l">automated tests, all passing on 19 Oct</div></div>
+    <div class="tile"><div class="n">20200</div><div class="l">chain id of the hosted FISCO BCOS 3.16.4 chain</div></div>
+  </div>
+
+  <h3>One payment, start to finish</h3>
+  <svg width="100%" viewBox="0 0 640 150" role="img" aria-label="The owner sets rules on the card; the agent asks the wallet tools to pay; the seller's facilitator submits the transfer; the token asks the card, which pays or reverts">
+    <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111215"/></marker></defs>
+    <g font-size="9">
+      <rect x="0" y="6" width="112" height="52" rx="6" fill="#F5F4F1"/><text x="10" y="25" font-weight="600" font-size="10">Owner</text><text x="10" y="39" fill="#5E5F68">phone or console</text><text x="10" y="51" fill="#5E5F68">holds the owner key</text>
+      <rect x="132" y="6" width="112" height="52" rx="6" fill="#F5F4F1"/><text x="142" y="25" font-weight="600" font-size="10">AI agent</text><text x="142" y="39" fill="#5E5F68">plans, compares, asks</text><text x="142" y="51" fill="#5E5F68">holds no key</text>
+      <rect x="264" y="6" width="112" height="52" rx="6" fill="#D1E4FF"/><text x="274" y="25" font-weight="600" font-size="10">Wallet tools</text><text x="274" y="39" fill="#124977">check the task, Radar</text><text x="274" y="51" fill="#124977">sign with the agent key</text>
+      <rect x="396" y="6" width="112" height="52" rx="6" fill="#F5F4F1"/><text x="406" y="25" font-weight="600" font-size="10">x402 seller</text><text x="406" y="39" fill="#5E5F68">HTTP 402 with a price,</text><text x="406" y="51" fill="#5E5F68">facilitator submits</text>
+      <rect x="528" y="6" width="112" height="52" rx="6" fill="#111215"/><text x="538" y="25" font-weight="600" font-size="10" fill="#fff">Card contract</text><text x="538" y="39" fill="#C9C8C3">the token asks it</text><text x="538" y="51" fill="#C9C8C3">as the money moves</text>
+      <g stroke="#111215" stroke-width="1.2" marker-end="url(#a1)"><line x1="112" y1="32" x2="130" y2="32"/><line x1="244" y1="32" x2="262" y2="32"/><line x1="376" y1="32" x2="394" y2="32"/><line x1="508" y1="32" x2="526" y2="32"/></g>
+      <path d="M56,58 L56,84 L584,84 L584,62" fill="none" stroke="#F04E23" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a1)"/>
+      <text x="200" y="98" fill="#B32A00">the owner's key creates the card, funds it and sets the rules: sellers, cap, ask-me limit, allowance, expiry</text>
+      <rect x="528" y="110" width="54" height="22" rx="11" fill="#DCFCE7"/><text x="555" y="125" text-anchor="middle" fill="#15803D" font-weight="600">pays</text>
+      <rect x="586" y="110" width="54" height="22" rx="11" fill="#FFDBD2"/><text x="613" y="125" text-anchor="middle" fill="#B32A00" font-weight="600">reverts</text>
+      <text x="0" y="125" fill="#3A3B41">The agent's words count for nothing at the end: the token pays only if the card says yes.</text>
+      <text x="0" y="140" fill="#5E5F68">Above the ask-me limit, the owner co-signs that one payment on the phone.</text>
+    </g>
+  </svg>
+
+  <div class="row" style="grid-template-columns: repeat(3, 1fr); margin: 10px 0 14px;">
+    <div class="box"><h3>Each agent, its own card</h3><p>An agent gets a card and a key that can only sign for that card. A mistake or an attack is limited to that card's balance and rules, never the owner's wallet.</p></div>
+    <div class="box"><h3>The chain has the last word</h3><p>Seller allowlist, cap, co-sign limit, weekly allowance, expiry, revoke and freeze live in the card. Code in the server and app checks first, but nothing relies on it.</p></div>
+    <div class="box"><h3>The owner's key stays on the device</h3><p>The phone keeps it in the iOS Keychain or Android Keystore; the console keeps it in the browser, optionally behind a passkey. The server never sees it.</p></div>
+  </div>
+
+  <div class="row" style="grid-template-columns: 1.25fr 1fr;">
+    <div>
+      <h3>Contents</h3>
+      <div class="toc">
+        <a href="#p2"><span>Architecture</span><span>2</span></a>
+        <a href="#p8"><span>Security and monitoring</span><span>8</span></a>
+        <a href="#p3"><span>Keys and sign-in</span><span>3</span></a>
+        <a href="#p9"><span>The apps</span><span>9</span></a>
+        <a href="#p4"><span>One payment, step by step</span><span>4</span></a>
+        <a href="#p10"><span>Running modes</span><span>10</span></a>
+        <a href="#p5"><span>The card contract</span><span>5</span></a>
+        <a href="#p11"><span>Chain and deployment</span><span>11</span></a>
+        <a href="#p6"><span>Wallet server</span><span>6</span></a>
+        <a href="#p12"><span>Tests, setup and limits</span><span>12</span></a>
+        <a href="#p7"><span>Agent and AI brain</span><span>7</span></a>
+      </div>
+    </div>
+    <div class="box dark">
+      <h3 style="color:#fff">Try it</h3>
+      <p style="font-size:8pt">Console: <a style="color:#9DCAFF" href="https://fintechathon-lian-ai-nao.vercel.app">fintechathon-lian-ai-nao.vercel.app</a><br>
+      Explorer: <a style="color:#9DCAFF" href="https://fisco-api-production-85c5.up.railway.app/explorer">fisco-api-production-85c5.up.railway.app/explorer</a><br>
+      Source: <a style="color:#9DCAFF" href="https://github.com/ixgnoy/Fintechathon-LianAiNao">github.com/ixgnoy/Fintechathon-LianAiNao</a><br>
+      Attack results: <span style="color:#fff">ChainBrain-security-test-report.pdf</span>, 63 attacks, HK$0 lost</p>
+    </div>
+  </div>
+
+  <div class="foot"><span>Mock e-HKD is a test token on FISCO BCOS, not the HKMA's e-HKD. The contract is named Pocket; the apps call it a card.</span><span>1 / 12</span></div>
+</section>
+
+<!-- 2 · architecture -->
+<section class="page" id="p2">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">Architecture</div></div>
+  <h2>Architecture</h2>
+  <p class="sub">Three owner apps, three hosted services on Railway, and three contracts on one FISCO BCOS chain. Each box below is real, running code; the folder is where it lives in the repository.</p>
+
+  <svg width="100%" viewBox="0 0 640 372" role="img" aria-label="Architecture: owner apps talk to the wallet API and sign on-chain; the wallet API runs the agent, tools, Radar and Sentinel; the sellers service runs x402 sellers and the facilitator; the node runs FISCO BCOS with the contracts">
+    <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111215"/></marker><marker id="a2r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#F04E23"/></marker></defs>
+    <g font-size="8.6">
+      <!-- owner apps -->
+      <text x="0" y="12" font-size="8" fill="#5E5F68" font-weight="600">OWNER DEVICES</text>
+      <rect x="0" y="20" width="132" height="44" rx="6" fill="#F5F4F1"/><text x="9" y="36" font-weight="600" font-size="9.4">Phone app</text><text x="9" y="49" fill="#5E5F68">Expo SDK 57 · iOS and Android</text><text x="9" y="59" fill="#5E5F68" class="mono">mobile/</text>
+      <rect x="0" y="72" width="132" height="44" rx="6" fill="#F5F4F1"/><text x="9" y="88" font-weight="600" font-size="9.4">Web console</text><text x="9" y="101" fill="#5E5F68">React 19 + Vite · on Vercel</text><text x="9" y="111" fill="#5E5F68" class="mono">web/</text>
+      <rect x="0" y="124" width="132" height="44" rx="6" fill="#F5F4F1"/><text x="9" y="140" font-weight="600" font-size="9.4">Android app</text><text x="9" y="153" fill="#5E5F68">Kotlin · Android Keystore</text><text x="9" y="163" fill="#5E5F68" class="mono">android/</text>
+
+      <!-- api -->
+      <text x="166" y="12" font-size="8" fill="#5E5F68" font-weight="600">RAILWAY · fisco-api</text>
+      <rect x="166" y="20" width="222" height="236" rx="8" fill="none" stroke="#111215" stroke-width="1"/>
+      <rect x="176" y="30" width="98" height="38" rx="5" fill="#F5F4F1"/><text x="183" y="45" font-weight="600">Sign-in, cards</text><text x="183" y="58" fill="#5E5F68">EIP-712 login, agent keys</text>
+      <rect x="280" y="30" width="98" height="38" rx="5" fill="#F5F4F1"/><text x="287" y="45" font-weight="600">Agent loop</text><text x="287" y="58" fill="#5E5F68">tool calls, max 24 steps</text>
+      <rect x="176" y="74" width="202" height="40" rx="5" fill="#D1E4FF"/><text x="183" y="89" font-weight="600" fill="#124977">Wallet tools · 7 tools · the money path</text><text x="183" y="103" fill="#124977">intent check · canPay · pre-flight · signs EIP-3009</text>
+      <rect x="176" y="120" width="98" height="38" rx="5" fill="#FFDBD2"/><text x="183" y="135" font-weight="600" fill="#B32A00">Radar</text><text x="183" y="148" fill="#B32A00">traces a seller's money</text>
+      <rect x="280" y="120" width="98" height="38" rx="5" fill="#FFDBD2"/><text x="287" y="135" font-weight="600" fill="#B32A00">Sentinel</text><text x="287" y="148" fill="#B32A00">watches, can freeze</text>
+      <rect x="176" y="164" width="98" height="38" rx="5" fill="#F5F4F1"/><text x="183" y="179" font-weight="600">Brain memory</text><text x="183" y="192" fill="#5E5F68">may only narrow</text>
+      <rect x="280" y="164" width="98" height="38" rx="5" fill="#F5F4F1"/><text x="287" y="179" font-weight="600">Rules compiler</text><text x="287" y="192" fill="#5E5F68">sentence → card rules</text>
+      <rect x="176" y="208" width="98" height="38" rx="5" fill="#F5F4F1"/><text x="183" y="223" font-weight="600">Event stream</text><text x="183" y="236" fill="#5E5F68">SSE, every step live</text>
+      <rect x="280" y="208" width="98" height="38" rx="5" fill="#F5F4F1"/><text x="287" y="223" font-weight="600">Explorer, faucet</text><text x="287" y="236" fill="#5E5F68">read-only RPC proxy</text>
+
+      <!-- sellers -->
+      <text x="422" y="12" font-size="8" fill="#5E5F68" font-weight="600">RAILWAY · fisco-sellers</text>
+      <rect x="422" y="20" width="218" height="84" rx="8" fill="none" stroke="#111215" stroke-width="1"/>
+      <rect x="432" y="30" width="96" height="64" rx="5" fill="#F5F4F1"/><text x="439" y="45" font-weight="600">8 x402 sellers</text><text x="439" y="58" fill="#5E5F68">HTTP 402 price,</text><text x="439" y="70" fill="#5E5F68">then the content</text><text x="439" y="84" fill="#5E5F68" class="mono">sellers.ts</text>
+      <rect x="534" y="30" width="96" height="64" rx="5" fill="#F5F4F1"/><text x="541" y="45" font-weight="600">x402 facilitator</text><text x="541" y="58" fill="#5E5F68">in-process; submits</text><text x="541" y="70" fill="#5E5F68">the signed transfer</text><text x="541" y="84" fill="#5E5F68" class="mono">facilitator.ts</text>
+
+      <!-- node -->
+      <text x="422" y="132" font-size="8" fill="#5E5F68" font-weight="600">RAILWAY · fisco-node</text>
+      <rect x="422" y="140" width="218" height="216" rx="8" fill="#111215"/>
+      <text x="434" y="160" font-weight="600" fill="#fff" font-size="9.4">FISCO BCOS 3.16.4 · chain 20200</text>
+      <text x="434" y="174" fill="#C9C8C3">JSON-RPC gateway fixes wallet quirks</text>
+      <rect x="434" y="186" width="194" height="36" rx="5" fill="#2A2B30"/><text x="442" y="201" font-weight="600" fill="#fff">PocketFactory</text><text x="442" y="214" fill="#C9C8C3">creates cards; caller = owner</text>
+      <rect x="434" y="228" width="194" height="52" rx="5" fill="#F04E23"/><text x="442" y="243" font-weight="600" fill="#fff">Pocket · one card per agent</text><text x="442" y="256" fill="#fff">ERC-1271: approves only transfers</text><text x="442" y="268" fill="#fff">inside the owner's rules</text>
+      <rect x="434" y="286" width="194" height="36" rx="5" fill="#9DCAFF"/><text x="442" y="301" font-weight="600" fill="#111215">MockEHKD · eHKD, 6 decimals</text><text x="442" y="314" fill="#124977">ERC-20 + EIP-3009 transfers</text>
+      <text x="434" y="342" fill="#C9C8C3">contracts/src · Solidity 0.8.24</text>
+
+      <!-- external -->
+      <rect x="166" y="282" width="222" height="40" rx="6" fill="none" stroke="#B4B2A9" stroke-dasharray="4 3"/><text x="176" y="298" font-weight="600">OpenRouter · Claude Haiku 5.5</text><text x="176" y="311" fill="#5E5F68">default model; Anthropic or scripted by one flag</text>
+      <rect x="0" y="282" width="132" height="40" rx="6" fill="none" stroke="#B4B2A9" stroke-dasharray="4 3"/><text x="9" y="298" font-weight="600">Python verifier</text><text x="9" y="311" fill="#5E5F68">reads a card, no trust</text>
+
+      <!-- arrows -->
+      <g stroke="#111215" stroke-width="1" fill="none" marker-end="url(#a2)">
+        <line x1="132" y1="42" x2="164" y2="42"/>
+        <line x1="132" y1="94" x2="164" y2="94"/>
+        <line x1="388" y1="94" x2="420" y2="62"/>
+        <line x1="582" y1="104" x2="582" y2="138"/>
+        <line x1="329" y1="68" x2="329" y2="72"/>
+        <line x1="277" y1="256" x2="277" y2="280"/>
+        <path d="M66,322 L66,346 L420,346"/>
+        <line x1="388" y1="228" x2="420" y2="228"/>
+      </g>
+      <path d="M66,168 L66,264 Q66,272 74,272 L410,272 Q416,272 418,266 L420,252" fill="none" stroke="#F04E23" stroke-width="1.2" marker-end="url(#a2r)"/>
+      <text x="150" y="268" fill="#B32A00" font-size="8">owner key signs create, fund, edit, revoke, unfreeze and co-signs</text>
+      <path d="M329,158 L329,162" stroke="#B32A00"/>
+      <text x="392" y="88" font-size="7.8" fill="#3A3B41">quote,</text><text x="392" y="98" font-size="7.8" fill="#3A3B41">pay</text>
+      <text x="588" y="124" font-size="7.8" fill="#3A3B41">transfer</text>
+      <text x="392" y="224" font-size="7.8" fill="#3A3B41">reads,</text><text x="392" y="242" font-size="7.8" fill="#3A3B41">freeze</text>
+      <text x="150" y="342" font-size="7.8" fill="#3A3B41">eth_call, eth_getLogs: reads a card's rules and history</text>
+      <text x="138" y="38" font-size="7.8" fill="#3A3B41">tasks</text><text x="138" y="90" font-size="7.8" fill="#3A3B41">events</text>
+    </g>
+  </svg>
+
+  <table style="margin-top: 10px;">
+    <tr><th style="width:34mm">Part</th><th>What it does</th><th style="width:44mm">Where it runs · folder</th></tr>
+    <tr><td class="k">Phone app</td><td>Owner's main app: cards, chat with the agent, co-sign with Face ID, Brain graph, ledger</td><td>iOS, Android · <span class="mono">mobile/</span></td></tr>
+    <tr><td class="k">Web console</td><td>Judges' and presenter's view: live trace, Brain, explorer, evidence, attack arena, faucet</td><td>Vercel · <span class="mono">web/</span></td></tr>
+    <tr><td class="k">Wallet API</td><td>Sign-in, agent loop, wallet tools, Radar, Sentinel, memory, routines, events, explorer</td><td>Railway fisco-api · <span class="mono">server/src</span></td></tr>
+    <tr><td class="k">Sellers</td><td>8 x402 sellers that answer HTTP 402 with a price, and the facilitator that submits payments</td><td>Railway fisco-sellers · <span class="mono">server/src</span></td></tr>
+    <tr><td class="k">Chain node</td><td>FISCO BCOS with a JSON-RPC gateway (fee history, log windows, batch splits, funding)</td><td>Railway fisco-node · <span class="mono">deploy/fisco-node</span></td></tr>
+    <tr><td class="k">Contracts</td><td>Pocket (the card), PocketFactory, MockEHKD, Clock (FISCO's millisecond time to seconds)</td><td>On chain · <span class="mono">contracts/src</span></td></tr>
+    <tr><td class="k">Shared code</td><td>Signing guard, EIP-712 login, the built-in demo network used by both apps</td><td>In the apps · <span class="mono">shared/</span></td></tr>
+    <tr><td class="k">Verifier</td><td>Standard-library Python; checks a card's rules and history against the chain, read-only</td><td>Anywhere · <span class="mono">verify/</span></td></tr>
+  </table>
+
+  <div class="foot"><span>ChainBrain · Technical documentation</span><span>2 / 12</span></div>
+</section>
+
+<!-- 3 · keys -->
+<section class="page" id="p3">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">Keys and sign-in</div></div>
+  <h2>Who holds which key</h2>
+  <p class="sub">Every key can do one narrow job. The owner's key is the only one that changes a rule or moves money out freely, and it never leaves the owner's device.</p>
+
+  <table>
+    <tr><th style="width:30mm">Key</th><th style="width:38mm">Where it lives</th><th>Can</th><th>Cannot</th></tr>
+    <tr><td class="k">Owner</td><td>Phone: iOS Keychain or Android Keystore. Console: browser, optionally behind a passkey</td><td>Create, fund and edit cards; revoke, unfreeze, take funds back; co-sign one payment</td><td>Be read by the server: it never leaves the device</td></tr>
+    <tr><td class="k">Agent, one per card</td><td>Derived on the server when used: <span class="mono">keccak256(AGENT_MASTER_KEY ‖ cardId)</span>, never stored</td><td>Sign an exact EIP-3009 transfer from its own card to a quoted seller</td><td>Edit a rule, pay a seller off the list, pass the cap, the allowance or the balance, or sign for another person's card</td></tr>
+    <tr><td class="k">Sentinel (guardian)</td><td>Server, <span class="mono">SENTINEL_PK</span>; fixed in the factory</td><td>Freeze a card, with a reason</td><td>Move money, unfreeze, or change any rule</td></tr>
+    <tr><td class="k">Facilitator</td><td>Sellers service, <span class="mono">FACILITATOR_PK</span></td><td>Submit a transfer the agent already signed</td><td>Spend from a card without the agent's signature</td></tr>
+    <tr><td class="k">Issuer</td><td>Server, <span class="mono">OWNER_PK</span></td><td>Mint test Mock e-HKD for the faucet and new visitors</td><td>Touch any card's rules or balance</td></tr>
+  </table>
+
+  <h3 style="margin-top: 16px;">If a key is stolen</h3>
+  <div class="row" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="tile"><div class="pill bl" style="margin-bottom:6px">agent key</div><div class="l" style="font-size:8pt;color:#3A3B41">Pays only allowed sellers, under the cap and the allowance. Above the ask-me limit it still needs the owner.</div></div>
+    <div class="tile"><div class="pill bl" style="margin-bottom:6px">the whole server</div><div class="l" style="font-size:8pt;color:#3A3B41">Same limits, for every card. The checks in the server are skipped; the card's checks are not.</div></div>
+    <div class="tile"><div class="pill gr" style="margin-bottom:6px">guardian key</div><div class="l" style="font-size:8pt;color:#3A3B41">Can freeze cards. Freezing stops payments; the owner unfreezes. No money moves.</div></div>
+    <div class="tile dark"><div class="pill no" style="margin-bottom:6px">owner key</div><div class="l" style="font-size:8pt">Full control of that owner's cards. That's why it stays in the device's secure storage.</div></div>
+  </div>
+
+  <h3 style="margin-top: 18px;">Signing in without a password</h3>
+  <svg width="100%" viewBox="0 0 640 112" role="img" aria-label="Sign-in: app asks for a challenge, signs an EIP-712 Login, the server checks the signature and returns a session token">
+    <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111215"/></marker></defs>
+    <g font-size="8.6">
+      <rect x="0" y="0" width="140" height="62" rx="6" fill="#F5F4F1"/><text x="10" y="16" font-size="8" fill="#5E5F68">1</text><text x="10" y="32" font-weight="600">Challenge</text><text x="10" y="45" fill="#5E5F68">single-use 32-byte nonce,</text><text x="10" y="56" fill="#5E5F68">5 minutes</text>
+      <rect x="166" y="0" width="140" height="62" rx="6" fill="#F5F4F1"/><text x="176" y="16" font-size="8" fill="#5E5F68">2</text><text x="176" y="32" font-weight="600">Device signs Login</text><text x="176" y="45" fill="#5E5F68">EIP-712; the statement says</text><text x="176" y="56" fill="#5E5F68">it moves no money</text>
+      <rect x="332" y="0" width="140" height="62" rx="6" fill="#F5F4F1"/><text x="342" y="16" font-size="8" fill="#5E5F68">3</text><text x="342" y="32" font-weight="600">Server checks</text><text x="342" y="45" fill="#5E5F68">account = hash of the owner</text><text x="342" y="56" fill="#5E5F68">address; same key, same account</text>
+      <rect x="498" y="0" width="142" height="62" rx="6" fill="#111215"/><text x="508" y="16" font-size="8" fill="#C9C8C3">4</text><text x="508" y="32" font-weight="600" fill="#fff">Session token</text><text x="508" y="45" fill="#C9C8C3">7 days; only its hash is</text><text x="508" y="56" fill="#C9C8C3">stored; 5 per account</text>
+      <g stroke="#111215" stroke-width="1.1" marker-end="url(#a3)"><line x1="140" y1="31" x2="164" y2="31"/><line x1="306" y1="31" x2="330" y2="31"/><line x1="472" y1="31" x2="496" y2="31"/></g>
+      <text x="0" y="84" fill="#3A3B41">Every card route checks the card's on-chain <tspan class="mono">owner()</tspan> against the signed-in key: someone else's card answers 403 NOT_YOUR_CARD.</text>
+      <text x="0" y="100" fill="#3A3B41">A new account is funded with real transactions: gas balance plus HK$500 of Mock e-HKD, so it can open cards straight away.</text>
+    </g>
+  </svg>
+
+  <div class="row" style="grid-template-columns: 1fr 1fr; margin-top: 14px;">
+    <div class="box blue">
+      <h3>What the phone will sign</h3>
+      <p>A signing guard decodes every request first and signs only: creating a card, funding the owner's own card, the owner controls on the owner's own card, and a co-sign whose card, seller and amount match the request shown on screen. Anything it can't decode, it refuses.</p>
+    </div>
+    <div class="box">
+      <h3>How a card gets its agent</h3>
+      <p>The app asks <span class="mono">POST /v1/cards/agent</span> for the next agent address, then the owner's key signs <span class="mono">PocketFactory.create(agent, cap, askAbove, expiresAt, sellers)</span> and a plain transfer to fund it. A card can only use an agent issued to its own owner.</p>
+    </div>
+  </div>
+
+  <div class="foot"><span>ChainBrain · Technical documentation</span><span>3 / 12</span></div>
+</section>
+
+<!-- 4 · one payment -->
+<section class="page" id="p4">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">One payment</div></div>
+  <h2>One payment, step by step</h2>
+  <p class="sub">"Get me a durian export report, under HK$15, by tonight." Below is every message from that sentence to the money landing, with the place each check happens.</p>
+
+  <svg width="100%" viewBox="0 0 640 432" role="img" aria-label="Sequence of one payment across owner, agent, wallet tools, seller and facilitator, token and card">
+    <defs><marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111215"/></marker><marker id="a4r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#F04E23"/></marker></defs>
+    <g font-size="8.2">
+      <g font-weight="600" font-size="8.8" text-anchor="middle">
+        <rect x="6" y="0" width="76" height="22" rx="4" fill="#F5F4F1"/><text x="44" y="15">Owner</text>
+        <rect x="112" y="0" width="76" height="22" rx="4" fill="#F5F4F1"/><text x="150" y="15">AI agent</text>
+        <rect x="218" y="0" width="96" height="22" rx="4" fill="#D1E4FF"/><text x="266" y="15">Wallet tools</text>
+        <rect x="344" y="0" width="96" height="22" rx="4" fill="#F5F4F1"/><text x="392" y="15">Seller · facilitator</text>
+        <rect x="470" y="0" width="70" height="22" rx="4" fill="#9DCAFF"/><text x="505" y="15">eHKD token</text>
+        <rect x="566" y="0" width="70" height="22" rx="4" fill="#111215"/><text x="601" y="15" fill="#fff">Card</text>
+      </g>
+      <g stroke="#D3D3D1" stroke-width="1"><line x1="44" y1="22" x2="44" y2="428"/><line x1="150" y1="22" x2="150" y2="428"/><line x1="266" y1="22" x2="266" y2="428"/><line x1="392" y1="22" x2="392" y2="428"/><line x1="505" y1="22" x2="505" y2="428"/><line x1="601" y1="22" x2="601" y2="428"/></g>
+
+      <g stroke="#111215" stroke-width="1" marker-end="url(#a4)">
+        <line x1="44" y1="44" x2="148" y2="44"/>
+        <line x1="150" y1="72" x2="264" y2="72"/>
+        <line x1="266" y1="90" x2="46" y2="90" stroke-dasharray="3 2"/>
+        <line x1="150" y1="126" x2="264" y2="126"/>
+        <line x1="266" y1="144" x2="390" y2="144"/>
+        <line x1="392" y1="160" x2="268" y2="160" stroke-dasharray="3 2"/>
+        <line x1="150" y1="258" x2="264" y2="258"/>
+        <line x1="266" y1="276" x2="390" y2="276"/>
+        <line x1="392" y1="300" x2="503" y2="300"/>
+        <line x1="505" y1="324" x2="599" y2="324"/>
+        <line x1="601" y1="344" x2="507" y2="344" stroke-dasharray="3 2"/>
+        <line x1="505" y1="366" x2="599" y2="366"/>
+        <line x1="392" y1="392" x2="268" y2="392" stroke-dasharray="3 2"/>
+        <line x1="266" y1="408" x2="152" y2="408" stroke-dasharray="3 2"/>
+      </g>
+      <g stroke="#F04E23" stroke-width="1" marker-end="url(#a4r)">
+        <line x1="266" y1="214" x2="46" y2="214" stroke-dasharray="4 3"/>
+        <line x1="44" y1="228" x2="264" y2="228" stroke-dasharray="4 3"/>
+        <line x1="266" y1="244" x2="503" y2="244" stroke-dasharray="1.5 2.5"/>
+      </g>
+
+      <text x="52" y="40">1 · the task, in words</text>
+      <text x="156" y="68">2 · draft_intent</text>
+      <text x="52" y="86">3 · owner confirms Buy / Price / Deadline</text>
+      <text x="156" y="122">4 · search_sellers, get_quote</text>
+      <text x="272" y="140">5 · GET the item</text>
+      <text x="272" y="174" fill="#3A3B41">HTTP 402 with a price</text>
+      <rect x="196" y="180" width="140" height="22" rx="4" fill="#D1E4FF"/><text x="204" y="194" fill="#124977">6 · task · card rules · Radar · Sentinel</text>
+      <text x="52" y="210" fill="#B32A00">7 · above ask-me: co-sign this exact transfer</text>
+      <text x="52" y="240" fill="#B32A00">owner signs with Face ID</text>
+      <text x="276" y="240" fill="#B32A00">8 · pre-flight eth_call, predicts only</text>
+      <text x="156" y="254">9 · pay</text>
+      <text x="272" y="272">10 · signed EIP-3009 authorisation</text>
+      <text x="398" y="296">11 · transferWithAuthorization</text>
+      <text x="511" y="320">12 · isValidSignature</text>
+      <text x="511" y="358" fill="#3A3B41">yes, or 0xffffffff</text>
+      <text x="511" y="380">13 · onSpend, count</text>
+      <text x="272" y="388" fill="#3A3B41">200 + receipt hash</text>
+      <text x="156" y="424" fill="#3A3B41">14 · content, wrapped as untrusted data</text>
+    </g>
+  </svg>
+
+  <table style="margin-top: 6px;">
+    <tr><th style="width:8mm">Step</th><th style="width:40mm">Check</th><th>What it compares</th><th style="width:52mm">Refusal code</th></tr>
+    <tr><td>6</td><td class="k">Task the owner confirmed</td><td>Price per item, total, number of items, deadline</td><td><span class="mono">PRICE_ABOVE_INTENT · INTENT_TOTAL_REACHED</span></td></tr>
+    <tr><td>6</td><td class="k">Card rules, read first</td><td><span class="mono">canPay(to, value)</span> on the chain before signing</td><td><span class="mono">SELLER_NOT_ALLOWED · OVER_CAP</span></td></tr>
+    <tr><td>6</td><td class="k">Radar, Sentinel</td><td>Seller's money trail score; a hold after suspicious refusals</td><td><span class="mono">COUNTERPARTY_HIGH_RISK · SENTINEL_HOLD</span></td></tr>
+    <tr><td>10</td><td class="k">Live quote</td><td>The 402 at pay time must match the quote: network, token, payee, amount</td><td><span class="mono">QUOTE_MISMATCH</span></td></tr>
+    <tr><td>12</td><td class="k">The card, on chain</td><td>Exact digest, agent signature, rules, owner co-sign (page 5)</td><td>transfer reverts</td></tr>
+  </table>
+  <p class="cap">Every refusal returns one of 30 reason codes, so the model can re-plan instead of retrying. Each nonce is keccak256(task hash, sequence), so every transfer traces back to the task the owner confirmed. Authorisations expire after 600 seconds.</p>
+
+  <div class="foot"><span>ChainBrain · Technical documentation</span><span>4 / 12</span></div>
+</section>
+
+<!-- 5 · contracts -->
+<section class="page" id="p5">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">Smart contracts</div></div>
+  <h2>The card contract</h2>
+  <p class="sub">A card is a small ERC-1271 contract. The token asks it "is this signature valid?" at the moment of payment, and the card answers yes only for a transfer inside the owner's rules.</p>
+
+  <div class="tiles" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 12px;">
+    <div class="tile dark"><div class="n">216</div><div class="l">lines: Pocket.sol, the card</div></div>
+    <div class="tile"><div class="n">102</div><div class="l">lines: MockEHKD.sol, ERC-20 + EIP-3009, 6 decimals</div></div>
+    <div class="tile"><div class="n">27</div><div class="l">lines: PocketFactory.sol, creates cards</div></div>
+    <div class="tile"><div class="n">11</div><div class="l">lines: Clock.sol, FISCO's millisecond time to seconds</div></div>
+  </div>
+
+  <h3>What happens when a payment reaches the chain</h3>
+  <svg width="100%" viewBox="0 0 640 150" role="img" aria-label="Check order: token checks time window and nonce, then the card checks digest, agent signature, card active, seller, cap, balance, allowance, owner co-sign">
+    <g font-size="8.4">
+      <text x="0" y="10" font-size="7.8" fill="#5E5F68" font-weight="600">TOKEN</text>
+      <text x="164" y="10" font-size="7.8" fill="#5E5F68" font-weight="600">CARD · isValidSignature, then canPay</text>
+      <g fill="#9DCAFF"><rect x="0" y="16" width="74" height="54" rx="5"/><rect x="80" y="16" width="74" height="54" rx="5"/></g>
+      <g fill="#F5F4F1"><rect x="164" y="16" width="56" height="54" rx="5"/><rect x="224" y="16" width="56" height="54" rx="5"/><rect x="284" y="16" width="56" height="54" rx="5"/><rect x="344" y="16" width="56" height="54" rx="5"/><rect x="404" y="16" width="56" height="54" rx="5"/><rect x="464" y="16" width="56" height="54" rx="5"/><rect x="524" y="16" width="56" height="54" rx="5"/></g>
+      <rect x="584" y="16" width="56" height="54" rx="5" fill="#111215"/>
+      <g font-weight="600">
+        <text x="7" y="36">Time window</text><text x="7" y="48" font-weight="400" fill="#124977">valid after,</text><text x="7" y="59" font-weight="400" fill="#124977">before</text>
+        <text x="87" y="36">Nonce unused</text><text x="87" y="48" font-weight="400" fill="#124977">works once</text>
+        <text x="170" y="36">Exact</text><text x="170" y="47">digest</text>
+        <text x="230" y="36">Agent</text><text x="230" y="47">signed</text>
+        <text x="290" y="36">Card</text><text x="290" y="47">active</text>
+        <text x="350" y="36">Seller</text><text x="350" y="47">allowed</text>
+        <text x="410" y="36">Under</text><text x="410" y="47">the cap</text>
+        <text x="470" y="36">Enough</text><text x="470" y="47">balance</text>
+        <text x="530" y="36">Within</text><text x="530" y="47">allowance</text>
+        <text x="590" y="36" fill="#fff">Owner</text><text x="590" y="47" fill="#fff">co-sign</text>
+      </g>
+      <g font-size="7" fill="#5E5F68"><text x="170" y="63">no permits</text><text x="290" y="63">not revoked,</text><text x="410" y="63">or the seller's</text><text x="590" y="63" fill="#C9C8C3">above ask-me</text></g>
+      <g font-size="7.2" fill="#B32A00">
+        <text x="290" y="84">REVOKED</text><text x="290" y="94">FROZEN</text><text x="290" y="104">EXPIRED</text>
+        <text x="350" y="84">SELLER_NOT</text><text x="350" y="94">_ALLOWED</text>
+        <text x="410" y="84">OVER_CAP</text>
+        <text x="470" y="84">OVER_BUDGET</text>
+        <text x="530" y="84">OVER_PERIOD</text>
+        <text x="590" y="84">invalid</text>
+      </g>
+      <text x="0" y="128" fill="#3A3B41">Any no returns 0xffffffff and the token reverts "EHKD: invalid signature". The owner's co-signature lifts only two things: the ask-me limit</text>
+      <text x="0" y="142" fill="#3A3B41">and the allowance. It never lifts revoked, frozen, expired, seller, cap or balance. Then the token calls onSpend with 100,000 gas to count the allowance.</text>
+    </g>
+  </svg>
+
+  <h3 style="margin-top: 10px;">The rules a card holds</h3>
+  <table>
+    <tr><th>Rule</th><th>Stored as</th><th>Who changes it</th><th>When broken</th></tr>
+    <tr><td class="k">Sellers it may pay</td><td><span class="mono">sellerAllowed[address]</span></td><td>owner, <span class="mono">setSeller</span></td><td><span class="mono">SELLER_NOT_ALLOWED</span></td></tr>
+    <tr><td class="k">Cap per payment</td><td><span class="mono">perPaymentCap</span>, or a seller's own cap</td><td>owner, <span class="mono">setCap · setSellerCap</span></td><td><span class="mono">OVER_CAP</span></td></tr>
+    <tr><td class="k">Ask-me limit</td><td><span class="mono">askAbove</span></td><td>owner, <span class="mono">setAskAbove</span></td><td>needs the owner's signature</td></tr>
+    <tr><td class="k">Allowance</td><td>day, week or month, in Hong Kong time</td><td>owner, <span class="mono">setPeriodLimit</span></td><td><span class="mono">OVER_PERIOD</span>, owner may co-sign</td></tr>
+    <tr><td class="k">Expiry</td><td><span class="mono">expiresAt</span></td><td>owner, <span class="mono">setExpiresAt</span></td><td><span class="mono">POCKET_EXPIRED</span></td></tr>
+    <tr><td class="k">Freeze</td><td><span class="mono">frozen</span></td><td>owner or Sentinel freezes; only the owner unfreezes</td><td><span class="mono">POCKET_FROZEN</span></td></tr>
+    <tr><td class="k">Revoke</td><td><span class="mono">revoked</span>, permanent</td><td>owner, <span class="mono">revoke</span>; funds come back with <span class="mono">returnFunds</span></td><td><span class="mono">POCKET_REVOKED</span></td></tr>
+  </table>
+
+  <div class="row" style="grid-template-columns: 1.2fr 1fr; margin-top: 12px;">
+    <div class="box">
+      <h3>What the agent and owner sign</h3>
+      <p>Both sign the same EIP-712 <span class="mono">TransferWithAuthorization</span>: from this card, to one seller, one amount, one nonce, one time window. The signature handed to the token is an envelope:</p>
+      <pre style="margin-top:5px">abi.encode(to, value, validAfter, validBefore,
+           nonce, agentSig, ownerSig)</pre>
+      <p class="cap">ownerSig is empty (0x) when no co-sign is needed.</p>
+    </div>
+    <div class="box">
+      <h3>Events anyone can read</h3>
+      <p><span class="mono">PocketCreated(pocket, owner, agent)</span>, <span class="mono">Spent</span>, <span class="mono">Frozen(by, reason)</span>, <span class="mono">Unfrozen</span>, <span class="mono">Revoked</span>, <span class="mono">RulesChanged</span>, <span class="mono">SellerSet</span>, <span class="mono">SellerCapSet</span>, and the token's <span class="mono">AuthorizationUsed</span>. The Python verifier rebuilds a card's history from them.</p>
+    </div>
+  </div>
+  <p class="cap">Solidity 0.8.24, optimizer 200 runs, OpenZeppelin 5.4, Foundry. Any owner function still works on a frozen or revoked card, so the owner can always take the money back.</p>
+
+  <div class="foot"><span>ChainBrain · Technical documentation</span><span>5 / 12</span></div>
+</section>
+
+<!-- 6 · wallet server -->
+<section class="page" id="p6">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">Wallet server</div></div>
+  <h2>Wallet server</h2>
+  <p class="sub">One TypeScript service (Hono on Node 24, viem, the x402 libraries) and a second process for the sellers. It runs the agent and does every check it can before the chain, but it holds no owner key.</p>
+
+  <div class="tiles" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 12px;">
+    <div class="tile dark"><div class="n">7</div><div class="l">agent tools</div></div>
+    <div class="tile"><div class="n">42</div><div class="l">API routes, plus 5 on the sellers</div></div>
+    <div class="tile"><div class="n">30</div><div class="l">reason codes the model can read</div></div>
+    <div class="tile"><div class="n">15</div><div class="l">event types on the live stream</div></div>
+    <div class="tile"><div class="n">8</div><div class="l">x402 sellers, 12 items</div></div>
+  </div>
+
+  <div class="row" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="box"><h3>HTTP and identity</h3><p>App, SSE, sign-in, per-card agent keys, rate limits, JSON storage on a volume<br><span class="mono">index · visitors · agentKeys · limits · store</span></p></div>
+    <div class="box blue"><h3>Money path</h3><p>Tools, quote and settle, x402 scheme, task check, pre-flight, co-sign, content scan, reason codes, nonces<br><span class="mono">wallet/ · facilitator · ledger</span></p></div>
+    <div class="box"><h3>Agent brain</h3><p>Tool loop, prompt, scripted fallback, model switch, memory, rules compiler, card-app composer<br><span class="mono">agent/ · llm · brain/ · rules/ · pocketApp/</span></p></div>
+    <div class="box" style="background:#FFDBD2;border:0"><h3>Safety</h3><p>Radar screening and alerts, Sentinel hold and freeze, the attack arena on the real chain<br><span class="mono">radar/ · sentinel/ · arena</span></p></div>
+    <div class="box"><h3>Autonomy</h3><p>Routines every 30 s, two starter cards for new accounts, faucet, gas funding<br><span class="mono">routines · starter · faucet · fund</span></p></div>
+    <div class="box"><h3>Chain access</h3><p>Chain config, read-only explorer and RPC proxy, the 8 test sellers<br><span class="mono">chains · explorer · rpcProxy · sellers</span></p></div>
+  </div>
+
+  <h3 style="margin-top: 14px;">The agent's seven tools</h3>
+  <table>
+    <tr><th style="width:30mm">Tool</th><th>What it does</th><th style="width:26mm">Moves money</th></tr>
+    <tr><td class="k mono" style="font-size:8pt">get_pocket</td><td>Balance, cap, ask-me limit, allowance, spent on this task</td><td><span class="pill gr">no</span></td></tr>
+    <tr><td class="k mono" style="font-size:8pt">search_sellers</td><td>Sellers, items and prices, and whether the card allows each</td><td><span class="pill gr">no</span></td></tr>
+    <tr><td class="k mono" style="font-size:8pt">draft_intent</td><td>Shows the owner a fixed Buy / Price / Deadline task and waits up to 10 minutes</td><td><span class="pill gr">no</span></td></tr>
+    <tr><td class="k mono" style="font-size:8pt">get_quote</td><td>The seller's 402 price, with the card check, task check and Radar result</td><td><span class="pill gr">no</span></td></tr>
+    <tr><td class="k mono" style="font-size:8pt">counter_offer</td><td>Haggles, at most 3 rounds, only on items with a floor</td><td><span class="pill gr">no</span></td></tr>
+    <tr><td class="k mono" style="font-size:8pt">ask_owner</td><td>A question, or a co-sign request for one quote</td><td><span class="pill gr">no</span></td></tr>
+    <tr><td class="k mono" style="font-size:8pt">pay</td><td>Settles a quote over x402, after every check on page 4</td><td><span class="pill no">yes, only this</span></td></tr>
+  </table>
+  <p class="cap">No tool takes a recipient address, edits a card, or reaches another card or the owner's main wallet. An attacker who controls the model can only pick from quotes the server fetched itself.</p>
+
+  <h3 style="margin-top: 12px;">Main routes</h3>
+  <div class="row" style="grid-template-columns: 1fr 1fr; column-gap: 16px; font-size: 8pt;">
+    <ul class="plain">
+      <li><span class="mono">POST /v1/challenge · /v1/visitors</span> sign up or sign in</li>
+      <li><span class="mono">POST /v1/cards/agent</span> the next card's agent address</li>
+      <li><span class="mono">POST /api/chat</span> one agent turn</li>
+      <li><span class="mono">POST /api/approvals/:id</span> owner's answer or co-sign</li>
+      <li><span class="mono">GET /api/events</span> live stream (SSE), or <span class="mono">.json</span> to poll</li>
+    </ul>
+    <ul class="plain">
+      <li><span class="mono">POST /api/rules/compile</span> a sentence to card rules</li>
+      <li><span class="mono">POST /api/arena/straight</span> agent key tries the chain directly</li>
+      <li><span class="mono">GET /api/radar/screen/:who</span> a seller's risk</li>
+      <li><span class="mono">GET /api/explorer/*</span> · <span class="mono">/explorer</span> blocks, transactions</li>
+      <li><span class="mono">POST /api/faucet · /rpc/fisco</span> test funds, read-only RPC</li>
+    </ul>
+  </div>
+
+  <div class="foot"><span>ChainBrain · Technical documentation</span><span>6 / 12</span></div>
+</section>
+
+<!-- 7 · AI brain -->
+<section class="page" id="p7">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">Agent and AI brain</div></div>
+  <h2>Agent and AI brain</h2>
+  <p class="sub">The model plans, compares sellers and asks the owner. It is assumed it can be fooled, so every money rule is enforced in code and on chain, never by the prompt alone.</p>
+
+  <div class="row" style="grid-template-columns: 1.05fr 1fr;">
+    <div>
+      <h3>One turn of the agent</h3>
+      <svg width="100%" viewBox="0 0 320 214" role="img" aria-label="Agent loop: model call, tool calls, results back, repeat up to 24 times, then reply">
+        <defs><marker id="a7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111215"/></marker></defs>
+        <g font-size="8.6">
+          <rect x="0" y="0" width="140" height="44" rx="6" fill="#F5F4F1"/><text x="9" y="17" font-weight="600">Owner's message</text><text x="9" y="31" fill="#5E5F68">+ memory snapshot, marked</text><text x="9" y="41" fill="#5E5F68">"not instructions"</text>
+          <rect x="180" y="0" width="140" height="44" rx="6" fill="#111215"/><text x="189" y="17" font-weight="600" fill="#fff">Model call</text><text x="189" y="31" fill="#C9C8C3">system prompt, 7 tools,</text><text x="189" y="41" fill="#C9C8C3">full history</text>
+          <rect x="180" y="84" width="140" height="44" rx="6" fill="#D1E4FF"/><text x="189" y="101" font-weight="600" fill="#124977">Run each tool call</text><text x="189" y="115" fill="#124977">results go back as one</text><text x="189" y="125" fill="#124977">message</text>
+          <rect x="0" y="84" width="140" height="44" rx="6" fill="#DCFCE7"/><text x="9" y="101" font-weight="600" fill="#15803D">Reply to the owner</text><text x="9" y="115" fill="#15803D">when the model calls</text><text x="9" y="125" fill="#15803D">no tool</text>
+          <g stroke="#111215" stroke-width="1.1" fill="none" marker-end="url(#a7)">
+            <line x1="140" y1="22" x2="178" y2="22"/>
+            <path d="M270,44 L270,82"/>
+            <path d="M230,84 L230,46"/>
+            <path d="M180,64 L142,96"/>
+          </g>
+          <text x="276" y="68" fill="#3A3B41">tool calls</text><text x="150" y="68" fill="#3A3B41">none</text><text x="196" y="68" fill="#3A3B41">loop</text>
+          <rect x="0" y="146" width="320" height="64" rx="6" fill="none" stroke="#D3D3D1"/>
+          <text x="9" y="162" font-weight="600">Stops on its own when</text>
+          <text x="9" y="176" fill="#3A3B41">· 24 model calls are used, or the model errors or refuses</text>
+          <text x="9" y="189" fill="#3A3B41">· and then it names the payments already made; nothing retries</text>
+          <text x="9" y="202" fill="#3A3B41">· no model or key: a scripted agent takes over, shown in the trace</text>
+        </g>
+      </svg>
+    </div>
+    <div>
+      <h3>The task the owner confirms</h3>
+      <div class="box" style="background:#F5F4F1;border:0;margin-bottom:8px">
+        <p class="mono" style="font-size:8pt;line-height:1.7;color:#111215">Buy: one durian export market report<br>Price: at most HK$15.00 each, HK$15.00 in total, up to 1 item<br>Deadline: 2026-10-19 23:59 HKT</p>
+      </div>
+      <p style="font-size:8.3pt;color:var(--ink2)">The model proposes the fields; code writes the three lines, so amounts and the deadline are never copied from the model. Every quote, co-sign request and payment is then checked against it: confirmed, not expired, price per item, total, number of items.</p>
+      <h3 style="margin-top:10px">Models</h3>
+      <table>
+        <tr><th>Flag <span class="mono">LLM_PROVIDER</span></th><th>Used for every role</th></tr>
+        <tr><td class="k">openrouter <span class="pill ok">default</span></td><td>Claude Haiku 5.5; four other presets allowed</td></tr>
+        <tr><td class="k">anthropic</td><td>Opus 5.5 agent, Sonnet 5.5 rules, Haiku 5.5 for memory, Radar, Sentinel</td></tr>
+        <tr><td class="k">scripted</td><td>No model: keyword router and fixed parsers</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="row" style="grid-template-columns: repeat(3, 1fr); margin-top: 14px;">
+    <div class="box">
+      <h3>Memory may only narrow</h3>
+      <p>After each turn a reflection writes one memory note per card (up to 30 items). It reads only the owner's words and fixed lines built from wallet events, never seller text. Anything that would loosen a limit ("always pay", "raise the cap", "trust this seller") is rejected. Bad output twice keeps the old memory.</p>
+    </div>
+    <div class="box">
+      <h3>Speak your rules</h3>
+      <p>"HK$5 a week for news, only Exa, ask me above HK$1." Two model readings run in parallel and any difference takes the stricter value. The result is a draft card plus a plain-words proof of each rule. It never creates the card: the owner still signs.</p>
+    </div>
+    <div class="box">
+      <h3>The Brain graph</h3>
+      <p>The apps draw the brain as a live graph: ChainBrain in the centre, memory around it, then agents, their cards, and the sellers each card may pay. Every node is a real agent, card or seller; each edge is "allowed to pay", with the payment count.</p>
+    </div>
+  </div>
+
+  <div class="box dark" style="margin-top: 12px;">
+    <p style="font-size:8.4pt"><b style="color:#fff">Seller text is data.</b> Everything a seller returns is wrapped in <span class="mono" style="background:#2A2B30;color:#fff">&lt;untrusted_content source="…"&gt;</span>, forged closing tags are removed, and requests for personal data or for a signature are refused by code (DISCLOSURE_REFUSED, SIGNATURE_TYPE_NOT_ALLOWED). Seller text never reaches memory, the haggler, Radar's summary or the Sentinel's model.</p>
+  </div>
+
+  <div class="foot"><span>ChainBrain · Technical documentation</span><span>7 / 12</span></div>
+</section>
+
+<!-- 8 · security -->
+<section class="page" id="p8">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">Security and monitoring</div></div>
+  <h2>Security and monitoring</h2>
+  <p class="sub">Layers stacked from the model down to the token. The ones above the card make the agent better behaved; the card makes it safe. Results of 63 attacks are in the separate security test report.</p>
+
+  <div class="row" style="grid-template-columns: 1fr 1fr;">
+    <svg width="100%" viewBox="0 0 310 300" role="img" aria-label="Protection layers top to bottom">
+      <g font-size="8.4">
+        <rect x="0" y="0" width="226" height="30" rx="5" fill="#F5F4F1"/><text x="9" y="13" font-weight="600">1 · AI agent</text><text x="9" y="25" fill="#5E5F68">can be fooled, holds no key</text>
+        <rect x="0" y="34" width="226" height="30" rx="5" fill="#F5F4F1"/><text x="9" y="47" font-weight="600">2 · Content wrap and scan</text><text x="9" y="59" fill="#5E5F68">seller text is data; data and signature asks refused</text>
+        <rect x="0" y="68" width="226" height="30" rx="5" fill="#D1E4FF"/><text x="9" y="81" font-weight="600" fill="#124977">3 · Task check</text><text x="9" y="93" fill="#124977">price, total, items, deadline the owner confirmed</text>
+        <rect x="0" y="102" width="226" height="30" rx="5" fill="#FFDBD2"/><text x="9" y="115" font-weight="600" fill="#B32A00">4 · Radar</text><text x="9" y="127" fill="#B32A00">seller's money trail: ok, ask the owner, or refuse</text>
+        <rect x="0" y="136" width="226" height="30" rx="5" fill="#FFDBD2"/><text x="9" y="149" font-weight="600" fill="#B32A00">5 · Sentinel hold</text><text x="9" y="161" fill="#B32A00">after odd behaviour, the next payment needs the owner</text>
+        <rect x="0" y="170" width="226" height="30" rx="5" fill="#D1E4FF"/><text x="9" y="183" font-weight="600" fill="#124977">6 · Signing rule</text><text x="9" y="195" fill="#124977">signs only its own transfer matching the live quote</text>
+        <rect x="0" y="210" width="226" height="34" rx="5" fill="#111215"/><text x="9" y="224" font-weight="600" fill="#fff">7 · Card contract</text><text x="9" y="237" fill="#C9C8C3">digest, agent, rules, owner co-sign</text>
+        <rect x="0" y="248" width="226" height="28" rx="5" fill="#9DCAFF"/><text x="9" y="261" font-weight="600">8 · Mock e-HKD token</text><text x="9" y="272" fill="#124977">each authorisation exact, works once</text>
+        <path d="M236,4 L244,4 L244,198 L236,198" fill="none" stroke="#5E5F68"/><text x="250" y="96" fill="#5E5F68">off chain:</text><text x="250" y="108" fill="#5E5F68">a broken server</text><text x="250" y="120" fill="#5E5F68">skips these</text>
+        <path d="M236,212 L244,212 L244,274 L236,274" fill="none" stroke="#F04E23"/><text x="250" y="240" fill="#B32A00" font-weight="600">on chain:</text><text x="250" y="252" fill="#B32A00">always holds</text>
+        <rect x="0" y="282" width="226" height="16" rx="4" fill="none" stroke="#B4B2A9" stroke-dasharray="3 2"/><text x="9" y="293" fill="#5E5F68">beside the agent: memory guard, narrow-only</text>
+      </g>
+    </svg>
+    <div>
+      <h3>Radar: who is this seller?</h3>
+      <p style="font-size:8.3pt;color:var(--ink2);margin-bottom:6px">Indexes every Mock e-HKD transfer, then traces a seller's money 3 hops each way. Labels come from a sanctions-style file, plus ChainBrain's own "flagged" label for any seller that asked for data or a signature.</p>
+      <svg width="100%" viewBox="0 0 300 74" role="img" aria-label="Radar score 0 to 10: below 5 ok, 5 to 7 owner co-signs, 8 and above refused">
+        <g font-size="8">
+          <rect x="0" y="10" width="140" height="16" fill="#DCFCE7"/><rect x="140" y="10" width="84" height="16" fill="#D1E4FF"/><rect x="224" y="10" width="76" height="16" fill="#FFDBD2"/>
+          <g fill="#5E5F68" text-anchor="middle"><text x="0" y="6" text-anchor="start">0</text><text x="140" y="6">5</text><text x="224" y="6">8</text><text x="300" y="6" text-anchor="end">10</text></g>
+          <text x="6" y="21" fill="#15803D" font-weight="600">ok</text><text x="146" y="21" fill="#124977" font-weight="600">owner co-signs</text><text x="230" y="21" fill="#B32A00" font-weight="600">refused</text>
+          <text x="0" y="42" fill="#3A3B41">mixer in the trail: 5 · drainer or scam: 6</text>
+          <text x="0" y="55" fill="#3A3B41">mixer 25%+: 7 · scam 10%+ or darknet: 8</text>
+          <text x="0" y="68" fill="#3A3B41">sanctioned in the trail: 9 · labelled itself: 10</text>
+        </g>
+      </svg>
+      <p class="cap">Re-screens every 30 s; a worse score alerts every card that paid or quoted that seller. Thresholds are a first guess, not calibrated.</p>
+
+      <h3 style="margin-top:10px">Sentinel: is this agent hijacked?</h3>
+      <table>
+        <tr><th>Signal</th><th>When</th><th>Action</th></tr>
+        <tr><td class="k">Refusal burst</td><td>3+ refused attempts in 60 s</td><td><span class="pill no">freeze</span></td></tr>
+        <tr><td class="k">Ghost transfer</td><td>money left with no payment event</td><td><span class="pill no">freeze</span></td></tr>
+        <tr><td class="k">Follow-through</td><td>a refusal within 120 s of a data ask</td><td><span class="pill bl">hold</span></td></tr>
+        <tr><td class="k">Probing</td><td>2 refused attempts in 60 s</td><td><span class="pill gr">watch</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="row" style="grid-template-columns: repeat(3, 1fr); margin-top: 12px;">
+    <div class="box"><h3>The guardian key only freezes</h3><p>A freeze is an on-chain transaction from the Sentinel's guardian key, fixed per card. It can't move money, unfreeze or change a rule. Without the key, a freeze falls back to a hold.</p></div>
+    <div class="box"><h3>The AI can only raise</h3><p>A model (TypeSafe's Jev when keyed, else Haiku 5.5) reads a fixed summary and may raise watch to hold or freeze. It can never lower a decision, and low confidence can't freeze.</p></div>
+    <div class="box"><h3>Pre-flight predicts, never blocks</h3><p>Before paying, the wallet runs the exact transfer as an eth_call and records "pays" or "refused, because". After settling it shows predicted vs actual, so a wrong guess is visible.</p></div>
+  </div>
+
+  <h3 style="margin-top: 14px;">The 30 reasons a payment can be refused</h3>
+  <table style="font-size:7.4pt">
+    <tr><td class="k" style="width:30mm">Card, on chain</td><td class="mono">SELLER_NOT_ALLOWED · OVER_CAP · OVER_BUDGET · OVER_PERIOD · POCKET_REVOKED · POCKET_EXPIRED · POCKET_FROZEN</td></tr>
+    <tr><td class="k">Confirmed task</td><td class="mono">PRICE_ABOVE_INTENT · INTENT_TOTAL_REACHED · INTENT_ITEMS_REACHED · INTENT_EXPIRED · INTENT_NOT_CONFIRMED</td></tr>
+    <tr><td class="k">Owner</td><td class="mono">NEEDS_OWNER_APPROVAL · APPROVAL_EXPIRED · OWNER_DECLINED</td></tr>
+    <tr><td class="k">Quote and signing</td><td class="mono">QUOTE_MISMATCH · QUOTE_ALREADY_PAID · QUOTE_UNKNOWN · SIGNATURE_TYPE_NOT_ALLOWED · SETTLEMENT_FAILED · NOT_THIS_AGENT</td></tr>
+    <tr><td class="k">Seller content</td><td class="mono">DISCLOSURE_REFUSED</td></tr>
+    <tr><td class="k">Radar, Sentinel</td><td class="mono">COUNTERPARTY_HIGH_RISK · COUNTERPARTY_REVIEW · SENTINEL_HOLD</td></tr>
+    <tr><td class="k">Haggling</td><td class="mono">OFFER_NOT_LOWER · NEGOTIATION_ROUNDS_USED · NEGOTIATION_NOT_OFFERED · DEAL_ALREADY_AGREED · QUOTE_ALREADY_APPROVED</td></tr>
+  </table>
+  <p class="cap">Each code comes with a plain-English line (<span class="mono">server/src/wallet/reasons.ts</span>). The model reads it and re-plans; the apps show it to the owner.</p>
+
+  <div class="foot"><span>ChainBrain · Technical documentation</span><span>8 / 12</span></div>
+</section>
+
+<!-- 9 · apps -->
+<section class="page" id="p9">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">The apps</div></div>
+  <h2>The apps</h2>
+  <p class="sub">The phone app is where the owner lives: cards, the agent, co-signing. The web console is where judges watch every decision and try to break it. Screens below are from the real apps.</p>
+
+  <div class="shots" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 10px;">
+    <div class="shot"><img src="img/phone-home.jpg" alt="Phone Home"><div class="c"><b>Home</b>main wallet, and one card per job, coloured by use</div></div>
+    <div class="shot"><img src="img/phone-canvas.jpg" alt="Compose"><div class="c"><b>Compose</b>one sentence; the card builds itself from fixed blocks</div></div>
+    <div class="shot"><img src="img/phone-cheque.jpg" alt="Co-sign"><div class="c"><b>Co-sign</b>one exact payment, seller check, slide and Face ID</div></div>
+    <div class="shot"><img src="img/phone-brain-tab.jpg" alt="Brain"><div class="c"><b>Brain</b>live graph and how each payment was decided</div></div>
+    <div class="shot"><img src="img/phone-sentinel.jpg" alt="Sentinel"><div class="c"><b>Sentinel</b>asks for an OK, then freezes the card on-chain</div></div>
+  </div>
+
+  <div class="row" style="grid-template-columns: 1.45fr 1fr;">
+    <div class="wide"><img src="img/console-judges.jpg" alt="Web console Judges tab"><p class="cap">Web console, Judges tab: four one-tap attacks (induced transfer, data extraction, privilege escalation, prompt injection), each with the expected result and a "write your own attack" box.</p></div>
+    <div>
+      <table>
+        <tr><th></th><th>Phone app</th></tr>
+        <tr><td class="k">Stack</td><td>Expo SDK 57, React Native 0.86, Skia, viem</td></tr>
+        <tr><td class="k">Tabs</td><td>Home, Agents, Brain, Activity, Settings</td></tr>
+        <tr><td class="k">Key</td><td>made on the device, in secure storage</td></tr>
+        <tr><td class="k">Signs</td><td>only what the signing guard can decode</td></tr>
+      </table>
+      <table style="margin-top:8px">
+        <tr><th></th><th>Web console</th></tr>
+        <tr><td class="k">Stack</td><td>React 19, Vite 8, Tailwind 4</td></tr>
+        <tr><td class="k">Tabs</td><td>Live, Brain, Pockets, Sellers, Explorer, Evidence, Judges, Faucet</td></tr>
+        <tr><td class="k">Key</td><td>made in the browser, optional passkey</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="row" style="grid-template-columns: repeat(3, 1fr); margin-top: 10px;">
+    <div class="box"><h3>Neo-Kinetic design</h3><p>Ink #111215, vermillion #F04E23, powder blue #9DCAFF on warm grey #E7E6E2; Clash Display and General Sans. One token file per app.</p></div>
+    <div class="box"><h3>Every step on screen</h3><p>Both apps read the server's live event stream: task, quote, Radar, pre-flight, payment, refusal with its reason. Each hash opens in the explorer.</p></div>
+    <div class="box"><h3>A third app</h3><p>A native Kotlin Android app signs with the Android Keystore against the same server. Its EIP-712 signatures are byte-identical to viem's.</p></div>
+  </div>
+
+  <div class="foot"><span>ChainBrain · Technical documentation</span><span>9 / 12</span></div>
+</section>
+
+<!-- 10 · running modes -->
+<section class="page" id="p10">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">Running modes</div></div>
+  <h2>Three ways to run it</h2>
+  <p class="sub">The apps open on the real hosted chain. A built-in demo network lets every scene run with no server or internet, and a local stack lets anyone run the real code end to end.</p>
+
+  <div class="row" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="box dark"><div class="pill ok" style="margin-bottom:6px">default</div><h3 style="color:#fff">Hosted, real chain</h3><p>Apps sign in with the owner's key and talk to the hosted wallet API on Railway. Real FISCO transactions, real Mock e-HKD, every hash in the public explorer. Live model through OpenRouter.</p></div>
+    <div class="box"><div class="pill gr" style="margin-bottom:6px">Settings → Demo network</div><h3>Built-in demo network</h3><p>The whole world in TypeScript inside the app: a virtual chain, the wallet API, 7 sellers, 3 agents, 12 scenes and two weeks of history. Needs nothing else. Hashes exist only in the app.</p></div>
+    <div class="box"><div class="pill bl" style="margin-bottom:6px">Settings → Custom server</div><h3>Your own server</h3><p>Point either app at any ChainBrain server: a local FISCO node with <span class="mono">scripts/fisco</span>, or the dev stack, which runs the real server and contracts with a scripted agent and no API key.</p></div>
+  </div>
+
+  <h3 style="margin-top: 16px;">What is real in each mode</h3>
+  <table>
+    <tr><th style="width:42mm"></th><th>Hosted</th><th>Demo network</th><th>Dev stack</th></tr>
+    <tr><td class="k">Chain</td><td><span class="pill ok">FISCO BCOS</span></td><td><span class="pill gr">in-memory, same card rules</span></td><td><span class="pill ok">FISCO BCOS, local</span></td></tr>
+    <tr><td class="k">Contracts</td><td><span class="pill ok">deployed</span></td><td><span class="pill gr">same check order as Pocket.sol</span></td><td><span class="pill ok">fresh deploy per run</span></td></tr>
+    <tr><td class="k">Wallet server and tools</td><td><span class="pill ok">real</span></td><td><span class="pill gr">same logic, in the app</span></td><td><span class="pill ok">real</span></td></tr>
+    <tr><td class="k">x402 payments</td><td><span class="pill ok">real</span></td><td><span class="pill gr">not run</span></td><td><span class="pill ok">real</span></td></tr>
+    <tr><td class="k">The agent</td><td><span class="pill ok">live model</span></td><td><span class="pill gr">scripted</span></td><td><span class="pill gr">scripted</span></td></tr>
+    <tr><td class="k">Radar, Sentinel, memory</td><td><span class="pill ok">real</span></td><td><span class="pill gr">same rules; AI parts scripted</span></td><td><span class="pill ok">real rules</span></td></tr>
+    <tr><td class="k">Owner key</td><td><span class="pill ok">device</span></td><td><span class="pill ok">device</span></td><td><span class="pill gr">dev keys</span></td></tr>
+  </table>
+  <p class="cap">The demo network shares its pure modules with the apps on every mode: the checks path, the proof card, the explorer view, the Brain graph. Outside agents (Claude and ChatGPT pairing) exist only on the demo network for now.</p>
+
+  <h3 style="margin-top: 14px;">Linking the phone to the console on the demo network</h3>
+  <svg width="100%" viewBox="0 0 640 92" role="img" aria-label="Phone pushes events to a relay; console polls the relay and sends judge actions back to the phone">
+    <defs><marker id="a10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111215"/></marker></defs>
+    <g font-size="8.6">
+      <rect x="0" y="12" width="150" height="50" rx="6" fill="#F5F4F1"/><text x="10" y="31" font-weight="600">Phone</text><text x="10" y="45" fill="#5E5F68">pushes events and a snapshot</text><text x="10" y="56" fill="#5E5F68">on change, or every 3 s</text>
+      <rect x="245" y="12" width="150" height="50" rx="6" fill="#D1E4FF"/><text x="255" y="31" font-weight="600" fill="#124977">Relay</text><text x="255" y="45" fill="#124977">/dev/relay on the dev stack</text><text x="255" y="56" fill="#124977">keeps the last state</text>
+      <rect x="490" y="12" width="150" height="50" rx="6" fill="#111215"/><text x="500" y="31" font-weight="600" fill="#fff">Console</text><text x="500" y="45" fill="#C9C8C3">follows the phone's cards,</text><text x="500" y="56" fill="#C9C8C3">polls every 6 s</text>
+      <g stroke="#111215" stroke-width="1.1" marker-end="url(#a10)"><line x1="150" y1="30" x2="243" y2="30"/><line x1="395" y1="30" x2="488" y2="30"/><line x1="488" y1="50" x2="397" y2="50"/><line x1="243" y1="50" x2="152" y2="50"/></g>
+      <text x="640" y="80" fill="#3A3B41" text-anchor="end">judge actions go back to the phone: plant an order, force a transfer, hijack, say</text>
+    </g>
+  </svg>
+
+  <div class="foot"><span>ChainBrain · Technical documentation</span><span>10 / 12</span></div>
+</section>
+
+<!-- 11 · chain -->
+<section class="page" id="p11">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">Chain and deployment</div></div>
+  <h2>Chain and deployment</h2>
+  <p class="sub">A single-node FISCO BCOS 3.16.4 chain runs on Railway with its own explorer and faucet, so anyone can open a transaction, get test money and check a card.</p>
+
+  <div class="tiles" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 12px;">
+    <div class="tile dark"><div class="n">20200</div><div class="l">chain id; x402 network eip155:20200</div></div>
+    <div class="tile"><div class="n">0</div><div class="l">gas price; senders still need a native balance</div></div>
+    <div class="tile"><div class="n">3</div><div class="l">Railway services: node, API, sellers</div></div>
+    <div class="tile"><div class="n">HK$100</div><div class="l">from the faucet, once per address per day</div></div>
+    <div class="tile"><div class="n">ms</div><div class="l">FISCO block time is in milliseconds; Clock.sol converts</div></div>
+  </div>
+
+  <div class="row" style="grid-template-columns: 1fr 1fr;">
+    <div>
+      <h3>Public addresses</h3>
+      <div class="k2">
+        <div>RPC</div><div><a href="https://fisco-node-production.up.railway.app">fisco-node-production.up.railway.app</a></div>
+        <div>Wallet API</div><div><a href="https://fisco-api-production-85c5.up.railway.app">fisco-api-production-85c5.up.railway.app</a></div>
+        <div>Explorer</div><div><a href="https://fisco-api-production-85c5.up.railway.app/explorer">…/explorer</a></div>
+        <div>Faucet</div><div><a href="https://fisco-api-production-85c5.up.railway.app/faucet">…/faucet</a></div>
+        <div>Sellers</div><div><a href="https://fisco-sellers-production.up.railway.app">fisco-sellers-production.up.railway.app</a></div>
+        <div>Console</div><div><a href="https://fintechathon-lian-ai-nao.vercel.app">fintechathon-lian-ai-nao.vercel.app</a></div>
+      </div>
+      <h3 style="margin-top:12px">Contracts on the hosted chain</h3>
+      <div class="k2">
+        <div>Mock e-HKD</div><div class="mono">0x0355c0c5Afe2A35369056FBB854903A4aF07781A</div>
+        <div>PocketFactory</div><div class="mono">0x03aB4C311eeE7C3295c63F910D79a07Ffa7A097A</div>
+      </div>
+      <p class="cap">From <span class="mono">contracts/deployments/20200.json</span>. Each card is its own contract created by the factory.</p>
+    </div>
+    <div class="wide"><img src="img/explorer-revert.jpg" alt="Explorer showing a reverted transaction"><p class="cap">The hosted explorer, built into the wallet API because FISCO has none: a reverted attempt to move money, sent to the Mock e-HKD token.</p></div>
+  </div>
+
+  <h3 style="margin-top: 12px;">What the RPC gateway fixes</h3>
+  <div class="row" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="tile"><div class="l" style="font-size:8pt;color:#3A3B41"><b style="color:#111215">Fee history.</b> Wallets ask for EIP-1559 fees; FISCO has none, so the gateway answers with zeros.</div></div>
+    <div class="tile"><div class="l" style="font-size:8pt;color:#3A3B41"><b style="color:#111215">Log windows.</b> eth_getLogs is split into 5-block windows, up to 5,000 blocks.</div></div>
+    <div class="tile"><div class="l" style="font-size:8pt;color:#3A3B41"><b style="color:#111215">Batches.</b> More than 8 calls are split; transaction indexes are repaired.</div></div>
+    <div class="tile"><div class="l" style="font-size:8pt;color:#3A3B41"><b style="color:#111215">Funding.</b> A token-protected route gives a new sender the native balance FISCO requires.</div></div>
+  </div>
+
+  <h3 style="margin-top: 12px;">Deploying it</h3>
+  <div class="row" style="grid-template-columns: 1fr 1fr;">
+    <div><p class="cap" style="margin:0 0 4px">On a laptop</p><pre>bash scripts/fisco/setup.sh   # once
+bash scripts/fisco/deploy.sh  # deploy, mint
+cd server &amp;&amp; pnpm sellers     # :4021
+cd server &amp;&amp; pnpm dev         # :8787</pre></div>
+    <div><p class="cap" style="margin:0 0 4px">Hosted, then check any card</p><pre>railway up --service fisco-node
+railway up --service fisco-api
+railway up --service fisco-sellers
+python3 verify/verify_pocket.py \
+  --rpc &lt;url&gt; --pocket 0x…</pre></div>
+  </div>
+  <p class="cap"><span class="mono">deploy.sh</span> funds the keys, runs the Foundry deploy and mints HK$10,000 to the issuer. On Railway, the API service's bootstrap does the same before starting. The console deploys to Vercel.</p>
+
+  <div class="foot"><span>ChainBrain · Technical documentation</span><span>11 / 12</span></div>
+</section>
+
+<!-- 12 · tests, setup, limits -->
+<section class="page" id="p12">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Technical documentation</div><div class="meta">Tests, setup and limits</div></div>
+  <h2>Tests, setup and limits</h2>
+  <p class="sub">Every suite below was run on 19 October 2026 on the submitted code. Attack results, live-model runs and the hosted-chain proof are in the security test report.</p>
+
+  <svg width="100%" viewBox="0 0 640 196" role="img" aria-label="Test suites passing: wallet server 126, web console 92, contracts 79, demo network 67, phone app 61, full stack 21, Python verifier 16; 462 in total">
+    <g font-size="9.6" fill="#111215">
+      <text x="0" y="16">Wallet server, on FISCO</text><rect x="168" y="6" width="340" height="14" rx="3" fill="#111215"/><text x="516" y="17" font-weight="600">126</text>
+      <text x="0" y="42">Web console</text><rect x="168" y="32" width="248" height="14" rx="3" fill="#111215"/><text x="424" y="43" font-weight="600">92</text>
+      <text x="0" y="68">Contracts, with fuzzing</text><rect x="168" y="58" width="213" height="14" rx="3" fill="#111215"/><text x="389" y="69" font-weight="600">79</text><text x="414" y="69" font-size="8.4" fill="#5E5F68">6 invariants over 128,000 random calls</text>
+      <text x="0" y="94">Built-in demo network</text><rect x="168" y="84" width="181" height="14" rx="3" fill="#111215"/><text x="357" y="95" font-weight="600">67</text>
+      <text x="0" y="120">Phone app</text><rect x="168" y="110" width="165" height="14" rx="3" fill="#111215"/><text x="341" y="121" font-weight="600">61</text>
+      <text x="0" y="146">Full stack, end to end</text><rect x="168" y="136" width="57" height="14" rx="3" fill="#111215"/><text x="233" y="147" font-weight="600">21</text>
+      <text x="0" y="172">Python verifier</text><rect x="168" y="162" width="43" height="14" rx="3" fill="#111215"/><text x="219" y="173" font-weight="600">16</text>
+      <line x1="0" y1="184" x2="640" y2="184" stroke="#111215" stroke-width="0.8"/>
+      <text x="0" y="196" font-weight="600">462 tests, 0 failures</text><text x="168" y="196" font-size="8.4" fill="#5E5F68">Plus 6 agent scenes, 6/6 with the scripted agent; the native Android app's 6 unit tests weren't re-run for this count.</text>
+    </g>
+  </svg>
+
+  <div class="row" style="grid-template-columns: 1fr 1fr; margin-top: 14px;">
+    <div>
+      <h3>Run the tests</h3>
+      <pre>cd contracts &amp;&amp; forge test
+cd server &amp;&amp; npx vitest run
+cd web &amp;&amp; npx vitest run
+cd mobile &amp;&amp; npm test
+cd mobile &amp;&amp; node --import tsx \
+  --test ../shared/sim/*.test.ts
+cd devstack &amp;&amp; npx vitest run
+python3 -m unittest verify/test_verify.py</pre>
+      <p class="cap">The server and full-stack suites need the local FISCO node: <span class="mono">bash scripts/fisco/start.sh</span>.</p>
+    </div>
+    <div>
+      <h3>Settings that matter</h3>
+      <table>
+        <tr><th>Variable</th><th>Default · purpose</th></tr>
+        <tr><td class="mono">FISCO_RPC</td><td>127.0.0.1:8545 · the chain</td></tr>
+        <tr><td class="mono">LLM_PROVIDER</td><td>openrouter · or anthropic, scripted</td></tr>
+        <tr><td class="mono">OPENROUTER_API_KEY</td><td>none · without it, scripted agent</td></tr>
+        <tr><td class="mono">LLM_MODEL</td><td>claude-haiku-5.5 · or a preset</td></tr>
+        <tr><td class="mono">AGENT_MASTER_KEY</td><td>0x + 64 hex · set once, never change</td></tr>
+        <tr><td class="mono">SENTINEL_PK</td><td>optional · the freeze-only guardian</td></tr>
+        <tr><td class="mono">DATA_DIR</td><td>server/.data · accounts, cards, events</td></tr>
+        <tr><td class="mono">VISITOR_STARTER</td><td>500 · HK$ for a new account</td></tr>
+      </table>
+      <p class="cap"><span class="mono">pnpm wallets</span> writes the other keys to <span class="mono">server/.env</span>.</p>
+    </div>
+  </div>
+
+  <div class="row" style="grid-template-columns: 1fr 1fr; margin-top: 12px;">
+    <div class="box">
+      <h3>Built to be checked</h3>
+      <ul class="dots">
+        <li>Every hash opens in the hosted explorer.</li>
+        <li>The Python verifier reads a card with only the standard library and says MATCH or MISMATCH against what the owner approved.</li>
+        <li><span class="mono">verify-evidence.ts</span> re-fetches every recorded hash.</li>
+        <li>The console's Evidence tab exports expected vs actual per scene.</li>
+      </ul>
+    </div>
+    <div class="box ver">
+      <h3>Known limits</h3>
+      <ul class="dots">
+        <li>Radar's thresholds are a first guess, not calibrated on real data.</li>
+        <li>The content scan reads JSON fields; a request written as prose isn't caught by code, only by the model and the card.</li>
+        <li>Open tasks, quotes, Radar's index and the Sentinel's watch lists live in memory and reset on restart; accounts, cards, memory and events are saved.</li>
+        <li>One FISCO node; iOS tested in the simulator and Expo Go, not on a device build.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot"><span>ChainBrain · Technical documentation</span><span>12 / 12</span></div>
+</section>
+
+</body>
+</html>

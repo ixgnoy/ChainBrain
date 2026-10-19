@@ -22,7 +22,7 @@ DOCS = [  # (path, part title shown in the contents)
     ("docs/09-technical-reference/10-configuration.md", None),
     ("docs/ai-brain.md", "AI brain"),
     ("docs/security-self-assessment.md", "Security"),
-    ("docs/redteam-report.md", None),
+    ("docs/submission/redteam/report.md", None),
     ("docs/fisco-ehkd-chain.md", "Chain and evidence"),
     ("docs/evidence-fisco.md", None),
 ]

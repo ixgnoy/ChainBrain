@@ -2,7 +2,7 @@
 
 **We attacked our own wallet 63 times. HK$0 left a card.**
 
-The designed version of this report is [`redteam-report.pdf`](redteam-report.pdf) (7 pages); its source is [`redteam/report.html`](redteam/report.html). This file carries the same numbers as text.
+The designed version of this report is [`ChainBrain-security-test-report.pdf`](../ChainBrain-security-test-report.pdf) (7 pages); its source is [`report.html`](report.html). This file carries the same numbers as text.
 
 Tested on 19 October 2026. Money is Mock e-HKD, a test token on FISCO BCOS shown as HK$. It is not the HKMA's e-HKD.
 
@@ -153,7 +153,7 @@ On 19 October we deployed the same contracts to the hosted FISCO chain from a fr
 | The agent key tries to raise the cap to HK$800 | reverted | `0x7a3b37d1e079992e34d24c39c61e6d1efc8da5da42bb6330070ac5627c9bfecf` |
 | The agent key tries to add the planted address as a seller | reverted | `0x49c7645026d38943e81f84ae77f299e2c084713d974ee3c30a5353d5aa5b9616` |
 
-The end balance is HK$26.00, which is HK$40 − HK$2.30 − HK$11.70. Card `0x33Dc83121F0D5A9cCfa0F1b55553B6Ee06013356`, token `0x2299E8cD0be36226A43E1f7Ad7c4B367ABDFfF22`. All 14 steps, including the deploy and mint steps, are in [`redteam/hosted-proof.json`](redteam/hosted-proof.json).
+The end balance is HK$26.00, which is HK$40 − HK$2.30 − HK$11.70. Card `0x33Dc83121F0D5A9cCfa0F1b55553B6Ee06013356`, token `0x2299E8cD0be36226A43E1f7Ad7c4B367ABDFfF22`. All 14 steps, including the deploy and mint steps, are in [`hosted-proof.json`](hosted-proof.json).
 
 ## 6. What we learned, and what isn't tested yet
 

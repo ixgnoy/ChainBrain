@@ -2,7 +2,7 @@
 // Mock e-HKD, factory and card, deployed from a fresh key funded by the faucet). Two payments that should settle, then
 // attempts the card must refuse, each sent with fixed gas so the refusal is mined as a reverted transaction.
 //   FISCO_RPC=https://fisco-node-production.up.railway.app API=https://fisco-api-production-85c5.up.railway.app \
-//     OUT=../docs/redteam/hosted-proof.json pnpm tsx scripts/hosted-proof.ts
+//     OUT=../docs/submission/redteam/hosted-proof.json pnpm tsx scripts/hosted-proof.ts
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { createPublicClient, createWalletClient, defineChain, hexToString, http, parseEventLogs, toHex, type Address, type Hex } from "viem";
@@ -11,7 +11,7 @@ import { buildAuthorization, envelope, transferTypedData } from "../src/wallet/s
 
 const RPC = process.env.FISCO_RPC ?? "https://fisco-node-production.up.railway.app";
 const API = (process.env.API ?? "https://fisco-api-production-85c5.up.railway.app").replace(/\/+$/, "");
-const OUT = process.env.OUT ?? "../docs/redteam/hosted-proof.json";
+const OUT = process.env.OUT ?? "../docs/submission/redteam/hosted-proof.json";
 const ATTACKER: Address = "0x000000000000000000000000000000000000ABC0";
 const artifact = (n: string) => JSON.parse(readFileSync(new URL(`../../contracts/out/${n}.sol/${n}.json`, import.meta.url), "utf8"));
 const atom = (s: string) => BigInt(Math.round(Number(s) * 1e6));
