@@ -65,4 +65,6 @@ ffmpeg -v error -y -i out/video-muted.mp4 -i remotion/public/audio/mix.wav -map 
 python3 tools/srt.py remotion/src out/InternationalAI-ChainBrain-DemoVideo.srt
 ffmpeg -v error -y -ss 26.0 -i "$OUT" -frames:v 1 -q:v 2 out/poster.jpg
 ffprobe -v error -show_entries format=duration -of csv=p=0 "$OUT"
+# last checks: length, format, loudness, peak, black, frozen picture, silence, subtitle speed
+python3 tools/qc.py "$OUT" --srt out/InternationalAI-ChainBrain-DemoVideo.srt || echo "qc: fix the FAIL lines above before you submit"
 echo "done: $OUT"
