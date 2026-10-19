@@ -10,7 +10,7 @@ Commit: "Subtitles: optional Simplified Chinese line under the English".
 
 ## Honesty and checking (must do before shipping)
 - Claude drafted the translation. **A team member who reads Chinese must check every line** before it ships, and should own it. Terms to check first:
-  - "AI 卡" for AI Card, "代理" for agent, "所有者密钥" owner key, "代理密钥" agent key, "守护密钥" guardian key.
+  - "AI 卡" for AI Card, "智能体" for agent (the mainland term; HKMA writes A.I.代理), "所有者密钥" owner key, "代理密钥" agent key, "守护密钥" guardian key.
   - "结算方" for the x402 facilitator.
   - "金管局" for the HKMA, with Carmen Chu kept in English because her official Chinese name was not verified.
   - "涵盖了这四点" keeps the "covers, never complies" rule.
