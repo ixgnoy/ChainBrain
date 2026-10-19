@@ -7,16 +7,16 @@ Source of each fix: `accuracy.md` (rows in brackets); every rating was checked a
 
 | Line | v4 | v4.1 | Why |
 |---|---|---|---|
-| m2 | tricked an AI agent into emptying its wallet. | tricked an AI agent into giving away over a hundred and fifty thousand dollars. | OECD reports 3 billion DRB tokens, worth US$150,000 to 200,000. It does not say the wallet was emptied (29) |
+| m2 | tricked an AI agent into emptying its wallet. | tricked an AI agent into giving away over a hundred and fifty thousand US dollars. | OECD reports 3 billion DRB tokens, worth US$150,000 to 200,000. It does not say the wallet was emptied (29) |
 | u0 | If the job is unclear, it asks one question first. | When the job is unclear, it can ask you one question first. | The live model asked 0 questions in 24 runs (security PDF p5). Only the scripted demo asks (13) |
-| u1 | …Right now that's Exa for search and CoinGecko for prices, over x402. | …In the demo, test versions of Exa and CoinGecko sell it search and prices, over x402. | The sellers are our own test sellers at published prices. Exa got no money (12) |
+| u1 | …Right now that's Exa for search and CoinGecko for prices, over x402. | …In our demo it buys search from a test Exa and prices from a test CoinGecko, over x402. | The sellers are our own test sellers at published prices. Exa got no money (12) |
 | x2 | …our server keeps one agent key for each card… | …our server makes a separate agent key for each card… | Agent keys are derived on demand and never stored (tech PDF p9) (7) |
 | x5 | …and the seller's facilitator sends it… | …and a facilitator sends it… | In our setup the facilitator is ours (35) |
 | x6a | Many agent wallets… | Some agent wallets… | Only secondary sources support it, and counter-examples exist (11) |
 | u4 | …and the agent finds another way. | …and the agent re-plans or asks you. | The live model doesn't switch sellers on its own (p5) (14) |
 | u3 | …to eight eighty. | …to eight dollars eighty. | "eight eighty" is easy to mishear (15) |
-| r1 | …and the money comes back. | …and take back what's left. | Settled payments don't come back (p2, p7) (16) |
-| k3 | Worst case, we fool the agent on purpose and it tries to send the money. | Worst case, we act as a fooled agent and use its key to send the money. | The worst-case tests force the agent key. The live model was never fooled (19) |
+| r1 | …and the money comes back. | …and get back whatever hasn't been spent. | Settled payments don't come back (p2, p7) (16) |
+| k3 | Worst case, we fool the agent on purpose and it tries to send the money. | Worst case, we play a fooled agent and use its key to send the money. | The worst-case tests force the agent key. The live model was never fooled (19) |
 | k5 | The agent was fooled. The card still won't pay outside its rules. | Even a fooled agent can't pay outside the card's rules. | Same as k3 (19) |
 | f1 | …all seven forbidden payments were rejected. | …all seven forbidden attempts were rejected. | Two of the seven are rule edits, and one is a forged owner signature (20) |
 
@@ -45,3 +45,5 @@ Screen changes in the same commit:
 - **`SENTINEL_PK` on Railway.** Without it, "freezes the card" is only a hold.
 
 **Preview audio.** The ElevenLabs free quota had 178 characters left, so the 12 changed lines in this branch's preview are Kokoro (`af_heart`). Timings are real but the voice differs. The owner's recording replaces both.
+
+Revised after the first sceptical-judge review (`review-judge-1.md`): u1, k3, m2 and r1 read more naturally; the use1 headline says "It can ask one question first."; middle dots left the AI Card back and the money-scene balance line.

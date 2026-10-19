@@ -9,7 +9,7 @@
   "id": "m2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "tricked an AI agent into giving away over a hundred and fifty thousand dollars."
+  "text": "tricked an AI agent into giving away over a hundred and fifty thousand US dollars."
  },
  {
   "id": "m3",
@@ -69,7 +69,7 @@
   "id": "u1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It pays small amounts on its own. In the demo, test versions of Exa and CoinGecko sell it search and prices, over x402."
+  "text": "It pays small amounts on its own. In our demo it buys search from a test Exa and prices from a test CoinGecko, over x402."
  },
  {
   "id": "x1",
@@ -141,7 +141,7 @@
   "id": "r1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It's your card, so you can cancel it mid-task and take back what's left."
+  "text": "It's your card, so you can cancel it mid-task and get back whatever hasn't been spent."
  },
  {
   "id": "k1",
@@ -159,7 +159,7 @@
   "id": "k3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Worst case, we act as a fooled agent and use its key to send the money."
+  "text": "Worst case, we play a fooled agent and use its key to send the money."
  },
  {
   "id": "k4",

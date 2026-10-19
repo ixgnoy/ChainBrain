@@ -290,7 +290,7 @@ export const Money: React.FC = () => {
             })
           : null}
         <div style={{ position: "absolute", left: cardX - cardW / 2 + shake, top: 560 - (cardW * CARD_RATIO) / 2 }}>
-          <AICard w={cardW} agent={AGENTS[0]} ry={-4} alarm={hit ? Math.exp(-(t - no) * 2.5) : 0} limit="Balance HK$26.00 · unchanged" />
+          <AICard w={cardW} agent={AGENTS[0]} ry={-4} alarm={hit ? Math.exp(-(t - no) * 2.5) : 0} limit="Balance HK$26.00, unchanged" />
         </div>
         {hit ? (
           <div style={{ position: "absolute", left: cardX - 300, width: 600, top: 90, textAlign: "center", fontFamily: F.display, fontWeight: 700, fontSize: 210, lineHeight: 1, letterSpacing: "-0.04em", color: C.vermillion, opacity: noP, transform: `scale(${1.25 - 0.25 * noP})` }}>
@@ -411,7 +411,7 @@ export const ProofV3: React.FC = () => {
       <div style={{ position: "absolute", left: 960, top: 190, opacity: settle(t - 0.4, 7), transform: `translateY(${(1 - settle(t - 0.4, 7)) * 40}px)` }}>
         <Browser media={{ src: "footage/explorer.mp4", kind: "video", playbackRate: 0.85 }} width={860} url="fisco-api-production-85c5.up.railway.app/explorer" aspect={720 / 1280} zoom={{ s: 1.2, fx: 0.1, fy: 0.1 }} />
       </div>
-      <Small p={settle(t - 3.5, 6)} style={{ left: 120, top: 905, fontSize: 19 }}>
+      <Small p={settle(t - 3.5, 6)} style={{ left: 120, top: 850, fontSize: 19 }}>
         Mock e-HKD is test money, not the HKMA's e-HKD. Our team hosts the chain, and the phone shots were recorded on our test setup. Details: ChainBrain-security-self-assessment.pdf
       </Small>
     </Stage>

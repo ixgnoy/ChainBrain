@@ -56,7 +56,7 @@ export const AttackRail: React.FC<{ active: number; done: number }> = ({ active,
             {a}
             <span style={{ fontFamily: F.mono, fontSize: 18, color: C.vermillion, opacity: isDone ? 1 : 0 }}>blocked</span>
           </div>
-          <div style={{ marginLeft: 38, marginTop: 2, fontFamily: F.mono, fontSize: 17, letterSpacing: "0.06em", color: isOn || isDone ? C.muted : C.faint, fontVariantLigatures: "none" }}>{RUBRIC[i]}</div>
+          <div style={{ marginLeft: 38, marginTop: 2, fontFamily: F.mono, fontSize: 22, letterSpacing: "0.04em", color: isOn || isDone ? "#B4B5BC" : C.muted, fontVariantLigatures: "none" }}>{RUBRIC[i]}</div>
         </div>
       );
     })}

@@ -57,7 +57,7 @@ const beatsGet: Beat[] = [
   { t: segAt("get", 3) - 0.1, head: "Slide to approve,\nand it's live.", cap: { text: "its own smart contract, on FISCO BCOS", tone: "blue" } },
 ];
 const beatsUse1: Beat[] = [
-  { t: 0, tag: "clarification", head: "It asks one\nquestion first.", cap: { text: "HK$0.80 in total, or per lookup?", tone: "plain" } },
+  { t: 0, tag: "clarification", head: "It can ask one\nquestion first.", cap: { text: "HK$0.80 in total, or per lookup?", tone: "plain" } },
   { t: segAt("use1", 2), head: "It pays small amounts\non its own.", cap: { text: "test sellers at Exa and CoinGecko prices", tone: "blue", logos: [["exa-icon-square.svg", "#0143D9"], ["coingecko-symbol.svg", "#FFFFFF"], ["x402-logo-dark.png", "#FFFFFF"]] } },
 ];
 const beatsUse2: Beat[] = [

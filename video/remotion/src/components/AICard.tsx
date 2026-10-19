@@ -11,8 +11,8 @@ export const CARD_RATIO = 0.63;
 export const RULES: [string, string][] = [
   ["Spending limit", "HK$15.00"],
   ["Ask me above", "HK$8.00"],
-  ["Sellers", "DataLite · DataPro"],
-  ["Freeze · cancel", "only you"],
+  ["Sellers", "DataLite, DataPro"],
+  ["Freeze or cancel", "only you"],
 ];
 
 export const AICard: React.FC<{
@@ -75,7 +75,7 @@ export const AICard: React.FC<{
         <div style={{ ...face, transform: "rotateY(180deg)" }}>
           <div style={{ position: "absolute", left: 0, right: 0, top: u * 7, height: u * 9, background: "#0A0B0D" }} />
           <div style={{ position: "absolute", left: u * 6, top: u * 20, fontFamily: F.mono, fontSize: u * 2.8, color: C.blue, letterSpacing: "0.14em", fontVariantLigatures: "none" }}>
-            SMART CONTRACT · FISCO BCOS
+            SMART CONTRACT ON FISCO BCOS
           </div>
           <div style={{ position: "absolute", left: u * 6, right: u * 6, top: u * 27 }}>
             {RULES.map(([k, v]) => (
