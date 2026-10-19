@@ -6,6 +6,7 @@ import { BrandMark } from "../components/BrandMark";
 import { Browser } from "../components/Devices";
 import { Reveal } from "../components/Kinetic";
 import { Plaque, UiCard, pop } from "../components/Real";
+import { HashHold } from "../components/HashHold";
 import { Stage } from "../components/Stage";
 import { C, F, clamp, easeInOut, easeOut, settle } from "../theme";
 import timeline from "../timeline.json";
@@ -110,7 +111,7 @@ export const Hook: React.FC = () => {
           })}
         </div>
         <Small p={settle(t - (letters[0]?.at ?? 1), 6)} style={{ left: 0, right: 0, textAlign: "center", top: 700, fontSize: 22 }}>
-          illustration of a hidden order, not the attacker's post
+          an illustration of a hidden order
         </Small>
       </AbsoluteFill>
     );
@@ -152,11 +153,11 @@ export const Stat: React.FC = () => {
       {t >= nine - 0.05 ? (
         <div style={{ position: "absolute", left: 960, top: 300, opacity: p9, transform: `translateY(${(1 - p9) * 40}px)` }}>
           <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 380, lineHeight: 0.9, letterSpacing: "-0.05em", color: C.vermillion }}>9%</div>
-          <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 40, color: C.text, marginTop: 18 }}>would let it buy on its own, within set limits</div>
+          <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 40, color: C.text, marginTop: 18 }}>would let it buy on its own</div>
         </div>
       ) : null}
       <Small p={settle(t - a - 1.2, 7)} style={{ left: 160, top: 860, fontSize: 25 }}>
-        Accenture, “Talk to My AI Agent”, 2026: 25,590 consumers in 16 markets (Hong Kong with mainland China)
+        Accenture, “Talk to My AI Agent”, 2026: 25,590 consumers in 16 markets (Hong Kong with mainland China); 9% would let an agent act on its own within set limits
       </Small>
     </Stage>
   );
@@ -240,6 +241,7 @@ export const Money: React.FC = () => {
   const no = r.word("k4", "no");
   const k5 = r.vo("k5");
   const split = k5 - 0.1;
+  const held = r.end("k5") + 0.5; // the reverted forced transfer's hash, held full screen for 2 s
   const fly = Math.pow(clamp((t - send) / (no - 0.05 - send)), 1.6); // accelerates into the card
   const flying = t >= send && t < no - 0.05;
   const hit = t >= no - 0.05;
@@ -346,6 +348,9 @@ export const Money: React.FC = () => {
             <br />
             <span style={{ color: C.vermillion }}>won't pay.</span>
           </div>
+          {t > held - 0.2 ? (
+            <HashHold p={pop(t, held - 0.2, 10)} t={t - held} hash="0x91525ada450e84a0afb9f4fb255d57df3c910d1eb8af78acb2b10f40ed7e7745" eyebrow="THE FORCED TRANSFER ON OUR FISCO BCOS NODE, BLOCK 13" ok={false} status="reverted, nothing moved" />
+          ) : null}
         </>
       ) : null}
     </Stage>

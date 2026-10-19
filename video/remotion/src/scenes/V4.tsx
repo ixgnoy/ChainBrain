@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, Img, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { Ban, Bot, ClipboardCheck, Coins, Eye, FileLock2, Gauge, KeyRound, PenLine, Radar, ScanText, Server, Smartphone, Snowflake, Wrench } from "lucide-react";
 import { Badge } from "../components/Badge";
+import { HashHold } from "../components/HashHold";
 import { BrandMark } from "../components/BrandMark";
 import { Reveal } from "../components/Kinetic";
 import { DIM, Plaque, UiCard } from "../components/Real";
@@ -442,7 +443,7 @@ export const XRay: React.FC = () => {
           <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 28, color: C.text }}>FISCO BCOS counts block time in milliseconds. The card converts it to seconds.</div>
         </div>
       ) : null}
-      {t > T.end - 0.3 && t < E + 0.4 ? <HashHold p={Math.min(lit(t, T.end - 0.2, 10), 1 - clamp((t - E + 0.1) / 0.4))} t={t - T.end} /> : null}
+      {t > T.end - 0.3 && t < E + 0.4 ? <HashHold p={Math.min(lit(t, T.end - 0.2, 10), 1 - clamp((t - E + 0.1) / 0.4))} t={t - T.end} hash="0x15b0d30f82cd7efc94f5b534277a71ddaa439ecd5576315ae94cf9cbdccf9333" eyebrow="A REAL PAYMENT ON OUR FISCO BCOS 3.16.4 NODE, CHAIN ID 20200, BLOCK 11" ok status="success" note="Every hash in this film is listed in ChainBrain-execution-evidence.pdf" /> : null}
       {/* the whole system */}
       {all > 0 ? (
         <div style={{ position: "absolute", left: 90, top: 40, opacity: all, fontFamily: F.display, fontWeight: 600, fontSize: 44, color: C.text }}>
@@ -452,30 +453,6 @@ export const XRay: React.FC = () => {
     </Stage>
   );
 };
-
-// The block 11 payment's full hash, large enough to read off a laptop, with where to open it.
-const HASH = "0x15b0d30f82cd7efc94f5b534277a71ddaa439ecd5576315ae94cf9cbdccf9333";
-const HashHold: React.FC<{ p: number; t: number }> = ({ p, t }) => (
-  <AbsoluteFill style={{ opacity: p, background: "rgba(10,11,13,0.94)", justifyContent: "center", paddingLeft: 150 }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 18, fontFamily: F.mono, fontSize: 24, letterSpacing: "0.12em", color: C.muted, fontVariantLigatures: "none" }}>
-      <Plaque src="brand/fisco-bcos-logo.svg" h={30} p={1} pad={10} />
-      A REAL PAYMENT ON OUR FISCO BCOS 3.16.4 NODE, CHAIN ID 20200, BLOCK 11
-    </div>
-    <div style={{ marginTop: 34, fontFamily: F.mono, fontWeight: 500, fontSize: 58, lineHeight: 1.25, color: C.text, letterSpacing: "0.02em", fontVariantLigatures: "none" }}>
-      {[HASH.slice(0, 34), HASH.slice(34)].map((h, i) => (
-        <div key={i} style={{ clipPath: `inset(0 ${100 - clamp((t - 0.1 - i * 0.25) / 0.6) * 100}% 0 0)` }}>{h}</div>
-      ))}
-    </div>
-    <div style={{ marginTop: 30, display: "flex", alignItems: "center", gap: 16, opacity: clamp((t - 0.7) / 0.4) }}>
-      <Badge kind="ok" size={30} />
-      <div style={{ fontFamily: F.body, fontWeight: 600, fontSize: 30, color: C.green }}>success</div>
-      <div style={{ fontFamily: F.mono, fontSize: 24, color: C.muted, marginLeft: 18, fontVariantLigatures: "none" }}>fisco-api-production-85c5.up.railway.app/explorer</div>
-    </div>
-    <div style={{ marginTop: 22, fontFamily: F.body, fontWeight: 500, fontSize: 26, color: C.muted, opacity: clamp((t - 1.0) / 0.4) }}>
-      Every hash in this film is listed in ChainBrain-execution-evidence.pdf
-    </div>
-  </AbsoluteFill>
-);
 
 // A real screen from the app, beside the board while the camera holds still.
 const Inset: React.FC<{ name: string; w: number; x: number; y: number; t: number; from: number; to: number; label: string }> = ({ name, w, x, y, t, from, to, label }) => {
