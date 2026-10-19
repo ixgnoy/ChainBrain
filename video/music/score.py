@@ -555,5 +555,12 @@ end = int((cue["end"] + 0.6) * SR)
 out = out[:end]
 fade = int(1.6 * SR)
 out[-fade:] *= np.linspace(1, 0, fade)[:, None]
+# the hush before "No.": the room's reverb and the strings' tails would fill it, so gate the finished score to
+# true silence from the end of the riser until the hit (20 ms fades)
+a, b, f = int((hush + 0.03) * SR), int((nn - 0.03) * SR), int(0.02 * SR)
+if b - a > 2 * f:
+    out[a:a + f] *= np.linspace(1, 0, f)[:, None]
+    out[a + f:b - f] = 0
+    out[b - f:b] *= np.linspace(0, 1, f)[:, None]
 sf.write(sys.argv[2], out.astype(np.float32), SR)
 print("score", sys.argv[2], round(len(out) / SR, 2), "s, peak", round(float(np.abs(out).max()), 3))
