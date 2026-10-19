@@ -698,7 +698,7 @@ export const Hkma: React.FC = () => {
         <div style={{ fontFamily: F.mono, fontSize: 22, letterSpacing: "0.12em", color: C.muted, fontVariantLigatures: "none" }}>HKMA FINANCE + A.I. FORUM, 16 OCT 2026</div>
       </div>
       <div style={{ position: "absolute", left: 120, top: 120, fontFamily: F.body, fontWeight: 500, fontSize: 24, color: C.muted, opacity: settle(t - 0.5, 8) }}>
-        Remarks by Carmen Chu, Executive Director (Banking Supervision), on governing AI agents
+        Remarks by Carmen Chu, Executive Director (Banking Supervision), on governing AI agents under the HKMA’s ART framework (Accountability, Resilience, Trust)
       </div>
       <div style={{ position: "absolute", left: 120, right: 120, top: 280, transform: `scale(${1 + 0.02 * clamp(t / 17)})`, transformOrigin: "left top" }}>
         {PRINCIPLES.map((p) => {
