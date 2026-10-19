@@ -1,4 +1,4 @@
-# 链AI脑 ChainBrain
+# ChainBrain
 
 **Give your AI a pocket, not your wallet.** A consumer wallet where you open *pockets* for your AI agent. Each pocket holds its own Mock e-HKD balance and rules. The agent spends from it on-chain by itself over x402, and a pocket smart contract enforces the rules. Your AI can be fooled. ChainBrain protects you: Radar screens every seller, a pre-flight test checks every payment, your card's own contract refuses anything outside your rules, and the Sentinel freezes the card when it spots an attack.
 
