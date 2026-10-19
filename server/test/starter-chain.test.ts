@@ -50,22 +50,24 @@ describe("starter cards", () => {
     for (const p of r.payments) expect((await pub().getTransactionReceipt({ hash: p.tx })).status).toBe("success");
     expect(r.balances[brief]).toBe(String(2_000_000 - 56_000 - 56_000 - 80_000));
     expect(r.balances[watch]).toBe(String(2_000_000 - 80_000));
+    const { starterExtras } = await import("../src/starter");
+    const extras = [...starterExtras.values()].at(-1)!; // set before the answer; removed once it settles
     expect((await post("/v1/starter", { cards: [brief, watch] }, { [VISITOR_HEADER]: token })).status).toBe(409);
 
     // after the answer the account turns lived-in: ShadyFeed's transfer reverted on chain, a routine, a cheque waiting
     let ask: any;
     for (let i = 0; i < 120 && !ask; i++) { ask = (await (await api.request(`/api/pending?pocket=${brief}`)).json()).find((a: any) => a.kind === "payment"); if (!ask) await new Promise((r) => setTimeout(r, 250)); }
-    expect(ask.data).toMatchObject({ sellerId: "coingecko", amount: "0.08", allowance: { run: 1, period: "week", allowance: "0.10", spent: "0.056", after: "0.136" } });
+    expect(ask.text).toContain("That takes today to HK$0.136, past your HK$0.10 a day.");
+    expect(ask.data).toMatchObject({ sellerId: "coingecko", amount: "0.08", allowance: { run: 1, period: "day", allowance: "0.10", spent: "0.056", after: "0.136" } });
     const { bus } = await import("../src/wallet/events");
     const forced = bus.recent().find((e: any) => e.type === "forced" && e.pocket === watch) as any;
     expect(forced).toMatchObject({ reverted: true, sellerId: "shadyfeed", balanceBefore: forced.balanceAfter });
     expect((await pub().getTransactionReceipt({ hash: forced.tx })).status).toBe("reverted");
-    expect(await (await api.request(`/api/routine?pocket=${brief}`)).json()).toMatchObject({ status: "active", allowance: { amount: "0.10", period: "week" } });
+    expect(await (await api.request(`/api/routine?pocket=${brief}`)).json()).toMatchObject({ status: "active", allowance: { amount: "0.10", period: "day" } });
 
     const { transferTypedData } = await import("../src/wallet/scheme");
     expect((await post(`/api/approvals/${ask.id}`, { approved: true, signature: await me.signTypedData(transferTypedData(ask.data.auth) as any) }, { [VISITOR_HEADER]: token })).status).toBe(200);
-    const { starterExtras } = await import("../src/starter");
-    const run: any = await Promise.all([...starterExtras.values()]).then((x) => x.at(-1));
+    const run: any = await extras;
     expect(run.outs.map((o: any) => [o.sellerId, o.outcome])).toEqual([["exa", "paid"], ["coingecko", "cosigned"]]);
     for (const o of run.outs) expect((await pub().getTransactionReceipt({ hash: o.tx })).status).toBe("success");
   });

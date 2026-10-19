@@ -670,7 +670,7 @@ Phone typecheck clean, tests 61.
 **What changed** (`server/src/starter.ts`, after `/v1/starter` answers, so the phone never waits):
 - **More purchases:** the brief buys Exa's durian and fruit news plus CoinGecko's ETH price; the watch buys Nansen's balances. That's 4 real x402 payments.
 - **A fooled transfer the chain refused:** the watch "read" ShadyFeed's preview, which tells agents to send HK$50 to its address. Market watch's own agent key signs that transfer and the token contract reverts it. The phone shows "Transfer blocked on-chain, HK$50.00".
-- **A running routine and a waiting cheque:** the brief gets a standing order (Exa + CoinGecko, daily 08:00, HK$0.10 a week), and its first run goes at once. Exa is paid inside the allowance; CoinGecko would take the week to HK$0.136, so the phone opens the cheque right away. The judge's first tap is a real co-signed payment.
+- **A running routine and a waiting cheque:** the brief gets a standing order (Exa + CoinGecko, daily 08:00, HK$0.10 a day), and its first run goes at once. Exa is paid inside the allowance; CoinGecko would take the day to HK$0.136, so the phone opens the cheque right away. The judge's first tap is a real co-signed payment. Every later morning Exa is paid on its own and only CoinGecko asks; a cheque nobody answers expires after 10 minutes. The user chose a daily allowance over a weekly one: with a weekly HK$0.10, every run from day 2 would ask for both items and the routine would never pay on its own.
 - **Switch:** `STARTER_EXTRAS=off` turns this part off.
 - **Live price:** `server/src/sellers.ts` serves CoinGecko's live price in HKD from its public simple-price API (no key, 3 s timeout, cached a minute). Any failure serves the stored file. `COINGECKO_LIVE=off` keeps the stored file; the tests set it.
 - **Arena:** `straightToChain` takes an optional `sellerId`, so the event names who asked for the transfer.
@@ -678,14 +678,16 @@ Phone typecheck clean, tests 61.
 **Evidence**
 - **Simulator** (Expo Go, fresh keychain, local FISCO):
   - the intro already shows Daily brief at HK$1.752 (2.00 − 0.056 − 0.056 − 0.08 − 0.056);
-  - on Home the cheque opens by itself: "Run 1 would pass this week's HK$0.10", with the week's meter at HK$0.136 of 0.10;
+  - on Home the cheque opens by itself: "Run 1 would pass this week's HK$0.10", with the week's meter at HK$0.136 of 0.10 (run with the weekly allowance first; the daily one reads "this day's" on the phone and "today" in the server's text);
   - after Face ID, Daily brief is at HK$1.672 with "Wed 08:00" and Next up 1;
   - Activity reads "6 paid, HK$0.408 spent", including the co-signed CoinGecko payment and "Transfer blocked on-chain, HK$50.00";
   - the delivered content was "ETH price (CoinGecko, simple price, live), ethereum: 18,846 HKD".
 - **Tests:**
-  - `starter-chain.test.ts` covers 4 payments with status 1, the cheque `{run 1, spent 0.056, after 0.136}`, ShadyFeed's transfer reverted with the balance unchanged, the routine active, and the owner's co-sign giving outcomes `paid`, `cosigned`, both receipts status 1;
+  - `starter-chain.test.ts` covers 4 payments with status 1, the cheque `{run 1, period day, spent 0.056, after 0.136}` with the text "That takes today to HK$0.136, past your HK$0.10 a day.", ShadyFeed's transfer reverted with the balance unchanged, the routine active, and the owner's co-sign giving outcomes `paid`, `cosigned`, both receipts status 1;
   - `coingecko-live.test.ts` covers the HKD format, the one-minute cache and every fallback.
 - **e2e** (fresh dev stack): **72/72**. The phone approves the starter cheque with the slider, and a new step checks the routine, the run's receipts and the reverted ShadyFeed hash.
 - Server **127 passed, 6 skipped**; web 92; devstack 21.
+
+**Detail check before the push.** `starterExtras` now drops each visitor's entry once the background job settles (it grew per visitor). The ShadyFeed revert reads `SELLER_NOT_ALLOWED` from the card's rule, and on chain the token reports an invalid signature because the card won't vouch for its agent. That's the same evidence the arena already shows.
 
 **For the deploy.** No new required env vars, and the defaults are right. The sellers service needs outbound HTTPS to `api.coingecko.com`; without it, it falls back to the stored price.

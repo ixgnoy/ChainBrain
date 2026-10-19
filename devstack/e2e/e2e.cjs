@@ -342,11 +342,11 @@ async function phoneFlow(browser, scenes, issues) {
     await tab("Home");
     await until("the two starter cards", async () => /out in 2 cards/.test(await body()), 90000);
     check("a new account opens with two starter cards made by the phone's key", true);
-    // the starter's routine runs once at once: CoinGecko would pass its HK$0.10 a week, so the cheque opens by itself
+    // the starter's routine runs once at once: CoinGecko would pass its HK$0.10 a day, so the cheque opens by itself
     await visible("asks you").waitFor({ timeout: 60000 });
     await sleep(1600);
     const cheque = await body();
-    check("the starter routine's first run asks to co-sign CoinGecko HK$0.08, past its HK$0.10 a week", /CoinGecko/.test(cheque) && /0\.08/.test(cheque) && /HK\$0\.10/.test(cheque));
+    check("the starter routine's first run asks to co-sign CoinGecko HK$0.08, past its HK$0.10 a day", /CoinGecko/.test(cheque) && /0\.08/.test(cheque) && /HK\$0\.10/.test(cheque));
     await shot(page, "phone-04-starter-cheque");
     await slide("Slide to approve");
     const cosigned = async () => payments(await (await fetch(`${API}/api/events.json`)).json()).find((e) => e.sellerId === "coingecko" && e.cosigned && e.routine);

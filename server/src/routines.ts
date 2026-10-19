@@ -119,7 +119,7 @@ export async function runRoutine(pocket: Address, o: { early?: boolean } = {}) {
         const a = approvals.create({
           pocket, kind: "payment",
           text: amount > left.left
-            ? `Run ${run} of your routine: ${seller} costs ${"HK$"}${q.price}. That takes this ${rt.allowance.period} to HK$${formatAmount(after)}, past your HK$${formatAmount(allowance)} a ${rt.allowance.period}.`
+            ? `Run ${run} of your routine: ${seller} costs ${"HK$"}${q.price}. That takes ${rt.allowance.period === "day" ? "today" : `this ${rt.allowance.period}`} to HK$${formatAmount(after)}, past your HK$${formatAmount(allowance)} a ${rt.allowance.period}.`
             : overPeriod ? `Run ${run} of your routine: ${seller} costs HK$${q.price}, past the allowance this card holds on-chain.`
             : `Run ${run} of your routine: ${seller} costs HK$${q.price}, above your ask-me limit.`,
           data: {

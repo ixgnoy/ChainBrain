@@ -18,16 +18,17 @@ import { VISITOR_HEADER } from "../../shared/chain/login";
  * After the answer, so the device never waits, the account is made lived-in, all of it real (STARTER_EXTRAS=off skips it):
  *   - the watch read ShadyFeed's free preview, which tells agents to send HK$50 to its address; the card's own agent key
  *     signs that transfer and the chain reverts it (a real reverted hash, shown as "Transfer blocked on-chain");
- *   - the brief gets a standing order (Exa + CoinGecko, daily 08:00, HK$0.10 a week) and its first run goes now: Exa is
+ *   - the brief gets a standing order (Exa + CoinGecko, daily 08:00, HK$0.10 a day) and its first run goes now: Exa is
  *     paid inside the allowance, CoinGecko would pass it, so the owner's phone shows the cheque to co-sign with its own key.
+ *     Every later morning Exa is paid on its own and only CoinGecko asks (a cheque nobody answers expires after APPROVAL_WAIT_MS).
  */
 const done = table<{ at: number; txs: string[] }>("starter");
 const PLAN: [string, string][][] = [[["exa", "durian-news"], ["exa", "fruit-news"], ["coingecko", "eth-price"]], [["nansen", "wallet-balances"]]];
 export const STARTER_ROUTINE = {
   kind: "schedule" as const, cadence: { every: "day" as const, hour: 8, minute: 0 },
-  items: [{ sellerId: "exa", sku: "durian-news" }, { sellerId: "coingecko", sku: "eth-price" }], allowance: { amount: "0.10", period: "week" as const },
+  items: [{ sellerId: "exa", sku: "durian-news" }, { sellerId: "coingecko", sku: "eth-price" }], allowance: { amount: "0.10", period: "day" as const },
 };
-/** The background part, per visitor, so tests can wait for it. */
+/** The background part, per visitor, while it runs (tests wait for it). */
 export const starterExtras = new Map<string, Promise<unknown>>();
 
 async function livedIn(brief: Address, watch?: Address) {
@@ -61,7 +62,7 @@ export function starterRoutes() {
     const balances = Object.fromEntries(await Promise.all((cards as Address[]).map(async (a) => [a, (await P(a).info()).balance.toString()])));
     if (process.env.STARTER_EXTRAS !== "off") {
       const [brief, watch] = cards as Address[];
-      starterExtras.set(v.id, livedIn(brief, watch).catch((e) => console.error(`starter extras for ${v.id}:`, (e as Error).message)));
+      starterExtras.set(v.id, livedIn(brief, watch).catch((e) => console.error(`starter extras for ${v.id}:`, (e as Error).message)).finally(() => starterExtras.delete(v.id)));
     }
     return c.json({ payments: out, balances });
   });
