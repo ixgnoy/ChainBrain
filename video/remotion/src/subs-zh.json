@@ -1,6 +1,6 @@
 {
  "_": "Simplified Chinese subtitle under the English one: one entry per English sentence of each voice line (same count, same order); \"|\" marks where the Chinese splits when the English sentence spans two pages. Draft by Claude; a team member who reads Chinese must check every line before it ships (video/overnight/research/zh-subtitles.md). Set enabled to false to drop the Chinese line.",
- "enabled": true,
+ "enabled": false,
  "lines": {
   "m1": [
    "今年五月，一条用摩斯电码写成的帖子"
