@@ -19,3 +19,7 @@ Commit: "Subtitles: optional Simplified Chinese line under the English".
 
 ## Why
 See `judges.md` (judge language) and `academic.md` (dual subtitles for second-language viewers).
+
+## Revision after the native-reader review (`review-nonnative.md` §3)
+
+Applied: 智能体 everywhere; "购买价格数据" (u1); "支付中继服务（facilitator）" (x5, replacing the wrong 结算方); "由代币直接向这张卡确认" (x6); "取消" (r1, not 注销, which means closing an account); 部署的 (f1, f4); 守护者密钥; 香港金管局; plus smaller wording. **Still needs a team member's final check before `enabled` goes true.**
