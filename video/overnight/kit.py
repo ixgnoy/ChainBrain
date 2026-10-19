@@ -2,6 +2,7 @@
 swapped in and highlighted.  usage: python3 video/overnight/kit.py"""
 import html
 import json
+import re
 import os
 import subprocess
 
@@ -32,6 +33,17 @@ for i, text in new.items():
         missing.append(i)
 s = s.replace("<style>", "<style>mark{background:#ffe9a8;padding:0 2px;border-radius:3px}", 1)
 s = s.replace("Voice recording kit</h1>", "Voice recording kit (v4.1)</h1><p><mark>Highlighted</mark> lines changed in v4.1 for accuracy (video/overnight/research/script-v41.md). Read those words. Leave 3 seconds of silence at the start of every file: the clean-up measures your room from it.</p>", 1)
+# changed lines get a fresh target length at 150 words a minute (the kit's other targets are the v4 voice's)
+s = re.sub(
+    r'<span class="sec">[\d.]+s</span><span class="txt"><mark title="([^"]+)">([^<]+)</mark>',
+    lambda m: f'<span class="sec">{len(m.group(2).split()) / 2.5:.1f}s</span><span class="txt"><mark title="{m.group(1)}">{m.group(2)}</mark>',
+    s,
+)
+s = s.replace(
+    "The video has about 8 seconds of room under the 5-minute limit, so keep a brisk, natural pace.",
+    "At 145 words a minute the film runs about 4:51 (tools/pace.py), so keep a brisk, natural pace of 145 to 150, and keep the on-camera intro under 5 seconds.",
+)
+
 # the audio review's coaching (research/audio.md, section 4) at the end of the kit
 import re  # noqa: E402
 

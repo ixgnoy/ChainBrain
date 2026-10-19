@@ -1,6 +1,6 @@
 # Overnight video report: ranked, ready to cherry-pick
 
-Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 03:40 HKT.
+Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 04:30 HKT.
 
 - Frames: [storyboard.html](storyboard.html)
 - Research and reviews: [research/](research/)
@@ -30,14 +30,14 @@ What that buys, most important first:
 | 2 | **Two real hashes, held full screen.** The block 11 payment for 2.2 s, and the block 13 refused transfer for 2 s (`8cc1d81`). Full hash, "success", "FISCO BCOS 3.16.4 node, chain id 20200, block 11", the explorer address, and "every hash in this film is listed in ChainBrain-execution-evidence.pdf" (checked: all nine are). | `77d4822` (+ cue fix in `3bca10a`) | Task completion (40%) is judged on transaction hashes. v4's only legible hash was a 2 s screenshot. | Low. Adds 2.2 s. |
 | 3 | **The rubric's own words on screen.** Prompt injection, data extraction, privilege escalation and induced transfer on the four attacks; clarification and fallback on the two beats that show them. | `056dd8c` `81546ed` `281dd3a` | Makes 60 of 100 points easy to tick for a judge with the rubric open | Very low |
 | 4 | **A phone voice that sounds like a room, not a phone.** The clean-up measures each file's noise floor; the old chain assumed −28 dBFS against a real −50. | `fd0c90f` | The first thing a judge hears | Low. Listen once with both chains. |
-| 5 | **"You can try it today, on our hosted FISCO BCOS chain."** One new line, with the address under the explorer. | `6f2ddef` | Aims at the 0–5 deployment bonus | Low. Adds 4 s. |
+| 5 | **"Try it: fintechathon-lian-ai-nao.vercel.app" under the explorer, after the tests.** It was a spoken line too, dropped in `d3ffd3b` to fit 5:00. | `6f2ddef` `d3ffd3b` | Aims at the 0–5 deployment bonus | Low |
 | 6 | **Readable on a laptop.** The test-money disclaimer, the HKMA source line, the Stat label and the X-ray brackets were 18–21 px or hidden under subtitles; they're now 23–26 px and clear of them. Three plain words replace "ask-me limit / co-sign", "traces … simulates" and "settles". The Task check tile no longer overflows. | `20a7efd` `3bca10a` `d5c9359` | A Mandarin-first judge on a laptop follows the X-ray ([review-nonnative.md](research/review-nonnative.md)) | Low |
 | 7 | **The first and last frames.** The opening was 6 s of near-black with tiny dots; now bigger dots, the date from frame 0, a slow push and a time-base. The ending's call to action was 25 px; now 34 px, with a drift and a 0.5 s fade instead of a hard stop. | `c854df2` | First and last impressions | Low |
 | 8 | **The film's key beat.** A real half-second hush before "No." (reverb had filled it). A hostile whip into the attacks, a softer cut pop, and a drifting HKMA list. | `32eb822` `da320ef` | Polish a motion designer would notice ([review-motion.md](research/review-motion.md)) | Low |
 | 9 | **Delivery safety.** The MP4's true peak goes from −0.6 to −1.7 dBTP, and `qc.py` checks length, format, loudness, peak, black, freezes, silence and subtitle speed. | `6edcc66` `b366b98` | A portal never has to touch our audio | None |
 | 10 | **Small text fixes.** "A.I. versus A.I." no longer breaks across two subtitles. The HKMA beat is "four ideas from the speech", which matches the speech; it never says "principles". | `9e4ef9b` `860094b` `ab94d1a` | Removes a mislabel a Hong Kong judge could check in two minutes | None |
 
-**Runtime.** 4:48.5 with the branch's preview voice, which is 11.5 s under the cap. The owner should keep to the kit's targets, and `qc.py` fails anything over 5:00. The owner's pace of 140–150 wpm is close to Sarah's.
+**Runtime.** The review rounds had grown the script from 534 to 602 words, and at the owner's coached 145 wpm that ran **5:13.5, over the cap**. `d3ffd3b` trims it back to 549 words (every accuracy fix kept) and adds `tools/pace.py`. Simulated with `layout.py`: **4:51 at 145 wpm, 4:45.5 at 150, 4:55.5 at 140** (v4 was 4:46 at 145). Keep any on-camera intro under 5 s, and run `python3 tools/pace.py remotion/src/vo-words.json remotion/src/edit.json 145` after any script change. `qc.py` fails anything over 5:00. The owner's pace of 140–150 wpm is close to Sarah's.
 
 ### If the owner's voice does not arrive in time
 
@@ -141,3 +141,4 @@ These are approved decisions. Reviewers questioned them; the evidence is noted, 
 | P18 | FISCO clock caption | `246f1c7` | clock-119.3 | kept (optional) |
 | P19 | Refused transfer's hash held; captions match the voice | `8cc1d81` | v4-181 / revert-178.3, v4-20 / stat-19 | kept |
 | P20 | HKMA policy round (h2, footer, x7, r1, k3) | `61678ad` | hk-125, hk-155, hk-247.5 | kept; [review-hkma.md](research/review-hkma.md) |
+| P21 | Fit under 5:00 at 145 wpm, plus `tools/pace.py` | `d3ffd3b` | fit-107, fit-119.6, fit-169.8, fit-196, fit-250.8 | kept; this was a must-fix |
