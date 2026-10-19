@@ -20,12 +20,14 @@ git cherry-pick 9bcd289..video-overnight
 - Confirm `SENTINEL_PK` is set on Railway. Without it, "freezes the card" is only a hold, and line w2 must say "holds".
 - If a team member reads Chinese, have them check `remotion/src/subs-zh.json` and set `"enabled": true`. Otherwise leave it off.
 
+A fresh judge who compared v4 with this branch's preview estimated **about 77 → 88 points**: task 28 → 33, security 22 → 25, innovation 26 vs 24, bonus 3 → 4 ([review-holistic.md](research/review-holistic.md)). That preview predates `ccee08c`, `b52d9fd`, `246f1c7` and `8cc1d81`.
+
 What that buys, most important first:
 
 | # | Change | Commits | Effect on the score | Risk |
 |---|---|---|---|---|
 | 1 | **Every spoken claim matches the evidence (v4.1 script).** Twenty lines changed or were added. Examples: test sellers stand in for Exa and CoinGecko; the live model *can* ask a question but didn't in testing; cancelling gets back what hasn't been spent; we *play* a fooled agent and force its key; seven forbidden *attempts*; the Morse post sent away US$150,000+ (the wallet wasn't shown to be emptied); "some" agent wallets check limits server-side; a stolen agent key "can still only pay your listed sellers, up to the cap"; 63 attacks "with test money"; "462 tests passed" on 19 Oct, as the PDFs say; the on-chain layers "keep every card inside its rules"; "Nothing gets through". | `860094b` `281dd3a` `789349f` `7763ef5` `3bca10a` `b52d9fd` | Security & compliance (30%) is judged by people who can read our security PDF. Each line the PDF contradicts costs more than any visual gain. | Low. It only lands if the owner records it (see the fallback below). |
-| 2 | **The real hash, held full screen for 2.2 s.** Full hash, "success", "FISCO BCOS 3.16.4 node, chain id 20200, block 11", the explorer address, and "every hash in this film is listed in ChainBrain-execution-evidence.pdf" (checked: all nine are). | `77d4822` (+ cue fix in `3bca10a`) | Task completion (40%) is judged on transaction hashes. v4's only legible hash was a 2 s screenshot. | Low. Adds 2.2 s. |
+| 2 | **Two real hashes, held full screen.** The block 11 payment for 2.2 s, and the block 13 refused transfer for 2 s (`8cc1d81`). Full hash, "success", "FISCO BCOS 3.16.4 node, chain id 20200, block 11", the explorer address, and "every hash in this film is listed in ChainBrain-execution-evidence.pdf" (checked: all nine are). | `77d4822` (+ cue fix in `3bca10a`) | Task completion (40%) is judged on transaction hashes. v4's only legible hash was a 2 s screenshot. | Low. Adds 2.2 s. |
 | 3 | **The rubric's own words on screen.** Prompt injection, data extraction, privilege escalation and induced transfer on the four attacks; clarification and fallback on the two beats that show them. | `056dd8c` `81546ed` `281dd3a` | Makes 60 of 100 points easy to tick for a judge with the rubric open | Very low |
 | 4 | **A phone voice that sounds like a room, not a phone.** The clean-up measures each file's noise floor; the old chain assumed −28 dBFS against a real −50. | `fd0c90f` | The first thing a judge hears | Low. Listen once with both chains. |
 | 5 | **"You can try it today, on our hosted FISCO BCOS chain."** One new line, with the address under the explorer. | `6f2ddef` | Aims at the 0–5 deployment bonus | Low. Adds 4 s. |
@@ -35,7 +37,7 @@ What that buys, most important first:
 | 9 | **Delivery safety.** The MP4's true peak goes from −0.6 to −1.7 dBTP, and `qc.py` checks length, format, loudness, peak, black, freezes, silence and subtitle speed. | `6edcc66` `b366b98` | A portal never has to touch our audio | None |
 | 10 | **Small text fixes.** "A.I. versus A.I." no longer breaks across two subtitles. The HKMA beat is "four ideas from the speech", which matches the speech; it never says "principles". | `9e4ef9b` `860094b` `ab94d1a` | Removes a mislabel a Hong Kong judge could check in two minutes | None |
 
-**Runtime.** 4:44.5 with the branch's preview voice, which is 15 s under the cap. The owner's pace of 140–150 wpm is close to Sarah's.
+**Runtime.** 4:46 with the branch's preview voice, which is 14 s under the cap. The owner's pace of 140–150 wpm is close to Sarah's.
 
 ### If the owner's voice does not arrive in time
 
@@ -135,3 +137,4 @@ These are approved decisions. Reviewers questioned them; the evidence is noted, 
 | P16 | Morse decodes into "SEND ALL" | `ccee08c` | v4-5.5 / morse-5.6, morse-3 | kept (optional) |
 | P17 | Security round 3 (y2 rules, k2, receipt label) | `b52d9fd` | v4-181 / r3-176, r3-191 | kept |
 | P18 | FISCO clock caption | `246f1c7` | clock-119.3 | kept (optional) |
+| P19 | Refused transfer's hash held; captions match the voice | `8cc1d81` | v4-181 / revert-178.3, v4-20 / stat-19 | kept |
