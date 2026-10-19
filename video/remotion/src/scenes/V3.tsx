@@ -227,7 +227,7 @@ export const Money: React.FC = () => {
     <Stage tint={1}>
       <div style={{ position: "absolute", left: 120, top: 80, opacity: settle(t - 0.1, 9) * (1 - out), display: "flex", alignItems: "center", gap: 16 }}>
         <div style={{ width: 10, height: 10, background: C.vermillion }} />
-        <div style={{ fontFamily: F.mono, fontSize: 22, letterSpacing: "0.12em", color: C.muted, fontVariantLigatures: "none" }}>THE FOURTH ATTACK: A FORCED PAYMENT</div>
+        <div style={{ fontFamily: F.mono, fontSize: 22, letterSpacing: "0.12em", color: C.muted, fontVariantLigatures: "none" }}>THE FOURTH ATTACK: A FORCED PAYMENT (INDUCED TRANSFER)</div>
       </div>
       <div style={{ opacity: 1 - out, transform: `translateX(${-200 * out}px)` }}>
         {/* the fooled agent and the order it was given */}

@@ -42,16 +42,21 @@ export const ActTitle: React.FC<{ title: string }> = ({ title }) => {
 // The four attacks the judges score (prompt injection, data extraction, privilege escalation, induced transfer), in
 // plain words; each is marked blocked as it is shown.
 export const ATTACKS = ["hidden orders", "data requests", "fake admin", "forced payment"];
+// the judging rubric's own name for each (Security & Compliance, 30%), small under the plain words
+export const RUBRIC = ["prompt injection", "data extraction", "privilege escalation", "induced transfer"];
 export const AttackRail: React.FC<{ active: number; done: number }> = ({ active, done }) => (
-  <div style={{ position: "absolute", left: 120, top: 690, display: "flex", flexDirection: "column", gap: 12 }}>
+  <div style={{ position: "absolute", left: 120, top: 640, display: "flex", flexDirection: "column", gap: 10 }}>
     {ATTACKS.map((a, i) => {
       const isDone = i < done;
       const isOn = i === active;
       return (
-        <div key={a} style={{ display: "flex", alignItems: "center", gap: 14, fontFamily: F.body, fontWeight: 600, fontSize: 24, color: isOn ? C.text : isDone ? C.vermillion : C.faint }}>
-          {isDone ? <Badge kind="no" size={24} /> : <div style={{ width: 24, height: 3, background: isOn ? C.vermillion : "rgba(255,255,255,0.14)" }} />}
-          {a}
-          <span style={{ fontFamily: F.mono, fontSize: 18, color: C.vermillion, opacity: isDone ? 1 : 0 }}>blocked</span>
+        <div key={a}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, fontFamily: F.body, fontWeight: 600, fontSize: 24, color: isOn ? C.text : isDone ? C.vermillion : C.faint }}>
+            {isDone ? <Badge kind="no" size={24} /> : <div style={{ width: 24, height: 3, background: isOn ? C.vermillion : "rgba(255,255,255,0.14)" }} />}
+            {a}
+            <span style={{ fontFamily: F.mono, fontSize: 18, color: C.vermillion, opacity: isDone ? 1 : 0 }}>blocked</span>
+          </div>
+          <div style={{ marginLeft: 38, marginTop: 2, fontFamily: F.mono, fontSize: 17, letterSpacing: "0.06em", color: isOn || isDone ? C.muted : C.faint, fontVariantLigatures: "none" }}>{RUBRIC[i]}</div>
         </div>
       );
     })}
