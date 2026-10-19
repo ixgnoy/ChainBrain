@@ -46,14 +46,29 @@ export const Hook: React.FC = () => {
     // dots and dashes light up in time with the beeps, on one line; the line turns vermillion as the sentence lands
     const last = MORSE.length ? MORSE[MORSE.length - 1][0] + MORSE[MORSE.length - 1][1] : r.end("m1");
     const turn = easeOut(clamp((t - (last - 0.1)) / 0.4));
-    const unit = 36;
+    const unit = 30;
+    // the pulses spell an illustrative order ("SEND ALL"): a longer silence starts a new letter or word, and each
+    // letter appears under its dots once its last pulse has sounded
+    const TEXT = "SENDALL";
     let x = 0;
-    const marks = MORSE.map(([s, d, dash]) => {
+    let letter = 0;
+    const letters: { x0: number; x1: number; at: number; ch: string }[] = [];
+    const marks = MORSE.map(([s, d, dash], i) => {
+      if (i > 0) {
+        const gap = s - (MORSE[i - 1][0] + MORSE[i - 1][1]);
+        if (gap > 0.15) {
+          letter++;
+          x += gap > 0.35 ? unit * 2.5 : unit * 1.0;
+        }
+      }
       const m = { x, wd: dash ? unit * 3 : unit, s };
-      x += m.wd + (dash ? unit * 0.9 : unit * 0.9);
+      const L = letters[letter] ?? (letters[letter] = { x0: x, x1: x, at: s, ch: TEXT[letter] ?? "" });
+      L.x1 = x + m.wd;
+      L.at = s + d;
+      x += m.wd + unit * 0.9;
       return m;
     });
-    const total = x;
+    const total = x - unit * 0.9;
     return (
       <AbsoluteFill style={{ background: "#000" }}>
         <Small p={settle(t - 0.1, 8)} style={{ left: 120, top: 100, color: C.text, fontSize: 34 }}>
@@ -63,7 +78,7 @@ export const Hook: React.FC = () => {
           one post on X
         </Small>
         {/* a hairline time-base under the dots, growing as the post is "typed" */}
-        <div style={{ position: "absolute", left: (1920 - total) / 2, top: 540 + unit * 0.5 + 30, width: total * clamp(t / cut), height: 1, background: "rgba(255,255,255,0.12)" }} />
+        <div style={{ position: "absolute", left: (1920 - total) / 2, top: 540 + unit * 0.5 + 100, width: total * clamp(t / cut), height: 1, background: "rgba(255,255,255,0.12)" }} />
         <div style={{ position: "absolute", left: (1920 - total) / 2, top: 540 - unit / 2, height: unit, transform: `scale(${1 + 0.04 * clamp(t / cut)})`, transformOrigin: `${total / 2}px ${unit / 2}px` }}>
           {marks.map((m, i) => {
             const on = t >= m.s;
@@ -85,7 +100,18 @@ export const Hook: React.FC = () => {
               />
             );
           })}
+          {letters.map((L, i) => {
+            const p = settle(t - L.at, 12);
+            return (
+              <div key={i} style={{ position: "absolute", left: (L.x0 + L.x1) / 2 - 40, width: 80, top: unit + 34, textAlign: "center", fontFamily: F.mono, fontWeight: 500, fontSize: 44, color: turn > 0 ? C.vermillion : C.text, opacity: p, transform: `translateY(${(1 - p) * 10}px)` }}>
+                {L.ch}
+              </div>
+            );
+          })}
         </div>
+        <Small p={settle(t - (letters[0]?.at ?? 1), 6)} style={{ left: 0, right: 0, textAlign: "center", top: 700, fontSize: 22 }}>
+          illustration of a hidden order, not the attacker's post
+        </Small>
       </AbsoluteFill>
     );
   }
