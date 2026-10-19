@@ -1,0 +1,106 @@
+{
+  "chain": "FISCO BCOS, hosted (chain id 20200)",
+  "rpc": "https://fisco-node-production.up.railway.app",
+  "explorer": "https://fisco-api-production-85c5.up.railway.app/explorer#/tx/",
+  "at": "2026-10-19T10:02:42.312Z",
+  "owner": "0x67398439c8E2e137062BA321Fa52FDFa9098304E",
+  "agent": "0x4dB461cA8a55C34819295fA3E6145ddd156830AF",
+  "token": "0x2299E8cD0be36226A43E1f7Ad7c4B367ABDFfF22",
+  "factory": "0x7245ABC2b0Fd71868a7c70f73ee601fB6EEcfEBB",
+  "card": "0x33Dc83121F0D5A9cCfa0F1b55553B6Ee06013356",
+  "cardBalance": "26.00",
+  "cardCap": "15.00",
+  "expectedBalance": "26.00",
+  "steps": [
+    {
+      "step": "deploy Mock e-HKD",
+      "expect": "success",
+      "tx": "0xc17c58de3ba74ae8c7a54e366f0ed2be8ba5b0e5ad692393137a06123b067f69",
+      "status": "success"
+    },
+    {
+      "step": "deploy PocketFactory",
+      "expect": "success",
+      "tx": "0x8a3ba306c34d10232a5b16c27df957ef4fb3c5b238c28b2045e44ccc0c2a9098",
+      "status": "success"
+    },
+    {
+      "step": "mint HK$50 to the owner",
+      "expect": "success",
+      "tx": "0x49222bc1544256b52c019c6fd51dbceb424246b1a01669c90af9197e20cdf0ce",
+      "status": "success"
+    },
+    {
+      "step": "owner creates the card (cap HK$15, owner co-signs above HK$8, DataLite and DataPro only)",
+      "expect": "success",
+      "tx": "0x6d2c951f114b2384f26d76c8f890dfb3e14bce28f7e5d5239d3ace20b7f39053",
+      "status": "success"
+    },
+    {
+      "step": "owner funds the card with HK$40",
+      "expect": "success",
+      "tx": "0x0ff9192e7061a242f40467af6a3e940a8a0f7dcc58423299b58f8e1195d173e4",
+      "status": "success"
+    },
+    {
+      "step": "the agent key pays DataLite HK$2.30 (inside the rules)",
+      "expect": "success",
+      "tx": "0xd687ae822e99ecd3b765051da79cb5f2f610d535649813bc304dd3ca257bd2db",
+      "status": "success"
+    },
+    {
+      "step": "DataPro HK$11.70, above HK$8, with the owner's co-signature",
+      "expect": "success",
+      "tx": "0x8625dbfba0b8a5ee1a09ed44a62c0ae35a1bc2014cfaa3bd268c8319e48d7386",
+      "status": "success"
+    },
+    {
+      "step": "the agent key sends HK$5 to an address a seller planted (not on the card)",
+      "expect": "reverted",
+      "tx": "0xd49be111844a951677804707d6df521f92f0d5d2c74e8006843752ff11ed6954",
+      "status": "reverted",
+      "reason": "SELLER_NOT_ALLOWED"
+    },
+    {
+      "step": "the agent key pays DataPro HK$11.70 without the owner",
+      "expect": "reverted",
+      "tx": "0xb3d88830e45bad4cf41870b26a8e081c71e5b9958182bf4b4b29fcb5686277da",
+      "status": "reverted",
+      "reason": "NEEDS_OWNER_SIGNATURE"
+    },
+    {
+      "step": "the agent key signs as the owner too",
+      "expect": "reverted",
+      "tx": "0xaf285aa5e918a7a1e326c2bc6ff0f8faeafb50e78ad056ab3662103199506e87",
+      "status": "reverted",
+      "reason": "agent key in the owner's place"
+    },
+    {
+      "step": "the agent key pays DataLite HK$20, above the HK$15 cap",
+      "expect": "reverted",
+      "tx": "0xf0ad609b1f65a71d76ed6750bb738f6e748957a5391349a1a27a869b6c99b82f",
+      "status": "reverted",
+      "reason": "OVER_CAP"
+    },
+    {
+      "step": "the same DataLite authorisation submitted again (replay)",
+      "expect": "reverted",
+      "tx": "0x84e1d74e8d6c87e21c7b55d027019c86aacd5b22cebbcde3322661c3709c5384",
+      "status": "reverted"
+    },
+    {
+      "step": "the agent key tries to raise the cap to HK$800",
+      "expect": "reverted",
+      "tx": "0x7a3b37d1e079992e34d24c39c61e6d1efc8da5da42bb6330070ac5627c9bfecf",
+      "status": "reverted",
+      "reason": "NOT_OWNER"
+    },
+    {
+      "step": "the agent key tries to add the planted address as a seller",
+      "expect": "reverted",
+      "tx": "0x49c7645026d38943e81f84ae77f299e2c084713d974ee3c30a5353d5aa5b9616",
+      "status": "reverted",
+      "reason": "NOT_OWNER"
+    }
+  ]
+}
