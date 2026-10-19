@@ -1,118 +1,134 @@
 # Overnight video report: ranked, ready to cherry-pick
 
-Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`). Last updated 20 Oct 2026, early morning (HKT). Frames: [storyboard.html](storyboard.html). Research notes: [research/](research/).
+Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 03:40 HKT.
+
+- Frames: [storyboard.html](storyboard.html)
+- Research and reviews: [research/](research/)
+- Kit for the owner's recording: [recording-kit-v41.html](recording-kit-v41.html), rebuilt with `python3 video/overnight/kit.py`
 
 ## If you have two hours before the deadline, do these
 
-The branch is a straight line on `main` at `9bcd289`, and every commit is meant to ship. Picking the whole range is tested clean, and the subtitles stay English-only until someone turns the Chinese on:
+**1. Pick the whole branch.** It's tested clean on `9bcd289`, and the subtitles stay English-only until someone turns the Chinese on:
 
 ```bash
 git cherry-pick 9bcd289..video-overnight
 ```
 
-To pick commits one at a time instead, use the commit column below. Pick them in branch order and include the report commits (`1916e95`, `13e670a`, …), which carry the kit HTML. `b366b98` (QC), `6edcc66` (mix peak), `32eb822` (hush) and `fd0c90f` (voice clean-up) each apply alone.
+**2. Record the v4.1 kit in the owner's voice, then build.** The kit takes about an hour. Then run `tools/voice.py` and `sh video/build.sh`. The build now ends with `tools/qc.py`.
 
-| # | Change | Commits | Effect on judges | Minutes | Risk |
-|---|---|---|---|---|---|
-| 1 | **Record the v4.1 script, not v4.** Twelve lines said more than the evidence shows. For example: the live model never asked a clarifying question; Exa and CoinGecko are our test sellers; cancelling gets back only what hasn't been spent; "seven forbidden payments" includes two rule edits; the Morse post sent away US$150,000+, which doesn't mean the wallet was emptied. Captions, labels and the hook counter change with them. Give the owner `overnight/recording-kit-v41.html` (rebuild it with `python3 video/overnight/kit.py`). | `d3c6f87` (the subtitle file it edits), `860094b`, `0bb1084`, `281dd3a` | Security & compliance (30%) is judged by people who can read our security PDF. A line the PDF contradicts costs more than any visual gain. | 15 to pick, plus the recording you were doing anyway | Low |
-| 2 | **Clean the phone recording at its real noise floor.** The old chain assumed a −28 dBFS room. Phones in a quiet room sit near −50, so the denoiser barely worked. | `fd0c90f` | A voice that sounds like a room, not a phone, is the first thing a judge hears | 5, plus one A/B listen of the first file | Low. Listen once with both chains. |
-| 3 | **Hold the real hash full screen for 2.2 s** after "a hash anyone can open": the full hash, "success", the explorer address, and a note that every hash in the film is in the execution-evidence PDF (checked: all nine are). | `77d4822` | Topic F's 40 task points are judged on transaction hashes. In v4 the only legible hash was a 2 s screenshot. | 5 | Low. Adds 2.2 s; v4.1 runs 4:41 with the preview voice. |
-| 4 | **Name the rubric's own words on screen.** Prompt injection, data extraction, privilege escalation and induced transfer label the four attacks. Clarification and fallback label the two phone beats that show them. | `056dd8c`, `81546ed`, `281dd3a` | Makes 60 of the 100 points easy to tick for a judge with the rubric open | 5 | Very low |
-| 5 | **Confirm `SENTINEL_PK` is set on Railway.** Without it, "freezes the card" is only a hold, and the voice line w2 would need "holds". (The 462 tests are now dated "passed on 19 Oct", as the PDFs say, in `789349f`.) | `789349f` | Avoids a provable mismatch between the video and the documents | 20 | None |
-| 5b | **Make the hush before "No." real.** The approved score has half a second of silence there, but reverb tails filled it. | `32eb822` | The film's key beat lands harder | 2 | None. It's a score-only change and applies alone. |
-| 6 | **Keep the delivered MP4 under −1 dBTP and check it before upload.** v4 measures −0.6 dBTP true peak. `tools/qc.py` (also run at the end of `build.sh`) checks length, format, loudness, peak, black, freezes, silence and subtitle speed. | `b366b98`, `6edcc66` | A portal that normalises or rejects hot audio won't touch ours | 5 | None |
-| 7 | **Chinese subtitles, only if a team member who reads Chinese checks all 43 lines today.** Then set `"enabled": true` in `remotion/src/subs-zh.json`. | in the chain, off by default | Mainland and Hong Kong judges can follow the fast X-ray. English stays primary, as the rules require. | 30 to check | Medium if unchecked, which is why it ships off |
+**3. Two checks only a human can do.**
+- Confirm `SENTINEL_PK` is set on Railway. Without it, "freezes the card" is only a hold, and line w2 must say "holds".
+- If a team member reads Chinese, have them check `remotion/src/subs-zh.json` and set `"enabled": true`. Otherwise leave it off.
 
-**If the owner's voice does not arrive in time**, don't pick the v4.1 script commits. Sarah's audio still says the v4 words, and the ElevenLabs free quota has only 178 characters left, so it can't re-voice them. Pick the screen-only set instead (tested on `9bcd289`):
+What that buys, most important first:
 
-```bash
-git cherry-pick 9e4ef9b 056dd8c 81546ed b366b98 6edcc66 fd0c90f 32eb822
-```
+| # | Change | Commits | Effect on the score | Risk |
+|---|---|---|---|---|
+| 1 | **Every spoken claim matches the evidence (v4.1 script).** Twenty lines changed or were added. Examples: test sellers stand in for Exa and CoinGecko; the live model *can* ask a question but didn't in testing; cancelling gets back what hasn't been spent; we *play* a fooled agent and force its key; seven forbidden *attempts*; the Morse post sent away US$150,000+ (the wallet wasn't shown to be emptied); "some" agent wallets check limits server-side; a stolen agent key "can still only pay your listed sellers, up to the cap"; 63 attacks "with test money"; "462 tests passed" on 19 Oct, as the PDFs say. | `860094b` `281dd3a` `789349f` `7763ef5` `3bca10a` | Security & compliance (30%) is judged by people who can read our security PDF. Each line the PDF contradicts costs more than any visual gain. | Low. It only lands if the owner records it (see the fallback below). |
+| 2 | **The real hash, held full screen for 2.2 s.** Full hash, "success", "FISCO BCOS 3.16.4 node, chain id 20200, block 11", the explorer address, and "every hash in this film is listed in ChainBrain-execution-evidence.pdf" (checked: all nine are). | `77d4822` (+ cue fix in `3bca10a`) | Task completion (40%) is judged on transaction hashes. v4's only legible hash was a 2 s screenshot. | Low. Adds 2.2 s. |
+| 3 | **The rubric's own words on screen.** Prompt injection, data extraction, privilege escalation and induced transfer on the four attacks; clarification and fallback on the two beats that show them. | `056dd8c` `81546ed` `281dd3a` | Makes 60 of 100 points easy to tick for a judge with the rubric open | Very low |
+| 4 | **A phone voice that sounds like a room, not a phone.** The clean-up measures each file's noise floor; the old chain assumed −28 dBFS against a real −50. | `fd0c90f` | The first thing a judge hears | Low. Listen once with both chains. |
+| 5 | **"You can try it today, on our hosted FISCO BCOS chain."** One new line, with the address under the explorer. | `6f2ddef` | Aims at the 0–5 deployment bonus | Low. Adds 4 s. |
+| 6 | **Readable on a laptop.** The test-money disclaimer, the HKMA source line, the Stat label and the X-ray brackets were 18–21 px or hidden under subtitles; they're now 23–26 px and clear of them. Three plain words replace "ask-me limit / co-sign", "traces … simulates" and "settles". The Task check tile no longer overflows. | `20a7efd` `3bca10a` `d5c9359` | A Mandarin-first judge on a laptop follows the X-ray ([review-nonnative.md](research/review-nonnative.md)) | Low |
+| 7 | **The first and last frames.** The opening was 6 s of near-black with tiny dots; now bigger dots, the date from frame 0, a slow push and a time-base. The ending's call to action was 25 px; now 34 px, with a drift and a 0.5 s fade instead of a hard stop. | `c854df2` | First and last impressions | Low |
+| 8 | **The film's key beat.** A real half-second hush before "No." (reverb had filled it). A hostile whip into the attacks, a softer cut pop, and a drifting HKMA list. | `32eb822` `da320ef` | Polish a motion designer would notice ([review-motion.md](research/review-motion.md)) | Low |
+| 9 | **Delivery safety.** The MP4's true peak goes from −0.6 to −1.7 dBTP, and `qc.py` checks length, format, loudness, peak, black, freezes, silence and subtitle speed. | `6edcc66` `b366b98` | A portal never has to touch our audio | None |
+| 10 | **Small text fixes.** "A.I. versus A.I." no longer breaks across two subtitles. The HKMA beat is "four ideas from the speech", which matches the speech; it never says "principles". | `9e4ef9b` `860094b` `ab94d1a` | Removes a mislabel a Hong Kong judge could check in two minutes | None |
 
-```bash
-git cherry-pick 77d4822
-```
+**Runtime.** 4:44.5 with the branch's preview voice, which is 15 s under the cap. The owner's pace of 140–150 wpm is close to Sarah's.
 
-The second pick conflicts only on the generated `timeline.json`. Resolve it with:
+### If the owner's voice does not arrive in time
 
-```bash
-git checkout --ours video/remotion/src/timeline.json
-```
+Sarah's audio says the v4 words, and the ElevenLabs free quota has 178 characters left, so it can't voice v4.1. Don't pick the script commits; two voices in one film sound odd. Pick the screen and audio set instead (tested on `9bcd289`):
 
 ```bash
-cd video && python3 tools/layout.py remotion/src/edit.json remotion/src/vo-words.json remotion/src/timeline.json && python3 tools/cues.py remotion/src/timeline.json remotion/src/vo-words.json && cd ..
+git cherry-pick 9e4ef9b 056dd8c 81546ed b366b98 6edcc66 fd0c90f 32eb822 d5c9359 c854df2
 ```
 
-```bash
-git add video/remotion/src/timeline.json && git cherry-pick --continue
-```
-
-Without the new voice, the v4 overstatements stay in the audio. Two different voices in one film would sound odd, so a full recording of the v4.1 kit is still the real fix. The kit runs about 4:40, and with practice it takes about an hour to record.
-
-**Conflicts if you pick only some.** `timeline.json` and `vo-words.json` are generated. On a conflict, take either side, then re-run `tools/layout.py` and `tools/cues.py`; `tools/voice.py` rewrites them anyway when the owner's takes are imported. The branch's preview voice for the 12 changed lines is Kokoro, because the ElevenLabs free quota has 178 characters left.
+Then decide on `20a7efd` (legibility) and `da320ef` (motion). Both conflict only on text lines the script commits changed, so keep main's text in the conflicting lines. `77d4822` (the hash hold) conflicts only on the generated `timeline.json`. To resolve it, keep main's side, re-run `tools/layout.py` and `tools/cues.py`, and change `cues.py`'s `"pullback"` to `end("x7") + 2.2 + 0.6` as in `3bca10a`.
 
 ## Full ranked list
 
-Effect × confidence ÷ effort, under the 5:00 cap. B = before the deadline, A = after (finals).
+B means before the deadline; A means after, for the finals. Ranked by effect × confidence ÷ effort.
 
-| Rank | Idea | Status | When | Evidence | Effort | Risk |
-|---|---|---|---|---|---|---|
-| 1 | Script v4.1 accuracy fixes (above) | **built**, `860094b` | B | [accuracy.md](research/accuracy.md) rows 7, 11-16, 19, 20, 29, 35, checked against the security PDF p2, p5, p7 and `hosted-proof.json` | S | Low |
-| 2 | Owner's own voice | planned by the owner; v4.1 kit ready | B | ETHGlobal's rules ban TTS voices ([practice.md](research/practice.md) §1). Lavan 2025 found synthetic voices *not* rated less trustworthy, so the gain is authenticity and the team's presence, not raw trust ([academic.md](research/academic.md)). FinTechathon sets no voice rule ([judges.md](research/judges.md) §1). | M | Pace: there are only ~8 s spare under 5:00 |
-| 3 | Rubric words on screen | **built**, `056dd8c`, `81546ed` | B | Rules: the security criterion lists the four attack types; the interaction criterion lists clarification, correction and fallback ([judges.md](research/judges.md) §1) | S | Very low |
-| 4 | HKMA beat says "four ideas from the speech", not principles | **partly built** (footer in `860094b`) | B | The speech has the four phrases (paras 18, 19, 21, 23) under the ART framework's three pillars and never says "principles" (hkma.gov.hk speech of 16 Oct, HKMA press release of 15 Oct; [judges.md](research/judges.md) §3). The voice line is already a fair paraphrase. "Covers all four" stays per the owner's decision; the softer option is "has a feature for each". | S | Low |
-| 5 | Subtitle A.I. fix | **built**, `9e4ef9b` | B | Cue 50/51 split mid-phrase | S | None |
-| 6 | Hold one full real hash on screen, tied to the task | **built**, `77d4822` (2.2 s) | B | Topic F's 40 points are "evaluated using on-chain transaction hashes" (rules); v4's only legible hash is a different payment ([judges.md](research/judges.md) #2) | M | Low |
-| 7 | Chinese subtitles (checked by a team member) | **built**, off by default | B if checked, else A | Dual subtitles help second-language viewers ([academic.md](research/academic.md)); the rules require English materials, not English only ([judges.md](research/judges.md) §4) | S to check | Medium unchecked |
-| 8 | X-ray legibility: one idea at a time, dim the inactive lanes, a 2 s lane legend | to prototype | B/A | Contiguity and signalling: Ginns 2006 meta-analysis, d ≈ 0.85, largest for complex material ([academic.md](research/academic.md)) | M | Medium (the approved board) |
-| 9 | Phone scenes: drop headlines that repeat the subtitle word for word | to prototype | A | Redundancy principle; keep subtitles for non-native viewers (Toh 2010) ([academic.md](research/academic.md)) | M | Medium (the approved look) |
-| 10 | "Live and deployed" said once near the end, for the 0-5 bonus | to prototype | B | Bonus rewards "demonstrated real-world deployment" (rules) | S | Low |
-| 11 | "test" next to e-HKD in the attack order | to prototype | B | The HKMA has not decided on a retail e-HKD ([judges.md](research/judges.md) §2) | S | None |
-| 12 | Render QC script (black, freeze, silence, loudness) | **built**, `b366b98` | B | [github.md](research/github.md) #1 | M | None |
-| 13 | 90 s finals cut | idea | A | [practice.md](research/practice.md) #10 | L | — |
-| 14 | Last frame rhymes with the first (Morse dots resolve into the mark) | idea | A | [practice.md](research/practice.md) #4 | M | Low |
+| Rank | Idea | Status | When | Evidence |
+|---|---|---|---|---|
+| 1 | v4.1 accuracy script | **built** | B | [accuracy.md](research/accuracy.md) (37 claims checked against the PDFs, proof JSON and code), [review-security.md](research/review-security.md) |
+| 2 | Owner's own voice + clean chain + coaching | **built** (kit, chain); recording pending | B | ETHGlobal bans TTS voices ([practice.md](research/practice.md)). A synthetic voice isn't rated less trustworthy (Lavan 2025), so the gain is presence and authenticity ([academic.md](research/academic.md)). FinTechathon sets no voice rule ([judges.md](research/judges.md)). |
+| 3 | Held real hash | **built** | B | The rules: Topic F is "evaluated using on-chain transaction hashes" |
+| 4 | Rubric words on screen | **built** | B | Rules: security and interaction criteria name these terms |
+| 5 | Laptop legibility | **built** | B | Netflix/BBC caption norms; Q11 minimum text height ([review-motion.md](research/review-motion.md), [review-nonnative.md](research/review-nonnative.md)) |
+| 6 | Deployment line | **built** | B | Bonus: "demonstrated real-world deployment" |
+| 7 | Chinese subtitles | **built**, off | B if a team member checks; else A | Dual subtitles help second-language viewers. The rules require English materials, which this keeps. A native-reader review fixed the wrong terms (买价格, 结算方, 注销). |
+| 8 | Opening and ending | **built** | B | First impressions form fast (Ambady and Rosenthal 1993, in [academic.md](research/academic.md)) |
+| 9 | Hush before "No." | **built** | B | The approved design asked for it; measured 0.2 s in v4 ([audio.md](research/audio.md)) |
+| 10 | Peak fix + QC | **built** | B | v4 measures −0.6 dBTP |
+| 11 | FISCO detail on screen: Clock.sol's millisecond-to-second conversion | idea | A | [review-fisco.md](research/review-fisco.md). Strong for WeBank engineers, but needs a new shot. |
+| 12 | X-ray: one idea at a time, a 2 s lane legend before the voice | idea | A | Contiguity and signalling (Ginns 2006, d ≈ 0.85) ([academic.md](research/academic.md)) |
+| 13 | Morse decoded into letters under the dots | idea | A | [review-motion.md](research/review-motion.md) B-list |
+| 14 | Varied Reveal settle and camera travel per act | idea | A | [review-motion.md](research/review-motion.md) items 7 and 9 |
+| 15 | 90 s finals cut from existing scenes | plan | A | [finals-cut.md](research/finals-cut.md) |
+| 16 | Say "Mock e-HKD" aloud once; "test eHKD" in the planted order | idea | A | [review-fisco.md](research/review-fisco.md). The proof footer already says it. |
 
-## What the research says, in one paragraph each
+### Left for the owner to decide
 
-- **Accuracy** ([accuracy.md](research/accuracy.md)). 37 claims checked.
-  - **Clean:** the eight card checks, "the token asks the card", guardian freeze-only, owner-only unfreeze, the block 11 and block 13 hashes, HK$12.00 to HK$8.80, 63 = 55 + 8, and 462 as the sum of the seven suites.
-  - **Subtitles:** they match the voice word for word.
-  - **Overstated or ambiguous:** the twelve lines fixed in v4.1, plus three left for the owner to decide (listed in [script-v41.md](research/script-v41.md)).
+These are approved decisions. Reviewers questioned them; the evidence is noted, and nothing was changed.
+
+- **"Stricter, never looser" (w3).** The second AI tightens what the agent may do; it doesn't edit the stored rules. A safer line: "The second AI can only hold or block a payment. It can never loosen a limit."
+- **"ChainBrain covers all four" (h2).** Fair once the beat says "four ideas", as it does now. The softer option is "has a feature for each".
+- **"Every agent, Claude, ChatGPT, or ours" (n2).** Pairing outside agents works only on the demo network so far.
+- **The ending's vermillion "card".** It breaks the colour rule (vermillion only for attacks); the motion reviewer suggests powder blue.
+
+## Research, one paragraph each
+
+- **Accuracy** ([accuracy.md](research/accuracy.md)).
+  - **Clean:** the eight card checks, "the token asks the card", guardian freeze-only, owner-only unfreeze, the block 11 and 13 hashes, HK$12.00 to HK$8.80, 63 = 55 + 8, and 462 as the sum of the suites.
+  - **Subtitles:** they matched the voice word for word.
+  - **Fixed in v4.1:** everything rated overstated.
 - **Judges** ([judges.md](research/judges.md)).
-  - No rule on video format, subtitles or voice: 5:00 maximum, materials in English.
+  - The rules set no format, subtitle or voice requirement: 5:00 maximum, materials in English.
   - Topic F is scored on hashes.
-  - No new HKMA or SFC statement on agents since 16 Oct. Not confirmed for 20 Oct itself.
+  - No HKMA or SFC statement on AI agents since 16 Oct; the HKMA's index was last revised on 15 Oct.
   - Keys are secp256k1, so never imply 国密/SM2.
 - **Academic** ([academic.md](research/academic.md)).
-  - Contiguity and signalling matter most for the dense X-ray.
+  - Contiguity and signalling matter most for the X-ray.
   - Subtitles help non-native viewers.
-  - First impressions form fast, so polish the first 30 s.
-  - Synthetic voices aren't rated less trustworthy (Lavan 2025). Energetic, faster speakers hold attention (Guo 2014).
+  - First impressions form fast.
+  - Synthetic voices aren't rated less trustworthy; energetic speakers hold attention.
 - **Practice** ([practice.md](research/practice.md)).
-  - ETHGlobal: 2 to 4 min, short backstory, narrate yourself.
-  - Linear-style films use real pixels, a guiding camera and a closed palette. v4 already does.
-  - Signs of AI-made video: repeated push-ins, uniform easing, an even-paced voice.
-- **GitHub** ([github.md](research/github.md)). The pipeline already has the hard parts. The gaps are QC and reading-time checks. 7 repos cloned to `reference/repos/` (git-ignored), with licences noted.
+  - Real product pixels and a guiding camera, which v4 already has.
+  - Signs of AI-made video: repeated identical push-ins, uniform easing, an even-paced voice. `da320ef` starts on these.
+- **GitHub** ([github.md](research/github.md)).
+  - 7 repos cloned to `reference/repos/` (git-ignored), licences noted.
+  - Borrowed: the QC idea (re-implemented; the source is CC BY-NC).
 - **Audio** ([audio.md](research/audio.md), [clean-chain.txt](research/clean-chain.txt)).
-  - The mix measures −14.0 LUFS with true peak −0.6 dBTP: AAC overshoots the −1.5 target. Re-encode toward −2 dBTP if a portal demands ≤ −1.
-  - The voice sits a median 15 dB over the music. Laptop-speaker simulation keeps 96% of words recognisable.
-  - The gap before "No." holds a riser, so true near-silence lasts only ~0.2 s.
-  - The clean chain is now `fd0c90f`. The owner's coaching: 3 s of room tone, 15–20 cm from the phone, 45° off-axis, 140–150 wpm.
+  - Voice is 15 dB over the music.
+  - Laptop-speaker word recall is 96%.
+  - The clean chain is tested on a synthetic noisy phone take: the pause floor drops from −56.9 to −68.6 dBFS.
+- **Reviews.**
+  - [review-judge-1.md](research/review-judge-1.md): a sceptical judge.
+  - [review-security.md](research/review-security.md): a security researcher.
+  - [review-fisco.md](research/review-fisco.md): a WeBank/FISCO engineer.
+  - [review-nonnative.md](research/review-nonnative.md): a Mandarin-first judge on a laptop.
+  - [review-motion.md](research/review-motion.md): a motion designer.
 
 ## Prototype log
 
-| # | Prototype | Commit | Frames (before, after) | Kept? | Reviewer's note |
-|---|---|---|---|---|---|
-| P0 | Subtitle "A.I." page break | `9e4ef9b` | (text only) | kept | KEEP |
-| P1 | Chinese line under the English | `d3c6f87`, `399a15a` | v4-100 / zh-100, v4-241 / zh-241, v4-39.5 / zh-39.5 | kept, off by default | KEEP, off until checked; proof footnote moved clear of a 3-line subtitle |
-| P2 | Rubric terms on the attack rail | `056dd8c` | v4-166.5 / rubric-166.5, v4-170 / rubric-170 | kept | KEEP WITH FIX: labels 17 to 22 px, lighter (done) |
-| P3 | Clarification and fallback tags | `81546ed` | v4-66 / interact-66, v4-141 / interact-141 | kept | KEEP WITH FIX: headline now "It can ask one question first." (done) |
-| P4 | Script v4.1 and captions | `860094b`, `0bb1084`, `281dd3a` | `v4-acc-*` / `acc-*` (9 pairs), `r1-*` | kept | KEEP WITH FIX, fixed in `281dd3a` (plainer u1, k3, m2, r1) |
-| P5 | Real hash held full screen | `77d4822` | v4-129 / hash-129 | kept | the reviewer's "bigger gain than any of these" |
-| P6 | Phone-voice clean chain | `fd0c90f` | (audio; synthetic test in clean-chain.txt) | kept | — |
-| P7 | 462 tests "passed on 19 Oct" | `789349f` | v4-264 / tests-262 | kept | — |
-| P8 | Render QC script | `b366b98` | (text) | kept | Found v4's −0.6 dBTP peak |
-| P9 | Mix true peak under −1 dBTP | `6edcc66` | (audio: AAC −1.7 dBTP, −14.4 LUFS) | kept | — |
-| P10 | A real hush before "No." (music gated to silence 0.5 to 0.1 s before the hit) | `32eb822` | (audio) | kept | The approved design asked for half a second of silence; v4 had ~0.2 s |
-| P11 | Docs follow v4.1 ("four ideas", new lines) | `ab94d1a` | (text) | kept | — |
-| P12 | Kit v4.1 with delivery coaching (3 s room tone, 15–20 cm, 45°, 140–150 wpm) | `f3db094` | `overnight/recording-kit-v41.html` | kept | — |
+| # | Prototype | Commits | Frames, before and after | Verdict |
+|---|---|---|---|---|
+| P0 | Subtitle "A.I." page break | `9e4ef9b` | — | kept |
+| P1 | Chinese line under the English | `d3c6f87` `399a15a` `eeed484` | v4-100 / zh-100, v4-241 / zh-241 | kept, off until checked |
+| P2 | Rubric terms on the attack rail | `056dd8c` `281dd3a` | v4-166.5 / rubric-166.5, r1-162 | kept, labels enlarged after review |
+| P3 | Clarification and fallback tags | `81546ed` | v4-66 / interact-66, r1-66 | kept, headline fixed after review |
+| P4 | Script v4.1 | `860094b` `281dd3a` `7763ef5` `3bca10a` | v4-acc-* / acc-*, r1-*, r2-*, plain-* | kept, reworded in three review rounds |
+| P5 | Held real hash | `77d4822` `7763ef5` | v4-129 / hash-129, r2-127.8 | kept, FISCO version and chain id added |
+| P6 | Phone-voice clean chain | `fd0c90f` | (audio) | kept |
+| P7 | 462 tests dated | `789349f` | v4-264 / tests-262 | kept |
+| P8 | QC script | `b366b98` | — | kept; found v4's −0.6 dBTP peak |
+| P9 | True peak under −1 dBTP | `6edcc66` | (audio) | kept |
+| P10 | Hush before "No." | `32eb822` | (audio) | kept |
+| P11 | Deployment line | `6f2ddef` | live-264.5 | kept |
+| P12 | Task check tile fits | `d5c9359` | tile-100 | kept |
+| P13 | Laptop legibility | `20a7efd` | v4-20 / leg-20, leg-129.6, leg-243, leg-259 | kept |
+| P14 | Opening and ending | `c854df2` | v4-5.5 / open-5.5, v4-284 / end-283 | kept |
+| P15 | Motion variety | `da320ef` | v4-246 / hkma-244 | kept |

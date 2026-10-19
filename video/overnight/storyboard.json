@@ -11,6 +11,10 @@
    [
     "v4-129.jpg",
     "hash-129.jpg"
+   ],
+   [
+    "v4-129.jpg",
+    "r2-127.8.jpg"
    ]
   ]
  },
@@ -20,8 +24,11 @@
   "status": "kept",
   "commits": [
    "860094b",
-   "0bb1084",
-   "281dd3a"
+   "281dd3a",
+   "789349f",
+   "7763ef5",
+   "3bca10a",
+   "6f2ddef"
   ],
   "note": "Record these words. Captions, labels and the hook counter follow the voice. Preview audio for the changed lines is Kokoro (ElevenLabs quota used up). Revised after review round 1 (r1 frames).",
   "pairs": [
@@ -84,6 +91,30 @@
    [
     "v4-39.5.jpg",
     "r1-40.jpg"
+   ],
+   [
+    "v4-203.jpg",
+    "r2-203.5.jpg"
+   ],
+   [
+    "v4-260.jpg",
+    "r2-253.jpg"
+   ],
+   [
+    "v4-acc-114.jpg",
+    "plain-103.jpg"
+   ],
+   [
+    "v4-129.jpg",
+    "plain-125.jpg"
+   ],
+   [
+    "v4-141.jpg",
+    "plain-135.jpg"
+   ],
+   [
+    "v4-264.jpg",
+    "live-264.5.jpg"
    ]
   ],
   "lines": [
@@ -108,6 +139,11 @@
     "The owner key stays on your phone, and our server makes a separate agent key for each card. The AI never holds a key."
    ],
    [
+    "x4",
+    "Our server checks the payment against the task you confirmed, traces the seller's money, and simulates it.",
+    "Our server checks the payment against the task you confirmed, looks at where the seller's money goes, and tests the payment first."
+   ],
+   [
     "x5",
     "Then the agent key signs one exact payment from the card, and the seller's facilitator sends it to the chain.",
     "Then the agent key signs one exact payment from the card, and a facilitator sends it to the chain."
@@ -116,6 +152,21 @@
     "x6a",
     "Many agent wallets check their limits on the wallet company's server.",
     "Some agent wallets check their limits on the wallet company's server."
+   ],
+   [
+    "x6",
+    "Here the token asks the card, which runs eight checks before any money moves.",
+    "Here the token asks the card, which runs its own eight checks before any money moves."
+   ],
+   [
+    "x7",
+    "All eight pass, so it settles on FISCO BCOS, with a hash anyone can open.",
+    "All eight pass, so the payment goes through on FISCO BCOS, and anyone can look it up by its hash."
+   ],
+   [
+    "u2",
+    "Above your ask-me limit, the card needs you to co-sign on your phone.",
+    "Above the amount you chose, the card asks you to sign on your phone too."
    ],
    [
     "u4",
@@ -143,9 +194,29 @@
     "Even a fooled agent can't pay outside the card's rules."
    ],
    [
+    "y3",
+    "If someone steals an agent key, it's still capped. The guardian key can only freeze, and your owner key never leaves your phone.",
+    "If someone steals an agent key, it can still only pay your listed sellers, up to the cap. The guardian key can only freeze, and your owner key never leaves your phone."
+   ],
+   [
     "f1",
     "On our hosted FISCO BCOS chain, all seven forbidden payments were rejected.",
     "On our hosted FISCO BCOS chain, all seven forbidden attempts were rejected."
+   ],
+   [
+    "f2",
+    "We attacked our own wallet sixty-three times and didn't lose a single dollar.",
+    "We ran sixty-three attacks on our own cards, with test money, and didn't lose a single dollar."
+   ],
+   [
+    "f3",
+    "And all four hundred and sixty-two automated tests pass.",
+    "And all four hundred and sixty-two automated tests passed."
+   ],
+   [
+    "f4",
+    "(new line)",
+    "You can try it today, on our hosted FISCO BCOS chain."
    ]
   ]
  },
@@ -223,6 +294,66 @@
    [
     "v4-241.jpg",
     "zh-241.jpg"
+   ]
+  ]
+ },
+ {
+  "title": "P13 Laptop legibility",
+  "when": "before the deadline",
+  "status": "kept",
+  "commits": [
+   "20a7efd",
+   "d5c9359"
+  ],
+  "note": "Stat label stays readable; disclaimers and source lines 23-26 px and clear of the subtitles; X-ray brackets clear; Task check tile fits.",
+  "pairs": [
+   [
+    "v4-20.jpg",
+    "leg-20.jpg"
+   ],
+   [
+    "v4-100.jpg",
+    "tile-100.jpg"
+   ],
+   [
+    "v4-129.jpg",
+    "leg-129.6.jpg"
+   ],
+   [
+    "v4-264.jpg",
+    "leg-259.jpg"
+   ]
+  ]
+ },
+ {
+  "title": "P14 Opening and ending",
+  "when": "before the deadline",
+  "status": "kept",
+  "commits": [
+   "c854df2"
+  ],
+  "pairs": [
+   [
+    "v4-5.5.jpg",
+    "open-5.5.jpg"
+   ],
+   [
+    "v4-284.jpg",
+    "end-283.jpg"
+   ]
+  ]
+ },
+ {
+  "title": "P15 Motion variety (HKMA list lower, drifting)",
+  "when": "before the deadline",
+  "status": "kept",
+  "commits": [
+   "da320ef"
+  ],
+  "pairs": [
+   [
+    "v4-246.jpg",
+    "hkma-244.jpg"
    ]
   ]
  }
