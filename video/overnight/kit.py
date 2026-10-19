@@ -12,8 +12,17 @@ s = open(KIT, encoding="utf-8").read()
 old = {l["id"]: l["text"] for l in json.loads(subprocess.check_output(["git", "-C", VIDEO, "show", "9bcd289:video/tts/lines.json"]))}
 new = {l["id"]: l["text"] for l in json.load(open(os.path.join(VIDEO, "tts/lines.json"), encoding="utf-8"))}
 missing = []
+ids = list(new)
 for i, text in new.items():
     if old.get(i) == text:
+        continue
+    if i not in old:
+        # a new line: a new list item after the previous line's item, about 2.6 words a second
+        prev = new[ids[ids.index(i) - 1]]
+        at = s.find(html.escape(prev, quote=True)) if html.escape(prev, quote=True) in s else s.find(html.escape(prev, quote=False))
+        end = s.find("</li>", at) + len("</li>")
+        secs = round(len(text.split()) / 2.6, 1)
+        s = s[:end] + f'<li><span class="sec">{secs}s</span><span class="txt"><mark title="new in v4.1">{html.escape(text, quote=False)}</mark></span></li>' + s[end:]
         continue
     for cand in (old[i], html.escape(old[i], quote=False), html.escape(old[i])):
         if cand in s:
