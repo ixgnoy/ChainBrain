@@ -117,7 +117,7 @@
   "id": "x7",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "All eight pass, so the payment goes through on FISCO BCOS, and anyone can look it up by its hash."
+  "text": "All eight pass, so the payment goes through on FISCO BCOS, and you can open it by its hash in our explorer."
  },
  {
   "id": "u2",
@@ -141,7 +141,7 @@
   "id": "r1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It's your card, so you can cancel it mid-task and get back whatever hasn't been spent."
+  "text": "It's your card, so you can cancel it mid-task. In our demo, whatever hasn't been spent goes back to your balance."
  },
  {
   "id": "k1",
@@ -159,7 +159,7 @@
   "id": "k3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Worst case, we play a fooled agent and use its key to send the money."
+  "text": "Worst case, we play a fooled agent and use its key to send test money."
  },
  {
   "id": "k4",
@@ -225,7 +225,7 @@
   "id": "h2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "ChainBrain covers all four."
+  "text": "ChainBrain covers each of the four."
  },
  {
   "id": "f1",

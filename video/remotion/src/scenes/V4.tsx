@@ -682,7 +682,7 @@ export const Stolen: React.FC = () => {
 // ─────────────── HKMA: four principles ───────────────
 const PRINCIPLES: { name: string; ours: string; word: string }[] = [
   { name: "Anchored to intent", ours: "every payment traces back to the task you confirmed", word: "intent" },
-  { name: "Kill-switches", ours: "freeze or cancel a card, on-chain, at once", word: "kill" },
+  { name: "Kill-switches", ours: "freeze or cancel a card, on-chain", word: "kill" },
   { name: "A.I. versus A.I.", ours: "a second AI watches the agent", word: "versus" },
   { name: "Secure boundaries", ours: "the card's own contract sets the limits", word: "boundaries" },
 ];
@@ -715,7 +715,7 @@ export const Hkma: React.FC = () => {
         })}
       </div>
       <div style={{ position: "absolute", left: 120, top: 890, fontFamily: F.mono, fontSize: 24, color: C.muted, opacity: settle(t - four - 0.6, 6), fontVariantLigatures: "none" }}>
-        Our mapping of four ideas from the speech, not a regulatory approval. Source: hkma.gov.hk, speech of 16 Oct 2026.
+        Our mapping of four ideas from the speech. Not an HKMA statement, approval or assessment of ChainBrain. Source: hkma.gov.hk, 16 Oct 2026.
       </div>
     </Stage>
   );
