@@ -165,6 +165,7 @@ export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) =
             word="Break"
             tint={1}
             snap={17}
+            travel={0.45}
             segs={segs("attack")}
             beats={beatsAttack}
             cams={cams("attack", [

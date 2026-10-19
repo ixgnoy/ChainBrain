@@ -17,15 +17,16 @@ const R = PW * 0.14;
 
 export const segLen = (s: Seg) => (s.to - s.from) / (s.rate ?? 1);
 
-function camAt(cams: Cam[], t: number): Cam {
+function camAt(cams: Cam[], t: number, travel = 0.7): Cam {
   if (cams.length === 0) return { t: 0, s: 1, fx: 0.5, fy: 0.5 };
   if (t <= cams[0].t) return cams[0];
   for (let i = 0; i < cams.length - 1; i++) {
     const a = cams[i];
     const b = cams[i + 1];
     if (t < b.t) {
-      // each keyframe is where the camera arrives; it travels during the 0.7 s before it (exponential ease-out)
-      const k = easeOut(clamp((t - (b.t - 0.7)) / 0.7));
+      // each keyframe is where the camera arrives; it travels during the `travel` s before it (exponential ease-out).
+      // Only ever shorten it: some keyframes sit 0.6 s apart, and a longer travel would make the camera jump.
+      const k = easeOut(clamp((t - (b.t - travel)) / travel));
       return { t, s: a.s + (b.s - a.s) * k, fx: a.fx + (b.fx - a.fx) * k, fy: a.fy + (b.fy - a.fy) * k };
     }
   }
@@ -90,11 +91,12 @@ export const PhoneScene: React.FC<{
   tint?: number;
   rail?: React.ReactNode;
   snap?: number; // headline settle stiffness (the attack scene lands harder)
-}> = ({ segs, word, beats, cams = [], tint = 0, rail, snap = 11 }) => {
+  travel?: number; // camera travel in seconds (shorter = more urgent)
+}> = ({ segs, word, beats, cams = [], tint = 0, rail, snap = 11, travel = 0.7 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
-  const cam = camAt(cams, t);
+  const cam = camAt(cams, t, travel);
   const zoomed = clamp((cam.s - 1) / 0.5);
   const focusX = PX + cam.fx * PW;
   const focusY = PY + cam.fy * PH;
