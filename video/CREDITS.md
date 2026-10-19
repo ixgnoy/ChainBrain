@@ -14,7 +14,7 @@
 
 ## Facts quoted
 
-- HKMA, Carmen Chu, Executive Director (Banking Supervision), opening remarks at the Finance + A.I. Forum, 16 Oct 2026 (https://www.hkma.gov.hk/eng/news-and-media/speeches/2026/10/20261016-1/): governance anchored to intent, kill-switch mechanisms, "A.I. versus A.I.", securing the boundaries around an agent. The video paraphrases them as four principles.
+- HKMA, Carmen Chu, Executive Director (Banking Supervision), opening remarks at the Finance + A.I. Forum, 16 Oct 2026 (https://www.hkma.gov.hk/eng/news-and-media/speeches/2026/10/20261016-1/): governance anchored to intent, kill-switch mechanisms, "A.I. versus A.I.", securing the boundaries around an agent. The video paraphrases them as four ideas from the speech, which places them under the HKMA's ART framework.
 
 ## Facts in the opening
 

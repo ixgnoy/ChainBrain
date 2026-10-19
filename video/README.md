@@ -4,7 +4,7 @@ The 4:46 FinTechathon demo video (v4: the AI Card, with a "how it works" X-ray):
 
 - Script and shot list: [SCRIPT.md](SCRIPT.md); the approved storyboard and why: [STORYBOARD-v4.md](STORYBOARD-v4.md) (the earlier [v3](STORYBOARD-v3.md)). Credits and licences: [CREDITS.md](CREDITS.md).
 - The edit: `remotion/src/edit.json` (scenes, footage cuts, voice anchors). `tools/layout.py` turns it into `remotion/src/timeline.json` (scene times on the 120 BPM grid, voice start times); `tools/cues.py` adds the music cues.
-- Shots and camera moves: `remotion/src/Main.tsx`; the story scenes: `remotion/src/scenes/V3.tsx` and `V4.tsx` (the X-ray board, the eight layers, stolen keys, the HKMA principles).
+- Shots and camera moves: `remotion/src/Main.tsx`; the story scenes: `remotion/src/scenes/V3.tsx` and `V4.tsx` (the X-ray board, the eight layers, stolen keys, the HKMA's four ideas).
 - Storyboard frames: `cd remotion && node scripts/stills.mjs <out_dir> 0.5 <t1> <t2> …` renders many stills with one bundle.
 
 ## Rebuild
@@ -73,5 +73,5 @@ ffmpeg -i raw.mp4 -vf fps=30 -c:v libx264 -crf 17 -pix_fmt yuv420p out.mp4
 - Every hash the video points at is a real transaction on the hosted chain, from `docs/evidence-fisco-railway.json` and `docs/redteam/hosted-proof.json` (the 7 rejected payments).
 - The hook's facts are sourced on screen: the 4 May 2026 Morse-code wallet drain (OECD AI Incidents Monitor, about US$150,000) and Accenture's June 2026 survey (74% / 9%). The dots and dashes are an illustration, not the attacker's post.
 - The AI Card is a drawn illustration of the idea; it carries the hosted proof card's real address tail (0x33Dc…3356) and rules. The X-ray board is a diagram of the real system (`docs/submission/ChainBrain-technical-overview.pdf`, pages 1-8); the app screens beside it and everything else are the app's real screens and the explorer's real pages. No code is shown.
-- The HKMA beat paraphrases four principles from Carmen Chu's remarks of 16 Oct 2026 (hkma.gov.hk) and says ChainBrain "covers" them; on screen it is called our mapping, not a regulatory approval.
+- The HKMA beat paraphrases four ideas from Carmen Chu's remarks of 16 Oct 2026 (hkma.gov.hk) and says ChainBrain "covers" them; on screen it is called our mapping, not a regulatory approval.
 - Proof numbers match the submitted PDFs: 63 attacks with HK$0 lost, 462 automated tests, 7 of 7 forbidden payments rejected on the hosted chain.
