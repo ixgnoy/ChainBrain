@@ -6,7 +6,7 @@ import { C, F, FPS, clamp, easeOut, settle } from "../theme";
 
 export type Seg = { src: string; from: number; to: number; rate?: number; tag?: string }; // footage seconds [from, to)
 export type Cam = { t: number; s: number; fx: number; fy: number }; // scene time (s), scale, focus x/y on the screen (0..1)
-export type Beat = { t: number; head: string; cap?: { text: string; tone: "red" | "blue" | "plain"; logos?: [string, string][] } };
+export type Beat = { t: number; head: string; tag?: string; cap?: { text: string; tone: "red" | "blue" | "plain"; logos?: [string, string][] } };
 
 export const PH = 880; // phone screen height on the stage
 export const PW = PH * (1206 / 2622);
@@ -111,6 +111,7 @@ export const PhoneScene: React.FC<{
       <AbsoluteFill>
         <div style={{ position: "absolute", left: 120, top: 330, width: 860 }}>
           <Sequence key={ci} from={Math.round(current.t * fps)} layout="none">
+            {current.tag ? <RubricTag text={current.tag} /> : null}
             <Reveal text={current.head} size={82} delay={0} stagger={0.045} />
             {current.cap ? <Caption {...current.cap} /> : null}
           </Sequence>
@@ -149,6 +150,20 @@ export const PhoneScene: React.FC<{
       <SpeedTag segs={segs} />
       <SimTag />
     </Stage>
+  );
+};
+
+// The judging rubric's word for what the beat shows (Innovation & Interaction: clarification, fallback), small, above
+// the headline.
+const RubricTag: React.FC<{ text: string }> = ({ text }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const p = settle(frame / fps - 0.15, 9);
+  return (
+    <div style={{ position: "absolute", top: -54, left: 0, display: "flex", alignItems: "center", gap: 12, opacity: p, fontFamily: F.mono, fontSize: 20, letterSpacing: "0.14em", color: C.blue, textTransform: "uppercase", fontVariantLigatures: "none" }}>
+      <div style={{ width: 9, height: 9, background: C.blue }} />
+      {text}
+    </div>
   );
 };
 
