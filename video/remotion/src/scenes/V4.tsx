@@ -452,7 +452,7 @@ const HashHold: React.FC<{ p: number; t: number }> = ({ p, t }) => (
   <AbsoluteFill style={{ opacity: p, background: "rgba(10,11,13,0.94)", justifyContent: "center", paddingLeft: 150 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 18, fontFamily: F.mono, fontSize: 24, letterSpacing: "0.12em", color: C.muted, fontVariantLigatures: "none" }}>
       <Plaque src="brand/fisco-bcos-logo.svg" h={30} p={1} pad={10} />
-      A REAL PAYMENT ON OUR HOSTED CHAIN, BLOCK 11
+      A REAL PAYMENT ON OUR FISCO BCOS 3.16.4 NODE, CHAIN ID 20200, BLOCK 11
     </div>
     <div style={{ marginTop: 34, fontFamily: F.mono, fontWeight: 500, fontSize: 58, lineHeight: 1.25, color: C.text, letterSpacing: "0.02em", fontVariantLigatures: "none" }}>
       {[HASH.slice(0, 34), HASH.slice(34)].map((h, i) => (
@@ -644,10 +644,10 @@ const Bracket: React.FC<{ x: number; y1: number; y2: number; label: string; colo
 
 // ─────────────── if a key is stolen ───────────────
 const STOLEN: { icon: React.ReactNode; title: string; verdict: string; word: [string, string, number] | null; owner?: boolean }[] = [
-  { icon: <KeyRound size={40} />, title: "Agent key stolen", verdict: "still capped by the card", word: ["y3", "steal", 0] },
+  { icon: <KeyRound size={40} />, title: "Agent key stolen", verdict: "only listed sellers, up to the cap", word: ["y3", "steal", 0] },
   { icon: <Server size={40} />, title: "Our server taken", verdict: "the card still checks every payment", word: null },
   { icon: <Snowflake size={40} />, title: "Guardian key", verdict: "can only freeze a card", word: ["y3", "guardian", 0] },
-  { icon: <Smartphone size={40} />, title: "Your owner key", verdict: "never leaves your phone", word: ["y3", "your", 0], owner: true },
+  { icon: <Smartphone size={40} />, title: "Your owner key", verdict: "never leaves your phone", word: ["y3", "your", 1], owner: true },
 ];
 
 export const Stolen: React.FC = () => {

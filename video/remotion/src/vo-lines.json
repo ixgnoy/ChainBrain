@@ -111,7 +111,7 @@
   "id": "x6",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Here the token asks the card, which runs eight checks before any money moves."
+  "text": "Here the token asks the card, which runs its own eight checks before any money moves."
  },
  {
   "id": "x7",
@@ -189,7 +189,7 @@
   "id": "y3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "If someone steals an agent key, it's still capped. The guardian key can only freeze, and your owner key never leaves your phone."
+  "text": "If someone steals an agent key, it can still only pay your listed sellers, up to the cap. The guardian key can only freeze, and your owner key never leaves your phone."
  },
  {
   "id": "w1",
@@ -237,7 +237,7 @@
   "id": "f2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "We attacked our own wallet sixty-three times and didn't lose a single dollar."
+  "text": "We ran sixty-three attacks on our own cards, with test money, and didn't lose a single dollar."
  },
  {
   "id": "f3",
