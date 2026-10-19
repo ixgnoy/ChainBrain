@@ -27,7 +27,7 @@ export function buildPages(): Page[] {
       const chars = cur.map((x) => x.w).join(" ").length;
       const rest = ws.length - i - 1;
       const punct = /[.,:;?!]$/.test(w.w);
-      const end = /[.?!]$/.test(w.w);
+      const end = /[.?!]$/.test(w.w) && !/^([A-Z]\.)+$/.test(w.w); // "A.I." doesn't end a sentence
       if ((end && chars >= 20 && rest > 0) || (punct && chars >= 45 && rest >= 3) || chars >= 84) flush();
     });
     flush();

@@ -29,7 +29,7 @@ for line in lines:
         chars = len(" ".join(x["w"] for x in cur))
         rest = len(ws) - i - 1
         punct = re.search(r"[.,:;?!]$", w["w"]) is not None
-        end = re.search(r"[.?!]$", w["w"]) is not None
+        end = re.search(r"[.?!]$", w["w"]) is not None and not re.fullmatch(r"([A-Z]\.)+", w["w"])  # "A.I." doesn't end a sentence
         if (end and chars >= 20 and rest > 0) or (punct and chars >= 45 and rest >= 3) or chars >= 84:
             flush()
     flush()
