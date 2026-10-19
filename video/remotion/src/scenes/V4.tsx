@@ -435,6 +435,13 @@ export const XRay: React.FC = () => {
           </div>
         </AbsoluteFill>
       ) : null}
+      {/* one FISCO-specific fact while the card's checks tick (contracts/src/Clock.sol) */}
+      {t > T.eight + 0.6 && t < T.pass + 0.6 ? (
+        <div style={{ position: "absolute", left: 90, top: 700, maxWidth: 620, display: "flex", alignItems: "center", gap: 16, padding: "14px 22px", borderRadius: 14, background: "rgba(10,11,13,0.88)", boxShadow: "0 0 0 1.5px rgba(157,202,255,0.35)", opacity: Math.min(lit(t, T.eight + 0.7, 10), 1 - clamp((t - T.pass - 0.2) / 0.4)) }}>
+          <Plaque src="brand/fisco-bcos-logo.svg" h={28} p={1} pad={9} />
+          <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 28, color: C.text }}>FISCO BCOS counts block time in milliseconds. The card converts it to seconds.</div>
+        </div>
+      ) : null}
       {t > T.end - 0.3 && t < E + 0.4 ? <HashHold p={Math.min(lit(t, T.end - 0.2, 10), 1 - clamp((t - E + 0.1) / 0.4))} t={t - T.end} /> : null}
       {/* the whole system */}
       {all > 0 ? (
