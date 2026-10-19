@@ -1,0 +1,189 @@
+[
+ {
+  "title": "P4 Script v4.1: twelve lines match the evidence",
+  "when": "before the deadline",
+  "status": "kept",
+  "commits": [
+   "860094b",
+   "0bb1084"
+  ],
+  "note": "Record these words. Captions, labels and the hook counter follow the voice. Preview audio for the changed lines is Kokoro (ElevenLabs quota used up).",
+  "pairs": [
+   [
+    "v4-acc-10.5.jpg",
+    "acc-10.5.jpg"
+   ],
+   [
+    "v4-acc-74.jpg",
+    "acc-74.jpg"
+   ],
+   [
+    "v4-acc-114.jpg",
+    "acc-113.jpg"
+   ],
+   [
+    "v4-acc-142.jpg",
+    "acc-138.jpg"
+   ],
+   [
+    "v4-acc-148.jpg",
+    "acc-145.jpg"
+   ],
+   [
+    "v4-acc-154.jpg",
+    "acc-151.jpg"
+   ],
+   [
+    "v4-acc-171.jpg",
+    "acc-168.jpg"
+   ],
+   [
+    "v4-acc-179.jpg",
+    "acc-175.jpg"
+   ],
+   [
+    "v4-acc-252.jpg",
+    "acc-248.jpg"
+   ]
+  ],
+  "lines": [
+   [
+    "m2",
+    "tricked an AI agent into emptying its wallet.",
+    "tricked an AI agent into giving away over a hundred and fifty thousand dollars."
+   ],
+   [
+    "u0",
+    "If the job is unclear, it asks one question first.",
+    "When the job is unclear, it can ask you one question first."
+   ],
+   [
+    "u1",
+    "It pays small amounts on its own. Right now that's Exa for search and CoinGecko for prices, over x402.",
+    "It pays small amounts on its own. In the demo, test versions of Exa and CoinGecko sell it search and prices, over x402."
+   ],
+   [
+    "x2",
+    "The owner key stays on your phone, and our server keeps one agent key for each card. The AI never holds a key.",
+    "The owner key stays on your phone, and our server makes a separate agent key for each card. The AI never holds a key."
+   ],
+   [
+    "x5",
+    "Then the agent key signs one exact payment from the card, and the seller's facilitator sends it to the chain.",
+    "Then the agent key signs one exact payment from the card, and a facilitator sends it to the chain."
+   ],
+   [
+    "x6a",
+    "Many agent wallets check their limits on the wallet company's server.",
+    "Some agent wallets check their limits on the wallet company's server."
+   ],
+   [
+    "u4",
+    "A seller that isn't on your list gets refused, and the agent finds another way.",
+    "A seller that isn't on your list gets refused, and the agent re-plans or asks you."
+   ],
+   [
+    "u3",
+    "The agent negotiates the price down, from twelve Hong Kong dollars to eight eighty.",
+    "The agent negotiates the price down, from twelve Hong Kong dollars to eight dollars eighty."
+   ],
+   [
+    "r1",
+    "It's your card, so you can cancel it mid-task and the money comes back.",
+    "It's your card, so you can cancel it mid-task and take back what's left."
+   ],
+   [
+    "k3",
+    "Worst case, we fool the agent on purpose and it tries to send the money.",
+    "Worst case, we act as a fooled agent and use its key to send the money."
+   ],
+   [
+    "k5",
+    "The agent was fooled. The card still won't pay outside its rules.",
+    "Even a fooled agent can't pay outside the card's rules."
+   ],
+   [
+    "f1",
+    "On our hosted FISCO BCOS chain, all seven forbidden payments were rejected.",
+    "On our hosted FISCO BCOS chain, all seven forbidden attempts were rejected."
+   ]
+  ]
+ },
+ {
+  "title": "P2 Rubric terms on the attack rail",
+  "when": "before the deadline",
+  "status": "kept",
+  "commits": [
+   "056dd8c"
+  ],
+  "pairs": [
+   [
+    "v4-166.5.jpg",
+    "rubric-166.5.jpg"
+   ],
+   [
+    "v4-170.jpg",
+    "rubric-170.jpg"
+   ]
+  ]
+ },
+ {
+  "title": "P3 Clarification and fallback tags",
+  "when": "before the deadline",
+  "status": "kept",
+  "commits": [
+   "81546ed"
+  ],
+  "pairs": [
+   [
+    "v4-66.jpg",
+    "interact-66.jpg"
+   ],
+   [
+    "v4-141.jpg",
+    "interact-141.jpg"
+   ]
+  ]
+ },
+ {
+  "title": "P1 Simplified Chinese line under the English (off until checked)",
+  "when": "before the deadline if checked",
+  "status": "kept, disabled",
+  "commits": [
+   "d3c6f87",
+   "399a15a"
+  ],
+  "pairs": [
+   [
+    "v4-100.jpg",
+    "zh-100.jpg"
+   ],
+   [
+    "v4-241.jpg",
+    "zh-241.jpg"
+   ],
+   [
+    "v4-39.5.jpg",
+    "zh-39.5.jpg"
+   ],
+   [
+    "v4-236.jpg",
+    "zh-236.jpg"
+   ]
+  ]
+ },
+ {
+  "title": "P0 Subtitle page break on “A.I. versus A.I.”",
+  "when": "before the deadline",
+  "status": "kept",
+  "commits": [
+   "9e4ef9b"
+  ],
+  "pairs": [
+   [
+    "v4-241.jpg",
+    "zh-241.jpg"
+   ]
+  ]
+ }
+]
