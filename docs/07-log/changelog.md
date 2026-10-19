@@ -1,6 +1,14 @@
 # Changelog
 Last updated: 2026-10-19
 
+## 2026-10-19 (demo video v3, "the AI Card")
+
+- **Video v3 (3:33):** re-told around one USP: ChainBrain gives your AI its own card; the card's own smart contract sets the limits, and a second AI watches every payment and can only make the rules stricter. Storyboard and research: [video/STORYBOARD-v3.md](../../video/STORYBOARD-v3.md).
+- **Opening:** the 4 May 2026 Morse-code wallet drain (about US$150,000, OECD AI Incidents Monitor), then Accenture's June 2026 survey: 74% would let AI handle their tasks, 9% would let it spend.
+- **Flow:** hook → the AI Card → get one → use it → break it ("The card says no", with the real block 13 revert) → the watcher → "Stricter. Never looser." → proof (7 of 7 forbidden payments rejected on the hosted chain, 55 attacks with 0 through, 0 rule breaks in 128,000 calls) → built with → close with the team's photos. Each idea is shown once; "Why it held", the Judges scoreboard and the second "two safety nets" pass are gone.
+- **Plain words:** negotiate (not haggle), approve, limit, rejected; phone shots are tagged "recorded on our test setup".
+- **Pipeline:** `video/remotion/src/edit.json` + `video/tools/layout.py` lay out the edit on the 120 BPM grid from the voice's word timings; key music hits punch through the voice ducking (`video/tools/mix.py`); the Chinese name uses the system PingFang SC (no font download at render).
+
 ## 2026-10-19 (demo video v2)
 
 - **Video v2 (4:04):** re-cut on a 120 BPM grid (one beat = 15 frames), with shorter shots, hard cuts that settle on motion, a gently tilted 3D phone and whip entrances at act changes.

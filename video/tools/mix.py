@@ -2,7 +2,8 @@
 
 usage: .venv/bin/python tools/mix.py remotion/src/timeline.json remotion/public/audio out.wav
 - each VO line (remotion/public/audio/vo/<id>.wav, 24 kHz) is levelled to the same loudness and placed at its cue;
-- the score (remotion/public/audio/score.wav) is ducked under the voice so it never sits closer than 14 dB to it;
+- the score (remotion/public/audio/score.wav) is ducked under the voice so it never sits closer than 14 dB to it,
+  except on the key hits listed in timeline cues.punch;
 - the result is normalised to -14 LUFS integrated, -1.0 dBTP, with ffmpeg's two-pass loudnorm.
 """
 import json
@@ -54,6 +55,18 @@ for i in range(0, N, 64):  # block-wise for speed
     coef = a_att if tgt < prev else a_rel
     prev = coef ** 64 * prev + (1 - coef ** 64) * tgt
     g[i:i + 64] = prev
+# punch-through: on the film's key hits (cues.punch: [start, length]) the music may rise to 3 dB over the voice,
+# with a 15 ms rise and a 350 ms fall, so the hit lands even while a word is being spoken
+cap_hit = 10 ** ((VO_RMS_DB + 3) / 20)
+for st, ln in tl["cues"].get("punch", []):
+    a, b = int(st * SR), int((st + ln) * SR)
+    if a >= N:
+        continue
+    b = min(b, N)
+    gp = np.minimum(1.0, cap_hit / m_env[a:b])
+    n = b - a
+    shape = np.minimum(1, np.minimum(np.arange(n) / (0.015 * SR), (n - np.arange(n)) / (0.35 * SR))).clip(0, 1)
+    g[a:b] = np.maximum(g[a:b], g[a:b] + (gp - g[a:b]).clip(0) * shape)
 mix = music * g[:, None] * 0.9 + vo[:, None]
 tmp = out + ".pre.wav"
 sf.write(tmp, mix, SR, subtype="FLOAT")

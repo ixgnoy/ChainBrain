@@ -1,12 +1,12 @@
-"""The v2 score: a 120 BPM hybrid trailer cue, composed in code and cut to the edit (remotion/src/timeline.json).
+"""The v3 score: a 120 BPM hybrid trailer cue, composed in code and cut to the edit (remotion/src/timeline.json).
 
 usage: ../.venv/bin/python score.py ../remotion/src/timeline.json ../remotion/public/audio/score.wav
 - Samples: VS Chamber Orchestra: Community Edition (CC0) via lemo-opuscar's sampler (MIT): strings, brass, timpani,
   orchestral percussion. Everything else (kick, claps, hats, synth pulse, bass, braams, risers, sub hits, bells,
   UI ticks) is numpy synthesis written for this video.
-- D minor, i-VI-III-VII (Dm Bb F C) for the drive; the drop lands on "Now, let's attack it"; the architecture act
-  runs on a mechanical clock texture with a chime per checkpoint and a tick per contract rule; D major for the
-  Brain and the close.
+- v3 arc: a Morse-key hook, a slam on the 9%, D minor (Dm Bb F C) drive through the product, the drop on "Now, let's
+  break it", half a second of silence before "The card says no." and the film's biggest hit on "no", a mechanical
+  texture for the watcher, D major for the close.
 - At 120 BPM one beat is exactly 15 frames at 30 fps, so every hit lands on a frame.
 """
 import json
@@ -323,127 +323,145 @@ def brass_swell(start, bars, chord, gain=0.5):
         sustain(start, start + bars * BAR, inst, m, vel=0.45, pan=pan, gain=gain, attack=bars * BAR * 0.6)
 
 
-# ================= arrangement =================
-# 0:00 cold open: drone and clock ticks, typing clicks, a short riser, hard silence at the cut, then the turn.
+# ================= arrangement (v3) =================
+def beep(d, f=720.0, v=1.0):
+    """One Morse pulse: a soft-edged sine, the way a radio key sounds."""
+    n = int((d + 0.02) * SR)
+    t = np.arange(n) / SR
+    env = np.minimum(1, np.minimum(t / 0.006, (d + 0.02 - t) / 0.012)).clip(0, 1)
+    return ((np.sin(2 * np.pi * f * t) + 0.12 * np.sin(4 * np.pi * f * t)) * env * 0.5 * v).astype(np.float32)
+
+
+def fall(d=2.4, f0=420.0, f1=48.0, v=1.0):
+    """A falling tone under the draining balance."""
+    n = int(d * SR)
+    t = np.arange(n) / SR
+    f = f0 * (f1 / f0) ** (t / d)
+    ph = 2 * np.pi * np.cumsum(f) / SR
+    return ((np.sin(ph) + 0.3 * np.sin(2 * ph)) * np.linspace(0.2, 1, n) ** 0.5 * np.linspace(1, 0.6, n) * 0.4 * v).astype(np.float32)
+
+
+# 0:00 hook: a low drone, the Morse key, then a hard cut to the balance falling to zero.
 c = cue["cut"]
-place(pad([36.71, 73.42], c + 0.4, v=0.6, cutoff=420)[: int(c * SR)], 0.0, 0.9)
-for i, tt in enumerate(np.arange(0.5, c - 0.1, BEAT)):
-    place(tick(0.8, 2000 if i % 2 else 2600), tt, 0.7, 0.25 if i % 2 else -0.25)
-for tt in np.arange(0.75, 3.1, 0.055):  # typing (the hidden line types out)
-    place(tick(0.35 + 0.2 * rng.random(), 3200 + 800 * rng.random()), tt + 0.01 * rng.random(), 0.5, rng.uniform(-0.2, 0.2))
-place(riser(2.2, 0.8), c - 2.2, 0.6)
-place(swell(0.8, 1.0), c - 0.8, 0.6)
-place(sub_hit(58, 28, 3.4, 1.0), cue["turn"] - 0.02, 0.95)
-sustain(cue["turn"], cue["title"] + 0.5, "contrabass", "D2", vel=0.45, gain=0.8, attack=0.2)
-sustain(cue["turn"], cue["title"] + 0.5, "cellos", "D3", vel=0.35, gain=0.6, attack=0.3)
-place(swell(1.4, 1.0), cue["title"] - 1.4, 0.75)
+place(pad([36.71, 73.42], c + 0.4, v=0.55, cutoff=380)[: int(c * SR)], 0.0, 0.9)
+for st, d, dash in cue["morse"]:
+    place(beep(d, 700.0, 1.0), st, 0.55, 0.0)
+place(riser(1.6, 0.6), c - 1.6, 0.4)
+place(sub_hit(58, 28, 2.4, 1.0), c, 0.9)
+place(fall(2.6, 420, 46, 1.0), c + 0.2, 0.7)
+z = c + 2.6  # the counter hits zero
+impact(z, 0.8)
+place(braam(3.2, 0.8), z, 0.5)
 
-# 0:10 title + team: the hit, the mark locks in, the pulse starts filtered.
-impact(cue["title"], 0.75)
-k_title = drums(cue["title"], cue["layers"], "pulse", 0.8)
-arp(cue["title"], cue["layers"], DRIVE, 3, 0.7, k_title, bright=1200)
-place(pad([73.42, 87.31, 110.0, 146.83], cue["layers"] - cue["title"] + 1.5, 0.8, 1000), cue["title"], 0.65)
+# 0:12 the trust gap: a tick as 74% counts up, a slam on "nine".
+for i in range(8):
+    place(tick(0.7, 2600 + 120 * i), cue["stat"] + 0.5 + i * 0.13, 0.5, 0.2 if i % 2 else -0.2)
+impact(cue["nine"] - 0.03, 0.85)
+place(swell(1.6, 1.0), cue["card"] - 1.6, 0.6)
 
-# 0:20 the problem: half-time kicks, bass, slams on each phrase.
-k_lay = drums(cue["layers"], cue["act1"], "half", 0.9)
-arp(cue["layers"], cue["act1"], DRIVE, 3, 0.8, k_lay, bright=1800)
-bassline(cue["layers"], cue["act1"], DRIVE, 0.8, k_lay)
-for s in cue["slams"]:
-    impact(s, 0.45)
-place(swell(1.6, 1.0), cue["act1"] - 1.6, 0.7)
+# 0:21 the card: the theme begins, filtered; a hit as the card arrives.
+k_c = drums(cue["card"], cue["what"], "pulse", 0.7)
+arp(cue["card"], cue["what"], DRIVE, 3, 0.6, k_c, bright=1100)
+place(pad([73.42, 87.31, 110.0, 146.83], cue["what"] - cue["card"] + 1.5, 0.8, 1000), cue["card"], 0.6)
+impact(cue["give"] - 0.05, 0.5)
 
-# 0:40 Act 1: the groove; spiccato strings join.
-k1 = drums(cue["act1"], cue["act2"], "drive", 0.85)
-arp(cue["act1"], cue["act2"], DRIVE, 3, 0.8, k1, bright=2200)
-bassline(cue["act1"], cue["act2"], DRIVE, 0.85, k1)
-ostinato(cue["act1"] + 2 * BAR, cue["act2"], DRIVE, "cellos_spic", 3, (0.32, 0.45), -0.25, 0.7)
-impact(cue["act1"], 0.5)
+# 0:28 what the AI Card is: half-time groove; a hit per agent card, a chime on FISCO, a bell on the watcher.
+k_w = drums(cue["what"], cue["get"], "half", 0.85)
+arp(cue["what"], cue["get"], DRIVE, 3, 0.75, k_w, bright=1800)
+bassline(cue["what"], cue["get"], DRIVE, 0.8, k_w)
+for a_ in cue["agents"]:
+    impact(a_ - 0.03, 0.3)
+place(chime(1.0), cue["fisco"] - 0.02, 0.7, 0.1)
+place(bell(880.0, 2.0, 0.8), cue["watcher"], 0.5, -0.2)
+place(swell(1.6, 1.0), cue["get"] - 1.6, 0.6)
 
-# 1:02 Act 2: bigger; violins and brass swells; build to the drop.
-k2 = drums(cue["act2"], cue["riser"], "drive", 1.0)
-arp(cue["act2"], cue["riser"], DRIVE, 3, 0.85, k2, bright=3000)
-bassline(cue["act2"], cue["riser"], DRIVE, 0.95, k2)
-ostinato(cue["act2"], cue["riser"], DRIVE, "cellos_spic", 3, (0.42, 0.58), -0.25, 0.8)
-ostinato(cue["act2"] + 2 * BAR, cue["riser"], DRIVE, "violins_spic", 4, (0.25, 0.42), 0.3, 0.5)
-for tb in np.arange(cue["act2"], cue["riser"] - 0.1, 4 * BAR):
+# 0:48 get one: the groove; spiccato strings join; a hit when the card goes live.
+k1 = drums(cue["get"], cue["use"], "drive", 0.85)
+arp(cue["get"], cue["use"], DRIVE, 3, 0.8, k1, bright=2200)
+bassline(cue["get"], cue["use"], DRIVE, 0.85, k1)
+ostinato(cue["get"] + 2 * BAR, cue["use"], DRIVE, "cellos_spic", 3, (0.32, 0.45), -0.25, 0.7)
+impact(cue["get"], 0.5)
+impact(cue["live"] - 0.03, 0.55)
+
+# 1:14 use it: bigger; violins and brass; a small accent on each new beat; build to the drop.
+riser_at = cue["drop"] - 4.0
+k2 = drums(cue["use"], riser_at, "drive", 1.0)
+arp(cue["use"], riser_at, DRIVE, 3, 0.85, k2, bright=3000)
+bassline(cue["use"], riser_at, DRIVE, 0.95, k2)
+ostinato(cue["use"], riser_at, DRIVE, "cellos_spic", 3, (0.42, 0.58), -0.25, 0.8)
+ostinato(cue["use"] + 2 * BAR, riser_at, DRIVE, "violins_spic", 4, (0.25, 0.42), 0.3, 0.5)
+for tb in np.arange(cue["use"], riser_at - 0.1, 4 * BAR):
     brass_swell(tb, 4, DRIVE[0], 0.4)
-impact(cue["act2"], 0.55)
-# into the drop: snare roll + riser, then one beat of silence before the drop
-place(riser(cue["drop"] - cue["riser"] - 0.5, 1.0), cue["riser"], 0.7)
-smp([(0, "snare", "roll", cue["drop"] - cue["riser"] - 0.5, 0.6, 0.0)], cue["drop"] - cue["riser"] + 1, 0.6, cue["riser"])
-k_r = drums(cue["riser"], cue["drop"] - 0.5, "drive", 0.9)
-arp(cue["riser"], cue["drop"] - 0.5, ["C"], 3, 0.8, k_r, bright=4200)
+impact(cue["use"], 0.55)
+for ub in cue["use_beats"]:
+    impact(ub - 0.02, 0.28)
+place(riser(cue["drop"] - riser_at - 0.5, 1.0), riser_at, 0.7)
+smp([(0, "snare", "roll", cue["drop"] - riser_at - 0.5, 0.6, 0.0)], cue["drop"] - riser_at + 1, 0.6, riser_at)
+k_r = drums(riser_at, cue["drop"] - 0.5, "drive", 0.9)
+arp(riser_at, cue["drop"] - 0.5, ["C"], 3, 0.8, k_r, bright=4200)
 
-# 1:32 THE DROP: braam + full hit, then the attack act drives on train kicks.
+# 1:54 THE DROP on "Now, let's break it", then the attacks drive on train kicks.
 d0 = cue["drop"]
 impact(d0, 1.0)
-place(braam(5.0, 1.0), d0, 0.7)
-k3 = drums(d0 + BAR, cue["blocked"], "train", 0.95)
-bassline(d0 + BAR, cue["blocked"], DARK, 1.0, k3)
-arp(d0 + BAR, cue["blocked"], DARK, 3, 0.75, k3, bright=2400)
-ostinato(d0 + BAR, cue["blocked"], DARK, "cellos_spic", 3, (0.55, 0.72), -0.25, 0.85)
-ostinato(d0 + 2 * BAR, cue["blocked"], DARK, "violins_spic", 4, (0.35, 0.5), 0.3, 0.5)
-sustain(d0, cue["blocked"], "contrabass", "D2", vel=0.55, gain=0.7, attack=0.2)
-sustain(d0 + BAR, cue["blocked"], "trombone", "D2", vel=0.42, gain=0.5, attack=1.2)
+place(braam(4.5, 1.0), d0, 0.7)
+hush = cue["no"] - 0.55  # silence before "No."
+k3 = drums(cue["attack"], hush, "train", 0.95)
+bassline(cue["attack"], hush, DARK, 1.0, k3)
+arp(cue["attack"], hush, DARK, 3, 0.75, k3, bright=2400)
+ostinato(cue["attack"], hush, DARK, "cellos_spic", 3, (0.55, 0.72), -0.25, 0.85)
+ostinato(cue["attack"] + BAR, hush, DARK, "violins_spic", 4, (0.35, 0.5), 0.3, 0.5)
+sustain(d0, hush, "contrabass", "D2", vel=0.55, gain=0.7, attack=0.2)
 for h in cue["hits"]:
     impact(h - 0.02, 0.6)
-impact(cue["refuse"] - 0.02, 1.0)          # "The card refuses it."
-for p in ["D3", "A3", "F4"]:
-    sustain(cue["refuse"], cue["refuse"] + 4.5, "horn", p, vel=0.5, gain=0.4, attack=0.3)
-impact(cue["freeze"] - 0.02, 0.8)           # "...freezes the card."
-place(riser(cue["blocked"] - cue["freeze"] - 0.5, 0.6), cue["freeze"] + 0.5, 0.5)
+place(riser(hush - cue["fool"], 0.9), cue["fool"], 0.6)
 
-# 2:08 "4 of 4 attacks blocked": resolve to D major.
-b = cue["blocked"]
-impact(b, 0.7)
-for p, inst, pan in [("D3", "horn", -0.3), ("F#3", "horn", 0.0), ("A3", "horn", 0.3), ("D4", "violins", 0.15)]:
-    sustain(b, cue["hood"] + 1.0, inst, p, vel=0.5, pan=pan, gain=0.5, attack=0.25)
+# 2:14 "The card says no.": half a second of nothing, then the biggest hit of the film.
+nn = cue["no"]
+impact(nn - 0.02, 1.0)
+place(sub_hit(62, 26, 4.0, 1.0), nn - 0.02, 1.0)
+place(shatter(1.0), nn, 0.6)
+for p, inst, pan in [("D2", "contrabass", 0.0), ("D3", "cellos", -0.2), ("A3", "horn", 0.2), ("F4", "violins", 0.1)]:
+    sustain(nn + 0.4, cue["watch"] + 0.5, inst, p, vel=0.45, pan=pan, gain=0.45, attack=1.2)
+place(pad([73.42, 110.0, 146.83], cue["watch"] - nn, 0.6, 700), nn + 0.5, 0.5)
+impact(cue["because"] - 0.03, 0.45)
 
-# 2:12 UNDER THE HOOD: a mechanism. Clock hats, a tight bass ostinato, a chime per checkpoint, a tick per rule.
-hd = cue["hood"]
-sh = cue["shatter"]
-k_h = drums(hd + BAR, sh - 0.1, "pulse", 0.75)
-for i, tt in enumerate(np.arange(hd, sh - 0.2, BEAT / 4)):
-    place(tick(0.35 if i % 4 else 0.6, 3000 if i % 4 else 2200), tt, 0.5, 0.35 if i % 2 else -0.35)
-bassline(hd + BAR, sh - 0.2, DARK, 0.7, k_h)
-arp(hd + 4 * BAR, sh - 0.2, DARK, 4, 0.55, k_h, bright=1500, step=BEAT / 2, gain=0.45)
-place(pad([73.42, 110.0, 146.83], sh - hd, 0.6, 700), hd, 0.6)
-for cp in cue["checkpoints"]:
-    place(chime(1.0), cp - 0.02, 0.8, 0.1)
-    place(sub_hit(55, 40, 1.0, 0.5), cp - 0.02, 0.45)
-for i, r in enumerate(cue["rules"]):
-    place(tick(1.0, 1800 + 260 * i), r - 0.01, 0.9)
-    place(bell(880.0 * 2 ** (i * 2 / 12), 0.8, 0.6), r, 0.45)
-place(riser(max(0.6, sh - (cue["rules"][-1] + 0.4)), 0.8), cue["rules"][-1] + 0.4, 0.55)
-impact(sh - 0.02, 1.0)                     # "One rule fails"
-place(shatter(1.0), sh, 0.8)
-place(swell(1.6, 1.0), cue["brain"] - 1.6, 0.6)
+# 2:27 the watcher: a mechanism; ticks, tight bass; a hit when it freezes the card.
+wt = cue["watch"]
+k_h = drums(wt, cue["only"] - 0.1, "pulse", 0.75)
+for i, tt in enumerate(np.arange(wt, cue["only"] - 0.2, BEAT / 4)):
+    place(tick(0.3 if i % 4 else 0.55, 3000 if i % 4 else 2200), tt, 0.45, 0.35 if i % 2 else -0.35)
+bassline(wt, cue["only"] - 0.2, DARK, 0.7, k_h)
+arp(wt + 2 * BAR, cue["only"] - 0.2, DARK, 4, 0.55, k_h, bright=1500, step=BEAT / 2, gain=0.45)
+impact(cue["freeze"] - 0.03, 0.8)
+place(swell(1.2, 1.0), cue["only"] - 1.2, 0.5)
 
-# 3:00 the Brain: warm, curious. D major pad, bells, pizzicato.
-br = cue["brain"]
-place(pad([73.42, 92.5, 110.0, 146.83], cue["charge"] - br + 1.5, 0.85, 1500), br, 0.7)
-impact(br, 0.35)
-bells = [587.33, 739.99, 880.0, 1174.66, 880.0, 739.99]
-for i, tt in enumerate(np.arange(br + BEAT, cue["charge"], BEAT)):
-    if i % 2 == 0:
-        place(bell(bells[(i // 2) % len(bells)], 2.2, 0.8), tt, 0.6, 0.4 if i % 4 == 0 else -0.4)
-ev = [(tt - br, "violins_pizz", ["D4", "A4", "F#4", "A4"][i % 4], 0.4, 0.35, 0.2) for i, tt in enumerate(np.arange(br + BAR, cue["charge"], BEAT))]
-smp(ev, cue["charge"] - br + 2, 0.5, br)
-k_b = drums(br + 4 * BAR, cue["charge"], "pulse", 0.6)
-arp(br + 2 * BAR, cue["charge"], LIFT, 4, 0.45, k_b, bright=1600, step=BEAT / 2, gain=0.4)
+# 2:44 stricter, never looser: a bright bell, then a low hit on "looser".
+impact(cue["only"], 0.4)
+place(bell(1174.66, 2.4, 1.0), cue["stricter"], 0.7, 0.15)
+place(bell(1760.0, 2.0, 0.7), cue["stricter"] + 0.08, 0.5, -0.15)
+impact(cue["looser"] + 0.2, 0.75)
+place(sub_hit(50, 30, 2.0, 0.8), cue["looser"] + 0.2, 0.6)
 
-# 3:20 in charge, 3:30 proof: confident, building to the close.
-k_c = drums(cue["charge"], cue["proof"], "half", 0.75)
-bassline(cue["charge"], cue["proof"], LIFT, 0.7, k_c)
-arp(cue["charge"], cue["proof"], LIFT, 3, 0.6, k_c, bright=2000)
-k_p = drums(cue["proof"], cue["close"] - 0.5, "drive", 0.8)
-bassline(cue["proof"], cue["close"] - 0.5, ["Bb", "C", "Dm", "Dm"], 0.85, k_p)
-arp(cue["proof"], cue["close"] - 0.5, ["Bb", "C", "Dm", "Dm"], 3, 0.7, k_p, bright=2600)
-ostinato(cue["proof"] + 2 * BAR, cue["close"] - 0.5, ["Bb", "C", "Dm", "Dm"], "cellos_spic", 3, (0.35, 0.55), -0.25, 0.7)
-brass_swell(cue["close"] - 2 * BAR, 2, "A", 0.45)
+# 2:50 proof: confident drive; a tick per rejected row, a hit on "Fifty-five".
+pr = cue["proof"]
+k_p = drums(pr, cue["built"], "drive", 0.8)
+bassline(pr, cue["built"], ["Bb", "C", "Dm", "Dm"], 0.85, k_p)
+arp(pr, cue["built"], ["Bb", "C", "Dm", "Dm"], 3, 0.7, k_p, bright=2600)
+ostinato(pr + 2 * BAR, cue["built"], ["Bb", "C", "Dm", "Dm"], "cellos_spic", 3, (0.35, 0.55), -0.25, 0.7)
+impact(pr, 0.5)
+for i in range(7):
+    place(tick(1.0, 2200 + 140 * i), cue["rejected"] + i * 0.12, 0.7, -0.3 + 0.1 * i)
+impact(cue["fiftyfive"] - 0.03, 0.6)
+
+# 3:14 built with: lift to D major.
+bw = cue["built"]
+k_b = drums(bw, cue["close"] - 0.5, "drive", 0.85)
+bassline(bw, cue["close"] - 0.5, LIFT, 0.8, k_b)
+arp(bw, cue["close"] - 0.5, LIFT, 3, 0.75, k_b, bright=3000)
+brass_swell(bw, 2, "D", 0.45)
 place(riser(2.0, 0.9), cue["close"] - 2.0, 0.6)
 
-# 3:48 close: the last hit, a full D major chord and a long tail.
+# 3:20 close: the last hit, a full D major chord and a long tail.
 cl = cue["close"]
 impact(cl, 1.0)
 smp([(0, "gong", None, None, 0.4, 0.0)], 6.0, 0.6, cl)

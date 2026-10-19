@@ -1,6 +1,5 @@
 import { loadFont } from "@remotion/fonts";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
-import { loadFont as loadCjk } from "@remotion/google-fonts/NotoSansSC";
 import { staticFile } from "remotion";
 
 // Dark-keynote stage around the app's own Neo-Kinetic tokens (mobile/src/tokens.ts).
@@ -37,13 +36,12 @@ for (const [family, file, weight] of faces) {
   loadFont({ family, url: staticFile(`fonts/${file}`), weight });
 }
 export const mono = loadMono("normal", { weights: ["400", "500", "700"], subsets: ["latin"] }).fontFamily;
-export const cjk = loadCjk("normal", { weights: ["500", "700"] }).fontFamily;
 
 export const F = {
   display: "'Clash Display', sans-serif",
   body: "'General Sans', sans-serif",
   mono: `${mono}, monospace`,
-  cjk: `${cjk}, sans-serif`,
+  cjk: "'PingFang SC', 'Hiragino Sans GB', sans-serif", // system font for 链AI脑 (no network fetch at render)
 };
 
 // Critically damped spring step response: 0 → 1, no overshoot (the banned list forbids bouncy easing).

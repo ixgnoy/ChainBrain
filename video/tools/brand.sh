@@ -15,4 +15,6 @@ cp -f "$L/Anthropic media resources/Anthropic logos/Claude logos/3 Claude Spark/
 cp -f "$L/OpenAI-logos/PNGs/OAI_OpenAI-Blossom_Black.png" "$B/openai-blossom-black.png" 2>/dev/null || true
 cp -f "$R/reference/repos/from-prior/x402/examples/typescript/fullstack/next/public/x402-logo-dark.png" "$B/x402-logo-dark.png" 2>/dev/null || echo "note: x402 logo not found (reference/ missing)"
 cp -f "$R/reference/repos/from-prior/FISCO-BCOS/docs/FISCO_BCOS_Logo.svg" "$B/fisco-bcos-logo.svg" 2>/dev/null || echo "note: FISCO BCOS logo not found (reference/ missing)"
+# official marks for the "Built with" strip (video/assets/brand, see CREDITS.md)
+cp -f assets/brand/* "$B/"
 ls "$B" | wc -l

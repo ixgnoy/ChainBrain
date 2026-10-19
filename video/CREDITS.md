@@ -8,6 +8,15 @@
 - Tan Hao Wen, Universiti Malaya
 - Wong Yong Xi, Universiti Putra Malaysia
 
+## Team photos
+
+- Supplied by the team for the end card (`footage/teammate/`, not in git).
+
+## Facts in the opening
+
+- The Morse-code wallet drain, 4 May 2026: OECD AI Incidents Monitor, https://oecd.ai/en/incidents/2026-05-04-4a73 (amount reported as about US$150,000 in DRB tokens; reports vary).
+- Accenture, "Talk to My AI Agent" (June 2026; 25,590 consumers, 16 countries): 74% would let an agent handle routine tasks; 9% are open to fully autonomous purchasing.
+
 ## Footage
 
 - **Phone:** the ChainBrain Expo app in Expo Go on the iOS Simulator, recorded with `xcrun simctl io recordVideo` on 19 Oct 2026.
@@ -17,7 +26,8 @@
 - **Console:** the ChainBrain web console on its built-in network, recorded in headless Chromium (Playwright 1.64, MIT licence).
 - **Real chain:** the hosted ChainBrain explorer for the team's FISCO BCOS 3.16.4 chain (chain id 20200).
   - The proof scene shows these transactions: `docs/evidence-fisco-railway.json`.
-  - "Why it held" shows two of them as screenshots: block 11 (success, HK$2.30 to the team's test seller DataLite) and block 13 (the forced transfer, reverted).
+  - "The card says no" shows block 13 (the forced transfer, reverted) as a screenshot.
+  - The proof scene lists the 7 refused payments from `docs/redteam/hosted-proof.json` with their hashes.
 - **App UI crops:** cut from the phone recordings above (`tools/ui-stills.sh`, `tools/crops.py`); they are the app's real screens on its built-in network.
 - **Seller names:** Exa, CoinGecko, Nansen, DataPro, Harbour Wines, ShadyFeed and TradeWire appear as the app shows them on its built-in network.
   - DataPro, Harbour Wines, ShadyFeed and TradeWire are fictional demo sellers.
@@ -25,6 +35,7 @@
   - Agent marks: the Claude Spark (Anthropic press kit) and the OpenAI Blossom (OpenAI brand assets), unmodified.
   - All third-party marks are shown unmodified, as small avatars beside the name, the way the app shows them. No partnership is implied.
 - **Technology marks:** the FISCO BCOS logo from the FISCO-BCOS repository (`docs/FISCO_BCOS_Logo.svg`) and the x402 logo from the x402 repository (`x402-logo-dark.png`), both shown on a white plaque, for identification only.
+- **"Built with" strip** (`video/assets/brand/`), each mark from its project's own repository, unmodified except Expo's (its white mark recoloured black for a white plaque): Solidity (`ethereum/solidity` docs/logo.svg), Vite (`vitejs/vite` docs/public/logo.svg), Hono (`honojs/hono` docs/images/hono-title.png), React and Expo (the official Expo app template's images). Shown to name the tools the code uses; no endorsement is implied.
 - **Icons:** Lucide (ISC licence), the same icon set the ChainBrain apps use.
 
 ## Voice
@@ -44,7 +55,7 @@
 
 - Clash Display and General Sans by Indian Type Foundry, ITF Free Font License (Fontshare).
 - JetBrains Mono, SIL Open Font License 1.1.
-- Noto Sans SC, SIL Open Font License 1.1.
+- PingFang SC (macOS system font) for 链AI脑.
 
 ## Tools
 

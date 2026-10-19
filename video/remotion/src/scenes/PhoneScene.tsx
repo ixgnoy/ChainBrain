@@ -195,7 +195,7 @@ export const Caption: React.FC<{ text: string; tone: "red" | "blue" | "plain"; d
             style={{
               width: 52,
               height: 52,
-              borderRadius: 13,
+              borderRadius: 26,
               background: bg,
               boxShadow: "0 8px 20px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.16)",
               display: "flex",
@@ -228,7 +228,7 @@ export const Caption: React.FC<{ text: string; tone: "red" | "blue" | "plain"; d
   );
 };
 
-// Honest label, small corner text: the phone and console footage ran on the app's built-in network.
+// Honest label, small corner text: the phone footage ran on the app's built-in network (an in-app test chain).
 export const SimTag: React.FC<{ what?: string; style?: React.CSSProperties }> = ({ what = "Phone", style }) => (
   <div
     style={{
@@ -247,6 +247,6 @@ export const SimTag: React.FC<{ what?: string; style?: React.CSSProperties }> = 
     }}
   >
     <div style={{ width: 8, height: 8, background: C.blue }} />
-    {what} on the built-in network · simulated chain
+    {what} recorded on our test setup · test chain
   </div>
 );

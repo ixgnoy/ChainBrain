@@ -1,10 +1,10 @@
 # ChainBrain demo video
 
-The 4-minute FinTechathon demo video: `out/InternationalAI-ChainBrain-DemoVideo.mp4`, with its `.srt` and `poster.jpg`.
+The 3½-minute FinTechathon demo video (v3, "the AI Card"): `out/InternationalAI-ChainBrain-DemoVideo.mp4`, with its `.srt` and `poster.jpg`.
 
-- Script and shot list: [SCRIPT.md](SCRIPT.md). Credits and licences: [CREDITS.md](CREDITS.md).
-- Edit timing (scenes, voice cues, music cues): `remotion/src/timeline.json`.
-- Shots and camera moves: `remotion/src/Main.tsx`.
+- Script and shot list: [SCRIPT.md](SCRIPT.md); the approved storyboard and why: [STORYBOARD-v3.md](STORYBOARD-v3.md). Credits and licences: [CREDITS.md](CREDITS.md).
+- The edit: `remotion/src/edit.json` (scenes, footage cuts, voice anchors). `tools/layout.py` turns it into `remotion/src/timeline.json` (scene times on the 120 BPM grid, voice start times); `tools/cues.py` adds the music cues.
+- Shots and camera moves: `remotion/src/Main.tsx`; the story scenes: `remotion/src/scenes/V3.tsx`.
 
 ## Rebuild
 
@@ -16,7 +16,7 @@ sh video/build.sh setup
 sh video/build.sh
 ```
 
-`setup` installs the Python venv (Kokoro, faster-whisper), the Kokoro model, the CC0 orchestral samples and the Remotion packages. The second command rebuilds everything after the recordings: UI stills and crops, voice, word timings, music cues, score, mix, picture, subtitles and the final MP4.
+`setup` installs the Python venv (Kokoro, faster-whisper), the Kokoro model, the CC0 orchestral samples and the Remotion packages. The second command rebuilds everything after the recordings: brand marks, team photo crops, UI stills and crops, voice, word timings, the edit layout, music cues, score, mix, picture, subtitles and the final MP4.
 
 ## Voice (ElevenLabs)
 
@@ -51,10 +51,13 @@ ffmpeg -i raw.mp4 -vf fps=30 -c:v libx264 -crf 17 -pix_fmt yuv420p out.mp4
 - Recorded with `node tools/console-rec.mjs tools/shots/<shot>.json <out.mp4>`.
 - The console used demo mode (`?server=builtin`). The explorer is the real hosted FISCO chain.
 
+**Team photos** (`footage/teammate/*`, git-ignored): `tools/team.py` makes the round end-card crops.
+
 **Explorer stills** (`footage/probe/ex-*.png`): `node tools/console-rec.mjs tools/shots/explorer-stills.json` screenshots the hosted explorer at 2x; `tools/crops.py` cuts the transaction panels.
 
 ## Honesty rules the edit follows
 
-- Phone and console shots carry a "built-in network · simulated chain" tag, and the video never zooms in on a demo hash.
-- Every hash the video points at is a real transaction on the hosted chain, from `docs/evidence-fisco-railway.json`.
-- No code is shown and no UI is invented: the story scenes use crops of the app's real screens and the explorer's real pages.
+- Phone shots carry a "recorded on our test setup · test chain" tag (the app's built-in network), and the video never zooms in on a demo hash.
+- Every hash the video points at is a real transaction on the hosted chain, from `docs/evidence-fisco-railway.json` and `docs/redteam/hosted-proof.json` (the 7 rejected payments).
+- The hook's facts are sourced on screen: the 4 May 2026 Morse-code wallet drain (OECD AI Incidents Monitor, about US$150,000) and Accenture's June 2026 survey (74% / 9%). The dots and dashes are an illustration, not the attacker's post.
+- The AI Card is a drawn illustration of the idea; it carries the hosted proof card's real address tail (0x33Dc…3356) and rules. Everything else is the app's real screens and the explorer's real pages. No code is shown.

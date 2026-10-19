@@ -1,0 +1,353 @@
+{
+  "_": "v3 edit decision list. tools/layout.py turns it into timeline.json (scene times on the 120 BPM grid, voice-over start times). Phone scenes list footage segments [src, from, to, rate?, tag?]; a scene's length is its footage plus `pad`. Voice anchors: at = seconds into the scene; seg = start of footage segment N plus off; after = end of another line plus gap.",
+  "scenes": [
+    {
+      "id": "hook",
+      "len": 12.0,
+      "vo": [
+        {
+          "id": "m1",
+          "at": 0.6
+        },
+        {
+          "id": "m2",
+          "at": 6.1
+        }
+      ]
+    },
+    {
+      "id": "stat",
+      "len": 9.0,
+      "vo": [
+        {
+          "id": "m3",
+          "at": 0.5
+        }
+      ]
+    },
+    {
+      "id": "card",
+      "len": 7.5,
+      "vo": [
+        {
+          "id": "n1",
+          "at": 0.9
+        }
+      ]
+    },
+    {
+      "id": "what",
+      "len": 20.0,
+      "vo": [
+        {
+          "id": "n2",
+          "at": 0.4
+        },
+        {
+          "id": "n3",
+          "after": "n2",
+          "gap": 0.6
+        },
+        {
+          "id": "n4",
+          "after": "n3",
+          "gap": 0.6
+        }
+      ]
+    },
+    {
+      "id": "get",
+      "segs": [
+        [
+          "AP",
+          448.6,
+          457.4,
+          1.3
+        ],
+        [
+          "AP",
+          458.6,
+          461.0
+        ],
+        [
+          "AP",
+          461.5,
+          472.0,
+          1.0
+        ],
+        [
+          "AP",
+          478.6,
+          481.4
+        ],
+        [
+          "AP",
+          482.0,
+          569.0,
+          30,
+          "×30"
+        ]
+      ],
+      "pad": 0.5,
+      "vo": [
+        {
+          "id": "g1",
+          "at": 0.5
+        },
+        {
+          "id": "g2",
+          "at": 5.0
+        },
+        {
+          "id": "g3",
+          "seg": 3,
+          "off": -0.2
+        }
+      ]
+    },
+    {
+      "id": "use",
+      "segs": [
+        [
+          "AP",
+          43.4,
+          47.4
+        ],
+        [
+          "AP",
+          48.0,
+          49.5
+        ],
+        [
+          "AP",
+          55.5,
+          63.9
+        ],
+        [
+          "AP",
+          63.9,
+          70.6
+        ],
+        [
+          "AP",
+          86.4,
+          89.4
+        ],
+        [
+          "AP",
+          97.6,
+          100.4
+        ],
+        [
+          "AP",
+          168.6,
+          172.6
+        ],
+        [
+          "AP",
+          175.2,
+          178.2
+        ],
+        [
+          "AP",
+          277.4,
+          280.2
+        ],
+        [
+          "AP",
+          283.6,
+          286.4
+        ]
+      ],
+      "pad": 0.4,
+      "vo": [
+        {
+          "id": "u0",
+          "at": 0.3
+        },
+        {
+          "id": "u1",
+          "seg": 2,
+          "off": 0.2
+        },
+        {
+          "id": "u2",
+          "after": "u1",
+          "gap": 0.5
+        },
+        {
+          "id": "u4",
+          "seg": 4,
+          "off": 0.2
+        },
+        {
+          "id": "u3",
+          "seg": 6,
+          "off": 0.2
+        },
+        {
+          "id": "r1",
+          "seg": 8,
+          "off": 0.2
+        }
+      ]
+    },
+    {
+      "id": "breakT",
+      "len": 3.0,
+      "vo": [
+        {
+          "id": "k1",
+          "at": 0.5
+        }
+      ]
+    },
+    {
+      "id": "attack",
+      "segs": [
+        [
+          "AP",
+          113.0,
+          115.4
+        ],
+        [
+          "AP",
+          121.6,
+          123.5
+        ],
+        [
+          "AP",
+          143.6,
+          147.0
+        ],
+        [
+          "AP",
+          125.0,
+          134.0
+        ]
+      ],
+      "fit": {
+        "line": "k2",
+        "lead": 0.6,
+        "words": [
+          "hidden",
+          "requests",
+          "fake"
+        ],
+        "tail": 0.7
+      },
+      "vo": [
+        {
+          "id": "k2",
+          "at": 0.6
+        },
+        {
+          "id": "k3",
+          "seg": 3,
+          "off": 0.3
+        }
+      ]
+    },
+    {
+      "id": "money",
+      "len": 13.0,
+      "vo": [
+        {
+          "id": "k4",
+          "at": 1.0
+        },
+        {
+          "id": "k5",
+          "after": "k4",
+          "gap": 1.2
+        }
+      ]
+    },
+    {
+      "id": "watch",
+      "segs": [
+        [
+          "BR",
+          48.0,
+          50.0
+        ],
+        [
+          "AP",
+          204.0,
+          206.6
+        ],
+        [
+          "AP",
+          213.0,
+          215.0
+        ],
+        [
+          "BR",
+          253.0,
+          255.6
+        ],
+        [
+          "AP",
+          231.0,
+          234.6
+        ],
+        [
+          "AP",
+          246.0,
+          250.4
+        ]
+      ],
+      "pad": 0.3,
+      "vo": [
+        {
+          "id": "w1",
+          "at": 0.5
+        },
+        {
+          "id": "w2",
+          "seg": 4,
+          "off": 0.3
+        }
+      ]
+    },
+    {
+      "id": "only",
+      "len": 6.0,
+      "vo": [
+        {
+          "id": "w3",
+          "at": 0.6
+        }
+      ]
+    },
+    {
+      "id": "proof",
+      "len": 24.0,
+      "vo": [
+        {
+          "id": "f1",
+          "at": 0.8
+        },
+        {
+          "id": "f2",
+          "at": 10.5
+        }
+      ]
+    },
+    {
+      "id": "built",
+      "len": 6.5,
+      "vo": []
+    },
+    {
+      "id": "close",
+      "len": 12.0,
+      "vo": [
+        {
+          "id": "z1",
+          "at": 0.7
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,8 @@
 """Derive the score's hit points in timeline.json from the scene layout and the voice-over's word timings,
-so the music follows the voice whenever a line is re-recorded or moved.
+so the music follows the voice whenever a line is re-recorded or moved (v3 edit).
+
+Also writes the hook's Morse pulses (cues.morse: [start, length, dash]); the picture lights a dot or dash on each one
+and the score beeps on each one, so sound and picture share one source.
 
 usage: python3 tools/cues.py remotion/src/timeline.json remotion/src/vo-words.json
 """
@@ -25,35 +28,68 @@ def word(line, w, nth=0):
     raise SystemExit(f"cues.py: no word '{w}' in line {line}")
 
 
-def on_beat(t):
-    """The beat at or just before t (slams land on the grid, just ahead of the phrase)."""
-    return round(int(t / beat + 1e-6) * beat, 3)
+def end(line):
+    return round(at[line] + words[line][-1]["e"], 3)
 
 
-c = tl["cues"]
-c.update({
-    "turn": at["c3"],
-    "title": sc["title"]["start"],
-    "team": sc["team"]["start"],
-    "layers": sc["layers"]["start"],
-    "slams": [on_beat(at[k]) for k in ("p1", "p2", "p3", "p4")],
-    "act1": sc["act1"]["start"],
-    "act2": sc["act2"]["start"],
-    "drop": sc["attackTitle"]["start"],
-    "riser": sc["attackTitle"]["start"] - 4 * beat * 2,
-    "hits": [at[k] for k in ("k2", "k3", "k4", "k5")],
-    "refuse": at["k6"],
-    "freeze": word("k7", "freezes"),
-    "blocked": sc["judges"]["start"],
-    "hood": sc["hood"]["start"],
-    "checkpoints": [word("h3", "brain"), at["h5"], word("h6", "contract")],
-    "rules": [word("h4", w) for w in ("screens", "predicts", "watches", "learns")],
-    "shatter": word("h7", "no"),
-    "brain": sc["brain"]["start"],
-    "charge": sc["charge"]["start"],
+def seg(scene, i):
+    t = sc[scene]["start"]
+    for s in sc[scene]["segs"][:i]:
+        t += (s[2] - s[1]) / (s[3] if len(s) > 3 else 1)
+    return round(t, 3)
+
+
+# Morse for an illustrative order ("SEND ALL"); one unit = 70 ms, laid out from 0.8 s.
+CODE = {"S": "...", "E": ".", "N": "-.", "D": "-..", "A": ".-", "L": ".-.."}
+U, t, morse = 0.07, 0.8, []
+for wi, w in enumerate("SEND ALL".split()):
+    for li, ch in enumerate(w):
+        for si, sym in enumerate(CODE[ch]):
+            d = U * (3 if sym == "-" else 1)
+            morse.append([round(t, 3), round(d, 3), 1 if sym == "-" else 0])
+            t += d + U
+        t += 2 * U
+    t += 4 * U
+
+c = {
+    "morse": morse,
+    "cut": round(at["m2"] - 0.25, 3),            # hard cut to the wallet running out
+    "empty": word("m2", "emptying"),
+    "stat": sc["stat"]["start"],
+    "tasks": word("m3", "tasks"),
+    "nine": word("m3", "nine"),
+    "card": sc["card"]["start"],
+    "give": word("n1", "give"),
+    "what": sc["what"]["start"],
+    "agents": [word("n2", "claude"), word("n2", "chatgpt"), word("n2", "ours")],
+    "fisco": word("n3", "fisco"),
+    "watcher": at["n4"],
+    "get": sc["get"]["start"],
+    "live": at["g3"],
+    "use": sc["use"]["start"],
+    "use_beats": [seg("use", i) for i in (2, 3, 4, 6, 8)],
+    "drop": sc["breakT"]["start"],
+    "attack": sc["attack"]["start"],
+    "hits": [word("k2", "hidden"), word("k2", "requests"), word("k2", "fake")],
+    "fool": at["k3"],
+    "money": sc["money"]["start"],
+    "no": word("k4", "no"),
+    "because": word("k5", "because", 1),
+    "watch": sc["watch"]["start"],
+    "freeze": word("w2", "freezes"),
+    "only": sc["only"]["start"],
+    "stricter": word("w3", "stricter"),
+    "looser": word("w3", "looser"),
     "proof": sc["proof"]["start"],
+    "rejected": word("f1", "rejected"),
+    "fiftyfive": at["f2"],
+    "built": sc["built"]["start"],
     "close": sc["close"]["start"],
+    "line": at["z1"],
     "end": tl["total"],
-})
-json.dump(tl, open(tl_path, "w"), indent=2)
-print("cues:", {k: c[k] for k in ("drop", "refuse", "freeze", "rules", "shatter")})
+}
+# hits that cut through the voice ducking (tools/mix.py)
+c["punch"] = [[round(c["cut"] + 2.55, 3), 1.2], [round(c["nine"] - 0.05, 3), 0.9], [round(c["no"] - 0.05, 3), 1.3], [round(c["looser"] + 0.15, 3), 0.9]]
+tl["cues"] = c
+json.dump(tl, open(tl_path, "w"), indent=1)
+print("cues:", {k: c[k] for k in ("cut", "nine", "drop", "no", "freeze", "stricter", "end")}, f"morse {len(morse)} pulses to {t:.2f}s")

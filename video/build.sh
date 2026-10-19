@@ -37,6 +37,7 @@ done
 # brand marks (shared/brand + official files under reference/), then real app UI stills and crops for the story
 # scenes (from the phone recordings and the hosted explorer)
 sh tools/brand.sh
+if [ -d footage/teammate ]; then $PY tools/team.py footage/teammate remotion/public/team; fi
 sh tools/ui-stills.sh
 [ -f footage/probe/ex-success.png ] || node tools/console-rec.mjs tools/shots/explorer-stills.json
 $PY tools/crops.py
@@ -48,6 +49,8 @@ else
   $PY tts/asr.py tts/lines.json remotion/public/audio/vo remotion/src/vo-words.json
 fi
 cp tts/lines.json remotion/src/vo-lines.json
+# the edit: scene lengths from the footage cuts, voice-over start times (remotion/src/edit.json)
+python3 tools/layout.py remotion/src/edit.json remotion/src/vo-words.json remotion/src/timeline.json
 # music hit points follow the voice, then the score and the mix
 python3 tools/cues.py remotion/src/timeline.json remotion/src/vo-words.json
 # music and mix
@@ -57,6 +60,6 @@ $PY tools/mix.py remotion/src/timeline.json remotion/public/audio remotion/publi
 (cd remotion && npx remotion render Main ../out/video-muted.mp4 --codec=h264 --crf=16 --concurrency=8 --muted)
 ffmpeg -v error -y -i out/video-muted.mp4 -i remotion/public/audio/mix.wav -map 0:v -map 1:a -vf "noise=alls=2:allf=t" -c:v libx264 -crf 21 -preset slow -pix_fmt yuv420p -c:a aac -b:a 256k -movflags +faststart -shortest "$OUT"
 python3 tools/srt.py remotion/src out/InternationalAI-ChainBrain-DemoVideo.srt
-ffmpeg -v error -y -ss 13.5 -i "$OUT" -frames:v 1 -q:v 2 out/poster.jpg
+ffmpeg -v error -y -ss 26.0 -i "$OUT" -frames:v 1 -q:v 2 out/poster.jpg
 ffprobe -v error -show_entries format=duration -of csv=p=0 "$OUT"
 echo "done: $OUT"
