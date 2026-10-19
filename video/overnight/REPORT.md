@@ -77,7 +77,7 @@ B means before the deadline; A means after, for the finals. Ranked by effect × 
 These are approved decisions. Reviewers questioned them; the evidence is noted, and nothing was changed.
 
 - **"Stricter, never looser" (w3).** The second AI tightens what the agent may do; it doesn't edit the stored rules. A safer line: "The second AI can only hold or block a payment. It can never loosen a limit."
-- **ART framework tags on the HKMA slide.** The policy reviewer suggests three small tags (Accountability, Resilience, Trust) over the four rows. That's after the deadline: it adds text, and the voice must not say ART requires anything.
+- **ART framework on the HKMA slide.** `2216e4e` (optional) names it in the source line only: "under the HKMA's ART framework (Accountability, Resilience, Trust)". The policy reviewer's fuller idea, three pillar tags over the rows, is for after the deadline.
 - **"Every agent, Claude, ChatGPT, or ours" (n2).** Pairing outside agents works only on the demo network so far.
 - **The ending's vermillion "card".** It breaks the colour rule (vermillion only for attacks); the motion reviewer suggests powder blue.
 
@@ -144,3 +144,4 @@ These are approved decisions. Reviewers questioned them; the evidence is noted, 
 | P21 | Fit under 5:00 at 145 wpm, plus `tools/pace.py` | `d3ffd3b` | fit-107, fit-119.6, fit-169.8, fit-196, fit-250.8 | kept; this was a must-fix |
 | P22 | Attack headlines land harder (settle stiffness per scene) | `033e48c` | attack-whip-150.65 | kept |
 | P23 | Attack camera travels faster (0.45 s) | `3021ee3` | (motion) | kept |
+| P24 | ART framework named on the HKMA slide | `2216e4e` | art-hkma | kept (optional) |
