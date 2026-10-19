@@ -1,8 +1,8 @@
-# ChainBrain security test report
+# ChainBrain security self-assessment
 
 **We attacked our own wallet 63 times. HK$0 left a card.**
 
-The designed version of this report is [`ChainBrain-security-test-report.pdf`](../ChainBrain-security-test-report.pdf) (7 pages); its source is [`report.html`](report.html). This file carries the same numbers as text.
+The designed version is [`ChainBrain-security-self-assessment.pdf`](../ChainBrain-security-self-assessment.pdf) (10 pages); its source is [`report.html`](report.html). This file carries the same content as text. It follows the organisers' template: 01 Permission model, 02 Security tests (sections 1 to 6 below), 03 Data and privacy, 04 Known risks. Team ChainBrain, International AI Track, Topic F.
 
 Tested on 19 October 2026. Money is Mock e-HKD, a test token on FISCO BCOS shown as HK$. It is not the HKMA's e-HKD.
 
@@ -13,6 +13,38 @@ Tested on 19 October 2026. Money is Mock e-HKD, a test token on FISCO BCOS shown
 | Ordinary tasks blocked by a protection layer | **0 of 31** |
 | Random contract calls that broke a rule | **0 of 128,000** |
 | Attempts refused on the hosted chain (open them yourself) | **7 of 7** |
+
+## 01 Permission model
+
+| Role | Can | Cannot | Enforced by |
+| --- | --- | --- | --- |
+| Owner | Create, fund and edit cards; revoke; unfreeze; take the funds back; co-sign one payment | Have the key read by the server: it never leaves the phone or browser | The card (`onlyOwner`); the device's signing guard |
+| AI agent (the model) | Read the card and sellers, draft a task, quote, haggle, ask the owner, pay a quote | Name an address, hold a key, edit a card, reach another card or the main wallet | The wallet tools: no tool takes an address or returns a key |
+| Agent key, one per card | Sign one exact transfer from its own card to a quoted seller | Pay off the allowlist, above the cap, the allowance or the balance; pass the ask-me limit alone; change a rule | The card (`isValidSignature`, `canPay`) |
+| Sentinel (guardian key) | Freeze a card, with a reason | Move money, unfreeze, or change any rule | The card (guardian set once, freeze only) |
+| Seller and facilitator | Quote a price; submit a transfer the agent signed | Change the payee or amount; obtain personal data or any other signature | The token's EIP-712 digest; the wallet's content scan and signing rule |
+| Signed-in visitor | Act on their own cards | Write to someone else's card (403 NOT_YOUR_CARD) | The server, which checks the card's on-chain `owner()` |
+
+Sensitive actions, by tier:
+
+- **Tier 0, read:** balance, rules, sellers, quotes. No confirmation; nothing moves.
+- **Tier 1, pay inside the rules:** the owner confirms the task once (a fixed Buy / Price / Deadline card written by code); the agent key then pays inside it.
+- **Tier 2, above the limit:** above ask-me or the allowance, the owner co-signs that one payment with slide and Face ID: one seller, one amount, 10 minutes.
+- **Tier 3, change a rule:** rules, revoke, unfreeze and return funds need the owner's own transaction. Never the agent, the server or the Sentinel.
+
+Verification: the wallet reads `canPay` before signing; pre-flight runs the exact transfer as an eth_call; the live 402 must match the quote; the card checks again at settlement, and that is the check that counts. Every result has a hash in the explorer.
+
+Rollback and recovery: a refused transfer reverts whole; an authorisation works once and expires after 600 seconds; revoke stops the next payment and `returnFunds` takes the balance back; a refusal returns a reason code and is never retried unchanged. A settled payment can't be reversed, so every check runs first.
+
+| Failure | What happens | Test |
+| --- | --- | --- |
+| Owner revokes mid-task | The next payment is refused; the owner takes the rest back | `tools`, `pay`, `scenes` |
+| Agent probes the rules | 3 refusals in a minute: the Sentinel freezes the card on chain; the owner unfreezes | `sentinel-chain` |
+| Model errors or is down | The scripted agent finishes the turn and says so in the trace | `agent`, `llm` |
+| Agent loops | Stops at 24 steps and names the payments already made | `agent` |
+| Server restarts | Accounts, events, approvals and memory return; a pending approval returns timed out | `persist` |
+
+## 02 Security tests
 
 ## 1. How we tested
 
@@ -134,6 +166,10 @@ Every suite passes on the submitted code:
 | Web console | 92 of 92 |
 | Phone app | 61 of 61 |
 | Full stack, end to end (chain, wallet API and sellers through the chat API) | 21 of 21 |
+| Built-in demo network | 67 of 67 |
+| Python verifier | 16 of 16 |
+
+462 tests in 7 suites, 0 failures, all run on 19 October.
 
 ## 5. Check it yourself
 
@@ -171,7 +207,47 @@ Not tested yet:
 - Other models, and more live runs. Eight attack runs leave a 36.9% upper bound; about 60 are needed to get under 6%.
 - The full test suites on the hosted chain. Only the proof run in §5 ran there.
 
-## 7. Every test, and how to re-run it
+## 03 Data and privacy
+
+ChainBrain asks for no name, email, phone number or ID. An account is a wallet address.
+
+| Data | Where | How long | Who can read it |
+| --- | --- | --- | --- |
+| Owner key | The owner's device: iOS Keychain, Android Keystore, or the browser, optionally behind a passkey | Until the owner removes it | The owner only |
+| Account | Server volume: owner address, created time, funding transaction, hashes of session tokens | Tokens 7 days; the account until the operator removes it | The server |
+| Card's agent | Server volume: card id and agent address; the key is derived when used, never stored | Life of the card | The server |
+| Recent chat | Server volume, per card | The last few turns; older text survives only as the memory note | The server; the model during a turn |
+| Memory notes | Server volume: up to 30 short notes per card, plus the last 100 versions | Until the owner taps Forget | The owner; the model, marked "not instructions" |
+| Wallet events | Server volume: payments, refusals, the agent's trace | The last 1,000 | Anyone with the card address (KR-05) |
+| Tasks, quotes, Radar, Sentinel | Server memory | Until the server restarts | The server |
+| Rules and transfers | FISCO chain | Permanent | Anyone: public by design, under pseudonymous addresses |
+
+What leaves the system: the model provider (OpenRouter, Claude Haiku 5.5) gets the system prompt, the owner's messages and tool results, with seller text wrapped as untrusted, never a key. Sellers get a payment authorisation and public addresses; requests for a name, email, history, other cards or a signature are refused by code (DISCLOSURE_REFUSED, SIGNATURE_TYPE_NOT_ALLOWED).
+
+Consent and minimisation: sign-in is a signed message that says it moves no money; the owner confirms each task and co-signs each payment above the limit; memory reads only the owner's words and wallet events, never seller text, and may not store limits, keys or addresses.
+
+Deletion: the owner can forget any memory note; chat is trimmed and events capped at 1,000; there is no self-service account deletion yet (KR-13); on-chain records can't be deleted and hold addresses and amounts, not names. All money is Mock e-HKD; seller reports and the demo network's history are invented and labelled.
+
+## 04 Known risks
+
+| ID | Risk | Impact | What limits it today | Next step |
+| --- | --- | --- | --- | --- |
+| KR-01 | The server is broken into and the agent master key stolen | High | Signs only inside each card's rules: allowed sellers, cap, allowance, never above ask-me alone | Keys in a hardware or cloud key service; rotation per card |
+| KR-02 | An owner's device key is lost or stolen | High | Device secure storage; optional passkey on the console | Recovery contacts; a delay before any rule is loosened |
+| KR-03 | The agent is fooled inside the rules: the wrong item from an allowed seller | Medium | The confirmed task caps price, total, items and deadline; ask-me co-sign | Put the task's budget on chain; check receipts against the task |
+| KR-04 | An allowed seller turns bad | Medium | Radar re-screens every 30 s and alerts; the owner removes the seller | A waiting period before a new seller can be paid |
+| KR-05 | A card's events, pending approvals, memory and Sentinel status can be read by anyone who knows its address | Medium | No keys or money exposed; no personal data collected; kept open so the judges' console can show live activity | Owner sign-in on these reads; a separate public demo feed |
+| KR-06 | One FISCO node, run by us | Medium | Public RPC, explorer and an independent verifier | A multi-node consortium chain |
+| KR-07 | The content scan reads JSON fields; a request in prose isn't caught by code | Low | Seller text wrapped as data; the card still holds | A classifier for prose requests |
+| KR-08 | Radar's thresholds are a first guess | Low | A review score only asks the owner; the allowlist still applies | Calibrate on labelled transfer data |
+| KR-09 | Tasks, quotes, Radar's index and the Sentinel's watch reset on restart | Low | Events, approvals, memory and accounts persist | Persist the Sentinel's state |
+| KR-10 | The model provider sees chat text | Low | No personal data collected; keys never sent | A self-hosted model or a data-processing agreement |
+| KR-11 | The Android app's co-sign screen doesn't re-check payee and amount | Low | The card still enforces the allowlist and cap; the iOS/Expo app checks | Port the phone app's signing guard |
+| KR-12 | Live-model evidence is small: 8 attack runs, one model, one wording each | Low | 95% upper bounds published with every result | 60+ runs, more models, reworded and translated attacks |
+| KR-13 | No self-service account deletion | Low | Memory notes can be forgotten; chat and events are trimmed | A delete-account route |
+| KR-14 | Mock e-HKD is a test token, not from a licensed issuer | Scope | Labelled on every page and screen | The same card contract on a licensed issuer's token |
+
+## Appendix: every test, and how to re-run it
 
 Each attack is one test function, counted once. The contract tests also run a second time under a millisecond clock; that second run isn't counted.
 

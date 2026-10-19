@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>ChainBrain security test report</title>
+<title>ChainBrain security self-assessment</title>
 <style>
 @font-face { font-family: "Clash"; src: url("../../../mobile/assets/fonts/ClashDisplay-Semibold.ttf"); font-weight: 600; }
 @font-face { font-family: "Clash"; src: url("../../../mobile/assets/fonts/ClashDisplay-Medium.ttf"); font-weight: 500; }
@@ -66,14 +66,27 @@ ul.plain li:last-child { border-bottom: 0; }
 .grp p { font-size: 7.6pt; color: var(--ink2); line-height: 1.4; }
 code, .code { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: var(--tile); padding: 1px 4px; border-radius: 3px; }
 pre { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: var(--tile); padding: 8px 10px; border-radius: 5px; line-height: 1.6; white-space: pre-wrap; }
+.bl { background: var(--blueSoft); color: var(--blueInk); }
+.gr { background: var(--tile); color: var(--ink2); border: 0.5px solid var(--line); }
+.eyebrow { font-size: 8pt; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--verInk); margin-bottom: 4px; }
+.sec { font-size: 7.6pt; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--verInk); margin-bottom: 3px; }
+table.tight td { font-size: 7.7pt; padding: 3.5px 5px; line-height: 1.32; }
+table.tight th { font-size: 7.2pt; padding: 3px 5px; }
+.tier { border-radius: 6px; padding: 9px 10px; }
+.tier .t { font-size: 7.4pt; font-weight: 600; letter-spacing: 0.4px; margin-bottom: 4px; }
+.tier .h { font-weight: 600; font-size: 9pt; margin-bottom: 3px; }
+.tier p { font-size: 7.8pt; line-height: 1.32; }
+.page > * { flex-shrink: 0; }
+ul.compact li { padding: 2.5px 0; font-size: 7.8pt; line-height: 1.32; }
 </style>
 </head>
 <body>
 
 <!-- 1 -->
 <section class="page">
-  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security test report</div><div class="meta">19 October 2026 · FISCO BCOS · Mock e-HKD</div></div>
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security self-assessment</div><div class="meta">19 October 2026 · FISCO BCOS · Mock e-HKD</div></div>
 
+  <div class="eyebrow">Security self-assessment · Team ChainBrain · International AI Track · Topic F · 20 Oct 2026</div>
   <h1>We attacked our own wallet 63 times.<br>HK$0 left a card.</h1>
   <p class="lede">55 worst-case tests assume the AI is already compromised. In 8 more runs a live model made every decision. No payment left a card outside the owner's rules.</p>
 
@@ -125,23 +138,85 @@ pre { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: va
         <li><span class="pill ok">paid</span> HK$2.30 to DataLite, agent key alone<br><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0xd687ae822e99ecd3b765051da79cb5f2f610d535649813bc304dd3ca257bd2db">0xd687ae82…57bd2db</a></li>
         <li><span class="pill ok">paid</span> HK$11.70 to DataPro, owner co-signed<br><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x8625dbfba0b8a5ee1a09ed44a62c0ae35a1bc2014cfaa3bd268c8319e48d7386">0x8625dbfb…48d7386</a></li>
       </ul>
-      <p class="cap">All 14 steps of this run are on page 6.</p>
+      <p class="cap">All 14 steps of this run are on page 7.</p>
     </div>
   </div>
 
-  <h3 style="margin-top: 20px;">Where the numbers come from</h3>
-  <div class="row" style="grid-template-columns: repeat(3, 1fr);">
-    <div class="box"><div class="tile" style="background:none;padding:0"><div class="n">55 + 15</div></div><p style="font-size:8.4pt;color:var(--ink2)"><b>Worst-case suite.</b> Attacks and ordinary tasks from the project's own tests, on a FISCO node. The AI is assumed compromised or skipped entirely.</p></div>
-    <div class="box"><div class="tile" style="background:none;padding:0"><div class="n">24</div></div><p style="font-size:8.4pt;color:var(--ink2)"><b>Live model.</b> Claude Haiku 5.5 decides every step of 6 demo scenes, 4 times each: 8 attack runs and 16 ordinary tasks.</p></div>
-    <div class="box"><div class="tile" style="background:none;padding:0"><div class="n">14</div></div><p style="font-size:8.4pt;color:var(--ink2)"><b>Hosted proof.</b> Transactions on the public FISCO chain: 2 payments that should settle and 7 that the card must refuse.</p></div>
+  <h3 style="margin-top: 20px;">In this self-assessment</h3>
+  <div class="row" style="grid-template-columns: repeat(5, 1fr); gap: 6px;">
+    <div class="tile"><div class="sec">01</div><div class="l" style="font-size:8pt;color:#111215"><b>Permission model</b><br>roles, confirmation, rollback · p. 2</div></div>
+    <div class="tile dark"><div class="sec" style="color:#FFDBD2">02</div><div class="l" style="font-size:8pt;color:#fff"><b>Security tests</b><br><span style="color:#C9C8C3">attacks, live model, fuzzing, hosted proof · p. 3–7</span></div></div>
+    <div class="tile"><div class="sec">03</div><div class="l" style="font-size:8pt;color:#111215"><b>Data and privacy</b><br>what is kept, where, for how long · p. 8</div></div>
+    <div class="tile"><div class="sec">04</div><div class="l" style="font-size:8pt;color:#111215"><b>Known risks</b><br>impact, mitigation, next step · p. 9</div></div>
+    <div class="tile"><div class="sec" style="color:#5E5F68">Appendix</div><div class="l" style="font-size:8pt;color:#111215"><b>Every test</b><br>and how to re-run it · p. 10</div></div>
   </div>
 
-  <div class="foot"><span>Mock e-HKD is a test token on FISCO BCOS, not the HKMA's e-HKD.</span><span>1 / 7</span></div>
+  <div class="foot"><span>Mock e-HKD is a test token on FISCO BCOS, not the HKMA's e-HKD.</span><span>1 / 10</span></div>
+</section>
+
+<!-- P01 -->
+<section class="page">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security self-assessment</div><div class="meta">01 Permission model</div></div>
+  <div class="sec">01 · Permission model</div>
+  <h2>Who can do what, and who checks it</h2>
+  <p class="sub">Each role gets the narrowest power that does its job. "The card" is the contract on chain, which holds even if everything above it is compromised.</p>
+
+  <table class="tight">
+    <tr><th style="width:27mm">Role</th><th>Can</th><th>Cannot</th><th style="width:38mm">Enforced by</th></tr>
+    <tr><td class="k">Owner</td><td>Create, fund and edit cards; revoke; unfreeze; take the funds back; co-sign one payment</td><td>Have the key read by the server: it never leaves the phone or browser</td><td>The card (<span class="mono">onlyOwner</span>); the device's signing guard</td></tr>
+    <tr><td class="k">AI agent (the model)</td><td>Read the card and sellers, draft a task, quote, haggle, ask the owner, pay a quote</td><td>Name an address, hold a key, edit a card, reach another card or the main wallet</td><td>The wallet tools: no tool takes an address or returns a key</td></tr>
+    <tr><td class="k">Agent key, one per card</td><td>Sign one exact transfer from its own card to a quoted seller</td><td>Pay off the allowlist, above the cap, the allowance or the balance; pass the ask-me limit alone; change a rule</td><td>The card (<span class="mono">isValidSignature</span>, <span class="mono">canPay</span>)</td></tr>
+    <tr><td class="k">Sentinel (guardian key)</td><td>Freeze a card, with a reason</td><td>Move money, unfreeze, or change any rule</td><td>The card (guardian set once, freeze only)</td></tr>
+    <tr><td class="k">Seller and facilitator</td><td>Quote a price; submit a transfer the agent signed</td><td>Change the payee or amount; obtain personal data or any other signature</td><td>The token's EIP-712 digest; the wallet's content scan and signing rule</td></tr>
+    <tr><td class="k">Signed-in visitor</td><td>Act on their own cards</td><td>Write to someone else's card (403 NOT_YOUR_CARD)</td><td>The server, which checks the card's on-chain <span class="mono">owner()</span></td></tr>
+  </table>
+
+  <h3 style="margin-top: 10px;">Sensitive actions, by tier</h3>
+  <div class="row" style="grid-template-columns: repeat(4, 1fr); gap: 7px;">
+    <div class="tier" style="background:#F5F4F1"><div class="t" style="color:#5E5F68">TIER 0 · READ</div><div class="h">No confirmation</div><p>Balance, rules, sellers, quotes. Nothing moves.</p></div>
+    <div class="tier" style="background:#D1E4FF"><div class="t" style="color:#124977">TIER 1 · PAY INSIDE THE RULES</div><div class="h">The owner confirms the task once</div><p>A fixed Buy / Price / Deadline card written by code; the agent key then pays inside it.</p></div>
+    <div class="tier" style="background:#FFDBD2"><div class="t" style="color:#B32A00">TIER 2 · ABOVE THE LIMIT</div><div class="h">The owner co-signs that payment</div><p>Above ask-me or the allowance: slide and Face ID, one seller, one amount, 10 minutes.</p></div>
+    <div class="tier" style="background:#111215;color:#fff"><div class="t" style="color:#FFDBD2">TIER 3 · CHANGE A RULE</div><div class="h">Only the owner's own transaction</div><p style="color:#D9D8D3">Rules, revoke, unfreeze, return funds. Never the agent, the server or the Sentinel.</p></div>
+  </div>
+
+  <div class="row" style="grid-template-columns: 1fr 1fr; margin-top: 12px;">
+    <div class="box">
+      <h3>Verification</h3>
+      <ul class="plain compact">
+        <li>The wallet reads the card's <span class="mono">canPay</span> before it signs anything.</li>
+        <li>Pre-flight runs the exact transfer as an eth_call and records its prediction.</li>
+        <li>The live 402 must match the quote: network, token, payee, amount.</li>
+                <li>The card checks again at settlement; that is the check that counts. Every result has a hash in the explorer.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Rollback and recovery</h3>
+      <ul class="plain compact">
+        <li>A refused transfer reverts whole: no money moves.</li>
+        <li>An authorisation works once and expires after 600 seconds.</li>
+        <li>Revoke stops the next payment; <span class="mono">returnFunds</span> takes the whole balance back.</li>
+        <li>A refusal returns a reason code; the agent re-plans and never retries it unchanged. A settled payment can't be reversed, so every check runs first.</li>
+              </ul>
+    </div>
+  </div>
+
+  <h3 style="margin-top: 9px;">Failure recovery, and the test that shows it</h3>
+  <table class="tight">
+    <tr><th style="width:36mm">Failure</th><th>What happens</th><th style="width:34mm">Test</th></tr>
+    <tr><td class="k">Owner revokes mid-task</td><td>The next payment is refused; the owner takes the rest back</td><td class="mono">tools, pay, scenes</td></tr>
+    <tr><td class="k">Agent probes the rules</td><td>3 refusals in a minute: the Sentinel freezes the card on chain; the owner unfreezes</td><td class="mono">sentinel-chain</td></tr>
+    <tr><td class="k">Model errors or is down</td><td>The scripted agent finishes the turn and says so in the trace</td><td class="mono">agent, llm</td></tr>
+    <tr><td class="k">Agent loops</td><td>Stops at 24 steps and names the payments already made</td><td class="mono">agent</td></tr>
+    <tr><td class="k">Server restarts</td><td>Accounts, events, approvals and memory return; a pending approval returns timed out</td><td class="mono">persist</td></tr>
+  </table>
+
+  <div class="foot"><span>ChainBrain · Security self-assessment</span><span>2 / 10</span></div>
 </section>
 
 <!-- 2 -->
 <section class="page">
-  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security test report</div><div class="meta">How we tested</div></div>
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security self-assessment</div><div class="meta">02 Security tests · How we tested</div></div>
+  <div class="sec">02 · Security tests</div>
   <h2>How we tested</h2>
   <p class="sub">Each AI agent spends from its own card: a smart contract holding Mock e-HKD and the owner's rules. A payment has to pass every layer below the AI. We attacked each layer, and also skipped straight past the upper ones to hit the card directly.</p>
 
@@ -216,14 +291,14 @@ pre { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: va
     <tr><td class="k">Prompt injection</td><td>LLM01 Prompt injection</td><td>Hide orders for the agent inside a seller's page</td></tr>
     <tr><td class="k">Memory poisoning</td><td>ASI06 Memory and context poisoning</td><td>Plant a note in the agent's memory that loosens its limits</td></tr>
   </table>
-  <p class="cap">OWASP Top 10 for LLM Applications 2025 (LLM) and Top 10 for Agentic Applications 2026 (ASI). Neither has a category for money moved without permission, so we file it under ASI01 and LLM06.</p>
+  <p class="cap">OWASP Top 10 for LLM Applications 2025 (LLM) and Top 10 for Agentic Applications 2026 (ASI). Neither has a category for money moved without permission, so we file it under ASI01 and LLM06. Social engineering, in the template's words, is covered by induced transfer and privilege escalation: messages that claim to be the owner or an admin. Failure recovery is on page 2.</p>
 
-  <div class="foot"><span>ChainBrain · Security test report</span><span>2 / 7</span></div>
+  <div class="foot"><span>ChainBrain · Security self-assessment</span><span>3 / 10</span></div>
 </section>
 
 <!-- 3 -->
 <section class="page">
-  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security test report</div><div class="meta">Worst-case results</div></div>
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security self-assessment</div><div class="meta">02 Security tests · Worst-case results</div></div>
   <h2>Worst case: 55 attacks, 0 got through</h2>
   <p class="sub">Every test passed on the code we submitted. Zero failures in a small sample is still a small sample, so each bar shows the highest failure rate the result can't rule out.</p>
 
@@ -268,12 +343,12 @@ pre { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: va
     <div class="tile"><div class="n">3</div><div class="l">refusals inside one minute, and the Sentinel freezes the card on-chain</div></div>
   </div>
 
-  <div class="foot"><span>ChainBrain · Security test report</span><span>3 / 7</span></div>
+  <div class="foot"><span>ChainBrain · Security self-assessment</span><span>4 / 10</span></div>
 </section>
 
 <!-- 4 -->
 <section class="page">
-  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security test report</div><div class="meta">Live model</div></div>
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security self-assessment</div><div class="meta">02 Security tests · Live model</div></div>
   <h2>Live model: the AI was not fooled</h2>
   <p class="sub">The demo scenes ran 4 times with Claude Haiku 5.5 deciding every step, on a FISCO node with real x402 payments. Two scenes are attacks. The other four are ordinary tasks.</p>
 
@@ -346,12 +421,12 @@ pre { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: va
     </div>
   </div>
 
-  <div class="foot"><span>ChainBrain · Security test report</span><span>4 / 7</span></div>
+  <div class="foot"><span>ChainBrain · Security self-assessment</span><span>5 / 10</span></div>
 </section>
 
 <!-- 5 -->
 <section class="page">
-  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security test report</div><div class="meta">Contract and suites</div></div>
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security self-assessment</div><div class="meta">02 Security tests · Contract and suites</div></div>
   <h2>The card contract under random input</h2>
   <p class="sub">The fuzzer throws random amounts, recipients and callers at a card; the invariant run strings together random payments, owner co-signs, time jumps, freezes and unfreezes, then checks the rules still hold after every call.</p>
 
@@ -377,16 +452,18 @@ pre { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: va
   </div>
 
   <h3 style="margin-top: 22px;">Every test suite on the submitted code</h3>
-  <svg width="100%" viewBox="0 0 640 162" role="img" aria-label="Test suites, all passing: contracts 79 of 79, wallet server 126 of 126, web console 92 of 92, phone app 61 of 61, full stack end to end 21 of 21">
+  <svg width="100%" viewBox="0 0 640 186" role="img" aria-label="Test suites, all passing: wallet server 126, web console 92, contracts 79, built-in demo network 67, phone app 61, full stack 21, Python verifier 16; 462 in total">
     <g font-family="General" font-size="10" fill="#111215">
-      <text x="0" y="20">Contracts (Foundry)</text><rect x="150" y="10" width="153" height="14" rx="3" fill="#111215"/><text x="311" y="21" font-weight="600">79 / 79</text>
-      <text x="0" y="50">Wallet server, on FISCO</text><rect x="150" y="40" width="244" height="14" rx="3" fill="#111215"/><text x="402" y="51" font-weight="600">126 / 126</text><text x="460" y="51" fill="#5E5F68" font-size="8.5">+6 agent scenes, run separately</text>
-      <text x="0" y="80">Web console</text><rect x="150" y="70" width="178" height="14" rx="3" fill="#111215"/><text x="336" y="81" font-weight="600">92 / 92</text>
-      <text x="0" y="110">Phone app</text><rect x="150" y="100" width="118" height="14" rx="3" fill="#111215"/><text x="276" y="111" font-weight="600">61 / 61</text>
-      <text x="0" y="140">Full stack, end to end</text><rect x="150" y="130" width="40" height="14" rx="3" fill="#111215"/><text x="198" y="141" font-weight="600">21 / 21</text>
+      <text x="0" y="18">Wallet server, on FISCO</text><rect x="150" y="8" width="244" height="13" rx="3" fill="#111215"/><text x="402" y="19" font-weight="600">126 / 126</text><text x="460" y="19" fill="#5E5F68" font-size="8.5">+6 agent scenes, run separately</text>
+      <text x="0" y="44">Web console</text><rect x="150" y="34" width="178" height="13" rx="3" fill="#111215"/><text x="336" y="45" font-weight="600">92 / 92</text>
+      <text x="0" y="70">Contracts (Foundry)</text><rect x="150" y="60" width="153" height="13" rx="3" fill="#111215"/><text x="311" y="71" font-weight="600">79 / 79</text>
+      <text x="0" y="96">Built-in demo network</text><rect x="150" y="86" width="130" height="13" rx="3" fill="#111215"/><text x="288" y="97" font-weight="600">67 / 67</text>
+      <text x="0" y="122">Phone app</text><rect x="150" y="112" width="118" height="13" rx="3" fill="#111215"/><text x="276" y="123" font-weight="600">61 / 61</text>
+      <text x="0" y="148">Full stack, end to end</text><rect x="150" y="138" width="41" height="13" rx="3" fill="#111215"/><text x="199" y="149" font-weight="600">21 / 21</text>
+      <text x="0" y="174">Python verifier</text><rect x="150" y="164" width="31" height="13" rx="3" fill="#111215"/><text x="189" y="175" font-weight="600">16 / 16</text>
     </g>
   </svg>
-  <p class="cap">379 tests, 0 failures. The 6 agent scenes passed 6/6 with the fixed stand-in; their 4 live runs are on page 4.</p>
+  <p class="cap">462 tests in 7 suites, 0 failures, all run on 19 October. The 6 agent scenes passed 6/6 with the fixed stand-in; their 4 live runs are on page 5.</p>
 
   <h3 style="margin-top: 22px;">What the card checks before any money moves</h3>
   <svg width="100%" viewBox="0 0 640 120" role="img" aria-label="The card's checks in order: exact transfer, agent signature, card active, seller allowed, under the cap, enough balance, within the weekly allowance, owner co-sign above the limit">
@@ -401,12 +478,12 @@ pre { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: va
     </g>
   </svg>
 
-  <div class="foot"><span>ChainBrain · Security test report</span><span>5 / 7</span></div>
+  <div class="foot"><span>ChainBrain · Security self-assessment</span><span>6 / 10</span></div>
 </section>
 
 <!-- 6 -->
 <section class="page">
-  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security test report</div><div class="meta">Check it yourself</div></div>
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security self-assessment</div><div class="meta">02 Security tests · Check it yourself</div></div>
   <h2>Check it yourself</h2>
   <p class="sub">On 19 October we deployed the same contracts to the hosted FISCO chain from a fresh key, opened one card with HK$40, and ran this. Every hash opens in the explorer at <a href="https://fisco-api-production-85c5.up.railway.app/explorer">fisco-api-production-85c5.up.railway.app/explorer</a>.</p>
 
@@ -447,12 +524,94 @@ pre { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: va
     </div>
   </div>
 
-  <div class="foot"><span>ChainBrain · Security test report</span><span>6 / 7</span></div>
+  <div class="foot"><span>ChainBrain · Security self-assessment</span><span>7 / 10</span></div>
+</section>
+
+<!-- P03 -->
+<section class="page">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security self-assessment</div><div class="meta">03 Data and privacy</div></div>
+  <div class="sec">03 · Data and privacy</div>
+  <h2>What we keep, and where</h2>
+  <p class="sub">ChainBrain asks for no name, email, phone number or ID. An account is a wallet address. This is everything the system keeps, where it is kept, and for how long.</p>
+
+  <table class="tight">
+    <tr><th style="width:36mm">Data</th><th style="width:40mm">Where</th><th>How long</th><th style="width:36mm">Who can read it</th></tr>
+    <tr><td class="k">Owner key</td><td>The owner's device: iOS Keychain, Android Keystore, or the browser, optionally behind a passkey</td><td>Until the owner removes it</td><td>The owner only</td></tr>
+    <tr><td class="k">Account</td><td>Server volume: owner address, created time, funding transaction, hashes of session tokens</td><td>Tokens 7 days; the account until the operator removes it</td><td>The server</td></tr>
+    <tr><td class="k">Card's agent</td><td>Server volume: card id and agent address; the agent key itself is derived when used, never stored</td><td>Life of the card</td><td>The server</td></tr>
+    <tr><td class="k">Recent chat</td><td>Server volume, per card</td><td>The last few turns; older text survives only as the memory note</td><td>The server; the model during a turn</td></tr>
+    <tr><td class="k">Memory notes</td><td>Server volume: up to 30 short notes per card, plus the last 100 versions</td><td>Until the owner taps Forget</td><td>The owner; the model, marked "not instructions"</td></tr>
+    <tr><td class="k">Wallet events</td><td>Server volume: payments, refusals, the agent's trace</td><td>The last 1,000</td><td>Anyone with the card address (risk KR-05)</td></tr>
+    <tr><td class="k">Tasks, quotes, Radar, Sentinel</td><td>Server memory</td><td>Until the server restarts</td><td>The server</td></tr>
+    <tr><td class="k">Rules and transfers</td><td>FISCO chain</td><td>Permanent</td><td>Anyone: public by design, under pseudonymous addresses</td></tr>
+  </table>
+
+  <div class="row" style="grid-template-columns: 1fr 1fr; margin-top: 12px;">
+    <div class="box">
+      <h3>What leaves the system</h3>
+      <ul class="plain" style="font-size:8pt">
+        <li><b>Model provider</b> (OpenRouter, Claude Haiku 5.5): the system prompt, the owner's messages and tool results, with seller text wrapped as untrusted. Never a key.</li>
+        <li><b>Sellers</b>: a payment authorisation and public addresses. Requests for a name, email, history, other cards or a signature are refused by code (DISCLOSURE_REFUSED, SIGNATURE_TYPE_NOT_ALLOWED) and shown to the owner.</li>
+        <li><b>The chain</b>: rules and transfers, which is the point of the design.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Consent and minimisation</h3>
+      <ul class="plain" style="font-size:8pt">
+        <li>Sign-in is a signed message that says it moves no money.</li>
+        <li>The owner confirms each task and co-signs each payment above the limit.</li>
+        <li>The agent's tools never show the owner's identity: there is none to show.</li>
+        <li>Memory reads only the owner's words and wallet events, never seller text, and may not store limits, keys or addresses.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
+    <div class="box">
+      <h3>Deletion</h3>
+      <p style="font-size:8pt;color:var(--ink2)">The owner can forget any memory note. Chat is trimmed to the last few turns and events to the last 1,000. There is no self-service account deletion yet (KR-13). Records on the chain can't be deleted; they hold addresses and amounts, not names.</p>
+    </div>
+    <div class="box">
+      <h3>Test data</h3>
+      <p style="font-size:8pt;color:var(--ink2)">All money is Mock e-HKD, a test token, not the HKMA's e-HKD. Seller reports are marked as invented demo data. The built-in demo network's two weeks of history are generated, not anyone's real activity.</p>
+    </div>
+  </div>
+
+  <div class="foot"><span>ChainBrain · Security self-assessment</span><span>8 / 10</span></div>
+</section>
+
+<!-- P04 -->
+<section class="page">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security self-assessment</div><div class="meta">04 Known risks</div></div>
+  <div class="sec">04 · Known risks</div>
+  <h2>Known risks</h2>
+  <p class="sub">What could still go wrong, how bad it would be, what limits it today, and what we would do next. The card's on-chain rules bound every money risk below.</p>
+
+  <table class="tight">
+    <tr><th style="width:10mm">ID</th><th style="width:44mm">Risk</th><th style="width:14mm">Impact</th><th>What limits it today</th><th style="width:40mm">Next step</th></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-01</td><td class="k">The server is broken into and the agent master key stolen</td><td><span class="pill no">high</span></td><td>The attacker can sign as any agent, but only inside each card's rules: allowed sellers, cap, allowance, never above ask-me alone</td><td>Keys in a hardware or cloud key service; rotation per card</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-02</td><td class="k">An owner's device key is lost or stolen</td><td><span class="pill no">high</span></td><td>Device secure storage; optional passkey on the console</td><td>Recovery contacts; a delay before any rule is loosened</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-03</td><td class="k">The agent is fooled inside the rules: the wrong item from an allowed seller</td><td><span class="pill bl">medium</span></td><td>The confirmed task caps price, total, items and deadline; ask-me co-sign; at most one payment cap per mistake</td><td>Put the task's budget on chain; check receipts against the task</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-04</td><td class="k">An allowed seller turns bad</td><td><span class="pill bl">medium</span></td><td>Radar re-screens every 30 s and alerts every card that paid it; the owner removes the seller</td><td>A waiting period before a new seller can be paid</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-05</td><td class="k">A card's events, pending approvals, memory and Sentinel status can be read by anyone who knows its address</td><td><span class="pill bl">medium</span></td><td>No keys or money exposed; no personal data is collected; addresses are pseudonymous. Kept open so the judges' console can show live activity</td><td>Owner sign-in on these reads; a separate public feed for the demo</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-06</td><td class="k">One FISCO node, run by us</td><td><span class="pill bl">medium</span></td><td>Public RPC, explorer and an independent verifier anyone can run</td><td>A multi-node consortium chain</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-07</td><td class="k">The content scan reads JSON fields; a request written as prose isn't caught by code</td><td><span class="pill gr">low</span></td><td>Seller text is wrapped as data; the model is told so; the card still holds</td><td>A classifier for prose requests</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-08</td><td class="k">Radar's thresholds are a first guess</td><td><span class="pill gr">low</span></td><td>A review score only asks the owner; the card's allowlist still applies</td><td>Calibrate on labelled transfer data</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-09</td><td class="k">Tasks, quotes, Radar's index and the Sentinel's watch reset on restart</td><td><span class="pill gr">low</span></td><td>Events, approvals, memory and accounts persist; the card is unaffected</td><td>Persist the Sentinel's state</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-10</td><td class="k">The model provider sees chat text</td><td><span class="pill gr">low</span></td><td>No personal data collected; keys are never sent</td><td>A self-hosted model or a data-processing agreement</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-11</td><td class="k">The Android app's co-sign screen doesn't re-check payee and amount</td><td><span class="pill gr">low</span></td><td>The card still enforces the allowlist and cap; the iOS/Expo app does check</td><td>Port the phone app's signing guard</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-12</td><td class="k">Live-model evidence is small: 8 attack runs, one model, one wording each</td><td><span class="pill gr">low</span></td><td>95% upper bounds published with every result (pages 4–5)</td><td>60+ runs, more models, reworded and translated attacks</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-13</td><td class="k">No self-service account deletion</td><td><span class="pill gr">low</span></td><td>Memory notes can be forgotten; chat and events are trimmed</td><td>A delete-account route</td></tr>
+    <tr><td class="mono" style="white-space:nowrap">KR-14</td><td class="k">Mock e-HKD is a test token, not issued by a licensed issuer</td><td><span class="pill gr">scope</span></td><td>Labelled on every page and screen</td><td>Run the same card contract on a licensed issuer's token</td></tr>
+  </table>
+  <p class="cap">Impact is the worst case with the card's rules in place. No risk above lets money leave a card outside the owner's rules: that is what the 63 attacks in section 02 test.</p>
+
+  <div class="foot"><span>ChainBrain · Security self-assessment</span><span>9 / 10</span></div>
 </section>
 
 <!-- 7 -->
 <section class="page">
-  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security test report</div><div class="meta">Appendix</div></div>
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Security self-assessment</div><div class="meta">Appendix</div></div>
   <h2>Appendix: every test, and how to re-run it</h2>
   <p class="sub">Each attack is one test function in the repository, counted once.</p>
 
@@ -474,10 +633,10 @@ cd mobile &amp;&amp; npm test                  # 61 tests, phone app
 cd devstack &amp;&amp; npx vitest run          # 21 tests, full stack end to end
 cd server &amp;&amp; SCENES=1 SCENE_REPLAY=1 npx vitest run test/scenes.test.ts      # 6 scenes, fixed stand-in
 cd server &amp;&amp; SCENES=1 SCENES_DEBUG=1 npx vitest run test/scenes.test.ts --silent=false   # live model
-cd server &amp;&amp; npx tsx scripts/hosted-proof.ts    # the hosted-chain run on page 6</pre>
+cd server &amp;&amp; npx tsx scripts/hosted-proof.ts    # the hosted-chain run on page 7</pre>
   <p class="cap">The live-model run needs OPENROUTER_API_KEY in server/.env. SCENES_DEBUG prints every tool call and result: that trace is where "AI fooled" is read from. Full written report: docs/submission/redteam/report.md.</p>
 
-  <div class="foot"><span>ChainBrain · Security test report</span><span>7 / 7</span></div>
+  <div class="foot"><span>ChainBrain · Security self-assessment</span><span>10 / 10</span></div>
 </section>
 
 </body>

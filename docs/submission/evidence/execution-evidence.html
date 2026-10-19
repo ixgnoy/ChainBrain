@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ChainBrain execution evidence</title>
+<style>
+@font-face { font-family: "Clash"; src: url("../../../mobile/assets/fonts/ClashDisplay-Semibold.ttf"); font-weight: 600; }
+@font-face { font-family: "Clash"; src: url("../../../mobile/assets/fonts/ClashDisplay-Medium.ttf"); font-weight: 500; }
+@font-face { font-family: "General"; src: url("../../../mobile/assets/fonts/GeneralSans-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "General"; src: url("../../../mobile/assets/fonts/GeneralSans-Medium.ttf"); font-weight: 500; }
+@font-face { font-family: "General"; src: url("../../../mobile/assets/fonts/GeneralSans-Semibold.ttf"); font-weight: 600; }
+@page { size: A4; margin: 0; }
+:root { --ink:#111215; --ink2:#3A3B41; --muted:#5E5F68; --line:#D3D3D1; --tile:#F5F4F1; --canvas:#E7E6E2; --ver:#F04E23; --verInk:#B32A00; --verSoft:#FFDBD2; --blue:#9DCAFF; --blueInk:#124977; --blueSoft:#D1E4FF; --green:#15803D; --greenSoft:#DCFCE7; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: "General", -apple-system, sans-serif; color: var(--ink); font-size: 9.6pt; line-height: 1.45; font-variant-numeric: tabular-nums; }
+.page { width: 210mm; height: 297mm; padding: 15mm 16mm 13mm; position: relative; page-break-after: always; overflow: hidden; display: flex; flex-direction: column; }
+.page:last-child { page-break-after: auto; }
+.top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--ink); padding-bottom: 7px; margin-bottom: 18px; }
+.mark { display: grid; grid-template-columns: 7px 7px; gap: 2px; }
+.mark span { width: 7px; height: 7px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 9.5pt; }
+.meta { font-size: 8pt; color: var(--muted); }
+.foot { position: absolute; left: 16mm; right: 16mm; bottom: 9mm; display: flex; justify-content: space-between; font-size: 7.5pt; color: var(--muted); border-top: 0.5px solid var(--line); padding-top: 5px; }
+h1 { font-family: "Clash"; font-weight: 600; font-size: 25pt; line-height: 1.12; letter-spacing: -0.2px; }
+h2 { font-family: "Clash"; font-weight: 600; font-size: 18pt; line-height: 1.15; margin-bottom: 4px; }
+h3 { font-size: 10pt; font-weight: 600; margin-bottom: 7px; }
+.lede { font-size: 10.5pt; color: var(--ink2); margin: 8px 0 16px; max-width: 150mm; }
+.sub { color: var(--ink2); margin-bottom: 14px; max-width: 160mm; }
+.cap { font-size: 8pt; color: var(--muted); margin-top: 6px; }
+.tiles { display: grid; gap: 7px; }
+.tile { background: var(--tile); border-radius: 6px; padding: 10px 11px; }
+.tile .n { font-family: "Clash"; font-weight: 600; font-size: 19pt; line-height: 1; margin-bottom: 5px; }
+.tile .l { font-size: 7.8pt; color: var(--muted); line-height: 1.3; }
+.tile.dark { background: var(--ink); color: #fff; }
+.tile.dark .l { color: #C9C8C3; }
+.box { border: 0.5px solid var(--line); border-radius: 6px; padding: 11px 12px; }
+.row { display: grid; gap: 12px; }
+.mono { font-family: "SF Mono", Menlo, monospace; font-size: 7.4pt; }
+a { color: var(--blueInk); text-decoration: none; }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font-size: 7.8pt; color: var(--muted); font-weight: 500; padding: 4px 6px; border-bottom: 1px solid var(--ink); }
+td { padding: 5px 6px; border-bottom: 0.5px solid var(--line); vertical-align: top; font-size: 8.6pt; }
+.pill { display: inline-block; font-size: 7.4pt; padding: 1px 6px; border-radius: 9px; font-weight: 500; white-space: nowrap; }
+.ok { background: var(--greenSoft); color: var(--green); }
+.no { background: var(--verSoft); color: var(--verInk); }
+.mx td, .mx th { text-align: center; font-size: 8.2pt; padding: 0; height: 24px; vertical-align: middle; }
+.mx th { height: 30px; font-size: 7.2pt; line-height: 1.15; border-bottom: 1px solid var(--ink); }
+.mx td:first-child, .mx th:first-child { text-align: left; padding-left: 4px; width: 33mm; }
+.c0 { color: #C9C8C3; } .c1 { background: #EDEFF3; } .c2 { background: #C9D9EE; } .c3 { background: #7FA6D6; color: #fff; font-weight: 600; } .c4 { background: #111215; color: #fff; font-weight: 600; }
+.grid6 { display: grid; grid-template-columns: 52mm repeat(3, 1fr); gap: 4px; align-items: stretch; }
+.cell { border-radius: 4px; padding: 6px 7px; font-size: 7.8pt; line-height: 1.25; }
+.held { background: var(--ink); color: #fff; }
+.asx { background: var(--greenSoft); color: var(--green); }
+.diff { background: var(--tile); color: var(--ink2); border: 0.5px dashed #B4B2A9; }
+.lbl { font-size: 8.2pt; padding: 6px 2px; }
+.lbl b { font-weight: 600; display: block; }
+.lbl span { color: var(--muted); font-size: 7.5pt; }
+.k { font-weight: 600; }
+ul.plain { list-style: none; }
+ul.plain li { padding: 5px 0; border-bottom: 0.5px solid var(--line); }
+ul.plain li:last-child { border-bottom: 0; }
+.cols2 { columns: 2; column-gap: 9mm; }
+.cols2 .grp { break-inside: avoid; margin-bottom: 9px; }
+.grp h4 { font-size: 8.4pt; font-weight: 600; margin-bottom: 2px; }
+.grp p { font-size: 7.6pt; color: var(--ink2); line-height: 1.4; }
+code, .code { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: var(--tile); padding: 1px 4px; border-radius: 3px; }
+pre { font-family: "SF Mono", Menlo, monospace; font-size: 7.6pt; background: var(--tile); padding: 8px 10px; border-radius: 5px; line-height: 1.6; white-space: pre-wrap; }
+.bl { background: var(--blueSoft); color: var(--blueInk); }
+.gr { background: var(--tile); color: var(--ink2); border: 0.5px solid var(--line); }
+.eyebrow { font-size: 8pt; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--verInk); margin-bottom: 4px; }
+.sec { font-size: 7.6pt; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--verInk); margin-bottom: 3px; }
+table.tight td { font-size: 7.7pt; padding: 3.5px 5px; line-height: 1.32; }
+table.tight th { font-size: 7.2pt; padding: 3px 5px; }
+.tier { border-radius: 6px; padding: 9px 10px; }
+.tier .t { font-size: 7.4pt; font-weight: 600; letter-spacing: 0.4px; margin-bottom: 4px; }
+.tier .h { font-weight: 600; font-size: 9pt; margin-bottom: 3px; }
+.tier p { font-size: 7.8pt; line-height: 1.32; }
+.page > * { flex-shrink: 0; }
+ul.compact li { padding: 2.5px 0; font-size: 7.8pt; line-height: 1.32; }
+
+
+.wide img { width: 100%; border-radius: 6px; border: 0.5px solid var(--line); display: block; }
+table.ev td { font-size: 7.6pt; padding: 3.6px 5px; vertical-align: middle; }
+table.ev th { font-size: 7.2pt; padding: 3px 5px; }
+table.ev tr.grp td { background: var(--tile); font-weight: 600; font-size: 7.6pt; color: var(--ink2); padding: 5px; }
+</style>
+</head>
+<body>
+
+<section class="page">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Execution evidence</div><div class="meta">19 October 2026 · FISCO BCOS · Mock e-HKD</div></div>
+  <div class="eyebrow">Execution evidence · Team ChainBrain · International AI Track · Topic F · 20 Oct 2026</div>
+  <h1>25 transactions on a public FISCO chain.<br>9 of them are attacks the card refused.</h1>
+  <p class="lede">Every hash below opens in the hosted explorer, and one command re-fetches all 25 receipts from the public RPC. A refusal is an expected result: it is a payment outside the owner's rules, mined and reverted, with no money moved.</p>
+
+  <div class="tiles" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 16px;">
+    <div class="tile dark"><div class="n">25 / 25</div><div class="l">receipts match the expected result, re-checked 19 Oct, 23:21 HKT</div></div>
+    <div class="tile"><div class="n">16</div><div class="l">succeeded: cards created, funded, rules set, payments made</div></div>
+    <div class="tile"><div class="n">9</div><div class="l">refused on chain: planted payee, over cap, no co-sign, replay, rule edits</div></div>
+    <div class="tile"><div class="n">HK$0</div><div class="l">moved by any of the 9 refused attempts</div></div>
+    <div class="tile"><div class="n">20200</div><div class="l">chain id; FISCO BCOS 3.16.4, blocks 9 to 41</div></div>
+  </div>
+
+  <div class="sec">01 · Evidence summary</div>
+  <div class="row" style="grid-template-columns: 1fr 1fr; margin-bottom: 12px;">
+    <div class="box">
+      <h3>Topic and scenario</h3>
+      <p>Topic F, Agent Wallet. An owner gives an AI agent its own card: a smart contract holding Mock e-HKD and the owner's rules (which sellers, how much per payment, when to ask). The agent buys research reports from x402 sellers. Every payment is an EIP-3009 transfer from the card, which the token approves only after asking the card (ERC-1271).</p>
+    </div>
+    <div class="box">
+      <h3>What the evidence shows</h3>
+      <ul class="plain" style="font-size:8pt">
+        <li>The agent's key pays an allowed seller alone, inside the rules.</li>
+        <li>Above the ask-me limit, a payment settles only with the owner's co-signature.</li>
+        <li>A weekly allowance is counted on chain; the owner's co-signature lifts it once.</li>
+        <li>A compromised agent key sending straight to the chain is refused, every way we tried.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="wide"><img src="../tech/img/explorer-revert.jpg" alt="Hosted explorer showing transaction 5 reverted"></div>
+  <p class="cap">Transaction 5 in the hosted explorer: a compromised agent key sent a seller's planted transfer straight to the Mock e-HKD token, and the card refused it.</p>
+
+  <div class="box" style="margin-top: 12px;">
+    <h3>What is not in this table</h3>
+    <p>The test suites and the live-model runs (in the security self-assessment) ran on a local FISCO node, so judges can't open those hashes; they are recorded in <span class="mono">docs/evidence-fisco.json</span> and re-checked by <span class="mono">server/scripts/verify-evidence.ts</span>. Only transactions on the hosted chain are listed here.</p>
+  </div>
+
+  <div class="foot"><span>Mock e-HKD is a test token on FISCO BCOS, not the HKMA's e-HKD.</span><span>1 / 3</span></div>
+</section>
+
+<section class="page">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Execution evidence</div><div class="meta">02 Transactions</div></div>
+  <div class="sec">02 · Transactions</div>
+  <h2>Every hosted transaction</h2>
+  <p class="sub">Time and block are read from the chain. "Refused" means the transaction was mined and reverted by the card or the token; the reason is the card's own code for that payment.</p>
+  <table class="ev">
+    <tr><th style="width:6mm">#</th><th style="width:15mm">Time</th><th style="width:10mm">Block</th><th>Action</th><th style="width:15mm">Result</th><th style="width:33mm">Reason</th><th style="width:30mm">Transaction</th></tr>
+<tr class="grp"><td colspan="7">A · The app's own deployment · 19 October 2026, HKT</td></tr>
+<tr><td>1</td><td class="mono">01:47:52</td><td class="mono">9</td><td>Owner creates a research card: DataLite and DataPro, co-sign above the limit</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x9a1587e0e447cf82fa769fc18e765a29bad191d1aa03cfbe60c607f0dfa958d9">0x9a1587e0…a958d9</a></td></tr>
+<tr><td>2</td><td class="mono">01:47:53</td><td class="mono">10</td><td>Owner funds the card</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x84d74efed56af8e0a90592193948906f77ee85c1f7796eb1333d59e7c5cbb2ca">0x84d74efe…cbb2ca</a></td></tr>
+<tr><td>3</td><td class="mono">01:47:55</td><td class="mono">11</td><td>Agent pays DataLite over x402, agent key alone</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x15b0d30f82cd7efc94f5b534277a71ddaa439ecd5576315ae94cf9cbdccf9333">0x15b0d30f…cf9333</a></td></tr>
+<tr><td>4</td><td class="mono">01:47:56</td><td class="mono">12</td><td>Agent pays DataPro above the ask-me limit, owner co-signed</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0xcc79bc34fd0d6640866b6d555c46626e19d21177ca15380477326668346164a3">0xcc79bc34…6164a3</a></td></tr>
+<tr><td>5</td><td class="mono">01:48:03</td><td class="mono">13</td><td>Compromised agent key sends a seller's planted transfer straight to the token</td><td><span class="pill no">refused</span></td><td><span class="mono" style="color:#B32A00">SELLER_NOT_ALLOWED</span></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x91525ada450e84a0afb9f4fb255d57df3c910d1eb8af78acb2b10f40ed7e7745">0x91525ada…7e7745</a></td></tr>
+<tr><td>6</td><td class="mono">01:48:06</td><td class="mono">14</td><td>Owner creates an allowance card: DataLite only, never asks</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x28d40fb7cd1694e34365f8477f174f7378c55546e511f3a0ab8726b798ff1afe">0x28d40fb7…ff1afe</a></td></tr>
+<tr><td>7</td><td class="mono">01:48:06</td><td class="mono">15</td><td>Owner funds it with HK$10</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x2247a6432c039e643cc63333dee56e8eac309b541f2cfc90ac752cf2fef489ee">0x2247a643…f489ee</a></td></tr>
+<tr><td>8</td><td class="mono">01:48:07</td><td class="mono">16</td><td>Owner sets an allowance of HK$3.00 a week</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x7a1cd383a8cebe70494fbc7f554a45f15c9d9f20b82a5090c834dd7a937d5336">0x7a1cd383…7d5336</a></td></tr>
+<tr><td>9</td><td class="mono">01:48:08</td><td class="mono">17</td><td>Agent pays HK$2.30, counted against the allowance on chain</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x7626c8aa14cdf3747018b65d26f944b857425626946eb468ee440e9e43f1332c">0x7626c8aa…f1332c</a></td></tr>
+<tr><td>10</td><td class="mono">01:48:09</td><td class="mono">18</td><td>Agent key alone, second report: over the week's allowance</td><td><span class="pill no">refused</span></td><td><span class="mono" style="color:#B32A00">OVER_PERIOD</span></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0xdf5430232a3a875bfaad52087f40c151b688219c647f744f221c843b18392a9c">0xdf543023…392a9c</a></td></tr>
+<tr><td>11</td><td class="mono">01:48:10</td><td class="mono">19</td><td>The same payment with the owner's co-signature</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0xc06736439a736e23a49df09d16e32d08feb6a7301299084b9d3b6de37c808e93">0xc0673643…808e93</a></td></tr>
+<tr class="grp"><td colspan="7">B · Proof run on freshly deployed contracts · 19 October 2026, HKT</td></tr>
+<tr><td>12</td><td class="mono">18:02:35</td><td class="mono">28</td><td>Deploy a fresh Mock e-HKD</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0xc17c58de3ba74ae8c7a54e366f0ed2be8ba5b0e5ad692393137a06123b067f69">0xc17c58de…067f69</a></td></tr>
+<tr><td>13</td><td class="mono">18:02:35</td><td class="mono">29</td><td>Deploy a fresh PocketFactory</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x8a3ba306c34d10232a5b16c27df957ef4fb3c5b238c28b2045e44ccc0c2a9098">0x8a3ba306…2a9098</a></td></tr>
+<tr><td>14</td><td class="mono">18:02:36</td><td class="mono">30</td><td>Mint HK$50 to the owner</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x49222bc1544256b52c019c6fd51dbceb424246b1a01669c90af9197e20cdf0ce">0x49222bc1…cdf0ce</a></td></tr>
+<tr><td>15</td><td class="mono">18:02:36</td><td class="mono">31</td><td>Owner creates a card: cap HK$15, co-sign above HK$8, DataLite and DataPro</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x6d2c951f114b2384f26d76c8f890dfb3e14bce28f7e5d5239d3ace20b7f39053">0x6d2c951f…f39053</a></td></tr>
+<tr><td>16</td><td class="mono">18:02:37</td><td class="mono">32</td><td>Owner funds it with HK$40</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x0ff9192e7061a242f40467af6a3e940a8a0f7dcc58423299b58f8e1195d173e4">0x0ff9192e…d173e4</a></td></tr>
+<tr><td>17</td><td class="mono">18:02:37</td><td class="mono">33</td><td>Agent key pays DataLite HK$2.30</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0xd687ae822e99ecd3b765051da79cb5f2f610d535649813bc304dd3ca257bd2db">0xd687ae82…7bd2db</a></td></tr>
+<tr><td>18</td><td class="mono">18:02:38</td><td class="mono">34</td><td>DataPro HK$11.70 with the owner's co-signature</td><td><span class="pill ok">done</span></td><td></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x8625dbfba0b8a5ee1a09ed44a62c0ae35a1bc2014cfaa3bd268c8319e48d7386">0x8625dbfb…8d7386</a></td></tr>
+<tr><td>19</td><td class="mono">18:02:38</td><td class="mono">35</td><td>Agent key sends HK$5 to an address a seller planted</td><td><span class="pill no">refused</span></td><td><span class="mono" style="color:#B32A00">SELLER_NOT_ALLOWED</span></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0xd49be111844a951677804707d6df521f92f0d5d2c74e8006843752ff11ed6954">0xd49be111…ed6954</a></td></tr>
+<tr><td>20</td><td class="mono">18:02:39</td><td class="mono">36</td><td>Agent key pays DataPro HK$11.70 without the owner</td><td><span class="pill no">refused</span></td><td><span class="mono" style="color:#B32A00">NEEDS_OWNER_SIGNATURE</span></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0xb3d88830e45bad4cf41870b26a8e081c71e5b9958182bf4b4b29fcb5686277da">0xb3d88830…6277da</a></td></tr>
+<tr><td>21</td><td class="mono">18:02:39</td><td class="mono">37</td><td>Agent key signs in the owner's place too</td><td><span class="pill no">refused</span></td><td><span class="mono" style="color:#B32A00">wrong owner signature</span></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0xaf285aa5e918a7a1e326c2bc6ff0f8faeafb50e78ad056ab3662103199506e87">0xaf285aa5…506e87</a></td></tr>
+<tr><td>22</td><td class="mono">18:02:40</td><td class="mono">38</td><td>Agent key pays DataLite HK$20, above the cap</td><td><span class="pill no">refused</span></td><td><span class="mono" style="color:#B32A00">OVER_CAP</span></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0xf0ad609b1f65a71d76ed6750bb738f6e748957a5391349a1a27a869b6c99b82f">0xf0ad609b…99b82f</a></td></tr>
+<tr><td>23</td><td class="mono">18:02:41</td><td class="mono">39</td><td>The HK$2.30 authorisation sent again (replay)</td><td><span class="pill no">refused</span></td><td><span class="mono" style="color:#B32A00">nonce already used</span></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x84e1d74e8d6c87e21c7b55d027019c86aacd5b22cebbcde3322661c3709c5384">0x84e1d74e…9c5384</a></td></tr>
+<tr><td>24</td><td class="mono">18:02:41</td><td class="mono">40</td><td>Agent key tries to raise the cap to HK$800</td><td><span class="pill no">refused</span></td><td><span class="mono" style="color:#B32A00">NOT_OWNER</span></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x7a3b37d1e079992e34d24c39c61e6d1efc8da5da42bb6330070ac5627c9bfecf">0x7a3b37d1…9bfecf</a></td></tr>
+<tr><td>25</td><td class="mono">18:02:42</td><td class="mono">41</td><td>Agent key tries to add the planted address as a seller</td><td><span class="pill no">refused</span></td><td><span class="mono" style="color:#B32A00">NOT_OWNER</span></td><td><a class="mono" href="https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x49c7645026d38943e81f84ae77f299e2c084713d974ee3c30a5353d5aa5b9616">0x49c76450…5b9616</a></td></tr>
+
+  </table>
+  <p class="cap">Set A uses the app's deployed contracts: token <span class="mono">0x0355c0c5…07781A</span>, factory <span class="mono">0x03aB4C31…7A097A</span>, allowance card <span class="mono">0x91019dDC…5D5374</span>. Set B deployed its own: token <span class="mono">0x2299E8cD…DFfF22</span>, card <span class="mono">0x33Dc8312…013356</span>; the card ends with HK$26.00 = HK$40 − HK$2.30 − HK$11.70.</p>
+  <div class="foot"><span>Mock e-HKD is a test token on FISCO BCOS, not the HKMA's e-HKD.</span><span>2 / 3</span></div>
+</section>
+
+<section class="page">
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Execution evidence</div><div class="meta">03 Reproduction guide</div></div>
+  <div class="sec">03 · Reproduction guide</div>
+  <h2>Check it yourself</h2>
+  <p class="sub">Nothing below needs a key or an account. Steps 1 to 3 only read the public chain.</p>
+
+  <div class="row" style="grid-template-columns: 1fr; gap: 10px;">
+    <div class="box"><h3>1 · Open any transaction</h3><p>Click a hash on page 2, or open <span class="mono">https://fisco-api-production-85c5.up.railway.app/explorer#/tx/&lt;hash&gt;</span>. The explorer shows status, block, sender, the contract called and its events.</p></div>
+    <div class="box"><h3>2 · Re-fetch all 25 receipts</h3><p>Python 3, standard library only. It reads the public RPC, prints block, time and status for every hash, and exits with an error if any result differs from the table.</p>
+<pre style="margin-top:6px">python3 docs/submission/evidence/check_hosted.py</pre></div>
+    <div class="box"><h3>3 · Read a card's rules from the chain</h3><p>The independent verifier rebuilds a card's rules in plain words and checks it was created by the ChainBrain factory. Add <span class="mono">--approved approved.json</span> to compare it with what the owner approved.</p>
+<pre style="margin-top:6px">python3 verify/verify_pocket.py --rpc https://fisco-node-production.up.railway.app \
+  --pocket 0x91019dDCD226aA00D3e76CD79C5bCFF9973D5374</pre></div>
+    <div class="box"><h3>4 · Run the proof again, with new keys</h3><p>Deploys a fresh token, factory and card from keys funded by the public faucet, then sends set B's 14 transactions. New hashes, same results; it exits with an error on any mismatch.</p>
+<pre style="margin-top:6px">cd server &amp;&amp; npx tsx scripts/hosted-proof.ts</pre></div>
+    <div class="box"><h3>5 · Try the app</h3><p>Console: <a href="https://fintechathon-lian-ai-nao.vercel.app">fintechathon-lian-ai-nao.vercel.app</a> (Judges tab: four one-tap attacks). Test money: <a href="https://fisco-api-production-85c5.up.railway.app/faucet">fisco-api-production-85c5.up.railway.app/faucet</a>, HK$100 per address per day.</p></div>
+  </div>
+
+  <h3 style="margin-top: 14px;">Chain details</h3>
+  <table>
+    <tr><td class="k" style="width:36mm">Chain</td><td>FISCO BCOS 3.16.4, chain id 20200, one node hosted on Railway, gas price 0</td></tr>
+    <tr><td class="k">Public RPC</td><td class="mono">https://fisco-node-production.up.railway.app</td></tr>
+    <tr><td class="k">Explorer and faucet</td><td class="mono">https://fisco-api-production-85c5.up.railway.app/explorer · /faucet</td></tr>
+    <tr><td class="k">Receipts file</td><td><span class="mono">docs/submission/evidence/hosted-receipts.json</span>, written by step 2 with <span class="mono">--write</span></td></tr>
+  </table>
+  <div class="foot"><span>Mock e-HKD is a test token on FISCO BCOS, not the HKMA's e-HKD.</span><span>3 / 3</span></div>
+</section>
+
+</body>
+</html>
