@@ -33,7 +33,7 @@ A second stack can run beside the first on the same node: `API_PORT=28787 SELLER
 pnpm --dir devstack start
 ```
 
-Wait for the banner. It prints the laptop URL, the LAN URL for a phone, the Mock e-HKD and factory addresses and the exact app commands. Stop with Ctrl+C (the FISCO node keeps running).
+Wait for the banner (start the apps or `seed` only after it). It prints the laptop URL, the LAN URL for a phone (the Wi-Fi address; set `LAN_IP=<ip>` if it picks the wrong adapter), the Mock e-HKD and factory addresses and the exact app commands. Stop with Ctrl+C (the FISCO node keeps running).
 
 Each start deploys a fresh token and factory, so pockets you made in an earlier run belong to the old factory and the app stops showing them (clear the pocket list in the app or add new ones). Approvals and intent state live in memory.
 

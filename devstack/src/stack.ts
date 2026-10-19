@@ -36,10 +36,13 @@ export type DevStackOptions = {
   rpc?: string; revokeWindowMs?: number; ownerEhkd?: number; log?: (s: string) => void;
 };
 
+/** The address a phone on the same Wi-Fi can reach. LAN_IP overrides; virtual adapters (VirtualBox, Hyper-V/WSL, Docker, VMware) are skipped. */
 export function lanIp(): string | undefined {
+  if (process.env.LAN_IP) return process.env.LAN_IP;
   const all = Object.entries(networkInterfaces()).flatMap(([n, l]) => (l ?? []).map((i) => ({ n, ...i })));
   const v4 = all.filter((i) => i.family === "IPv4" && !i.internal && !i.address.startsWith("169.254."));
-  return (v4.find((i) => /^(en|wlan|wl|eth)/.test(i.n)) ?? v4[0])?.address;
+  const real = v4.filter((i) => !/virtualbox|vmware|vethernet|hyper-v|docker|wsl|^vbox|^br-|^utun/i.test(i.n) && !i.address.startsWith("192.168.56."));
+  return (real.find((i) => /^(wi-?fi|wlan|wl)/i.test(i.n)) ?? real.find((i) => /^(en|eth)/i.test(i.n)) ?? real[0] ?? v4[0])?.address;
 }
 
 async function rpcCall(rpc: string, method: string, params: unknown[] = []) {
