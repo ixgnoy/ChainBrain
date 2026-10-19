@@ -374,5 +374,28 @@
     "morse-3.jpg"
    ]
   ]
+ },
+ {
+  "title": "P17 Security round 3 and P18 FISCO clock caption",
+  "when": "before the deadline",
+  "status": "kept",
+  "commits": [
+   "b52d9fd",
+   "246f1c7"
+  ],
+  "pairs": [
+   [
+    "v4-181.jpg",
+    "r3-191.jpg"
+   ],
+   [
+    "v4-181.jpg",
+    "r3-176.jpg"
+   ],
+   [
+    "v4-129.jpg",
+    "clock-119.3.jpg"
+   ]
+  ]
  }
 ]

@@ -63,7 +63,7 @@ B means before the deadline; A means after, for the finals. Ranked by effect × 
 | 8 | Opening and ending | **built** | B | First impressions form fast (Ambady and Rosenthal 1993, in [academic.md](research/academic.md)) |
 | 9 | Hush before "No." | **built** | B | The approved design asked for it; measured 0.2 s in v4 ([audio.md](research/audio.md)) |
 | 10 | Peak fix + QC | **built** | B | v4 measures −0.6 dBTP |
-| 11 | FISCO detail on screen: Clock.sol's millisecond-to-second conversion | idea | A | [review-fisco.md](research/review-fisco.md). Strong for WeBank engineers, but needs a new shot. |
+| 11 | FISCO detail on screen: Clock.sol's millisecond-to-second conversion | **built**, `246f1c7` (optional) | B (optional) | [review-fisco.md](research/review-fisco.md): the one detail that shows real porting. It's a caption while the checks tick. |
 | 12 | X-ray: one idea at a time, a 2 s lane legend before the voice | idea | A | Contiguity and signalling (Ginns 2006, d ≈ 0.85) ([academic.md](research/academic.md)) |
 | 13 | Morse decoded into "SEND ALL" under the dots | **built**, `ccee08c` | B (optional) | [review-motion.md](research/review-motion.md) B-list; labelled as an illustration |
 | 14 | Varied Reveal settle and camera travel per act | idea | A | [review-motion.md](research/review-motion.md) items 7 and 9 |
@@ -134,3 +134,4 @@ These are approved decisions. Reviewers questioned them; the evidence is noted, 
 | P15 | Motion variety | `da320ef` | v4-246 / hkma-244 | kept |
 | P16 | Morse decodes into "SEND ALL" | `ccee08c` | v4-5.5 / morse-5.6, morse-3 | kept (optional) |
 | P17 | Security round 3 (y2 rules, k2, receipt label) | `b52d9fd` | v4-181 / r3-176, r3-191 | kept |
+| P18 | FISCO clock caption | `246f1c7` | clock-119.3 | kept (optional) |
