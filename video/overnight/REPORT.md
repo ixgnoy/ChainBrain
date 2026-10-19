@@ -10,7 +10,7 @@ The branch is a straight line on `main` at `9bcd289`, and every commit is meant 
 git cherry-pick 9bcd289..video-overnight
 ```
 
-To pick commits one at a time instead, use the commit column below. Pick them in branch order and include the report commits (`1916e95`, `13e670a`, …), which carry the kit HTML. `b366b98` (QC), `6edcc66` (mix peak) and `fd0c90f` (voice clean-up) each apply alone.
+To pick commits one at a time instead, use the commit column below. Pick them in branch order and include the report commits (`1916e95`, `13e670a`, …), which carry the kit HTML. `b366b98` (QC), `6edcc66` (mix peak), `32eb822` (hush) and `fd0c90f` (voice clean-up) each apply alone.
 
 | # | Change | Commits | Effect on judges | Minutes | Risk |
 |---|---|---|---|---|---|
@@ -19,13 +19,14 @@ To pick commits one at a time instead, use the commit column below. Pick them in
 | 3 | **Hold the real hash full screen for 2.2 s** after "a hash anyone can open": the full hash, "success", the explorer address, and a note that every hash in the film is in the execution-evidence PDF (checked: all nine are). | `77d4822` | Topic F's 40 task points are judged on transaction hashes. In v4 the only legible hash was a 2 s screenshot. | 5 | Low. Adds 2.2 s; v4.1 runs 4:41 with the preview voice. |
 | 4 | **Name the rubric's own words on screen.** Prompt injection, data extraction, privilege escalation and induced transfer label the four attacks. Clarification and fallback label the two phone beats that show them. | `056dd8c`, `81546ed`, `281dd3a` | Makes 60 of the 100 points easy to tick for a judge with the rubric open | 5 | Very low |
 | 5 | **Confirm `SENTINEL_PK` is set on Railway.** Without it, "freezes the card" is only a hold, and the voice line w2 would need "holds". (The 462 tests are now dated "passed on 19 Oct", as the PDFs say, in `789349f`.) | `789349f` | Avoids a provable mismatch between the video and the documents | 20 | None |
+| 5b | **Make the hush before "No." real.** The approved score has half a second of silence there, but reverb tails filled it. | `32eb822` | The film's key beat lands harder | 2 | None. It's a score-only change and applies alone. |
 | 6 | **Keep the delivered MP4 under −1 dBTP and check it before upload.** v4 measures −0.6 dBTP true peak. `tools/qc.py` (also run at the end of `build.sh`) checks length, format, loudness, peak, black, freezes, silence and subtitle speed. | `b366b98`, `6edcc66` | A portal that normalises or rejects hot audio won't touch ours | 5 | None |
 | 7 | **Chinese subtitles, only if a team member who reads Chinese checks all 43 lines today.** Then set `"enabled": true` in `remotion/src/subs-zh.json`. | in the chain, off by default | Mainland and Hong Kong judges can follow the fast X-ray. English stays primary, as the rules require. | 30 to check | Medium if unchecked, which is why it ships off |
 
 **If the owner's voice does not arrive in time**, don't pick the v4.1 script commits. Sarah's audio still says the v4 words, and the ElevenLabs free quota has only 178 characters left, so it can't re-voice them. Pick the screen-only set instead (tested on `9bcd289`):
 
 ```bash
-git cherry-pick 9e4ef9b 056dd8c 81546ed b366b98 6edcc66 fd0c90f
+git cherry-pick 9e4ef9b 056dd8c 81546ed b366b98 6edcc66 fd0c90f 32eb822
 ```
 
 ```bash
@@ -112,3 +113,6 @@ Effect × confidence ÷ effort, under the 5:00 cap. B = before the deadline, A =
 | P7 | 462 tests "passed on 19 Oct" | `789349f` | v4-264 / tests-262 | kept | — |
 | P8 | Render QC script | `b366b98` | (text) | kept | Found v4's −0.6 dBTP peak |
 | P9 | Mix true peak under −1 dBTP | `6edcc66` | (audio: AAC −1.7 dBTP, −14.4 LUFS) | kept | — |
+| P10 | A real hush before "No." (music gated to silence 0.5 to 0.1 s before the hit) | `32eb822` | (audio) | kept | The approved design asked for half a second of silence; v4 had ~0.2 s |
+| P11 | Docs follow v4.1 ("four ideas", new lines) | `ab94d1a` | (text) | kept | — |
+| P12 | Kit v4.1 with delivery coaching (3 s room tone, 15–20 cm, 45°, 140–150 wpm) | `f3db094` | `overnight/recording-kit-v41.html` | kept | — |
