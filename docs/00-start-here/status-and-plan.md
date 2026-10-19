@@ -7,7 +7,7 @@ Last updated: 2026-10-17
 
 ## In one minute
 
-- **Countdown:** at 2026-10-14 19:48 (UTC+8) there are about **6 days 4 hours** to the deadline (24:00 on 20 Oct, UTC+8) and about **5 days 16 hours** to the team's submit target of noon on 20 Oct. The spec says 23:59 and the rules say 24:00; plan to the earlier one.
+- **Countdown:** at 2026-10-14 19:48 (UTC+8) there are about **6 days 4 hours** to the deadline (23:59 or 24:00 on 20 Oct, UTC+8) and about **5 days 16 hours** to the team's submit target of noon on 20 Oct. The spec and Attachment 2 say 23:59 and the website says 24:00; plan to the earlier one. Attachment 3 (the registration form) needs passport images and enrolment proofs for every member: see [attachments.md](../01-competition/attachments.md).
 - **Built and tested locally** (per the [technical document](../technical-document.md)): pocket, factory and Mock e-HKD (55 contract tests), wallet tool layer and agent API (82 tests pass on the local FISCO node, 6 skipped without `ANTHROPIC_API_KEY`), scenes 1-8 through the agent loop in replay mode (6 tests), web app (82 tests), Expo phone app (46 tests), native Android app (6 tests, APK builds). The same stack is hosted on Railway ([FISCO evidence](../evidence-fisco.md)).
 - **Not done yet (needs a phone, an API key or a human):** MetaMask live signing against the Railway node, Expo on a real phone, real-model run of scenes 1-8, organiser email, team eligibility check, deck, video, submission.
 - **Day-1 gate:** passed on the FISCO node. Mock e-HKD calls the pocket's ERC-1271 check, and x402's facilitator code (always in-process) verifies and settles pocket payments ([security self-assessment](../security-self-assessment.md)).
@@ -20,10 +20,11 @@ Last updated: 2026-10-17
 | --- | --- |
 | Wed 14 Oct | Spike and day-1 gate |
 | Tue 20 Oct noon | Team's submit target |
-| Tue 20 Oct 24:00 | Submission deadline (spec says 23:59) |
+| Tue 20 Oct 23:59 | Submission deadline (website says 24:00; plan to 23:59) |
 | 21 Oct | Compliance screening |
 | 22-23 Oct | Online review, top 10 chosen (IEEE page says 23-28 Oct: [VERIFY]) |
 | 31 Oct | Finalists announced |
+| 20-23 Nov | Finals: check-in 20 Nov, defence 22 Nov, awards 23 Nov; at least one member per finalist team must attend in person (Attachment 2) |
 | 22 Nov | Defence at WeBank, Shenzhen |
 
 ## Day plan 14-20 Oct

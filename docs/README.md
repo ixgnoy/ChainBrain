@@ -24,7 +24,7 @@ Last updated: 2026-10-17
 | [technical-document.md](technical-document.md) | Architecture, pocket check, tool layer signing rule, x402 notes, owner keys, test summary |
 | [security-self-assessment.md](security-self-assessment.md) | Permission tiers, what a pocket stops and does not stop, the four named attacks with test names, residual risks |
 | [evidence-fisco.md](evidence-fisco.md) | On-chain transactions on the local FISCO chain (`evidence-fisco.json`; hosted chain in `evidence-fisco-railway.json`), re-checked by `server/scripts/verify-evidence.ts` |
-| [hackathon-overview.md](01-competition/hackathon-overview.md), [hackathon-rules.md](01-competition/hackathon-rules.md) | Official competition material |
+| [hackathon-overview.md](01-competition/hackathon-overview.md), [hackathon-rules.md](01-competition/hackathon-rules.md), [attachments.md](01-competition/attachments.md) | Official competition material, plus the two downloadable attachments and where they conflict with the website |
 
 ## Start here: reading order by role
 
@@ -48,9 +48,10 @@ Last updated: 2026-10-17
 | [status-and-plan.md](00-start-here/status-and-plan.md) | Countdown, built vs pending, day plan 14-20 Oct, top risks |
 | [open-questions.md](00-start-here/open-questions.md) | All open questions, grouped, with defaults; draft email to organisers |
 | [roles-and-workplan.md](00-start-here/roles-and-workplan.md) | Four suggested roles for the remaining work, gates by day, dependencies, owners column (blank) |
-| **01-competition/** | Official material (team files, unchanged) |
+| **01-competition/** | Official material (website captures, 19 Oct cross-check, attachment digest) |
 | [hackathon-overview.md](01-competition/hackathon-overview.md) | Competition overview, directions, schedule, awards |
-| [hackathon-rules.md](01-competition/hackathon-rules.md) | Rules, deliverables, scoring |
+| [hackathon-rules.md](01-competition/hackathon-rules.md) | Rules, deliverables, scoring, English vs Chinese differences, 60% table |
+| [attachments.md](01-competition/attachments.md) | Attachment 2 (topics and rules) and Attachment 3 (registration form): eight conflicts with the website, form fields, questions for the organisers |
 | **02-product/** | What we are building |
 | [product-design.md](02-product/product-design.md) | Spec v2 (owner: @Tan Hao Wen). Team file, not edited by the research run |
 | [recommended-changes.md](02-product/recommended-changes.md) | 49 changes research suggested for the OLD spec, with a v2 disposition table |

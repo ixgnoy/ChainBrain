@@ -41,7 +41,7 @@ Last updated: 2026-10-17
 >
 > Dear Organising Committee,
 >
-> We are a team entering the International AI Track, Topic F (Agent Wallet). Before we finalise our submission due 24:00 on 20 October (UTC+8), could you please clarify:
+> We are a team entering the International AI Track, Topic F (Agent Wallet). Before we finalise our submission due 20 October (UTC+8), could you please clarify:
 >
 > 1. For Topic F, our wallet runs on a self-hosted FISCO BCOS chain with a mock Hong Kong dollar test token. Are its transaction hashes accepted as "real on-chain transaction hashes", or are mainnet transactions required?
 > 2. Is FISCO BCOS mandatory, optional, or considered for the bonus score?
@@ -54,6 +54,10 @@ Last updated: 2026-10-17
 9. Is a private repository with reviewer access acceptable for the source code, or must it be public?
 10. At the 22 November defence, will model API access or a network exception be available, or should we bring our own access? Are mainland-China-based model services acceptable?
 11. For Topic F, is a deliberately failing (reverted) transaction accepted as evidence that an unsafe action was refused?
+12. Which mailbox is canonical, fintechathon@ican-x.com (website, registration form) or info@ican-x.com (Attachment 2)?
+13. Is the deadline 23:59 (Attachment 2) or 24:00 (website)?
+14. Is the demo video required (website) or optional (Attachment 2)?
+15. Is a typed name acceptable for the team leader's signature on the registration form?
 >
 > Thank you for your help.
 >
@@ -129,7 +133,8 @@ Last updated: 2026-10-17
 | N6 | Does Expo Go run the bundle and secure storage on a real phone? | Phone demo | Expo web target; native Android app |
 | N7 | Does the real model pass scenes 1-8 (replay mode passed)? | Scenes | Tune prompt and tool text; no scripted branches |
 | N8 | Name on the deck: 链AI脑 with ChainBrain as the English name? | Deck | Yes |
-| N9 | Deadline wording: spec says 23:59, rules say 24:00 UTC+8 | Planning | Plan to noon on 20 Oct |
+| N9 | Deadline wording: spec and Attachment 2 say 23:59, website says 24:00 UTC+8 | Planning | Plan to noon on 20 Oct |
+| N10 | Attachment 2 differs from the website on contact mailbox, video required, fourth prize name, finals dates and attendance | Planning | Take the safer reading ([attachments.md](../01-competition/attachments.md)); questions 12-15 above |
 
 ## What this means for winning
 

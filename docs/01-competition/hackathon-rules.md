@@ -1,6 +1,6 @@
 # FinTechathon 2026 — International Track Rules
 
-Source: <https://fintechathon.g-ican.com/#/rule> → 国际赛道 / International Track, captured 13 Oct 2026. English version first, then the Chinese reference version. **If the two differ, the Chinese version prevails** (Statement 04).
+Source: <https://fintechathon.g-ican.com/#/rule> → 国际赛道 / International Track, captured 13 Oct 2026. English version first, then the Chinese reference version. **If the two differ, the Chinese version prevails** (Statement 04). Compared on 19 Oct 2026 with a fresh copy of the same page (same content). The downloadable Attachment 2 and Attachment 3 differ from this page in places: see [attachments.md](attachments.md).
 
 ## English
 
@@ -25,6 +25,15 @@ These rules apply to the International Artificial Intelligence Track.
 7. **Intellectual property** — The intellectual property rights of competition entries belong to the participants. The organiser may use entries and team information in promotional materials, publications, designated and authorised media, official website display and download, and exhibitions including touring exhibitions for non-commercial publicity. This licence is non-exclusive and royalty-free.
 
 **Competition enquiries (International AI Track):** fintechathon@ican-x.com
+
+**Reading aid: the 60% rule by team size** (non-Chinese members needed, rounded up; the rules count by nationality, so we read a Chinese national studying abroad as Chinese):
+
+| Team size | Minimum non-Chinese | Maximum Chinese |
+| --- | --- | --- |
+| 2 | 2 (a mixed pair fails at 50%) | 0 |
+| 3 | 2 | 1 |
+| 4 | 3 | 1 |
+| 5 | 3 | 2 |
 
 ### Competition Process
 
@@ -66,6 +75,18 @@ A capped 0–5 point challenge/implementation bonus rewards advanced topics or d
 4. The International Track is governed by the laws of the People's Republic of China. The Chinese and English notices are published together; in case of discrepancy, the Chinese version prevails.
 
 2026 Shenzhen International FinTech Competition — WeBank FinTech College Students Challenge, August 2026
+
+## English vs Chinese: differences that matter
+
+The Chinese text prevails, so these count even though the English omits them.
+
+| Point | English | Chinese |
+| --- | --- | --- |
+| Finalists | "ten finalist teams" | 前 10 名晋级决赛 (top 10 advance) |
+| Defence | "conducted in English at WeBank" | 闭门答辩 (closed-door defence) and presentation; demo, defence and review all in English |
+| Interpretation | not stated | 本规则最终解释权归大赛组委会所有 (final interpretation rests with the Organising Committee) |
+| Notice of changes | "will notify" | 提前通知 (notify in advance) |
+| Registration channel | "Register by official email" | 通过大赛官方邮箱报名 (same) |
 
 ## 中文参考
 
