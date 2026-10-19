@@ -37,6 +37,28 @@
   ]
  },
  {
+  "title": "P20 HKMA policy round",
+  "when": "before the deadline",
+  "status": "kept",
+  "commits": [
+   "61678ad"
+  ],
+  "pairs": [
+   [
+    "v4-129.jpg",
+    "hk-125.jpg"
+   ],
+   [
+    "v4-acc-154.jpg",
+    "hk-155.jpg"
+   ],
+   [
+    "v4-246.jpg",
+    "hk-247.5.jpg"
+   ]
+  ]
+ },
+ {
   "title": "P4 Script v4.1: twelve lines match the evidence",
   "when": "before the deadline",
   "status": "kept",
