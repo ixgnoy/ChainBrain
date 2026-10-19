@@ -20,7 +20,7 @@ git cherry-pick 9bcd289..video-overnight
 - Confirm `SENTINEL_PK` is set on Railway. Without it, "freezes the card" is only a hold, and line w2 must say "holds".
 - If a team member reads Chinese, have them check `remotion/src/subs-zh.json` and set `"enabled": true`. Otherwise leave it off.
 
-A fresh judge who compared v4 with this branch's preview estimated **about 77 → 88 points**: task 28 → 33, security 22 → 25, innovation 26 vs 24, bonus 3 → 4 ([review-holistic.md](research/review-holistic.md)). That preview predates `ccee08c`, `b52d9fd`, `246f1c7` and `8cc1d81`.
+A fresh judge who compared v4 with this branch's preview estimated **about 77 → 88 points**: task 28 → 33, security 22 → 25, innovation 24 → 26, bonus 3 → 4 ([review-holistic.md](research/review-holistic.md)). That preview predates `ccee08c`, `b52d9fd`, `246f1c7` and `8cc1d81`.
 
 What that buys, most important first:
 
