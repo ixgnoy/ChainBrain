@@ -68,15 +68,17 @@ export async function settle(pocket: Address, rec: QuoteRec, intentHash: Hex): P
     const agent = agentFor(info); // this card's own derived key, or the legacy shared one
     if (!agent) return fail("NOT_THIS_AGENT");
     const rule = await p.canPay(rec.payTo, rec.amount);
-    if (rule !== "OK") return fail(isReason(rule) ? rule : "SETTLEMENT_FAILED", rule);
+    const cheque = rule === "OVER_PERIOD"; // the one refusal the owner's co-signature lifts (Pocket.isValidSignature)
+    if (rule !== "OK" && !cheque) return fail(isReason(rule) ? rule : "SETTLEMENT_FAILED", rule);
+    if (cheque && !rec.ownerSig) return fail("OVER_PERIOD");
     if ((await p.needsOwner(rec.amount)) && !rec.ownerSig) return fail("NEEDS_OWNER_APPROVAL");
     if (rec.auth && BigInt(rec.auth.validBefore) <= BigInt(Math.floor(Date.now() / 1000) + 10)) return fail("APPROVAL_EXPIRED");
     const auth = prepareApproval(pocket, rec, intentHash);
 
     const pay = wrapFetchWithPaymentFromConfig(fetch, {
       schemes: [{ network: cfg().network, client: new PocketScheme({ auth, agent, ownerSig: rec.ownerSig ?? "0x" }) as any }],
-      // @x402/fetch defaults to $1 of known USD tokens only; allow our token, capped atomically at the pocket's cap (the real limit)
-      spendControls: { allowedAssets: [{ network: cfg().network, asset: cfg().token, maxAmountPerPayment: info.cap.toString() }] },
+      // @x402/fetch defaults to $1 of known USD tokens only; allow our token, capped at this seller's cap on the pocket (the real limit)
+      spendControls: { allowedAssets: [{ network: cfg().network, asset: cfg().token, maxAmountPerPayment: (await p.capFor(rec.payTo)).toString() }] },
     } as any);
 
     // Network failure: retry once with the identical authorization (same nonce), so it can never pay twice.

@@ -17,9 +17,9 @@ const tool = (ids: string[]) => ({
     properties: {
       name: { type: "string", description: "Short pocket name from the sentence, max 24 chars" },
       sellers: { type: "array", items: { type: "string", enum: ids }, description: "Seller ids the owner named" },
-      cap: { type: "string", description: 'Max USD per payment, e.g. "2.00"' },
-      budget: { type: "string", description: 'Total USD to put in the pocket, e.g. "5.00"' },
-      askAbove: { type: "string", description: '"never" = never ask, "0" = ask every time, else a USD amount' },
+      cap: { type: "string", description: 'Max per payment in HK$ (Mock e-HKD), e.g. "2.00"' },
+      budget: { type: "string", description: 'Total HK$ to put in the pocket, e.g. "5.00"' },
+      askAbove: { type: "string", description: '"never" = never ask, "0" = ask every time, else an HK$ amount' },
       lifetime: { type: "string", enum: LIFETIMES },
       questions: {
         type: "array", description: "One question per thing the sentence leaves open or ambiguous",
@@ -35,7 +35,7 @@ async function read(model: RulesModel, modelId: string, sentence: string, seller
   const ids = sellers.map((s) => s.id);
   const res = await model({
     model: modelId, max_tokens: 1500, tools: [tool(ids)], tool_choice: { type: "tool", name: "propose_pocket" },
-    system: `You turn an owner's one-sentence description of a spending pocket for their AI agent into rules. Sellers: ${sellers.map((s) => `${s.id} (${s.name})`).join(", ")}. If the sentence does not say something, ask a question and propose the stricter value.`,
+    system: `You turn an owner's one-sentence description of a spending pocket for their AI agent into rules. All amounts are Hong Kong dollars (HK$, paid in Mock e-HKD): "$5", "5 dollars" and "HK$5" all mean HK$5.00, never US dollars. Sellers: ${sellers.map((s) => `${s.id} (${s.name})`).join(", ")}. If the sentence does not say something, ask a question and propose the stricter value.`,
     messages: [{ role: "user", content: sentence.slice(0, 500) }],
   });
   const x = res.content.find((b): b is Anthropic.Messages.ToolUseBlock => b.type === "tool_use")?.input as Record<string, any> | undefined;

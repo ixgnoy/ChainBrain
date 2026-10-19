@@ -1,6 +1,7 @@
 // The signing guard. The owner key on the device signs only what this module can decode and allows:
 //   transactions: PocketFactory.create, a Mock e-HKD transfer to one of the owner's own cards, and the Pocket owner
-//                 methods (revoke, returnFunds, unfreeze, setCap, setAskAbove, setSeller, setExpiresAt) on the owner's card;
+//                 methods (revoke, returnFunds, unfreeze, setCap, setAskAbove, setSeller, setSellerCap, setPeriodLimit,
+//                 setExpiresAt) on the owner's card;
 //   typed data:   Login (to this owner), and a TransferWithAuthorization co-sign that is exactly a pending approval's.
 // Anything else (an unknown contract or method, a transfer elsewhere, value, an undecodable message) is refused, and every
 // verdict carries the plain sentence the approval screen shows. No imports: each app passes its own viem decoder.
@@ -33,7 +34,8 @@ export type GuardRefusal =
 const fn = (name: string, inputs: string[]) => ({ type: "function", name, stateMutability: "nonpayable", inputs: inputs.map((type, i) => ({ name: `a${i}`, type })), outputs: [] });
 const FACTORY_ABI = [fn("create", ["address", "uint256", "uint256", "uint64", "address[]"])];
 const TOKEN_ABI = [fn("transfer", ["address", "uint256"])];
-const POCKET_ABI = [fn("revoke", []), fn("returnFunds", []), fn("unfreeze", []), fn("setCap", ["uint256"]), fn("setAskAbove", ["uint256"]), fn("setSeller", ["address", "bool"]), fn("setExpiresAt", ["uint64"])];
+const POCKET_ABI = [fn("revoke", []), fn("returnFunds", []), fn("unfreeze", []), fn("setCap", ["uint256"]), fn("setAskAbove", ["uint256"]), fn("setSeller", ["address", "bool"]), fn("setSellerCap", ["address", "uint256"]), fn("setPeriodLimit", ["uint8", "uint256"]), fn("setExpiresAt", ["uint64"])];
+const PERIOD = ["", "day", "week", "month"]; // Pocket.setPeriodLimit kind: 1 day, 2 week, 3 month (Hong Kong calendar), 0 none
 
 const NEVER = 2n ** 256n - 1n;
 const same = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
@@ -86,6 +88,8 @@ export async function checkTx(ctx: GuardContext, tx: { to?: Address | null; data
       setCap: () => `Set card ${c} to pay at most ${hk(a[0])} each time.`,
       setAskAbove: () => `Set card ${c} to ${a[0] === NEVER ? "never ask you" : a[0] === 0n ? "ask you every time" : `ask you above ${hk(a[0])}`}.`,
       setSeller: () => `${a[1] ? "Allow" : "Block"} ${name(a[0])} on card ${c}.`,
+      setSellerCap: () => (a[1] === 0n ? `Let ${name(a[0])} use card ${c}'s own cap again.` : `Cap ${name(a[0])} at ${hk(a[1])} a payment on card ${c}.`),
+      setPeriodLimit: () => (Number(a[0]) === 0 || a[1] === 0n ? `Remove card ${c}'s spending allowance.` : `Let card ${c} spend up to ${hk(a[1])} a ${PERIOD[Number(a[0])] ?? "period"} on its own; past that it asks you.`),
       setExpiresAt: () => `Make card ${c} expire at ${when(a[0])}.`,
     };
     const s = sentence[d.functionName];

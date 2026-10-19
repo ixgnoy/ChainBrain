@@ -41,7 +41,7 @@ export function refusalCounts(rows: LedgerRow[]): { reason: string; count: numbe
 export type SecCategory = "injection" | "disclosure" | "signature" | "overreach" | "revoke" | "owner";
 export type SecEvent = { key: string; at: number; severity: "high" | "medium" | "low"; category: SecCategory; title: string; detail: string; reasons: string[]; pocket?: string; sellerId?: string };
 
-const OVERREACH = ["SELLER_NOT_ALLOWED", "OVER_CAP", "OVER_BUDGET", "PRICE_ABOVE_INTENT", "INTENT_TOTAL_REACHED", "INTENT_ITEMS_REACHED"];
+const OVERREACH = ["SELLER_NOT_ALLOWED", "OVER_CAP", "OVER_BUDGET", "OVER_PERIOD", "PRICE_ABOVE_INTENT", "INTENT_TOTAL_REACHED", "INTENT_ITEMS_REACHED"];
 
 /** `redactOwnerText` (regulator): drop approval text, which echoes what the owner asked for. */
 export function securityEvents(events: WalletEvent[], opts: { redactOwnerText?: boolean } = {}): SecEvent[] {

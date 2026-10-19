@@ -130,6 +130,41 @@ test("routine: runs pay inside the week's allowance; the run that would pass it 
   assert.equal(runsOf(w.events(0), pocket)[0].asked, true);
 });
 
+test("routine allowance is on-chain: the pocket refuses OVER_PERIOD without the owner's co-sign, pays with it", async () => {
+  const { w, pocket } = await routinePocket();
+  const v = w.chain.view(pocket);
+  assert.equal(v.periodKind, 2, "a weekly allowance, set by the owner's setPeriodLimit");
+  assert.equal(v.periodLimit, parseHkd("0.40"));
+  const setTx = w.chain.txs().find((t) => t.method === "setPeriodLimit" && t.pocket === pocket);
+  assert.equal(setTx?.status, "success");
+  const seller = reg.find((s) => s.id === "exa")!.payTo as Hex;
+  const sub = { submitter: v.agent, ownerSigned: false };
+  assert.equal(w.chain.settle(pocket, seller, parseHkd("0.25"), sub).ok, true);
+  assert.equal(w.chain.spentThisPeriod(pocket), parseHkd("0.25"));
+  assert.equal(w.chain.canPay(pocket, seller, parseHkd("0.20")), "OVER_PERIOD");
+  const alone = w.chain.settle(pocket, seller, parseHkd("0.20"), sub); // a stolen agent key, straight to the chain
+  assert.deepEqual([alone.ok, alone.reason], [false, "OVER_PERIOD"]);
+  assert.equal(w.chain.settle(pocket, seller, parseHkd("0.20"), { ...sub, ownerSigned: true }).ok, true, "the cheque");
+  assert.equal(w.chain.spentThisPeriod(pocket), parseHkd("0.45"));
+  assert.equal(w.chain.spentThisPeriod(pocket, w.now() + 8 * 86_400_000), 0n, "nothing carries over to next week");
+  // the owner edits the allowance: another setPeriodLimit; only the owner can
+  w.editRoutine(pocket, { allowance: { amount: "1.00", period: "day" } });
+  assert.deepEqual([w.chain.view(pocket).periodKind, w.chain.view(pocket).periodLimit], [1, parseHkd("1.00")]);
+  assert.throws(() => w.chain.setPeriodLimit(v.agent, pocket, 0, 0n), /NOT_OWNER/);
+});
+
+test("seller caps: a seller's own cap replaces the pocket cap for that seller only", async () => {
+  const { w, pocket } = await routinePocket();
+  const v = w.chain.view(pocket);
+  const exa = reg.find((s) => s.id === "exa")!.payTo as Hex;
+  const cg = reg.find((s) => s.id === "coingecko")!.payTo as Hex;
+  w.chain.setSellerCap(v.owner, pocket, exa, 1n);
+  assert.equal(w.chain.canPay(pocket, exa, 2n), "OVER_CAP");
+  assert.equal(w.chain.canPay(pocket, cg, 2n), "OK");
+  assert.equal(w.chain.view(pocket).sellerCaps?.[exa.toLowerCase()], 1n);
+  assert.throws(() => w.chain.setSellerCap(v.agent, pocket, exa, 10n ** 9n), /NOT_OWNER/);
+});
+
 test("routine: a seller's injected text can't change it; the run says so and does exactly what it was set to", async () => {
   const { w, pocket } = await routinePocket();
   const before = JSON.stringify(w.routine(pocket));
@@ -280,6 +315,32 @@ test("routine edit: same routine, spend so far still counts; the change is in th
   }
   assert.ok(done, "the run ended once its asks were answered");
   assert.throws(() => w.editRoutine(pocket, { allowance: { amount: "-1", period: "week" } }));
+});
+
+test("routine allowance follows the chain: a week-to-day edit resets the pocket's count, so a run the pocket allows doesn't ask", async () => {
+  const { w, pocket } = await routinePocket();
+  await w.runRoutineNow(pocket);
+  await w.runRoutineNow(pocket); // HK$0.272 spent this week, all of it today
+  w.editRoutine(pocket, { allowance: { amount: "0.40", period: "day" } }); // a new period kind: the pocket counts from zero
+  assert.equal(w.chain.spentThisPeriod(pocket), 0n);
+  const r3 = await w.runRoutineNow(pocket);
+  assert.equal(w.pending(pocket).length, 0, "the chain would pay it, so the run doesn't ask");
+  assert.deepEqual(r3.outs.map((o: { outcome: string }) => o.outcome), ["paid", "paid"]);
+  assert.equal(w.chain.spentThisPeriod(pocket), parseHkd(r3.paid));
+});
+
+test("routine allowance follows the chain: the rules sheet's change holds; a schedule-only edit never touches the pocket", async () => {
+  const { w, pocket } = await routinePocket();
+  const v = w.chain.view(pocket);
+  w.chain.setPeriodLimit(v.owner, pocket, 2, parseHkd("1.00")); // the owner raises it in the rules sheet (no routine edit)
+  assert.deepEqual(w.routine(pocket)!.allowance, { amount: "1.00", period: "week" }, "the routine shows the allowance that holds");
+  const sets = () => w.chain.txs().filter((t) => t.method === "setPeriodLimit" && t.pocket === pocket).length;
+  const before = sets();
+  w.editRoutine(pocket, { cadence: { every: "week", weekday: 1, dayOfMonth: null, hour: 9, minute: 0 } });
+  assert.equal(sets(), before, "no setPeriodLimit: the edit didn't change the allowance");
+  assert.equal(w.chain.view(pocket).periodLimit, parseHkd("1.00"), "the owner's HK$1.00 still holds");
+  for (let i = 0; i < 3; i++) await w.runRoutineNow(pocket); // HK$0.408 this week: under HK$1.00
+  assert.equal(w.pending(pocket).length, 0, "no ask under the raised allowance");
 });
 
 test("spec stream: the canvas replays the spec's real decisions and ends on the spec exactly", async () => {

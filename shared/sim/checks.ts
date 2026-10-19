@@ -59,6 +59,7 @@ export function gateOf(code?: string): GateId {
     case "OVER_CAP": return "cap";
     case "OVER_BUDGET": return "budget";
     case "NEEDS_OWNER_APPROVAL": case "OWNER_DECLINED": case "APPROVAL_EXPIRED": return "cosign";
+    case "OVER_PERIOD": return "cosign"; // past the period allowance: the pocket pays it only with the owner's co-signature
     case "NOT_OWNER": return "owner";
     case "DISCLOSURE_REFUSED": case "SIGNATURE_TYPE_NOT_ALLOWED": return "privacy";
     case "NOT_A_PURCHASE": return "agent";

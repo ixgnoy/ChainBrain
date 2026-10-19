@@ -93,7 +93,6 @@ export default function Settings() {
       <ListCard>
         {dev || demo || getChain()?.key === "fisco" ? <ListRow a11y="Get test funds" onPress={getFunds} icon="plus" title="Get test funds" sub={funds.text ?? "Test money, for this network"} rightSub={funds.state === "busy" ? "Adding…" : undefined} rightSubTone={funds.state === "fail" ? "negative" : "muted"} /> : null}
         <ListRow a11y="Add an existing card" onPress={() => setAdding(!adding)} icon="layers" title="Add an existing card" sub="By its address"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
-        <ListRow a11y="Import a key" onPress={() => { setImporting(!importing); }} icon="key" title="Import a key" sub="A test key you have"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         <ListRow a11y="Back up your key" onPress={() => setBackup(backup === "closed" ? "open" : "closed")} icon="key" title="Back up your key" sub="Only on this phone: copy it somewhere safe"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
         {/* a browser tab keeps the built-in network across reloads (lib/builtin.ts); this is the way back to a fresh one */}
         {source === "builtin" && Platform.OS === "web" ? (
@@ -123,18 +122,6 @@ export default function Settings() {
           </Card>
         </Animated.View>
       ) : null}
-      {importing ? (
-        <Animated.View entering={FadeInDown.duration(motion.base)} exiting={FadeOut.duration(motion.exit)}>
-        <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
-          <T v="sub" color="ink2">Cards owned by your current key can no longer be managed from this phone after you switch. Test keys only.</T>
-          <Field value={pk} onChangeText={setPk} placeholder="Private key (0x…)" autoCapitalize="none" autoCorrect={false} secureTextEntry accessibilityLabel="Private key" />
-          {!!keyErr && <T v="sub" color="negative">{keyErr}</T>}
-          <Button label="Import this key" small disabled={!isPrivateKey(pk)} onPress={async () => { try { await importKey(pk); setImporting(false); setPk(""); setKeyErr(""); haptic.warning(); } catch (e) { setKeyErr((e as Error).message); } }} />
-          <Button label="Cancel" kind="text" small onPress={() => { setImporting(false); setPk(""); setKeyErr(""); }} />
-        </Card>
-        </Animated.View>
-      ) : null}
-
       <Group title="About" />
       <ListCard>
         <ListRow a11y="How ChainBrain works, shows the intro again" icon="info" title="How ChainBrain works" sub="The intro, in under a minute" onPress={replayIntro}>
@@ -157,8 +144,22 @@ export default function Settings() {
           </ListRow>
         ) : null}
         {demo && linked ? <ListRow icon="activity" title="Laptop console" sub="Linked" /> : null}
+        {/* developer only: replaces the phone's own key with a raw test key, so it stays out of the main flow */}
+        <ListRow a11y="Developer: import a test key" onPress={() => { setImporting(!importing); }} icon="key" title="Import a test key" sub="Developer only. Replaces this phone's key"><Icon name="chevronRight" size={18} color={c.muted} /></ListRow>
       </ListCard>
       {!demo ? <T v="cap" color={conn === "offline" || visitor.state === "error" ? "negative" : "muted"} style={{ paddingHorizontal: 24, paddingTop: 8 }}>{network}</T> : null}
+      {importing ? (
+        <Animated.View entering={FadeInDown.duration(motion.base)} exiting={FadeOut.duration(motion.exit)}>
+        <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>
+          <T v="sub" color="ink2">Cards owned by your current key can no longer be managed from this phone after you switch. Test keys only.</T>
+          <Field value={pk} onChangeText={setPk} placeholder="Private key (0x…)" autoCapitalize="none" autoCorrect={false} secureTextEntry accessibilityLabel="Private key" />
+          {!!keyErr && <T v="sub" color="negative">{keyErr}</T>}
+          <Button label="Import this key" small disabled={!isPrivateKey(pk)} onPress={async () => { try { await importKey(pk); setImporting(false); setPk(""); setKeyErr(""); haptic.warning(); } catch (e) { setKeyErr((e as Error).message); } }} />
+          <Button label="Cancel" kind="text" small onPress={() => { setImporting(false); setPk(""); setKeyErr(""); }} />
+        </Card>
+        </Animated.View>
+      ) : null}
+
       {editing && !demo ? (
         <Animated.View entering={FadeInDown.duration(motion.base)} exiting={FadeOut.duration(motion.exit)}>
           <Card style={{ marginHorizontal: 20, marginTop: 12, gap: 12 }}>

@@ -43,7 +43,9 @@ import * as api from "../../lib/api";
 import { curSign } from "../../lib/runtime";
 import { ProtectedHead, ProtectedLayers } from "../../components/Protected";
 
-/** A rule chip: white pill with a muted label and a bold value; editable ones open the rule sheet. */
+/** Pocket.periodKind as a word. */
+const PERIOD_WORD: Record<number, string> = { 1: "day", 2: "week", 3: "month" };
+
 /** A rule as VaultBank's category tile: a coloured dot, the figure big, what it means under it; a pencil when you can edit it. */
 function RuleTile({ icon, label, value, onPress, a11y }: { icon: IconName; label: string; value: string; onPress?: () => void; a11y: string }) {
   const body = (
@@ -128,6 +130,8 @@ export default function PocketDetail() {
   const sellerNames = (cfg?.sellers ?? []).filter((s) => pocket.allowed.includes(s.id)).map((s) => cleanText(s.name, 30));
   const agent = agentInfo(pocket.agentId ?? "");
   const ask = pocket.askAbove === NEVER || pocket.askAbove > pocket.cap ? "Never" : pocket.askAbove === 0n ? "Every payment" : money(pocket.askAbove);
+  // the allowance the pocket enforces on-chain (Pocket.periodLimit); past it a payment needs your co-sign
+  const allowance = pocket.periodKind ? `${money(pocket.periodLimit ?? 0n)} a ${PERIOD_WORD[pocket.periodKind]}` : "None";
   // what came back with the revoke (its sweep follows the revoke tx), not earlier Return funds
   const revokedAt = mine.find((r) => r.kind === "owner" && r.ownerKind === "revoke")?.at;
   const returned = revokedAt == null ? 0n : mine.filter((r) => r.kind === "owner" && r.ownerKind === "return" && r.at >= revokedAt).reduce((n, r) => n + (r.amount ?? 0n), 0n);
@@ -267,6 +271,10 @@ export default function PocketDetail() {
                 <RuleTile icon="gauge" label="Per payment" value={money(pocket.cap)} a11y={`Edit cap: Cap ${money(pocket.cap)}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "cap" }) : undefined} />
                 <RuleTile icon="bell" label="Asks above" value={ask} a11y={`Edit ask-me limit: Ask above ${ask}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "ask" }) : undefined} />
                 <RuleTile icon="clock" label={expired ? "Ended" : pocket.frozen ? "Frozen" : "Ends"} value={shortEnd(pocket.expiresAt)} a11y={pocket.frozen ? "Frozen by the Sentinel" : untilText(pocket.expiresAt)} />
+              </View>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <RuleTile icon="refresh" label={pocket.periodKind ? `Allowance · ${money(pocket.spentThisPeriod ?? 0n)} used this ${PERIOD_WORD[pocket.periodKind]}` : "Allowance"} value={allowance}
+                  a11y={`${editable ? "Edit allowance" : "Allowance"}: ${allowance}${pocket.periodKind ? `, ${money(pocket.spentThisPeriod ?? 0n)} used this ${PERIOD_WORD[pocket.periodKind]}` : ""}`} onPress={editable ? () => setRules({ pocket: pocket.address, field: "allowance" }) : undefined} />
               </View>
               <Press kind="row" haptics="select" onPress={() => setRulesOpen((o) => !o)} accessibilityRole="button" accessibilityLabel={`Allowed sellers: ${sellerNames.join(", ")}. Anyone else is refused`}
                 style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 }}>

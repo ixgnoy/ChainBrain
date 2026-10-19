@@ -7,7 +7,7 @@ export const EHKD: Address = "0x0355c0c5Afe2A35369056FBB854903A4aF07781A";
 export const NEVER = 2n ** 256n - 1n;
 export function parseHkd(s: string): bigint {
   const m = /^(\d+)(?:\.(\d{1,6}))?$/.exec(String(s).trim());
-  if (!m) throw new Error(`bad USD amount: ${s}`);
+  if (!m) throw new Error(`bad HK$ amount: ${s}`);
   return BigInt(m[1]) * 1_000_000n + BigInt((m[2] ?? "").padEnd(6, "0") || "0");
 }
 export function formatHkd(n: bigint): string {
@@ -18,11 +18,12 @@ export function formatHkd(n: bigint): string {
 
 export { transferTypedData, type Authorization } from "./typed";
 
-/** The complete reason-code map (24 codes, server/src/wallet/reasons.ts). The mobile app used to miss QUOTE_UNKNOWN and NOT_THIS_AGENT. */
+/** The complete reason-code map (25 codes, server/src/wallet/reasons.ts). The mobile app used to miss QUOTE_UNKNOWN and NOT_THIS_AGENT. */
 export const REASONS: Record<string, string> = {
   SELLER_NOT_ALLOWED: "This seller is not in the card's allowlist",
   OVER_CAP: "Above the card's per-payment cap",
   OVER_BUDGET: "Not enough left in the card",
+  OVER_PERIOD: "Over this period's allowance: the card pays it only with the owner's co-signature",
   POCKET_REVOKED: "The owner revoked this card",
   POCKET_EXPIRED: "The card has expired",
   PRICE_ABOVE_INTENT: "The price is above the intent's max per item",

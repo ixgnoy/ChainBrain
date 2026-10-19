@@ -12,9 +12,9 @@ const mid = (s: string) => `m:${createHash("sha256").update(s).digest("hex").sli
 
 /** One fixed line per event type, built from typed fields only (no seller-provided or agent-written text). */
 function line(e: WalletEvent): string | undefined {
-  const usd = (v: unknown) => `${cfg().currency}${formatAmount(BigInt(String(v ?? 0)))}`;
+  const hkd = (v: unknown) => `${cfg().currency}${formatAmount(BigInt(String(v ?? 0)))}`;
   switch (e.type) {
-    case "payment": return `paid ${e.sellerId} ${e.sku} ${usd(e.amount)}${e.cosigned ? " (owner co-signed)" : ""}`;
+    case "payment": return `paid ${e.sellerId} ${e.sku} ${hkd(e.amount)}${e.cosigned ? " (owner co-signed)" : ""}`;
     case "refusal": return `refused ${e.sellerId} ${e.sku}: ${e.reason}`;
     case "disclosure": return `${e.sellerId} asked for data or a signature: refused`;
     case "radar": return e.kind === "screen" ? `radar ${e.counterparty} ${e.score}/10 ${e.verdict}` : e.kind === "alert" ? `radar alert ${(e.alert as any)?.name} now ${(e.alert as any)?.to?.verdict}` : undefined;

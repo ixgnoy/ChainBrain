@@ -99,6 +99,7 @@ export function createLocalFeed(o: WorldOptions & { background?: boolean; pauseM
       const pockets: PocketState[] = world.chain.pockets().map((p) => ({
         address: p.address as Address, owner: p.owner as Address, agent: p.agent as Address, createdTx: p.createdTx as Hex | undefined, createdBlock: p.createdBlock,
         balance: p.balance, cap: p.cap, askAbove: p.askAbove, expiresAt: Number(p.expiresAt), revoked: p.revoked, frozen: p.frozen, allowed: p.allowed,
+        periodKind: p.periodKind ?? 0, periodLimit: p.periodLimit ?? 0n, spentThisPeriod: p.spentThisPeriod ?? 0n,
         name: titles.get(p.address.toLowerCase()) || nameOf(p.owner, p.cap, autopilot.presenter),
       })).sort((a, b) => Number((b.createdBlock ?? 0n) - (a.createdBlock ?? 0n)));
       return { events: evCache.out, pockets, txs: ok, allTxs: all, follow: autopilot.active, scene: autopilot.state.scene };

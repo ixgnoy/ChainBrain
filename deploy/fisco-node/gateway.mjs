@@ -3,7 +3,11 @@
 //                      eth_feeHistory is answered here: FISCO lacks it, and wallets (MetaMask, ethers, forge) need it for
 //                      EIP-1559 fees. The chain's base fee and gas price are 0, so the honest history is all zeros.
 //                      transactionIndex is repaired in responses: FISCO returns the hex of the ASCII text ("0x307830" for
-//                      "0x0"), which overflows client number parsers (viem) and confuses wallets.
+//                      "0x0"), which overflows client number parsers (viem) and confuses wallets. A one-element batch is
+//                      answered as an array again (FISCO unwraps it, which breaks batching clients such as viem), and a
+//                      batch over the node's limit of 8 calls is split.
+//                      eth_getLogs is answered here too (logs.mjs): FISCO rejects a filter without toBlock, address or
+//                      topics, and silently drops logs from wide block ranges; logs.mjs scans in small windows, with limits.
 //   GET  /health       200 when the node answers eth_blockNumber
 //                      chainbrain_getRevertData(txHash) is answered here: the web3 receipt of a reverted transaction carries
 //                      no revert data, the node's native receipt does (status 16, output = the ABI-encoded error). The native
@@ -13,6 +17,7 @@ import { createServer } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { readFileSync } from "node:fs";
 import { execFile } from "node:child_process";
+import { makeGetLogs, MAX_LOGS_PER_BATCH, batchLimitError, rewrapBatch, answerBatch } from "./logs.mjs";
 
 const RPC = "http://127.0.0.1:8545";
 const PORT = Number(process.env.PORT ?? 8080);
@@ -79,13 +84,19 @@ function repair(x) {
 }
 const repaired = (text) => (text.includes("transactionIndex") ? JSON.stringify(repair(JSON.parse(text))) : text);
 
+const getLogs = makeGetLogs((m) => rpc(JSON.stringify(m)).then((r) => r.json()), repair);
+
 async function forward(body) {
   let msg;
   try { msg = JSON.parse(body); } catch { return null; } // let the node answer malformed JSON itself
-  const one = async (m) => (m?.method === "eth_feeHistory" ? feeHistory(m.id, m.params ?? []) : m?.method === "chainbrain_getRevertData" ? revertData(m.id, m.params ?? []) : null);
+  const one = async (m) =>
+    m?.method === "eth_feeHistory" ? feeHistory(m.id, m.params ?? []) : m?.method === "eth_getLogs" ? getLogs(m.id, m.params ?? []) : m?.method === "chainbrain_getRevertData" ? revertData(m.id, m.params ?? []) : null;
   if (Array.isArray(msg)) {
-    if (!msg.some((m) => m?.method === "eth_feeHistory" || m?.method === "chainbrain_getRevertData")) return null;
-    const out = await Promise.all(msg.map(async (m) => (await one(m)) ?? repair(await rpc(JSON.stringify(m)).then((r) => r.json()))));
+    // answered here: fee history, getLogs (at most MAX_LOGS_PER_BATCH), revert data, and batches the node would refuse (over 8 calls)
+    if (msg.length <= 8 && !msg.some((m) => m?.method === "eth_feeHistory" || m?.method === "eth_getLogs" || m?.method === "chainbrain_getRevertData")) return null;
+    let logs = 0;
+    const special = (m) => (m?.method === "eth_getLogs" && ++logs > MAX_LOGS_PER_BATCH ? Promise.resolve(batchLimitError(m.id)) : one(m));
+    const out = await answerBatch(msg, special, (arr) => rpc(JSON.stringify(arr)).then((r) => r.json()).then(repair));
     return JSON.stringify(out);
   }
   const r = await one(msg);
@@ -117,7 +128,7 @@ createServer(async (req, res) => {
       const local = await forward(body);
       if (local) return send(res, 200, local);
       const r = await rpc(body);
-      return send(res, r.status, repaired(await r.text()));
+      return send(res, r.status, rewrapBatch(body, repaired(await r.text())));
     }
     send(res, 404, { error: "not found" });
   } catch (e) {

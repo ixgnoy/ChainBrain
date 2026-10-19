@@ -8,6 +8,8 @@ export type PocketState = {
   balance: bigint; cap: bigint; askAbove: bigint; expiresAt: number; revoked: boolean; allowed: string[];
   /** Pocket.frozen: the Sentinel (or the owner) stopped all payments; only the owner can unfreeze. */
   frozen?: boolean;
+  /** Pocket.periodKind (0 none, 1 day, 2 week, 3 month, Hong Kong calendar), periodLimit and spentThisPeriod(): the allowance the contract enforces. */
+  periodKind?: number; periodLimit?: bigint; spentThisPeriod?: bigint;
   /** The owner's own label for it (only a phone knows it; the chain has none). */
   name?: string;
 };
@@ -94,14 +96,15 @@ export async function loadPockets(client: PublicClient, cfg: Config, index: Chai
   const read = (address: Address, functionName: string, args: unknown[] = []) => client.readContract({ address, abi: cfg.abis.pocket, functionName, args } as any) as Promise<any>;
   const states = await Promise.all(addrs.map(async (address) => {
     try {
-      const [owner, agent, cap, askAbove, expiresAt, revoked, frozen, balance, ...allowedFlags] = await Promise.all([
+      const [owner, agent, cap, askAbove, expiresAt, revoked, frozen, periodKind, periodLimit, spentThisPeriod, balance, ...allowedFlags] = await Promise.all([
         read(address, "owner"), read(address, "agent"), read(address, "perPaymentCap"), read(address, "askAbove"), read(address, "expiresAt"), read(address, "revoked"),
         read(address, "frozen").catch(() => false), // pockets from an older factory have no freeze
+        read(address, "periodKind").catch(() => 0), read(address, "periodLimit").catch(() => 0n), read(address, "spentThisPeriod").catch(() => 0n), // nor an allowance
         client.readContract({ address: cfg.token, abi: cfg.abis.erc20, functionName: "balanceOf", args: [address] } as any) as Promise<bigint>,
         ...cfg.sellers.map((s) => read(address, "sellerAllowed", [s.payTo])),
       ]);
       const log = created.get(address.toLowerCase());
-      return { address: (log?.args.pocket ?? address) as Address, owner, agent, cap, askAbove, expiresAt: Number(expiresAt), revoked, frozen: !!frozen, balance, allowed: cfg.sellers.filter((_, i) => allowedFlags[i]).map((s) => s.id), createdTx: log?.transactionHash ?? undefined, createdBlock: log?.blockNumber ?? undefined } as PocketState;
+      return { address: (log?.args.pocket ?? address) as Address, owner, agent, cap, askAbove, expiresAt: Number(expiresAt), revoked, frozen: !!frozen, periodKind: Number(periodKind), periodLimit: toBig(periodLimit), spentThisPeriod: toBig(spentThisPeriod), balance, allowed: cfg.sellers.filter((_, i) => allowedFlags[i]).map((s) => s.id), createdTx: log?.transactionHash ?? undefined, createdBlock: log?.blockNumber ?? undefined } as PocketState;
     } catch { return null; } // not a pocket (or not readable on this chain)
   }));
   return states.filter((s): s is PocketState => !!s).sort((a, b) => Number((b.createdBlock ?? 0n) - (a.createdBlock ?? 0n)));

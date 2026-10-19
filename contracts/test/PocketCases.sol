@@ -298,4 +298,148 @@ abstract contract PocketCases is Test {
         vm.expectRevert(bytes("NOT_GUARDIAN"));
         p.freeze("X");
     }
+
+    // ---- the period allowance (on-chain, counted by the token's spend hook) ----
+
+    function _warpTo(uint256 secs) internal {
+        vm.warp(msClock ? secs * 1000 : secs);
+    }
+
+    /// Owner sets a weekly allowance and pushes expiry out so the pocket lives across the periods tested.
+    function _weekly(uint256 limit) internal {
+        vm.startPrank(owner);
+        pocket.setPeriodLimit(2, limit);
+        pocket.setExpiresAt(type(uint64).max);
+        vm.stopPrank();
+    }
+
+    function test_period_allowance_needs_owner_beyond_it() public {
+        _weekly(1e6);
+        _submit(_auth(dataLite, 6e5, agentPk), "");
+        assertEq(pocket.spentThisPeriod(), 6e5);
+        assertEq(pocket.canPay(dataLite, 5e5), bytes32("OVER_PERIOD"));
+        Auth memory a = _auth(dataLite, 5e5, agentPk);
+        vm.expectRevert(); // a stolen agent key cannot go past the allowance alone
+        _submit(a, "");
+        _submit(a, _sign(ownerPk, a.digest)); // the cheque: the owner's signature lifts it
+        assertEq(pocket.spentThisPeriod(), 1.1e6);
+        assertEq(token.balanceOf(dataLite), 1.1e6);
+    }
+
+    function test_period_allowance_exact_fit_and_reset_next_week() public {
+        _weekly(1e6);
+        _submit(_auth(dataLite, 6e5, agentPk), "");
+        _submit(_auth(dataLite, 4e5, agentPk), ""); // exactly the allowance
+        assertEq(pocket.canPay(dataLite, 1), bytes32("OVER_PERIOD"));
+        _warpBy(7 days);
+        assertEq(pocket.spentThisPeriod(), 0); // nothing carries over
+        _submit(_auth(dataLite, 6e5, agentPk), "");
+        assertEq(pocket.spentThisPeriod(), 6e5);
+    }
+
+    function test_period_boundaries_are_hong_kong_calendar() public {
+        vm.prank(owner);
+        pocket.setPeriodLimit(1, 1e6);
+        // 2026-10-18 15:59:59 UTC = 23:59:59 Sunday in Hong Kong; one second later is Monday 00:00 HKT
+        uint256 sunEnd = 1_792_339_199;
+        assertEq(pocket.periodOf(sunEnd + 1), pocket.periodOf(sunEnd) + 1);
+        vm.prank(owner);
+        pocket.setPeriodLimit(2, 1e6);
+        assertEq(pocket.periodOf(sunEnd + 1), pocket.periodOf(sunEnd) + 1); // the week starts on Monday
+        assertEq(pocket.periodOf(sunEnd + 1), pocket.periodOf(sunEnd + 1 + 7 days - 1));
+        vm.prank(owner);
+        pocket.setPeriodLimit(3, 1e6);
+        // months: 2024-02-29 (leap day) and 2024-03-01 00:00 HKT = 2024-02-29 16:00 UTC
+        assertEq(pocket.periodOf(1_709_222_400 - 1), 2024 * 12 + 2);
+        assertEq(pocket.periodOf(1_709_222_400), 2024 * 12 + 3);
+        assertEq(pocket.periodOf(946_656_000), 2000 * 12 + 1); // 2000-01-01 00:00 HKT
+    }
+
+    function test_only_the_token_counts_spend() public {
+        _weekly(1e6);
+        vm.prank(attacker);
+        vm.expectRevert(bytes("NOT_TOKEN"));
+        pocket.onSpend(dataLite, 0);
+        vm.prank(agent);
+        vm.expectRevert(bytes("NOT_OWNER"));
+        pocket.setPeriodLimit(0, 0);
+        vm.prank(owner);
+        vm.expectRevert(bytes("BAD_PERIOD"));
+        pocket.setPeriodLimit(4, 1e6);
+    }
+
+    function test_starving_the_spend_hook_reverts_the_payment() public {
+        _weekly(1e6);
+        Auth memory a = _auth(dataLite, 6e5, agentPk);
+        vm.prank(facilitator);
+        vm.expectRevert();
+        token.transferWithAuthorization{gas: 120_000}(address(pocket), a.to, a.value, 0, a.validBefore, a.nonce, _env(a, ""));
+        assertEq(token.balanceOf(dataLite), 0);
+    }
+
+    /// The token's pre-check: too little gas for the hook reverts the whole payment (above); with enough gas the same
+    /// authorization settles and the pocket counts it, so no gas limit pays without being counted.
+    function test_spend_hook_counts_with_enough_gas() public {
+        _weekly(1e6);
+        Auth memory a = _auth(dataLite, 6e5, agentPk);
+        vm.prank(facilitator);
+        vm.expectRevert(bytes("EHKD: out of gas for the spend hook"));
+        token.transferWithAuthorization{gas: 160_000}(address(pocket), a.to, a.value, 0, a.validBefore, a.nonce, _env(a, ""));
+        vm.prank(facilitator);
+        token.transferWithAuthorization{gas: 400_000}(address(pocket), a.to, a.value, 0, a.validBefore, a.nonce, _env(a, ""));
+        assertEq(token.balanceOf(dataLite), 6e5);
+        assertEq(pocket.spentThisPeriod(), 6e5);
+    }
+
+    /// onSpend's worst case (month kind, first spend in a new period, every slot cold) stays far under the 100,000 gas the
+    /// token gives the hook, so the hook never runs out of gas inside a payment.
+    function test_onSpend_worst_case_gas_is_under_80k() public {
+        vm.startPrank(owner);
+        pocket.setPeriodLimit(3, 1e6);
+        pocket.setExpiresAt(type(uint64).max);
+        vm.stopPrank();
+        _warpBy(40 days); // a new month: the period index and the count are both rewritten
+        vm.cool(address(pocket));
+        vm.prank(address(token));
+        uint256 before = gasleft();
+        pocket.onSpend(dataLite, 6e5);
+        uint256 used = before - gasleft();
+        emit log_named_uint("onSpend worst-case gas", used);
+        assertLt(used, 80_000);
+        assertEq(pocket.spentThisPeriod(), 6e5);
+    }
+
+    // ---- per-seller caps ----
+
+    /// Override semantics: a seller's own cap replaces the pocket cap for that seller, so lowering the pocket cap (setCap)
+    /// does NOT restrict a seller that has its own cap. To stop that seller, the owner changes its cap, removes it, or freezes.
+    function test_lowering_the_pocket_cap_does_not_restrict_a_seller_with_its_own_cap() public {
+        vm.startPrank(owner);
+        pocket.setSellerCap(dataPro, 3e6);
+        pocket.setCap(1e5); // emergency tightening of the pocket cap
+        vm.stopPrank();
+        assertEq(pocket.canPay(dataLite, 2e5), bytes32("OVER_CAP")); // the pocket cap holds for sellers without their own
+        assertEq(pocket.canPay(dataPro, 2.5e6), bytes32("OK")); // DataPro keeps its own cap of 3
+        Auth memory a = _auth(dataPro, 2.5e6, agentPk);
+        _submit(a, _sign(ownerPk, a.digest)); // above ask: the owner co-signs, the seller cap allows it
+        assertEq(token.balanceOf(dataPro), 2.5e6);
+        vm.prank(owner);
+        pocket.setSellerCap(dataPro, 0); // back to the pocket cap
+        assertEq(pocket.canPay(dataPro, 2e5), bytes32("OVER_CAP"));
+    }
+
+    function test_seller_cap_overrides_the_pocket_cap() public {
+        vm.startPrank(owner);
+        pocket.setSellerCap(dataPro, 3e6);
+        pocket.setSellerCap(dataLite, 1e5);
+        vm.stopPrank();
+        assertEq(pocket.canPay(dataPro, 2.5e6), bytes32("OK")); // above the pocket cap of 2, under DataPro's 3
+        assertEq(pocket.canPay(dataLite, 3e5), bytes32("OVER_CAP")); // DataLite is held to 0.10
+        Auth memory a = _auth(dataPro, 2.5e6, agentPk);
+        _submit(a, _sign(ownerPk, a.digest)); // still above ask: the owner co-signs
+        assertEq(token.balanceOf(dataPro), 2.5e6);
+        vm.prank(agent);
+        vm.expectRevert(bytes("NOT_OWNER"));
+        pocket.setSellerCap(dataLite, 100e6);
+    }
 }

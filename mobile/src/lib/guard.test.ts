@@ -50,6 +50,8 @@ test("allows the owner's controls on the owner's card, nothing else", async () =
     ["function setAskAbove(uint256)", "setAskAbove", [0n], /ask you every time/],
     ["function setSeller(address,bool)", "setSeller", [SHOP, false], /Block DataLite/],
     ["function setExpiresAt(uint64)", "setExpiresAt", [1_900_000_000n], /expire at 2030/],
+    ["function setSellerCap(address,uint256)", "setSellerCap", [SHOP, 400_000n], /Cap DataLite at HK\$0\.40 a payment/],
+    ["function setPeriodLimit(uint8,uint256)", "setPeriodLimit", [2, 1_000_000n], /up to HK\$1\.00 a week on its own/],
   ];
   for (const [sig, fn, args, re] of cases) {
     const v = await checkTx(ctx, { to: MY_CARD, data: enc(sig, fn, args) });

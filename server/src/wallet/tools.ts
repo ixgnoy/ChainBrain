@@ -22,7 +22,7 @@ type Tool = { description: string; schema: z.ZodType; run(ctx: ToolCtx, args: an
 export type ToolMap = Record<string, { description: string; input_schema: object; run(ctx: ToolCtx, args: unknown): Promise<object> }>;
 
 const NEVER = 2n ** 256n - 1n;
-const usd = (n: bigint) => (n === NEVER ? "never" : formatAmount(n));
+const hkd = (n: bigint) => (n === NEVER ? "never" : formatAmount(n));
 const refuse = (reason: Reason, extra: object = {}) => ({ ok: false, reason, why: REASONS[reason], ...extra });
 const APPROVAL_WAIT_MS = Number(process.env.APPROVAL_WAIT_MS ?? 600_000);
 
@@ -55,7 +55,8 @@ const defs: Record<string, Tool> = {
       const sellers = await directory();
       const allowed = (await Promise.all(sellers.map(async (x) => ((await P(ctx.pocket).sellerAllowed(x.payTo)) ? x.name : null)))).filter(Boolean);
       return {
-        ok: true, balance: usd(i.balance), perPaymentCap: usd(i.cap), askMeAbove: usd(i.askAbove),
+        ok: true, balance: hkd(i.balance), perPaymentCap: hkd(i.cap), askMeAbove: hkd(i.askAbove),
+        ...(i.periodKind ? { allowance: { per: (["", "day", "week", "month"] as const)[i.periodKind], limit: hkd(i.periodLimit), spentThisPeriod: hkd(i.spent) } } : {}),
         expiresAt: new Date(Number(i.expiresAt) * 1000).toISOString(), revoked: i.revoked, allowedSellers: allowed,
         spentThisTask: formatAmount(s.spent), itemsThisTask: s.items, intent: s.intent ? renderIntent(s.intent) : null,
       };
@@ -106,7 +107,7 @@ const defs: Record<string, Tool> = {
       return {
         ok: true, quoteId: rec.quoteId, sellerId, sku, description: rec.description, price: formatAmount(rec.amount),
         allowedByPocket: rule === "OK" ? "OK" : { reason: rule, why: isReason(rule) ? REASONS[rule] : rule },
-        needsOwnerApproval: (await P(ctx.pocket).needsOwner(rec.amount)) || sentinel.isHeld(ctx.pocket),
+        needsOwnerApproval: rule === "OVER_PERIOD" || (await P(ctx.pocket).needsOwner(rec.amount)) || sentinel.isHeld(ctx.pocket),
         intentCheck: intentCheck ? { reason: intentCheck, why: REASONS[intentCheck] } : "OK",
         counterpartyRisk: risk ? { score: risk.score, verdict: risk.verdict, reasons: brief(risk).reasons } : "unavailable",
         ...((await directory().catch(() => [])).find((x) => x.id === sellerId)?.items.find((i) => i.sku === sku)?.negotiable ? { negotiable: true } : {}),
@@ -144,13 +145,13 @@ const defs: Record<string, Tool> = {
       if (kind === "accept") { rec.amount = answered; rec.agreed = true; rec.url = `${base}?deal=${encodeURIComponent(j.deal)}`; }
       bus.publish({ type: "haggle", pocket: ctx.pocket, quoteId, sellerId: rec.sellerId, sku: rec.sku, round: rec.rounds, offer, reply: kind, price: answered, final, list: rec.list, accepting });
       return kind === "accept"
-        ? { ok: true, deal: true, price: formatAmount(answered), list: formatAmount(rec.list), saved: formatAmount(rec.list - answered), needsOwnerApproval: (await P(ctx.pocket).needsOwner(answered)) || sentinel.isHeld(ctx.pocket), note: "Deal agreed: pay (or ask_owner first if needsOwnerApproval) with the same quoteId." }
+        ? { ok: true, deal: true, price: formatAmount(answered), list: formatAmount(rec.list), saved: formatAmount(rec.list - answered), needsOwnerApproval: (await P(ctx.pocket).canPay(rec.payTo, answered)) === "OVER_PERIOD" || (await P(ctx.pocket).needsOwner(answered)) || sentinel.isHeld(ctx.pocket), note: "Deal agreed: pay (or ask_owner first if needsOwnerApproval) with the same quoteId." }
         : { ok: true, deal: false, counter: formatAmount(answered), final, roundsLeft: MAX_ROUNDS - rec.rounds, note: final ? "The seller's final price: accept it by offering exactly this price, or walk away." : "Offer again (lower than the counter), accept the counter by offering exactly it, or walk away." };
     },
   },
 
   ask_owner: {
-    description: "Either ask the owner ONE clarifying question ({question}: then end your turn), or ask approval for a quote above the ask-me threshold ({quoteId, reason}: one sentence; waits for the owner's signature).",
+    description: "Either ask the owner ONE clarifying question ({question}: then end your turn), or ask approval for a quote above the ask-me threshold or over the pocket's period allowance ({quoteId, reason}: one sentence; waits for the owner's signature).",
     schema: z.object({ question: z.string().optional(), quoteId: z.string().optional(), reason: z.string().optional() }),
     async run(ctx, { question, quoteId, reason }) {
       if (question) {

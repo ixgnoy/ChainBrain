@@ -26,7 +26,8 @@ const TWA = [{
 export async function preflight(pocket: Address, rec: QuoteRec, intentHash: Hex): Promise<Prediction> {
   const p = P(pocket);
   const [rule, needs, info] = await Promise.all([p.canPay(rec.payTo, rec.amount), p.needsOwner(rec.amount), p.info()]);
-  const ruleReason = rule !== "OK" ? rule : needs && !rec.ownerSig ? "NEEDS_OWNER_APPROVAL" : undefined;
+  const lifted = rule === "OVER_PERIOD" && !!rec.ownerSig; // the owner's co-signature lifts the period allowance
+  const ruleReason = rule !== "OK" && !lifted ? rule : needs && !rec.ownerSig ? "NEEDS_OWNER_APPROVAL" : undefined;
   const balanceAfter = (info.balance - rec.amount).toString();
   try {
     const auth = prepareApproval(pocket, rec, intentHash); // the same authorization (and nonce) the payment will use

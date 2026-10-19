@@ -4,7 +4,7 @@
   "entries": [
     {
       "label": "spike: create research pocket",
-      "tx": "0xe3190aa2e17860497013a44b35f339d58fad6dc6e950cad28cb7985f0b5e990f",
+      "tx": "0x9a1587e0e447cf82fa769fc18e765a29bad191d1aa03cfbe60c607f0dfa958d9",
       "expect": "success",
       "event": "PocketCreated(address,address,address)",
       "contract": "0x03aB4C311eeE7C3295c63F910D79a07Ffa7A097A"
@@ -18,22 +18,63 @@
     },
     {
       "label": "spike: DataLite paid by the agent key alone (x402, EIP-3009 + ERC-1271)",
-      "tx": "0x43cab25d106af65015627652aa8b7a5b097ee3d8cbc968cc964cc85c3650cd4d",
+      "tx": "0x15b0d30f82cd7efc94f5b534277a71ddaa439ecd5576315ae94cf9cbdccf9333",
       "expect": "success",
       "event": "AuthorizationUsed(address,bytes32)",
       "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
     },
     {
       "label": "spike: DataPro above ask-me, owner co-signed",
-      "tx": "0xfb13de15eeb8ee0bae77c0b95d33afb51dfae9cb1888242a67eab38ed4dfdb59",
+      "tx": "0xcc79bc34fd0d6640866b6d555c46626e19d21177ca15380477326668346164a3",
       "expect": "success",
       "event": "AuthorizationUsed(address,bytes32)",
       "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
     },
     {
       "label": "scene 5 backstop: compromised agent key forces the injected transfer straight to the token",
-      "tx": "0xc57568ce3b4d12050bf82e14cef3007c57665a7e98245dcb39c62c7e2ca4a529",
+      "tx": "0x91525ada450e84a0afb9f4fb255d57df3c910d1eb8af78acb2b10f40ed7e7745",
       "expect": "reverted",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "allowance: create pocket (DataLite only, never asks)",
+      "tx": "0x28d40fb7cd1694e34365f8477f174f7378c55546e511f3a0ab8726b798ff1afe",
+      "expect": "success",
+      "event": "PocketCreated(address,address,address)",
+      "contract": "0x03aB4C311eeE7C3295c63F910D79a07Ffa7A097A"
+    },
+    {
+      "label": "allowance: fund pocket HK$10",
+      "tx": "0x2247a6432c039e643cc63333dee56e8eac309b541f2cfc90ac752cf2fef489ee",
+      "expect": "success",
+      "event": "Transfer(address,address,uint256)",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "allowance: owner sets at most HK$3.00 a week (Hong Kong time)",
+      "tx": "0x7a1cd383a8cebe70494fbc7f554a45f15c9d9f20b82a5090c834dd7a937d5336",
+      "expect": "success",
+      "event": "RulesChanged()",
+      "contract": "0x91019dDCD226aA00D3e76CD79C5bCFF9973D5374"
+    },
+    {
+      "label": "allowance: first report HK$2.30, agent key alone (counted on-chain)",
+      "tx": "0x7626c8aa14cdf3747018b65d26f944b857425626946eb468ee440e9e43f1332c",
+      "expect": "success",
+      "event": "AuthorizationUsed(address,bytes32)",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "allowance: second report, agent key alone straight to the token: over the week's allowance",
+      "tx": "0xdf5430232a3a875bfaad52087f40c151b688219c647f744f221c843b18392a9c",
+      "expect": "reverted",
+      "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
+    },
+    {
+      "label": "allowance: second report with the owner's co-signature (the cheque)",
+      "tx": "0xc06736439a736e23a49df09d16e32d08feb6a7301299084b9d3b6de37c808e93",
+      "expect": "success",
+      "event": "AuthorizationUsed(address,bytes32)",
       "contract": "0x0355c0c5Afe2A35369056FBB854903A4aF07781A"
     }
   ]

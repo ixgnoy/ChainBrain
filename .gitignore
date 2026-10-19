@@ -20,3 +20,4 @@ contracts/deployments/*.bak
 
 # server state (visitors, approvals) when run locally
 server/.data/
+__pycache__/

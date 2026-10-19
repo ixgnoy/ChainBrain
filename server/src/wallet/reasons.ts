@@ -3,6 +3,7 @@ export const REASONS = {
   SELLER_NOT_ALLOWED: "This seller is not in the pocket's allowlist",
   OVER_CAP: "Above the pocket's per-payment cap",
   OVER_BUDGET: "Not enough left in the pocket",
+  OVER_PERIOD: "Over the pocket's allowance for this period (day, week or month): call ask_owner with this quote; the owner's co-signature lets it through on-chain",
   POCKET_REVOKED: "The owner revoked this pocket",
   POCKET_EXPIRED: "The pocket has expired",
   PRICE_ABOVE_INTENT: "The price is above the intent's max per item",

@@ -16,6 +16,8 @@ export type Layout = "research" | "deal" | "subscriptions" | "haggle";
 export const LAYOUTS: readonly Layout[] = ["research", "deal", "subscriptions", "haggle"];
 export type Period = "day" | "week" | "month";
 export const PERIODS: readonly Period[] = ["day", "week", "month"];
+/** Pocket.setPeriodLimit's kind for each period (0 = no allowance). */
+export const PERIOD_KIND: Record<Period, number> = { day: 1, week: 2, month: 3 };
 
 /** When a routine runs. `weekday` 1 = Monday … 7 = Sunday (ISO); hours and minutes in Hong Kong time. */
 export type Cadence = { every: "day" | "weekday" | "week" | "month"; weekday?: number | null; dayOfMonth?: number | null; hour: number; minute: number };
@@ -26,7 +28,7 @@ export type RoutineSpec = {
   cadence: Cadence;
   /** What each run buys (seller-registry ids; names and descriptions are read from the registry when shown). */
   items: RoutineItem[];
-  /** At most this much per period; a run that would pass it asks the owner (the cheque). USD string, e.g. "0.40". */
+  /** At most this much per period; a run that would pass it asks the owner (the cheque). HK$ string, e.g. "0.40". */
   allowance: { amount: string; period: Period };
   /** Price watch: buy only at or below this (also the pocket's per-payment cap, so the contract enforces it). */
   limitPrice?: string | null;
@@ -79,7 +81,7 @@ export const ROUTINE_KIND: Record<Layout, RoutineKind | null> = { research: "sch
 export type Registry = { id: string; name: string; items: { sku: string; price: string | null }[] }[];
 export type Checked<T> = { ok: true; value: T } | { ok: false; errors: string[] };
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === "object" && !Array.isArray(x);
-const USD = /^\d{1,4}(?:\.\d{1,6})?$/;
+const AMOUNT = /^\d{1,4}(?:\.\d{1,6})?$/;
 const hkdNum = (s: string) => Number.parseFloat(s);
 
 /** A label from the owner's sentence (or a model's reading of it): letters, digits and plain punctuation only, 28 characters
@@ -123,9 +125,9 @@ export function validateRoutine(raw: unknown, registry: Registry, layout?: Layou
   }
   if (kind === "price-watch" && Array.isArray(items) && items.length !== 1) e.push("routine.items: a price watch buys one item");
   const a = raw.allowance;
-  if (!isObj(a) || typeof a.amount !== "string" || !USD.test(a.amount) || hkdNum(a.amount) <= 0 || !PERIODS.includes(a.period as Period)) e.push("routine.allowance");
+  if (!isObj(a) || typeof a.amount !== "string" || !AMOUNT.test(a.amount) || hkdNum(a.amount) <= 0 || !PERIODS.includes(a.period as Period)) e.push("routine.allowance");
   if (kind === "price-watch") {
-    if (typeof raw.limitPrice !== "string" || !USD.test(raw.limitPrice) || hkdNum(raw.limitPrice) <= 0) e.push("routine.limitPrice: a price watch needs its limit");
+    if (typeof raw.limitPrice !== "string" || !AMOUNT.test(raw.limitPrice) || hkdNum(raw.limitPrice) <= 0) e.push("routine.limitPrice: a price watch needs its limit");
   } else if (raw.limitPrice != null) e.push("routine.limitPrice: only a price watch has one");
   if (e.length) return { ok: false, errors: e };
   const cc = c as Record<string, number | string>;
@@ -212,7 +214,7 @@ export function catalogPrompt(registry: Registry): string {
     `Routine kinds: research -> schedule, deal -> price-watch (one item, limitPrice required), subscriptions -> renewals, haggle -> no routine (null).`,
     `Items you may use (seller/sku): ${items}. Only sellers the owner named.`,
     "title: up to 28 plain characters taken from the owner's words. No links, addresses, amounts or markup anywhere.",
-    "Cadence hours are Hong Kong time. weekday 1 = Monday. Amounts are USD strings like \"0.05\".",
+    "Cadence hours are Hong Kong time. weekday 1 = Monday. Amounts are HK$ strings (Mock e-HKD) like \"0.40\".",
   ].join("\n");
 }
 

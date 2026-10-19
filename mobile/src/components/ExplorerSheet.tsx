@@ -94,7 +94,10 @@ function Body({ hash, close }: { hash: string; close: () => void }) {
       // payment ("Research data paid someone", transferWithAuthorization) when the ledger row was taken for one
       const own = ownerTxs.find((o) => o.hash.toLowerCase() === hash.toLowerCase());
       const row = ledger.find((r) => r.kind !== "owner" && r.tx?.toLowerCase() === hash.toLowerCase());
-      if (own) t = { hash, kind: own.kind === "cap" || own.kind === "ask" || own.kind === "seller" || own.kind === "unfreeze" ? "rules" : own.kind, pocket: own.pocket, at: own.at, amount: own.amount, status: "success", from: wallet?.address, counterparty: own.kind === "return" ? wallet?.address : undefined, label: own.kind === "unfreeze" ? "unfrozen" : own.note };
+      // rule edits (the allowance and seller caps too) are RulesChanged, never a payment: their amount is a limit, not money moved
+      const rule = ["cap", "ask", "seller", "unfreeze", "allowance", "sellerCap"].includes(own?.kind ?? "");
+      if (own) t = { hash, kind: rule ? "rules" : own.kind, pocket: own.pocket, at: own.at, amount: rule ? undefined : own.amount, status: "success", from: wallet?.address, counterparty: own.kind === "return" ? wallet?.address : undefined,
+        label: own.kind === "unfreeze" ? "unfrozen" : own.kind === "allowance" ? "allowance changed" : own.kind === "sellerCap" ? "seller cap changed" : own.note };
       else if (row) t = { hash, kind: row.kind === "forced" ? "out" : "payment", pocket: row.pocket, at: row.at, amount: row.amount, status: row.outcome === "refused" ? "reverted" : "success", counterparty: cfg.sellers.find((s) => s.id === row.sellerId)?.payTo, reason: row.reasons[0], args: row.cosigned ? { cosigned: "true" } : undefined };
     }
     return t ? explainTx(t, { ehkd: cfg.token, factory: cfg.factory, nameOf }, all) : null;

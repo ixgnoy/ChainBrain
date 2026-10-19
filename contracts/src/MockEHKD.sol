@@ -8,6 +8,11 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Clock} from "./Clock.sol";
 
+/// What a contract payer (a pocket) is told after the token moved its money on its ERC-1271 approval.
+interface ISpendHook {
+    function onSpend(address to, uint256 value) external;
+}
+
 /// MOCK e-HKD for the ChainBrain demo on a local FISCO BCOS chain. Not the HKMA e-HKD, not money.
 /// A plain ERC-20 (6 decimals) plus EIP-3009 transferWithAuthorization, including the bytes-signature overload
 /// (from EIP-3009 as extended for smart-contract payers): for a contract payer it asks the payer (ERC-1271), which is how a pocket approves its payments.
@@ -18,6 +23,7 @@ contract MockEHKD is ERC20, EIP712, Ownable {
     bytes32 public constant CANCEL_AUTHORIZATION_TYPEHASH = keccak256("CancelAuthorization(address authorizer,bytes32 nonce)");
 
     mapping(address => mapping(bytes32 => bool)) private _usedAuthorizations;
+    uint256 internal constant SPEND_HOOK_GAS = 100_000;
 
     event AuthorizationUsed(address indexed authorizer, bytes32 indexed nonce);
     event AuthorizationCanceled(address indexed authorizer, bytes32 indexed nonce);
@@ -62,6 +68,19 @@ contract MockEHKD is ERC20, EIP712, Ownable {
         _usedAuthorizations[from][nonce] = true;
         emit AuthorizationUsed(from, nonce);
         _transfer(from, to, value);
+        // a contract signer (a pocket) is told what it just paid, so it can count its period allowance on-chain. The call
+        // gets a fixed SPEND_HOOK_GAS and the payment reverts unless that much is left, so a caller cannot starve the
+        // count; a contract without the hook (any other ERC-1271 wallet) reverts it, which is ignored.
+        if (_byContract(from, digest, signature)) {
+            require(gasleft() > SPEND_HOOK_GAS + SPEND_HOOK_GAS / 63 + 10_000, "EHKD: out of gas for the spend hook");
+            (bool ok,) = from.call{gas: SPEND_HOOK_GAS}(abi.encodeCall(ISpendHook.onSpend, (to, value)));
+            ok;
+        }
+    }
+
+    function _byContract(address signer, bytes32 digest, bytes memory signature) internal pure returns (bool) {
+        (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(digest, signature);
+        return !(err == ECDSA.RecoverError.NoError && recovered == signer);
     }
 
     /// ECDSA by `signer` itself first, then ERC-1271. Not OpenZeppelin's code-length switch: FISCO BCOS gives funded EOAs

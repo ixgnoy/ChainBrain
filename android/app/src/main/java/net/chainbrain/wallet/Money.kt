@@ -4,7 +4,7 @@ import java.math.BigInteger
 
 // Same rules as mobile/src/lib/shared.ts: Mock e-HKD has 6 decimals; "never" = max uint256.
 object Money {
-    val NEVER: BigInteger = BigInteger.TWO.pow(256) - BigInteger.ONE
+    val NEVER: BigInteger = BigInteger.valueOf(2).pow(256) - BigInteger.ONE // not BigInteger.TWO: that field is API 33+, the app runs on 28+
     private val UNIT = BigInteger.valueOf(1_000_000)
     private val amount = Regex("""^(\d+)(?:\.(\d{1,6}))?$""")
 
@@ -31,6 +31,7 @@ val REASONS = mapOf(
     "SELLER_NOT_ALLOWED" to "Seller not in this pocket's allowlist",
     "OVER_CAP" to "Above the per-payment cap",
     "OVER_BUDGET" to "Not enough left in the pocket",
+    "OVER_PERIOD" to "Over this period's allowance; needs your OK",
     "POCKET_REVOKED" to "You revoked this pocket",
     "POCKET_EXPIRED" to "The pocket has expired",
     "PRICE_ABOVE_INTENT" to "Price above the task's max per item",

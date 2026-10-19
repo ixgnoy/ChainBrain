@@ -151,14 +151,16 @@ export function createAutopilot(world: World, o: AutopilotOptions = {}) {
       chain.transfer(owner, pocket, parseHkd(s.fund), t + 30_000);
       return pocket;
     };
-    // oldest first: event times only move forward; the presenter's today starts 4.5 hours ago
-    const p1 = await world.past(7 * HOUR, make(research, { cap: "0.40", ask: "0.16", sellers: ["exa", "coingecko", "nansen"], fund: "8" }));
-    await world.past(6 * HOUR + 50 * MIN, () => world.chat(p1, "Check the exporter's wallet with Nansen's counterparty data. Max HK$0.40, by tonight."));
-    const p2 = await world.past(6 * HOUR + 20 * MIN, make(trading, { cap: "0.40", ask: "0.16", sellers: ["exa", "harbour-wines"], fund: "4.0" }));
-    await world.past(6 * HOUR, () => world.chat(p2, "Buy Harbour Wines' fruit and wine trade report. Max HK$0.40, by tonight. Confirmed, go ahead."));
-    const p3 = await world.past(5 * HOUR + 30 * MIN, make(small, { cap: "0.08", ask: "never", sellers: ["exa"], fund: "0.8" }));
-    await world.past(5 * HOUR + 15 * MIN, () => world.chat(p3, "Search Exa for durian export news. Max HK$0.08, by tonight."));
-    await world.past(5 * HOUR, async () => { chain.revoke(small, p3); chain.returnFunds(small, p3); });
+    // oldest first: event times only move forward; the presenter's today starts 4.5 hours ago. The presenter's routine runs
+    // due before each step run first, at their scheduled times (a run left for later would be stamped late, e.g. 09:15)
+    const at = async <T>(ago: number, f: () => Promise<T>) => { await catchUpRoutines(world, presenter, ago); return world.past(ago, f); };
+    const p1 = await at(7 * HOUR, make(research, { cap: "0.40", ask: "0.16", sellers: ["exa", "coingecko", "nansen"], fund: "8" }));
+    await at(6 * HOUR + 50 * MIN, () => world.chat(p1, "Check the exporter's wallet with Nansen's counterparty data. Max HK$0.40, by tonight."));
+    const p2 = await at(6 * HOUR + 20 * MIN, make(trading, { cap: "0.40", ask: "0.16", sellers: ["exa", "harbour-wines"], fund: "4.0" }));
+    await at(6 * HOUR, () => world.chat(p2, "Buy Harbour Wines' fruit and wine trade report. Max HK$0.40, by tonight. Confirmed, go ahead."));
+    const p3 = await at(5 * HOUR + 30 * MIN, make(small, { cap: "0.08", ask: "never", sellers: ["exa"], fund: "0.8" }));
+    await at(5 * HOUR + 15 * MIN, () => world.chat(p3, "Search Exa for durian export news. Max HK$0.08, by tonight."));
+    await at(5 * HOUR, async () => { chain.revoke(small, p3); chain.returnFunds(small, p3); });
     others.push({ owner: research, pocket: p1 }, { owner: trading, pocket: p2 });
   }
 

@@ -38,8 +38,8 @@ export function groupSellers<S extends { category: string }>(list: S[]): [string
   return [...m.entries()];
 }
 const STEPS = ["Start", "Funds", "Sellers", "How much", "When to ask me", "How long", "Review"] as const;
-// money chips: cents on the built-in network (per-request data), dollars against the real server's sellers
-const fundPresets = (small: boolean) => (small ? [0.1, 0.5, 1, 2] : [0.3, 1, 2, 5]);
+// money chips in HK$: small amounts on the built-in network (per-request data), more against the real server's sellers
+const fundPresets = (small: boolean) => (small ? [0.8, 4, 8, 16] : [2.4, 8, 16, 40]);
 type AskMode = "always" | "above" | "never";
 type Progress = { pocket?: `0x${string}`; funded?: boolean; createTx?: string; fundTx?: string };
 const LIFETIMES: [Lifetime, string, string][] = [["one-task", "One task", "Ends in 24 hours. Made for a single purchase."], ["until-tonight", "Until tonight", "Ends at 23:59 your time."], ["ongoing", "Ongoing", "Runs for a year. You can revoke it any time."]];
@@ -210,7 +210,7 @@ export default function Create() {
     setName(p.label); setFunds(Number(p.budget)); setCap(Number(p.cap)); setSellers(p.sellers); setLife(p.lifetime);
     if (p.askAbove === "never") setAskMode("never"); else if (p.askAbove === "0") setAskMode("always"); else { setAskMode("above"); setAsk(Number(p.askAbove)); }
   };
-  const capMax = Math.max(0.05, Math.min(funds, 5));
+  const capMax = Math.max(0.05, funds); // a cap above the budget means nothing: the balance is the hard limit
   // one-cent steps at any budget: the sellers charge per request (HK$0.056 to HK$0.40), so a cap or ask-me limit below
   // five cents must stay reachable when the budget is over a dollar
   const tick = 0.01;
@@ -310,7 +310,7 @@ export default function Create() {
           <Title h="How much goes in?" sub="This is the agent's whole budget. When it is gone, the agent stops." />
           <BigNumber value={money2(funds)} />
           <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>{fundPresets(small).map((v) => <PickChip key={v} on={funds === v} label={`${curSign()}${money2(v)}`} onPress={() => setFunds(v)} />)}</View>
-          <Slider min={0.05} max={10} step={0.05} value={funds} onChange={setFunds} />
+          <Slider min={0.05} max={80} step={0.05} value={funds} onChange={setFunds} />
           {balances && <T v="cap" color="muted" style={{ textAlign: "center" }}>Main wallet: {curSign()}{hkd(balances.ehkd)}{balances.ehkd < parseHkd(money2(funds)) ? ". Not enough for this budget." : ""}</T>}
         </View>);
       case 2: return (

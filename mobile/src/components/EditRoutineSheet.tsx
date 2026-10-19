@@ -1,7 +1,7 @@
 // Edit a pocket's routine, signed by the owner: when it runs (four cadences, four times) and its allowance (a stepper and
 // the period). A preview says the next run and where the agent will stop and ask. Saving changes only those fields of
-// the same routine (editRoutine keeps its id, runs and this period's spend, so an edit can't reset the allowance); the
-// sellers and items stay as they were signed. Face ID (or the device passcode) signs it; on the built-in network only.
+// the same routine (editRoutine keeps its id and runs; this period's spend still counts unless the period itself changes,
+// which the card's contract counts from zero); the sellers and items stay as they were signed. Face ID (or the device passcode) signs it; on the built-in network only.
 import React, { useMemo, useState } from "react";
 import { View } from "react-native";
 import { c, radius } from "../tokens";
@@ -13,7 +13,9 @@ import { AgentAvatar } from "../ui/AgentAvatar";
 import { haptic } from "../haptics";
 import { confirmOwner } from "../lib/biometric";
 import * as api from "../lib/api";
-import { cadenceText, nextRun, type Cadence, type Period, type Routine } from "../../../shared/sim/pocketApp";
+import { parseHkd } from "../lib/shared";
+import { useApp } from "../store";
+import { cadenceText, nextRun, PERIOD_KIND, type Cadence, type Period, type Routine } from "../../../shared/sim/pocketApp";
 import { useCoverDock } from "./AskDock";
 import { agentName } from "./app/theme";
 import { curSign } from "../lib/runtime";
@@ -47,20 +49,32 @@ function Body({ routine, agentId, onClose, onSaved }: { routine: Routine; agentI
   const [every, setEvery] = useState(EVERY.find((e) => e.c.every === routine.cadence.every)?.key ?? "day");
   const [hour, setHour] = useState(routine.cadence.hour);
   const [amount, setAmount] = useState(Number(routine.allowance.amount));
+  const [touched, setTouched] = useState(false); // an untouched allowance keeps its exact string (up to 6 decimals)
+  const bump = (dir: 1 | -1) => { setTouched(true); setAmount((x) => step(x, dir)); };
   const [period, setPeriod] = useState<Period>(routine.allowance.period);
+  const { wallet, recordTx } = useApp();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const cadence: Cadence = useMemo(() => ({ ...EVERY.find((e) => e.key === every)!.c, hour, minute: 0 }), [every, hour]);
   const next = nextRun(cadence, Date.now());
   const was = Number(routine.allowance.amount);
-  const looser = amount > was || PERIODS.indexOf(period) > PERIODS.indexOf(routine.allowance.period);
-  const changed = amount !== was || period !== routine.allowance.period || cadenceText(cadence) !== cadenceText(routine.cadence);
+  const amountStr = touched ? amount.toFixed(2) : routine.allowance.amount;
+  const newPeriod = period !== routine.allowance.period;
+  // any new period is looser: the contract counts the new period from zero, so it frees the allowance at once
+  const looser = amount > was || newPeriod;
+  const changed = amountStr !== routine.allowance.amount || newPeriod || cadenceText(cadence) !== cadenceText(routine.cadence);
   const save = async () => {
     setErr(null); setBusy(true);
     // a looser allowance is signed with Face ID (or the passcode); a stricter one or a new time can only lower the risk
-    if (looser && (await confirmOwner(`Let ${who} spend up to ${curSign()}${amount.toFixed(2)} a ${period} on its own`)) === "cancel") { setBusy(false); return; }
+    if (looser && (await confirmOwner(`Let ${who} spend up to ${curSign()}${amountStr} a ${period} on its own`)) === "cancel") { setBusy(false); return; }
     try {
-      await api.editRoutine(routine.pocket, { cadence, allowance: { amount: amount.toFixed(2), period } });
+      // a new allowance is an owner transaction: the pocket itself enforces it (past it, a payment needs your co-sign)
+      if (wallet && (amountStr !== routine.allowance.amount || newPeriod)) {
+        const limit = parseHkd(amountStr);
+        const t = await wallet.setPeriodLimit(routine.pocket as `0x${string}`, PERIOD_KIND[period], limit);
+        recordTx({ kind: "allowance", pocket: routine.pocket, hash: t.hash, amount: limit.toString(), note: `per ${period}` });
+      }
+      await api.editRoutine(routine.pocket, { cadence, allowance: { amount: amountStr, period } });
       haptic.success(); onSaved?.(); onClose();
     } catch { haptic.error(); setErr("That change didn't save."); }
     finally { setBusy(false); }
@@ -84,13 +98,13 @@ function Body({ routine, agentId, onClose, onSaved }: { routine: Routine; agentI
       <View style={{ gap: 10 }}>
         <T v="head">On its own, up to</T>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <Stepper icon="arrowDown" label="Less" onPress={() => setAmount((x) => step(x, -1))} disabled={amount <= 0.01} />
-          <View style={{ flex: 1, alignItems: "center" }} accessible accessibilityLabel={`${curSign()}${amount.toFixed(2)} a ${period}`} accessibilityRole="adjustable"
-            accessibilityActions={[{ name: "increment" }, { name: "decrement" }]} onAccessibilityAction={(e) => setAmount((x) => step(x, e.nativeEvent.actionName === "increment" ? 1 : -1))}>
-            <T v="balance" style={{ fontVariant: ["tabular-nums"] }}>{`${curSign()}${amount.toFixed(2)}`}</T>
+          <Stepper icon="arrowDown" label="Less" onPress={() => bump(-1)} disabled={amount <= 0.01} />
+          <View style={{ flex: 1, alignItems: "center" }} accessible accessibilityLabel={`${curSign()}${amountStr} a ${period}`} accessibilityRole="adjustable"
+            accessibilityActions={[{ name: "increment" }, { name: "decrement" }]} onAccessibilityAction={(e) => bump(e.nativeEvent.actionName === "increment" ? 1 : -1)}>
+            <T v="balance" style={{ fontVariant: ["tabular-nums"] }}>{`${curSign()}${amountStr}`}</T>
             {amount !== was ? <T v="cap" color={amount > was ? "vermillionInk" : "muted"}>{`was ${curSign()}${was.toFixed(2)}`}</T> : <T v="cap" color="muted">{" "}</T>}
           </View>
-          <Stepper icon="arrowUp" label="More" onPress={() => setAmount((x) => step(x, 1))} />
+          <Stepper icon="arrowUp" label="More" onPress={() => bump(1)} />
         </View>
         <View style={{ flexDirection: "row", gap: 8 }}>{PERIODS.map((p) => <Chip key={p} label={`a ${p}`} on={period === p} onPress={() => setPeriod(p)} />)}</View>
       </View>
@@ -103,9 +117,9 @@ function Body({ routine, agentId, onClose, onSaved }: { routine: Routine; agentI
         </View>
         <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
           <Icon name="bell" size={16} color={c.vermillionInk} stroke={2} />
-          <T v="sub" style={{ flex: 1 }}>{`Past ${curSign()}${amount.toFixed(2)} a ${period}, ${who} stops and asks you`}</T>
+          <T v="sub" style={{ flex: 1 }}>{`Past ${curSign()}${amountStr} a ${period}, ${who} stops and asks you`}</T>
         </View>
-        <T v="cap" color="muted">This period's spend so far still counts: changing the routine doesn't reset it.</T>
+        <T v="cap" color={newPeriod ? "vermillionInk" : "muted"}>{newPeriod ? `A new period starts the count from zero: ${who} can spend the full ${curSign()}${amountStr} again right away.` : "This period's spend so far still counts: a new amount or time doesn't reset it."}</T>
       </View>
 
       {err ? <T v="sub" color="vermillionInk">{err}</T> : null}

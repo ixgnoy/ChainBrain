@@ -1,0 +1,10 @@
+type Rpc = { jsonrpc: "2.0"; id: unknown; result?: any; error?: { code: number; message: string } };
+export declare const LOG_WINDOW: bigint;
+export declare const MAX_LOG_BLOCKS: bigint;
+export declare const MAX_LOGS_PER_BATCH: number;
+export declare function makeGetLogs(call: (m: object) => Promise<Rpc>, repair?: (x: any) => any): (id: unknown, params?: any[]) => Promise<Rpc>;
+export declare function overBatchLimit(msgs: any[]): boolean;
+export declare function batchLimitError(id: unknown): Rpc;
+export declare function rewrapBatch(requestText: string, responseText: string): string;
+export declare const NODE_BATCH_LIMIT: number;
+export declare function answerBatch(msgs: any[], special: (m: any) => Promise<Rpc> | null, sendBatch: (arr: any[]) => Promise<any>): Promise<any[]>;
