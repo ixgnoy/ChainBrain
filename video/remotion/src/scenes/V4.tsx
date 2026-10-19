@@ -246,6 +246,9 @@ export const XRay: React.FC = () => {
     hash: r.word("x7", "hash"),
     end: r.end("x7"),
   };
+  // the real hash, held full screen after "a hash anyone can open" (Topic F is scored on hashes); the pull-back waits
+  const HOLD = 2.2;
+  const E = T.end + HOLD;
   const cams: Cam[] = [
     { t: 0, cx: 1310, cy: 690, s: 0.7 },
     { t: T.scan + 1.2, cx: 1310, cy: 690, s: 0.7 },
@@ -261,8 +264,8 @@ export const XRay: React.FC = () => {
     { t: T.asks + 0.5, cx: 2310, cy: 960, s: 1.15 },
     { t: T.pass + 0.2, cx: 2310, cy: 960, s: 1.15 },
     { t: T.pass + 1.3, cx: 2050, cy: 560, s: 0.92 },
-    { t: T.end + 0.4, cx: 2050, cy: 560, s: 0.92 },
-    { t: T.end + 1.6, cx: 1310, cy: 690, s: 0.71 },
+    { t: E + 0.4, cx: 2050, cy: 560, s: 0.92 },
+    { t: E + 1.6, cx: 1310, cy: 690, s: 0.71 },
   ];
   const cam = camAt(cams, t);
   // the contrast overlay (where the limit lives) covers the board from x6a until the money "asks" the card
@@ -271,7 +274,7 @@ export const XRay: React.FC = () => {
   const scanX = easeInOut(clamp((t - T.scan) / 1.1)) * 2100 - 90;
   const boardIn = clamp((t - T.scan) / 0.6);
   const settled = t >= T.pass;
-  const all = clamp((t - T.end - 0.6) / 0.8); // final pull-back: everything lit
+  const all = clamp((t - E - 0.6) / 0.8); // final pull-back: everything lit
   const on = (at: number) => Math.max(lit(t, at), all);
   const checkOn = (i: number) => lit(t, T.eight + 0.15 + i * 0.3, 14);
   return (
@@ -391,7 +394,7 @@ export const XRay: React.FC = () => {
           </div>
           {/* edges */}
           <svg width={BW} height={BH} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}>
-            <Edge pts={[[280, 450], [280, 1300], [2310, 1300], [2310, 1260]]} t={t} at={T.end + 0.9} dur={1.2} color={C.vermillion} dashed label="your key creates the card, funds it, sets its rules" labelAt={[1300, 1288]} />
+            <Edge pts={[[280, 450], [280, 1300], [2310, 1300], [2310, 1260]]} t={t} at={E + 0.9} dur={1.2} color={C.vermillion} dashed label="your key creates the card, funds it, sets its rules" labelAt={[1300, 1288]} />
             <Edge pts={[[460, 340], [600, 340]]} t={t} at={T.x3 - 0.1} dur={0.5} label="your task" labelAt={[530, 322]} />
             <Edge pts={[[790, 230], [790, 160], [1730, 160], [1730, 230]]} t={t} at={T.picks} dur={1.0} label="get a quote" labelAt={[1260, 146]} />
             <Edge pts={[[1540, 380], [1420, 380]]} t={t} at={T.price} dur={0.5} label="402" labelAt={[1480, 364]} />
@@ -424,7 +427,7 @@ export const XRay: React.FC = () => {
 
       {/* the real payment on the hosted chain */}
       {t > T.hash - 0.3 ? (
-        <AbsoluteFill style={{ opacity: 1 - clamp((t - T.end - 0.3) / 0.5) }}>
+        <AbsoluteFill style={{ opacity: 1 - clamp((t - E - 0.3) / 0.5) }}>
           <AbsoluteFill style={{ background: "linear-gradient(90deg, rgba(10,11,13,0) 30%, rgba(10,11,13,0.9) 52%)", opacity: lit(t, T.hash - 0.2, 9) }} />
           <UiCard name="ex-success" w={800} x={1420} y={640} p={lit(t, T.hash - 0.2, 9)} tone={C.green} from={[60, 0]} />
           <div style={{ position: "absolute", left: 1020, top: 830, width: 860, whiteSpace: "nowrap", fontFamily: F.mono, fontSize: 20, color: C.green, opacity: lit(t, T.hash + 0.3), fontVariantLigatures: "none" }}>
@@ -432,6 +435,7 @@ export const XRay: React.FC = () => {
           </div>
         </AbsoluteFill>
       ) : null}
+      {t > T.end - 0.3 && t < E + 0.4 ? <HashHold p={Math.min(lit(t, T.end - 0.2, 10), 1 - clamp((t - E + 0.1) / 0.4))} t={t - T.end} /> : null}
       {/* the whole system */}
       {all > 0 ? (
         <div style={{ position: "absolute", left: 90, top: 40, opacity: all, fontFamily: F.display, fontWeight: 600, fontSize: 44, color: C.text }}>
@@ -441,6 +445,30 @@ export const XRay: React.FC = () => {
     </Stage>
   );
 };
+
+// The block 11 payment's full hash, large enough to read off a laptop, with where to open it.
+const HASH = "0x15b0d30f82cd7efc94f5b534277a71ddaa439ecd5576315ae94cf9cbdccf9333";
+const HashHold: React.FC<{ p: number; t: number }> = ({ p, t }) => (
+  <AbsoluteFill style={{ opacity: p, background: "rgba(10,11,13,0.94)", justifyContent: "center", paddingLeft: 150 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 18, fontFamily: F.mono, fontSize: 24, letterSpacing: "0.12em", color: C.muted, fontVariantLigatures: "none" }}>
+      <Plaque src="brand/fisco-bcos-logo.svg" h={30} p={1} pad={10} />
+      A REAL PAYMENT ON OUR HOSTED CHAIN, BLOCK 11
+    </div>
+    <div style={{ marginTop: 34, fontFamily: F.mono, fontWeight: 500, fontSize: 58, lineHeight: 1.25, color: C.text, letterSpacing: "0.02em", fontVariantLigatures: "none" }}>
+      {[HASH.slice(0, 34), HASH.slice(34)].map((h, i) => (
+        <div key={i} style={{ clipPath: `inset(0 ${100 - clamp((t - 0.1 - i * 0.25) / 0.6) * 100}% 0 0)` }}>{h}</div>
+      ))}
+    </div>
+    <div style={{ marginTop: 30, display: "flex", alignItems: "center", gap: 16, opacity: clamp((t - 0.7) / 0.4) }}>
+      <Badge kind="ok" size={30} />
+      <div style={{ fontFamily: F.body, fontWeight: 600, fontSize: 30, color: C.green }}>success</div>
+      <div style={{ fontFamily: F.mono, fontSize: 24, color: C.muted, marginLeft: 18, fontVariantLigatures: "none" }}>fisco-api-production-85c5.up.railway.app/explorer</div>
+    </div>
+    <div style={{ marginTop: 22, fontFamily: F.body, fontWeight: 500, fontSize: 26, color: C.muted, opacity: clamp((t - 1.0) / 0.4) }}>
+      Every hash in this film is listed in ChainBrain-execution-evidence.pdf
+    </div>
+  </AbsoluteFill>
+);
 
 // A real screen from the app, beside the board while the camera holds still.
 const Inset: React.FC<{ name: string; w: number; x: number; y: number; t: number; from: number; to: number; label: string }> = ({ name, w, x, y, t, from, to, label }) => {
