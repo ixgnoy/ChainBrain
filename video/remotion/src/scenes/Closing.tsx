@@ -1,9 +1,10 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
+import { Badge } from "../components/Badge";
 import { Stage } from "../components/Stage";
 import { C, F, clamp, easeOut, settle } from "../theme";
 
-// The drop: one huge line, cropped off the left edge, on a warm stage.
+// The drop: one huge line, centred inside the frame, on a warm stage.
 export const ActTitle: React.FC<{ title: string }> = ({ title }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -13,15 +14,17 @@ export const ActTitle: React.FC<{ title: string }> = ({ title }) => {
   return (
     <Stage tint={1}>
       <AbsoluteFill>
-        <div style={{ position: "absolute", left: 120, top: 330, width: 1680 * rule, height: 4, background: C.vermillion }} />
+        <div style={{ position: "absolute", left: 960 - 840 * rule, top: 330, width: 1680 * rule, height: 4, background: C.vermillion }} />
         <div
           style={{
             position: "absolute",
-            left: -30,
-            top: 380,
+            left: 0,
+            right: 0,
+            top: 390,
+            textAlign: "center",
             fontFamily: F.display,
             fontWeight: 600,
-            fontSize: 250,
+            fontSize: 230,
             lineHeight: 0.92,
             letterSpacing: "-0.04em",
             color: C.text,
@@ -46,7 +49,7 @@ export const AttackRail: React.FC<{ active: number; done: number }> = ({ active,
       const isOn = i === active;
       return (
         <div key={a} style={{ display: "flex", alignItems: "center", gap: 14, fontFamily: F.body, fontWeight: 600, fontSize: 24, color: isOn ? C.text : isDone ? C.vermillion : C.faint }}>
-          <div style={{ width: 22, height: 3, background: isOn || isDone ? C.vermillion : "rgba(255,255,255,0.14)" }} />
+          {isDone ? <Badge kind="no" size={24} /> : <div style={{ width: 24, height: 3, background: isOn ? C.vermillion : "rgba(255,255,255,0.14)" }} />}
           {a}
           <span style={{ fontFamily: F.mono, fontSize: 18, color: C.vermillion, opacity: isDone ? 1 : 0 }}>blocked</span>
         </div>

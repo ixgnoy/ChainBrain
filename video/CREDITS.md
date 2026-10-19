@@ -10,7 +10,11 @@
 
 ## Team photos
 
-- Supplied by the team for the end card (`footage/teammate/`, not in git).
+- Supplied by the team for the team slide (`footage/teammate/`, not in git); cropped to matching 3:4 portraits by `tools/team.py`.
+
+## Facts quoted
+
+- HKMA, Carmen Chu, Executive Director (Banking Supervision), opening remarks at the Finance + A.I. Forum, 16 Oct 2026 (https://www.hkma.gov.hk/eng/news-and-media/speeches/2026/10/20261016-1/): governance anchored to intent, kill-switch mechanisms, "A.I. versus A.I.", securing the boundaries around an agent. The video paraphrases them as four principles.
 
 ## Facts in the opening
 
@@ -35,13 +39,14 @@
   - Agent marks: the Claude Spark (Anthropic press kit) and the OpenAI Blossom (OpenAI brand assets), unmodified.
   - All third-party marks are shown unmodified, as small avatars beside the name, the way the app shows them. No partnership is implied.
 - **Technology marks:** the FISCO BCOS logo from the FISCO-BCOS repository (`docs/FISCO_BCOS_Logo.svg`) and the x402 logo from the x402 repository (`x402-logo-dark.png`), both shown on a white plaque, for identification only.
-- **"Built with" strip** (`video/assets/brand/`), each mark from its project's own repository, unmodified except Expo's (its white mark recoloured black for a white plaque): Solidity (`ethereum/solidity` docs/logo.svg), Vite (`vitejs/vite` docs/public/logo.svg), Hono (`honojs/hono` docs/images/hono-title.png), React and Expo (the official Expo app template's images). Shown to name the tools the code uses; no endorsement is implied.
+- **Marks on the X-ray boxes** (`video/assets/brand/`), each from its project's own source, unmodified: Solidity (`ethereum/solidity` docs/logo.svg), Hono (`honojs/hono` docs/images/hono-title.png), OpenRouter (the app icon openrouter.ai serves as apple-touch-icon.png). With the Claude, Exa, x402 and FISCO BCOS marks above, they name what runs in each box; no endorsement is implied.
 - **Icons:** Lucide (ISC licence), the same icon set the ChainBrain apps use.
 
 ## Voice
 
 - ElevenLabs text to speech, model `eleven_v4`, premade voice "Sarah", generated with `tts/eleven.py`; word timings from the API's character timestamps. Check ElevenLabs' terms for your plan before publishing beyond the competition (the free plan's commercial terms are not stated on its pricing page).
-- Pronunciation checked with faster-whisper `small.en` (MIT).
+- Pronunciation checked with faster-whisper (MIT). The team's names are respelled for the voice only ("June Chuen", "Yong Shee"); subtitles keep the real spelling.
+- Script wording reviewed against 2025-2026 research on AI-sounding writing (Wikipedia "Signs of AI writing", Kobak et al. 2025, Reinhart et al. 2025): no negative parallelism, stacked fragments, question-then-answer or dot-separated captions.
 - Offline fallback when no key is set: Kokoro TTS v1.0 (`kokoro-onnx`, MIT; model weights Apache-2.0).
 
 ## Music

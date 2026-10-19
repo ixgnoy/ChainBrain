@@ -247,6 +247,6 @@ export const SimTag: React.FC<{ what?: string; style?: React.CSSProperties }> = 
     }}
   >
     <div style={{ width: 8, height: 8, background: C.blue }} />
-    {what} recorded on our test setup · test chain
+    {what} recorded on our test setup
   </div>
 );

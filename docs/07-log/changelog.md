@@ -1,5 +1,26 @@
 # Changelog
-Last updated: 2026-10-19
+Last updated: 2026-10-20
+
+## 2026-10-20 (demo video v4, "how it works")
+
+- **Video v4 (4:46):** v3's AI Card story, plus a judge-facing overview. Storyboard and decisions: [video/STORYBOARD-v4.md](../../video/STORYBOARD-v4.md).
+- **The X-ray (53 s):** right after the first payment, the same payment is replayed across one board: your phone, our server, the seller, FISCO BCOS.
+  - It shows who holds which key, with the app's real co-sign screen.
+  - It shows the server checks, with the app's Guarded panel.
+  - A short comparison: many agent wallets check limits on the wallet company's server, while here the token asks the card.
+  - The card's eight checks tick, the payment settles with a real hosted-chain hash, and the camera pulls back to the whole system.
+  - Real logos sit on each box: Claude, OpenRouter, Hono, Exa, x402, FISCO BCOS, Solidity.
+- **After "The card says no":**
+  - "Why it held": eight layers, each attack shown where it was stopped; the two on-chain layers hold even if the server is taken over.
+  - "If a key is stolen".
+  - The HKMA's four principles for AI agents (Carmen Chu, 16 Oct 2026), mapped to ChainBrain.
+- **Proof:** the numbers now match the submitted PDFs: 7 of 7 forbidden payments rejected on the hosted chain, 63 attacks with HK$0 lost, 462 tests.
+- **Fixed:**
+  - Eight places where the voice ran ahead of or behind the picture (cuts now follow the spoken words).
+  - The "Let's break it." title, now centred.
+- **Removed:** the "Built with" slide.
+- **Added:** a team slide (matching 3:4 portraits), then an ending slide.
+- **Wording:** 27 of 43 lines rewritten from 2025-2026 research on what reads as AI-written. Typed ticks, crosses, arrows and middle dots are replaced with Lucide icon badges.
 
 ## 2026-10-19 (demo video v3, "the AI Card")
 
