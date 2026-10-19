@@ -1,7 +1,9 @@
-# What `railway up` should not upload (on top of .gitignore): the apps and docs are not part of the FISCO services.
+# What `railway up` should not upload (on top of .gitignore): the phone apps and docs are not part of the FISCO services.
+# web/ is uploaded for fisco-web (deploy/fisco-web/Dockerfile).
 android/
 mobile/
-web/*
-!web/package.json
+web/node_modules/
+web/dist/
+web/test-results/
 docs/
 .claude/
