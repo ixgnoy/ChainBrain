@@ -71,7 +71,7 @@ c = {
     "scan": round(at["x1"] + 0.45, 3),
     "keys": [word("x2", "owner"), word("x2", "agent"), word("x2", "ai")],
     "quote": word("x3", "price"),
-    "checks": [word("x4", "task"), word("x4", "traces"), word("x4", "simulates")],
+    "checks": [word("x4", "task"), word("x4", "looks"), word("x4", "tests")],
     "signs": word("x5", "signs"),
     "sends": word("x5", "sends"),
     "contrast": at["x6a"],
@@ -79,7 +79,7 @@ c = {
     "eight": word("x6", "eight"),
     "pass": word("x7", "pass"),
     "hash": word("x7", "hash"),
-    "pullback": round(end("x7") + 0.6, 3),
+    "pullback": round(end("x7") + 2.2 + 0.6, 3),  # after the real hash is held for 2.2 s (HOLD in scenes/V4.tsx XRay)
     "use2": sc["use2"]["start"],
     "use2_beats": [seg("use2", i) for i in (2, 4, 6)],
     "drop": sc["breakT"]["start"],

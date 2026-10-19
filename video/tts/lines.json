@@ -93,7 +93,7 @@
   "id": "x4",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Our server checks the payment against the task you confirmed, traces the seller's money, and simulates it."
+  "text": "Our server checks the payment against the task you confirmed, looks at where the seller's money goes, and tests the payment first."
  },
  {
   "id": "x5",
@@ -117,13 +117,13 @@
   "id": "x7",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "All eight pass, so it settles on FISCO BCOS, with a hash anyone can open."
+  "text": "All eight pass, so the payment goes through on FISCO BCOS, and anyone can look it up by its hash."
  },
  {
   "id": "u2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Above your ask-me limit, the card needs you to co-sign on your phone."
+  "text": "Above the amount you chose, the card asks you to sign on your phone too."
  },
  {
   "id": "u4",
