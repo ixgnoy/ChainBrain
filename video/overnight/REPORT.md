@@ -1,6 +1,6 @@
 # Overnight video report: ranked, ready to cherry-pick
 
-Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 04:30 HKT.
+Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 04:00 HKT.
 
 - Frames: [storyboard.html](storyboard.html)
 - Research and reviews: [research/](research/)
@@ -14,7 +14,7 @@ Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a strai
 git cherry-pick 9bcd289..video-overnight
 ```
 
-**2. Record the v4.1 kit in the owner's voice, then build.** The kit takes about an hour. Then run `tools/voice.py` and `sh video/build.sh`. The build now ends with `tools/qc.py`.
+**2. Record the v4.1 kit in the owner's voice at 145–150 words a minute, then build.** The kit takes about an hour. Slower than 140 wpm risks the 5:00 cap; see Runtime below. Then run `tools/voice.py` and `sh video/build.sh`. The build now ends with `tools/qc.py`.
 
 **3. Two checks only a human can do.**
 - Confirm `SENTINEL_PK` is set on Railway. Without it, "freezes the card" is only a hold, and line w2 must say "holds".
