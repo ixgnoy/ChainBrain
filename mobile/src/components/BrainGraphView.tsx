@@ -51,7 +51,7 @@ export function FocusPanel({ id, byId, edges, events, pockets, onOpen, onClose }
     const pays = recent.filter((e) => e.type === "payment" && e.sellerId === n.ref);
     const r = [...events].reverse().find((e) => e.type === "radar" && e.sellerId === n.ref);
     const from = edges.filter((e) => e.to === id).length;
-    sub = `${pays.length} paid from your cards · ${from} ${from === 1 ? "pocket may" : "pockets may"} pay it${r ? ` · Radar ${Number(r.score) || 0}/10` : ""}`;
+    sub = `${pays.length} paid from your cards · ${from} ${from === 1 ? "card may" : "cards may"} pay it${r ? ` · Radar ${Number(r.score) || 0}/10` : ""}`;
   } else if (n.kind === "agent") {
     const held = edges.filter((e) => e.from === id).length;
     const mine = new Set(edges.filter((e) => e.from === id).map((e) => byId.get(e.to)?.ref?.toLowerCase()));

@@ -21,7 +21,8 @@ const OWNER_REASONS = new Set(["NEEDS_OWNER_APPROVAL", "APPROVAL_EXPIRED", "OWNE
 const RADAR_REASONS = new Set(["COUNTERPARTY_HIGH_RISK", "COUNTERPARTY_REVIEW"]);
 
 const same = (a?: unknown, b?: unknown) => !!a && !!b && String(a).toLowerCase() === String(b).toLowerCase();
-const usd = (units: unknown) => { try { const n = Number(BigInt(String(units ?? 0))) / 1e6; return `${curSign()}${n.toFixed(n < 0.1 ? 3 : 2).replace(/0$/, "")}`; } catch { return ""; } };
+// HK$ with 2 decimals (3 below HK$0.10, trimmed to 2 when the third is 0): HK$2.30, HK$0.056, HK$0.08
+const amt = (units: unknown) => { try { const n = Number(BigInt(String(units ?? 0))) / 1e6; return `${curSign()}${n < 0.1 ? n.toFixed(3).replace(/0$/, "") : n.toFixed(2)}`; } catch { return ""; } };
 const tail = (h?: unknown) => (h ? `${String(h).slice(0, 6)}…${String(h).slice(-4)}` : "");
 const isQuote = (e: WalletEvent) => e.type === "trace" && e.phase === "tool_result" && e.tool === "get_quote" && e.result?.ok;
 
@@ -110,7 +111,7 @@ function build(mine: WalletEvent[], end: WalletEvent, sellerName: (id?: string) 
     ? { key: "preflight", label: STAGE_LABEL.preflight, value: `Predicted ${pre.predicted?.outcome === "pays" ? "it pays" : "a refusal"}${pre.kind === "result" ? (pre.matched ? " · matched" : " · missed") : ""}`, state: pre.kind === "result" && !pre.matched ? "stop" : "info", at: pre.at }
     : none("preflight");
   const settle: Stage = paid
-    ? { key: "settle", label: STAGE_LABEL.settle, value: `${usd(end.amount)} on-chain · ${tail(end.tx)}`, state: "ok", at: T }
+    ? { key: "settle", label: STAGE_LABEL.settle, value: `${amt(end.amount)} on-chain · ${tail(end.tx)}`, state: "ok", at: T }
     : { key: "settle", label: STAGE_LABEL.settle, value: "Refused · no money moved", state: "stop", at: T };
   const sen: Stage = sentinel
     ? { key: "sentinel", label: STAGE_LABEL.sentinel, value: sentinel.kind === "freeze" ? "Froze the card" : sentinel.kind === "hold" ? "Holding payments for you" : sentinel.kind === "watch" ? "Watching closer" : "All clear", state: sentinel.kind === "freeze" || sentinel.kind === "hold" ? "stop" : "ok", at: sentinel.at }

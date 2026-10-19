@@ -16,7 +16,8 @@ export type LiveCard = {
   /** what the seller or the chat said (quoted, never obeyed) */ quote?: string; tx?: string; reason?: string;
 };
 
-const usd = (units: unknown) => { try { const n = Number(BigInt(String(units ?? 0))) / 1e6; return `${curSign()}${n.toFixed(n < 0.1 ? 3 : 2).replace(/0$/, "")}`; } catch { return ""; } };
+// HK$ with 2 decimals (3 below HK$0.10, trimmed to 2 when the third is 0): HK$2.30, HK$0.056, HK$0.08
+const amt = (units: unknown) => { try { const n = Number(BigInt(String(units ?? 0))) / 1e6; return `${curSign()}${n < 0.1 ? n.toFixed(3).replace(/0$/, "") : n.toFixed(2)}`; } catch { return ""; } };
 
 export function liveCards(events: WalletEvent[], o: { agentOf(pocket?: string): string | undefined; sellerName(id?: string): string; days?: number; now?: number }): LiveCard[] {
   const since = (o.now ?? Date.now()) - (o.days ?? 14) * 86_400_000;
@@ -25,18 +26,18 @@ export function liveCards(events: WalletEvent[], o: { agentOf(pocket?: string): 
   for (const e of events) {
     if (e.at < since) continue;
     const base = { at: e.at, pocket: e.pocket, agent: o.agentOf(e.pocket), sellerId: e.sellerId };
-    if (e.type === "payment") out.push({ ...base, key: `pay:${e.tx ?? e.at}`, kind: e.cosigned ? "cosigned" : "paid", amount: usd(e.amount), tx: e.tx,
+    if (e.type === "payment") out.push({ ...base, key: `pay:${e.tx ?? e.at}`, kind: e.cosigned ? "cosigned" : "paid", amount: amt(e.amount), tx: e.tx,
       title: `Paid ${sn(e.sellerId)}`, why: e.cosigned ? "You co-signed it" : e.routine ? `Routine run ${e.routine.run}, inside its allowance` : "Inside the card's rules" });
-    else if (e.type === "refusal") out.push({ ...base, key: `ref:${e.at}:${e.sellerId}`, kind: "refused", amount: e.amount ? usd(e.amount) : undefined, reason: e.reason,
+    else if (e.type === "refusal") out.push({ ...base, key: `ref:${e.at}:${e.sellerId}`, kind: "refused", amount: e.amount ? amt(e.amount) : undefined, reason: e.reason,
       title: `${sn(e.sellerId)} refused`, why: plainReason(String(e.reason ?? "")) });
-    else if (e.type === "forced" && e.reverted) out.push({ ...base, key: `forced:${e.tx}`, kind: "refused", amount: usd(e.amount), tx: e.tx,
+    else if (e.type === "forced" && e.reverted) out.push({ ...base, key: `forced:${e.tx}`, kind: "refused", amount: amt(e.amount), tx: e.tx,
       title: "Transfer blocked on-chain", why: "Money to an address not on the list: the contract reverted it" });
     else if (e.type === "routine" && e.kind === "ignored") out.push({ ...base, key: `ign:${e.at}:${e.sellerId}`, kind: "ignored", quote: e.excerpt,
       title: `${sn(e.sellerId)} tried to give orders`, why: "Ignored: a routine is fixed fields you signed" });
     else if (e.type === "attack") out.push({ ...base, key: `atk:${e.at}`, kind: e.verdict === "fooled" ? "refused" : "attack", quote: e.text,
       title: e.verdict === "fooled" ? "A fooled agent tried to send money" : "A chat message tried to take over", why: e.verdict === "fooled" ? "The card contract refused it" : "Refused: only your key changes the rules" });
-    else if (e.type === "quote" && e.limit != null && !e.below) out.push({ ...base, key: `q:${e.at}`, kind: "watched", amount: usd(e.price),
-      title: `Checked ${sn(e.sellerId)}'s price`, why: `Above your ${usd(e.limit)} limit, so it waited` });
+    else if (e.type === "quote" && e.limit != null && !e.below) out.push({ ...base, key: `q:${e.at}`, kind: "watched", amount: amt(e.price),
+      title: `Checked ${sn(e.sellerId)}'s price`, why: `Above your ${amt(e.limit)} limit, so it waited` });
     else if (e.type === "routine" && e.kind === "run" && !(Array.isArray(e.outs) && e.outs.length)) out.push({ ...base, key: `run:${e.routineId}:${e.run}`, kind: "run",
       title: `Routine run ${e.run}`, why: "Nothing to pay" });
   }

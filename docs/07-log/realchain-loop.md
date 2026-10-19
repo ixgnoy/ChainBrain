@@ -628,3 +628,27 @@ Three reviewers covered the phone, the web console and the contract between the 
 - the phone polls every 4 s with no backoff beyond the offline mark;
 - the console's chain index lives in memory per tab;
 - the hosted API still runs the old build, so sign-up there needs the deploy in "When stopping".
+
+---
+
+## Round 15 · 19 Oct 14:25–14:45 · The native phone app in Expo Go on the iOS Simulator
+
+Until now the phone had been tested only as the Expo web build. This round ran the native app: Expo Go 57 on an iPhone 17 simulator, Metro with `EXPO_PUBLIC_API_URL=http://localhost:8787`, and the local FISCO dev stack.
+
+**Walked through by hand** (simulator keychain reset first, so it was a true first launch). Every step was checked on chain with `eth_getTransactionReceipt`, `balanceOf` and `revoked()`:
+- **First launch:** the key was made in SecureStore, then one Login signature signed it up. HK$500 was minted (`0xb197…39b0`), all in 31 s.
+- **Starter cards:** "Daily brief" and "Market watch" were made and funded by the phone's key, and their agents paid Exa, CoinGecko and Nansen. Home shows HK$496.00.
+- **Wizard:** the sentence "Buy DataLite market reports when I ask. Put HK$40 on it and ask me above HK$1." was read as DataLite, HK$40 and ask above HK$1. Slide to create triggered **Face ID** (simulator enrolment plus match). That gave the create tx `0xaad0…070f`, card `0x27B3…E31C`, and fund tx `0x567d…1d8c`.
+- **Chat and co-sign:** the agent asked to confirm the task, then the co-sign cheque showed HK$2.30 to DataLite, "Above your HK$1.00 ask-me limit", and the guard sentence. After Face ID, the payment `0x50e0…6b7f` has receipt status 1 in block 3663, and the card's on-chain balance is HK$37.70.
+- **Hold to revoke, then Face ID:** two owner transactions (blocks 3664 and 3665). On chain, `revoked()` is true and the card balance is 0. The main wallet shows HK$493.70 (456.00 + 37.70).
+
+**Fixed**
+- The live feed and the decision trace showed "HK$2.3": a local formatter dropped a trailing zero even at 2 decimals. It now gives HK$2.30, HK$0.056, HK$0.08, and it is renamed from `usd` to `amt`.
+- The Brain graph's seller line said "pockets may pay it"; it now says "cards".
+
+**Seen, not fixed**
+- **One hang, never reproduced:** the very first open, right after a failed attempt to reach Metro, sat on "Connecting…" until a reload. Two cold starts and a fresh-key first launch afterwards all connected in seconds.
+- **Taps land 1–3 s late in Expo Go.** This is the dev build (JS dev mode); a release build wasn't measured here.
+- **Local runs:** Metro started with `--localhost` listens only on IPv6 `::1`, while Expo Go asks for `127.0.0.1`. Start it without `--localhost` and open `exp://127.0.0.1:8081`.
+
+Phone typecheck clean, tests 61.
