@@ -22,6 +22,32 @@ To pick commits one at a time instead, use the commit column below. Pick them in
 | 6 | **Keep the delivered MP4 under −1 dBTP and check it before upload.** v4 measures −0.6 dBTP true peak. `tools/qc.py` (also run at the end of `build.sh`) checks length, format, loudness, peak, black, freezes, silence and subtitle speed. | `b366b98`, `6edcc66` | A portal that normalises or rejects hot audio won't touch ours | 5 | None |
 | 7 | **Chinese subtitles, only if a team member who reads Chinese checks all 43 lines today.** Then set `"enabled": true` in `remotion/src/subs-zh.json`. | in the chain, off by default | Mainland and Hong Kong judges can follow the fast X-ray. English stays primary, as the rules require. | 30 to check | Medium if unchecked, which is why it ships off |
 
+**If the owner's voice does not arrive in time**, don't pick the v4.1 script commits. Sarah's audio still says the v4 words, and the ElevenLabs free quota has only 178 characters left, so it can't re-voice them. Pick the screen-only set instead (tested on `9bcd289`):
+
+```bash
+git cherry-pick 9e4ef9b 056dd8c 81546ed b366b98 6edcc66 fd0c90f
+```
+
+```bash
+git cherry-pick 77d4822
+```
+
+The second pick conflicts only on the generated `timeline.json`. Resolve it with:
+
+```bash
+git checkout --ours video/remotion/src/timeline.json
+```
+
+```bash
+cd video && python3 tools/layout.py remotion/src/edit.json remotion/src/vo-words.json remotion/src/timeline.json && python3 tools/cues.py remotion/src/timeline.json remotion/src/vo-words.json && cd ..
+```
+
+```bash
+git add video/remotion/src/timeline.json && git cherry-pick --continue
+```
+
+Without the new voice, the worst v4 overstatements stay in the audio. The least bad option is still recording just the twelve changed lines in the owner's voice; the clean-up chain makes a phone take sit well beside Sarah.
+
 **Conflicts if you pick only some.** `timeline.json` and `vo-words.json` are generated. On a conflict, take either side, then re-run `tools/layout.py` and `tools/cues.py`; `tools/voice.py` rewrites them anyway when the owner's takes are imported. The branch's preview voice for the 12 changed lines is Kokoro, because the ElevenLabs free quota has 178 characters left.
 
 ## Full ranked list
