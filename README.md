@@ -4,6 +4,10 @@
 
 FinTechathon 2026, International AI Track, Topic F (Agent Wallet). Base Sepolia testnet.
 
+<a href="docs/media/chainbrain-brag.mp4"><img src="docs/media/chainbrain-brag.gif" alt="ChainBrain in 22 seconds: a hijacked agent, a pocket that refuses off-list sellers on-chain, and the Sentinel freezing the pocket" width="100%"></a>
+
+<sub>22-second tour (silent loop). Click it for the MP4 with sound.</sub>
+
 - Technical document: [`docs/technical-document.md`](docs/technical-document.md)
 - Security self-assessment: [`docs/security-self-assessment.md`](docs/security-self-assessment.md)
 - On-chain evidence: [`docs/evidence.md`](docs/evidence.md)
