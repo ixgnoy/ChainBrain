@@ -1,0 +1,6 @@
+# Static Expo web export; unknown paths fall back to index.html so deep links (/pocket/...) survive a reload.
+:{$PORT:8080} {
+	root * /srv
+	try_files {path} {path}.html {path}/index.html /index.html
+	file_server
+}
