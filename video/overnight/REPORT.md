@@ -68,7 +68,7 @@ B means before the deadline; A means after, for the finals. Ranked by effect × 
 | 11 | FISCO detail on screen: Clock.sol's millisecond-to-second conversion | **built**, `246f1c7` (optional) | B (optional) | [review-fisco.md](research/review-fisco.md): the one detail that shows real porting. It's a caption while the checks tick. |
 | 12 | X-ray: one idea at a time, a 2 s lane legend before the voice | idea | A | Contiguity and signalling (Ginns 2006, d ≈ 0.85) ([academic.md](research/academic.md)) |
 | 13 | Morse decoded into "SEND ALL" under the dots | **built**, `ccee08c` | B (optional) | [review-motion.md](research/review-motion.md) B-list; labelled as an illustration |
-| 14 | Varied Reveal settle and camera travel per act | idea | A | [review-motion.md](research/review-motion.md) items 7 and 9 |
+| 14 | Varied Reveal settle and camera travel per act | **built** for the attack, `033e48c` `3021ee3` | B (optional) | [review-motion.md](research/review-motion.md) items 7 and 9 |
 | 15 | 90 s finals cut from existing scenes | plan | A | [finals-cut.md](research/finals-cut.md) |
 | 16 | Say "Mock e-HKD" aloud once; "test eHKD" in the planted order | idea | A | [review-fisco.md](research/review-fisco.md). The proof footer already says it. |
 
@@ -142,3 +142,5 @@ These are approved decisions. Reviewers questioned them; the evidence is noted, 
 | P19 | Refused transfer's hash held; captions match the voice | `8cc1d81` | v4-181 / revert-178.3, v4-20 / stat-19 | kept |
 | P20 | HKMA policy round (h2, footer, x7, r1, k3) | `61678ad` | hk-125, hk-155, hk-247.5 | kept; [review-hkma.md](research/review-hkma.md) |
 | P21 | Fit under 5:00 at 145 wpm, plus `tools/pace.py` | `d3ffd3b` | fit-107, fit-119.6, fit-169.8, fit-196, fit-250.8 | kept; this was a must-fix |
+| P22 | Attack headlines land harder (settle stiffness per scene) | `033e48c` | attack-whip-150.65 | kept |
+| P23 | Attack camera travels faster (0.45 s) | `3021ee3` | (motion) | kept |
