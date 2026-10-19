@@ -1,13 +1,29 @@
 [
  {
+  "title": "P5 The real hash, held full screen",
+  "when": "before the deadline",
+  "status": "kept",
+  "commits": [
+   "77d4822"
+  ],
+  "note": "After “a hash anyone can open”: full hash, success, explorer address, and where every hash in the film is listed. Left: v4 at the same moment.",
+  "pairs": [
+   [
+    "v4-129.jpg",
+    "hash-129.jpg"
+   ]
+  ]
+ },
+ {
   "title": "P4 Script v4.1: twelve lines match the evidence",
   "when": "before the deadline",
   "status": "kept",
   "commits": [
    "860094b",
-   "0bb1084"
+   "0bb1084",
+   "281dd3a"
   ],
-  "note": "Record these words. Captions, labels and the hook counter follow the voice. Preview audio for the changed lines is Kokoro (ElevenLabs quota used up).",
+  "note": "Record these words. Captions, labels and the hook counter follow the voice. Preview audio for the changed lines is Kokoro (ElevenLabs quota used up). Revised after review round 1 (r1 frames).",
   "pairs": [
    [
     "v4-acc-10.5.jpg",
@@ -44,13 +60,37 @@
    [
     "v4-acc-252.jpg",
     "acc-248.jpg"
+   ],
+   [
+    "v4-acc-74.jpg",
+    "r1-75.jpg"
+   ],
+   [
+    "v4-66.jpg",
+    "r1-66.jpg"
+   ],
+   [
+    "v4-acc-171.jpg",
+    "r1-169.jpg"
+   ],
+   [
+    "v4-166.5.jpg",
+    "r1-162.jpg"
+   ],
+   [
+    "v4-acc-252.jpg",
+    "r1-260.jpg"
+   ],
+   [
+    "v4-39.5.jpg",
+    "r1-40.jpg"
    ]
   ],
   "lines": [
    [
     "m2",
     "tricked an AI agent into emptying its wallet.",
-    "tricked an AI agent into giving away over a hundred and fifty thousand dollars."
+    "tricked an AI agent into giving away over a hundred and fifty thousand US dollars."
    ],
    [
     "u0",
@@ -60,7 +100,7 @@
    [
     "u1",
     "It pays small amounts on its own. Right now that's Exa for search and CoinGecko for prices, over x402.",
-    "It pays small amounts on its own. In the demo, test versions of Exa and CoinGecko sell it search and prices, over x402."
+    "It pays small amounts on its own. In our demo it buys search from a test Exa and prices from a test CoinGecko, over x402."
    ],
    [
     "x2",
@@ -90,12 +130,12 @@
    [
     "r1",
     "It's your card, so you can cancel it mid-task and the money comes back.",
-    "It's your card, so you can cancel it mid-task and take back what's left."
+    "It's your card, so you can cancel it mid-task and get back whatever hasn't been spent."
    ],
    [
     "k3",
     "Worst case, we fool the agent on purpose and it tries to send the money.",
-    "Worst case, we act as a fooled agent and use its key to send the money."
+    "Worst case, we play a fooled agent and use its key to send the money."
    ],
    [
     "k5",
