@@ -51,7 +51,7 @@
   "id": "g2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It builds the card right in front of you, and you approve every rule."
+  "text": "It builds the card in front of you, and you approve every rule."
  },
  {
   "id": "g3",
@@ -63,13 +63,13 @@
   "id": "u0",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "When the job is unclear, it can ask you one question first."
+  "text": "If the job is unclear, it can ask one question first."
  },
  {
   "id": "u1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It pays small amounts on its own. In our demo it buys search from a test Exa and prices from a test CoinGecko, over x402."
+  "text": "It pays small amounts on its own, here to test versions of Exa and CoinGecko, over x402."
  },
  {
   "id": "x1",
@@ -81,43 +81,43 @@
   "id": "x2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The owner key stays on your phone, and our server makes a separate agent key for each card. The AI never holds a key."
+  "text": "The owner key stays on your phone. Our server makes one agent key per card, and the AI never holds one."
  },
  {
   "id": "x3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The AI picks a seller, and the seller names its price, over x402."
+  "text": "The AI picks a seller, which names its price over x402."
  },
  {
   "id": "x4",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Our server checks the payment against the task you confirmed, looks at where the seller's money goes, and tests the payment first."
+  "text": "Our server checks the payment against your task, looks at where the seller's money goes, and tests it first."
  },
  {
   "id": "x5",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Then the agent key signs one exact payment from the card, and a facilitator sends it to the chain."
+  "text": "The agent key signs one exact payment, and a facilitator sends it to the chain."
  },
  {
   "id": "x6a",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Some agent wallets check their limits on the wallet company's server."
+  "text": "Some agent wallets check limits on the company's server."
  },
  {
   "id": "x6",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Here the token asks the card, which runs its own eight checks before any money moves."
+  "text": "Here the token asks the card, which runs its own eight checks first."
  },
  {
   "id": "x7",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "All eight pass, so the payment goes through on FISCO BCOS, and you can open it by its hash in our explorer."
+  "text": "All eight pass, so it goes through on FISCO BCOS, with a hash you can open in our explorer."
  },
  {
   "id": "u2",
@@ -129,7 +129,7 @@
   "id": "u4",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "A seller that isn't on your list gets refused, and the agent re-plans or asks you."
+  "text": "An unlisted seller gets refused, and the agent re-plans or asks you."
  },
  {
   "id": "u3",
@@ -141,7 +141,7 @@
   "id": "r1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It's your card, so you can cancel it mid-task. In our demo, whatever hasn't been spent goes back to your balance."
+  "text": "It's your card, so you can cancel it mid-task, and in our demo the unspent money goes back."
  },
  {
   "id": "k1",
@@ -183,13 +183,13 @@
   "id": "y2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The last two are on-chain, and they keep every card inside its rules even if our whole server is taken over."
+  "text": "The last two are on-chain, and they keep every card inside its rules, even with our server taken over."
  },
  {
   "id": "y3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "If someone steals an agent key, it can still only pay your listed sellers, up to the cap. The guardian key can only freeze, and your owner key never leaves your phone."
+  "text": "A stolen agent key still only pays your listed sellers, up to the cap. The guardian key can only freeze. Your owner key stays on your phone."
  },
  {
   "id": "w1",
@@ -219,7 +219,7 @@
   "id": "h1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "In October, the HKMA's Carmen Chu described governance for AI agents as anchored to intent, with kill switches, A.I. versus A.I., and secure boundaries."
+  "text": "The HKMA's Carmen Chu described AI agent governance in October as anchored to intent, with kill switches, A.I. versus A.I., and secure boundaries."
  },
  {
   "id": "h2",
@@ -237,19 +237,13 @@
   "id": "f2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "We ran sixty-three attacks on our own cards, with test money, and didn't lose a single dollar."
+  "text": "We attacked our own cards sixty-three times with test money, and lost nothing."
  },
  {
   "id": "f3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "And all four hundred and sixty-two automated tests passed."
- },
- {
-  "id": "f4",
-  "voice": "af_heart",
-  "speed": 0.9,
-  "text": "You can try it today, on our hosted FISCO BCOS chain."
+  "text": "And all four hundred and sixty-two tests passed."
  },
  {
   "id": "t1",

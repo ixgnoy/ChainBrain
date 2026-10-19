@@ -248,7 +248,7 @@ export const XRay: React.FC = () => {
     end: r.end("x7"),
   };
   // the real hash, held full screen after "a hash anyone can open" (Topic F is scored on hashes); the pull-back waits
-  const HOLD = 2.2;
+  const HOLD = 1.8;
   const E = T.end + HOLD;
   const cams: Cam[] = [
     { t: 0, cx: 1310, cy: 690, s: 0.7 },
@@ -628,7 +628,7 @@ const Bracket: React.FC<{ x: number; y1: number; y2: number; label: string; colo
 
 // ─────────────── if a key is stolen ───────────────
 const STOLEN: { icon: React.ReactNode; title: string; verdict: string; word: [string, string, number] | null; owner?: boolean }[] = [
-  { icon: <KeyRound size={40} />, title: "Agent key stolen", verdict: "only listed sellers, up to the cap", word: ["y3", "steal", 0] },
+  { icon: <KeyRound size={40} />, title: "Agent key stolen", verdict: "only listed sellers, up to the cap", word: ["y3", "stolen", 0] },
   { icon: <Server size={40} />, title: "Our server taken", verdict: "the card still checks every payment", word: null },
   { icon: <Snowflake size={40} />, title: "Guardian key", verdict: "can only freeze a card", word: ["y3", "guardian", 0] },
   { icon: <Smartphone size={40} />, title: "Your owner key", verdict: "never leaves your phone", word: ["y3", "your", 1], owner: true },

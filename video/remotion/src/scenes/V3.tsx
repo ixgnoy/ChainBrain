@@ -241,7 +241,7 @@ export const Money: React.FC = () => {
   const no = r.word("k4", "no");
   const k5 = r.vo("k5");
   const split = k5 - 0.1;
-  const held = r.end("k5") + 0.5; // the reverted forced transfer's hash, held full screen for 2 s
+  const held = r.end("k5") + 0.5; // the reverted forced transfer's hash, held full screen for 1.6 s
   const fly = Math.pow(clamp((t - send) / (no - 0.05 - send)), 1.6); // accelerates into the card
   const flying = t >= send && t < no - 0.05;
   const hit = t >= no - 0.05;
@@ -403,7 +403,7 @@ export const ProofV3: React.FC = () => {
   const rej = r.word("f1", "rejected");
   const f2 = r.vo("f2");
   const f3 = r.vo("f3");
-  const f4 = r.vo("f4");
+  const f4 = r.end("f3") + 0.3; // the try-it address follows the tests (on screen only)
   const swap = easeInOut(clamp((t - (f2 - 0.4)) / 0.5));
   return (
     <Stage>

@@ -79,7 +79,7 @@ c = {
     "eight": word("x6", "eight"),
     "pass": word("x7", "pass"),
     "hash": word("x7", "hash"),
-    "pullback": round(end("x7") + 2.2 + 0.6, 3),  # after the real hash is held for 2.2 s (HOLD in scenes/V4.tsx XRay)
+    "pullback": round(end("x7") + 1.8 + 0.6, 3),  # after the real hash is held for 1.8 s (HOLD in scenes/V4.tsx XRay)
     "use2": sc["use2"]["start"],
     "use2_beats": [seg("use2", i) for i in (2, 4, 6)],
     "drop": sc["breakT"]["start"],
@@ -95,7 +95,7 @@ c = {
     "last": word("y2", "last"),
     "taken": word("y2", "taken"),
     "stolen": sc["stolen"]["start"],
-    "stolen_hits": [word("y3", "steals"), word("y3", "guardian"), word("y3", "your")],
+    "stolen_hits": [word("y3", "stolen"), word("y3", "guardian"), word("y3", "your", 1)],
     "watch": sc["watch"]["start"],
     "freeze": word("w2", "freezes"),
     "only": sc["only"]["start"],
