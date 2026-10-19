@@ -19,6 +19,36 @@ import { parseAmount, formatAmount } from "./wallet/money";
 // /admin/* is a demo-only hook (red-team box, payTo lookup); it is not part of what a seller must run.
 const content = (f: string) => readFileSync(new URL(`./content/${f}`, import.meta.url), "utf8");
 
+/**
+ * CoinGecko's ETH price is live: its public simple-price API (no key), in HKD, cached a minute. Any failure (timeout,
+ * rate limit, no network) serves the stored file instead, so a paid request always gets its data. COINGECKO_LIVE=off keeps
+ * the stored file (tests).
+ */
+let ethCache: { at: number; md: string } | undefined;
+export async function liveEthPrice(f: typeof fetch = fetch, now = Date.now()): Promise<string | null> {
+  if (process.env.COINGECKO_LIVE === "off") return null;
+  if (ethCache && now - ethCache.at < 60_000) return ethCache.md;
+  try {
+    const r = await f("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=hkd&include_24hr_vol=true&include_24hr_change=true&include_last_updated_at=true",
+      { signal: AbortSignal.timeout(3000), headers: { accept: "application/json" } });
+    if (!r.ok) return null;
+    const e = ((await r.json()) as { ethereum?: { hkd?: number; hkd_24h_vol?: number; hkd_24h_change?: number; last_updated_at?: number } }).ethereum;
+    if (!e || typeof e.hkd !== "number") return null;
+    const hk = (n: number, d = 0) => n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+    const when = (s: number) => new Date(s * 1000).toLocaleString("en-GB", { timeZone: "Asia/Hong_Kong", dateStyle: "medium", timeStyle: "short" }) + " HKT";
+    const md = [
+      "# ETH price (CoinGecko, simple price, live)",
+      `- ethereum: ${hk(e.hkd)} HKD`,
+      ...(typeof e.hkd_24h_change === "number" ? [`- 24 h change: ${e.hkd_24h_change >= 0 ? "+" : ""}${e.hkd_24h_change.toFixed(2)}%`] : []),
+      ...(typeof e.hkd_24h_vol === "number" ? [`- 24 h volume: ${hk(e.hkd_24h_vol / 1e9, 2)} billion HKD`] : []),
+      ...(e.last_updated_at ? [`- last updated: ${when(e.last_updated_at)}`] : []),
+      "- source: api.coingecko.com, fetched for this purchase",
+    ].join("\n");
+    ethCache = { at: now, md };
+    return md;
+  } catch { return null; }
+}
+
 /** Where each seller is paid: its key's address (SELLER_*_PK), or a fixed payTo for the mocked sellers that only receive. */
 export const sellerPayTo = (): Record<string, Address> =>
   Object.fromEntries((sellers as { id: string; keyEnv?: string; payTo?: string }[]).map((s) => [s.id, (s.payTo ?? privateKeyToAccount(process.env[s.keyEnv!] as Hex).address) as Address]));
@@ -92,9 +122,10 @@ export function sellersApp() {
   app.use(paymentMiddleware(routes as any, new x402ResourceServer(facilitatorClient()).register(network, new ExactEvmScheme())));
 
   for (const s of sellers) for (const it of s.items)
-    app.get(`/${s.id}/${it.sku}`, (c) => {
+    app.get(`/${s.id}/${it.sku}`, async (c) => {
       const x = dealOf(c.req.url, `${s.id}/${it.sku}`);
       if (x) x.d.used = true; // paid at the deal's price (the middleware settled it before this handler runs)
+      if (s.id === "coingecko" && it.sku === "eth-price") return c.text((await liveEthPrice()) ?? content(it.content));
       return it.content.endsWith(".json") ? c.json(JSON.parse(content(it.content))) : c.text(content(it.content));
     });
   return app;

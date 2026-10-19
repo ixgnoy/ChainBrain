@@ -468,6 +468,8 @@ Last updated: 2026-10-19
 | `LLM_MODEL` | API | `claude-haiku-5.5` | or `glm-5.3-flash`, `deepseek-v4.1-flash`, `mimo-v2.6-pro`, `mimo-v2.6-flash` |
 | `ROUTINE_TICK_MS` | API | `30000` | how often due routines run |
 | `ARENA_PER_IP_DAY` | API | `20` | straight-to-the-chain attempts per IP per day |
+| `STARTER_EXTRAS` | API | on | `off` skips the lived-in starter (ShadyFeed revert, routine, waiting cheque) |
+| `COINGECKO_LIVE` | sellers | on | `off` serves the stored ETH price instead of CoinGecko's public API |
 | `AGENT_MASTER_KEY` | API | none | 0x + 64 hex (`0x$(openssl rand -hex 32)`). **Generate once, keep secret, never change** (changing it orphans every card's agent) |
 
 ---
@@ -652,3 +654,38 @@ Until now the phone had been tested only as the Expo web build. This round ran t
 - **Local runs:** Metro started with `--localhost` listens only on IPv6 `::1`, while Expo Go asks for `127.0.0.1`. Start it without `--localhost` and open `exp://127.0.0.1:8081`.
 
 Phone typecheck clean, tests 61.
+
+---
+
+## Round 16 · 20 Oct 00:33–01:05 · A seeded account for judges, all on the real chain
+
+**Why.** Opened the way a judge would, the hosted phone (`fisco-phone-production`, the Expo web build the team put on Railway) showed HK$100.00, 0 cards and "Create your first card". The hosted API is still the old build. Even with the new build, a new account had only two starter cards with three small purchases: there was little to try.
+
+**Decided with the user.** Server side only, no new phone UI:
+- the phone's own key still creates and funds the starter cards (the factory makes `msg.sender` the owner, and the server never signs owner actions);
+- the server makes the account lived-in;
+- CoinGecko's ETH price is live, and the other sellers keep their stored content;
+- no seed for the console.
+
+**What changed** (`server/src/starter.ts`, after `/v1/starter` answers, so the phone never waits):
+- **More purchases:** the brief buys Exa's durian and fruit news plus CoinGecko's ETH price; the watch buys Nansen's balances. That's 4 real x402 payments.
+- **A fooled transfer the chain refused:** the watch "read" ShadyFeed's preview, which tells agents to send HK$50 to its address. Market watch's own agent key signs that transfer and the token contract reverts it. The phone shows "Transfer blocked on-chain, HK$50.00".
+- **A running routine and a waiting cheque:** the brief gets a standing order (Exa + CoinGecko, daily 08:00, HK$0.10 a week), and its first run goes at once. Exa is paid inside the allowance; CoinGecko would take the week to HK$0.136, so the phone opens the cheque right away. The judge's first tap is a real co-signed payment.
+- **Switch:** `STARTER_EXTRAS=off` turns this part off.
+- **Live price:** `server/src/sellers.ts` serves CoinGecko's live price in HKD from its public simple-price API (no key, 3 s timeout, cached a minute). Any failure serves the stored file. `COINGECKO_LIVE=off` keeps the stored file; the tests set it.
+- **Arena:** `straightToChain` takes an optional `sellerId`, so the event names who asked for the transfer.
+
+**Evidence**
+- **Simulator** (Expo Go, fresh keychain, local FISCO):
+  - the intro already shows Daily brief at HK$1.752 (2.00 − 0.056 − 0.056 − 0.08 − 0.056);
+  - on Home the cheque opens by itself: "Run 1 would pass this week's HK$0.10", with the week's meter at HK$0.136 of 0.10;
+  - after Face ID, Daily brief is at HK$1.672 with "Wed 08:00" and Next up 1;
+  - Activity reads "6 paid, HK$0.408 spent", including the co-signed CoinGecko payment and "Transfer blocked on-chain, HK$50.00";
+  - the delivered content was "ETH price (CoinGecko, simple price, live), ethereum: 18,846 HKD".
+- **Tests:**
+  - `starter-chain.test.ts` covers 4 payments with status 1, the cheque `{run 1, spent 0.056, after 0.136}`, ShadyFeed's transfer reverted with the balance unchanged, the routine active, and the owner's co-sign giving outcomes `paid`, `cosigned`, both receipts status 1;
+  - `coingecko-live.test.ts` covers the HKD format, the one-minute cache and every fallback.
+- **e2e** (fresh dev stack): **72/72**. The phone approves the starter cheque with the slider, and a new step checks the routine, the run's receipts and the reverted ShadyFeed hash.
+- Server **127 passed, 6 skipped**; web 92; devstack 21.
+
+**For the deploy.** No new required env vars, and the defaults are right. The sellers service needs outbound HTTPS to `api.coingecko.com`; without it, it falls back to the stored price.

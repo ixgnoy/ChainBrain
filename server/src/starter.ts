@@ -4,17 +4,37 @@ import { fetchQuote, settle, track } from "./wallet/pay";
 import { pocket as P } from "./wallet/chain";
 import { guard, visitorByToken } from "./visitors";
 import { table } from "./store";
+import { straightToChain } from "./arena";
+import { runRoutine, setRoutine } from "./routines";
 import { VISITOR_HEADER } from "../../shared/chain/login";
 
 /**
  * A new account shouldn't open empty. Right after sign-up the device creates two small starter cards with its own key
  * (the owner signs; the server never can), then calls
  *   POST /v1/starter {cards: [brief, watch]}   (visitor token; each card must be the visitor's)
- * and each card's own agent makes real small x402 payments: the brief buys Exa's durian news and CoinGecko's ETH price,
- * the watch buys Nansen's exporter balances. Once per visitor. Real hashes, replacing the demo network's seed on live.
+ * and each card's own agent makes real small x402 payments: the brief buys Exa's durian and fruit news and CoinGecko's
+ * ETH price, the watch buys Nansen's exporter balances. Once per visitor. Real hashes, replacing the demo network's seed on live.
+ *
+ * After the answer, so the device never waits, the account is made lived-in, all of it real (STARTER_EXTRAS=off skips it):
+ *   - the watch read ShadyFeed's free preview, which tells agents to send HK$50 to its address; the card's own agent key
+ *     signs that transfer and the chain reverts it (a real reverted hash, shown as "Transfer blocked on-chain");
+ *   - the brief gets a standing order (Exa + CoinGecko, daily 08:00, HK$0.10 a week) and its first run goes now: Exa is
+ *     paid inside the allowance, CoinGecko would pass it, so the owner's phone shows the cheque to co-sign with its own key.
  */
 const done = table<{ at: number; txs: string[] }>("starter");
-const PLAN: [string, string][][] = [[["exa", "durian-news"], ["coingecko", "eth-price"]], [["nansen", "wallet-balances"]]];
+const PLAN: [string, string][][] = [[["exa", "durian-news"], ["exa", "fruit-news"], ["coingecko", "eth-price"]], [["nansen", "wallet-balances"]]];
+export const STARTER_ROUTINE = {
+  kind: "schedule" as const, cadence: { every: "day" as const, hour: 8, minute: 0 },
+  items: [{ sellerId: "exa", sku: "durian-news" }, { sellerId: "coingecko", sku: "eth-price" }], allowance: { amount: "0.10", period: "week" as const },
+};
+/** The background part, per visitor, so tests can wait for it. */
+export const starterExtras = new Map<string, Promise<unknown>>();
+
+async function livedIn(brief: Address, watch?: Address) {
+  if (watch) await straightToChain(watch, 50_000_000n, { sellerId: "shadyfeed" }).catch(() => undefined);
+  await setRoutine(brief, STARTER_ROUTINE as any);
+  return runRoutine(brief, { early: true }); // waits for the owner's co-sign on CoinGecko (APPROVAL_WAIT_MS), then pays or not
+}
 
 export function starterRoutes() {
   const app = new Hono();
@@ -38,7 +58,12 @@ export function starterRoutes() {
       }
     }
     done.set(v.id, { at: Date.now(), txs: out.flatMap((o) => (o.tx ? [o.tx] : [])) });
-    return c.json({ payments: out, balances: Object.fromEntries(await Promise.all((cards as Address[]).map(async (a) => [a, (await P(a).info()).balance.toString()]))) });
+    const balances = Object.fromEntries(await Promise.all((cards as Address[]).map(async (a) => [a, (await P(a).info()).balance.toString()])));
+    if (process.env.STARTER_EXTRAS !== "off") {
+      const [brief, watch] = cards as Address[];
+      starterExtras.set(v.id, livedIn(brief, watch).catch((e) => console.error(`starter extras for ${v.id}:`, (e as Error).message)));
+    }
+    return c.json({ payments: out, balances });
   });
   return app;
 }

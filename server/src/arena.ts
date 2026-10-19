@@ -39,7 +39,7 @@ async function cardAgent(pocket: Address) {
 }
 
 /** The fooled agent's transfer, signed by the card's own agent key, straight to the token. Never throws for a revert. */
-export async function straightToChain(pocket: Address, amount = 50_000_000n) {
+export async function straightToChain(pocket: Address, amount = 50_000_000n, o: { sellerId?: string } = {}) {
   const { info, pk } = await cardAgent(pocket);
   if (!pk) return { error: "NOT_THIS_AGENT" as const };
   const reason = await P(pocket).canPay(ATTACKER, amount).catch(() => ""); // what the card's rules say, read just before
@@ -54,6 +54,7 @@ export async function straightToChain(pocket: Address, amount = 50_000_000n) {
     tx: r.hash, reverted, to: ATTACKER, amount: amount.toString(), balanceBefore: before.toString(), balanceAfter: after.toString(),
     ...(reverted && reason && reason !== "OK" ? { reason } : {}), ...(r.revert ? { revert: r.revert.message, revertName: r.revert.name, revertSource: r.revertSource } : {}),
     signedBy: info.agent, via: "agent", explorer: cfg().txUrl(r.hash),
+    ...(o.sellerId ? { sellerId: o.sellerId } : {}), // whose text asked for it (the starter's ShadyFeed scene)
   };
   bus.publish({ type: "forced", pocket, ...out });
   return out;

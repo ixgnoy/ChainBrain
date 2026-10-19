@@ -342,6 +342,16 @@ async function phoneFlow(browser, scenes, issues) {
     await tab("Home");
     await until("the two starter cards", async () => /out in 2 cards/.test(await body()), 90000);
     check("a new account opens with two starter cards made by the phone's key", true);
+    // the starter's routine runs once at once: CoinGecko would pass its HK$0.10 a week, so the cheque opens by itself
+    await visible("asks you").waitFor({ timeout: 60000 });
+    await sleep(1600);
+    const cheque = await body();
+    check("the starter routine's first run asks to co-sign CoinGecko HK$0.08, past its HK$0.10 a week", /CoinGecko/.test(cheque) && /0\.08/.test(cheque) && /HK\$0\.10/.test(cheque));
+    await shot(page, "phone-04-starter-cheque");
+    await slide("Slide to approve");
+    const cosigned = async () => payments(await (await fetch(`${API}/api/events.json`)).json()).find((e) => e.sellerId === "coingecko" && e.cosigned && e.routine);
+    await until("the starter cheque co-signed", cosigned, 60000, 500);
+    check("the phone's key co-signed it and the card paid (receipt status 1)", (await rpc("eth_getTransactionReceipt", [(await cosigned()).tx]))?.status === "0x1");
     await tab("Settings");
     await sw.click();
     await until("demo switch on", async () => (await sw.getAttribute("aria-checked")) === "true", 5000);
@@ -386,16 +396,15 @@ async function phoneFlow(browser, scenes, issues) {
     await shot(page, "phone-02-funded");
   });
 
-  await stp("phone: a routine on a starter card runs on the server with real payments, and the phone shows it", async () => {
+  await stp("phone: the starter account is lived-in: a routine running and a fooled transfer the chain refused", async () => {
     const all = await (await fetch(`${API}/api/events.json`)).json();
     const brief = payments(all).find((e) => e.sellerId === "exa")?.pocket;
-    const token = await page.evaluate(() => Object.entries(localStorage).find(([k]) => k.startsWith("cb.visitor."))?.[1]);
-    const call = async (path, body) => (await fetch(`${API}${path}`, { method: "POST", headers: { "content-type": "application/json", "x-visitor-token": token }, body: JSON.stringify(body) })).json();
-    const spec = { kind: "schedule", cadence: { every: "day", hour: 8, minute: 0 }, items: [{ sellerId: "exa", sku: "durian-news" }, { sellerId: "coingecko", sku: "eth-price" }], allowance: { amount: "1.00", period: "week" } };
-    const set = await call("/api/routine", { pocket: brief, spec });
-    check("the owner's routine is set on their card (server-side)", set.status === "active", JSON.stringify(set).slice(0, 160));
-    const run = await call("/api/routine/run", { pocket: brief });
-    check("routine run 1 paid Exa and CoinGecko from the card (receipts status 1)", run.ok && run.outs.length === 2 && (await Promise.all(run.outs.map((o) => rpc("eth_getTransactionReceipt", [o.tx])))).every((r) => r?.status === "0x1"), JSON.stringify(run).slice(0, 200));
+    const rt = await (await fetch(`${API}/api/routine?pocket=${brief}`)).json();
+    check("the starter set a daily routine on Daily brief (server-side)", rt?.status === "active" && rt.allowance?.amount === "0.10", JSON.stringify(rt).slice(0, 160));
+    const run = all.filter((e) => e.type === "routine" && e.kind === "run" && e.pocket === brief).at(-1);
+    check("its run 1 paid Exa inside the allowance and CoinGecko co-signed (receipts status 1)", JSON.stringify(run?.outs?.map((o) => o.outcome)) === '["paid","cosigned"]' && (await Promise.all(run.outs.map((o) => rpc("eth_getTransactionReceipt", [o.tx])))).every((r) => r?.status === "0x1"), JSON.stringify(run?.outs).slice(0, 200));
+    const forced = all.find((e) => e.type === "forced" && e.sellerId === "shadyfeed");
+    check("ShadyFeed's HK$50 transfer, signed by Market watch's own agent, reverted on chain", forced?.reverted === true && (await rpc("eth_getTransactionReceipt", [forced.tx]))?.status === "0x0" && forced.balanceBefore === forced.balanceAfter, forced?.tx);
     await until("the phone shows the routine", async () => /Next up/.test(await body()) && /Daily brief/.test(await body()), 30000);
     check("the phone reads the routine back from the server's events (Next up)", true);
   });
