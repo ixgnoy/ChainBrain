@@ -50,7 +50,29 @@ SECTIONS = {
 }
 CLIPS = {"intro": "i1", "close": "z1", "team": "t1"}
 # cleaning: rumble and hiss out, a gentle compressor so quiet words carry (the mix levels each line afterwards)
-CLEAN = "highpass=f=80,afftdn=nf=-28,acompressor=threshold=-22dB:ratio=2.5:attack=8:release=140:makeup=2"
+# Phone-voice clean-up (video/overnight/research/clean-chain.txt): rumble cut, FFT denoise at the file's own measured
+# noise floor, a gentle expander for the pauses, less mud, a little presence, de-ess, levelling and a peak limiter.
+# No loudnorm here: tools/mix.py levels each line and the final mix is normalised to -14 LUFS.
+CLEAN = (
+    "highpass=f=90:poles=2,afftdn=nr=14:nf={nf}:tn=1:tr=1,"
+    "agate=threshold=0.004:ratio=1.8:range=0.18:attack=12:release=260:knee=3,"
+    "equalizer=f=200:t=q:w=0.9:g=-1.5,equalizer=f=3200:t=q:w=1.1:g=2,deesser=i=0.4:m=0.5:f=0.5:s=o,"
+    "acompressor=threshold=-24dB:ratio=2.5:attack=10:release=160:makeup=3,alimiter=limit=0.89:attack=3:release=50"
+)
+_NF = {}
+
+
+def noise_floor(path):
+    """The room's level in dBFS: the quietest tenth of 100 ms windows in the first 20 s (leave 3 s of silence at the
+    start of each take), clamped to -55..-35 for afftdn's nf."""
+    if path not in _NF:
+        cmd = ["ffmpeg", "-v", "error", "-t", "20", "-i", path, "-ac", "1", "-ar", "16000", "-f", "f32le", "-"]
+        x = np.frombuffer(subprocess.run(cmd, capture_output=True, check=True).stdout, np.float32)
+        win = x[: len(x) // 1600 * 1600].reshape(-1, 1600)
+        db = 20 * np.log10(np.sqrt((win.astype(np.float64) ** 2).mean(axis=1)) + 1e-9)
+        _NF[path] = float(min(-35.0, max(-55.0, np.percentile(db, 10) - 1)))
+        print(f"  noise floor {os.path.basename(path)}: {_NF[path]:.0f} dBFS")
+    return _NF[path]
 
 lines = json.load(open("tts/lines.json", encoding="utf-8"))
 TEXT = {L["id"]: L["text"] for L in lines}
@@ -115,7 +137,7 @@ def decode(path, start=None, end=None):
     cmd = ["ffmpeg", "-v", "error"]
     if start is not None:
         cmd += ["-ss", f"{start:.3f}", "-to", f"{end:.3f}"]
-    cmd += ["-i", path, "-af", CLEAN, "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"]
+    cmd += ["-i", path, "-af", CLEAN.format(nf=round(noise_floor(path))), "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"]
     return np.frombuffer(subprocess.run(cmd, capture_output=True, check=True).stdout, np.float32).copy()
 
 
