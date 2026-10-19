@@ -246,6 +246,12 @@
   "text": "And all four hundred and sixty-two automated tests passed."
  },
  {
+  "id": "f4",
+  "voice": "af_heart",
+  "speed": 0.9,
+  "text": "You can try it today, on our hosted FISCO BCOS chain."
+ },
+ {
   "id": "t1",
   "voice": "af_heart",
   "speed": 0.9,

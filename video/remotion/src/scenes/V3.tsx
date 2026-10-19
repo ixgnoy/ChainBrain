@@ -370,6 +370,7 @@ export const ProofV3: React.FC = () => {
   const rej = r.word("f1", "rejected");
   const f2 = r.vo("f2");
   const f3 = r.vo("f3");
+  const f4 = r.vo("f4");
   const swap = easeInOut(clamp((t - (f2 - 0.4)) / 0.5));
   return (
     <Stage>
@@ -410,6 +411,11 @@ export const ProofV3: React.FC = () => {
       {/* right: the real explorer */}
       <div style={{ position: "absolute", left: 960, top: 190, opacity: settle(t - 0.4, 7), transform: `translateY(${(1 - settle(t - 0.4, 7)) * 40}px)` }}>
         <Browser media={{ src: "footage/explorer.mp4", kind: "video", playbackRate: 0.85 }} width={860} url="fisco-api-production-85c5.up.railway.app/explorer" aspect={720 / 1280} zoom={{ s: 1.2, fx: 0.1, fy: 0.1 }} />
+      </div>
+      {/* where to try it, as the voice says so (the bonus rewards a real deployment) */}
+      <div style={{ position: "absolute", left: 960, top: 760, display: "flex", alignItems: "center", gap: 14, opacity: settle(t - f4 - 0.2, 8), fontFamily: F.mono, fontSize: 26, color: C.blue, fontVariantLigatures: "none" }}>
+        <Globe size={26} />
+        Try it: fintechathon-lian-ai-nao.vercel.app
       </div>
       <Small p={settle(t - 3.5, 6)} style={{ left: 120, top: 850, fontSize: 19 }}>
         Mock e-HKD is test money, not the HKMA's e-HKD. Our team hosts the chain, and the phone shots were recorded on our test setup. Details: ChainBrain-security-self-assessment.pdf
