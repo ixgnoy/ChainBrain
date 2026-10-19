@@ -556,7 +556,7 @@ Last updated: 2026-10-19
 
 ---
 
-## Round 13 · 19 Oct 12:56–21:20 (paused while the app was closed) · Item 14, routines and auto-play on the real chain
+## Round 13 · 19 Oct 12:56–13:11 (the app was closed once mid-round) · Item 14, routines and auto-play on the real chain
 
 **What changed**
 - New `server/src/routines.ts`: a card's standing order, run by the server.
