@@ -69,7 +69,7 @@
   "id": "u1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It pays small amounts on its own, here to test versions of Exa and CoinGecko, over x402."
+  "text": "It pays small amounts on its own. Here the sellers are test versions of Exa and CoinGecko."
  },
  {
   "id": "x1",
@@ -141,7 +141,7 @@
   "id": "r1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It's your card, so you can cancel it mid-task, and in our demo the unspent money goes back."
+  "text": "It's your card, so you can cancel it mid-task and take back what's left."
  },
  {
   "id": "k1",

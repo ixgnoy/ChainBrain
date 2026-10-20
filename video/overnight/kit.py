@@ -41,8 +41,15 @@ s = re.sub(
 )
 s = s.replace(
     "The video has about 8 seconds of room under the 5-minute limit, so keep a brisk, natural pace.",
-    "At 145 words a minute the film runs about 4:51 (tools/pace.py), so keep a brisk, natural pace of 145 to 150, and keep the on-camera intro to about 4 seconds. With both an intro and a closing clip, read at 150 words a minute or the film reaches 5:00 (check with tools/pace.py --face).",
+    "At 145 words a minute the film runs about 4:49 (tools/pace.py), so keep a brisk, natural pace of 145 to 150, and keep the on-camera intro to about 5 seconds. With both an intro and a closing clip it runs 4:56 at 145 and 4:51 at 150, so lean towards 150 (check with tools/pace.py --face).",
 )
+# the last line as its own audio file, so the film never ends on the synthetic voice when there is no closing clip
+if "10-last-line.m4a" not in s:
+    z1 = html.escape(new["z1"], quote=False)
+    sec = (f'<section><h2><span class="file">10-last-line.m4a</span>The last line (record it even if you film it)'
+           f'<span class="tot">about 3 s</span></h2><ol><li><span class="sec">3.0s</span><span class="txt">{z1}</span></li></ol>'
+           f'<p class="sub">If you also film close.mov, the clip is used instead.</p></section>')
+    s = s.replace("</main>", sec + "</main>", 1) if "</main>" in s else s + sec
 
 # the audio review's coaching (research/audio.md, section 4) at the end of the kit
 import re  # noqa: E402

@@ -15,7 +15,7 @@ sections = json.loads("{" + re.search(r"SECTIONS = \{(.*?)\n\}", src, re.S).grou
 kit = dict(re.findall(r'^\s+"(n1|t1)": "(.*)",$', src.split("KIT = {", 1)[1].split("}", 1)[0], re.M))
 lines.update(kit)
 names = {"01": "01-hook", "02": "02-card", "03": "03-first-payment", "04": "04-xray", "05": "05-use-it", "06": "06-break-it",
-         "07": "07-why-it-held", "08": "08-hkma-proof", "09": "09-team"}
+         "07": "07-why-it-held", "08": "08-hkma-proof", "09": "09-team", "10": "10-last-line"}
 data = [{"file": names[k] + ".m4a", "lines": [{"id": i, "text": lines[i]} for i in ids]} for k, ids in sections.items()]
 
 page = """<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">

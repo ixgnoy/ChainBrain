@@ -1,5 +1,13 @@
 # Overnight video report: ranked, ready to cherry-pick
 
+> **Merged into `main` on 20 Oct 2026, 13:20 HKT (fast-forward), then three changes after review:**
+> - **u1** now reads "It pays small amounts on its own. Here the sellers are test versions of Exa and CoinGecko." The old "here to test versions of" was heard as "here to test".
+> - **r1** now reads "…cancel it mid-task and take back what's left." The app always revokes and then returns the balance, so "in our demo" was unneeded.
+> - **The last line (z1)** is a tenth recording file, `10-last-line.m4a`, so the film never ends on the synthetic voice; a `close.mov` clip still replaces it.
+>
+> Runtime at 145 wpm: 4:49, or 4:56 with a 5 s intro and a 3 s closing clip (4:51 at 150).
+
+
 Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 12:45 HKT.
 
 - Frames: [storyboard.html](storyboard.html)

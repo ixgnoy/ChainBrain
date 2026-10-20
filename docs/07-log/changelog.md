@@ -1,6 +1,28 @@
 # Changelog
 Last updated: 2026-10-20
 
+## 2026-10-20 (demo video v4.1: the overnight work merged)
+
+- **Merged:** the overnight branch `video-overnight`, as a fast-forward. Its report is [video/overnight/REPORT.md](../../video/overnight/REPORT.md).
+- **Script v4.1:** every spoken claim now matches the submitted PDFs and the code.
+  - Seven forbidden *attempts*, two of which are rule edits.
+  - We *play* a fooled agent and use its key.
+  - The agent *can* ask a question.
+  - The sellers are test versions of Exa and CoinGecko.
+  - Cancelling takes back what's left.
+  - 462 tests *passed* on 19 Oct.
+- **On screen:**
+  - Two real hashes held full screen.
+  - The judging rubric's own words on the attacks.
+  - Larger disclaimers, kept clear of the subtitles.
+  - Simplified Chinese subtitles, off by default until a team member checks them.
+- **Audio and tools:**
+  - The mix's true peak fixed: v4 measured −0.6 dBTP.
+  - `tools/qc.py` checks the final MP4.
+  - `tools/pace.py` predicts the runtime at a speaking pace.
+  - The recording kit, teleprompter and `try-recordings.sh` are in `video/overnight/`.
+- **After review:** u1 and r1 reworded, and the last line added as a tenth recording file. The runtime at 145 wpm is 4:49, or 4:56 with both on-camera clips.
+
 ## 2026-10-20 (demo video v4, "how it works")
 
 - **Video v4 (4:46):** v3's AI Card story, plus a judge-facing overview. Storyboard and decisions: [video/STORYBOARD-v4.md](../../video/STORYBOARD-v4.md).

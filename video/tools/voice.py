@@ -37,6 +37,8 @@ FOOT_DIR = OUT if OUT else "remotion/public/footage"
 if OUT:
     os.makedirs(VO_DIR, exist_ok=True)
 SR = 48000
+# "10" is the last line as audio too: a close.mov clip, when there is one, replaces it.
+# (overnight/teleprompter.py and try-recordings.sh read this dict as JSON: keep comments out of it)
 SECTIONS = {
     "01": ["m1", "m2", "m3"],
     "02": ["n1", "n2", "n3", "n4"],
@@ -47,6 +49,7 @@ SECTIONS = {
     "07": ["y1", "y2", "y3", "w1", "w1b", "w2", "w3"],
     "08": ["h1", "h2", "f1", "f2", "f3"],
     "09": ["t1"],
+    "10": ["z1"],
 }
 CLIPS = {"intro": "i1", "close": "z1", "team": "t1"}
 # Phone-voice clean-up (video/overnight/research/clean-chain.txt): rumble cut, FFT denoise at the file's own measured
