@@ -1,6 +1,6 @@
 # Overnight video report: ranked, ready to cherry-pick
 
-Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 12:35 HKT.
+Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 12:45 HKT.
 
 - Frames: [storyboard.html](storyboard.html)
 - Research and reviews: [research/](research/)
@@ -48,6 +48,14 @@ The five changes that matter most, best first. Picking the whole range includes 
 **On-camera clips eat the margin.** `python3 tools/pace.py remotion/src/vo-words.json remotion/src/edit.json 145 --face intro=5 close=3` gave exactly **5:00.0**, right on the cap. `fbce3a2` shortens the ending slide from 8 s to 6 s when the last line was said on camera: now **4:58.0 at 145** and 4:52.5 at 150 with both clips, and a 4 s intro alone at 145 gives 4:55.5. So with both clips, read at 150 wpm, or keep the intro to about 4 s and skip the closing clip. A team clip replaces the portrait slide and costs almost nothing. Measure the real takes with `--face` before the final build.
 
 ### If the owner's voice does not arrive in time
+
+**Easiest: merge the ready-made branch `video-safe`.** It's `main` plus the screen and audio changes, with the conflicts below already resolved. It type-checks and its stills look right. Runtime is 4:51 with Sarah's voice. Run this on `main`, then rebuild:
+
+```bash
+git merge --ff-only video-safe
+```
+
+See `video/overnight/SAFE.md` on that branch for exactly what it adds. Or, by hand:
 
 Sarah's audio says the v4 words, and the ElevenLabs free quota has 178 characters left, so it can't voice v4.1. Don't pick the script commits; two voices in one film sound odd. Pick the screen and audio set instead (tested on `9bcd289`):
 
