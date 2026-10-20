@@ -41,7 +41,7 @@ s = re.sub(
 )
 s = s.replace(
     "The video has about 8 seconds of room under the 5-minute limit, so keep a brisk, natural pace.",
-    "At 145 words a minute the film runs about 4:51 (tools/pace.py), so keep a brisk, natural pace of 145 to 150, and keep the on-camera intro under 5 seconds.",
+    "At 145 words a minute the film runs about 4:51 (tools/pace.py), so keep a brisk, natural pace of 145 to 150, and keep the on-camera intro to about 4 seconds. With both an intro and a closing clip, read at 150 words a minute or the film reaches 5:00 (check with tools/pace.py --face).",
 )
 
 # the audio review's coaching (research/audio.md, section 4) at the end of the kit

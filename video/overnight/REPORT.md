@@ -1,6 +1,6 @@
 # Overnight video report: ranked, ready to cherry-pick
 
-Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 12:40 HKT.
+Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 12:50 HKT.
 
 - Frames: [storyboard.html](storyboard.html)
 - Research and reviews: [research/](research/)
@@ -44,6 +44,8 @@ The five changes that matter most, best first. Picking the whole range includes 
 - Chinese subtitles, off by default (`d3c6f87` `399a15a` `eeed484` `1ea1eeb`).
 
 **Runtime.** The review rounds had grown the script from 534 to 602 words, and at the owner's coached 145 wpm that ran **5:13.5, over the cap**. `d3ffd3b` trims it back to 549 words (every accuracy fix kept) and adds `tools/pace.py`. Simulated with `layout.py`: **4:51 at 145 wpm, 4:45.5 at 150, 4:55.5 at 140** (v4 was 4:46 at 145). Keep any on-camera intro under 5 s, and run `python3 tools/pace.py remotion/src/vo-words.json remotion/src/edit.json 145` after any script change. `qc.py` fails anything over 5:00. Subtitles simulated at the owner's pace peak at 16.2 cps at 140 wpm, 16.6 at 145 and 17.0 at 150. The 17 cps target holds after a comma in h1 gave the HKMA line a natural page break.
+
+**On-camera clips eat the margin.** `python3 tools/pace.py remotion/src/vo-words.json remotion/src/edit.json 145 --face intro=5 close=3` gives exactly **5:00.0**, right on the cap. At 150 wpm the same clips give 4:54.5, and a 4 s intro alone at 145 gives 4:55.5. So with both clips, read at 150 wpm, or keep the intro to about 4 s and skip the closing clip. A team clip replaces the portrait slide and costs almost nothing. Measure the real takes with `--face` before the final build.
 
 ### If the owner's voice does not arrive in time
 
