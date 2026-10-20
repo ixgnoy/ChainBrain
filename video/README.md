@@ -1,6 +1,6 @@
 # ChainBrain demo video
 
-The 4:46 FinTechathon demo video (v4: the AI Card, with a "how it works" X-ray): `out/InternationalAI-ChainBrain-DemoVideo.mp4`, with its `.srt` and `poster.jpg`.
+The FinTechathon demo video (delivered v4 cut 4:46; with the v4.1 script about 4:51 at 145 wpm, see overnight/REPORT.md) (v4: the AI Card, with a "how it works" X-ray): `out/InternationalAI-ChainBrain-DemoVideo.mp4`, with its `.srt` and `poster.jpg`.
 
 - Script and shot list: [SCRIPT.md](SCRIPT.md); the approved storyboard and why: [STORYBOARD-v4.md](STORYBOARD-v4.md) (the earlier [v3](STORYBOARD-v3.md)). Credits and licences: [CREDITS.md](CREDITS.md).
 - The edit: `remotion/src/edit.json` (scenes, footage cuts, voice anchors). `tools/layout.py` turns it into `remotion/src/timeline.json` (scene times on the 120 BPM grid, voice start times); `tools/cues.py` adds the music cues.

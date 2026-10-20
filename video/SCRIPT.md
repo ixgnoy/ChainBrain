@@ -1,6 +1,6 @@
 # ChainBrain demo video: script and shot list
 
-v6, 20 Oct 2026, as built (v4 edit: the AI Card with a "how it works" X-ray); voice-over updated to v4.1 for accuracy (`overnight/research/script-v41.md`). 4:46.5 at 120 BPM (one beat = 15 frames). Why this story: [STORYBOARD-v4.md](STORYBOARD-v4.md). Exact timings: `remotion/src/timeline.json` (built from `remotion/src/edit.json`); voice-over text: `tts/lines.json`.
+v6, 20 Oct 2026, as built (v4 edit: the AI Card with a "how it works" X-ray); voice-over updated to v4.1 for accuracy; timings below are v4's, and the v4.1 runtime is about 4:51 at 145 wpm (`tools/pace.py`) (`overnight/research/script-v41.md`). 4:46.5 at 120 BPM (one beat = 15 frames). Why this story: [STORYBOARD-v4.md](STORYBOARD-v4.md). Exact timings: `remotion/src/timeline.json` (built from `remotion/src/edit.json`); voice-over text: `tts/lines.json`.
 
 - **USP:** ChainBrain gives your AI its own card. Its own smart contract sets the limits; a second AI watches every payment and can only make the rules stricter.
 - **Voice:** ElevenLabs `eleven_v4`, voice Sarah, generated with `tts/eleven.py`; word timings from the API's character timestamps. Wording reviewed against 2025-2026 research on AI-sounding writing.

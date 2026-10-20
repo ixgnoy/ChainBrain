@@ -14,7 +14,7 @@ Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a strai
 git cherry-pick 9bcd289..video-overnight
 ```
 
-**2. Record the v4.1 kit in the owner's voice at 145–150 words a minute, then build.** The kit takes about an hour. Slower than 140 wpm risks the 5:00 cap; see Runtime below. Then run `tools/voice.py` and `sh video/build.sh`. The build now ends with `tools/qc.py`.
+**2. Record the v4.1 kit in the owner's voice at 145–150 words a minute, then build.** The kit takes about an hour. Slower than 140 wpm risks the 5:00 cap. With both an on-camera intro and a closing clip, read at 150 wpm or keep the intro to about 4 s (see Runtime below). Run every tool from `video/`, with `.venv/bin/python` for `voice.py`. `build.sh` already calls it. `qc.py` prints FAIL lines but does not stop the build, so read its output. Then run `tools/voice.py` and `sh video/build.sh`. The build now ends with `tools/qc.py`.
 
 **3. Two checks only a human can do.**
 - Confirm `SENTINEL_PK` is set on Railway. Without it, "freezes the card" is only a hold, and line w2 must say "holds".
@@ -26,7 +26,7 @@ The five changes that matter most, best first. Picking the whole range includes 
 
 | # | Change | Commits to cherry-pick | Expected effect | Minutes | Risk |
 |---|---|---|---|---|---|
-| 1 | **Record the v4.1 script.** Every spoken claim now matches the evidence: test sellers stand in for Exa and CoinGecko; the live model *can* ask a question but didn't in testing; we *play* a fooled agent and force its key; seven forbidden *attempts*; US$150,000+ sent away; a stolen key "still only pays your listed sellers, up to the cap"; "462 tests passed" on 19 Oct; no refund promise, no public-chain claim. 549 words, fitted to **4:51 at 145 wpm**. | `860094b` `281dd3a` `789349f` `7763ef5` `3bca10a` `b52d9fd` `61678ad` `d3ffd3b` `8245a37`, plus `d3c6f87` (the subtitle file they edit) | Security & compliance (30%) is judged by people who can read our security PDF. A line the PDF contradicts costs more than any visual. | 5 to pick, about 60 to record with the kit | Low. Without the recording, use the fallback below. |
+| 1 | **Record the v4.1 script.** Every spoken claim now matches the evidence: test sellers stand in for Exa and CoinGecko; the live model *can* ask a question but didn't in testing; we *play* a fooled agent and force its key; seven forbidden *attempts*; US$150,000+ sent away; a stolen key "still only pays your listed sellers, up to the cap"; "462 tests passed" on 19 Oct; no refund promise, no public-chain claim. 541 words, fitted to **4:51 at 145 wpm**. | `860094b` `281dd3a` `789349f` `7763ef5` `3bca10a` `b52d9fd` `61678ad` `d3ffd3b` `8245a37`, plus `d3c6f87` (the subtitle file they edit) | Security & compliance (30%) is judged by people who can read our security PDF. A line the PDF contradicts costs more than any visual. | 5 to pick, about 60 to record with the kit | Low. Without the recording, use the fallback below. |
 | 2 | **Two real hashes, held full screen.** The block 11 payment (1.8 s) and the block 13 refused transfer (1.6 s), each with its full hash, status and explorer address. All nine hashes in the film are in the execution-evidence PDF. | `77d4822` `8cc1d81` | Task completion (40%) is judged on transaction hashes. A fresh judge moved this criterion from 28 to 33. | 2 | Low |
 | 3 | **The rubric's own words on screen.** Prompt injection, data extraction, privilege escalation and induced transfer on the four attacks; clarification and fallback on the two beats that show them. | `056dd8c` `81546ed` `281dd3a` | 60 of 100 points become easy to tick for a judge with the rubric open | 2 | Very low |
 | 4 | **Clean the phone voice at its real noise floor,** and follow the kit's coaching: 3 s of room tone, 15–20 cm, 45° off-axis. | `fd0c90f` | The first thing a judge hears is a room, not a phone | 2, plus one A/B listen | Low |
@@ -43,7 +43,7 @@ The five changes that matter most, best first. Picking the whole range includes 
 - The "A.I. versus A.I." subtitle break (`9e4ef9b`).
 - Chinese subtitles, off by default (`d3c6f87` `399a15a` `eeed484` `1ea1eeb`).
 
-**Runtime.** The review rounds had grown the script from 534 to 602 words, and at the owner's coached 145 wpm that ran **5:13.5, over the cap**. `d3ffd3b` trims it back to 549 words (every accuracy fix kept) and adds `tools/pace.py`. Simulated with `layout.py`: **4:51 at 145 wpm, 4:45.5 at 150, 4:55.5 at 140** (v4 was 4:46 at 145). Keep any on-camera intro under 5 s, and run `python3 tools/pace.py remotion/src/vo-words.json remotion/src/edit.json 145` after any script change. `qc.py` fails anything over 5:00. Subtitles simulated at the owner's pace peak at 16.2 cps at 140 wpm, 16.6 at 145 and 17.0 at 150. The 17 cps target holds after a comma in h1 gave the HKMA line a natural page break.
+**Runtime.** The review rounds had grown the script from 534 to 602 words, and at the owner's coached 145 wpm that ran **5:13.5, over the cap**. `d3ffd3b` trims it back to 541 words (every accuracy fix kept) and adds `tools/pace.py`. Simulated with `layout.py`: **4:51 at 145 wpm, 4:45.5 at 150, 4:55.5 at 140** (v4 was 4:46 at 145). Keep any on-camera intro under 5 s, and run `python3 tools/pace.py remotion/src/vo-words.json remotion/src/edit.json 145` after any script change. `qc.py` fails anything over 5:00. Subtitles simulated at the owner's pace peak at 16.2 cps at 140 wpm, 16.6 at 145 and 17.0 at 150. The 17 cps target holds after a comma in h1 gave the HKMA line a natural page break.
 
 **On-camera clips eat the margin.** `python3 tools/pace.py remotion/src/vo-words.json remotion/src/edit.json 145 --face intro=5 close=3` gave exactly **5:00.0**, right on the cap. `fbce3a2` shortens the ending slide from 8 s to 6 s when the last line was said on camera: now **4:58.0 at 145** and 4:52.5 at 150 with both clips, and a 4 s intro alone at 145 gives 4:55.5. So with both clips, read at 150 wpm, or keep the intro to about 4 s and skip the closing clip. A team clip replaces the portrait slide and costs almost nothing. Measure the real takes with `--face` before the final build.
 
@@ -55,7 +55,31 @@ Sarah's audio says the v4 words, and the ElevenLabs free quota has 178 character
 git cherry-pick 9e4ef9b 056dd8c 81546ed b366b98 6edcc66 fd0c90f 32eb822 d5c9359 c854df2 ccee08c
 ```
 
-Then decide on `20a7efd` (legibility) and `da320ef` (motion). Both conflict only on text lines the script commits changed, so keep main's text in the conflicting lines. `77d4822` (the hash hold) conflicts only on the generated `timeline.json`. To resolve it, keep main's side, re-run `tools/layout.py` and `tools/cues.py`, and change `cues.py`'s `"pullback"` to `end("x7") + 2.2 + 0.6` as in `3bca10a`.
+Then decide on `20a7efd` (legibility) and `da320ef` (motion). Each conflicts only on lines whose wording the script commits changed. For each conflicting hunk, edit the file by hand: keep main's wording and take the branch's new `fontSize` and `top` values, which are the point of `20a7efd`. Then run `git add <file>` and `git cherry-pick --continue`.
+
+`77d4822` (the hash hold) conflicts only on the generated `timeline.json`. Resolve it with:
+
+```bash
+git checkout --ours video/remotion/src/timeline.json
+```
+
+```bash
+cd video && python3 tools/layout.py remotion/src/edit.json remotion/src/vo-words.json remotion/src/timeline.json && cd ..
+```
+
+Then edit `video/tools/cues.py`: set `"pullback"` to `round(end("x7") + 2.2 + 0.6, 3)`. In this subset the hold is 2.2 s (`HOLD` in `V4.tsx` at `77d4822`); the full branch later shortens it to 1.8 s. Then run:
+
+```bash
+cd video && python3 tools/cues.py remotion/src/timeline.json remotion/src/vo-words.json && cd ..
+```
+
+```bash
+git add video/remotion/src/timeline.json video/tools/cues.py && git cherry-pick --continue
+```
+
+**Pick the range or the subset above, not the per-row commit lists in the table.** Those lists show where each change lives, but picked alone several of them conflict.
+
+**The branch's own preview runs 4:30** because its changed lines use the fast Kokoro voice (about 167 wpm). The 4:51 figure is the same script simulated at the owner's 145 wpm, which is the number that matters.
 
 ## Full ranked list
 
