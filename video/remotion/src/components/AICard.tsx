@@ -4,7 +4,7 @@ import { BrandMark } from "./BrandMark";
 import { C, F } from "../theme";
 
 // The AI Card: the product's idea as one object. Front: the agent it belongs to, its contract address tail and its
-// limit. Back: the rules its smart contract enforces (the hosted-chain proof card, docs/redteam/hosted-proof.json).
+// limit. Back: the rules its smart contract enforces (the hosted-chain proof card, docs/submission/redteam/hosted-proof.json).
 export type Agent = { name: string; src?: string; imgScale?: number };
 
 export const CARD_RATIO = 0.63;

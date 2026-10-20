@@ -2,7 +2,7 @@
 //   sign up (funded) -> a card with its own agent key (create + fund) -> the card's agent pays x402 sellers ->
 //   "straight to the chain" refused (reverted) -> a privilege-escalation chat whose agent-key setCap reverts -> revoke.
 // Every hash is appended to EVIDENCE_FILE with what it must show; scripts/verify-evidence.ts re-checks them on the chain.
-//   API=https://fisco-api-production-85c5.up.railway.app EVIDENCE_FILE=../docs/evidence-fisco-railway.json \
+//   API=https://fisco-api-production-85c5.up.railway.app EVIDENCE_FILE=../docs/submission/evidence/evidence-fisco-railway.json \
 //     FISCO_RPC=https://fisco-node-production.up.railway.app pnpm tsx scripts/visitor-evidence.ts
 // Locally against the dev stack: API=http://localhost:8787 EVIDENCE_FILE=/tmp/ev.json pnpm tsx scripts/visitor-evidence.ts
 import { createPublicClient, createWalletClient, defineChain, http, parseEventLogs, type Address, type Hex } from "viem";

@@ -37,3 +37,7 @@ video/remotion/public/fonts/
 video/remotion/public/ui/
 video/remotion/public/brand/
 video/remotion/public/team/
+
+# Docs: only the submission pack is tracked; everything else under docs/ stays local
+/docs/*
+!/docs/submission/

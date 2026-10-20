@@ -16,7 +16,7 @@
 - **We couldn't find this combination anywhere.** Coinbase, Stripe, Visa, Mastercard, Google AP2, Skyfire, Turnkey and Privy keep limits on their own servers. Safe and session keys put them on-chain, but only for developers.
 
 **Proof we can show (all real, from the repo):**
-- On our hosted FISCO BCOS chain, the agent's own key tried 7 forbidden payments, and all 7 were rejected, with hashes (`docs/redteam/hosted-proof.json`).
+- On our hosted FISCO BCOS chain, the agent's own key tried 7 forbidden payments, and all 7 were rejected, with hashes (`docs/submission/redteam/hosted-proof.json`).
 - In the worst-case suite, 55 attacks got through 0 times.
 - Contract fuzzing found 0 rule breaks in 128,000 random calls.
 - In live-model runs, the AI acted on an attack 0 times in 8 (`docs/redteam-report.md`).
