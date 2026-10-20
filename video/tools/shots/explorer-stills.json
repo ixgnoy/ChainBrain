@@ -1,5 +1,0 @@
-{ "url": "https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x15b0d30f82cd7efc94f5b534277a71ddaa439ecd5576315ae94cf9cbdccf9333", "settle": 4, "viewport": {"width": 1100, "height": 620}, "dpr": 2, "steps": [
-  {"probe": "ex-success"},
-  {"goto": "https://fisco-api-production-85c5.up.railway.app/explorer#/tx/0x91525ada450e84a0afb9f4fb255d57df3c910d1eb8af78acb2b10f40ed7e7745"}, {"wait": 4},
-  {"probe": "ex-reverted"}
-] }

@@ -1,6 +1,0 @@
-{ "url": "http://localhost:5174/?server=builtin#brain", "settle": 6, "steps": [
-  {"wait": 2.5},
-  {"click": "Pay Exa"}, {"wait": 7.0},
-  {"click": "Try Harbour Wines"}, {"wait": 7.5},
-  {"probe": "brain-end"}
-] }
