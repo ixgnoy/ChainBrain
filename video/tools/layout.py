@@ -14,7 +14,7 @@ Keeping the picture on the words (so what is said is what is shown)
   placed with `at` / `after`;
 - `fit`: the first segments are trimmed so each cut lands on a word of one line (one beat of picture per phrase).
 On-camera clips (remotion/src/face.json, from tools/voice.py): a scene with `face: <clip>` lasts as long as the clip
-and is dropped when the clip isn't there; `unless_face: <clip>` drops a scene or a line when that clip is there.
+and is dropped when the clip isn't there; `unless_face: <clip>` drops a scene or a line when that clip is there; `len_with_face: {clip: s}` sets a scene's length when that clip is there.
 Keeps the existing `cues` block (tools/cues.py rewrites it).
 
 usage: python3 tools/layout.py remotion/src/edit.json remotion/src/vo-words.json remotion/src/timeline.json
@@ -78,6 +78,9 @@ for sc in edit["scenes"]:
     if sc.get("unless_face") in face:  # e.g. the portrait slide when the team filmed a clip
         continue
     sc = {**sc, "vo": [v for v in sc["vo"] if v.get("unless_face") not in face]}
+    for clip, n in sc.get("len_with_face", {}).items():  # e.g. the ending slide is shorter when the line was said on camera
+        if clip in face:
+            sc = {**sc, "len": n}
     segs = [list(s) for s in sc.get("segs", [])]
     if segs and sc.get("fit"):
         f = sc["fit"]

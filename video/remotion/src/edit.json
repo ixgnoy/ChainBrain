@@ -495,7 +495,10 @@
      "at": 0.7,
      "unless_face": "close"
     }
-   ]
+   ],
+   "len_with_face": {
+    "close": 6.0
+   }
   }
  ]
 }
