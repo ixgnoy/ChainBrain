@@ -54,15 +54,15 @@ const Rail: React.FC = () => {
 const beatsGet: Beat[] = [
   { t: 0, head: "Describe the job\nin one sentence." },
   { t: segAt("get", 2) - 0.2, head: "It builds the card\nin front of you.", cap: { text: "you approve every rule", tone: "blue" } },
-  { t: segAt("get", 3) - 0.1, head: "Slide to approve,\nand it's live.", cap: { text: "its own smart contract, on FISCO BCOS", tone: "blue" } },
+  { t: segAt("get", 3) - 0.1, head: "Slide to approve,\nthe card goes live.", cap: { text: "its own smart contract, on FISCO BCOS", tone: "blue" } },
 ];
 const beatsUse1: Beat[] = [
-  { t: 0, tag: "clarification", head: "It can ask one\nquestion first.", cap: { text: "HK$0.80 in total, or per lookup?", tone: "plain" } },
+  { t: 0, tag: "clarification", head: "It can ask you\na question first.", cap: { text: "HK$0.80 in total, or per lookup?", tone: "plain" } },
   { t: segAt("use1", 2), head: "It pays small amounts\non its own.", cap: { text: "test versions of Exa and CoinGecko, over x402", tone: "blue", logos: [["exa-icon-square.svg", "#0143D9"], ["coingecko-symbol.svg", "#FFFFFF"], ["x402-logo-dark.png", "#FFFFFF"]] } },
 ];
 const beatsUse2: Beat[] = [
   { t: 0, head: "Above your limit,\nyou sign too.", cap: { text: "Nansen charges HK$0.40. Slide to approve.", tone: "plain", logos: [["nansen-icon-black.svg", "#FFFFFF"]] } },
-  { t: segAt("use2", 2), tag: "fallback", head: "Unlisted sellers\nget refused.", cap: { text: "the agent re-plans or asks you", tone: "red" } },
+  { t: segAt("use2", 2), tag: "fallback", head: "Unlisted sellers\nget refused.", cap: { text: "the agent re-plans or checks with you", tone: "red" } },
   { t: segAt("use2", 4), head: "It negotiates\nthe price down.", cap: { text: "from HK$12.00 to HK$8.80, with a test seller", tone: "blue" } },
   { t: segAt("use2", 6), head: "Cancel any time,\neven mid-task.", cap: { text: "what's left comes back", tone: "plain" } },
 ];
@@ -73,7 +73,7 @@ const beatsAttack: Beat[] = [
 ];
 const beatsWatch: Beat[] = [
   { t: 0, head: "A second AI\nwatches." },
-  { t: segAt("watch", 1), head: "It checks\nevery seller.", cap: { text: "TradeWire blocked, risk 9/10", tone: "red" } },
+  { t: segAt("watch", 1), head: "It keeps checking\nevery seller.", cap: { text: "TradeWire blocked, risk 9/10", tone: "red" } },
   { t: segAt("watch", 3), head: "It learns\nhow you buy.", cap: { text: "and forgets anything you ask", tone: "blue" } },
   { t: segAt("watch", 4), head: "Repeated attempts\nfreeze the card.", cap: { text: "only you can unfreeze it", tone: "red" } },
 ];
@@ -157,7 +157,7 @@ export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) =
         </Whip>
       </At>
       <At id="breakT">
-        <ActTitle title="Let’s break it." />
+        <ActTitle title="Let’s try to break it." size={190} />
       </At>
       <At id="attack">
         <Whip id="attack" dir={-1}>

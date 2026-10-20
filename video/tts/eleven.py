@@ -71,7 +71,7 @@ def api(method, path, body=None, query=None, tries=5, soft=False):
             if soft:
                 raise SoftFail(f"HTTP {e.code}")
             sys.exit(f"ElevenLabs {method} {path} failed: HTTP {e.code} {detail}")
-        except urllib.error.URLError as e:
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as e:  # a read timeout is not a URLError
             if attempt < tries - 1:
                 time.sleep(2 ** attempt)
                 continue
@@ -239,6 +239,26 @@ def cmd_lines(lines_path, out_dir, words_path, only):
     dur_path = os.path.join(out_dir, "dur.json")
     dur = json.load(open(dur_path)) if os.path.exists(dur_path) else {}
     spoken = [L.get("say_eleven", L["text"]) for L in lines]
+    # tempo: a time-stretch after generation (pitch kept), for voices or models that ignore voice_settings.speed
+    # (eleven_v4 does). The cache key leaves it out: changing it re-derives the WAVs from the saved MP3s, no API call.
+    tempo = float(cfg.get("tempo", 1.0))
+
+    def timed(words_1x, d):
+        """Word times at this tempo, kept inside the kept audio (the API's last word runs to the end of the untrimmed
+        file, trailing silence included; the WAV is trimmed, so an unclamped line would look ~0.5 s longer than it is)."""
+        out = []
+        for w in words_1x:
+            s_, e_ = min(w["s"] / tempo, d), min(w["e"] / tempo, d)
+            out.append({"w": w["w"], "s": round(s_, 3), "e": round(max(e_, s_), 3)})
+        return out
+
+    def stretch(wav_path, words_1x, d_1x):
+        if abs(tempo - 1.0) > 1e-3:
+            tmp = wav_path + ".tmp.wav"
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", wav_path, "-af", f"atempo={tempo}", "-ar", "48000", "-ac", "1", tmp], check=True)
+            os.replace(tmp, wav_path)
+        return timed(words_1x, d_1x / tempo), d_1x / tempo
+
     for i, L in enumerate(lines):
         if only and L["id"] not in only:
             continue
@@ -248,17 +268,33 @@ def cmd_lines(lines_path, out_dir, words_path, only):
         sig = hashlib.sha256(json.dumps([text, prev_t, next_t, cfg.get("voice_id"), model, cfg.get("voice_settings"), cfg.get("seed")]).encode()).hexdigest()[:16]
         meta_path = os.path.join(out_dir, f"{L['id']}.eleven.json")
         wav = os.path.join(out_dir, f"{L['id']}.wav")
-        if os.path.exists(meta_path) and os.path.exists(wav) and json.load(open(meta_path)).get("sig") == sig:
-            print(f"{L['id']}\tcached")
-            continue
-        audio, al = synth(text, cfg["voice_id"], model, cfg, prev_t, next_t)
         mp3 = os.path.join(out_dir, f"{L['id']}.mp3")
+        meta = json.load(open(meta_path)) if os.path.exists(meta_path) else {}
+        if meta.get("sig") == sig and os.path.exists(wav):
+            if abs(meta.get("tempo", 1.0) - tempo) < 1e-3:
+                if meta.get("words_1x"):  # timings come from the take itself, so an interrupted run can't leave them stale
+                    import soundfile as _sf
+                    d_now = _sf.info(wav).duration
+                    words[L["id"]] = timed(meta["words_1x"], d_now)
+                    dur[L["id"]] = round(d_now, 3)
+                print(f"{L['id']}\tcached")
+                continue
+            if os.path.exists(mp3):  # same take, new tempo: rebuild from the saved MP3
+                base = meta.get("words_1x") or [{"w": w["w"], "s": w["s"] * meta.get("tempo", 1.0), "e": w["e"] * meta.get("tempo", 1.0)} for w in words.get(L["id"], [])]
+                _, d1 = mp3_to_wav(mp3, wav)
+                words[L["id"]], dur[L["id"]] = stretch(wav, base, d1)
+                meta.update({"tempo": tempo, "words_1x": base})
+                json.dump(meta, open(meta_path, "w"), indent=1)
+                print(f"{L['id']}\tre-timed to tempo {tempo}")
+                continue
+        audio, al = synth(text, cfg["voice_id"], model, cfg, prev_t, next_t)
         open(mp3, "wb").write(audio)
         lead, d = mp3_to_wav(mp3, wav)
         sw = words_from_alignment(al, lead) if al else []
-        words[L["id"]] = align_words(L["text"].split(), sw) if sw else []
+        base = align_words(L["text"].split(), sw) if sw else []
+        words[L["id"]], d = stretch(wav, base, d)
         dur[L["id"]] = round(d, 3)
-        json.dump({"sig": sig, "model": model, "voice_id": cfg["voice_id"], "text": text}, open(meta_path, "w"), indent=1)
+        json.dump({"sig": sig, "model": model, "voice_id": cfg["voice_id"], "text": text, "tempo": tempo, "words_1x": base}, open(meta_path, "w"), indent=1)
         n = len(L["text"].split())
         print(f"{L['id']}\t{d:6.2f}s\t{n / d * 60:5.0f} wpm\t{L['text'][:70]}")
     json.dump(dur, open(dur_path, "w"), indent=1)

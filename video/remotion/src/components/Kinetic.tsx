@@ -18,6 +18,7 @@ export const Reveal: React.FC<{
   highlight?: Record<string, string>; // word -> colour
   maxWidth?: number;
   w?: number; // settle stiffness: higher lands harder (attacks), lower lands softer
+  times?: number[]; // seconds from the start when each word comes in (instead of delay and stagger), e.g. as it is spoken
 }> = ({
   text,
   delay = 0,
@@ -33,6 +34,7 @@ export const Reveal: React.FC<{
   w = 11,
   highlight = {},
   maxWidth,
+  times,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -56,7 +58,7 @@ export const Reveal: React.FC<{
         <div key={li} style={{ display: "block", whiteSpace: "nowrap" }}>
           {line.split(" ").map((word, wi) => {
             const i = idx++;
-            const p = settle(t - delay - i * stagger, w);
+            const p = settle(t - (times?.[i] ?? delay + i * stagger), w);
             const q = out !== undefined ? settle(t - out - i * stagger * 0.5, 13) : 0;
             const y = (1 - p) * 1.05 + q * -1.05;
             const clean = word.replace(/[.,:;!?]/g, "");

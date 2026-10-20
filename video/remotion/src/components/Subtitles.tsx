@@ -5,9 +5,10 @@ import timeline from "../timeline.json";
 import words from "../vo-words.json";
 import zhSubs from "../subs-zh.json";
 import { C, F } from "../theme";
+import { TYPESET } from "../scenes/Face";
 
 type Word = { w: string; s: number; e: number };
-export type Page = { text: string; start: number; end: number; zh?: string };
+export type Page = { id: string; text: string; start: number; end: number; zh?: string };
 
 // Optional Simplified Chinese line under each English page: one entry per English sentence (subs-zh.json).
 const ZH = zhSubs as { enabled: boolean; lines: Record<string, string[]> };
@@ -48,7 +49,7 @@ export function buildPages(): Page[] {
     const flush = () => {
       if (!cur.length) return;
       const ks = [...new Set(sent.slice(first, first + cur.length))];
-      const p: Page = { text: cur.map((w) => w.w).join(" "), start: t0 + cur[0].s - 0.05, end: t0 + cur[cur.length - 1].e + 0.3 };
+      const p: Page = { id: line.id, text: cur.map((w) => w.w).join(" "), start: t0 + cur[0].s - 0.05, end: t0 + cur[cur.length - 1].e + 0.3 };
       linePages.push({ p, ks });
       pages.push(p);
       first += cur.length;
@@ -74,19 +75,21 @@ export function buildPages(): Page[] {
 }
 
 const PAGES = buildPages();
+// a line an on-camera clip already sets in big type beside the face isn't repeated at the bottom (the .srt keeps it)
+const SHOWN = PAGES.filter((p) => !TYPESET.has(p.id));
 
 export const Subtitles: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
-  const i = PAGES.findIndex((x) => t >= x.start && t < x.end);
+  const i = SHOWN.findIndex((x) => t >= x.start && t < x.end);
   if (i < 0) return null;
-  const p = PAGES[i];
+  const p = SHOWN[i];
   const fadeIn = Math.min(1, (t - p.start) / 0.12);
   const fadeOut = Math.min(1, (p.end - t) / 0.12);
   // the Chinese line holds steady when the next page continues the same sentence
-  const prev = PAGES[i - 1];
-  const next = PAGES[i + 1];
+  const prev = SHOWN[i - 1];
+  const next = SHOWN[i + 1];
   const zhIn = prev && prev.zh === p.zh && p.start - prev.end < 0.2 ? 1 : fadeIn;
   const zhOut = next && next.zh === p.zh && next.start - p.end < 0.2 ? 1 : fadeOut;
   const zhOpacity = p.zh ? Math.min(zhIn, zhOut) : 0;

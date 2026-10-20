@@ -1,11 +1,12 @@
 # ChainBrain demo video
 
-The FinTechathon demo video (delivered v4 cut 4:46; with the v4.1 script about 4:51 at 145 wpm, see overnight/REPORT.md) (v4: the AI Card, with a "how it works" X-ray): `out/InternationalAI-ChainBrain-DemoVideo.mp4`, with its `.srt` and `poster.jpg`.
+The FinTechathon demo video (v4.2, 4:37: the AI Card with a "how it works" X-ray, in Chin Jun Quan's cloned voice, with his own intro and last line on camera): `out/InternationalAI-ChainBrain-DemoVideo.mp4`, with its `.srt` and `poster.jpg`.
 
 - Script and shot list: [SCRIPT.md](SCRIPT.md); the approved storyboard and why: [STORYBOARD-v4.md](STORYBOARD-v4.md) (the earlier [v3](STORYBOARD-v3.md)). Credits and licences: [CREDITS.md](CREDITS.md).
 - The edit: `remotion/src/edit.json` (scenes, footage cuts, voice anchors). `tools/layout.py` turns it into `remotion/src/timeline.json` (scene times on the 120 BPM grid, voice start times); `tools/cues.py` adds the music cues.
 - Shots and camera moves: `remotion/src/Main.tsx`; the story scenes: `remotion/src/scenes/V3.tsx` and `V4.tsx` (the X-ray board, the eight layers, stolen keys, the HKMA's four ideas).
 - Storyboard frames: `cd remotion && node scripts/stills.mjs <out_dir> 0.5 <t1> <t2> …` renders many stills with one bundle.
+- Storyboard for approval: `.venv/bin/python tools/board.py out/storyboard.html` writes one page with real frames of the current cut, each with the line it plays under, then the full script (lines changed since the last commit show the old wording struck through), plus a voice-only track beside it.
 
 ## Rebuild
 
@@ -21,7 +22,9 @@ sh video/build.sh
 
 ## Voice (ElevenLabs)
 
-The narration uses ElevenLabs (`eleven_v4`, voice Sarah; settings in `tts/eleven.json`).
+The narration uses ElevenLabs (`eleven_v4`) with Chin Jun Quan's instant voice clone, "Quan" (settings in `tts/eleven.json`).
+
+- `tempo` in `tts/eleven.json` (1.07) speeds the voice up after generation with the pitch kept, because `eleven_v4` ignores `voice_settings.speed`. Changing it re-derives the WAVs from the saved MP3s, so it spends no characters.
 
 - Put your key in `video/.env` as one line, `ELEVENLABS_API_KEY=...` (git-ignored), or export it in the shell.
 - `.venv/bin/python tts/eleven.py check` shows the plan, characters used and the models the key can use.
@@ -32,12 +35,13 @@ The narration uses ElevenLabs (`eleven_v4`, voice Sarah; settings in `tts/eleven
 ## The team's own voice (optional)
 
 - `out/recording-kit.html` lists every line with a target length, how to record, and the file names.
-- Put the section files in `footage/voice/` (01-hook.m4a to 09-team.m4a) and the on-camera clips in `footage/face/` (`intro.mov`, `close.mov`, optional `team.mov`).
+- Put the section files in `footage/voice/` (01-hook.m4a to 10-last-line.m4a) and the on-camera clips in `footage/face/` (`intro.mov`, `close.mov`, optional `team.mov`).
 - `.venv/bin/python tools/voice.py --dry` reports what it found; without `--dry` it does three things:
   - splits each file into its lines (a retaken line keeps its last reading) and cleans the audio;
   - times every word with Whisper, and trims the clips to their words;
   - writes the clips' lines (`i1`, `z1`, `t1`) into `tts/lines.json`.
-- `build.sh` then uses these recordings instead of the synthetic voice.
+- `build.sh` then uses these recordings instead of the synthetic voice. With clips but no section files, it voices every line with ElevenLabs (or Kokoro) first and imports the clips on top, so the intro and the last line play as filmed.
+- A portrait clip plays in the film's phone frame with its words set large as they are spoken (`remotion/src/scenes/Face.tsx`); the burned-in subtitles leave that line out, and the `.srt` keeps it.
 - The edit adds the clip scenes by itself (`face` scenes in `remotion/src/edit.json`). Without clips, the video is unchanged.
 
 ## Recordings (not in git; `video/footage/`)

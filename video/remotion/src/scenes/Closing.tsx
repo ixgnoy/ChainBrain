@@ -5,7 +5,7 @@ import { Stage } from "../components/Stage";
 import { C, F, clamp, easeOut, settle } from "../theme";
 
 // The drop: one huge line, centred inside the frame, on a warm stage.
-export const ActTitle: React.FC<{ title: string }> = ({ title }) => {
+export const ActTitle: React.FC<{ title: string; size?: number }> = ({ title, size = 230 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
@@ -24,7 +24,7 @@ export const ActTitle: React.FC<{ title: string }> = ({ title }) => {
             textAlign: "center",
             fontFamily: F.display,
             fontWeight: 600,
-            fontSize: 230,
+            fontSize: size,
             lineHeight: 0.92,
             letterSpacing: "-0.04em",
             color: C.text,

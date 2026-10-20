@@ -1,6 +1,20 @@
 # Changelog
 Last updated: 2026-10-20
 
+## 2026-10-20 (demo video v4.2: the owner's own voice and face)
+
+- **Voice:** the narration is now Chin Jun Quan's ElevenLabs instant voice clone, played 7% faster with the pitch kept. `eleven_v4` ignores the speed setting, so `tempo` in `video/tts/eleven.json` stretches the audio after generation.
+- **On camera:** his own intro and last line play as filmed.
+  - Both clips sit in the film's phone frame, with his words set large as he says them; the burned-in subtitle steps aside for those two lines, and the `.srt` keeps them.
+  - The intro reads "With Hao Wen and Yong Xi, we built ChainBrain."
+- **Script v4.2:** reworded to sound spoken, with linking words ("First", "Then", "Once you slide to approve", "On top of that", "Meanwhile", "In other words"). Every claim stays as in v4.1, and on-screen words that quote a line now match it exactly.
+- **Close:** the team slide plays with music only. The end card opens on the mark instead of repeating the line, and the code link is now github.com/ixgnoy/ChainBrain.
+- **Runtime:** 4:37.5 (v4 was 4:46.5).
+- **Still to redo:** the Simplified Chinese subtitles (still off) follow the v4.1 wording, so they need a new translation before they're turned on.
+- **Tools:**
+  - `video/tools/board.py` builds the approval storyboard: real frames, each with its line, the full script and a voice-only track.
+  - `video/build.sh` voices every line first, then imports the clips, and takes the poster from the AI Card scene.
+
 ## 2026-10-20 (demo video v4.1: the overnight work merged)
 
 - **Merged:** the overnight branch `video-overnight`, as a fast-forward. Its report is [video/overnight/REPORT.md](../../video/overnight/REPORT.md).

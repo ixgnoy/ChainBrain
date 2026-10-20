@@ -32,6 +32,7 @@
   - The proof scene shows these transactions: `docs/evidence-fisco-railway.json`.
   - "The card says no" shows block 13 (the forced transfer, reverted) as a screenshot.
   - The proof scene lists the 7 refused payments from `docs/redteam/hosted-proof.json` with their hashes.
+- **On camera:** Chin Jun Quan's intro and last line, filmed by him in portrait (`footage/face/`, not in git), shown in the film's phone frame.
 - **App UI crops:** cut from the phone recordings above (`tools/ui-stills.sh`, `tools/crops.py`); they are the app's real screens on its built-in network.
 - **Seller names:** Exa, CoinGecko, Nansen, DataPro, Harbour Wines, ShadyFeed and TradeWire appear as the app shows them on its built-in network.
   - DataPro, Harbour Wines, ShadyFeed and TradeWire are fictional demo sellers.
@@ -44,8 +45,9 @@
 
 ## Voice
 
-- ElevenLabs text to speech, model `eleven_v4`, premade voice "Sarah", generated with `tts/eleven.py`; word timings from the API's character timestamps. Check ElevenLabs' terms for your plan before publishing beyond the competition (the free plan's commercial terms are not stated on its pricing page).
-- Pronunciation checked with faster-whisper (MIT). The team's names are respelled for the voice only ("June Chuen", "Yong Shee"); subtitles keep the real spelling.
+- The narration is Chin Jun Quan's own voice: an ElevenLabs instant voice clone he made on his own account from his recording ("Quan"), model `eleven_v4`, generated with `tts/eleven.py`; word timings from the API's character timestamps. It plays 7% faster than generated, with the pitch kept (ffmpeg `atempo`). Check ElevenLabs' terms for your plan before publishing beyond the competition.
+- The intro and the last line are his own on-camera recordings (`footage/face/`, not in git), imported with `tools/voice.py`; their sound is the recording itself, cleaned and levelled.
+- Pronunciation checked with faster-whisper (MIT). Names can be respelled for a synthetic voice only (`say_eleven` in `tts/lines.json`); subtitles keep the real spelling.
 - Script wording reviewed against 2025-2026 research on AI-sounding writing (Wikipedia "Signs of AI writing", Kobak et al. 2025, Reinhart et al. 2025): no negative parallelism, stacked fragments, question-then-answer or dot-separated captions.
 - Offline fallback when no key is set: Kokoro TTS v1.0 (`kokoro-onnx`, MIT; model weights Apache-2.0).
 

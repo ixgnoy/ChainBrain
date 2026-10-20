@@ -11,6 +11,7 @@ import { Stage } from "../components/Stage";
 import { C, F, clamp, easeInOut, easeOut, settle } from "../theme";
 import timeline from "../timeline.json";
 import { sceneEnd, sceneStart, voAt, voEnd, wordAt } from "../vo";
+import { hasClip } from "./Face";
 
 // v3 story scenes (video/STORYBOARD-v3.md). Every time below is relative to the scene's start, taken from the
 // voice-over's word timings, so a re-recorded line moves its picture with it.
@@ -504,32 +505,39 @@ export const TeamSlide: React.FC = () => {
 };
 
 // ───────────────────────── Ending ─────────────────────────
-// The line, the mark, and where to try it.
+// The line, the mark, and where to try it. When the closing clip has just said the line on camera (scenes/Face.tsx),
+// the card opens on the mark instead of setting the line again.
 export const Ending: React.FC = () => {
   const t = useT();
   const r = rel("close");
-  const foot = settle(t - r.end("z1") - 0.3, 7);
+  const said = hasClip("close");
+  const k = said ? 0.15 : r.end("z1") + 0.3; // when the mark comes in
+  const foot = settle(t - k, 7);
   const len = sceneEnd("close") - sceneStart("close");
   const drift = 1 + 0.025 * clamp(t / len);
   const out = 1 - easeOut(clamp((t - (len - 0.5)) / 0.5)); // fade to black over the last half second
+  const y = said ? { mark: 330, links: 530, event: 760 } : { mark: 640, links: 740, event: 900 };
+  const big = said ? 1.5 : 1;
   return (
     <Stage>
       <AbsoluteFill style={{ transform: `scale(${drift})`, opacity: out }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 260 }}>
-        <Sequence from={Math.max(0, Math.round(r.vo("z1") * 30) - 6)} layout="none">
-          <Reveal text={"Give your AI a card,\nnot your wallet."} size={128} align="center" stagger={0.08} highlight={{ card: C.vermillion }} />
-        </Sequence>
+      {said ? null : (
+        <div style={{ position: "absolute", left: 0, right: 0, top: 260 }}>
+          <Sequence from={Math.max(0, Math.round(r.vo("z1") * 30) - 6)} layout="none">
+            <Reveal text={"Give your AI a card,\nnot your wallet."} size={128} align="center" stagger={0.08} highlight={{ card: C.vermillion }} />
+          </Sequence>
+        </div>
+      )}
+      <div style={{ position: "absolute", left: 0, right: 0, top: y.mark, display: "flex", justifyContent: "center", alignItems: "center", gap: 20 * big, opacity: foot }}>
+        <BrandMark size={56 * big} t={t - k} />
+        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 52 * big, color: C.text }}>ChainBrain</div>
+        <div style={{ fontFamily: F.cjk, fontWeight: 700, fontSize: 30 * big, color: C.muted }}>链AI脑</div>
       </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 640, display: "flex", justifyContent: "center", alignItems: "center", gap: 20, opacity: foot }}>
-        <BrandMark size={56} t={t - r.end("z1") - 0.3} />
-        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 52, color: C.text }}>ChainBrain</div>
-        <div style={{ fontFamily: F.cjk, fontWeight: 700, fontSize: 30, color: C.muted }}>链AI脑</div>
-      </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 740, display: "flex", justifyContent: "center", opacity: settle(t - r.end("z1") - 0.8, 7) }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: y.links, display: "flex", justifyContent: "center", opacity: settle(t - k - 0.5, 7) }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {[
           { icon: <Globe size={32} />, label: "Try it", value: "fintechathon-lian-ai-nao.vercel.app" },
-          { icon: <CodeXml size={32} />, label: "Code", value: "github.com/ixgnoy/Fintechathon-LianAiNao" },
+          { icon: <CodeXml size={32} />, label: "Code", value: "github.com/ixgnoy/ChainBrain" },
         ].map((l) => (
           <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ color: C.blue, display: "flex" }}>{l.icon}</div>
@@ -539,7 +547,7 @@ export const Ending: React.FC = () => {
         ))}
         </div>
       </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 900, textAlign: "center", fontFamily: F.body, fontWeight: 500, fontSize: 26, color: C.muted, opacity: settle(t - r.end("z1") - 1.2, 7) }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: y.event, textAlign: "center", fontFamily: F.body, fontWeight: 500, fontSize: 26, color: C.muted, opacity: settle(t - k - 0.9, 7) }}>
         FinTechathon 2026, International AI Track, Topic F
       </div>
       </AbsoluteFill>

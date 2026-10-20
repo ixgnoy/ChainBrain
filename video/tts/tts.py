@@ -35,6 +35,8 @@ for L in lines:
     if only and L["id"] not in only:
         continue
     voice = L.get("voice", "am_michael")
+    if voice == "team":  # a line the team says on camera (tools/voice.py imports it): a stand-in until then
+        voice = "af_heart"
     if voice not in avail:
         sys.exit(f"tts.py: unknown voice {voice}; available: {', '.join(sorted(avail))}")
     a, sr = k.create(L.get("say", L["text"]), voice=voice, speed=L.get("speed", 0.95), lang=L.get("lang", "en-us"))

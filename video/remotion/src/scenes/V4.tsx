@@ -613,7 +613,7 @@ export const WhyHeld: React.FC = () => {
       <Bracket x={110} y1={top + 6 * (H + G) + 26} y2={top + 8 * (H + G) + 26 - G} label="on-chain, holds without our server" color={C.vermillion} p={lit(t, lastAt + 0.3)} />
       {down > 0 ? (
         <div style={{ position: "absolute", left: 160, top: top + 3 * (H + G) - 30, padding: "10px 24px", borderRadius: 12, background: C.vermillion, color: "#fff", fontFamily: F.display, fontWeight: 600, fontSize: 40, transform: `rotate(-4deg) scale(${0.9 + 0.1 * down})`, opacity: down, boxShadow: "0 20px 50px rgba(240,78,35,0.4)" }}>
-          even if our whole server is taken over
+          even if our server is taken over
         </div>
       ) : null}
     </Stage>

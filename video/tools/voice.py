@@ -9,7 +9,8 @@ inputs (git-ignored, see out/recording-kit.html):
   footage/face/{intro,close,team}.(mov|mp4)      on-camera clips, each optional
 outputs:
   remotion/public/audio/vo/<id>.wav, and those lines' word timings merged into remotion/src/vo-words.json
-  remotion/public/footage/face-<clip>.mp4 + remotion/src/face.json (trim, length, line) for the on-camera scenes
+  remotion/public/footage/face-<clip>.mp4 (its own shape and size) + remotion/src/face.json (trim, length, line,
+  width, height) for the on-camera scenes
   tts/lines.json: the clips' lines (i1 intro, z1 close, t1 team) take the words actually said
 A line read more than once keeps its last reading before the next line starts.
 """
@@ -89,10 +90,18 @@ FIXES = [
     (r"\bchain ?brain\b", "ChainBrain"),
     (r"\b(jun|june)[ -]?(quan|chuen|chuan|kwan|kuan|chen|chun)\b", "Jun Quan"),
     (r"\b(hao|how)[ -]?(wen|when|win|wan)\b", "Hao Wen"),
-    (r"\b(yong|young)[ -]?(xi|shee|she|si|see|sea|shi)\b", "Yong Xi"),
+    (r"\b(yong|young|yang)[ -]?(xi|shee|she|si|see|sea|shi)\b", "Yong Xi"),
     (r"\bfisco\b", "FISCO"),
     (r"\bbcos\b", "BCOS"),
 ]
+
+
+# what the kit asks each clip to say: the subtitles use these words when the take broadly matches them (Whisper
+# mishears names and accents: "Jun Chen", "E-Build Chen brand"); a take in other words keeps Whisper's text
+CLIP_SCRIPT = {
+    "i1": "Hi, I'm Jun Quan. With Hao Wen and Yong Xi, we built ChainBrain.",
+    "t1": "I'm Jun Quan. I'm Hao Wen. I'm Yong Xi. And we built ChainBrain.",
+}
 
 
 def fix_names(text):
@@ -295,18 +304,22 @@ for clip, lid in CLIPS.items():
     db, thr = level(full)
     a = max(0.0, onset(db, thr, 0.0, heard[0]["e"]) - 0.45)
     b = min(dur, offset(db, thr, heard[-1]["s"], dur) + 0.7)
-    said = re.sub(r"\s+", " ", " ".join(raw)).strip()
-    if clip != "close":  # the intro and team lines are said in their own words: subtitles follow what was said
-        TEXT[lid] = fix_names(said[0].upper() + said[1:])
-    elif SequenceMatcher(None, tokens(said), tokens(TEXT[lid])).ratio() < 0.8:
-        report.append((lid, f"close clip says: {said!r}", 0, 0))
+    said = fix_names(re.sub(r"\s+", " ", " ".join(raw)).strip())
+    script = CLIP_SCRIPT.get(lid) or TEXT.get(lid, "")
+    match = SequenceMatcher(None, tokens(said), tokens(script)).ratio()
+    if match >= 0.45:
+        TEXT[lid] = script
+    else:  # said in other words: the subtitles follow what was said
+        TEXT[lid] = said[0].upper() + said[1:]
+        report.append((lid, f"{clip} clip differs from the kit ({match:.2f}): {said!r}", 0, 0))
     y = full[int(a * SR): int(b * SR)].copy()
     new_words[lid] = times_for(TEXT[lid], heard, a)
-    face[clip] = {"src": f"footage/face-{clip}.mp4", "len": round(b - a, 3), "line": lid}
+    vw, vh = (int(v) for v in subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", src], capture_output=True, text=True, check=True).stdout.strip().split("x")[:2])
+    face[clip] = {"src": f"footage/face-{clip}.mp4", "len": round(b - a, 3), "line": lid, "w": vw, "h": vh}
     if not DRY:
         sf.write(f"{VO_DIR}/{lid}.wav", fade(y), SR, subtype="PCM_16")
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{a:.3f}", "-i", src, "-t", f"{b - a:.3f}",
-                        "-vf", "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,fps=30,format=yuv420p",
+                        "-vf", "fps=30,format=yuv420p",  # its own shape: a portrait clip stays portrait (Face.tsx frames it)
                         "-an", "-c:v", "libx264", "-crf", "16", f"{FOOT_DIR}/face-{clip}.mp4"], check=True)
     report.append((lid, f"{clip} clip, trimmed {a:.2f}-{b:.2f}s", round(b - a, 2), 1.0))
 

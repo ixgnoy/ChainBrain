@@ -15,151 +15,157 @@
   "id": "m3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Most people would let an agent handle routine tasks. Only nine percent would let it buy on its own."
+  "text": "Most people would let an agent handle routine tasks, but only nine percent would let it buy on its own."
+ },
+ {
+  "id": "i1",
+  "voice": "team",
+  "speed": 1.0,
+  "text": "Hi, I'm Jun Quan. With Hao Wen and Yong Xi, we built ChainBrain."
  },
  {
   "id": "n1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "This is ChainBrain. We give your AI its own card."
+  "text": "So instead of your wallet, we give your AI its own card."
  },
  {
   "id": "n2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Every agent, Claude, ChatGPT, or ours, gets its own AI Card."
+  "text": "Whether it's Claude, ChatGPT or ours, every agent gets its own AI Card."
  },
  {
   "id": "n3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Its limits live in the card's own smart contract, on FISCO BCOS."
+  "text": "The card's limits live in its own smart contract, on FISCO BCOS."
  },
  {
   "id": "n4",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "And a second AI watches every payment."
+  "text": "On top of that, a second AI watches every payment."
  },
  {
   "id": "g1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Tell it the job, like daily durian export news."
+  "text": "First, you tell it the job, like daily durian export news."
  },
  {
   "id": "g2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It builds the card in front of you, and you approve every rule."
+  "text": "Then it builds the card in front of you, and it needs you to approve every rule."
  },
  {
   "id": "g3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Slide to approve, and the card's live."
+  "text": "Once you slide to approve, the card goes live."
  },
  {
   "id": "u0",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "If the job is unclear, it can ask one question first."
+  "text": "If the job isn't clear, it can ask you a question first."
  },
  {
   "id": "u1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It pays small amounts on its own. Here the sellers are test versions of Exa and CoinGecko."
+  "text": "It pays small amounts on its own. In this demo, the sellers are test versions of Exa and CoinGecko."
  },
  {
   "id": "x1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Let's X-ray that payment."
+  "text": "Let's X-ray that payment to see what really happened."
  },
  {
   "id": "x2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The owner key stays on your phone. Our server makes one agent key per card, and the AI never holds one."
+  "text": "The owner key stays on your phone. Our server makes one agent key for each card, and the AI never holds one."
  },
  {
   "id": "x3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The AI picks a seller, which names its price over x402."
+  "text": "When the AI picks a seller, the seller names its price over x402."
  },
  {
   "id": "x4",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Our server checks the payment against your task, looks at where the seller's money goes, and tests it first."
+  "text": "Before signing, our server checks the payment against your task, looks at where the seller's money goes, and tests it first."
  },
  {
   "id": "x5",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The agent key signs one exact payment, and a facilitator sends it to the chain."
+  "text": "Then the agent key signs one exact payment, and a facilitator sends it to the chain."
  },
  {
   "id": "x6a",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Some agent wallets check limits on the company's server."
+  "text": "Now, some agent wallets check their limits on the company's server."
  },
  {
   "id": "x6",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Here the token asks the card, which runs its own eight checks first."
+  "text": "But here, the token asks the card, and the card runs its own eight checks first."
  },
  {
   "id": "x7",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "All eight pass, so it goes through on FISCO BCOS, with a hash you can open in our explorer."
+  "text": "If all eight pass, it goes through on FISCO BCOS, with a hash you can open in our explorer."
  },
  {
   "id": "u2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Above the amount you chose, the card asks you to sign on your phone too."
+  "text": "Above the amount you set, the card asks you to sign on your phone too."
  },
  {
   "id": "u4",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "An unlisted seller gets refused, and the agent re-plans or asks you."
+  "text": "If a seller isn't on your list, it's refused, and the agent re-plans or checks with you."
  },
  {
   "id": "u3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The agent negotiates the price down, from twelve Hong Kong dollars to eight dollars eighty."
+  "text": "The agent even negotiates, bringing the price down from twelve Hong Kong dollars to eight dollars eighty."
  },
  {
   "id": "r1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It's your card, so you can cancel it mid-task and take back what's left."
+  "text": "And because it's your card, you can cancel it mid-task and take back what's left."
  },
  {
   "id": "k1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Now, let's break it."
+  "text": "Now, let's try to break it."
  },
  {
   "id": "k2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "We try hidden orders, data requests, even a fake admin. Nothing gets through."
+  "text": "We throw hidden orders at it, then data requests, and even a fake admin. Nothing gets through."
  },
  {
   "id": "k3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Worst case, we play a fooled agent and use its key to send test money."
+  "text": "For the worst case, we play a fooled agent and use its key to send test money."
  },
  {
   "id": "k4",
@@ -171,61 +177,61 @@
   "id": "k5",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Even a fooled agent can't pay outside the card's rules."
+  "text": "Because even a fooled agent can't pay outside the card's rules."
  },
  {
   "id": "y1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "That's because every payment goes through eight layers. Six run on our server and make the agent behave."
+  "text": "It holds because every payment goes through eight layers. The first six run on our server and keep the agent in line."
  },
  {
   "id": "y2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The last two are on-chain, and they keep every card inside its rules, even with our server taken over."
+  "text": "The last two are on-chain, so they keep every card inside its rules, even if our server is taken over."
  },
  {
   "id": "y3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "A stolen agent key still only pays your listed sellers, up to the cap. The guardian key can only freeze. Your owner key stays on your phone."
+  "text": "A stolen agent key can still only pay your listed sellers, up to the cap. The guardian key can only freeze a card, and your owner key never leaves your phone."
  },
  {
   "id": "w1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The second AI checks every seller and every payment."
+  "text": "Meanwhile, the second AI keeps checking every seller and every payment."
  },
  {
   "id": "w1b",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It learns how you buy."
+  "text": "Over time, it learns how you buy."
  },
  {
   "id": "w2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "After repeated attempts, it freezes the card, and only you can unfreeze it."
+  "text": "If the attempts keep coming, it freezes the card, and only you can unfreeze it."
  },
  {
   "id": "w3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "It can only make your rules stricter, never looser."
+  "text": "In other words, it can only make your rules stricter, never looser."
  },
  {
   "id": "h1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "The HKMA's Carmen Chu described AI agent governance in October, as anchored to intent, with kill switches, A.I. versus A.I., and secure boundaries."
+  "text": "In October, the HKMA's Carmen Chu shared four ideas for governing AI agents: anchored to intent, kill switches, A.I. versus A.I., and secure boundaries."
  },
  {
   "id": "h2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "ChainBrain covers each of the four."
+  "text": "And ChainBrain covers each of these four."
  },
  {
   "id": "f1",
@@ -237,20 +243,19 @@
   "id": "f2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "We attacked our own cards sixty-three times with test money, and lost nothing."
+  "text": "In total, we attacked our own cards sixty-three times with test money, and lost nothing."
  },
  {
   "id": "f3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "And all four hundred and sixty-two tests passed."
+  "text": "And all four hundred and sixty-two automated tests passed."
  },
  {
   "id": "t1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "We're Jun Quan and Hao Wen from Universiti Malaya, and Yong Xi from Universiti Putra Malaysia.",
-  "say_eleven": "We're June Chuen and Hao Wen from Universiti Malaya, and Yong Shee from Universiti Putra Malaysia."
+  "text": "And that's our team. Jun Quan and Hao Wen from Universiti Malaya, and Yong Xi from Universiti Putra Malaysia."
  },
  {
   "id": "z1",

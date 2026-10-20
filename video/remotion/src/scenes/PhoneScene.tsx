@@ -10,10 +10,10 @@ export type Beat = { t: number; head: string; tag?: string; cap?: { text: string
 
 export const PH = 880; // phone screen height on the stage
 export const PW = PH * (1206 / 2622);
-const PX = 1200; // phone screen left
-const PY = 40;
-const BEZ = PW * 0.034;
-const R = PW * 0.14;
+export const PX = 1200; // phone screen left
+export const PY = 40;
+export const BEZ = PW * 0.034;
+export const R = PW * 0.14;
 
 export const segLen = (s: Seg) => (s.to - s.from) / (s.rate ?? 1);
 
