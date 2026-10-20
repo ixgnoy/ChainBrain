@@ -41,27 +41,36 @@ except subprocess.CalledProcessError:
 SCENES = {
     "hook": ("Hook", "Black. 4 May 2026, one post on X. Dots and dashes light with the Morse key and decode into \"SEND ALL\" (labelled an illustration). Hard cut: a counter runs up to US$150,000+ sent away by one AI agent (OECD AI Incidents Monitor)."),
     "stat": ("The trust gap", "74% would let an agent handle routine tasks; then 9%, in vermillion, would let it buy on its own (Accenture, June 2026)."),
-    "intro": ("Hello", "Your intro clip in the film's phone frame, your words set large as you say them, with your name and university above. The bottom subtitle steps aside for this line."),
+    "intro": ("Hello", "Your intro clip in the film's phone frame, with your name and university above. \"Hi, I'm Jun Quan.\" at 104 px, then \"With Hao Wen and Yong Xi, we built ChainBrain.\" as two big lines with ChainBrain in vermillion, each word as you say it. The bottom subtitle steps aside for this line."),
     "card": ("The AI Card", "The ChainBrain mark, then the AI Card rises out of the dark."),
     "what": ("What it is", "Three cards fan out on the names (Claude, ChatGPT, ours), fold into one and flip to the contract's rules; the FISCO BCOS logo lands; the real Brain map arrives as the second AI."),
     "get": ("Get one", "Phone: describe the job, the card builds itself live, slide to approve, created and funded (x30)."),
-    "use1": ("The first payment", "Phone: it asks one question; it pays test versions of Exa and CoinGecko on its own, over x402 (logos)."),
+    "use1": ("The first payment", "Phone (the 20 Oct take, no Claude dock): it asks one question; it pays test versions of Exa and CoinGecko on its own, over x402 (logos)."),
     "xray": ("X-ray of that payment", "One board in four lanes (your phone, our server, the seller, FISCO BCOS); the camera follows the payment: keys, the seller's price over x402, the server checks, the signature, the token asking the card, its eight checks, the real hosted-chain hash, then the whole system."),
-    "use2": ("Use it", "Phone: above your limit you co-sign (Nansen); an unlisted seller is refused and the agent re-plans or asks you; it negotiates HK$12.00 down to HK$8.80; cancel mid-task and take back what's left."),
+    "use2": ("Use it", "Phone (the 20 Oct take, no Claude dock): above your limit you co-sign (Nansen); an unlisted seller is refused and the agent re-plans or checks with you; it negotiates HK$12.00 down to HK$8.80; cancel mid-task and take back what's left."),
     "breakT": ("The drop", "\"Let's break it.\", centred, on a warm stage."),
-    "attack": ("Break it", "Phone with the attack rail: a hidden order (read as data, ignored), a request for your data (refused), a fake admin (refused)."),
-    "money": ("The card says no", "The fourth attack: a fooled agent sends test money; the order stops dead at the AI Card; half a second of silence, then \"No.\"; the phone's notice beside the real reverted transaction."),
+    "attack": ("Break it", "Phone (the 20 Oct take) with the attack rail: a hidden order (read as data, ignored), a request for your data (refused), a fake admin (refused)."),
+    "money": ("The card says no", "The fourth attack: a fooled agent sends test money; the order stops dead at the AI Card; half a second of silence, then \"No.\"; the phone's notice beside the real reverted transaction. The full-screen hash after it is gone."),
     "why": ("Why it held", "Eight layers with their icons; each demo attack sits at the layer that stops it; six on our server, two on-chain that hold even if our server is taken over."),
-    "stolen": ("If a key is stolen", "Four cards: the agent key (still capped), our server, the guardian key (can only freeze), your owner key (never leaves your phone)."),
-    "watch": ("The watcher", "Phone: the Brain; Radar blocks TradeWire (risk 9/10); it learns how you buy; repeated attempts freeze the card; only you can unfreeze it."),
-    "only": ("Only stricter", "\"Stricter.\" in blue; \"Never looser.\" struck through."),
+    "brain": ("The second AI", "The app's Brain map, redrawn: the Brain at the centre; your agents, their cards and the sellers on rings, as in the app; payments pulse out and ping the Brain; TradeWire (a made-up seller) is paid twice, then flagged, risk 9/10, and cut off from every card."),
+    "watch": ("The second AI, on the phone", "The real Brain map, then Radar tracing TradeWire's money (blocked for all your cards); how it decided (every check, in plain words); learned with you, the TradeWire note on screen for \"which sellers to avoid\", and a note removed on \"remove\" (version 1 to 2); the Sentinel asks for your OK, then freezes the card, with Unfreeze."),
+    "only": ("Only stricter", "\"The second AI can hold, block or freeze\" above \"Stricter.\" in blue and \"Never looser.\" struck through."),
     "hkma": ("The HKMA's four ideas", "Carmen Chu, HKMA, October 2026: anchored to intent, kill switches, A.I. versus A.I., secure boundaries, each mapped to a ChainBrain feature. Footer: our mapping, not a regulatory approval."),
-    "proof": ("Proof", "Our hosted FISCO BCOS chain: 7 of 7 forbidden attempts rejected, each with its hash; 63 attacks, HK$0 lost; 462 automated tests passed."),
-    "team": ("The team", "Three portraits: Chin Jun Quan and Tan Hao Wen (Universiti Malaya), Wong Yong Xi (Universiti Putra Malaysia). Music only now: the team line isn't voiced."),
+    "proof": ("Proof", "Our hosted FISCO BCOS chain: 7 of 7 forbidden attempts rejected, the seven listed from \"seven\" to \"rejected\" and held to read, beside the explorer held on a reverted transaction. Then our own test runs: 63 attacks, HK$0 lost (55 assume the AI is already fooled, 8 use a live model); 462 automated tests passed. Try it on the hosted console, and run the attacks yourself in its Judges tab."),
+    "team": ("The team", "Your clone says \"We're three university students from Malaysia.\" The headline appears word by word beside the waving Malaysian flag; the three portraits rise on \"three\"; each university's own logo (Universiti Malaya, UPM) lands under its students; a light passes over the portraits on \"Malaysia\"."),
     "closeface": ("The last line", "Your closing clip in the phone frame; the line set large as you say it, \"card\" in vermillion."),
-    "close": ("End card", "The mark, 链AI脑, where to try it, FinTechathon 2026, then a fade to black. With your closing clip just before, it no longer repeats the line."),
+    "close": ("The card constellation", "The three AI Cards (Claude's, ours, ChatGPT's) fly into an arc over a faint constellation; threads of light run from each card to the ChainBrain mark and a light sweeps across them; the mark locks in, then where to try it, the code, FinTechathon 2026; fade to black."),
 }
-FLAG = {"intro": "new", "closeface": "new", "team": "changed", "close": "changed"}
+FLAG = {"stat": "changed", "card": "changed", "what": "changed", "xray": "changed", "hkma": "changed", "intro": "changed", "team": "changed", "brain": "new", "watch": "changed", "use1": "changed", "use2": "changed", "attack": "changed", "money": "changed", "only": "changed", "proof": "changed", "close": "changed"}
+# what this round changed, for the summary at the top of the page
+SUMMARY = [
+    "Team slide: \"We're three university students from Malaysia.\" spoken and animated, with the Malaysian flag and the UM and UPM logos.",
+    "Intro: \"With Hao Wen and Yong Xi, we built ChainBrain.\" as two big lines, ChainBrain in vermillion.",
+    "Reviewed by three agents (a judge, an accuracy audit, a motion designer); their fixes are in:",
+    "Accuracy: each AI Card shows its true face (only our real card prints an address); the card's rules read \"Cap per payment\" and \"Unfreeze or cancel, only you\"; the 63 and 462 are labelled as our own test runs; the second AI \"checks every payment the agent makes\"; the HKMA disclaimer stays up; the links point at the hosted console in your PDFs.",
+    "Picture: a clearer Brain graph matching the app's cards; a fuller closing (fanned cards, a lock-in bloom, light along the threads); the 7/7 list builds on \"seven\" beside a held reverted transaction; cleaner phone framing; balanced subtitles; \"Looser.\" struck alone; Topic F tags; a Judges-tab pointer.",
+    "From the last round: the Claude dock is gone, the second AI has its own section, the key page and the short hash are cut.",
+]
 
 vo = sorted(T["vo"], key=lambda v: v["at"])
 scenes = T["scenes"]
@@ -153,9 +162,8 @@ td.t{font:600 13px ui-monospace,Menlo,monospace;color:var(--muted);white-space:n
 """
 out = [f"<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>ChainBrain storyboard</title><style>{css}</style></head><body>"]
 out.append(f"<header><h1>ChainBrain demo video: storyboard</h1><p class=sub>Real frames of the current cut, {tc(T['total'])} long, {len(placed)} lines, {n_words} words. Each frame shows the line it plays under; the words already said by that frame are in white.</p>")
-clips = ", ".join(k for k in FACE) or "none"
 out.append("<div class=sum>")
-out.append(f"<div class=box><h3>In this cut</h3><ul><li>Script v4.2: {len(changed)} lines reworded to sound more natural, {len(new)} new.</li><li>Your on-camera clips ({esc(clips)}) in the film's phone frame, your words set large as you say them.</li><li>The team slide plays with music only; the end card opens on the mark.</li></ul></div>")
+out.append("<div class=box><h3>In this cut</h3><ul>" + "".join(f"<li>{esc(x)}</li>" for x in SUMMARY) + f"<li>Script: {len(new)} new lines, {len(changed)} reworded since {esc(SINCE)}.</li></ul></div>")
 out.append(f"<div class=box><h3>Voice</h3>Your ElevenLabs clone, 7% faster with the pitch kept; your clips use your own recorded sound. Voice only, at the film's timings (music comes with the final mix):<audio controls preload=none src='{esc(os.path.basename(mp3))}'></audio></div>")
 out.append("<div class='box ask'><h3>Your call</h3>Approve and I'll compose the music, mix and render the final video. Or tell me what to change: a frame, a line or the pace.</div>")
 out.append("</div></header><main>")

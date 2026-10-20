@@ -17,7 +17,7 @@ const WORDS = words as Record<string, { w: string; s: number; e: number }[]>;
 
 // beside a portrait clip: a small label, the line in big type and a smaller second part, in the order spoken
 const TYPE: Record<string, { label?: string; head: string; sub?: string; highlight?: Record<string, string> }> = {
-  intro: { label: "Chin Jun Quan / Universiti Malaya", head: "Hi, I'm\nJun Quan.", sub: "With Hao Wen and Yong Xi, we built ChainBrain." },
+  intro: { label: "Chin Jun Quan / Universiti Malaya", head: "Hi, I'm\nJun Quan.", sub: "With Hao Wen and Yong Xi,\nwe built ChainBrain.", highlight: { ChainBrain: C.vermillion } },
   close: { head: "Give your AI\na card, not\nyour wallet.", highlight: { card: C.vermillion } },
 };
 
@@ -73,7 +73,11 @@ const Portrait: React.FC<{ clip: string; c: Clip }> = ({ clip, c }) => {
         <div style={{ position: "absolute", left: 120, top: 330, width: 860 }}>
           {type.label ? <Label text={type.label} t={t} /> : null}
           <Reveal text={type.head} size={104} times={times.slice(0, nHead)} highlight={type.highlight} />
-          {type.sub ? <Sub text={type.sub} times={times.slice(nHead)} t={t} /> : null}
+          {type.sub ? (
+            <div style={{ marginTop: 38 }}>
+              <Reveal text={type.sub} size={64} times={times.slice(nHead)} highlight={type.highlight} lineHeight={1.08} />
+            </div>
+          ) : null}
         </div>
       ) : null}
       <div
@@ -139,17 +143,6 @@ const Label: React.FC<{ text: string; t: number }> = ({ text, t }) => {
     >
       <div style={{ width: 9, height: 9, background: C.blue }} />
       {text}
-    </div>
-  );
-};
-
-// the second part of the line, smaller, after a short rule that draws in as it starts
-const Sub: React.FC<{ text: string; times: number[]; t: number }> = ({ text, times, t }) => {
-  const line = easeOut(clamp((t - (times[0] ?? 0)) / 0.3));
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: 40 }}>
-      <div style={{ width: 44 * line, height: 3, background: C.blue, flex: "none" }} />
-      <Reveal text={text} size={38} weight={500} font={F.body} letterSpacing="0" lineHeight={1.2} color="rgba(242,241,238,0.8)" times={times} />
     </div>
   );
 };

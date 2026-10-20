@@ -1,6 +1,6 @@
 # ChainBrain demo video
 
-The FinTechathon demo video (v4.2, 4:37: the AI Card with a "how it works" X-ray, in Chin Jun Quan's cloned voice, with his own intro and last line on camera): `out/InternationalAI-ChainBrain-DemoVideo.mp4`, with its `.srt` and `poster.jpg`.
+The FinTechathon demo video (v4.4, 4:44: the AI Card with a "how it works" X-ray and a section on the second AI, in Chin Jun Quan's cloned voice, with his own intro and last line on camera): `out/InternationalAI-ChainBrain-DemoVideo.mp4`, with its `.srt` and `poster.jpg`.
 
 - Script and shot list: [SCRIPT.md](SCRIPT.md); the approved storyboard and why: [STORYBOARD-v4.md](STORYBOARD-v4.md) (the earlier [v3](STORYBOARD-v3.md)). Credits and licences: [CREDITS.md](CREDITS.md).
 - The edit: `remotion/src/edit.json` (scenes, footage cuts, voice anchors). `tools/layout.py` turns it into `remotion/src/timeline.json` (scene times on the 120 BPM grid, voice start times); `tools/cues.py` adds the music cues.
@@ -46,7 +46,7 @@ The narration uses ElevenLabs (`eleven_v4`) with Chin Jun Quan's instant voice c
 
 ## Recordings (not in git; `video/footage/`)
 
-**Phone (`footage/cfr/autoplay.mp4`, `footage/cfr/brain.mp4`)**
+**Phone (`footage/cfr/autoplay.mp4`, `footage/cfr/autoplay-2.mp4`, `footage/cfr/brain.mp4`)**
 
 - The mobile app ran in Expo Go on the iOS Simulator from the production bundle (`.claude/launch.json` → `mobile-prod`, `exp://127.0.0.1:8092`).
 - Demo mode was on: Settings → Demo network.
@@ -60,6 +60,7 @@ ffmpeg -i raw.mp4 -vf fps=30 -c:v libx264 -crf 17 -pix_fmt yuv420p out.mp4
 ```
 
 - `autoplay.mp4` is one take of the app's own auto-play: long-press the chat header for 1.5 s.
+- `autoplay-2.mp4` (20 Oct) is the same auto-play, recorded after declining Claude's pending co-sign request first (it arrives about 12 s after demo mode starts), so the ask dock never shows. The phone scenes after the wizard use it; `tools/retime.py` finds each cut of an old take in a new one by matching frames.
 - `brain.mp4` is the Brain tab, the Brain map, and a card's Brain page with forget.
 
 **Console and explorer (`footage/raw/console-*.mp4`, `footage/raw/explorer.mp4`)**

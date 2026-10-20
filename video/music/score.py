@@ -469,9 +469,10 @@ impact(cue["because"] - 0.03, 0.45)
 # 3:03 why it held: the mechanism again under the layers; a tick per layer; the stamp hits on "taken over";
 # two bells for the on-chain layers that hold.
 wy = cue["why"]
-k_y = drums(wy + 0.5, cue["stolen"], "pulse", 0.65)
-bassline(wy + 0.5, cue["stolen"], DARK, 0.65, k_y)
-for i, tt in enumerate(np.arange(wy + 0.5, cue["stolen"] - 0.2, BEAT / 4)):
+wy_end = cue.get("stolen") or cue.get("brain") or cue["watch"]  # v4.3 has no stolen-keys page: the layers run up to the Brain
+k_y = drums(wy + 0.5, wy_end, "pulse", 0.65)
+bassline(wy + 0.5, wy_end, DARK, 0.65, k_y)
+for i, tt in enumerate(np.arange(wy + 0.5, wy_end - 0.2, BEAT / 4)):
     place(tick(0.25 if i % 4 else 0.45, 3000 if i % 4 else 2200), tt, 0.38, 0.35 if i % 2 else -0.35)
 for i in range(6):
     place(tick(0.9, 1800 + 160 * i), cue["layers"] + i * 0.18, 0.6, -0.25 + 0.1 * i)
@@ -480,14 +481,23 @@ for i in range(2):
 impact(cue["taken"] - 0.03, 0.8)
 place(sub_hit(52, 30, 2.0, 0.8), cue["taken"] - 0.03, 0.6)
 
-# 3:18 if a key is stolen: sparse; a soft hit per card.
-place(pad([73.42, 87.31, 110.0], cue["watch"] - cue["stolen"] + 0.5, 0.6, 700), cue["stolen"], 0.45)
-for sh in cue["stolen_hits"]:
-    impact(sh - 0.03, 0.3)
-    place(bell(739.99, 1.4, 0.6), sh, 0.35)
+# 3:18 if a key is stolen (v4.2 and earlier): sparse; a soft hit per card.
+if cue.get("stolen") is not None:
+    place(pad([73.42, 87.31, 110.0], cue["watch"] - cue["stolen"] + 0.5, 0.6, 700), cue["stolen"], 0.45)
+    for sh in cue["stolen_hits"]:
+        impact(sh - 0.03, 0.3)
+        place(bell(739.99, 1.4, 0.6), sh, 0.35)
 
-# 3:29 the watcher: pulse and ticks; a hit when it freezes the card.
-wt = cue["watch"]
+# 3:29 the watcher: pulse and ticks; a hit when it freezes the card. From v4.3 the Brain's graph opens it: a bell as
+# it lights up, and a low hit when the risky seller is cut off.
+wt = cue.get("brain") or cue["watch"]
+if cue.get("brain") is not None:
+    place(swell(1.0, 0.8), wt - 1.0, 0.4)
+    place(bell(1318.51, 2.4, 0.8), wt + 0.25, 0.45, 0.1)
+    place(bell(1975.53, 2.0, 0.6), wt + 0.4, 0.3, -0.15)
+    if cue.get("flag") is not None:
+        impact(cue["flag"] - 0.03, 0.55)
+        place(sub_hit(56, 30, 1.6, 0.7), cue["flag"] - 0.03, 0.5)
 k_h = drums(wt, cue["only"] - 0.1, "pulse", 0.75)
 for i, tt in enumerate(np.arange(wt, cue["only"] - 0.2, BEAT / 4)):
     place(tick(0.3 if i % 4 else 0.55, 3000 if i % 4 else 2200), tt, 0.45, 0.35 if i % 2 else -0.35)

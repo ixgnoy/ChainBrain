@@ -92,7 +92,8 @@ export const PhoneScene: React.FC<{
   rail?: React.ReactNode;
   snap?: number; // headline settle stiffness (the attack scene lands harder)
   travel?: number; // camera travel in seconds (shorter = more urgent)
-}> = ({ segs, word, beats, cams = [], tint = 0, rail, snap = 11, travel = 0.7 }) => {
+  simNote?: string; // a second line under the honest label (what else on this setup is simulated)
+}> = ({ segs, word, beats, cams = [], tint = 0, rail, snap = 11, travel = 0.7, simNote }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
@@ -151,7 +152,7 @@ export const PhoneScene: React.FC<{
         </div>
       </div>
       <SpeedTag segs={segs} />
-      <SimTag />
+      <SimTag note={simNote} />
     </Stage>
   );
 };
@@ -247,15 +248,12 @@ export const Caption: React.FC<{ text: string; tone: "red" | "blue" | "plain"; d
 };
 
 // Honest label, small corner text: the phone footage ran on the app's built-in network (an in-app test chain).
-export const SimTag: React.FC<{ what?: string; style?: React.CSSProperties }> = ({ what = "Phone", style }) => (
+export const SimTag: React.FC<{ what?: string; note?: string; style?: React.CSSProperties }> = ({ what = "Phone", note, style }) => (
   <div
     style={{
       position: "absolute",
       left: 120,
       top: 64,
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
       fontFamily: F.body,
       fontWeight: 500,
       fontSize: 24,
@@ -264,7 +262,10 @@ export const SimTag: React.FC<{ what?: string; style?: React.CSSProperties }> = 
       ...style,
     }}
   >
-    <div style={{ width: 8, height: 8, background: C.blue }} />
-    {what} recorded on our test setup
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ width: 8, height: 8, background: C.blue }} />
+      {what} recorded on our test setup
+    </div>
+    {note ? <div style={{ marginTop: 4, marginLeft: 20, fontSize: 24, color: C.muted }}>{note}</div> : null}
   </div>
 );

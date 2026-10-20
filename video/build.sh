@@ -30,7 +30,7 @@ mkdir -p out remotion/public/footage remotion/public/audio remotion/public/fonts
 # brand fonts come from the phone app (git-ignored there too; mobile/scripts/fonts.sh fetches them)
 for f in ../mobile/assets/fonts/ClashDisplay-*.ttf ../mobile/assets/fonts/GeneralSans-*.ttf; do cp -f "$f" remotion/public/fonts/; done
 # footage: CFR copies of the recordings (see README for how they were made)
-for f in footage/cfr/autoplay.mp4 footage/cfr/brain.mp4 footage/raw/console-judges.mp4 footage/raw/console-brain.mp4 footage/raw/explorer.mp4; do
+for f in footage/cfr/autoplay.mp4 footage/cfr/autoplay-2.mp4 footage/cfr/brain.mp4 footage/raw/console-judges.mp4 footage/raw/console-brain.mp4 footage/raw/explorer.mp4; do
   [ -f "$f" ] || { echo "missing $f: record it first (README.md)"; exit 1; }
   ln -f "$f" "remotion/public/footage/$(basename "$f")"
 done

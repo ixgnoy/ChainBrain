@@ -9,10 +9,10 @@ export type Agent = { name: string; src?: string; imgScale?: number };
 
 export const CARD_RATIO = 0.63;
 export const RULES: [string, string][] = [
-  ["Spending limit", "HK$15.00"],
+  ["Cap per payment", "HK$15.00"],
   ["Ask me above", "HK$8.00"],
   ["Sellers", "DataLite, DataPro"],
-  ["Freeze or cancel", "only you"],
+  ["Unfreeze or cancel", "only you"],
 ];
 
 export const AICard: React.FC<{
@@ -26,7 +26,9 @@ export const AICard: React.FC<{
   alarm?: number; // vermillion edge, 0..1
   limit?: string;
   dim?: number;
-}> = ({ w, agent, flip = 0, ry = 0, rx = 0, rz = 0, glow = 0.35, alarm = 0, limit = "HK$15.00 limit", dim = 0 }) => {
+  addr?: string; // the contract address tail printed on the front ("" for none: a card that isn't on the hosted chain)
+  sweep?: number; // a light sweeping across the face, 0 (left) … 1 (right); undefined for none
+}> = ({ w, agent, flip = 0, ry = 0, rx = 0, rz = 0, glow = 0.35, alarm = 0, limit = "HK$15.00 per payment", dim = 0, addr = "0x33Dc ···· 3356", sweep }) => {
   const h = w * CARD_RATIO;
   const u = w / 100; // 1% of the card's width
   const edge = alarm > 0 ? `rgba(240,78,35,${0.4 + 0.6 * alarm})` : `rgba(157,202,255,${0.18 + 0.5 * glow})`;
@@ -60,8 +62,8 @@ export const AICard: React.FC<{
           </div>
           <div style={{ position: "absolute", right: u * 6, top: u * 7, fontFamily: F.mono, fontSize: u * 3, color: C.blue, letterSpacing: "0.18em", fontVariantLigatures: "none" }}>AI CARD</div>
           <Chip u={u} />
-          <div style={{ position: "absolute", left: u * 6, bottom: u * 15, fontFamily: F.mono, fontSize: u * 4.2, color: C.text, letterSpacing: "0.06em", fontVariantLigatures: "none" }}>0x33Dc ···· 3356</div>
-          <div style={{ position: "absolute", left: u * 6, bottom: u * 7, fontFamily: F.body, fontWeight: 500, fontSize: u * 3.1, color: C.muted }}>{limit}</div>
+          {addr ? <div style={{ position: "absolute", left: u * 6, bottom: u * 15, fontFamily: F.mono, fontSize: u * 4.2, color: C.text, letterSpacing: "0.06em", fontVariantLigatures: "none" }}>{addr}</div> : null}
+          {limit ? <div style={{ position: "absolute", left: u * 6, bottom: u * 7, fontFamily: F.body, fontWeight: 500, fontSize: u * 3.1, color: C.muted }}>{limit}</div> : null}
           {agent ? (
             <div style={{ position: "absolute", right: u * 6, bottom: u * 6.5, display: "flex", alignItems: "center", gap: u * 2 }}>
               <div style={{ fontFamily: F.body, fontWeight: 600, fontSize: u * 3.4, color: C.text }}>{agent.name}</div>
@@ -69,6 +71,9 @@ export const AICard: React.FC<{
                 {agent.src ? <Img src={staticFile(agent.src)} style={{ width: u * 9 * (agent.imgScale ?? 0.6), height: u * 9 * (agent.imgScale ?? 0.6), objectFit: "contain" }} /> : <BrandMark size={u * 5} light={false} />}
               </div>
             </div>
+          ) : null}
+          {sweep !== undefined && sweep > 0 && sweep < 1 ? (
+            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(110deg, transparent ${-34 + sweep * 168}%, rgba(255,255,255,0.26) ${-20 + sweep * 168}%, transparent ${-6 + sweep * 168}%)` }} />
           ) : null}
         </div>
         {/* back: the contract's rules */}

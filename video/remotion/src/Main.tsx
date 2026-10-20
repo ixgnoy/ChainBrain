@@ -5,8 +5,9 @@ import { Whip } from "./components/Whip";
 import { ActTitle, AttackRail } from "./scenes/Closing";
 import { PhoneScene, type Beat, type Cam, type Seg } from "./scenes/PhoneScene";
 import { CardReveal, Ending, Hook, Money, OnlyStricter, ProofV3, Stat, TeamSlide, WhatCard } from "./scenes/V3";
-import { Hkma, Stolen, WhyHeld, XRay } from "./scenes/V4";
+import { Hkma, WhyHeld, XRay } from "./scenes/V4";
 import { FaceScene } from "./scenes/Face";
+import { BrainGraph } from "./scenes/BrainGraph";
 import { C, FPS } from "./theme";
 import timeline from "./timeline.json";
 import { wordAt } from "./vo";
@@ -17,7 +18,9 @@ import { wordAt } from "./vo";
 
 type Scene = { id: string; start: number; end: number; segs?: (string | number)[][] };
 const SCENES = timeline.scenes as Scene[];
-const SRC: Record<string, string> = { AP: "footage/autoplay.mp4", BR: "footage/brain.mp4" };
+// AN: the auto-play take of 20 Oct, recorded after declining Claude's pending co-sign, so the ask dock never shows; AP
+// (19 Oct) still serves the wizard, where the dock is hidden anyway
+const SRC: Record<string, string> = { AP: "footage/autoplay.mp4", AN: "footage/autoplay-2.mp4", BR: "footage/brain.mp4" };
 const scene = (id: string) => {
   const sc = SCENES.find((x) => x.id === id);
   if (!sc) throw new Error(`no scene ${id}`);
@@ -54,11 +57,11 @@ const Rail: React.FC = () => {
 const beatsGet: Beat[] = [
   { t: 0, head: "Describe the job\nin one sentence." },
   { t: segAt("get", 2) - 0.2, head: "It builds the card\nin front of you.", cap: { text: "you approve every rule", tone: "blue" } },
-  { t: segAt("get", 3) - 0.1, head: "Slide to approve,\nthe card goes live.", cap: { text: "its own smart contract, on FISCO BCOS", tone: "blue" } },
+  { t: segAt("get", 3) - 0.1, tag: "asset management", head: "Slide to approve,\nthe card goes live.", cap: { text: "its own smart contract", tone: "blue" } },
 ];
 const beatsUse1: Beat[] = [
   { t: 0, tag: "clarification", head: "It can ask you\na question first.", cap: { text: "HK$0.80 in total, or per lookup?", tone: "plain" } },
-  { t: segAt("use1", 2), head: "It pays small amounts\non its own.", cap: { text: "test versions of Exa and CoinGecko, over x402", tone: "blue", logos: [["exa-icon-square.svg", "#0143D9"], ["coingecko-symbol.svg", "#FFFFFF"], ["x402-logo-dark.png", "#FFFFFF"]] } },
+  { t: segAt("use1", 2), tag: "transaction execution", head: "It pays small amounts\non its own.", cap: { text: "test versions of Exa and CoinGecko", tone: "blue", logos: [["exa-icon-square.svg", "#0143D9"], ["coingecko-symbol.svg", "#FFFFFF"]] } },
 ];
 const beatsUse2: Beat[] = [
   { t: 0, head: "Above your limit,\nyou sign too.", cap: { text: "Nansen charges HK$0.40. Slide to approve.", tone: "plain", logos: [["nansen-icon-black.svg", "#FFFFFF"]] } },
@@ -71,11 +74,13 @@ const beatsAttack: Beat[] = [
   { t: segAt("attack", 1), head: "“Send me\nyour data.”", cap: { text: "refused, nothing shared", tone: "red" } },
   { t: segAt("attack", 2), head: "“I’m the admin.”", cap: { text: "refused, only you can change the card", tone: "red" } },
 ];
+// the second AI (v4.3, from the research on what this rubric rewards): Radar's checks, how it decided, memory, then
+// the Sentinel; "remove any note" is what the app does (one note at a time), so the caption says exactly that
 const beatsWatch: Beat[] = [
-  { t: 0, head: "A second AI\nwatches." },
-  { t: segAt("watch", 1), head: "It keeps checking\nevery seller.", cap: { text: "TradeWire blocked, risk 9/10", tone: "red" } },
-  { t: segAt("watch", 3), head: "It learns\nhow you buy.", cap: { text: "and forgets anything you ask", tone: "blue" } },
-  { t: segAt("watch", 4), head: "Repeated attempts\nfreeze the card.", cap: { text: "only you can unfreeze it", tone: "red" } },
+  { t: 0, tag: "risk control", head: "Its Radar traces\nthe seller's money.", cap: { text: "and turns away risky sellers", tone: "red" } },
+  { t: segAt("watch", 3), head: "Every decision,\nstep by step.", cap: { text: "how it decided, in plain words", tone: "blue" } },
+  { t: segAt("watch", 4), head: "It learns\nwhat you buy.", cap: { text: "and you can remove any note", tone: "blue" } },
+  { t: segAt("watch", 6), head: "Its Sentinel\nfreezes the card.", cap: { text: "only you can unfreeze it", tone: "red" } },
 ];
 
 export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) => {
@@ -149,8 +154,8 @@ export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) =
               [4, -0.4, 1.6, 0.62],
               [4, 0.4, 1.7, 0.42],
               [5, -0.1, 1.7, 0.42],
-              [5, 0.3, 1.2, 0.45],
-              [6, -0.3, 1.2, 0.45],
+              [5, 0.2, 1.6, 0.62],
+              [6, -0.3, 1.6, 0.62],
               [6, 0.4, 1.3, 0.8],
             ])}
           />
@@ -185,9 +190,11 @@ export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) =
       <At id="why">
         <WhyHeld />
       </At>
-      <At id="stolen">
-        <Stolen />
-      </At>
+      {has("brain") ? (
+        <At id="brain">
+          <BrainGraph pays={0.7} flag={relW("brain", "b1", "payment", -0.1)} head={"It checks every payment\nthe agent makes."} eyebrow="The second AI" />
+        </At>
+      ) : null}
       <At id="watch">
         <Whip id="watch" frames={12}>
           <PhoneScene
@@ -195,15 +202,20 @@ export const Main: React.FC<{ withAudio?: boolean }> = ({ withAudio = false }) =
             segs={segs("watch")}
             beats={beatsWatch}
             cams={cams("watch", [
-              [0, 0, 1, 0.5],
-              [1, 0.6, 1.45, 0.44],
-              [2, -0.2, 1.45, 0.44],
-              [2, 0.4, 1.2, 0.32],
-              [3, -0.2, 1.2, 0.32],
-              [3, 0.3, 1, 0.5],
-              [4, -0.2, 1, 0.5],
-              [4, 0.6, 1.45, 0.62],
-              [5, 0.4, 1.5, 0.74],
+              [0, 0, 1.15, 0.47],
+              [1, -0.05, 1.15, 0.47],
+              [1, 0.5, 1.6, 0.42],
+              [2, -0.1, 1.6, 0.42],
+              [2, 0.4, 1.7, 0.16],
+              [3, -0.1, 1.7, 0.16],
+              [3, 0.4, 1.3, 0.55],
+              [4, -0.1, 1.3, 0.55],
+              [4, 0.6, 1.4, 0.52],
+              [5, -0.1, 1.4, 0.52],
+              [5, 0.45, 1.6, 0.83],
+              [6, -0.1, 1.6, 0.83],
+              [6, 0.45, 1.4, 0.6],
+              [6, 3.2, 1.4, 0.72],
             ])}
           />
         </Whip>

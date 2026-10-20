@@ -443,7 +443,7 @@ export const XRay: React.FC = () => {
           <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 28, color: C.text }}>FISCO BCOS counts block time in milliseconds. The card converts it to seconds.</div>
         </div>
       ) : null}
-      {t > T.end - 0.3 && t < E + 0.4 ? <HashHold p={Math.min(lit(t, T.end - 0.2, 10), 1 - clamp((t - E + 0.1) / 0.4))} t={t - T.end} hash="0x15b0d30f82cd7efc94f5b534277a71ddaa439ecd5576315ae94cf9cbdccf9333" eyebrow="A REAL PAYMENT ON OUR FISCO BCOS 3.16.4 NODE, CHAIN ID 20200, BLOCK 11" ok status="success" note="Every hash in this film is listed in ChainBrain-execution-evidence.pdf" /> : null}
+      {t > T.end - 0.3 && t < E + 0.4 ? <HashHold p={Math.min(lit(t, T.end - 0.2, 10), 1 - clamp((t - E + 0.1) / 0.4))} t={t - T.end} hash="0x15b0d30f82cd7efc94f5b534277a71ddaa439ecd5576315ae94cf9cbdccf9333" eyebrow="A REAL PAYMENT ON OUR FISCO BCOS 3.16.4 NODE, CHAIN ID 20200, BLOCK 11" ok status="success" note="Every hosted-chain hash in this film is listed in ChainBrain-execution-evidence.pdf" /> : null}
       {/* the whole system */}
       {all > 0 ? (
         <div style={{ position: "absolute", left: 90, top: 40, opacity: all, fontFamily: F.display, fontWeight: 600, fontSize: 44, color: C.text }}>
@@ -697,7 +697,7 @@ export const Hkma: React.FC = () => {
         <div style={{ width: 10, height: 10, background: C.blue }} />
         <div style={{ fontFamily: F.mono, fontSize: 22, letterSpacing: "0.12em", color: C.muted, fontVariantLigatures: "none" }}>HKMA FINANCE + A.I. FORUM, 16 OCT 2026</div>
       </div>
-      <div style={{ position: "absolute", left: 120, top: 120, fontFamily: F.body, fontWeight: 500, fontSize: 24, color: C.muted, opacity: settle(t - 0.5, 8) }}>
+      <div style={{ position: "absolute", left: 120, top: 120, maxWidth: 1560, fontFamily: F.body, fontWeight: 500, fontSize: 24, lineHeight: 1.35, color: C.muted, opacity: settle(t - 0.5, 8) }}>
         Remarks by Carmen Chu, Executive Director (Banking Supervision), on governing AI agents under the HKMA’s ART framework (Accountability, Resilience, Trust)
       </div>
       <div style={{ position: "absolute", left: 120, right: 120, top: 280, transform: `scale(${1 + 0.02 * clamp(t / 17)})`, transformOrigin: "left top" }}>
@@ -714,7 +714,7 @@ export const Hkma: React.FC = () => {
           );
         })}
       </div>
-      <div style={{ position: "absolute", left: 120, top: 890, fontFamily: F.mono, fontSize: 24, color: C.muted, opacity: settle(t - four - 0.6, 6), fontVariantLigatures: "none" }}>
+      <div style={{ position: "absolute", left: 120, right: 120, top: 832, fontFamily: F.mono, fontSize: 24, lineHeight: 1.35, color: C.muted, opacity: settle(t - 0.6, 6), fontVariantLigatures: "none" }}>
         Our mapping of four ideas from the speech. Not an HKMA statement, approval or assessment of ChainBrain. Source: hkma.gov.hk, 16 Oct 2026.
       </div>
     </Stage>

@@ -192,28 +192,28 @@
   "text": "The last two are on-chain, so they keep every card inside its rules, even if our server is taken over."
  },
  {
-  "id": "y3",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "A stolen agent key can still only pay your listed sellers, up to the cap. The guardian key can only freeze a card, and your owner key never leaves your phone."
+  "id": "b1",
+  "text": "Meanwhile, the second AI checks every payment the agent makes."
  },
  {
-  "id": "w1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Meanwhile, the second AI keeps checking every seller and every payment."
+  "id": "b2",
+  "text": "Before each payment, its Radar traces the seller's money, and turns away risky sellers."
  },
  {
-  "id": "w1b",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "Over time, it learns how you buy."
+  "id": "b3",
+  "text": "Over time, it learns what you buy, from whom, and which sellers to avoid, and you can remove any note."
  },
  {
-  "id": "w2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "If the attempts keep coming, it freezes the card, and only you can unfreeze it."
+  "id": "b4",
+  "text": "And its Sentinel freezes the card if an agent keeps testing your rules, and only you can unfreeze it."
  },
  {
   "id": "w3",
@@ -243,7 +243,7 @@
   "id": "f2",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "In total, we attacked our own cards sixty-three times with test money, and lost nothing."
+  "text": "In our test runs, we attacked our own cards sixty-three times with test money, and lost nothing."
  },
  {
   "id": "f3",
@@ -255,7 +255,7 @@
   "id": "t1",
   "voice": "af_heart",
   "speed": 0.9,
-  "text": "And that's our team. Jun Quan and Hao Wen from Universiti Malaya, and Yong Xi from Universiti Putra Malaysia."
+  "text": "We're three university students from Malaysia."
  },
  {
   "id": "z1",

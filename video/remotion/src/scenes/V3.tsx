@@ -1,17 +1,17 @@
 import React from "react";
-import { AbsoluteFill, Img, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { CodeXml, Globe } from "lucide-react";
+import { AbsoluteFill, Freeze, Img, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { CodeXml, Crosshair, Globe } from "lucide-react";
 import { AICard, CARD_RATIO, type Agent } from "../components/AICard";
 import { BrandMark } from "../components/BrandMark";
 import { Browser } from "../components/Devices";
 import { Reveal } from "../components/Kinetic";
 import { Plaque, UiCard, pop } from "../components/Real";
-import { HashHold } from "../components/HashHold";
 import { Stage } from "../components/Stage";
 import { C, F, clamp, easeInOut, easeOut, settle } from "../theme";
 import timeline from "../timeline.json";
 import { sceneEnd, sceneStart, voAt, voEnd, wordAt } from "../vo";
 import { hasClip } from "./Face";
+import { CardConstellation } from "./EndCard";
 
 // v3 story scenes (video/STORYBOARD-v3.md). Every time below is relative to the scene's start, taken from the
 // voice-over's word timings, so a re-recorded line moves its picture with it.
@@ -157,8 +157,8 @@ export const Stat: React.FC = () => {
           <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 40, color: C.text, marginTop: 18 }}>would let it buy on its own</div>
         </div>
       ) : null}
-      <Small p={settle(t - a - 1.2, 7)} style={{ left: 160, top: 860, fontSize: 25 }}>
-        Accenture, “Talk to My AI Agent”, 2026: 25,590 consumers in 16 markets (Hong Kong with mainland China); 9% would let an agent act on its own within set limits
+      <Small p={settle(t - a - 1.2, 7)} style={{ left: 160, top: 860, fontSize: 25, maxWidth: 1560 }}>
+        Accenture, “Talk to My AI Agent”, June 2026: 25,590 consumers in 16 countries. 74% would hand routine tasks to an AI agent; 9% are open to it making fully autonomous purchases.
       </Small>
     </Stage>
   );
@@ -180,7 +180,7 @@ export const CardReveal: React.FC = () => {
         <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 64, color: C.text, letterSpacing: "-0.02em" }}>ChainBrain</div>
       </div>
       <div style={{ position: "absolute", left: 960 - 380, top: 330 + (1 - k) * 420, opacity: clamp(k * 3) }}>
-        <AICard w={760} ry={-38 * (1 - k) - 6 + drift} rx={18 * (1 - k) + 6} rz={-6 * (1 - k)} glow={0.3 + 0.4 * k} agent={AGENTS[0]} />
+        <AICard w={760} ry={-38 * (1 - k) - 6 + drift} rx={18 * (1 - k) + 6} rz={-6 * (1 - k)} glow={0.3 + 0.4 * k} agent={AGENTS[2]} />
       </div>
     </Stage>
   );
@@ -214,13 +214,13 @@ export const WhatCard: React.FC = () => {
         const p = settle(t - arr[i] + 0.12, 9);
         if (p <= 0) return null;
         const fan = (i - 1) * (1 - gather);
-        const front = i === 0;
+        const front = i === 2; // ours stays and flips to its rules; Claude's and ChatGPT's cards fold into it
         const x = cx + fan * 560;
         const y = 500 + Math.abs(fan) * 30 + (1 - p) * 120;
         if (!front && gather >= 1) return null;
         return (
           <div key={a.name} style={{ position: "absolute", left: x - w / 2, top: y - (w * CARD_RATIO) / 2, opacity: Math.min(p, front ? 1 : 1 - gather * 0.9), zIndex: front ? 3 : 2 - Math.abs(i - 1) }}>
-            <AICard w={w} agent={a} rz={fan * 6} ry={-4 + Math.sin(t * 0.5 + i) * 2} flip={front ? flip : 0} glow={0.35 + 0.3 * side} />
+            <AICard w={w} agent={a} addr={front ? undefined : ""} limit={front ? undefined : ""} rz={fan * 6} ry={-4 + Math.sin(t * 0.5 + i) * 2} flip={front ? flip : 0} glow={0.35 + 0.3 * side} />
           </div>
         );
       })}
@@ -242,7 +242,6 @@ export const Money: React.FC = () => {
   const no = r.word("k4", "no");
   const k5 = r.vo("k5");
   const split = k5 - 0.1;
-  const held = r.end("k5") + 0.5; // the reverted forced transfer's hash, held full screen for 1.6 s
   const fly = Math.pow(clamp((t - send) / (no - 0.05 - send)), 1.6); // accelerates into the card
   const flying = t >= send && t < no - 0.05;
   const hit = t >= no - 0.05;
@@ -266,7 +265,7 @@ export const Money: React.FC = () => {
         <div style={{ position: "absolute", left: 120, top: 380, width: 400, opacity: agentP }}>
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
             <div style={{ width: 84, height: 84, borderRadius: 42, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 0 ${3 * fooled}px ${C.vermillion}` }}>
-              <Img src={staticFile("brand/claude-spark-clay.png")} style={{ width: 52, height: 52 }} />
+              <BrandMark size={46} light={false} />
             </div>
             <div>
               <div style={{ fontFamily: F.body, fontWeight: 600, fontSize: 32, color: C.text }}>AI agent</div>
@@ -321,7 +320,7 @@ export const Money: React.FC = () => {
             })
           : null}
         <div style={{ position: "absolute", left: cardX - cardW / 2 + shake, top: 560 - (cardW * CARD_RATIO) / 2 }}>
-          <AICard w={cardW} agent={AGENTS[0]} ry={-4} alarm={hit ? Math.exp(-(t - no) * 2.5) : 0} limit="Balance HK$26.00, unchanged" />
+          <AICard w={cardW} agent={AGENTS[2]} addr="0x5f6e ···· C91c" ry={-4} alarm={hit ? Math.exp(-(t - no) * 2.5) : 0} limit="Balance HK$26.00, unchanged" />
         </div>
         {hit ? (
           <div style={{ position: "absolute", left: cardX - 300, width: 600, top: 90, textAlign: "center", fontFamily: F.display, fontWeight: 700, fontSize: 210, lineHeight: 1, letterSpacing: "-0.04em", color: C.vermillion, opacity: noP, transform: `scale(${1.25 - 0.25 * noP})` }}>
@@ -342,16 +341,13 @@ export const Money: React.FC = () => {
           <UiCard name="ex-reverted" w={820} x={1400} y={420} p={pop(t, split + 0.5, 9)} from={[80, 0]} tone={C.vermillion} />
           <div style={{ position: "absolute", left: 990, top: 720, display: "flex", alignItems: "center", gap: 18, opacity: pop(t, split + 1.1) }}>
             <Plaque src="brand/fisco-bcos-logo.svg" h={30} p={1} pad={10} />
-            <div style={{ fontFamily: F.mono, fontSize: 23, color: C.vermillion, fontVariantLigatures: "none" }}>the same forced transfer, reverted on our hosted chain in block 13</div>
+            <div style={{ fontFamily: F.mono, fontSize: 23, color: C.vermillion, fontVariantLigatures: "none", maxWidth: 640, lineHeight: 1.35 }}>the same forced transfer, reverted on our hosted chain in block 13</div>
           </div>
           <div style={{ position: "absolute", left: 110, top: 640, width: 780, fontFamily: F.display, fontWeight: 600, fontSize: 56, lineHeight: 1.1, color: C.text, letterSpacing: "-0.02em", opacity: pop(t, r.word("k5", "agent") - 0.1) }}>
             The card still
             <br />
             <span style={{ color: C.vermillion }}>won't pay.</span>
           </div>
-          {t > held - 0.2 ? (
-            <HashHold p={pop(t, held - 0.2, 10)} t={t - held} hash="0x91525ada450e84a0afb9f4fb255d57df3c910d1eb8af78acb2b10f40ed7e7745" eyebrow="THE FORCED TRANSFER ON OUR FISCO BCOS NODE, BLOCK 13" ok={false} status="reverted, nothing moved" />
-          ) : null}
         </>
       ) : null}
     </Stage>
@@ -371,14 +367,14 @@ export const OnlyStricter: React.FC = () => {
   return (
     <Stage>
       <div style={{ position: "absolute", left: 160, top: 170, fontFamily: F.body, fontWeight: 500, fontSize: 36, color: C.muted, opacity: settle(t - 0.2, 8) }}>
-        What the AI can do to your rules
+        The second AI can hold, block or freeze
       </div>
       <div style={{ position: "absolute", left: 150, top: 300, fontFamily: F.display, fontWeight: 600, fontSize: 210, lineHeight: 1, letterSpacing: "-0.04em", color: C.blue, opacity: pS, transform: `translateY(${(1 - pS) * 40}px)` }}>
         Stricter.
       </div>
       <div style={{ position: "absolute", left: 150, top: 540, opacity: pN, transform: `translateY(${(1 - pN) * 40}px)` }}>
         <div style={{ position: "relative", fontFamily: F.display, fontWeight: 600, fontSize: 210, lineHeight: 1, letterSpacing: "-0.04em", color: C.faint }}>
-          Never looser.
+          Looser.
           <div style={{ position: "absolute", left: 0, top: "52%", width: `${100 * strike}%`, height: 14, background: C.vermillion }} />
         </div>
       </div>
@@ -391,7 +387,7 @@ const REFUSED: [string, string][] = [
   ["Pay an address a seller planted", "0xd49be111"],
   ["Pay above “ask me” without you", "0xb3d88830"],
   ["The agent signs as you", "0xaf285aa5"],
-  ["Pay over the HK$15 limit", "0xf0ad609b"],
+  ["Pay over the HK$15 cap", "0xf0ad609b"],
   ["Replay an old payment", "0x84e1d74e"],
   ["Raise its own limit to HK$800", "0x7a3b37d1"],
   ["Add the planted seller", "0x49c76450"],
@@ -401,16 +397,22 @@ export const ProofV3: React.FC = () => {
   const t = useT();
   const r = rel("proof");
   const seven = r.word("f1", "seven");
-  const rej = r.word("f1", "rejected");
   const f2 = r.vo("f2");
   const f3 = r.vo("f3");
   const f4 = r.end("f3") + 0.3; // the try-it address follows the tests (on screen only)
   const swap = easeInOut(clamp((t - (f2 - 0.4)) / 0.5));
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
   return (
     <Stage>
-      <div style={{ position: "absolute", left: 120, top: 70, display: "flex", alignItems: "center", gap: 20, opacity: settle(t - 0.1, 8) }}>
+      {/* where each number comes from: the 7/7 ran on the hosted chain; the 63 attacks and 462 tests on a local FISCO node,
+          Foundry and the demo network (security self-assessment p.3 and p.7) */}
+      <div style={{ position: "absolute", left: 120, top: 70, display: "flex", alignItems: "center", gap: 20, opacity: settle(t - 0.1, 8) * (1 - swap) }}>
         <Plaque src="brand/fisco-bcos-logo.svg" h={34} p={1} pad={11} />
         <div style={{ fontFamily: F.body, fontWeight: 600, fontSize: 26, color: C.text }}>Our hosted FISCO BCOS chain</div>
+      </div>
+      <div style={{ position: "absolute", left: 120, top: 78, fontFamily: F.body, fontWeight: 600, fontSize: 26, color: C.text, opacity: swap }}>
+        Our own test runs, on a local FISCO node, Foundry and the demo network
       </div>
       {/* left: 7 of 7 on the hosted chain, then 63 attacks / HK$0 and 462 tests (the submitted security and technical PDFs) */}
       <div style={{ position: "absolute", left: 120, top: 190, width: 760, opacity: 1 - swap }}>
@@ -424,12 +426,12 @@ export const ProofV3: React.FC = () => {
         </div>
         <div style={{ marginTop: 30 }}>
           {REFUSED.map(([label, tx], i) => {
-            const p = settle(t - rej - 0.05 - i * 0.12, 11);
+            const p = settle(t - seven - 0.35 - i * 0.22, 11); // from "seven" to "rejected"
             return (
               <div key={tx} style={{ display: "flex", alignItems: "center", gap: 16, padding: "9px 0", borderTop: "1px solid rgba(255,255,255,0.07)", opacity: p, transform: `translateX(${(1 - p) * 24}px)` }}>
                 <div style={{ width: 4, height: 20, background: C.vermillion }} />
-                <div style={{ flex: 1, fontFamily: F.body, fontWeight: 500, fontSize: 24, color: C.text }}>{label}</div>
-                <div style={{ fontFamily: F.mono, fontSize: 20, color: C.muted, fontVariantLigatures: "none" }}>{tx}…</div>
+                <div style={{ flex: 1, fontFamily: F.body, fontWeight: 500, fontSize: 27, color: C.text }}>{label}</div>
+                <div style={{ fontFamily: F.mono, fontSize: 22, color: C.muted, fontVariantLigatures: "none" }}>{tx}…</div>
               </div>
             );
           })}
@@ -437,106 +439,175 @@ export const ProofV3: React.FC = () => {
       </div>
       {t > f2 - 0.5 ? (
         <div style={{ position: "absolute", left: 120, top: 220, width: 800 }}>
-          <Big n="63" label="attacks on our own cards, test money" sub="HK$0 lost" p={settle(t - f2 + 0.2, 10)} />
+          <Big n="63" label="attacks on our own cards, test money" sub="HK$0 lost" note="55 assume the AI is already fooled, 8 use a live model" p={settle(t - f2 + 0.2, 10)} />
           <div style={{ height: 70 }} />
           <Big n="462" label="automated tests, 7 suites, on 19 Oct" sub="all passed" p={settle(t - f3 + 0.1, 10)} />
         </div>
       ) : null}
       {/* right: the real explorer */}
       <div style={{ position: "absolute", left: 960, top: 190, opacity: settle(t - 0.4, 7), transform: `translateY(${(1 - settle(t - 0.4, 7)) * 40}px)` }}>
-        <Browser media={{ src: "footage/explorer.mp4", kind: "video", playbackRate: 0.85 }} width={860} url="fisco-api-production-85c5.up.railway.app/explorer" aspect={720 / 1280} zoom={{ s: 1.2, fx: 0.1, fy: 0.1 }} />
+        {/* the reverted forced transfer (block 13) stays up while 7/7 is on screen; the clip runs on from the swap */}
+        <Freeze frame={Math.round(3.6 * fps)} active={frame >= Math.round(3.6 * fps) && t < f2 - 0.4}>
+          <Browser media={{ src: "footage/explorer.mp4", kind: "video", playbackRate: 0.85 }} width={860} url="fisco-api-production-85c5.up.railway.app/explorer" aspect={720 / 1280} zoom={{ s: 1.6, fx: 0.03, fy: 0.1 }} />
+        </Freeze>
       </div>
-      {/* where to try it, as the voice says so (the bonus rewards a real deployment) */}
-      <div style={{ position: "absolute", left: 960, top: 760, display: "flex", alignItems: "center", gap: 14, opacity: settle(t - f4 - 0.2, 8), fontFamily: F.mono, fontSize: 26, color: C.blue, fontVariantLigatures: "none" }}>
+      {/* where to try it (the bonus rewards a real deployment), and where a judge fires the attacks themself and gets
+          their own reverted hash on the hosted chain (README, step 4) */}
+      <div style={{ position: "absolute", left: 960, top: 736, display: "flex", alignItems: "center", gap: 14, opacity: settle(t - f4 - 0.2, 8), fontFamily: F.mono, fontSize: 26, color: C.blue, fontVariantLigatures: "none" }}>
         <Globe size={26} />
-        Try it: fintechathon-lian-ai-nao.vercel.app
+        Try it: fisco-web-production.up.railway.app
       </div>
-      <Small p={settle(t - 3.5, 6)} style={{ left: 120, top: 830, fontSize: 23, lineHeight: 1.4 }}>
-        Mock e-HKD is test money, not the HKMA's e-HKD. Our team hosts the chain, and the phone shots were recorded on our test setup.
+      <div style={{ position: "absolute", left: 960, top: 780, display: "flex", alignItems: "center", gap: 14, opacity: settle(t - f4 - 0.6, 8), fontFamily: F.mono, fontSize: 26, color: C.text, fontVariantLigatures: "none" }}>
+        <Crosshair size={26} color={C.blue} />
+        Run the attacks yourself in the Judges tab
+      </div>
+      <Small p={settle(t - 3.5, 6)} style={{ left: 120, top: 830, fontSize: 23, lineHeight: 1.4, maxWidth: 1500 }}>
+        Mock e-HKD is test money, not the HKMA's e-HKD. The phone shots were recorded on our test setup.
         <br />
-        Details: ChainBrain-security-self-assessment.pdf
+        Details: ChainBrain-security-self-assessment.pdf. Hosted-chain hashes: ChainBrain-execution-evidence.pdf.
       </Small>
     </Stage>
   );
 };
 
-const Big: React.FC<{ n: string; label: string; sub: string; p: number }> = ({ n, label, sub, p }) => (
+const Big: React.FC<{ n: string; label: string; sub: string; note?: string; p: number }> = ({ n, label, sub, note, p }) => (
   <div style={{ opacity: p, transform: `translateY(${(1 - p) * 30}px)` }}>
     <div style={{ display: "flex", alignItems: "baseline", gap: 24 }}>
       <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 170, lineHeight: 0.9, letterSpacing: "-0.05em", color: C.text }}>{n}</div>
       <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 30, color: C.muted, maxWidth: 280, lineHeight: 1.2 }}>{label}</div>
     </div>
-    <div style={{ marginTop: 12, fontFamily: F.display, fontWeight: 600, fontSize: 64, color: C.blue, letterSpacing: "-0.02em" }}>{sub}</div>
+    <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 26 }}>
+      <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 64, color: C.blue, letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>{sub}</div>
+      {note ? <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 24, color: C.muted, maxWidth: 360, lineHeight: 1.25 }}>{note}</div> : null}
+    </div>
   </div>
 );
 
 // ───────────────────────── The team ─────────────────────────
-// Three portraits (3:4, eyes on one line: tools/team.py), names and universities.
+// "We're three university students from Malaysia.", set as it is spoken beside the waving flag; the three portraits
+// (3:4, eyes on one line: tools/team.py) rise on "three", each university's own logo lands under its students on
+// "university students", and a light passes over the portraits on "Malaysia". The burned-in subtitle leaves this line
+// out (the headline is the line); the .srt keeps it.
+export const TEAM_LINE = "t1";
 const TEAM = [
-  { name: "Chin Jun Quan", uni: "Universiti Malaya", src: "team/chin-jun-quan.jpg" },
-  { name: "Tan Hao Wen", uni: "Universiti Malaya", src: "team/tan-hao-wen.jpg" },
-  { name: "Wong Yong Xi", uni: "Universiti Putra Malaysia", src: "team/wong-yong-xi.jpg" },
+  { name: "Chin Jun Quan", uni: "Universiti Malaya", src: "team/chin-jun-quan.jpg", logo: "brand/universiti-malaya-logo.png", logoH: 56 },
+  { name: "Tan Hao Wen", uni: "Universiti Malaya", src: "team/tan-hao-wen.jpg", logo: "brand/universiti-malaya-logo.png", logoH: 56 },
+  { name: "Wong Yong Xi", uni: "Universiti Putra Malaysia", src: "team/wong-yong-xi.jpg", logo: "brand/upm-logo.png", logoH: 62 },
 ];
 
 export const TeamSlide: React.FC = () => {
   const t = useT();
+  const r = rel("team");
+  const spoken = timeline.vo.some((v) => v.id === TEAM_LINE); // the line is voiced in this cut
+  const w = (word: string, fallback: number) => (spoken ? r.word(TEAM_LINE, word) : fallback);
+  const three = w("three", 0.5);
+  const uni = w("university", 0.9);
+  const malaysia = w("malaysia", 1.6);
+  const len = sceneEnd("team") - sceneStart("team");
+  const push = 1 + 0.025 * easeInOut(clamp(t / len));
+  const headWords = "We're three university students from Malaysia.".split(" ");
+  const times = headWords.map((hw) => w(hw.replace(/[^A-Za-z']/g, "").toLowerCase().replace("'", ""), 0.2) - 0.08);
   return (
     <Stage>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 96, display: "flex", justifyContent: "center", alignItems: "center", gap: 16, opacity: settle(t - 0.1, 8) }}>
-        <BrandMark size={34} />
-        <div style={{ fontFamily: F.body, fontWeight: 600, fontSize: 30, color: C.muted }}>The team behind ChainBrain</div>
-      </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 190, display: "flex", justifyContent: "center", gap: 70 }}>
-        {TEAM.map((m, i) => {
-          const p = settle(t - 0.25 - i * 0.18, 9);
-          return (
-            <div key={m.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", opacity: p, transform: `translateY(${(1 - p) * 40}px)` }}>
-              <div style={{ width: 390, height: 520, borderRadius: 28, overflow: "hidden", boxShadow: "0 30px 70px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.14)" }}>
-                <Img src={staticFile(m.src)} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      <AbsoluteFill style={{ transform: `scale(${push})` }}>
+        {/* the line, with the flag */}
+        <div style={{ position: "absolute", left: 0, right: 0, top: 96, display: "flex", justifyContent: "center", alignItems: "center", gap: 30 }}>
+          <WavingFlag t={t} at={Math.max(0, three - 0.6)} shimmer={malaysia} />
+          <Reveal text={headWords.join(" ")} size={64} times={times} w={10} />
+        </div>
+        <div style={{ position: "absolute", left: 0, right: 0, top: 222, display: "flex", justifyContent: "center", gap: 72 }}>
+          {TEAM.map((m, i) => {
+            const p = settle(t - three - i * 0.16, 8);
+            const lg = settle(t - uni - 0.1 - i * 0.14, 10);
+            const sweep = clamp((t - malaysia - 0.1 - i * 0.12) / 0.9);
+            return (
+              <div key={m.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 380, opacity: clamp(p * 1.4), transform: `translateY(${(1 - p) * 60}px)` }}>
+                <div style={{ position: "relative", width: 350, height: 467, borderRadius: 26, overflow: "hidden", boxShadow: "0 30px 70px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.14)" }}>
+                  <Img src={staticFile(m.src)} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  {sweep > 0 && sweep < 1 ? (
+                    <div style={{ position: "absolute", inset: 0, background: `linear-gradient(110deg, transparent ${-34 + sweep * 168}%, rgba(255,255,255,0.22) ${-20 + sweep * 168}%, transparent ${-6 + sweep * 168}%)` }} />
+                  ) : null}
+                </div>
+                <div style={{ marginTop: 24, fontFamily: F.display, fontWeight: 600, fontSize: 42, color: C.text, letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>{m.name}</div>
+                {/* the university's own logo, unmodified, on a white plaque */}
+                <div style={{ marginTop: 16, height: 80, padding: "0 16px", display: "flex", alignItems: "center", borderRadius: 14, background: "#FFFFFF", boxShadow: "0 10px 26px rgba(0,0,0,0.45)", opacity: lg, transform: `translateY(${(1 - lg) * 14}px) scale(${0.92 + 0.08 * lg})` }}>
+                  <Img src={staticFile(m.logo)} style={{ height: m.logoH, display: "block" }} />
+                </div>
+                <div style={{ marginTop: 12, fontFamily: F.body, fontWeight: 500, fontSize: 24, color: C.muted, opacity: lg, whiteSpace: "nowrap" }}>{m.uni}</div>
               </div>
-              <div style={{ marginTop: 30, fontFamily: F.display, fontWeight: 600, fontSize: 44, color: C.text, letterSpacing: "-0.01em" }}>{m.name}</div>
-              <div style={{ marginTop: 8, fontFamily: F.body, fontWeight: 500, fontSize: 26, color: C.muted }}>{m.uni}</div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
     </Stage>
+  );
+};
+
+// The Malaysian flag (Wikimedia Commons, public domain), unfurled from the left, then waving: the image is cut into
+// thin overlapping vertical strips, each lifted along a travelling sine wave. The light and shade of the folds is one
+// gradient across the whole flag, drawn inside every strip at the same offset as the image, so no strip edge shows.
+// A soft shine runs across it at `shimmer`.
+const WavingFlag: React.FC<{ t: number; at: number; shimmer: number }> = ({ t, at, shimmer }) => {
+  const W = 120;
+  const H = 60;
+  const N = 40; // 3 px strips on whole pixels: a strip edge on a half pixel shows as a faint seam
+  const u = t - at;
+  const open = easeOut(clamp(u / 0.6));
+  const amp = 3.2 * clamp(u / 0.8);
+  const phase = (fx: number) => fx * Math.PI * 2.2 - u * 5.2; // fx: 0 (hoist) .. 1 (free edge)
+  const depth = 0.08 * clamp(u / 0.8);
+  const stops = Array.from({ length: 13 }, (_, k) => {
+    const v = Math.cos(phase(k / 12)) * depth;
+    return `${v > 0 ? `rgba(255,255,255,${v.toFixed(3)})` : `rgba(0,0,0,${(-v * 1.4).toFixed(3)})`} ${((k / 12) * 100).toFixed(1)}%`;
+  }).join(", ");
+  const shine = clamp((t - shimmer) / 0.8);
+  return (
+    <div style={{ position: "relative", width: W, height: H + 10, opacity: clamp(u / 0.25), clipPath: `inset(-10px ${(1 - open) * 100}% -10px 0)` }}>
+      {Array.from({ length: N }, (_, i) => {
+        const x = Math.round((i / N) * W);
+        const dy = Math.sin(phase(i / N)) * amp * (0.35 + 0.65 * (i / N)); // the free edge moves most
+        return (
+          <div key={i} style={{ position: "absolute", left: x, top: 5, width: Math.round(W / N) + 1, height: H, overflow: "hidden", transform: `translateY(${dy.toFixed(2)}px)` }}>
+            <Img src={staticFile("brand/flag-malaysia.svg")} style={{ position: "absolute", left: -x, top: 0, width: W, height: H, display: "block" }} />
+            <div style={{ position: "absolute", left: -x, top: 0, width: W, height: H, background: `linear-gradient(90deg, ${stops})` }} />
+          </div>
+        );
+      })}
+      {shine > 0 && shine < 1 ? (
+        <div style={{ position: "absolute", left: 0, top: 0, width: W, height: H + 10, background: `linear-gradient(110deg, transparent ${-30 + shine * 160}%, rgba(255,255,255,0.35) ${-15 + shine * 160}%, transparent ${0 + shine * 160}%)` }} />
+      ) : null}
+    </div>
   );
 };
 
 // ───────────────────────── Ending ─────────────────────────
 // The line, the mark, and where to try it. When the closing clip has just said the line on camera (scenes/Face.tsx),
-// the card opens on the mark instead of setting the line again.
+// the end card is the card constellation instead (scenes/EndCard.tsx), so the line isn't set again.
 export const Ending: React.FC = () => {
   const t = useT();
   const r = rel("close");
-  const said = hasClip("close");
-  const k = said ? 0.15 : r.end("z1") + 0.3; // when the mark comes in
-  const foot = settle(t - k, 7);
   const len = sceneEnd("close") - sceneStart("close");
+  if (hasClip("close")) return <CardConstellation len={len} />;
+  const foot = settle(t - r.end("z1") - 0.3, 7);
   const drift = 1 + 0.025 * clamp(t / len);
   const out = 1 - easeOut(clamp((t - (len - 0.5)) / 0.5)); // fade to black over the last half second
-  const y = said ? { mark: 330, links: 530, event: 760 } : { mark: 640, links: 740, event: 900 };
-  const big = said ? 1.5 : 1;
   return (
     <Stage>
       <AbsoluteFill style={{ transform: `scale(${drift})`, opacity: out }}>
-      {said ? null : (
-        <div style={{ position: "absolute", left: 0, right: 0, top: 260 }}>
-          <Sequence from={Math.max(0, Math.round(r.vo("z1") * 30) - 6)} layout="none">
-            <Reveal text={"Give your AI a card,\nnot your wallet."} size={128} align="center" stagger={0.08} highlight={{ card: C.vermillion }} />
-          </Sequence>
-        </div>
-      )}
-      <div style={{ position: "absolute", left: 0, right: 0, top: y.mark, display: "flex", justifyContent: "center", alignItems: "center", gap: 20 * big, opacity: foot }}>
-        <BrandMark size={56 * big} t={t - k} />
-        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 52 * big, color: C.text }}>ChainBrain</div>
-        <div style={{ fontFamily: F.cjk, fontWeight: 700, fontSize: 30 * big, color: C.muted }}>链AI脑</div>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 260 }}>
+        <Sequence from={Math.max(0, Math.round(r.vo("z1") * 30) - 6)} layout="none">
+          <Reveal text={"Give your AI a card,\nnot your wallet."} size={128} align="center" stagger={0.08} highlight={{ card: C.vermillion }} />
+        </Sequence>
       </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: y.links, display: "flex", justifyContent: "center", opacity: settle(t - k - 0.5, 7) }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 640, display: "flex", justifyContent: "center", alignItems: "center", gap: 20, opacity: foot }}>
+        <BrandMark size={56} t={t - r.end("z1") - 0.3} />
+        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 52, color: C.text }}>ChainBrain</div>
+        <div style={{ fontFamily: F.cjk, fontWeight: 700, fontSize: 30, color: C.muted }}>链AI脑</div>
+      </div>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 740, display: "flex", justifyContent: "center", opacity: settle(t - r.end("z1") - 0.8, 7) }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {[
-          { icon: <Globe size={32} />, label: "Try it", value: "fintechathon-lian-ai-nao.vercel.app" },
+          { icon: <Globe size={32} />, label: "Try it", value: "fisco-web-production.up.railway.app" },
           { icon: <CodeXml size={32} />, label: "Code", value: "github.com/ixgnoy/ChainBrain" },
         ].map((l) => (
           <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -547,7 +618,7 @@ export const Ending: React.FC = () => {
         ))}
         </div>
       </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: y.event, textAlign: "center", fontFamily: F.body, fontWeight: 500, fontSize: 26, color: C.muted, opacity: settle(t - k - 0.9, 7) }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 900, textAlign: "center", fontFamily: F.body, fontWeight: 500, fontSize: 26, color: C.muted, opacity: settle(t - r.end("z1") - 1.2, 7) }}>
         FinTechathon 2026, International AI Track, Topic F
       </div>
       </AbsoluteFill>

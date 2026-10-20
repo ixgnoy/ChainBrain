@@ -6,6 +6,7 @@ import words from "../vo-words.json";
 import zhSubs from "../subs-zh.json";
 import { C, F } from "../theme";
 import { TYPESET } from "../scenes/Face";
+import { TEAM_LINE } from "../scenes/V3";
 
 type Word = { w: string; s: number; e: number };
 export type Page = { id: string; text: string; start: number; end: number; zh?: string };
@@ -75,8 +76,9 @@ export function buildPages(): Page[] {
 }
 
 const PAGES = buildPages();
-// a line an on-camera clip already sets in big type beside the face isn't repeated at the bottom (the .srt keeps it)
-const SHOWN = PAGES.filter((p) => !TYPESET.has(p.id));
+// a line the picture already sets in big type (an on-camera clip's line beside the face, the team slide's headline)
+// isn't repeated at the bottom (the .srt keeps it)
+const SHOWN = PAGES.filter((p) => !TYPESET.has(p.id) && p.id !== TEAM_LINE);
 
 export const Subtitles: React.FC = () => {
   const frame = useCurrentFrame();
@@ -122,6 +124,7 @@ export const Subtitles: React.FC = () => {
           lineHeight: 1.3,
           textAlign: "center",
           letterSpacing: "0.005em",
+          textWrap: "balance",
         }}
       >
         <div style={{ opacity: en / box }}>{p.text}</div>

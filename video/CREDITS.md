@@ -12,6 +12,14 @@
 
 - Supplied by the team for the team slide (`footage/teammate/`, not in git); cropped to matching 3:4 portraits by `tools/team.py`.
 
+## University marks and the flag (team slide)
+
+Shown for identification only, each on a white plaque; no endorsement is implied. Files in `video/assets/brand/`.
+
+- **Universiti Malaya:** the logo from the university's own website header (`https://www.um.edu.my/images/img-logo-UM.png`, 180 x 56), unmodified (`universiti-malaya-logo.png`).
+- **Universiti Putra Malaysia:** the logo from the university's own website header (`https://www.upm.edu.my/assets/images23/20170406143426UPM-New_FINAL.jpg`). It was converted from print colours (CMYK) to RGB and its white margin trimmed; the mark itself is unmodified (`upm-logo.png`).
+- **Flag of Malaysia:** Wikimedia Commons, `File:Flag_of_Malaysia.svg`, public domain (`flag-malaysia.svg`). The film animates it waving.
+
 ## Facts quoted
 
 - HKMA, Carmen Chu, Executive Director (Banking Supervision), opening remarks at the Finance + A.I. Forum, 16 Oct 2026 (https://www.hkma.gov.hk/eng/news-and-media/speeches/2026/10/20261016-1/): governance anchored to intent, kill-switch mechanisms, "A.I. versus A.I.", securing the boundaries around an agent. The video paraphrases them as four ideas from the speech, which places them under the HKMA's ART framework.
@@ -23,7 +31,7 @@
 
 ## Footage
 
-- **Phone:** the ChainBrain Expo app in Expo Go on the iOS Simulator, recorded with `xcrun simctl io recordVideo` on 19 Oct 2026.
+- **Phone:** the ChainBrain Expo app in Expo Go on the iOS Simulator, recorded with `xcrun simctl io recordVideo` on 19 Oct 2026, and again on 20 Oct after declining Claude's pending co-sign request, so its ask dock doesn't show.
   - It runs on the app's **built-in network**, a simulated chain (Settings → Demo network).
   - Every phone shot carries an on-screen label saying so.
   - The app's own auto-play drove the scenes.
