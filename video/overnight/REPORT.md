@@ -1,6 +1,6 @@
 # Overnight video report: ranked, ready to cherry-pick
 
-Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 13:45 HKT.
+Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 12:35 HKT.
 
 - Frames: [storyboard.html](storyboard.html)
 - Research and reviews: [research/](research/)

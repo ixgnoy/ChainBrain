@@ -190,7 +190,7 @@ Labels: "before the deadline" means doable in under 2 h of Remotion edits tonigh
 - No source for a Chinese-English caption speed norm, no BBC primary page, no study of judges' decision time on hackathon videos, no study isolating explainer-video voice credibility.
 - Kizilcec et al. (instructor face in video instruction) could not be found by search; I made no claims from it.
 
-## Addendum, 20 Oct 13:30: 2026 sources on synthetic voices (main session sweep)
+## Addendum, 20 Oct midday: 2026 sources on synthetic voices (main session sweep)
 
 - **Vocal Image listener study, Feb 2026** (IT Brief: https://itbrief.co.uk/story/uk-listeners-spot-ai-voices-faster-trust-them-less). More than 10,000 participants heard 20 TTS models. Approval fell when listeners identified a voice as machine-made (reported r = −0.802 between detection and approval). Industry study, secondary report: UNVERIFIED at the primary source.
 - **Crowd React Media radio blind test, Jul 2026** (Radio Ink: https://radioink.com/2026/07/07/radio-listeners-cant-detect-ai-voice-but-dont-trust-it-either/). With 1,326 listeners, human and synthetic voices scored about the same on trust, and detection was near chance. Commissioned by an interested party.
