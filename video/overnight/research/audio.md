@@ -98,3 +98,4 @@ I built two synthetic "phone takes" from the branch's preview lines: 3 s of room
 - **Whisper match:** 0.88–1.0 per line. The lowest scores are the lines with names (Carmen Chu, FISCO BCOS), and they still matched.
 
 What it means: the importer handles the edited script without changes. A real phone take will measure a higher floor, around −50 to −45, and the chain adapts to it.
+- **Closing clip.** A synthetic `face/close.mov` (4.5 s, the z1 line) imported cleanly: trimmed to 0.17–4.20 s, written to `face.json` as line z1. The layout then gives a 4.5 s `closeface` scene followed by the 6 s ending slide (`fbce3a2`).
