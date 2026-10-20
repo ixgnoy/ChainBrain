@@ -212,3 +212,8 @@ Unverified or needing a human:
   - the GenAI Sandbox++ first cohort, focused on agentic AI (https://www.fow.com/insights/sfc-hkma-launch-first-cohort-of-ai-sandbox-focused-on-agents, Aug 2026)
   - Linklaters' September 2026 bulletin (https://techinsights.linklaters.com/post/102o0io/asia-fintech-payments-regulatory-bulletin-september-2026)
 - **What it means for the video.** The HKMA beat needs no update for new statements. Re-check on 21–22 Oct for the finals deck.
+
+## Addendum, 20 Oct 12:20 HKT
+
+- **HKMA press releases, rechecked.** The only item dated 16–20 Oct is a sovereign-bond notice of 20 Oct (https://www.hkma.gov.hk/eng/news-and-media/press-releases/2026/10/20261020-3/). Nothing on AI, agents, e-HKD or stablecoins, so the HKMA beat needs no update.
+- **Competition site.** The SPA at fintechathon.g-ican.com rendered blank from this environment. The team's 19 Oct capture in `docs/01-competition/` is still the latest copy. Check the site by hand before uploading in case of last-day notices.
