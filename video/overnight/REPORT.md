@@ -49,7 +49,7 @@ The five changes that matter most, best first. Picking the whole range includes 
 
 ### If the owner's voice does not arrive in time
 
-**Easiest: merge the ready-made branch `video-safe`.** It's `main` plus the screen and audio changes, with the conflicts below already resolved. It type-checks and its stills look right. Runtime is 4:51 with Sarah's voice. Run this on `main`, then rebuild:
+**Easiest: merge the ready-made branch `video-safe`.** It's `main` plus the screen and audio changes, with the conflicts below already resolved. It's verified with a half-resolution render: 4:51.0, −14.4 LUFS, true peak −3.0 dBTP, and voice and screen agree throughout (`overnight/frames/safe-preview-sheet.jpg`). Run this on `main`, then rebuild:
 
 ```bash
 git merge --ff-only video-safe
