@@ -1,6 +1,6 @@
 # Overnight video report: ranked, ready to cherry-pick
 
-Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 04:00 HKT.
+Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a straight line on `main` at `9bcd289`. Updated 20 Oct 2026, 12:20 HKT.
 
 - Frames: [storyboard.html](storyboard.html)
 - Research and reviews: [research/](research/)
@@ -37,7 +37,7 @@ What that buys, most important first:
 | 9 | **Delivery safety.** The MP4's true peak goes from −0.6 to −1.7 dBTP, and `qc.py` checks length, format, loudness, peak, black, freezes, silence and subtitle speed. | `6edcc66` `b366b98` | A portal never has to touch our audio | None |
 | 10 | **Small text fixes.** "A.I. versus A.I." no longer breaks across two subtitles. The HKMA beat is "four ideas from the speech", which matches the speech; it never says "principles". | `9e4ef9b` `860094b` `ab94d1a` | Removes a mislabel a Hong Kong judge could check in two minutes | None |
 
-**Runtime.** The review rounds had grown the script from 534 to 602 words, and at the owner's coached 145 wpm that ran **5:13.5, over the cap**. `d3ffd3b` trims it back to 549 words (every accuracy fix kept) and adds `tools/pace.py`. Simulated with `layout.py`: **4:51 at 145 wpm, 4:45.5 at 150, 4:55.5 at 140** (v4 was 4:46 at 145). Keep any on-camera intro under 5 s, and run `python3 tools/pace.py remotion/src/vo-words.json remotion/src/edit.json 145` after any script change. `qc.py` fails anything over 5:00. The owner's pace of 140–150 wpm is close to Sarah's.
+**Runtime.** The review rounds had grown the script from 534 to 602 words, and at the owner's coached 145 wpm that ran **5:13.5, over the cap**. `d3ffd3b` trims it back to 549 words (every accuracy fix kept) and adds `tools/pace.py`. Simulated with `layout.py`: **4:51 at 145 wpm, 4:45.5 at 150, 4:55.5 at 140** (v4 was 4:46 at 145). Keep any on-camera intro under 5 s, and run `python3 tools/pace.py remotion/src/vo-words.json remotion/src/edit.json 145` after any script change. `qc.py` fails anything over 5:00. Subtitles simulated at the owner's pace peak at 16.2 cps at 140 wpm, 16.6 at 145 and 17.0 at 150. The 17 cps target holds after a comma in h1 gave the HKMA line a natural page break.
 
 ### If the owner's voice does not arrive in time
 
