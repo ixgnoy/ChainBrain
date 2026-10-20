@@ -6,6 +6,7 @@ Branch `video-overnight` (worktree `.claude/worktrees/video-overnight`), a strai
 - Research and reviews: [research/](research/)
 - Kit for the owner's recording: [recording-kit-v41.html](recording-kit-v41.html), rebuilt with `python3 video/overnight/kit.py`
 - Teleprompter for the recording: [teleprompter.html](teleprompter.html). Open it in a browser on a laptop beside the phone. It shows one recording file per screen, and a highlight moves through the lines at 145 wpm, adjustable. Space starts and stops; the arrow keys change file. The timer turns red more than 10% over the section's target. Rebuild it with `python3 video/overnight/teleprompter.py`.
+- Checking takes before importing: `sh overnight/try-recordings.sh` (from `video/`). It imports whatever is in `footage/voice` and `footage/face` into a temp folder, then prints each line's match, the real speaking pace per file, and the film's runtime with those takes. It writes nothing into the project.
 
 ## If you have two hours before the deadline, do these
 
