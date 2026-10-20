@@ -32,7 +32,7 @@ for i, text in new.items():
     else:
         missing.append(i)
 s = s.replace("<style>", "<style>mark{background:#ffe9a8;padding:0 2px;border-radius:3px}", 1)
-s = s.replace("Voice recording kit</h1>", "Voice recording kit (v4.1)</h1><p><mark>Highlighted</mark> lines changed in v4.1 for accuracy (video/overnight/research/script-v41.md). Read those words. Leave 3 seconds of silence at the start of every file: the clean-up measures your room from it.</p>", 1)
+s = s.replace("Voice recording kit</h1>", "Voice recording kit (v4.1)</h1><p><mark>Highlighted</mark> lines changed in v4.1 for accuracy (video/overnight/research/script-v41.md). Read those words. Leave 3 seconds of silence at the start of every file: the clean-up measures your room from it. To hold the pace, read along with <b>teleprompter.html</b> (same folder), which moves through the lines at 145 words a minute.</p>", 1)
 # changed lines get a fresh target length at 150 words a minute (the kit's other targets are the v4 voice's)
 s = re.sub(
     r'<span class="sec">[\d.]+s</span><span class="txt"><mark title="([^"]+)">([^<]+)</mark>',
