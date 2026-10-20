@@ -7,7 +7,6 @@ import datetime, json, os, sys, urllib.request
 
 RPC = os.environ.get("FISCO_RPC", "https://fisco-node-production.up.railway.app")
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 HKT = datetime.timezone(datetime.timedelta(hours=8))
 
 
@@ -23,7 +22,7 @@ def call(method, params, tries=3):
 
 
 def rows():
-    app = json.load(open(os.path.join(ROOT, "docs", "evidence-fisco-railway.json")))
+    app = json.load(open(os.path.join(HERE, "evidence-fisco-railway.json")))
     for e in app["entries"]:
         yield {"set": "app", "label": e["label"], "tx": e["tx"], "expect": e["expect"]}
     proof = json.load(open(os.path.join(HERE, "..", "redteam", "hosted-proof.json")))

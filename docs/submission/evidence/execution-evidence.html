@@ -89,7 +89,7 @@ table.ev tr.grp td { background: var(--tile); font-weight: 600; font-size: 7.6pt
 <body>
 
 <section class="page">
-  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Execution evidence</div><div class="meta">19 October 2026 · FISCO BCOS · Mock e-HKD</div></div>
+  <div class="top"><div class="brand"><div class="mark"><span style="background:#111215"></span><span style="background:#F04E23"></span><span style="background:#9DCAFF"></span><span style="background:#111215"></span></div>ChainBrain · Execution evidence</div><div class="meta">20 October 2026 · FISCO BCOS · Mock e-HKD</div></div>
   <div class="eyebrow">Execution evidence · Team ChainBrain · International AI Track · Topic F · 20 Oct 2026</div>
   <h1>25 transactions on a public FISCO chain.<br>9 of them are attacks the card refused.</h1>
   <p class="lede">Every hash below opens in the hosted explorer, and one command re-fetches all 25 receipts from the public RPC. A refused payment is a success here: it broke the owner's rules, so the chain rejected it and no money moved.</p>
@@ -123,7 +123,7 @@ table.ev tr.grp td { background: var(--tile); font-weight: 600; font-size: 7.6pt
   <div class="wide"><img src="../tech/img/explorer-revert.jpg" alt="Hosted explorer showing transaction 5 reverted"></div>
   <p class="cap">Transaction 5 in the hosted explorer: a compromised agent key sent a seller's planted transfer straight to the Mock e-HKD token, and the card refused it.</p>
 
-  <p class="cap" style="margin-top:10px">Not listed: test-suite and live-model runs, which ran on a local FISCO node judges can't reach. Those are in <span class="mono">docs/evidence-fisco.json</span>.</p>
+  <p class="cap" style="margin-top:10px">Not listed: test-suite and live-model runs, which ran on a local FISCO node judges can't reach. Those are in <span class="mono">docs/submission/evidence/evidence-fisco.json</span>.</p>
 
   <div class="foot"><span>Mock e-HKD is a test token on FISCO BCOS, not the HKMA's e-HKD.</span><span>1 / 3</span></div>
 </section>
@@ -183,7 +183,7 @@ table.ev tr.grp td { background: var(--tile); font-weight: 600; font-size: 7.6pt
   --pocket 0x91019dDCD226aA00D3e76CD79C5bCFF9973D5374</pre></div>
     <div class="box"><h3>4 · Run the proof again, with new keys</h3><p>Deploys a fresh token, factory and card from new keys funded by the public faucet, then sends set B's 14 transactions. New hashes, same results; it exits with an error on any mismatch. Needs Node, <span class="mono">pnpm install</span> in <span class="mono">server/</span> and the contracts built with <span class="mono">forge build</span>.</p>
 <pre style="margin-top:6px">cd server &amp;&amp; OUT=/tmp/proof.json npx tsx scripts/hosted-proof.ts</pre></div>
-    <div class="box"><h3>5 · Try the app</h3><p>Console: <a href="https://fisco-web-production.up.railway.app">fisco-web-production.up.railway.app</a>, mirror <a href="https://fintechathon-lian-ai-nao.vercel.app">fintechathon-lian-ai-nao.vercel.app</a> (Judges tab: four one-tap attacks). Test money: <a href="https://fisco-api-production-85c5.up.railway.app/faucet">fisco-api-production-85c5.up.railway.app/faucet</a>, HK$100 per address per day.</p></div>
+    <div class="box"><h3>5 · Try the app</h3><p>Phone app: <a href="https://fisco-phone-production.up.railway.app">fisco-phone-production.up.railway.app</a>. Console: <a href="https://fisco-web-production.up.railway.app">fisco-web-production.up.railway.app</a> (Judges tab: four one-tap attacks). Test money: <a href="https://fisco-api-production-85c5.up.railway.app/faucet">fisco-api-production-85c5.up.railway.app/faucet</a>, HK$100 per address per day.</p></div>
   </div>
 
   <h3 style="margin-top: 14px;">Chain details</h3>

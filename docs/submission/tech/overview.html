@@ -80,7 +80,7 @@ svg .mono, svg tspan.mono { font-family: "SF Mono", Menlo, monospace; font-size:
 .big3 .tile { padding: 14px 14px 13px; }
 .big3 .n { font-size: 26pt; }
 .big3 .l { font-size: 8.4pt; }
-.links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.links { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .links a { display: block; border: 0.5px solid var(--line); border-radius: 6px; padding: 10px 12px; color: var(--ink); }
 .links a b { display: block; font-size: 9pt; margin-bottom: 2px; }
 .links a span { font-size: 7.6pt; color: var(--blueInk); white-space: nowrap; }
@@ -136,11 +136,12 @@ table.tight th { font-size: 7.3pt; padding: 3px 6px; }
 
   <h3>Try it and check it</h3>
   <div class="links">
-    <a href="https://fisco-web-production.up.railway.app"><b>Web console</b><span>fisco-web-production.up.railway.app</span></a>
-    <a href="https://fisco-api-production-85c5.up.railway.app/explorer"><b>Chain explorer</b><span>fisco-api-production-85c5…/explorer</span></a>
-    <a href="https://github.com/ixgnoy/Fintechathon-LianAiNao"><b>Source code</b><span>github.com/ixgnoy/…-LianAiNao</span></a>
+    <a href="https://fisco-phone-production.up.railway.app"><b>Phone app</b><span>fisco-phone-production…</span></a>
+    <a href="https://fisco-web-production.up.railway.app"><b>Web console</b><span>fisco-web-production…</span></a>
+    <a href="https://fisco-api-production-85c5.up.railway.app/explorer"><b>Chain explorer</b><span>fisco-api-…/explorer</span></a>
+    <a href="https://github.com/ixgnoy/ChainBrain"><b>Source code</b><span>github.com/ixgnoy/ChainBrain</span></a>
   </div>
-  <p class="cap" style="margin-top:8px">Console mirror: fintechathon-lian-ai-nao.vercel.app. Also in this package: the security self-assessment and the execution evidence.</p>
+  <p class="cap" style="margin-top:8px">All four run on Railway; the phone app opens in any browser. Also in this package: the security self-assessment and the execution evidence.</p>
 
   <div class="foot"><span>Mock e-HKD is a test token, not the HKMA's e-HKD. The card's contract is named Pocket in the code.</span><span>1 / 13</span></div>
 </section>
@@ -297,7 +298,7 @@ table.tight th { font-size: 7.3pt; padding: 3px 6px; }
     <tr><td class="k">Agent tools</td><td>7 wallet tools. Only <span class="mono">pay</span> moves money, and no tool accepts a payee address (page 4).</td></tr>
     <tr><td class="k">Payments</td><td>x402 version 2: the seller answers HTTP 402 with a price, the agent's signed payment comes back in a header, and a facilitator submits it on chain.</td></tr>
     <tr><td class="k">Data sources</td><td>Seller content, always wrapped as untrusted; token transfers on the chain, which Radar indexes; an optional risk-label file.</td></tr>
-    <tr><td class="k">Hosting</td><td>Railway: the chain node, the wallet API, the sellers and the console. A console mirror on Vercel.</td></tr>
+    <tr><td class="k">Hosting</td><td>Railway: the chain node, the wallet API, the sellers, the web console and the phone app's web build.</td></tr>
   </table>
 
   <div class="foot"><span>ChainBrain · Technical documentation</span><span>3 / 13</span></div>
@@ -315,7 +316,7 @@ table.tight th { font-size: 7.3pt; padding: 3px 6px; }
     <div class="box blue"><h3>Payments</h3><p>The 7 tools, quotes and settlement over x402, the task check, the dry run, owner co-signs, and the 30 refusal reasons.</p></div>
     <div class="box"><h3>The agent</h3><p>The tool loop, the scripted fallback, the model switch, memory, and turning one sentence into card rules.</p></div>
     <div class="box" style="background:#FFDBD2;border:0"><h3>Safety</h3><p>Radar's seller screening and alerts, the Sentinel's hold and freeze, and the judges' attack arena on the real chain.</p></div>
-    <div class="box"><h3>Routines and onboarding</h3><p>Standing orders checked every 30 seconds, two starter cards for a new account, the faucet.</p></div>
+    <div class="box"><h3>Routines and onboarding</h3><p>Standing orders checked every 30 seconds. A new account starts lived-in: two cards make real purchases, one refuses a planted transfer on chain, and a daily routine leaves a co-sign waiting.</p></div>
     <div class="box"><h3>Chain access</h3><p>A read-only explorer and RPC proxy, plus the 8 x402 test sellers with 12 items.</p></div>
   </div>
 
@@ -782,7 +783,8 @@ table.tight th { font-size: 7.3pt; padding: 3px 6px; }
     <div>
       <h3>Public addresses</h3>
       <table class="tight">
-        <tr><td class="k" style="width:24mm">Console</td><td><a href="https://fisco-web-production.up.railway.app">fisco-web-production.up.railway.app</a><br><span style="color:#5E5F68">mirror: <a href="https://fintechathon-lian-ai-nao.vercel.app">fintechathon-lian-ai-nao.vercel.app</a></span></td></tr>
+        <tr><td class="k" style="width:24mm">Console</td><td><a href="https://fisco-web-production.up.railway.app">fisco-web-production.up.railway.app</a></td></tr>
+        <tr><td class="k">Phone app</td><td><a href="https://fisco-phone-production.up.railway.app">fisco-phone-production.up.railway.app</a>, in a browser</td></tr>
         <tr><td class="k">Explorer</td><td><a href="https://fisco-api-production-85c5.up.railway.app/explorer">fisco-api-production-85c5…/explorer</a></td></tr>
         <tr><td class="k">Faucet</td><td><a href="https://fisco-api-production-85c5.up.railway.app/faucet">fisco-api-production-85c5…/faucet</a>, HK$100 a day</td></tr>
         <tr><td class="k">Chain RPC</td><td><a href="https://fisco-node-production.up.railway.app">fisco-node-production.up.railway.app</a></td></tr>
@@ -815,7 +817,8 @@ cd server &amp;&amp; pnpm dev         # :8787</pre></div>
     <div><p class="cap" style="margin:0 0 4px">On Railway</p><pre>railway up --service fisco-node
 railway up --service fisco-api
 railway up --service fisco-sellers
-railway up --service fisco-web</pre></div>
+railway up --service fisco-web
+railway up --service fisco-phone</pre></div>
   </div>
   <p class="cap"><span class="mono">deploy.sh</span> funds the keys, deploys the contracts with Foundry and mints HK$10,000 of test money to the issuer. On Railway, the API service does the same at first start.</p>
 
