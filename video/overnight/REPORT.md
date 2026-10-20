@@ -101,7 +101,7 @@ B means before the deadline; A means after, for the finals. Ranked by effect × 
 | 12 | X-ray: one idea at a time, a 2 s lane legend before the voice | idea | A | Contiguity and signalling (Ginns 2006, d ≈ 0.85) ([academic.md](research/academic.md)) |
 | 13 | Morse decoded into "SEND ALL" under the dots | **built**, `ccee08c` | B (optional) | [review-motion.md](research/review-motion.md) B-list; labelled as an illustration |
 | 14 | Varied Reveal settle and camera travel per act | **built** for the attack, `033e48c` `3021ee3` | B (optional) | [review-motion.md](research/review-motion.md) items 7 and 9 |
-| 15 | 90 s finals cut from existing scenes | plan | A | [finals-cut.md](research/finals-cut.md) |
+| 15 | 90 s finals cut from existing scenes | **built** on branch `video-finals` (`0f08593`): `tools/cut.py` + `cut-90.json` give 1:33 from the rendered film | A | [finals-cut.md](research/finals-cut.md). Kept off this branch so tonight's pick stays clean. |
 | 16 | Say "Mock e-HKD" aloud once; "test eHKD" in the planted order | idea | A | [review-fisco.md](research/review-fisco.md). The proof footer already says it. |
 
 ### Left for the owner to decide
