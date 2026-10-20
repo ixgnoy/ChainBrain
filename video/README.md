@@ -70,7 +70,7 @@ ffmpeg -i raw.mp4 -vf fps=30 -c:v libx264 -crf 17 -pix_fmt yuv420p out.mp4
 ## Honesty rules the edit follows
 
 - Phone shots carry a "recorded on our test setup" tag (the app's built-in network), and the video never zooms in on a demo hash.
-- Every hash the video points at is a real transaction on the hosted chain, from `docs/evidence-fisco-railway.json` and `docs/redteam/hosted-proof.json` (the 7 rejected payments).
+- Every hash the video points at is a real transaction on the hosted chain, from `docs/submission/evidence/evidence-fisco-railway.json` and `docs/submission/redteam/hosted-proof.json` (the 7 rejected payments).
 - The hook's facts are sourced on screen: the 4 May 2026 Morse-code drain (OECD AI Incidents Monitor: 3 billion DRB tokens, US$150,000 to 200,000; the film says "over a hundred and fifty thousand US dollars") and Accenture's 2026 survey (74% / 9%, "within set limits"). The dots and dashes spell an illustrative order, "SEND ALL", labelled on screen as an illustration, not the attacker's post.
 - The AI Card is a drawn illustration of the idea; it carries the hosted proof card's real address tail (0x33Dc…3356) and rules. The X-ray board is a diagram of the real system (`docs/submission/ChainBrain-technical-overview.pdf`, pages 1-8); the app screens beside it and everything else are the app's real screens and the explorer's real pages. No code is shown.
 - The HKMA beat paraphrases four ideas from Carmen Chu's remarks of 16 Oct 2026 (hkma.gov.hk) and says ChainBrain "covers" them; on screen it is called our mapping, not a regulatory approval.

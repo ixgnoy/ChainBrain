@@ -1,14 +1,14 @@
 // Re-fetches every recorded tx hash from the chain and checks it: the tx exists, its receipt has the expected status,
 // its block exists and contains it, the tx calls the recorded contract, and the expected event came from that contract.
 // Nothing is trusted from the file.
-// Usage: pnpm tsx scripts/verify-evidence.ts [../docs/evidence-fisco.json]
+// Usage: pnpm tsx scripts/verify-evidence.ts [../docs/submission/evidence/evidence-fisco.json]
 import { readFileSync } from "node:fs";
 import { keccak256, toHex, type Hex } from "viem";
 import { pub } from "../src/wallet/chain";
 import { cfg } from "../src/chains";
 
 type Entry = { label: string; tx: Hex; expect: "success" | "reverted"; event?: string; contract?: Hex };
-const file = process.argv[2] ?? new URL("../../docs/evidence-fisco.json", import.meta.url).pathname;
+const file = process.argv[2] ?? new URL("../../docs/submission/evidence/evidence-fisco.json", import.meta.url).pathname;
 const ev = JSON.parse(readFileSync(file, "utf8")) as { chain: string; chainId: number; entries: Entry[] };
 
 const c = pub();

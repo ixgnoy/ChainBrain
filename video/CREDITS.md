@@ -29,9 +29,9 @@
   - The app's own auto-play drove the scenes.
 - **Console:** the ChainBrain web console on its built-in network, recorded in headless Chromium (Playwright 1.64, MIT licence).
 - **Real chain:** the hosted ChainBrain explorer for the team's FISCO BCOS 3.16.4 chain (chain id 20200).
-  - The proof scene shows these transactions: `docs/evidence-fisco-railway.json`.
+  - The proof scene shows these transactions: `docs/submission/evidence/evidence-fisco-railway.json`.
   - "The card says no" shows block 13 (the forced transfer, reverted) as a screenshot.
-  - The proof scene lists the 7 refused payments from `docs/redteam/hosted-proof.json` with their hashes.
+  - The proof scene lists the 7 refused payments from `docs/submission/redteam/hosted-proof.json` with their hashes.
 - **App UI crops:** cut from the phone recordings above (`tools/ui-stills.sh`, `tools/crops.py`); they are the app's real screens on its built-in network.
 - **Seller names:** Exa, CoinGecko, Nansen, DataPro, Harbour Wines, ShadyFeed and TradeWire appear as the app shows them on its built-in network.
   - DataPro, Harbour Wines, ShadyFeed and TradeWire are fictional demo sellers.
