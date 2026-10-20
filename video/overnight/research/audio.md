@@ -88,3 +88,13 @@ The proposed chain is 11-15 dB quieter in the pauses with no loss in recognition
 4. High-pass the music below 60-70 Hz under speech (voice 1-2 dB louder on laptops).
 5. Trim the trailer clichés (shatter, number of impacts in 2:40-3:03); stop the riser before the "no" so the silence is real.
 6. De-ess the synthetic voice (`deesser=i=0.35`) if it is staying; re-break subtitle cues #20 and #50.
+
+## Addendum, 20 Oct 13:00: end-to-end import test with the v4.1 lines
+
+I built two synthetic "phone takes" from the branch's preview lines: 3 s of room tone first, 1 s gaps, a small-room tail, hiss near −50 dBFS and 50 Hz hum. One take read k3 twice. Then `tools/voice.py --in <test> --out <scratch>` ran with the new clean chain (`fd0c90f`).
+
+- **Lines:** all 10 were found (sections 06 and 08). k3 reported "2 take(s)" and kept the last, as the kit promises.
+- **Noise floor:** measured per file at −55 dBFS, the bottom of the clamp, because the synthetic hiss is quiet.
+- **Whisper match:** 0.88–1.0 per line. The lowest scores are the lines with names (Carmen Chu, FISCO BCOS), and they still matched.
+
+What it means: the importer handles the edited script without changes. A real phone take will measure a higher floor, around −50 to −45, and the chain adapts to it.
