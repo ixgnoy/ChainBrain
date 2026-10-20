@@ -111,7 +111,7 @@ These are approved decisions. Reviewers questioned them; the evidence is noted, 
 - **"Stricter, never looser" (w3).** The second AI tightens what the agent may do; it doesn't edit the stored rules. A safer line: "The second AI can only hold or block a payment. It can never loosen a limit."
 - **ART framework on the HKMA slide.** `2216e4e` (optional) names it in the source line only: "under the HKMA's ART framework (Accountability, Resilience, Trust)". The policy reviewer's fuller idea, three pillar tags over the rows, is for after the deadline.
 - **"Every agent, Claude, ChatGPT, or ours" (n2).** Pairing outside agents works only on the demo network so far.
-- **Investor review** ([review-investor.md](research/review-investor.md)). Taken: g1 now names the use case out loud ("Tell it the job, like daily durian export news.", `44c…`, no runtime change). Not taken: a "correction" tag on the cancel beat (cancelling isn't the user correcting the agent, so a judge could read the label as gaming the rubric), and rewording x6 (y2 already lands it). The Hong Kong market line and a "why us" line are for after the deadline.
+- **Investor review** ([review-investor.md](research/review-investor.md)). Taken: g1 now names the use case out loud ("Tell it the job, like daily durian export news.", `c7a41b1`, no runtime change). Not taken: a "correction" tag on the cancel beat (cancelling isn't the user correcting the agent, so a judge could read the label as gaming the rubric), and rewording x6 (y2 already lands it). The Hong Kong market line and a "why us" line are for after the deadline.
 - **The ending's vermillion "card".** It breaks the colour rule (vermillion only for attacks); the motion reviewer suggests powder blue.
 
 ## Research, one paragraph each
